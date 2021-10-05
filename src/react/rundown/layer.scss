@@ -1,0 +1,24 @@
+.layer {
+	width: 100%;
+	height: $layerHeight;
+	background: $emptyLayerColor;
+	position: relative;
+
+	&:not(:last-child) {
+		margin-bottom: 0.3rem;
+	}
+
+	&__content {
+		height: $layerHeight;
+		display: flex;
+		align-items: center;
+		background: #1769ff;
+		position: absolute;
+		padding: 0 0.5rem;
+		box-sizing: border-box;
+
+		.title {
+			font-size: 1.2rem;
+		}
+	}
+}

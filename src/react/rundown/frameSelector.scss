@@ -1,0 +1,24 @@
+.frame-selector {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 5;
+	background: pink;
+	height: 100%;
+
+	.head {
+		background-color: $redColor;
+		position: absolute;
+		transform: translateX(-50%) translateY(-100%);
+		font-size: 1.2rem;
+		padding: 0.2rem 0.3rem;
+		margin-left: 0.1rem;
+	}
+
+	.line {
+		height: 100%;
+		width: 0.2rem;
+		background-color: $redColor;
+		position: absolute;
+	}
+}

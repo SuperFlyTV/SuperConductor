@@ -1,0 +1,26 @@
+$greenColor: #68c858;
+$darkGreenColor: #326c28;
+$redColor: #fe3a3a;
+$mainFont: 'Trebuchet MS', 'Arial', sans-serif;
+$rundownOutlineColor: #4b4b4b;
+$layerHeight: 2.5rem;
+$emptyLayerColor: #1f1f1f;
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-size: 1.6rem;
+	color: white;
+	background-color: black;
+	font-family: $mainFont;
+}
+
+input,
+button,
+textarea {
+	font-family: $mainFont;
+}

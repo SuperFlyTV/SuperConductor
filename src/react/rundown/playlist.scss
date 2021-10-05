@@ -1,0 +1,22 @@
+.playlist {
+	border: 0.1rem solid $rundownOutlineColor;
+	margin-bottom: 2rem;
+	position: relative;
+
+	&__header {
+		position: absolute;
+		top: 0;
+		transform: translateY(-50%);
+		background-color: $rundownOutlineColor;
+		left: 2rem;
+
+		.title {
+			font-size: 1.3rem;
+			padding: 0.2rem 0.5rem;
+		}
+	}
+
+	&__content {
+		padding: 2rem;
+	}
+}
