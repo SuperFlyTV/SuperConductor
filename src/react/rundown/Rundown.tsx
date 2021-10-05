@@ -9,6 +9,7 @@ type PropsType = {}
 export const Rundown = () => {
 	return (
 		<div className="rundown">
+			<div className="rundown__duration">00:15:36</div>
 			<div className="rundown__meta">
 				<div className="title">Introduction</div>
 				<div className="controls">

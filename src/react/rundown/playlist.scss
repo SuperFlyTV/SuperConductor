@@ -1,7 +1,10 @@
 .playlist {
 	border: 0.1rem solid $rundownOutlineColor;
-	margin-bottom: 2rem;
 	position: relative;
+
+	&:not(:last-child) {
+		margin-bottom: 2.5rem;
+	}
 
 	&__header {
 		position: absolute;

@@ -1,18 +1,20 @@
 import { BrowserWindow } from 'electron'
-import { DeviceType, MappingCasparCG } from 'timeline-state-resolver'
+import { Conductor, DeviceType, MappingCasparCG } from 'timeline-state-resolver'
 import { literal } from 'timeline-state-resolver/dist/devices/device'
 
 export class TimedPlayerThingy {
 	mainWindow: BrowserWindow
 
-	// mappings = {
-	// 	casparLayer0: literal<MappingCasparCG>({
-	// 		device: DeviceType.CASPARCG,
-	// 		deviceId: 'caspar0',
-	// 		channel: 1,
-	// 		layer: 10,
-	// 	}),
-	// }
+	tsr: Conductor | undefined
+
+	mappings = {
+		casparLayer0: literal<MappingCasparCG>({
+			device: DeviceType.CASPARCG,
+			deviceId: 'caspar0',
+			channel: 1,
+			layer: 10,
+		}),
+	}
 
 	myTimeline = [
 		{
@@ -38,6 +40,12 @@ export class TimedPlayerThingy {
 
 	constructor(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
+		this.initTSR()
+	}
+
+	async initTSR() {
+		// this.tsr = new Conductor({})
+		// await this.tsr.init()
 	}
 
 	updateView() {
