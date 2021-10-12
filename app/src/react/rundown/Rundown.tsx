@@ -3,15 +3,22 @@ import { PlayBtn } from '../inputs/PlayBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { FrameSelector } from './FrameSelector'
 import { Layer } from './Layer'
+import Timeline from 'superfly-timeline'
 
-type PropsType = {}
+type PropsType = {
+	name: string
+	duration: string
+	timeline: Timeline.TimelineObject[]
+}
 
-export const Rundown = () => {
+export const Rundown = (props: PropsType) => {
+	console.log('Rundown props', props)
+
 	return (
 		<div className="rundown">
-			<div className="rundown__duration">00:15:36</div>
+			<div className="rundown__duration">{props.duration}</div>
 			<div className="rundown__meta">
-				<div className="title">Introduction</div>
+				<div className="title">{props.name}</div>
 				<div className="controls">
 					<PlayBtn />
 					<QueueBtn />
@@ -21,9 +28,9 @@ export const Rundown = () => {
 				<div>
 					<FrameSelector frame={10} />
 					<div className="layers">
-						<Layer />
-						<Layer />
-						<Layer />
+						{props.timeline.map((item, idx) => {
+							return <Layer timeline={item} />
+						})}
 					</div>
 				</div>
 			</div>
