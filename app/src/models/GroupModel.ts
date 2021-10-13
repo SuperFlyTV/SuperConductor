@@ -1,6 +1,6 @@
 import { RundownModel } from './RundownModel'
 
-export type RundownGroupModel = {
+export type GroupModel = {
 	name: string
 	type: 'group'
 	rundowns: RundownModel[]

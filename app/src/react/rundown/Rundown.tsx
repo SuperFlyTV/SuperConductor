@@ -4,6 +4,8 @@ import { QueueBtn } from '../inputs/QueueBtn'
 import { FrameSelector } from './FrameSelector'
 import { Layer } from './Layer'
 import Timeline from 'superfly-timeline'
+const { ipcRenderer } = window.require('electron')
+import { PLAY_RUNDOWN_CHANNEL } from '@/ipc/channels'
 
 type PropsType = {
 	name: string
@@ -12,7 +14,7 @@ type PropsType = {
 }
 
 export const Rundown = (props: PropsType) => {
-	console.log('Rundown props', props)
+	const totalDuration = 15000
 
 	return (
 		<div className="rundown">
@@ -20,16 +22,20 @@ export const Rundown = (props: PropsType) => {
 			<div className="rundown__meta">
 				<div className="title">{props.name}</div>
 				<div className="controls">
-					<PlayBtn />
+					<PlayBtn
+						onClick={() => {
+							ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, props.timeline)
+						}}
+					/>
 					<QueueBtn />
 				</div>
 			</div>
 			<div className="rundown__timeline">
 				<div>
-					<FrameSelector frame={10} />
+					<FrameSelector frame={0} />
 					<div className="layers">
 						{props.timeline.map((item, idx) => {
-							return <Layer timeline={item} />
+							return <Layer key={idx} totalDuration={totalDuration} timeline={item} />
 						})}
 					</div>
 				</div>

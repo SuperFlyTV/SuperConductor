@@ -1,4 +1,4 @@
-import { RundownGroupModel } from './RundownGroupModel'
+import { GroupModel } from './GroupModel'
 import { RundownModel } from './RundownModel'
 
-export type AppModel = (RundownModel | RundownGroupModel)[]
+export type AppModel = (RundownModel | GroupModel)[]

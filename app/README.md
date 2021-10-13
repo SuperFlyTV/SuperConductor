@@ -1,3 +1,3 @@
-# Timed Player Thingy
+# TPT App
 
-To run the project in development mode, run `yarn dev`.
+To run the project in development mode (both React and Electron), run `yarn dev`.

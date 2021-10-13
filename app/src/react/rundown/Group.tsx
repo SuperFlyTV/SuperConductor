@@ -5,13 +5,13 @@ type PropsType = {
 	children: React.ReactNode
 }
 
-export const Playlist = (props: PropsType) => {
+export const Group = (props: PropsType) => {
 	return (
-		<div className="playlist">
-			<div className="playlist__header">
+		<div className="group">
+			<div className="group__header">
 				<div className="title">Group #1</div>
 			</div>
-			<div className="playlist__content">{props.children}</div>
+			<div className="group__content">{props.children}</div>
 		</div>
 	)
 }

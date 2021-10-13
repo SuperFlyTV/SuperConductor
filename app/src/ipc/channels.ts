@@ -1,3 +1,2 @@
-import { AppModel } from '@/models/AppModel'
-
-export const MAIN_CHANNEL = 'main'
+export const APP_FEED_CHANNEL = 'app-feed'
+export const PLAY_RUNDOWN_CHANNEL = 'play-rundown'

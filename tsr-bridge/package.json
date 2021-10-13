@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@sofie-automation/code-standard-preset": "^0.4.2",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.3",
     "@types/koa-router": "^7.4.4",
@@ -26,5 +27,6 @@
     "koa-bodyparser": "^4.3.0",
     "koa-router": "^10.1.1",
     "timeline-state-resolver": "^6.2.0-release37.4"
-  }
+  },
+  "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
 }

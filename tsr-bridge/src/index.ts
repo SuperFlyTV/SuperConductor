@@ -1,66 +1,19 @@
-import {
-  Conductor,
-  ConductorOptions,
-  DeviceType,
-  MappingCasparCG,
-} from "timeline-state-resolver";
-import { literal } from "timeline-state-resolver/dist/devices/device";
-import { timelineMock } from "./mocks/timelineMock";
-import { Server } from "./server/server";
-import { TSRInput } from "./types/typings";
+import { TSRTimeline } from 'timeline-state-resolver-types'
+import { KoaServer } from './KoaServer'
+import { TSR } from './TSR'
 
-const allInputs: TSRInput = {
-  devices: {
-    caspar0: {
-      type: DeviceType.CASPARCG,
-      options: {
-        host: "127.0.0.1",
-        port: 5250,
-      },
-    },
-  },
-  mappings: {
-    casparLayer0: literal<MappingCasparCG>({
-      device: DeviceType.CASPARCG,
-      deviceId: "caspar0",
-      channel: 1,
-      layer: 10,
-    }),
-  },
-  settings: {
-    multiThreading: true,
-    multiThreadedResolver: false,
-  },
-  timeline: timelineMock,
-};
+const tsr = new TSR()
 
-let tsr: Conductor;
+const handleTimeline = (timeline: TSRTimeline) => {
+	timeline.map((item) => {
+		;(item.enable as any).start += Date.now()
+		return item
+	})
 
-let c: ConductorOptions = {
-  getCurrentTime: Date.now,
-  initializeAsClear: true,
-  multiThreadedResolver: false,
-  proActiveResolve: true,
-};
-tsr = new Conductor(c);
+	tsr.conductor.setTimelineAndMappings(timeline, tsr.allInputs.mappings)
+	tsr.conductor.init()
+}
 
-tsr.on("error", (e, ...args) => {
-  console.error("TSR", e, ...args);
-});
-tsr.on("info", (msg, ...args) => {
-  console.log("TSR", msg, ...args);
-});
-tsr.on("warning", (msg, ...args) => {
-  console.log("Warning: TSR", msg, ...args);
-});
-
-tsr.setTimelineAndMappings(allInputs.timeline!, allInputs.mappings);
-tsr.addDevice("caspar0", allInputs.devices!.caspar0);
-
-tsr.init();
-
-// Koa
-
-const server = new Server();
-
-console.log("Hello World!");
+const koaServer = new KoaServer({
+	handleTimeline,
+})
