@@ -1,4 +1,5 @@
 import { RundownModel } from '@/models/RundownModel'
+import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
 export const rundownsMock: RundownModel[] = [
 	{
@@ -6,16 +7,16 @@ export const rundownsMock: RundownModel[] = [
 		type: 'rundown',
 		timeline: [
 			{
-				id: 'video0',
-				layer: 'casparLayer0',
+				id: 'graphic0',
+				layer: 'casparLayer2',
 				enable: {
-					start: 0,
+					start: 3000,
 					duration: 10 * 1000,
 				},
 				content: {
-					deviceType: 1, // DeviceType.CASPARCG,
-					type: 'media', // TimelineContentTypeCasparCg.MEDIA,
-					file: 'trailer',
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.TEMPLATE,
+					file: 'lower-third',
 				},
 			},
 			{
@@ -26,9 +27,22 @@ export const rundownsMock: RundownModel[] = [
 					duration: 3 * 1000,
 				},
 				content: {
-					deviceType: 1, // DeviceType.CASPARCG,
-					type: 'media', // TimelineContentTypeCasparCg.MEDIA,
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.MEDIA,
 					file: 'amb',
+				},
+			},
+			{
+				id: 'video0',
+				layer: 'casparLayer0',
+				enable: {
+					start: 0,
+					duration: 10 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.MEDIA,
+					file: 'trailer',
 				},
 			},
 		],
@@ -45,8 +59,8 @@ export const rundownsMock: RundownModel[] = [
 					duration: 10 * 1000,
 				},
 				content: {
-					deviceType: 1, // DeviceType.CASPARCG,
-					type: 'media', // TimelineContentTypeCasparCg.MEDIA,
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.MEDIA,
 					file: 'trailer',
 				},
 			},

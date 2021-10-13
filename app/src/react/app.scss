@@ -1,10 +1,15 @@
 .app {
-	padding: 2rem;
+	display: flex;
+	align-items: stretch;
+	height: 100vh;
+	box-sizing: border-box;
 }
 
 @import './globals.scss';
 
 @import './inputs/btn.scss';
+@import './components/sidebar/sidebar.scss';
+@import './components/rundowns/rundowns.scss';
 
 @import './rundown/group.scss';
 @import './rundown/rundown.scss';

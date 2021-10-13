@@ -4,6 +4,16 @@
 	background: $emptyLayerColor;
 	position: relative;
 
+	/* Colors */
+
+	&.template .layer__content {
+		background: #e96703;
+	}
+
+	&.media .layer__content {
+		background: #1769ff;
+	}
+
 	&:not(:last-child) {
 		margin-bottom: 0.3rem;
 	}
@@ -12,7 +22,7 @@
 		height: $layerHeight;
 		display: flex;
 		align-items: center;
-		background: #1769ff;
+		background: silver;
 		position: absolute;
 		padding: 0 0.5rem;
 		box-sizing: border-box;

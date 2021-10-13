@@ -1,3 +1,4 @@
+import classNames from 'classnames'
 import React from 'react'
 import Timeline from 'superfly-timeline'
 
@@ -14,7 +15,7 @@ export const Layer = (props: PropsType) => {
 	const startPercentage = (start / props.totalDuration) * 100 + '%'
 
 	return (
-		<div className="layer">
+		<div className={classNames({ layer: true, [props.timeline.content.type]: true })}>
 			<div className="layer__content" style={{ width: widthPercentage, left: startPercentage }}>
 				<div className="title">{props.timeline.content.file}</div>
 			</div>

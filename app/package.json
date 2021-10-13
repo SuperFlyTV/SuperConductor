@@ -47,6 +47,8 @@
   "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
   "dependencies": {
     "axios": "^0.23.0",
-    "react-icons": "^4.3.1"
+    "classnames": "^2.3.1",
+    "react-icons": "^4.3.1",
+    "timeline-state-resolver-types": "^6.2.0-release37.4"
   }
 }
