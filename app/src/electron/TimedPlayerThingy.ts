@@ -17,23 +17,12 @@ export class TimedPlayerThingy {
 		}, 5000)
 
 		this.init()
-		this.resolve()
 	}
 
 	init() {
 		ipcMain.on(PLAY_RUNDOWN_CHANNEL, (event, arg) => {
 			TsrBridgeApi.postTimeline(arg)
 		})
-	}
-
-	resolve() {
-		const options = {
-			time: 0,
-		}
-		// const resolvedTimeline = Timeline.Resolver.resolveTimeline(rundownsMock[0].timeline, options)
-		// console.log(JSON.stringify(resolvedTimeline))
-		// const resolvedStates = Timeline.Resolver.resolveAllStates(resolvedTimeline)
-		// console.log(JSON.stringify(resolvedStates))
 	}
 
 	updateView() {

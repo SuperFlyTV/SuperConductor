@@ -33,26 +33,30 @@ const TemplateData = () => {
 		<div className="template-data">
 			<div className="title">Template data</div>
 			<table>
-				<tr>
-					<th>Key</th>
-					<th>Value</th>
-				</tr>
-				<tr>
-					<td>_name</td>
-					<td>John Doe</td>
-				</tr>
-				<tr>
-					<td>_name</td>
-					<td>John Doe</td>
-				</tr>
-				<tr>
-					<td>_name</td>
-					<td>John Doe</td>
-				</tr>
-				<tr>
-					<td>_name</td>
-					<td>John Doe</td>
-				</tr>
+				<thead>
+					<tr>
+						<th>Key</th>
+						<th>Value</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>_name</td>
+						<td>John Doe</td>
+					</tr>
+					<tr>
+						<td>_name</td>
+						<td>John Doe</td>
+					</tr>
+					<tr>
+						<td>_name</td>
+						<td>John Doe</td>
+					</tr>
+					<tr>
+						<td>_name</td>
+						<td>John Doe</td>
+					</tr>
+				</tbody>
 			</table>
 			<button>Add</button>
 		</div>
