@@ -1,0 +1,17 @@
+.app {
+	display: flex;
+	align-items: stretch;
+	height: 100vh;
+	box-sizing: border-box;
+}
+
+@import './globals.scss';
+
+@import './btn.scss';
+@import './sidebar.scss';
+@import './rundowns.scss';
+
+@import './group.scss';
+@import './rundown.scss';
+@import './layer.scss';
+@import './playHead.scss';

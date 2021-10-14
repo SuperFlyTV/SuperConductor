@@ -1,8 +1,9 @@
 import React from 'react'
 import Rundowns from './components/rundowns/Rundowns'
 import { Sidebar } from './components/sidebar/Sidebar'
-import './app.scss'
 import { mediaMock } from '@/mocks/mediaMock'
+
+import './styles/app.scss'
 
 export const App = () => {
 	return (

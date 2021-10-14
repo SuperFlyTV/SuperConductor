@@ -53,6 +53,12 @@ export class TSR {
 				channel: 1,
 				layer: 11,
 			}),
+			casparLayer2: literal<MappingCasparCG>({
+				device: DeviceType.CASPARCG,
+				deviceId: 'caspar0',
+				channel: 1,
+				layer: 12,
+			}),
 		},
 		settings: {
 			multiThreading: true,
@@ -82,9 +88,9 @@ export class TSR {
 			console.log('Warning: TSR', msg, ...args)
 		})
 
-		this.conductor.addDevice('caspar0', this.allInputs.devices!.caspar0)
-		this.conductor.setTimelineAndMappings(this.allInputs.timeline!, this.allInputs.mappings)
+		this.conductor.addDevice('caspar0', this.allInputs.devices!.caspar0).catch(console.error)
 
-		// this.conductor.init()
+		this.conductor.setTimelineAndMappings([], this.allInputs.mappings)
+		this.conductor.init().catch(console.error)
 	}
 }

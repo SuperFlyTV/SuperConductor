@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
-
 import { APP_FEED_CHANNEL } from '@/ipc/channels'
 import { AppModel } from '@/models/AppModel'
-
 import { Rundown } from '../rundown/Rundown'
 
 const Rundowns = () => {

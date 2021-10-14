@@ -1,7 +1,12 @@
+import { literal } from '@/lib'
 import { RundownModel } from '@/models/RundownModel'
-import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { DeviceType, MappingCasparCG, Mappings, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
-export const rundownsMock: RundownModel[] = [
+interface GUIModel {
+	layers: string[] // in the order they are to be displayed in the GUI
+}
+
+export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 	{
 		name: 'Introduction',
 		type: 'rundown',
@@ -11,12 +16,15 @@ export const rundownsMock: RundownModel[] = [
 				layer: 'casparLayer2',
 				enable: {
 					start: 3000,
-					duration: 10 * 1000,
+					duration: 5 * 1000,
 				},
 				content: {
 					deviceType: DeviceType.CASPARCG,
 					type: TimelineContentTypeCasparCg.TEMPLATE,
-					file: 'lower-third',
+					templateType: 'html',
+					name: 'lower-third',
+					data: JSON.stringify({ _label: 'Timed Player Thingy' }),
+					useStopCommand: true,
 				},
 			},
 			{
@@ -64,6 +72,34 @@ export const rundownsMock: RundownModel[] = [
 					file: 'trailer',
 				},
 			},
+			{
+				id: 'video1',
+				layer: 'casparLayer0',
+				enable: {
+					start: 10 * 1000,
+					duration: 10 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.MEDIA,
+					file: 'trailer2',
+				},
+			},
 		],
 	},
-]
+])
+
+export const layerMappings: Mappings = {
+	caspar_video: literal<MappingCasparCG>({
+		device: DeviceType.CASPARCG,
+		deviceId: 'caspar0',
+		channel: 1,
+		layer: 9,
+	}),
+	caspar_gfx: literal<MappingCasparCG>({
+		device: DeviceType.CASPARCG,
+		deviceId: 'caspar0',
+		channel: 1,
+		layer: 10,
+	}),
+}

@@ -1,0 +1,34 @@
+.layer {
+	width: 100%;
+	height: $layerHeight;
+	background: $emptyLayerColor;
+	position: relative;
+
+	&:not(:last-child) {
+		margin-bottom: 0.3rem;
+	}
+
+	&__content {
+		.object {
+			height: $layerHeight;
+			display: flex;
+			align-items: center;
+			background: silver;
+			position: absolute;
+			padding: 0 0.5rem;
+			box-sizing: border-box;
+
+			&.template {
+				background: #e96703;
+			}
+
+			&.media {
+				background: #1769ff;
+			}
+
+			.title {
+				font-size: 1.2rem;
+			}
+		}
+	}
+}

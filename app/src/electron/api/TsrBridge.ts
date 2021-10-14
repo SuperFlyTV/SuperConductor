@@ -1,11 +1,21 @@
 import { post } from './config'
 import Timeline from 'superfly-timeline'
 
-type TimelineRequest = Timeline.TimelineObject[]
+type PlayTimelineRequest = {
+	id: string
+	groupId: string
+	newTimeline: Timeline.TimelineObject[]
+}
+
+type StopTimelineRequest = {
+	id: string
+}
 
 export class TsrBridgeApi {
-	static postTimeline = async (params: TimelineRequest) => {
-		console.log('Posting timeline')
-		await post<{}>(`/timeline`, params)
+	static playTimeline = async (params: PlayTimelineRequest) => {
+		return await post<{}>(`/play-timeline`, params)
+	}
+	static stopTimeline = async (params: StopTimelineRequest) => {
+		return await post<{}>(`/stop-timeline`, params)
 	}
 }

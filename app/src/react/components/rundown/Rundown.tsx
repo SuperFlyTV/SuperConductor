@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { PlayBtn } from '../inputs/PlayBtn'
+import React, { useRef, useState } from 'react'
+import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import Timeline from 'superfly-timeline'
+import Timeline, { Resolver } from 'superfly-timeline'
 const { ipcRenderer } = window.require('electron')
-import { PLAY_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import { PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { msToTime } from '@/react/utils/msToTime'
 
 type PropsType = {
@@ -14,42 +14,49 @@ type PropsType = {
 }
 
 export const Rundown = (props: PropsType) => {
-	const totalDurations = props.timeline.map((item) => {
-		return (item.enable as any).start + (item.enable as any).duration
+	const resolvedTimeline = Resolver.resolveTimeline(props.timeline, { time: 0 })
+	let maxDuration = 0
+	Object.values(resolvedTimeline.objects).forEach((obj) => {
+		Object.values(obj.resolved.instances).forEach((instance) => {
+			if (instance.end) {
+				maxDuration = Math.max(maxDuration, instance.end)
+			}
+		})
 	})
-	const maxDuration = Math.max.apply(Math, totalDurations)
 
 	let startedPlayingTime = 0
-
 	const [isPlaying, setPlaying] = useState(false)
 	const [elapsedTime, setElapsedTime] = useState(0)
 	const intervalRef = useRef<NodeJS.Timeout>()
 
-	const handlePlay = () => {
+	const handlePlayControl = () => {
 		if (!isPlaying) {
-			setPlaying(true)
-			ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, props.timeline)
-			startedPlayingTime = Date.now()
-			intervalRef.current = setInterval(() => {
-				updateElapsedTime()
-			}, 16)
+			handleStart()
 		} else {
-			setPlaying(false)
-
-			if (intervalRef.current) clearInterval(intervalRef.current)
+			handleStop()
 		}
 	}
 
-	const handleStart = () => {}
-	const handleStop = () => {}
+	const handleStart = () => {
+		setPlaying(true)
+		startedPlayingTime = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, props.timeline)
+		intervalRef.current = setInterval(() => {
+			updateElapsedTime()
+		}, 16)
+	}
+
+	const handleStop = () => {
+		setPlaying(false)
+		setElapsedTime(0)
+		ipcRenderer.send(STOP_RUNDOWN_CHANNEL, props.timeline)
+		if (intervalRef.current) clearInterval(intervalRef.current)
+	}
 
 	const updateElapsedTime = () => {
 		const currentTime = Date.now()
 		const elapsed = currentTime - startedPlayingTime
-		// console.log('Elapsed', elapsed)
 		if (elapsed > maxDuration) {
-			handlePlay()
-			return
+			handleStop()
 		}
 		setElapsedTime(elapsed)
 	}
@@ -60,16 +67,18 @@ export const Rundown = (props: PropsType) => {
 			<div className="rundown__meta">
 				<div className="title">{props.name}</div>
 				<div className="controls">
-					<PlayBtn onClick={handlePlay} />
+					<PlayControlBtn mode={isPlaying ? 'stop' : 'play'} onClick={handlePlayControl} />
 					<QueueBtn />
 				</div>
 			</div>
 			<div className="rundown__timeline">
 				<div>
-					<PlayHead frame={0} percentage={(elapsedTime * 100) / maxDuration + '%'} />
+					<PlayHead percentage={(elapsedTime * 100) / maxDuration + '%'} />
 					<div className="layers">
-						{props.timeline.map((item, idx) => {
-							return <Layer key={idx} totalDuration={maxDuration} timeline={item} />
+						{Object.entries(resolvedTimeline.layers).map(([layerId, objectIds]) => {
+							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
+
+							return <Layer key={layerId} totalDuration={maxDuration} timelineObjs={objectsOnLayer} layerId={layerId} />
 						})}
 					</div>
 				</div>
