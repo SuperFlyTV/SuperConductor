@@ -43,4 +43,33 @@
 			background-color: $lightGreenColor;
 		}
 	}
+
+	&.form {
+		font-weight: bold;
+		background-color: $accentBg;
+		border: 0;
+		padding: 0.7rem 1.5rem;
+		color: white;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: all 150ms ease;
+
+		&:not(:disabled):hover {
+			background-color: $accentLightBg;
+		}
+
+		&:disabled {
+			opacity: 0.6;
+		}
+	}
+}
+
+.btn-row-left {
+	text-align: left;
+	margin-top: 1.5rem;
+}
+
+.btn-row-right {
+	text-align: right;
+	margin-top: 1.5rem;
 }

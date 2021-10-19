@@ -27,8 +27,8 @@ export const TemplateData = (props: { templateData: TemplateData }) => {
 						})}
 					</tbody>
 				</table>
-				<div className="btn-row">
-					<button>Add</button>
+				<div className="btn-row-right">
+					<button className="btn form">Add</button>
 				</div>
 			</div>
 		</InfoGroup>

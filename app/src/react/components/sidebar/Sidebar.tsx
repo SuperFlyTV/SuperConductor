@@ -6,6 +6,7 @@ import { MediaInfo } from './MediaInfo'
 import { TimelineObjInfo } from './TimelineObjInfo'
 import { TemplateData } from './TemplateData'
 import { findMedia, findTimelineObj } from '@/lib/util'
+import { MediaLibrary } from './MediaLibrary'
 
 type PropsType = {
 	appData: AppModel
@@ -26,27 +27,29 @@ export const Sidebar = (props: PropsType) => {
 		}
 	}, [props.appData])
 
-	if (!timelineObj) {
-		return <div className="sidebar">Nothing selected.</div>
-	}
-
 	let sidebarTitle = ''
-	const objContent = timelineObj.content as any
-	if (objContent.type === TimelineContentTypeCasparCg.TEMPLATE) {
-		sidebarTitle = objContent.name
-	} else if (objContent.type === TimelineContentTypeCasparCg.MEDIA) {
-		sidebarTitle = objContent.file
+	if (timelineObj) {
+		const objContent = timelineObj.content as any
+		if (objContent.type === TimelineContentTypeCasparCg.TEMPLATE) {
+			sidebarTitle = objContent.name
+		} else if (objContent.type === TimelineContentTypeCasparCg.MEDIA) {
+			sidebarTitle = objContent.file
+		}
 	}
 
 	return (
-		<div className="sidebar">
-			<div className="title">{sidebarTitle}</div>
+		<div className="sidebar timeline-obj-sidebar">
+			{sidebarTitle && <div className="title">{sidebarTitle}</div>}
 			{media && <MediaInfo media={media} />}
 			{timelineObj && <TimelineObjInfo timelineObj={timelineObj} />}
 
-			{(timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
+			{timelineObj && (timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 				<TemplateData templateData={JSON.parse((timelineObj.content as any)?.data)} />
 			)}
+
+			{timelineObj && <div className="sep" />}
+
+			<MediaLibrary appData={props.appData} />
 		</div>
 	)
 }

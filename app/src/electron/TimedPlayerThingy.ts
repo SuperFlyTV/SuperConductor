@@ -3,8 +3,10 @@ import {
 	PLAY_RUNDOWN_CHANNEL,
 	SELECT_TIMELINE_OBJ_CHANNEL,
 	STOP_RUNDOWN_CHANNEL,
-	UpdateTimelineObj,
+	IUpdateTimelineObj,
 	UPDATE_TIMELINE_OBJ_CHANNEL,
+	NEW_RUNDOWN_CHANNEL,
+	INewRundown,
 } from '@/ipc/channels'
 import { findTimelineObj } from '@/lib/util'
 import { appMock } from '@/mocks/appMock'
@@ -41,12 +43,21 @@ export class TimedPlayerThingy {
 			this.appData.selectedTimelineObjId = arg
 			this.updateView()
 		})
-		ipcMain.on(UPDATE_TIMELINE_OBJ_CHANNEL, async (event, arg: UpdateTimelineObj) => {
+		ipcMain.on(UPDATE_TIMELINE_OBJ_CHANNEL, async (event, arg: IUpdateTimelineObj) => {
 			const found = findTimelineObj(this.appData.rundowns, arg.id)
 			if (!found) return
-
 			;(found.enable as any).start = arg.enableStart
 			;(found.enable as any).duration = arg.enableDuration
+			this.updateView()
+		})
+		ipcMain.on(NEW_RUNDOWN_CHANNEL, async (event, arg: INewRundown) => {
+			console.log('Creating new rundown', arg)
+
+			this.appData.rundowns.push({
+				name: arg.name,
+				type: 'rundown',
+				timeline: [],
+			})
 			this.updateView()
 		})
 	}

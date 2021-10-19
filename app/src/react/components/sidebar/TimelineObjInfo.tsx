@@ -1,4 +1,4 @@
-import { UpdateTimelineObj, UPDATE_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
+import { IUpdateTimelineObj, UPDATE_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import React from 'react'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -12,8 +12,6 @@ type MyFormValues = {
 }
 
 export const TimelineObjInfo = ({ timelineObj }: { timelineObj: TSRTimelineObj }) => {
-	console.log('initial', timelineObj)
-
 	const initialValues: MyFormValues = {
 		enableStart: (timelineObj.enable as any)?.start,
 		enableDuration: (timelineObj.enable as any)?.duration,
@@ -27,7 +25,7 @@ export const TimelineObjInfo = ({ timelineObj }: { timelineObj: TSRTimelineObj }
 				initialValues={initialValues}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					const updateObj: UpdateTimelineObj = {
+					const updateObj: IUpdateTimelineObj = {
 						id: timelineObj.id,
 						enableStart: values.enableStart,
 						enableDuration: values.enableDuration,
@@ -48,8 +46,10 @@ export const TimelineObjInfo = ({ timelineObj }: { timelineObj: TSRTimelineObj }
 							<Field id="enableDuration" name="enableDuration" type="number" placeholder="0" />
 							<ErrorMessage name="enableDuration" component="div" />
 						</FormRow>
-						<div className="btn-row">
-							<button type="submit">Save changes</button>
+						<div className="btn-row-right">
+							<button type="submit" className="btn form">
+								Save changes
+							</button>
 						</div>
 					</Form>
 				)}

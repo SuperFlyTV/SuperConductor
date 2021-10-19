@@ -1,7 +1,21 @@
 .sidebar {
-	width: 28rem;
-	background-color: #4b4b4b;
-	padding: 1.5rem 2.5rem;
+	background-color: $silverBg;
+
+	&.timeline-obj-sidebar {
+		width: 28rem;
+		padding: 1.5rem 2.5rem;
+		border-bottom: 1px solid silver;
+	}
+
+	&.media-library-sidebar {
+		padding: 1.5rem 0;
+	}
+
+	.sep {
+		width: 100%;
+		height: 1px;
+		background: silver;
+	}
 
 	.title {
 		font-size: 1.8rem;
@@ -17,29 +31,6 @@
 			text-transform: uppercase;
 			margin-bottom: 0.5rem;
 			font-weight: bold;
-		}
-	}
-
-	.btn-row {
-		text-align: right;
-		button {
-			font-weight: bold;
-			background-color: #e96703;
-			border: 0;
-			padding: 0.7rem 1.5rem;
-			color: white;
-			text-transform: uppercase;
-			margin-top: 1.5rem;
-			cursor: pointer;
-			transition: all 150ms ease;
-
-			&:not(:disabled):hover {
-				background-color: #fc8021;
-			}
-
-			&:disabled {
-				opacity: 0.6;
-			}
 		}
 	}
 
@@ -78,32 +69,6 @@
 	.template-data {
 		.title {
 			font-weight: bold;
-		}
-
-		table {
-			width: 100%;
-			border-collapse: collapse;
-
-			td,
-			th {
-				font-size: 1.2rem;
-				padding: 0.5rem 0.7rem;
-				width: 50%;
-				text-align: left;
-			}
-
-			th {
-				background-color: #e96703;
-				text-transform: uppercase;
-			}
-
-			tr {
-				background-color: #000000;
-			}
-
-			tr:nth-child(even) {
-				background-color: #1f1f1f;
-			}
 		}
 	}
 }

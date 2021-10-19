@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Rundowns from './components/rundowns/Rundowns'
 import { Sidebar } from './components/sidebar/Sidebar'
-import { mediaMock } from '@/mocks/mediaMock'
 const { ipcRenderer } = window.require('electron')
 
 import './styles/app.scss'
@@ -21,7 +20,7 @@ export const App = () => {
 	return (
 		<div className="app">
 			<Rundowns appData={appData} selectedTimelineObjId={appData.selectedTimelineObjId} />
-			{appData.selectedTimelineObjId && <Sidebar appData={appData} />}
+			<Sidebar appData={appData} />
 		</div>
 	)
 }
