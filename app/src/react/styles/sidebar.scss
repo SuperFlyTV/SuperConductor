@@ -6,33 +6,22 @@
 	.title {
 		font-size: 1.8rem;
 		margin-bottom: 2rem;
+		font-weight: bold;
 	}
 
-	.row {
-		display: flex;
-		font-size: 1.3rem;
-		margin-bottom: 0.2rem;
+	.info-group {
+		margin-bottom: 2rem;
 
-		.label {
-			flex-basis: 50%;
-			flex-grow: 0;
-			flex-shrink: 0;
-			opacity: 0.7;
-		}
-		.value {
-			flex-basis: 50%;
-			flex-grow: 0;
-			flex-shrink: 0;
-		}
-	}
-
-	.template-data {
-		margin-top: 2rem;
-
-		.title {
+		& > .title {
+			font-size: 1.2rem;
+			text-transform: uppercase;
+			margin-bottom: 0.5rem;
 			font-weight: bold;
 		}
+	}
 
+	.btn-row {
+		text-align: right;
 		button {
 			font-weight: bold;
 			background-color: #e96703;
@@ -42,10 +31,53 @@
 			text-transform: uppercase;
 			margin-top: 1.5rem;
 			cursor: pointer;
+			transition: all 150ms ease;
 
-			&:hover {
-				background-color: #fa7713;
+			&:not(:disabled):hover {
+				background-color: #fc8021;
 			}
+
+			&:disabled {
+				opacity: 0.6;
+			}
+		}
+	}
+
+	.row {
+		display: flex;
+		margin-bottom: 0.2rem;
+
+		.label,
+		label {
+			flex-basis: 50%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			opacity: 0.7;
+			font-size: 1.3rem;
+			display: flex;
+			align-items: center;
+		}
+		.value,
+		input {
+			flex-basis: 50%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			font-size: 1.3rem;
+			box-sizing: border-box;
+		}
+
+		input {
+			background-color: black;
+			border: 0;
+			color: silver;
+			padding: 0.3rem;
+			overflow: hidden;
+		}
+	}
+
+	.template-data {
+		.title {
+			font-weight: bold;
 		}
 
 		table {

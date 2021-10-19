@@ -1,23 +1,25 @@
-import React, { useEffect, useState } from 'react'
-const { ipcRenderer } = window.require('electron')
-import { APP_FEED_CHANNEL } from '@/ipc/channels'
-import { AppModel } from '@/models/AppModel'
+import React from 'react'
+import { AppModel, Rundowns } from '@/models/AppModel'
 import { Rundown } from '../rundown/Rundown'
 
-const Rundowns = () => {
-	const [app, setApp] = useState<AppModel>([])
+type PropsType = {
+	appData: AppModel
+	selectedTimelineObjId?: string
+}
 
-	useEffect(() => {
-		ipcRenderer.on(APP_FEED_CHANNEL, (event, args: AppModel) => {
-			setApp(args)
-		})
-	}, [])
-
+const Rundowns = (props: PropsType) => {
 	return (
 		<div className="rundowns">
-			{app.map((rdOrGroup, idx) => {
+			{props.appData.rundowns.map((rdOrGroup, idx) => {
 				if (rdOrGroup.type === 'rundown') {
-					return <Rundown key={idx} name={rdOrGroup.name} timeline={rdOrGroup.timeline} />
+					return (
+						<Rundown
+							key={idx}
+							name={rdOrGroup.name}
+							timeline={rdOrGroup.timeline}
+							selectedTimelineObjId={props.selectedTimelineObjId}
+						/>
+					)
 				} else {
 					// Recursively show rundowns and groups
 				}

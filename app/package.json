@@ -48,7 +48,9 @@
   "dependencies": {
     "axios": "^0.23.0",
     "classnames": "^2.3.1",
+    "formik": "^2.2.9",
     "react-icons": "^4.3.1",
-    "timeline-state-resolver-types": "^6.2.0-release37.4"
+    "timeline-state-resolver-types": "^6.2.0-release37.4",
+    "yup": "^0.32.11"
   }
 }

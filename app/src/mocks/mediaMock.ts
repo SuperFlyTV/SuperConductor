@@ -9,4 +9,12 @@ export const mediaMock: MediaModel[] = [
 		frameCount: 811,
 		frameRateDuration: '1/25',
 	},
+	{
+		filename: 'amb',
+		type: 'MOVIE',
+		filesize: 2165175,
+		lastModified: 20211012143528,
+		frameCount: 811,
+		frameRateDuration: '1/25',
+	},
 ]

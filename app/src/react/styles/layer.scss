@@ -17,6 +17,16 @@
 			position: absolute;
 			padding: 0 0.5rem;
 			box-sizing: border-box;
+			cursor: pointer;
+			transition: all 150ms ease;
+
+			&:hover {
+				opacity: 0.8;
+			}
+
+			&.selected {
+				box-shadow: inset 0px 0px 0px 3px #ffffff85;
+			}
 
 			&.template {
 				background: #e96703;

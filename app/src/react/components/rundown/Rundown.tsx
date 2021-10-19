@@ -11,6 +11,7 @@ import { msToTime } from '@/react/utils/msToTime'
 type PropsType = {
 	name: string
 	timeline: Timeline.TimelineObject[]
+	selectedTimelineObjId?: string
 }
 
 export const Rundown = (props: PropsType) => {
@@ -78,7 +79,15 @@ export const Rundown = (props: PropsType) => {
 						{Object.entries(resolvedTimeline.layers).map(([layerId, objectIds]) => {
 							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
 
-							return <Layer key={layerId} totalDuration={maxDuration} timelineObjs={objectsOnLayer} layerId={layerId} />
+							return (
+								<Layer
+									key={layerId}
+									totalDuration={maxDuration}
+									timelineObjs={objectsOnLayer}
+									layerId={layerId}
+									selectedTimelineObjId={props.selectedTimelineObjId}
+								/>
+							)
 						})}
 					</div>
 				</div>

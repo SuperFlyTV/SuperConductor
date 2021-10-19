@@ -1,11 +1,14 @@
+import { SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 import classNames from 'classnames'
 import React from 'react'
 import Timeline from 'superfly-timeline'
+const { ipcRenderer } = window.require('electron')
 
 type PropsType = {
 	layerId: string
 	totalDuration: number
 	timelineObjs: Timeline.ResolvedTimelineObject[]
+	selectedTimelineObjId?: string
 }
 
 export const Layer = (props: PropsType) => {
@@ -22,8 +25,15 @@ export const Layer = (props: PropsType) => {
 					return (
 						<div
 							key={timelineObj.id}
-							className={classNames({ object: true, [timelineObj.content.type]: true })}
+							className={classNames({
+								object: true,
+								[timelineObj.content.type]: true,
+								selected: props.selectedTimelineObjId === timelineObj.id,
+							})}
 							style={{ width: widthPercentage, left: startPercentage }}
+							onClick={() => {
+								ipcRenderer.send(SELECT_TIMELINE_OBJ_CHANNEL, timelineObj.id)
+							}}
 						>
 							<div className="title">{timelineObj.content.file || timelineObj.content.name}</div>
 						</div>

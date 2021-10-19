@@ -1,4 +1,12 @@
-import { APP_FEED_CHANNEL, PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import {
+	APP_FEED_CHANNEL,
+	PLAY_RUNDOWN_CHANNEL,
+	SELECT_TIMELINE_OBJ_CHANNEL,
+	STOP_RUNDOWN_CHANNEL,
+	UpdateTimelineObj,
+	UPDATE_TIMELINE_OBJ_CHANNEL,
+} from '@/ipc/channels'
+import { findTimelineObj } from '@/lib/util'
 import { appMock } from '@/mocks/appMock'
 import { BrowserWindow, ipcMain } from 'electron'
 import Timeline from 'superfly-timeline'
@@ -7,6 +15,7 @@ import { TsrBridgeApi } from './api/TsrBridge'
 
 export class TimedPlayerThingy {
 	mainWindow: BrowserWindow
+	appData = appMock
 
 	constructor(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
@@ -28,10 +37,22 @@ export class TimedPlayerThingy {
 		ipcMain.on(STOP_RUNDOWN_CHANNEL, async (event, arg) => {
 			await TsrBridgeApi.stopTimeline({ id: 'myId' })
 		})
+		ipcMain.on(SELECT_TIMELINE_OBJ_CHANNEL, async (event, arg) => {
+			this.appData.selectedTimelineObjId = arg
+			this.updateView()
+		})
+		ipcMain.on(UPDATE_TIMELINE_OBJ_CHANNEL, async (event, arg: UpdateTimelineObj) => {
+			const found = findTimelineObj(this.appData.rundowns, arg.id)
+			if (!found) return
+
+			;(found.enable as any).start = arg.enableStart
+			;(found.enable as any).duration = arg.enableDuration
+			this.updateView()
+		})
 	}
 
 	updateView() {
 		console.log('Updating view')
-		this.mainWindow.webContents.send(APP_FEED_CHANNEL, appMock)
+		this.mainWindow.webContents.send(APP_FEED_CHANNEL, this.appData)
 	}
 }

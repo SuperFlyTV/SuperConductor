@@ -60,7 +60,7 @@ export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 		type: 'rundown',
 		timeline: [
 			{
-				id: 'video0',
+				id: 'video1',
 				layer: 'casparLayer0',
 				enable: {
 					start: 0,
@@ -73,7 +73,7 @@ export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 				},
 			},
 			{
-				id: 'video1',
+				id: 'video2',
 				layer: 'casparLayer0',
 				enable: {
 					start: 10 * 1000,
