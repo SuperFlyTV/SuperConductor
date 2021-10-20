@@ -44,7 +44,7 @@ export const Sidebar = (props: PropsType) => {
 			{timelineObj && <TimelineObjInfo timelineObj={timelineObj} />}
 
 			{timelineObj && (timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
-				<TemplateData templateData={JSON.parse((timelineObj.content as any)?.data)} />
+				<TemplateData timelineObjId={timelineObj.id} templateData={JSON.parse((timelineObj.content as any)?.data)} />
 			)}
 
 			{timelineObj && <div className="sep" />}

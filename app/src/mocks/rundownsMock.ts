@@ -8,6 +8,7 @@ interface GUIModel {
 
 export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 	{
+		id: 'rundown1',
 		name: 'Introduction',
 		type: 'rundown',
 		timeline: [
@@ -23,7 +24,7 @@ export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 					type: TimelineContentTypeCasparCg.TEMPLATE,
 					templateType: 'html',
 					name: 'lower-third',
-					data: JSON.stringify({ _label: 'Timed Player Thingy' }),
+					data: JSON.stringify({ _label: 'Timed Player Thingy', _text: 'Abcd' }),
 					useStopCommand: true,
 				},
 			},
@@ -56,6 +57,7 @@ export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
 		],
 	},
 	{
+		id: 'rundown2',
 		name: 'Only trailer',
 		type: 'rundown',
 		timeline: [

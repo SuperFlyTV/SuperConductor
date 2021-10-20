@@ -6,8 +6,9 @@ type PropsType = {
 
 export const PlayHead = (props: PropsType) => {
 	return (
-		<div className="playHead" style={{ left: props.percentage }}>
-			<div className="line"></div>
+		<div className="playHead">
+			<div className="shade" style={{ width: props.percentage }}></div>
+			<div className="line" style={{ left: props.percentage }}></div>
 		</div>
 	)
 }

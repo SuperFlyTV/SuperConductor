@@ -48,7 +48,7 @@ export const TimelineObjInfo = ({ timelineObj }: { timelineObj: TSRTimelineObj }
 						</FormRow>
 						<div className="btn-row-right">
 							<button type="submit" className="btn form">
-								Save changes
+								Save
 							</button>
 						</div>
 					</Form>

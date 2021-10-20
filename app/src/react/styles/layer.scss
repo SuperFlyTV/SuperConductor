@@ -29,11 +29,11 @@
 			}
 
 			&.template {
-				background: #e96703;
+				background: $templateLayerColor;
 			}
 
 			&.media {
-				background: #1769ff;
+				background: $mediaLayerColor;
 			}
 
 			.title {

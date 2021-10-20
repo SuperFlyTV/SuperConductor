@@ -3,17 +3,7 @@
 	border: 0.1rem solid $rundownOutlineColor;
 	position: relative;
 
-	&:not(:last-child) {
-		margin-bottom: 2.5rem;
-	}
-
-	&__duration {
-		position: absolute;
-		transform: translateY(-100%);
-		right: 0;
-		font-size: 1.3rem;
-		margin-top: -0.2rem;
-	}
+	margin: 2.5rem 0;
 
 	&__meta {
 		background-color: $rundownOutlineColor;
@@ -37,11 +27,31 @@
 	&__timeline {
 		flex-grow: 1;
 		padding: 1rem;
+		position: relative;
 
-		& > div {
+		& > .layers-wrapper {
 			position: relative;
 			height: 100%;
 			overflow: hidden;
+		}
+
+		&__current-time {
+			position: absolute;
+			transform: translateY(-100%);
+			left: 0;
+			font-size: 1.3rem;
+			margin-top: -1.2rem;
+			color: white;
+			background-color: $accentBg;
+			padding: 0.2rem 0.5rem;
+		}
+
+		&__duration {
+			position: absolute;
+			transform: translateY(-100%);
+			right: 0;
+			font-size: 1.3rem;
+			margin-top: -1.2rem;
 		}
 	}
 }

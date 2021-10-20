@@ -1,7 +1,9 @@
 import { SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 import classNames from 'classnames'
-import React from 'react'
+import React, { MouseEventHandler } from 'react'
 import Timeline from 'superfly-timeline'
+import { Menu, Item, useContextMenu, ItemParams } from 'react-contexify'
+import 'react-contexify/dist/ReactContexify.css'
 const { ipcRenderer } = window.require('electron')
 
 type PropsType = {
@@ -12,8 +14,31 @@ type PropsType = {
 }
 
 export const Layer = (props: PropsType) => {
+	const MENU_ID = 'layer-obj-context-menu'
+
+	const { show } = useContextMenu({
+		id: MENU_ID,
+	})
+
+	const handleContextMenu = (id: number) => {
+		const returnFunction: MouseEventHandler<HTMLDivElement> = (event) => {
+			event.preventDefault()
+			show(event, { props: { id } })
+		}
+		return returnFunction
+	}
+
+	const handleItemClick = ({ props }: ItemParams<{ id: number }>) => {
+		console.log(props)
+	}
+
 	return (
 		<div className="layer">
+			<Menu id={MENU_ID}>
+				<Item onClick={handleItemClick}>Item 1</Item>
+				<Item onClick={handleItemClick}>Item 2</Item>
+			</Menu>
+
 			<div className="layer__content">
 				{props.timelineObjs.map((timelineObj) => {
 					const start = (timelineObj.enable as any).start
@@ -25,6 +50,7 @@ export const Layer = (props: PropsType) => {
 					return (
 						<div
 							key={timelineObj.id}
+							onContextMenu={handleContextMenu(1)}
 							className={classNames({
 								object: true,
 								[timelineObj.content.type]: true,

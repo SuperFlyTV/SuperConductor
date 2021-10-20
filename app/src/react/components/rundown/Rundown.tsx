@@ -1,4 +1,6 @@
-import React, { useRef, useState } from 'react'
+import React, { MouseEventHandler, useRef, useState } from 'react'
+import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify'
+import 'react-contexify/dist/ReactContexify.css'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
@@ -48,9 +50,10 @@ export const Rundown = (props: PropsType) => {
 
 	const handleStop = () => {
 		setPlaying(false)
-		setElapsedTime(0)
 		ipcRenderer.send(STOP_RUNDOWN_CHANNEL, props.timeline)
 		if (intervalRef.current) clearInterval(intervalRef.current)
+
+		setElapsedTime(0)
 	}
 
 	const updateElapsedTime = () => {
@@ -58,13 +61,36 @@ export const Rundown = (props: PropsType) => {
 		const elapsed = currentTime - startedPlayingTime
 		if (elapsed > maxDuration) {
 			handleStop()
+		} else {
+			setElapsedTime(elapsed)
 		}
-		setElapsedTime(elapsed)
+	}
+
+	const MENU_ID = 'rundown-context-menu'
+
+	const { show } = useContextMenu({
+		id: MENU_ID,
+	})
+
+	const handleContextMenu = (id: number) => {
+		const returnFunction: MouseEventHandler<HTMLDivElement> = (event) => {
+			event.preventDefault()
+			show(event, { props: { id } })
+		}
+		return returnFunction
+	}
+
+	const handleItemClick = ({ props }: ItemParams<{ id: number }>) => {
+		console.log(props)
 	}
 
 	return (
 		<div className="rundown">
-			<div className="rundown__duration">{msToTime(maxDuration)}</div>
+			<Menu id={MENU_ID}>
+				<Item onClick={handleItemClick}>Item 1</Item>
+				<Item onClick={handleItemClick}>Item 2</Item>
+			</Menu>
+
 			<div className="rundown__meta">
 				<div className="title">{props.name}</div>
 				<div className="controls">
@@ -73,7 +99,9 @@ export const Rundown = (props: PropsType) => {
 				</div>
 			</div>
 			<div className="rundown__timeline">
-				<div>
+				{elapsedTime ? <div className="rundown__timeline__current-time">{msToTime(elapsedTime)}</div> : ''}
+				<div className="rundown__timeline__duration">{msToTime(maxDuration)}</div>
+				<div className="layers-wrapper">
 					<PlayHead percentage={(elapsedTime * 100) / maxDuration + '%'} />
 					<div className="layers">
 						{Object.entries(resolvedTimeline.layers).map(([layerId, objectIds]) => {

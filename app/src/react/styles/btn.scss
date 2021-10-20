@@ -8,15 +8,19 @@
 
 	&.play,
 	&.stop {
+		width: 3.4rem;
+		height: 2.6rem;
 		padding: 0.3rem 0.7rem;
 		display: flex;
 		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
 	}
 
 	&.play {
-		background-color: $greenColor;
+		background-color: $accentBg;
 		&:hover {
-			background-color: $lightGreenColor;
+			background-color: $accentLightBg;
 		}
 	}
 
@@ -30,7 +34,7 @@
 	&.queue {
 		display: flex;
 		align-items: center;
-		background-color: $greenColor;
+		background-color: $accentBg;
 		color: white;
 		cursor: pointer;
 		// padding: 0.5rem 1rem;
@@ -40,7 +44,7 @@
 		}
 
 		&:hover {
-			background-color: $lightGreenColor;
+			background-color: $accentLightBg;
 		}
 	}
 
