@@ -7,6 +7,8 @@ export const NEW_RUNDOWN_CHANNEL = 'new-rundown'
 export const NEW_TEMPLATE_DATA_CHANNEL = 'new-template-data'
 export const UPDATE_TEMPLATE_DATA_CHANNEL = 'update-template-data'
 export const DELETE_TEMPLATE_DATA_CHANNEL = 'delete-template-data'
+export const DELETE_TIMELINE_OBJ_CHANNEL = 'delete-timeline-obj'
+export const ADD_MEDIA_TO_TIMELINE_CHANNEL = 'add-media-to-timeline'
 
 export interface IUpdateTimelineObj {
 	id: string
@@ -32,4 +34,14 @@ export interface IUpdateTemplateDataChannel {
 export interface IDeleteTemplateDataChannel {
 	timelineObjId: string
 	key: string
+}
+
+export interface IDeleteTimelineObjChannel {
+	timelineObjId: string
+}
+
+export interface IAddMediaToTimelineChannel {
+	rundownId: string
+	layerId: string
+	filename: string
 }

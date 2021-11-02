@@ -41,11 +41,14 @@ export const Rundown = (props: PropsType) => {
 	}
 
 	const handleStart = () => {
-		setPlaying(true)
-		startedPlayingTime = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, props.timeline)
-		intervalRef.current = setInterval(() => {
-			updateElapsedTime()
-		}, 16)
+		const response = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, props.timeline)
+		if (response !== false) {
+			startedPlayingTime = response
+			setPlaying(true)
+			intervalRef.current = setInterval(() => {
+				updateElapsedTime()
+			}, 16)
+		}
 	}
 
 	const handleStop = () => {

@@ -1,9 +1,10 @@
-import { TSRTimelineObj } from 'timeline-state-resolver'
-import { DeviceType, Timeline, TSRTimeline } from 'timeline-state-resolver-types'
+import { Mappings, Timeline, TSRTimeline } from 'timeline-state-resolver-types'
 import { KoaServer } from './KoaServer'
 import { TSR } from './TSR'
 
 const tsr = new TSR()
+
+let mapping: Mappings | undefined = undefined
 
 const storedTimelines: {
 	[id: string]: Timeline.TimelineObject
@@ -16,12 +17,10 @@ function updateTSR() {
 	// tsr.conductor.setTimelineAndMappings(Object.values(storedTimelines), tsr.allInputs.mappings)
 	// tsr.conductor.setTimelineAndMappings(timelines, tsr.allInputs.mappings)
 	// console.log('Updating TSR', storedTimeline)
-	tsr.conductor.setTimelineAndMappings(storedTimeline!, tsr.allInputs.mappings)
+	tsr.conductor.setTimelineAndMappings(storedTimeline!, mapping)
 }
 
-const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline) => {
-	console.log('PLAY TIMELINE FIRED!', newTimeline)
-
+const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline, newMapping: Mappings) => {
 	// create a group
 	// const group: TSRTimelineObj = {
 	// 	id: id,
@@ -46,6 +45,8 @@ const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline) => 
 			delete storedTimelines[id]
 		}
 	})
+
+	mapping = newMapping
 
 	updateTSR()
 	return Date.now()

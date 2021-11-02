@@ -1,3 +1,5 @@
+import { BrowserWindow, ipcMain } from 'electron'
+import short from 'short-uuid'
 import {
 	APP_FEED_CHANNEL,
 	PLAY_RUNDOWN_CHANNEL,
@@ -13,15 +15,15 @@ import {
 	INewTemplateDataChannel,
 	DELETE_TEMPLATE_DATA_CHANNEL,
 	IDeleteTemplateDataChannel,
+	DELETE_TIMELINE_OBJ_CHANNEL,
+	IDeleteTimelineObjChannel,
+	ADD_MEDIA_TO_TIMELINE_CHANNEL,
+	IAddMediaToTimelineChannel,
 } from '@/ipc/channels'
-import { findTimelineObj } from '@/lib/util'
+import { deleteTimelineObj, findMedia, findRundown, findTimelineObj } from '@/lib/util'
 import { appMock } from '@/mocks/appMock'
-import { BrowserWindow, ipcMain } from 'electron'
-import Timeline from 'superfly-timeline'
-import short from 'short-uuid'
-
 import { TsrBridgeApi } from './api/TsrBridge'
-// const Timeline = require('superfly-timeline')
+import { DeviceType, TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export class TimedPlayerThingy {
 	mainWindow: BrowserWindow
@@ -40,9 +42,18 @@ export class TimedPlayerThingy {
 
 	init() {
 		ipcMain.on(PLAY_RUNDOWN_CHANNEL, async (event, arg) => {
-			const res = await TsrBridgeApi.playTimeline({ id: 'myId', groupId: 'myGroupId', newTimeline: arg })
-			const startedTime = res.data
-			event.returnValue = startedTime
+			try {
+				const res = await TsrBridgeApi.playTimeline({
+					id: 'myId',
+					groupId: 'myGroupId',
+					newTimeline: arg,
+					newMappings: this.appData.mappings,
+				})
+				const startedTime = res.data
+				event.returnValue = startedTime
+			} catch (error) {
+				event.returnValue = false
+			}
 		})
 
 		ipcMain.on(STOP_RUNDOWN_CHANNEL, async (event, arg) => {
@@ -111,6 +122,47 @@ export class TimedPlayerThingy {
 			const data = JSON.parse((found as any).content.data)
 			delete data[arg.key]
 			;(found as any).content.data = JSON.stringify(data)
+
+			this.updateView()
+		})
+
+		ipcMain.on(DELETE_TIMELINE_OBJ_CHANNEL, async (event, arg: IDeleteTimelineObjChannel) => {
+			deleteTimelineObj(this.appData.rundowns, arg.timelineObjId)
+
+			this.updateView()
+		})
+
+		ipcMain.on(ADD_MEDIA_TO_TIMELINE_CHANNEL, async (event, arg: IAddMediaToTimelineChannel) => {
+			const rd = findRundown(this.appData.rundowns, arg.rundownId)
+			if (!rd) {
+				return
+			}
+
+			const media = findMedia(this.appData.media, arg.filename)
+			if (!media) {
+				return
+			}
+
+			// if (media.type === 'MOVIE') {
+			// } else if (media.type === 'STILL') {
+			// } else if (media.type === 'AUDIO') {
+			// }
+
+			const data: TSRTimelineObj = {
+				id: short.generate(),
+				layer: arg.layerId,
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.MEDIA,
+					file: arg.filename,
+				},
+			}
+
+			rd.timeline.push(data)
 
 			this.updateView()
 		})

@@ -1,10 +1,12 @@
 import { post } from './config'
 import Timeline from 'superfly-timeline'
+import { Mappings } from 'timeline-state-resolver-types'
 
 type PlayTimelineRequest = {
 	id: string
 	groupId: string
 	newTimeline: Timeline.TimelineObject[]
+	newMappings: Mappings | undefined
 }
 
 type StopTimelineRequest = {

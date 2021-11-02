@@ -27,6 +27,14 @@ table {
 		background-color: #1f1f1f;
 	}
 
+	&.selectable {
+		cursor: pointer;
+
+		tr:hover {
+			background-color: #272727;
+		}
+	}
+
 	&.editable {
 		td {
 			padding: 0;

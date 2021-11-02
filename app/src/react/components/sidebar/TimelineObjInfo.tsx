@@ -1,4 +1,9 @@
-import { IUpdateTimelineObj, UPDATE_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
+import {
+	DELETE_TIMELINE_OBJ_CHANNEL,
+	IDeleteTimelineObjChannel,
+	IUpdateTimelineObj,
+	UPDATE_TIMELINE_OBJ_CHANNEL,
+} from '@/ipc/channels'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import React from 'react'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -46,7 +51,16 @@ export const TimelineObjInfo = ({ timelineObj }: { timelineObj: TSRTimelineObj }
 							<Field id="enableDuration" name="enableDuration" type="number" placeholder="0" />
 							<ErrorMessage name="enableDuration" component="div" />
 						</FormRow>
-						<div className="btn-row-right">
+						<div className="btn-row-equal">
+							<button
+								className="btn delete"
+								onClick={() => {
+									const data: IDeleteTimelineObjChannel = { timelineObjId: timelineObj.id }
+									ipcRenderer.send(DELETE_TIMELINE_OBJ_CHANNEL, data)
+								}}
+							>
+								Delete
+							</button>
 							<button type="submit" className="btn form">
 								Save
 							</button>

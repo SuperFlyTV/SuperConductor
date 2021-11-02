@@ -19,11 +19,16 @@ export const Sidebar = (props: PropsType) => {
 	useEffect(() => {
 		if (props.appData.selectedTimelineObjId) {
 			const foundTimelineObj = findTimelineObj(props.appData.rundowns, props.appData.selectedTimelineObjId)
-			setTimelineObj(foundTimelineObj)
-
-			const mediaFilename = (foundTimelineObj?.content as any).file
-			const foundMedia = findMedia(props.appData.media, mediaFilename)
-			setMedia(foundMedia)
+			if (foundTimelineObj) {
+				setTimelineObj(foundTimelineObj)
+				const mediaFilename = (foundTimelineObj?.content as any).file
+				const foundMedia = findMedia(props.appData.media, mediaFilename)
+				setMedia(foundMedia)
+			} else {
+				setTimelineObj(undefined)
+			}
+		} else {
+			setTimelineObj(undefined)
 		}
 	}, [props.appData])
 
@@ -40,16 +45,15 @@ export const Sidebar = (props: PropsType) => {
 	return (
 		<div className="sidebar timeline-obj-sidebar">
 			{sidebarTitle && <div className="title">{sidebarTitle}</div>}
-			{media && <MediaInfo media={media} />}
+
+			{timelineObj && media && <MediaInfo media={media} />}
 			{timelineObj && <TimelineObjInfo timelineObj={timelineObj} />}
 
 			{timelineObj && (timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 				<TemplateData timelineObjId={timelineObj.id} templateData={JSON.parse((timelineObj.content as any)?.data)} />
 			)}
 
-			{timelineObj && <div className="sep" />}
-
-			<MediaLibrary appData={props.appData} />
+			{!timelineObj && <MediaLibrary appData={props.appData} />}
 		</div>
 	)
 }

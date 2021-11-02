@@ -71,4 +71,31 @@
 			font-weight: bold;
 		}
 	}
+
+	.add-to-timeline {
+		.label {
+			font-size: 1.2rem;
+			margin-bottom: 0.5rem;
+			color: silver;
+		}
+
+		.dropdowns {
+			display: flex;
+
+			select {
+				flex-basis: 50%;
+
+				&:not(:last-child) {
+					margin-right: 1rem;
+				}
+			}
+		}
+	}
+
+	select {
+		background-color: black;
+		color: silver;
+		border: 0;
+		padding: 0.5rem 1rem;
+	}
 }

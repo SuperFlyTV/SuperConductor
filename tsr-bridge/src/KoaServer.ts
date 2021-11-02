@@ -1,10 +1,10 @@
 import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import Router from 'koa-router'
-import { TSRTimeline, TSRTimelineObj } from 'timeline-state-resolver'
+import { Mappings, TSRTimeline, TSRTimelineObj } from 'timeline-state-resolver'
 
 export type ServerHandles = {
-	playTimeline: (id: string, groupId: string, newTimeline: TSRTimeline) => number
+	playTimeline: (id: string, groupId: string, newTimeline: TSRTimeline, newMappings: Mappings) => number
 	stopTimeline: (id: string) => void
 }
 
@@ -24,9 +24,10 @@ export class KoaServer {
 			const id = ctx.request.body.id
 			const groupId = ctx.request.body.groupId
 			const newTimeline = ctx.request.body.newTimeline
+			const newMappings = ctx.request.body.newMappings
 
 			ctx.response.status = 200
-			ctx.response.body = serverHandles.playTimeline(id, groupId, newTimeline)
+			ctx.response.body = serverHandles.playTimeline(id, groupId, newTimeline, newMappings)
 		})
 
 		this.router.post('/stop-timeline', (ctx, next) => {
