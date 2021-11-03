@@ -1,3 +1,4 @@
+import { DeviceType, TSRTimelineObj } from 'timeline-state-resolver'
 import { Mappings, Timeline, TSRTimeline } from 'timeline-state-resolver-types'
 import { KoaServer } from './KoaServer'
 import { TSR } from './TSR'
@@ -22,29 +23,31 @@ function updateTSR() {
 
 const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline, newMapping: Mappings) => {
 	// create a group
-	// const group: TSRTimelineObj = {
-	// 	id: id,
-	// 	enable: {
-	// 		start: Date.now(),
-	// 	},
-	// 	layer: groupId,
-	// 	children: newTimeline,
-	// 	isGroup: true,
-	// 	content: {},
-	// }
+	storedTimeline = [
+		{
+			id: id,
+			enable: {
+				start: Date.now(),
+			},
+			layer: '',
+			children: newTimeline,
+			isGroup: true,
+			content: { deviceType: DeviceType.ABSTRACT, type: 'empty' },
+		},
+	]
 
-	// storedTimelines[id] = newTimeline
-	storedTimeline = newTimeline.map((nt) => {
-		;(nt.enable as any).start += Date.now()
-		return nt
-	})
+	// // storedTimelines[id] = newTimeline
+	// storedTimeline = newTimeline.map((nt) => {
+	// 	;(nt.enable as any).start += Date.now()
+	// 	return nt
+	// })
 
-	// we actually should look up others with the same groupId and remove them:
-	Object.entries(storedTimelines).forEach(([id, obj]) => {
-		if (obj.layer === groupId) {
-			delete storedTimelines[id]
-		}
-	})
+	// // we actually should look up others with the same groupId and remove them:
+	// Object.entries(storedTimelines).forEach(([id, obj]) => {
+	// 	if (obj.layer === groupId) {
+	// 		delete storedTimelines[id]
+	// 	}
+	// })
 
 	mapping = newMapping
 
