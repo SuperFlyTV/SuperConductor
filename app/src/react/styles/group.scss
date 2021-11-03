@@ -1,6 +1,7 @@
 .group {
 	border: 0.1rem solid $rundownOutlineColor;
 	position: relative;
+	margin: 2rem 0 1.5rem;
 
 	&:not(:last-child) {
 		margin-bottom: 2.5rem;
@@ -10,16 +11,36 @@
 		position: absolute;
 		top: 0;
 		transform: translateY(-50%);
-		background-color: $rundownOutlineColor;
 		left: 2rem;
+		background-color: $rundownOutlineColor;
+		display: flex;
+		align-items: stretch;
+		font-size: 1.3rem;
+		padding: 0.2rem 0.5rem;
 
 		.title {
-			font-size: 1.3rem;
-			padding: 0.2rem 0.5rem;
+			margin-right: 1rem;
+		}
+
+		.controls {
+			.toggle {
+				margin: 0 1rem;
+				display: flex;
+				align-items: center;
+
+				label {
+					margin: -0.5rem;
+					font-size: 1rem;
+				}
+
+				.toggle-label {
+					margin-left: 0.5rem;
+				}
+			}
 		}
 	}
 
 	&__content {
-		padding: 2rem;
+		padding: 0.5rem 1rem 0;
 	}
 }

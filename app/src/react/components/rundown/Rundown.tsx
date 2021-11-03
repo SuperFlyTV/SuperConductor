@@ -6,7 +6,7 @@ import { Layer } from './Layer'
 import Timeline, { Resolver } from 'superfly-timeline'
 const { ipcRenderer } = window.require('electron')
 import { DELETE_RUNDOWN_CHANNEL, IDeleteRundown, PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
-import { msToTime } from '@/react/utils/msToTime'
+import { msToTime } from '@/lib/msToTime'
 import { getMappingById } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
 

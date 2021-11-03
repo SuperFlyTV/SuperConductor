@@ -5,7 +5,35 @@ import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
 import { NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import { Group } from './Group'
 const { ipcRenderer } = window.require('electron')
+
+const RundownsItems = ({ rundowns, selectedTimelineObjId }: { rundowns: Rundowns; selectedTimelineObjId?: string }) => {
+	return (
+		<div className="rundown-items">
+			{rundowns.map((rdOrGroup, idx) => {
+				if (rdOrGroup.type === 'rundown') {
+					return (
+						<Rundown
+							key={idx}
+							id={rdOrGroup.id}
+							name={rdOrGroup.name}
+							timeline={rdOrGroup.timeline}
+							selectedTimelineObjId={selectedTimelineObjId}
+						/>
+					)
+				} else {
+					// Recursively show rundowns and groups
+					return (
+						<Group key={idx} loop={rdOrGroup.loop} id={rdOrGroup.id}>
+							<RundownsItems rundowns={rdOrGroup.rundowns} selectedTimelineObjId={selectedTimelineObjId} />
+						</Group>
+					)
+				}
+			})}
+		</div>
+	)
+}
 
 type PropsType = {
 	appData: AppModel
@@ -17,21 +45,8 @@ const Rundowns = (props: PropsType) => {
 
 	return (
 		<div className="rundowns">
-			{props.appData.rundowns.map((rdOrGroup, idx) => {
-				if (rdOrGroup.type === 'rundown') {
-					return (
-						<Rundown
-							key={idx}
-							id={rdOrGroup.id}
-							name={rdOrGroup.name}
-							timeline={rdOrGroup.timeline}
-							selectedTimelineObjId={props.selectedTimelineObjId}
-						/>
-					)
-				} else {
-					// Recursively show rundowns and groups
-				}
-			})}
+			<RundownsItems rundowns={props.appData.rundowns} selectedTimelineObjId={props.selectedTimelineObjId} />
+
 			<button className="btn form" onClick={() => setNewRundownOpen(true)}>
 				New rundown
 			</button>

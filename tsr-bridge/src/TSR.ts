@@ -1,50 +1,12 @@
-import {
-	Conductor,
-	ConductorOptions,
-	DeviceType,
-	MappingCasparCG,
-	Mappings,
-	TSRTimeline,
-} from 'timeline-state-resolver'
-import { literal } from 'timeline-state-resolver/dist/devices/device'
-
-export type Optional<T> = {
-	[K in keyof T]?: T[K]
-}
-
-export type TSRInput = Optional<Input>
-
-export interface Input {
-	settings: TSRSettings
-	devices: {
-		[deviceId: string]: any
-	}
-	mappings: Mappings
-	timeline: TSRTimeline
-}
-
-export interface TSRSettings {
-	initializeAsClear?: boolean
-	multiThreading?: boolean
-	multiThreadedResolver?: boolean
-}
+import { Conductor, ConductorOptions, DeviceType } from 'timeline-state-resolver'
 
 export class TSR {
-	allInputs: TSRInput = {
-		devices: {
-			caspar0: {
-				type: DeviceType.CASPARCG,
-				options: {
-					host: '127.0.0.1',
-					port: 5250,
-				},
-			},
+	casparCGDevice: any = {
+		type: DeviceType.CASPARCG,
+		options: {
+			host: '127.0.0.1',
+			port: 5250,
 		},
-		settings: {
-			multiThreading: true,
-			multiThreadedResolver: false,
-		},
-		timeline: undefined,
 	}
 
 	conductor: Conductor
@@ -68,7 +30,7 @@ export class TSR {
 			console.log('Warning: TSR', msg, ...args)
 		})
 
-		this.conductor.addDevice('caspar0', this.allInputs.devices!.caspar0).catch(console.error)
+		this.conductor.addDevice('caspar0', this.casparCGDevice).catch(console.error)
 
 		this.conductor.setTimelineAndMappings([], undefined)
 		this.conductor.init().catch(console.error)

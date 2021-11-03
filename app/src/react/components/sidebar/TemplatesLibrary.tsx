@@ -4,7 +4,8 @@ import { InfoGroup } from './InfoGroup'
 import { Field, Form, Formik, FormikProps } from 'formik'
 import { ADD_TEMPLATE_TO_TIMELINE_CHANNEL, IAddTemplateToTimelineChannel } from '@/ipc/channels'
 import { DataRow } from './DataRow'
-import { getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
 type PropsType = {
@@ -34,8 +35,13 @@ export const TemplatesLibrary = (props: PropsType) => {
 								<tr
 									key={item.filename}
 									onClick={() => {
-										setSelectedFilename(item.filename)
+										if (selectedFilename === item.filename) {
+											setSelectedFilename(undefined)
+										} else {
+											setSelectedFilename(item.filename)
+										}
 									}}
+									className={classNames({ selected: item.filename === selectedFilename })}
 								>
 									<td>{item.filename}</td>
 								</tr>
@@ -72,7 +78,7 @@ export const TemplatesLibrary = (props: PropsType) => {
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
 											<Field as="select" name="rundownId">
-												{props.appData.rundowns.map((rd) => {
+												{getAllRundowns(props.appData.rundowns).map((rd) => {
 													if (rd.type === 'rundown') {
 														return (
 															<option key={rd.id} value={rd.id}>

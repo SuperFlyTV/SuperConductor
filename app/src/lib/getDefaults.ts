@@ -1,4 +1,5 @@
 import { Rundowns } from '@/models/AppModel'
+import { RundownModel } from '@/models/RundownModel'
 import { Mappings } from 'timeline-state-resolver-types'
 
 export const getDefaultMappingLayer = (mappings?: Mappings) => {
@@ -24,4 +25,20 @@ export const getDefaultRundownId = (rundowns: Rundowns): string | undefined => {
 			return getDefaultRundownId(rdOrGroup.rundowns)
 		}
 	}
+}
+
+export const getAllRundowns = (rundowns: Rundowns): RundownModel[] => {
+	const foundRundowns: RundownModel[] = []
+	for (const rdOrGroup of rundowns) {
+		if (rdOrGroup.type === 'rundown') {
+			foundRundowns.push(rdOrGroup)
+		} else {
+			const groupRds = getAllRundowns(rdOrGroup.rundowns)
+			foundRundowns.push(...groupRds)
+		}
+	}
+
+	console.log('Found Rundowns', foundRundowns)
+
+	return foundRundowns
 }

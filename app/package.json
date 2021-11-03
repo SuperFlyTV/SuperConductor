@@ -48,6 +48,7 @@
   },
   "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
   "dependencies": {
+    "@atlaskit/toggle": "^12.3.0",
     "axios": "^0.23.0",
     "classnames": "^2.3.1",
     "formik": "^2.2.9",

@@ -23,8 +23,18 @@ import {
 	IAddTemplateToTimelineChannel,
 	DELETE_RUNDOWN_CHANNEL,
 	IDeleteRundown,
+	TOGGLE_GROUP_LOOP_CHANNEL,
+	IToggleGroupLoop,
 } from '@/ipc/channels'
-import { deleteRundown, deleteTimelineObj, findMedia, findRundown, findTemplate, findTimelineObj } from '@/lib/util'
+import {
+	deleteRundown,
+	deleteTimelineObj,
+	findGroup,
+	findMedia,
+	findRundown,
+	findTemplate,
+	findTimelineObj,
+} from '@/lib/util'
 import { appMock } from '@/mocks/appMock'
 import { TsrBridgeApi } from './api/TsrBridge'
 import { DeviceType, TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -198,6 +208,15 @@ export class TimedPlayerThingy {
 			}
 
 			rd.timeline.push(data)
+
+			this.updateView()
+		})
+
+		ipcMain.on(TOGGLE_GROUP_LOOP_CHANNEL, async (event, arg: IToggleGroupLoop) => {
+			const foundGroup = findGroup(this.appData.rundowns, arg.groupId)
+			if (!foundGroup) return
+
+			foundGroup.loop = arg.value
 
 			this.updateView()
 		})

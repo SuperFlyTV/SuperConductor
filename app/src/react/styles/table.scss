@@ -12,6 +12,10 @@ table {
 		box-sizing: border-box;
 	}
 
+	td {
+		white-space: nowrap;
+	}
+
 	th {
 		background-color: $accentBg;
 		text-transform: uppercase;
@@ -28,10 +32,16 @@ table {
 	}
 
 	&.selectable {
-		cursor: pointer;
+		td {
+			cursor: pointer;
+		}
 
 		tr:hover {
 			background-color: #272727;
+		}
+
+		tr.selected {
+			background-color: $accentBg;
 		}
 	}
 

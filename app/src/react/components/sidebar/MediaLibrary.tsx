@@ -4,8 +4,9 @@ import { InfoGroup } from './InfoGroup'
 import { MediaInfo } from './MediaInfo'
 import { Field, Form, Formik, FormikProps } from 'formik'
 import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel } from '@/ipc/channels'
-import { bytesToSize } from '@/react/utils/bytesToSize'
-import { getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import { bytesToSize } from '@/lib/bytesToSize'
+import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
 type PropsType = {
@@ -39,8 +40,13 @@ export const MediaLibrary = (props: PropsType) => {
 								<tr
 									key={item.filename}
 									onClick={() => {
-										setSelectedFilename(item.filename)
+										if (selectedFilename === item.filename) {
+											setSelectedFilename(undefined)
+										} else {
+											setSelectedFilename(item.filename)
+										}
 									}}
+									className={classNames({ selected: item.filename === selectedFilename })}
 								>
 									<td>{item.filename}</td>
 									<td>{item.type}</td>
@@ -79,7 +85,7 @@ export const MediaLibrary = (props: PropsType) => {
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
 											<Field as="select" name="rundownId">
-												{props.appData.rundowns.map((rd) => {
+												{getAllRundowns(props.appData.rundowns).map((rd) => {
 													if (rd.type === 'rundown') {
 														return (
 															<option key={rd.id} value={rd.id}>

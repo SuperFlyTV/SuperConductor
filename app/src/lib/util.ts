@@ -1,5 +1,6 @@
 import { mappingsMock } from '@/mocks/mappingsMock'
 import { Rundowns } from '@/models/AppModel'
+import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
@@ -27,6 +28,19 @@ export const findRundown = (rundowns: Rundowns, rundownId: string): RundownModel
 		} else {
 			// It's a group
 			return findRundown(rdOrGroup.rundowns, rundownId)
+		}
+	}
+}
+
+export const findGroup = (rundowns: Rundowns, groupId: string): GroupModel | undefined => {
+	for (const rdOrGroup of rundowns) {
+		if (rdOrGroup.type === 'group') {
+			// It's a rundown
+			if (rdOrGroup.id === groupId) {
+				return rdOrGroup
+			} else {
+				return findGroup(rdOrGroup.rundowns, groupId)
+			}
 		}
 	}
 }

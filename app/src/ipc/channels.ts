@@ -11,6 +11,7 @@ export const DELETE_TEMPLATE_DATA_CHANNEL = 'delete-template-data'
 export const DELETE_TIMELINE_OBJ_CHANNEL = 'delete-timeline-obj'
 export const ADD_MEDIA_TO_TIMELINE_CHANNEL = 'add-media-to-timeline'
 export const ADD_TEMPLATE_TO_TIMELINE_CHANNEL = 'add-template-to-timeline'
+export const TOGGLE_GROUP_LOOP_CHANNEL = 'toggle-group-loop'
 
 export interface IUpdateTimelineObj {
 	id: string
@@ -57,4 +58,9 @@ export interface IAddTemplateToTimelineChannel {
 	rundownId: string
 	layerId: string
 	filename: string
+}
+
+export interface IToggleGroupLoop {
+	groupId: string
+	value: boolean
 }
