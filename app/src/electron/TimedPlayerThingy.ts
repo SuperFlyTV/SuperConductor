@@ -19,8 +19,12 @@ import {
 	IDeleteTimelineObjChannel,
 	ADD_MEDIA_TO_TIMELINE_CHANNEL,
 	IAddMediaToTimelineChannel,
+	ADD_TEMPLATE_TO_TIMELINE_CHANNEL,
+	IAddTemplateToTimelineChannel,
+	DELETE_RUNDOWN_CHANNEL,
+	IDeleteRundown,
 } from '@/ipc/channels'
-import { deleteTimelineObj, findMedia, findRundown, findTimelineObj } from '@/lib/util'
+import { deleteRundown, deleteTimelineObj, findMedia, findRundown, findTemplate, findTimelineObj } from '@/lib/util'
 import { appMock } from '@/mocks/appMock'
 import { TsrBridgeApi } from './api/TsrBridge'
 import { DeviceType, TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -70,6 +74,7 @@ export class TimedPlayerThingy {
 			if (!found) return
 			;(found.enable as any).start = arg.enableStart
 			;(found.enable as any).duration = arg.enableDuration
+			found.layer = arg.layer
 			this.updateView()
 		})
 
@@ -80,6 +85,11 @@ export class TimedPlayerThingy {
 				type: 'rundown',
 				timeline: [],
 			})
+			this.updateView()
+		})
+
+		ipcMain.on(DELETE_RUNDOWN_CHANNEL, async (event, arg: IDeleteRundown) => {
+			this.appData.rundowns = deleteRundown(this.appData.rundowns, arg.id)
 			this.updateView()
 		})
 
@@ -134,14 +144,10 @@ export class TimedPlayerThingy {
 
 		ipcMain.on(ADD_MEDIA_TO_TIMELINE_CHANNEL, async (event, arg: IAddMediaToTimelineChannel) => {
 			const rd = findRundown(this.appData.rundowns, arg.rundownId)
-			if (!rd) {
-				return
-			}
+			if (!rd) return
 
 			const media = findMedia(this.appData.media, arg.filename)
-			if (!media) {
-				return
-			}
+			if (!media) return
 
 			// if (media.type === 'MOVIE') {
 			// } else if (media.type === 'STILL') {
@@ -159,6 +165,35 @@ export class TimedPlayerThingy {
 					deviceType: DeviceType.CASPARCG,
 					type: TimelineContentTypeCasparCg.MEDIA,
 					file: arg.filename,
+				},
+			}
+
+			rd.timeline.push(data)
+
+			this.updateView()
+		})
+
+		ipcMain.on(ADD_TEMPLATE_TO_TIMELINE_CHANNEL, async (event, arg: IAddTemplateToTimelineChannel) => {
+			const rd = findRundown(this.appData.rundowns, arg.rundownId)
+			if (!rd) return
+
+			const template = findTemplate(this.appData.templates, arg.filename)
+			if (!template) return
+
+			const data: TSRTimelineObj = {
+				id: short.generate(),
+				layer: arg.layerId,
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.CASPARCG,
+					type: TimelineContentTypeCasparCg.TEMPLATE,
+					templateType: 'html',
+					name: arg.filename,
+					data: JSON.stringify({}),
+					useStopCommand: true,
 				},
 			}
 

@@ -1,10 +1,9 @@
-import React, { MouseEventHandler, useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
-import { MediaInfo } from './MediaInfo'
 import { Field, Form, Formik, FormikProps } from 'formik'
-import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel } from '@/ipc/channels'
-import { bytesToSize } from '@/react/utils/bytesToSize'
+import { ADD_TEMPLATE_TO_TIMELINE_CHANNEL, IAddTemplateToTimelineChannel } from '@/ipc/channels'
+import { DataRow } from './DataRow'
 import { getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
 const { ipcRenderer } = window.require('electron')
 
@@ -12,29 +11,25 @@ type PropsType = {
 	appData: AppModel
 }
 
-export const MediaLibrary = (props: PropsType) => {
+export const TemplatesLibrary = (props: PropsType) => {
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
 
-	const selectedMedia = props.appData.media.find((item) => item.filename === selectedFilename)
+	const selectedTemplate = props.appData.templates.find((item) => item.filename === selectedFilename)
 
 	const defaultRundownId = getDefaultRundownId(props.appData.rundowns)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
 	return (
 		<div className="sidebar media-library-sidebar">
-			<InfoGroup title="Available media">
+			<InfoGroup title="Available templates">
 				<table className="selectable">
 					<thead>
 						<tr>
 							<th>Name</th>
-							<th>Type</th>
-							<th>Size</th>
-							<th>Frame count</th>
-							<th>Size</th>
 						</tr>
 					</thead>
 					<tbody>
-						{props.appData.media.map((item) => {
+						{props.appData.templates.map((item) => {
 							return (
 								<tr
 									key={item.filename}
@@ -43,10 +38,6 @@ export const MediaLibrary = (props: PropsType) => {
 									}}
 								>
 									<td>{item.filename}</td>
-									<td>{item.type}</td>
-									<td>{bytesToSize(item.filesize)}</td>
-									<td>{item.frameCount ? item.frameCount : ''}</td>
-									<td>{item.frameRateDuration}</td>
 								</tr>
 							)
 						})}
@@ -54,9 +45,11 @@ export const MediaLibrary = (props: PropsType) => {
 				</table>
 			</InfoGroup>
 
-			{selectedMedia && (
+			{selectedTemplate && (
 				<>
-					<MediaInfo media={selectedMedia} />
+					<InfoGroup title="Template">
+						<DataRow label="Filename" value={selectedTemplate.filename} />
+					</InfoGroup>
 					{defaultRundownId && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik
@@ -66,12 +59,12 @@ export const MediaLibrary = (props: PropsType) => {
 										return
 									}
 
-									const data: IAddMediaToTimelineChannel = {
+									const data: IAddTemplateToTimelineChannel = {
 										rundownId: values.rundownId,
 										layerId: values.layerId,
-										filename: selectedMedia.filename,
+										filename: selectedTemplate.filename,
 									}
-									ipcRenderer.send(ADD_MEDIA_TO_TIMELINE_CHANNEL, data)
+									ipcRenderer.send(ADD_TEMPLATE_TO_TIMELINE_CHANNEL, data)
 								}}
 							>
 								{(fProps: FormikProps<any>) => (

@@ -1,16 +1,17 @@
 import React, { MouseEventHandler, useRef, useState } from 'react'
-import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify'
-import 'react-contexify/dist/ReactContexify.css'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import Timeline, { Resolver } from 'superfly-timeline'
 const { ipcRenderer } = window.require('electron')
-import { PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import { DELETE_RUNDOWN_CHANNEL, IDeleteRundown, PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { msToTime } from '@/react/utils/msToTime'
+import { getMappingById } from '@/lib/util'
+import { TrashBtn } from '../inputs/TrashBtn'
 
 type PropsType = {
+	id: string
 	name: string
 	timeline: Timeline.TimelineObject[]
 	selectedTimelineObjId?: string
@@ -59,6 +60,11 @@ export const Rundown = (props: PropsType) => {
 		setElapsedTime(0)
 	}
 
+	const handleDelete = () => {
+		const data: IDeleteRundown = { id: props.id }
+		ipcRenderer.send(DELETE_RUNDOWN_CHANNEL, data)
+	}
+
 	const updateElapsedTime = () => {
 		const currentTime = Date.now()
 		const elapsed = currentTime - startedPlayingTime
@@ -69,36 +75,14 @@ export const Rundown = (props: PropsType) => {
 		}
 	}
 
-	const MENU_ID = 'rundown-context-menu'
-
-	const { show } = useContextMenu({
-		id: MENU_ID,
-	})
-
-	const handleContextMenu = (id: number) => {
-		const returnFunction: MouseEventHandler<HTMLDivElement> = (event) => {
-			event.preventDefault()
-			show(event, { props: { id } })
-		}
-		return returnFunction
-	}
-
-	const handleItemClick = ({ props }: ItemParams<{ id: number }>) => {
-		console.log(props)
-	}
-
 	return (
 		<div className="rundown">
-			<Menu id={MENU_ID}>
-				<Item onClick={handleItemClick}>Item 1</Item>
-				<Item onClick={handleItemClick}>Item 2</Item>
-			</Menu>
-
 			<div className="rundown__meta">
 				<div className="title">{props.name}</div>
 				<div className="controls">
 					<PlayControlBtn mode={isPlaying ? 'stop' : 'play'} onClick={handlePlayControl} />
 					<QueueBtn />
+					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
 			<div className="rundown__timeline">
@@ -107,7 +91,7 @@ export const Rundown = (props: PropsType) => {
 				<div className="layers-wrapper">
 					<PlayHead percentage={(elapsedTime * 100) / maxDuration + '%'} />
 					<div className="layers">
-						{Object.entries(resolvedTimeline.layers).map(([layerId, objectIds]) => {
+						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
 							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
 
 							return (
@@ -125,4 +109,21 @@ export const Rundown = (props: PropsType) => {
 			</div>
 		</div>
 	)
+}
+
+type TEntries = [string, string[]][]
+
+const sortLayers = (entries: TEntries) => {
+	return entries.sort((a, b) => {
+		const aLayerId = a[0]
+		const bLayerId = b[0]
+
+		const aMappingInfo = getMappingById(aLayerId)
+		const bMappingInfo = getMappingById(bLayerId)
+
+		const aLayer = (aMappingInfo as any)?.layer
+		const bLayer = (bMappingInfo as any)?.layer
+
+		return bLayer - aLayer
+	})
 }

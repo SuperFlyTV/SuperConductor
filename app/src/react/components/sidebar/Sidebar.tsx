@@ -7,6 +7,7 @@ import { TimelineObjInfo } from './TimelineObjInfo'
 import { TemplateData } from './TemplateData'
 import { findMedia, findTimelineObj } from '@/lib/util'
 import { MediaLibrary } from './MediaLibrary'
+import { TemplatesLibrary } from './TemplatesLibrary'
 
 type PropsType = {
 	appData: AppModel
@@ -47,13 +48,14 @@ export const Sidebar = (props: PropsType) => {
 			{sidebarTitle && <div className="title">{sidebarTitle}</div>}
 
 			{timelineObj && media && <MediaInfo media={media} />}
-			{timelineObj && <TimelineObjInfo timelineObj={timelineObj} />}
+			{timelineObj && <TimelineObjInfo timelineObj={timelineObj} appMappings={props.appData.mappings} />}
 
 			{timelineObj && (timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 				<TemplateData timelineObjId={timelineObj.id} templateData={JSON.parse((timelineObj.content as any)?.data)} />
 			)}
 
 			{!timelineObj && <MediaLibrary appData={props.appData} />}
+			{!timelineObj && <TemplatesLibrary appData={props.appData} />}
 		</div>
 	)
 }

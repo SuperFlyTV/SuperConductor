@@ -89,7 +89,6 @@ export const TemplateData = (props: ITemplateData) => {
 	}
 
 	const handleDelete: IDeleteRow = (rowId: string) => {
-		console.log('DELETING', rowId)
 		const data: IDeleteTemplateDataChannel = {
 			timelineObjId: props.timelineObjId,
 			key: rowId,
@@ -104,17 +103,6 @@ export const TemplateData = (props: ITemplateData) => {
 			value: props.templateData[key],
 		})
 	})
-
-	// const data: Array<any> = React.useMemo(() => {
-	// 	const list: { key: string; value: string }[] = []
-	// 	Object.keys(props.templateData).forEach((key) => {
-	// 		list.push({
-	// 			key: key,
-	// 			value: props.templateData[key],
-	// 		})
-	// 	})
-	// 	return list
-	// }, [])
 
 	const columns: Array<Column> = React.useMemo(
 		() => [

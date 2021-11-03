@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { AppModel, Rundowns } from '@/models/AppModel'
-import { Rundown } from '../rundown/Rundown'
+import { Rundown } from './Rundown'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
@@ -22,6 +22,7 @@ const Rundowns = (props: PropsType) => {
 					return (
 						<Rundown
 							key={idx}
+							id={rdOrGroup.id}
 							name={rdOrGroup.name}
 							timeline={rdOrGroup.timeline}
 							selectedTimelineObjId={props.selectedTimelineObjId}

@@ -1,10 +1,18 @@
+import { mappingsMock } from '@/mocks/mappingsMock'
 import { Rundowns } from '@/models/AppModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TemplateModel } from '@/models/TemplateModel'
+import { Mappings, TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
 	for (const item of mediaList) {
+		if (item.filename === filename) return item
+	}
+}
+
+export const findTemplate = (templateList: TemplateModel[], filename: string) => {
+	for (const item of templateList) {
 		if (item.filename === filename) return item
 	}
 }
@@ -47,4 +55,23 @@ export const deleteTimelineObj = (rundowns: Rundowns, timelineObjId: string) => 
 			deleteTimelineObj(rdOrGroup.rundowns, timelineObjId)
 		}
 	}
+}
+
+export const deleteRundown = (rundowns: Rundowns, rundownId: string): Rundowns => {
+	return rundowns.filter((rdOrGroup) => {
+		if (rdOrGroup.type === 'rundown') {
+			if (rdOrGroup.id === rundownId) {
+				// Found what to delete
+				return false
+			} else {
+				return true
+			}
+		} else if (rdOrGroup.type === 'group') {
+			return deleteRundown(rdOrGroup.rundowns, rundownId)
+		}
+	})
+}
+
+export const getMappingById = (id: string) => {
+	return mappingsMock[id]
 }
