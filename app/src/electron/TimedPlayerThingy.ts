@@ -46,10 +46,9 @@ export class TimedPlayerThingy {
 	constructor(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
 
-		this.updateView()
-		setInterval(() => {
+		mainWindow.webContents.once('dom-ready', () => {
 			this.updateView()
-		}, 2000)
+		})
 
 		this.init()
 	}
@@ -103,6 +102,9 @@ export class TimedPlayerThingy {
 			this.updateView()
 		})
 
+		/**
+		 * TODO - fix changing order
+		 */
 		ipcMain.on(UPDATE_TEMPLATE_DATA_CHANNEL, async (event, arg: IUpdateTemplateDataChannel) => {
 			const found = findTimelineObj(this.appData.rundowns, arg.timelineObjId)
 			if (!found) return
@@ -116,7 +118,6 @@ export class TimedPlayerThingy {
 				data[arg.value] = oldValue
 			} else {
 				// Just change value
-				console.log('Just change value')
 				data[arg.key] = arg.value
 			}
 
@@ -154,7 +155,10 @@ export class TimedPlayerThingy {
 
 		ipcMain.on(ADD_MEDIA_TO_TIMELINE_CHANNEL, async (event, arg: IAddMediaToTimelineChannel) => {
 			const rd = findRundown(this.appData.rundowns, arg.rundownId)
-			if (!rd) return
+			if (!rd) {
+				console.error('Could not find rundown ' + arg.rundownId)
+				return
+			}
 
 			const media = findMedia(this.appData.media, arg.filename)
 			if (!media) return
@@ -223,7 +227,7 @@ export class TimedPlayerThingy {
 	}
 
 	updateView() {
-		console.log('Updating view')
+		// console.log('Updating view')
 		this.mainWindow.webContents.send(APP_FEED_CHANNEL, this.appData)
 	}
 }

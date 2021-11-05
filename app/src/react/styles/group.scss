@@ -2,6 +2,7 @@
 	border: 0.1rem solid $rundownOutlineColor;
 	position: relative;
 	margin: 2rem 0 1.5rem;
+	padding-bottom: 2rem;
 
 	&:not(:last-child) {
 		margin-bottom: 2.5rem;

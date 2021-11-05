@@ -1,5 +1,5 @@
 import { mappingsMock } from '@/mocks/mappingsMock'
-import { Rundowns } from '@/models/AppModel'
+import { RundownOrGroupModel } from '@/models/AppModel'
 import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
@@ -18,7 +18,7 @@ export const findTemplate = (templateList: TemplateModel[], filename: string) =>
 	}
 }
 
-export const findRundown = (rundowns: Rundowns, rundownId: string): RundownModel | undefined => {
+export const findRundown = (rundowns: RundownOrGroupModel[], rundownId: string): RundownModel | undefined => {
 	for (const rdOrGroup of rundowns) {
 		if (rdOrGroup.type === 'rundown') {
 			// It's a rundown
@@ -27,12 +27,15 @@ export const findRundown = (rundowns: Rundowns, rundownId: string): RundownModel
 			}
 		} else {
 			// It's a group
-			return findRundown(rdOrGroup.rundowns, rundownId)
+			const found = findRundown(rdOrGroup.rundowns, rundownId)
+			if (found) {
+				return found
+			}
 		}
 	}
 }
 
-export const findGroup = (rundowns: Rundowns, groupId: string): GroupModel | undefined => {
+export const findGroup = (rundowns: RundownOrGroupModel[], groupId: string): GroupModel | undefined => {
 	for (const rdOrGroup of rundowns) {
 		if (rdOrGroup.type === 'group') {
 			// It's a rundown
@@ -45,7 +48,7 @@ export const findGroup = (rundowns: Rundowns, groupId: string): GroupModel | und
 	}
 }
 
-export const findTimelineObj = (rundowns: Rundowns, timelineObjId: string): TSRTimelineObj | undefined => {
+export const findTimelineObj = (rundowns: RundownOrGroupModel[], timelineObjId: string): TSRTimelineObj | undefined => {
 	for (const rdOrGroup of rundowns) {
 		if (rdOrGroup.type === 'rundown') {
 			// It's a rundown
@@ -54,12 +57,15 @@ export const findTimelineObj = (rundowns: Rundowns, timelineObjId: string): TSRT
 			}
 		} else {
 			// It's a group
-			return findTimelineObj(rdOrGroup.rundowns, timelineObjId)
+			const found = findTimelineObj(rdOrGroup.rundowns, timelineObjId)
+			if (found) {
+				return found
+			}
 		}
 	}
 }
 
-export const deleteTimelineObj = (rundowns: Rundowns, timelineObjId: string) => {
+export const deleteTimelineObj = (rundowns: RundownOrGroupModel[], timelineObjId: string) => {
 	for (const rdOrGroup of rundowns) {
 		if (rdOrGroup.type === 'rundown') {
 			// It's a rundown
@@ -71,17 +77,16 @@ export const deleteTimelineObj = (rundowns: Rundowns, timelineObjId: string) => 
 	}
 }
 
-export const deleteRundown = (rundowns: Rundowns, rundownId: string): Rundowns => {
+export const deleteRundown = (rundowns: RundownOrGroupModel[], rundownId: string): RundownOrGroupModel[] => {
 	return rundowns.filter((rdOrGroup) => {
 		if (rdOrGroup.type === 'rundown') {
 			if (rdOrGroup.id === rundownId) {
-				// Found what to delete
 				return false
 			} else {
 				return true
 			}
 		} else if (rdOrGroup.type === 'group') {
-			return deleteRundown(rdOrGroup.rundowns, rundownId)
+			rdOrGroup.rundowns = deleteRundown(rdOrGroup.rundowns, rundownId)
 		}
 	})
 }

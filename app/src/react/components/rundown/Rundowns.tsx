@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AppModel, Rundowns } from '@/models/AppModel'
+import { AppModel, RundownOrGroupModel } from '@/models/AppModel'
 import { Rundown } from './Rundown'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
@@ -8,7 +8,13 @@ import { NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { Group } from './Group'
 const { ipcRenderer } = window.require('electron')
 
-const RundownsItems = ({ rundowns, selectedTimelineObjId }: { rundowns: Rundowns; selectedTimelineObjId?: string }) => {
+const RundownsItems = ({
+	rundowns,
+	selectedTimelineObjId,
+}: {
+	rundowns: RundownOrGroupModel[]
+	selectedTimelineObjId?: string
+}) => {
 	return (
 		<div className="rundown-items">
 			{rundowns.map((rdOrGroup, idx) => {
@@ -47,9 +53,11 @@ const Rundowns = (props: PropsType) => {
 		<div className="rundowns">
 			<RundownsItems rundowns={props.appData.rundowns} selectedTimelineObjId={props.selectedTimelineObjId} />
 
-			<button className="btn form" onClick={() => setNewRundownOpen(true)}>
-				New rundown
-			</button>
+			<div className="rundowns-control-row">
+				<button className="btn form" onClick={() => setNewRundownOpen(true)}>
+					New rundown
+				</button>
+			</div>
 
 			{newRundownOpen && (
 				<Popup onClose={() => setNewRundownOpen(false)}>

@@ -3,7 +3,7 @@
 	border: 0.1rem solid $rundownOutlineColor;
 	position: relative;
 
-	margin: 1.5rem 0;
+	margin-top: 2rem;
 
 	&__meta {
 		background-color: $rundownOutlineColor;
@@ -17,6 +17,7 @@
 
 		& > .controls {
 			display: flex;
+			align-items: stretch;
 
 			& > *:not(:last-child) {
 				margin-right: 1rem;

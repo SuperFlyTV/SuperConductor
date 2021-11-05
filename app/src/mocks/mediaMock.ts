@@ -18,7 +18,7 @@ export const mediaMock: MediaModel[] = [
 		frameRateDuration: '1/25',
 	},
 	{
-		filename: 'CG1080P25',
+		filename: 'GO1080P25',
 		type: 'MOVIE',
 		filesize: 16694084,
 		lastModified: 20211102123056,

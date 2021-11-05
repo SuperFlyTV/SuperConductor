@@ -7,8 +7,8 @@ type PropsType = {
 
 export const TrashBtn = (props: PropsType) => {
 	return (
-		<button className="btn trash" onClick={props.onClick}>
-			<BsFillTrashFill />
-		</button>
+		<div className="btn trash" onClick={props.onClick}>
+			<BsFillTrashFill size={12} />
+		</div>
 	)
 }
