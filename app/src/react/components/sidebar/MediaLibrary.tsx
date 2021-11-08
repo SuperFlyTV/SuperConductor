@@ -1,9 +1,9 @@
-import React, { MouseEventHandler, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
 import { MediaInfo } from './MediaInfo'
 import { Field, Form, Formik, FormikProps } from 'formik'
-import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel } from '@/ipc/channels'
+import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel, REFRESH_MEDIA_CHANNEL } from '@/ipc/channels'
 import { bytesToSize } from '@/lib/bytesToSize'
 import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
 import classNames from 'classnames'
@@ -15,44 +15,60 @@ type PropsType = {
 
 export const MediaLibrary = (props: PropsType) => {
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
+	const selectedMedia = props.appData.media.find((item) => item.name === selectedFilename)
 
-	const selectedMedia = props.appData.media.find((item) => item.filename === selectedFilename)
+	const [refreshing, setRefreshing] = useState(false)
 
 	const defaultRundownId = getDefaultRundownId(props.appData.rundowns)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
+	useEffect(() => {
+		setRefreshing(false)
+		return () => {}
+	}, [props])
+
 	return (
 		<div className="sidebar media-library-sidebar">
-			<InfoGroup title="Available media">
+			<InfoGroup
+				title="Available media"
+				enableRefresh={true}
+				refreshActive={refreshing}
+				onRefreshClick={() => {
+					setRefreshing(true)
+					ipcRenderer.send(REFRESH_MEDIA_CHANNEL)
+				}}
+			>
 				<table className="selectable">
 					<thead>
 						<tr>
+							<th></th>
 							<th>Name</th>
 							<th>Type</th>
 							<th>Size</th>
-							<th>Frame count</th>
-							<th>Size</th>
+							<th>Duration</th>
 						</tr>
 					</thead>
 					<tbody>
 						{props.appData.media.map((item) => {
 							return (
 								<tr
-									key={item.filename}
+									key={item.name}
 									onClick={() => {
-										if (selectedFilename === item.filename) {
+										if (selectedFilename === item.name) {
 											setSelectedFilename(undefined)
 										} else {
-											setSelectedFilename(item.filename)
+											setSelectedFilename(item.name)
 										}
 									}}
-									className={classNames({ selected: item.filename === selectedFilename })}
+									className={classNames({ selected: item.name === selectedFilename })}
 								>
-									<td>{item.filename}</td>
+									<td>
+										<img className="thumbnail" src={item.thumbnail} alt={item.name} />
+									</td>
+									<td>{item.name}</td>
 									<td>{item.type}</td>
-									<td>{bytesToSize(item.filesize)}</td>
-									<td>{item.frameCount ? item.frameCount : ''}</td>
-									<td>{item.frameRateDuration}</td>
+									<td>{bytesToSize(item.size)}</td>
+									<td>{item.duration}</td>
 								</tr>
 							)
 						})}
@@ -75,7 +91,7 @@ export const MediaLibrary = (props: PropsType) => {
 									const data: IAddMediaToTimelineChannel = {
 										rundownId: values.rundownId,
 										layerId: values.layerId,
-										filename: selectedMedia.filename,
+										filename: selectedMedia.name,
 									}
 									ipcRenderer.send(ADD_MEDIA_TO_TIMELINE_CHANNEL, data)
 								}}

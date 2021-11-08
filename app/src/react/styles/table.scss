@@ -2,6 +2,11 @@ table {
 	width: 100%;
 	border-collapse: collapse;
 
+	img.thumbnail {
+		max-width: 5rem;
+		max-height: 3rem;
+	}
+
 	td,
 	th {
 		font-size: 1.2rem;
@@ -14,6 +19,7 @@ table {
 
 	td {
 		white-space: nowrap;
+		max-width: 8rem;
 	}
 
 	th {

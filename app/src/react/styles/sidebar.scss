@@ -2,7 +2,7 @@
 	background-color: $silverBg;
 
 	&.timeline-obj-sidebar {
-		width: 28rem;
+		width: 32rem;
 		padding: 1.5rem 2.5rem;
 		border-bottom: 1px solid silver;
 	}
@@ -23,14 +23,44 @@
 		font-weight: bold;
 	}
 
+	.content {
+		overflow: auto;
+	}
+
 	.info-group {
 		margin-bottom: 2rem;
+		width: 100%;
 
 		& > .title {
 			font-size: 1.2rem;
 			text-transform: uppercase;
 			margin-bottom: 0.5rem;
 			font-weight: bold;
+			display: flex;
+			justify-content: space-between;
+
+			button.refresh {
+				border: 0;
+				background: transparent;
+				padding: 0;
+				margin: 0;
+				cursor: pointer;
+
+				&.active {
+					svg {
+						animation: rotating 2s linear infinite;
+
+						@keyframes rotating {
+							from {
+								transform: rotate(360deg);
+							}
+							to {
+								transform: rotate(0deg);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 

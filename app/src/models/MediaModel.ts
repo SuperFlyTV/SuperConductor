@@ -1,8 +1,11 @@
 export type MediaModel = {
-	filename: string
-	type: 'STILL' | 'MOVIE' | 'AUDIO'
-	filesize: number
-	lastModified: number
-	frameCount: number
-	frameRateDuration: string
+	name: string
+	type: 'image' | 'video'
+	size: number
+	changed: number
+	frames: number
+	frameTime: string
+	frameRate: number
+	duration: number
+	thumbnail?: string
 }

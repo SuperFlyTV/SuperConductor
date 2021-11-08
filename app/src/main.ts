@@ -37,9 +37,11 @@ const createWindow = (): void => {
 	// Menu.setApplicationMenu(menu)
 
 	const tpt = new TimedPlayerThingy(win)
-	setTimeout(() => {
-		tpt.updateView()
-	}, 5000)
+
+	app.on('window-all-closed', async () => {
+		await tpt.handleOnClose()
+		app.quit()
+	})
 }
 
 app.on('ready', createWindow)

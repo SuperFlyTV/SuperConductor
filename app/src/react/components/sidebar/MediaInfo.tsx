@@ -8,12 +8,14 @@ import moment from 'moment'
 export const MediaInfo = ({ media }: { media: MediaModel }) => {
 	return (
 		<InfoGroup title="Media">
-			<DataRow label="Filename" value={media.filename} />
+			<DataRow label="Name" value={media.name} />
 			<DataRow label="Type" value={media.type} />
-			<DataRow label="Filesize" value={bytesToSize(media.filesize)} />
-			<DataRow label="Last modified" value={moment(media.lastModified).format()} />
-			<DataRow label="Frame count" value={media.frameCount ? media.frameCount : ''} />
-			<DataRow label="Frame rate/duration" value={media.frameRateDuration} />
+			<DataRow label="Filesize" value={bytesToSize(media.size)} />
+			<DataRow label="Changed" value={moment(media.changed).format('DD.MM.YYYY HH:mm')} />
+			<DataRow label="Frames" value={media.frames ? media.frames : ''} />
+			<DataRow label="Frame time" value={media.frameTime ? media.frameTime : ''} />
+			<DataRow label="Frame rate" value={media.frameRate ? media.frameRate : ''} />
+			<DataRow label="Duration" value={media.duration ? media.duration : ''} />
 		</InfoGroup>
 	)
 }

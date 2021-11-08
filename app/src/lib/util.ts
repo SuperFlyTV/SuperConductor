@@ -4,17 +4,17 @@ import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
-import { Mappings, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
 	for (const item of mediaList) {
-		if (item.filename === filename) return item
+		if (item.name === filename) return item
 	}
 }
 
 export const findTemplate = (templateList: TemplateModel[], filename: string) => {
 	for (const item of templateList) {
-		if (item.filename === filename) return item
+		if (item.name === filename) return item
 	}
 }
 

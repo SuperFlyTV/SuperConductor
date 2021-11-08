@@ -3,16 +3,24 @@ import Rundowns from './components/rundown/Rundowns'
 import { Sidebar } from './components/sidebar/Sidebar'
 const { ipcRenderer } = window.require('electron')
 
-import './styles/app.scss'
 import { AppModel } from '@/models/AppModel'
 import { APP_FEED_CHANNEL, SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
+
+import './styles/app.scss'
 
 export const App = () => {
 	const [appData, setAppData] = useState<AppModel>({ rundowns: [], media: [], templates: [], mappings: undefined })
 
+	/**
+	 * Main feed from backend
+	 */
 	useEffect(() => {
+		// Ask backend for the data once ready
+		ipcRenderer.send(APP_FEED_CHANNEL)
+
+		// Save all app data received from backend
 		ipcRenderer.on(APP_FEED_CHANNEL, (event, args: AppModel) => {
-			// console.log(APP_FEED_CHANNEL, args)
+			console.log(args)
 			setAppData(args)
 		})
 	}, [])

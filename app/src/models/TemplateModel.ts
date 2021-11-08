@@ -1,3 +1,4 @@
 export type TemplateModel = {
-	filename: string
+	name: string
+	type: 'template'
 }

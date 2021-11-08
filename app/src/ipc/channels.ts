@@ -12,6 +12,8 @@ export const DELETE_TIMELINE_OBJ_CHANNEL = 'delete-timeline-obj'
 export const ADD_MEDIA_TO_TIMELINE_CHANNEL = 'add-media-to-timeline'
 export const ADD_TEMPLATE_TO_TIMELINE_CHANNEL = 'add-template-to-timeline'
 export const TOGGLE_GROUP_LOOP_CHANNEL = 'toggle-group-loop'
+export const REFRESH_MEDIA_CHANNEL = 'refresh-media'
+export const REFRESH_TEMPLATES_CHANNEL = 'refresh-templates'
 
 export interface IUpdateTimelineObj {
 	id: string

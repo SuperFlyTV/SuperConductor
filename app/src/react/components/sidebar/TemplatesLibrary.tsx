@@ -1,8 +1,12 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
 import { Field, Form, Formik, FormikProps } from 'formik'
-import { ADD_TEMPLATE_TO_TIMELINE_CHANNEL, IAddTemplateToTimelineChannel } from '@/ipc/channels'
+import {
+	ADD_TEMPLATE_TO_TIMELINE_CHANNEL,
+	IAddTemplateToTimelineChannel,
+	REFRESH_TEMPLATES_CHANNEL,
+} from '@/ipc/channels'
 import { DataRow } from './DataRow'
 import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
 import classNames from 'classnames'
@@ -14,15 +18,29 @@ type PropsType = {
 
 export const TemplatesLibrary = (props: PropsType) => {
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
+	const selectedTemplate = props.appData.templates.find((item) => item.name === selectedFilename)
 
-	const selectedTemplate = props.appData.templates.find((item) => item.filename === selectedFilename)
+	const [refreshing, setRefreshing] = useState(false)
 
 	const defaultRundownId = getDefaultRundownId(props.appData.rundowns)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
+	useEffect(() => {
+		setRefreshing(false)
+		return () => {}
+	}, [props])
+
 	return (
 		<div className="sidebar media-library-sidebar">
-			<InfoGroup title="Available templates">
+			<InfoGroup
+				title="Available templates"
+				enableRefresh={true}
+				refreshActive={refreshing}
+				onRefreshClick={() => {
+					setRefreshing(true)
+					ipcRenderer.send(REFRESH_TEMPLATES_CHANNEL)
+				}}
+			>
 				<table className="selectable">
 					<thead>
 						<tr>
@@ -33,17 +51,17 @@ export const TemplatesLibrary = (props: PropsType) => {
 						{props.appData.templates.map((item) => {
 							return (
 								<tr
-									key={item.filename}
+									key={item.name}
 									onClick={() => {
-										if (selectedFilename === item.filename) {
+										if (selectedFilename === item.name) {
 											setSelectedFilename(undefined)
 										} else {
-											setSelectedFilename(item.filename)
+											setSelectedFilename(item.name)
 										}
 									}}
-									className={classNames({ selected: item.filename === selectedFilename })}
+									className={classNames({ selected: item.name === selectedFilename })}
 								>
-									<td>{item.filename}</td>
+									<td>{item.name}</td>
 								</tr>
 							)
 						})}
@@ -54,7 +72,7 @@ export const TemplatesLibrary = (props: PropsType) => {
 			{selectedTemplate && (
 				<>
 					<InfoGroup title="Template">
-						<DataRow label="Filename" value={selectedTemplate.filename} />
+						<DataRow label="Filename" value={selectedTemplate.name} />
 					</InfoGroup>
 					{defaultRundownId && defaultLayer && (
 						<div className="add-to-timeline">
@@ -68,7 +86,7 @@ export const TemplatesLibrary = (props: PropsType) => {
 									const data: IAddTemplateToTimelineChannel = {
 										rundownId: values.rundownId,
 										layerId: values.layerId,
-										filename: selectedTemplate.filename,
+										filename: selectedTemplate.name,
 									}
 									ipcRenderer.send(ADD_TEMPLATE_TO_TIMELINE_CHANNEL, data)
 								}}
