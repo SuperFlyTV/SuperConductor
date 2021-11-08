@@ -15,7 +15,7 @@
 		left: 2rem;
 		background-color: $rundownOutlineColor;
 		display: flex;
-		align-items: stretch;
+		align-items: center;
 		font-size: 1.3rem;
 		padding: 0.2rem 0.5rem;
 
@@ -24,6 +24,9 @@
 		}
 
 		.controls {
+			display: flex;
+			align-items: center;
+
 			.toggle {
 				margin: 0 1rem;
 				display: flex;
@@ -37,6 +40,11 @@
 				.toggle-label {
 					margin-left: 0.5rem;
 				}
+			}
+
+			.btn.trash {
+				margin-left: 1rem;
+				padding: 0.4rem;
 			}
 		}
 	}

@@ -1,32 +1,33 @@
-import React, { MouseEventHandler, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import Timeline, { Resolver } from 'superfly-timeline'
 const { ipcRenderer } = window.require('electron')
-import { DELETE_RUNDOWN_CHANNEL, IDeleteRundown, PLAY_RUNDOWN_CHANNEL, STOP_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import {
+	DELETE_RUNDOWN_CHANNEL,
+	IDeleteRundown,
+	IPlayRundown,
+	PLAY_RUNDOWN_CHANNEL,
+	STOP_RUNDOWN_CHANNEL,
+} from '@/ipc/channels'
 import { msToTime } from '@/lib/msToTime'
-import { getMappingById } from '@/lib/util'
+import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
+import { GroupModel } from '@/models/GroupModel'
 
 type PropsType = {
 	id: string
 	name: string
 	timeline: Timeline.TimelineObject[]
 	selectedTimelineObjId?: string
+	group?: GroupModel
 }
 
 export const Rundown = (props: PropsType) => {
 	const resolvedTimeline = Resolver.resolveTimeline(props.timeline, { time: 0 })
-	let maxDuration = 0
-	Object.values(resolvedTimeline.objects).forEach((obj) => {
-		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.end) {
-				maxDuration = Math.max(maxDuration, instance.end)
-			}
-		})
-	})
+	let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 	let startedPlayingTime = 0
 	const [isPlaying, setPlaying] = useState(false)
@@ -42,7 +43,9 @@ export const Rundown = (props: PropsType) => {
 	}
 
 	const handleStart = () => {
-		const response = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, props.timeline)
+		const data: IPlayRundown = { rundownId: props.id }
+		const response = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, data)
+
 		if (response !== false) {
 			startedPlayingTime = response
 			setPlaying(true)
@@ -69,7 +72,11 @@ export const Rundown = (props: PropsType) => {
 		const currentTime = Date.now()
 		const elapsed = currentTime - startedPlayingTime
 		if (elapsed > maxDuration) {
-			handleStop()
+			if (props.group && props.group.loop) {
+				startedPlayingTime = currentTime
+			} else {
+				handleStop()
+			}
 		} else {
 			setElapsedTime(elapsed)
 		}

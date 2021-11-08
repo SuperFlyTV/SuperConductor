@@ -30,18 +30,26 @@ import {
 	IToggleGroupLoop,
 	REFRESH_MEDIA_CHANNEL,
 	REFRESH_TEMPLATES_CHANNEL,
+	IPlayRundown,
+	NEW_GROUP_CHANNEL,
+	DELETE_GROUP_CHANNEL,
+	IDeleteGroup,
 } from '@/ipc/channels'
 
 import {
+	deleteGroup,
 	deleteRundown,
 	deleteTimelineObj,
 	findGroup,
 	findMedia,
+	findParentGroup,
 	findRundown,
 	findTemplate,
 	findTimelineObj,
+	getResolvedTimelineTotalDuration,
 } from '@/lib/util'
-import { AppModel } from '@/models/AppModel'
+import { AppModel, RundownOrGroupModel } from '@/models/AppModel'
+import { Resolver } from 'superfly-timeline'
 
 export class IPCPostman {
 	private _appDataRef: AppModel
@@ -76,27 +84,63 @@ export class IPCPostman {
 			this._refreshTemplatesRef()
 		})
 
-		ipcMain.on(PLAY_RUNDOWN_CHANNEL, async (event, arg) => {
-			try {
-				const res = await TsrBridgeApi.playTimeline({
-					id: 'myId',
-					groupId: 'myGroupId',
-					newTimeline: arg,
-					newMappings: this._appDataRef.mappings,
-				})
-				const startedTime = res.data
-				event.returnValue = startedTime
-			} catch (error) {
-				event.returnValue = false
-			}
-		})
+		ipcMain.on(PLAY_RUNDOWN_CHANNEL, async (event, arg: IPlayRundown) => {
+			const rundownId = arg.rundownId
 
-		ipcMain.on(PLAY_RUNDOWN_CHANNEL, async (event, arg) => {
+			const rd = findRundown(this._appDataRef.rundowns, rundownId)
+			if (!rd) {
+				console.error(`Rundown ${rundownId} not found.`)
+				return
+			}
+
+			let timelineToPlay: TSRTimelineObj[] = []
+
+			const group = findParentGroup(this._appDataRef.rundowns, rundownId)
+			if (group && group.loop) {
+				// Set up looping group
+				const resolvedTimeline = Resolver.resolveTimeline(rd.timeline, { time: 0 })
+				let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+				timelineToPlay = [
+					{
+						id: 'Group0',
+						enable: {
+							start: Date.now(),
+							duration: maxDuration,
+							repeating: maxDuration,
+						},
+						layer: '',
+						content: {
+							deviceType: DeviceType.ABSTRACT,
+							type: 'empty',
+						},
+						isGroup: true,
+						children: rd.timeline,
+					},
+				]
+			} else {
+				// Set up normal group
+				timelineToPlay = [
+					{
+						id: rundownId,
+						enable: {
+							start: Date.now(),
+						},
+						layer: '',
+						content: {
+							deviceType: DeviceType.ABSTRACT,
+							type: 'empty',
+						},
+						isGroup: true,
+						children: rd.timeline,
+					},
+				]
+			}
+
 			try {
 				const res = await TsrBridgeApi.playTimeline({
 					id: 'myId',
 					groupId: 'myGroupId',
-					newTimeline: arg,
+					newTimeline: timelineToPlay,
 					newMappings: this._appDataRef.mappings,
 				})
 				const startedTime = res.data
@@ -125,17 +169,55 @@ export class IPCPostman {
 		})
 
 		ipcMain.on(NEW_RUNDOWN_CHANNEL, async (event, arg: INewRundown) => {
-			this._appDataRef.rundowns.push({
+			const newItem: RundownOrGroupModel = {
 				id: short.generate(),
 				name: arg.name,
 				type: 'rundown',
 				timeline: [],
-			})
+			}
+
+			if (arg.groupId) {
+				const group = findGroup(this._appDataRef.rundowns, arg.groupId)
+				if (!group) {
+					console.error(`Group ${arg.groupId} not found.`)
+					return
+				}
+				group.rundowns.push(newItem)
+			} else {
+				this._appDataRef.rundowns.push(newItem)
+			}
+			this._updateViewRef()
+		})
+
+		ipcMain.on(NEW_GROUP_CHANNEL, async (event, arg: INewRundown) => {
+			const newItem: RundownOrGroupModel = {
+				id: short.generate(),
+				name: arg.name,
+				type: 'group',
+				rundowns: [],
+				loop: false,
+			}
+
+			if (arg.groupId) {
+				const group = findGroup(this._appDataRef.rundowns, arg.groupId)
+				if (!group) {
+					console.error(`Group ${arg.groupId} not found.`)
+					return
+				}
+				group.rundowns.push(newItem)
+			} else {
+				this._appDataRef.rundowns.push(newItem)
+			}
 			this._updateViewRef()
 		})
 
 		ipcMain.on(DELETE_RUNDOWN_CHANNEL, async (event, arg: IDeleteRundown) => {
 			this._appDataRef.rundowns = deleteRundown(this._appDataRef.rundowns, arg.id)
+			this._updateViewRef()
+		})
+
+		ipcMain.on(DELETE_GROUP_CHANNEL, async (event, arg: IDeleteGroup) => {
+			this._appDataRef.rundowns = deleteGroup(this._appDataRef.rundowns, arg.groupId)
 			this._updateViewRef()
 		})
 

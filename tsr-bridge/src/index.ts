@@ -23,18 +23,21 @@ function updateTSR() {
 
 const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline, newMapping: Mappings) => {
 	// create a group
-	storedTimeline = [
-		{
-			id: id,
-			enable: {
-				start: Date.now(),
-			},
-			layer: '',
-			children: newTimeline,
-			isGroup: true,
-			content: { deviceType: DeviceType.ABSTRACT, type: 'empty' },
-		},
-	]
+
+	// storedTimeline = [
+	// 	{
+	// 		id: id,
+	// 		enable: {
+	// 			start: Date.now(),
+	// 		},
+	// 		layer: '',
+	// 		children: newTimeline,
+	// 		isGroup: true,
+	// 		content: { deviceType: DeviceType.ABSTRACT, type: 'empty' },
+	// 	},
+	// ]
+
+	storedTimeline = newTimeline
 
 	// // storedTimelines[id] = newTimeline
 	// storedTimeline = newTimeline.map((nt) => {

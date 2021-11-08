@@ -1,6 +1,7 @@
 import React from 'react'
 import Toggle from '@atlaskit/toggle'
-import { IToggleGroupLoop, TOGGLE_GROUP_LOOP_CHANNEL } from '@/ipc/channels'
+import { DELETE_GROUP_CHANNEL, IDeleteGroup, IToggleGroupLoop, TOGGLE_GROUP_LOOP_CHANNEL } from '@/ipc/channels'
+import { TrashBtn } from '../inputs/TrashBtn'
 const { ipcRenderer } = window.require('electron')
 
 type PropsType = {
@@ -28,6 +29,12 @@ export const Group = (props: PropsType) => {
 							Loop
 						</label>
 					</div>
+					<TrashBtn
+						onClick={() => {
+							const data: IDeleteGroup = { groupId: props.id }
+							ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
+						}}
+					/>
 				</div>
 			</div>
 			<div className="group__content">{props.children}</div>

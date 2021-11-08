@@ -4,7 +4,9 @@ export const STOP_RUNDOWN_CHANNEL = 'stop-rundown'
 export const SELECT_TIMELINE_OBJ_CHANNEL = 'select-timeline-obj'
 export const UPDATE_TIMELINE_OBJ_CHANNEL = 'update-timeline-obj'
 export const NEW_RUNDOWN_CHANNEL = 'new-rundown'
+export const NEW_GROUP_CHANNEL = 'new-group'
 export const DELETE_RUNDOWN_CHANNEL = 'delete-rundown'
+export const DELETE_GROUP_CHANNEL = 'delete-group'
 export const NEW_TEMPLATE_DATA_CHANNEL = 'new-template-data'
 export const UPDATE_TEMPLATE_DATA_CHANNEL = 'update-template-data'
 export const DELETE_TEMPLATE_DATA_CHANNEL = 'delete-template-data'
@@ -15,6 +17,10 @@ export const TOGGLE_GROUP_LOOP_CHANNEL = 'toggle-group-loop'
 export const REFRESH_MEDIA_CHANNEL = 'refresh-media'
 export const REFRESH_TEMPLATES_CHANNEL = 'refresh-templates'
 
+export interface IPlayRundown {
+	rundownId: string
+}
+
 export interface IUpdateTimelineObj {
 	id: string
 	enableStart: number
@@ -24,10 +30,20 @@ export interface IUpdateTimelineObj {
 
 export interface INewRundown {
 	name: string
+	groupId?: string
+}
+
+export interface INewGroup {
+	name: string
+	groupId?: string
 }
 
 export interface IDeleteRundown {
 	id: string
+}
+
+export interface IDeleteGroup {
+	groupId: string
 }
 
 export interface INewTemplateDataChannel {

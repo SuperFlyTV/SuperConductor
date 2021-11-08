@@ -20,7 +20,6 @@ export const App = () => {
 
 		// Save all app data received from backend
 		ipcRenderer.on(APP_FEED_CHANNEL, (event, args: AppModel) => {
-			console.log(args)
 			setAppData(args)
 		})
 	}, [])

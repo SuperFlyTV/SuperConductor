@@ -4,6 +4,7 @@ import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
+import { ResolvedTimeline, Resolver } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
@@ -35,14 +36,32 @@ export const findRundown = (rundowns: RundownOrGroupModel[], rundownId: string):
 	}
 }
 
+export const findParentGroup = (rundowns: RundownOrGroupModel[], rundownId: string): GroupModel | undefined => {
+	for (const rdOrGroup of rundowns) {
+		if (rdOrGroup.type === 'group') {
+			// Look all rundowns in this group and check if any has the target id
+
+			for (const rd of rdOrGroup.rundowns) {
+				if (rd.type === 'rundown') {
+					if (rd.id === rundownId) {
+						return rdOrGroup
+					}
+				} else {
+					return findParentGroup(rdOrGroup.rundowns, rundownId)
+				}
+			}
+		}
+	}
+}
+
 export const findGroup = (rundowns: RundownOrGroupModel[], groupId: string): GroupModel | undefined => {
 	for (const rdOrGroup of rundowns) {
 		if (rdOrGroup.type === 'group') {
-			// It's a rundown
 			if (rdOrGroup.id === groupId) {
 				return rdOrGroup
 			} else {
-				return findGroup(rdOrGroup.rundowns, groupId)
+				const foundInside = findGroup(rdOrGroup.rundowns, groupId)
+				if (foundInside) return foundInside
 			}
 		}
 	}
@@ -87,10 +106,38 @@ export const deleteRundown = (rundowns: RundownOrGroupModel[], rundownId: string
 			}
 		} else if (rdOrGroup.type === 'group') {
 			rdOrGroup.rundowns = deleteRundown(rdOrGroup.rundowns, rundownId)
+			return true
+		}
+	})
+}
+
+export const deleteGroup = (rundowns: RundownOrGroupModel[], groupId: string): RundownOrGroupModel[] => {
+	return rundowns.filter((rdOrGroup) => {
+		if (rdOrGroup.type === 'group') {
+			if (rdOrGroup.id === groupId) {
+				return false
+			} else {
+				rdOrGroup.rundowns = deleteGroup(rdOrGroup.rundowns, groupId)
+				return true
+			}
+		} else {
+			return true
 		}
 	})
 }
 
 export const getMappingById = (id: string) => {
 	return mappingsMock[id]
+}
+
+export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimeline) => {
+	let maxDuration = 0
+	Object.values(resolvedTimeline.objects).forEach((obj) => {
+		Object.values(obj.resolved.instances).forEach((instance) => {
+			if (instance.end) {
+				maxDuration = Math.max(maxDuration, instance.end)
+			}
+		})
+	})
+	return maxDuration
 }

@@ -4,16 +4,19 @@ import { Rundown } from './Rundown'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
-import { NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
+import { INewGroup, INewRundown, NEW_GROUP_CHANNEL, NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { Group } from './Group'
+import { GroupModel } from '@/models/GroupModel'
 const { ipcRenderer } = window.require('electron')
 
 const RundownsItems = ({
 	rundowns,
 	selectedTimelineObjId,
+	group,
 }: {
 	rundowns: RundownOrGroupModel[]
 	selectedTimelineObjId?: string
+	group?: GroupModel
 }) => {
 	return (
 		<div className="rundown-items">
@@ -26,13 +29,20 @@ const RundownsItems = ({
 							name={rdOrGroup.name}
 							timeline={rdOrGroup.timeline}
 							selectedTimelineObjId={selectedTimelineObjId}
+							group={group}
 						/>
 					)
 				} else {
 					// Recursively show rundowns and groups
 					return (
 						<Group key={idx} loop={rdOrGroup.loop} id={rdOrGroup.id}>
-							<RundownsItems rundowns={rdOrGroup.rundowns} selectedTimelineObjId={selectedTimelineObjId} />
+							<RundownsItems
+								group={rdOrGroup}
+								rundowns={rdOrGroup.rundowns}
+								selectedTimelineObjId={selectedTimelineObjId}
+							/>
+
+							<NewRundownOptions groupId={rdOrGroup.id} />
 						</Group>
 					)
 				}
@@ -47,25 +57,47 @@ type PropsType = {
 }
 
 const Rundowns = (props: PropsType) => {
-	const [newRundownOpen, setNewRundownOpen] = useState(false)
-
 	return (
 		<div className="rundowns">
 			<RundownsItems rundowns={props.appData.rundowns} selectedTimelineObjId={props.selectedTimelineObjId} />
 
+			<NewRundownOptions />
+		</div>
+	)
+}
+
+export default Rundowns
+
+interface NewRundownOptionsProps {
+	groupId?: string
+}
+
+const NewRundownOptions = (props: NewRundownOptionsProps) => {
+	const [newRundownOpen, setNewRundownOpen] = useState(false)
+	const [newGroupOpen, setNewGroupOpen] = useState(false)
+
+	return (
+		<>
 			<div className="rundowns-control-row">
 				<button className="btn form" onClick={() => setNewRundownOpen(true)}>
 					New rundown
 				</button>
+				<button className="btn form" onClick={() => setNewGroupOpen(true)}>
+					New group
+				</button>
 			</div>
-
 			{newRundownOpen && (
 				<Popup onClose={() => setNewRundownOpen(false)}>
 					<Formik
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
 						onSubmit={(values, actions) => {
-							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, { name: values.name })
+							const data: INewRundown = {
+								name: values.name,
+								groupId: props.groupId,
+							}
+
+							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, data)
 							setNewRundownOpen(false)
 						}}
 					>
@@ -86,8 +118,40 @@ const Rundowns = (props: PropsType) => {
 					</Formik>
 				</Popup>
 			)}
-		</div>
+
+			{newGroupOpen && (
+				<Popup onClose={() => setNewGroupOpen(false)}>
+					<Formik
+						initialValues={{ name: '' }}
+						enableReinitialize={true}
+						onSubmit={(values, actions) => {
+							const data: INewGroup = {
+								name: values.name,
+								groupId: props.groupId,
+							}
+
+							ipcRenderer.send(NEW_GROUP_CHANNEL, data)
+
+							setNewGroupOpen(false)
+						}}
+					>
+						{(formik) => (
+							<Form>
+								<FormRow>
+									<label htmlFor="name">Name</label>
+									<Field id="name" name="name" placeholder="Group name" />
+									<ErrorMessage name="name" component="div" />
+								</FormRow>
+								<div className="btn-row-right">
+									<button type="submit" className="btn form">
+										Create
+									</button>
+								</div>
+							</Form>
+						)}
+					</Formik>
+				</Popup>
+			)}
+		</>
 	)
 }
-
-export default Rundowns
