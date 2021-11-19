@@ -39,7 +39,7 @@ export const TimelineObjInfo = (props: PropsType) => {
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
 					const updateObj: IUpdateTimelineObj = {
-						id: props.timelineObj.id,
+						timelineObjId: props.timelineObj.id,
 						layer: values.layer,
 						enableStart: values.enableStart,
 						enableDuration: values.enableDuration,

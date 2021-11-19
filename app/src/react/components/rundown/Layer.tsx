@@ -4,14 +4,12 @@ import React from 'react'
 import Timeline from 'superfly-timeline'
 const { ipcRenderer } = window.require('electron')
 
-type PropsType = {
+export const Layer: React.FC<{
 	layerId: string
 	totalDuration: number
 	timelineObjs: Timeline.ResolvedTimelineObject[]
-	selectedTimelineObjId?: string
-}
-
-export const Layer = (props: PropsType) => {
+	selectedTimelineObjId: string | undefined
+}> = (props) => {
 	return (
 		<div className="layer">
 			<div className="layer__content">

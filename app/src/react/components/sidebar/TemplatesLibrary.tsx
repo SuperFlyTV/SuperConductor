@@ -8,21 +8,17 @@ import {
 	REFRESH_TEMPLATES_CHANNEL,
 } from '@/ipc/channels'
 import { DataRow } from './DataRow'
-import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import { getAllRundowns, getDefaultMappingLayer, getDefaultRundown } from '@/lib/getDefaults'
 import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
-type PropsType = {
-	appData: AppModel
-}
-
-export const TemplatesLibrary = (props: PropsType) => {
+export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
 	const selectedTemplate = props.appData.templates.find((item) => item.name === selectedFilename)
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const defaultRundownId = getDefaultRundownId(props.appData.rundowns)
+	const defaultRundown = getDefaultRundown(props.appData)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
 	useEffect(() => {
@@ -74,17 +70,22 @@ export const TemplatesLibrary = (props: PropsType) => {
 					<InfoGroup title="Template">
 						<DataRow label="Filename" value={selectedTemplate.name} />
 					</InfoGroup>
-					{defaultRundownId && defaultLayer && (
+					{defaultRundown && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik
-								initialValues={{ rundownId: defaultRundownId, layerId: defaultLayer }}
+								initialValues={{ rundownId: defaultRundown.rundown.id, layerId: defaultLayer }}
 								onSubmit={(values, actions) => {
 									if (!values.rundownId || !values.layerId) {
 										return
 									}
 
+									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
+									if (!rd) return
+
+									console.log(values, rd)
 									const data: IAddTemplateToTimelineChannel = {
-										rundownId: values.rundownId,
+										groupId: rd.group.id,
+										rundownId: rd.rundown.id,
 										layerId: values.layerId,
 										filename: selectedTemplate.name,
 									}
@@ -96,14 +97,12 @@ export const TemplatesLibrary = (props: PropsType) => {
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
 											<Field as="select" name="rundownId">
-												{getAllRundowns(props.appData.rundowns).map((rd) => {
-													if (rd.type === 'rundown') {
-														return (
-															<option key={rd.id} value={rd.id}>
-																{rd.name}
-															</option>
-														)
-													}
+												{getAllRundowns(props.appData).map((rd) => {
+													return (
+														<option key={rd.rundown.id} value={rd.rundown.id}>
+															{rd.name}
+														</option>
+													)
 												})}
 											</Field>
 											<Field as="select" name="layerId">

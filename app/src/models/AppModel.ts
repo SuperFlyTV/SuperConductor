@@ -5,11 +5,9 @@ import { RundownModel } from './RundownModel'
 import { TemplateModel } from './TemplateModel'
 
 export type AppModel = {
-	rundowns: RundownOrGroupModel[]
-	selectedTimelineObjId?: string
+	groups: GroupModel[]
+	selectedTimelineObjId: string | undefined
 	media: MediaModel[]
 	templates: TemplateModel[]
 	mappings: Mappings | undefined
 }
-
-export type RundownOrGroupModel = RundownModel | GroupModel

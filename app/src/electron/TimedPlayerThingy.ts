@@ -33,27 +33,30 @@ export class TimedPlayerThingy {
 
 	updateView() {
 		this.mainWindow.webContents.send(APP_FEED_CHANNEL, this.appData)
+
+		this.saveAppData()
 	}
 
 	private getTptDir() {
 		const homeDirPath = os.homedir()
-		return path.join(homeDirPath, 'Documents', 'Timed Player Thingy')
+		return path.join(homeDirPath, 'Documents', 'Timed-Player-Thingy')
+	}
+	private getAppDataPath(): string {
+		return path.join(this.getTptDir(), 'appData.json')
 	}
 
 	handleOnOpen() {
-		const tptDirPath = this.getTptDir()
-
 		try {
-			const read = fs.readFileSync(path.join(tptDirPath, 'rundowns.json'))
+			const read = fs.readFileSync(this.getAppDataPath())
 			const data = read.toString()
 
-			this.appData.rundowns = JSON.parse(data)
+			this.appData.groups = JSON.parse(data)
 		} catch (error) {
 			console.log('No rundowns.json found.')
 		}
 	}
 
-	handleOnClose() {
+	saveAppData() {
 		const tptDirPath = this.getTptDir()
 
 		try {
@@ -61,7 +64,7 @@ export class TimedPlayerThingy {
 				fs.mkdirSync(tptDirPath)
 			}
 
-			fs.writeFileSync(path.join(tptDirPath, 'rundowns.json'), JSON.stringify(this.appData.rundowns), 'utf-8')
+			fs.writeFileSync(this.getAppDataPath(), JSON.stringify(this.appData.groups), 'utf-8')
 		} catch (e) {
 			alert('Failed to save the file!')
 		}

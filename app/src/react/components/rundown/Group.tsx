@@ -1,43 +1,169 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Toggle from '@atlaskit/toggle'
-import { DELETE_GROUP_CHANNEL, IDeleteGroup, IToggleGroupLoop, TOGGLE_GROUP_LOOP_CHANNEL } from '@/ipc/channels'
+import {
+	DELETE_GROUP_CHANNEL,
+	IDeleteGroup,
+	INewRundown,
+	IToggleAutoPlayLoop,
+	IToggleGroupLoop,
+	NEW_RUNDOWN_CHANNEL,
+	TOGGLE_GROUP_AUTOPLAY_CHANNEL,
+	TOGGLE_GROUP_LOOP_CHANNEL,
+} from '@/ipc/channels'
 import { TrashBtn } from '../inputs/TrashBtn'
+import { GroupModel } from '@/models/GroupModel'
+import { RundownView } from './Rundown'
+import { Formik, Form, Field, ErrorMessage } from 'formik'
+import { Popup } from '../popup/Popup'
+import { FormRow } from '../sidebar/DataRow'
+import { getGroupPlayhead, GroupPlayhead, GroupPreparedPlayheadData, prepareGroupPlayhead } from '@/lib/playhead'
 const { ipcRenderer } = window.require('electron')
 
-type PropsType = {
-	children: React.ReactNode
-	loop: boolean
-	id: string
-}
+export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: string | undefined }> = ({
+	group,
+	selectedTimelineObjId,
+}) => {
+	const [playheadData, setPlayheadData] = useState<GroupPreparedPlayheadData | null>(null)
+	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
 
-export const Group = (props: PropsType) => {
-	return (
-		<div className="group">
-			<div className="group__header">
-				<div className="title">Group #1</div>
-				<div className="controls">
-					<div className="toggle">
-						<Toggle
-							id="loop"
-							isChecked={props.loop}
-							onChange={() => {
-								const data: IToggleGroupLoop = { groupId: props.id, value: !props.loop }
-								ipcRenderer.send(TOGGLE_GROUP_LOOP_CHANNEL, data)
+	useEffect(() => {
+		setPlayheadData(prepareGroupPlayhead(group))
+	}, [group])
+
+	useEffect(() => {
+		let anim = 0
+		const updatePlayhead = () => {
+			const playhead = getGroupPlayhead(playheadData)
+			setPlayhead(playhead)
+			anim = window.requestAnimationFrame(updatePlayhead)
+		}
+		updatePlayhead()
+		return () => {
+			window.cancelAnimationFrame(anim)
+		}
+	}, [playheadData])
+
+	// console.log('is playhead', playhead)
+
+	const getRundownPlayhead = (rundownId: string): number | null => {
+		if (!playhead) return null
+		if (playhead.rundownId === rundownId) return playhead.time
+		return null
+	}
+
+	if (group.transparent) {
+		const firstRundown = group.rundowns[0]
+		return firstRundown ? (
+			<RundownView
+				selectedTimelineObjId={selectedTimelineObjId}
+				rundown={firstRundown}
+				parentGroup={group}
+				playheadData={playheadData}
+				playheadTime={getRundownPlayhead(firstRundown.id)}
+			/>
+		) : null
+	} else {
+		return (
+			<div className="group">
+				<div className="group__header">
+					<div className="title">{group.name}</div>
+					<div className="controls">
+						<div className="toggle">
+							<Toggle
+								id="auto-play"
+								isChecked={group.autoPlay}
+								onChange={() => {
+									const data: IToggleAutoPlayLoop = { groupId: group.id, value: !group.autoPlay }
+									ipcRenderer.send(TOGGLE_GROUP_AUTOPLAY_CHANNEL, data)
+								}}
+							/>
+							<label htmlFor="auto-play" className="toggle-label">
+								Auto-play
+							</label>
+						</div>
+
+						<div className="toggle">
+							<Toggle
+								id="loop"
+								isChecked={group.loop}
+								onChange={() => {
+									const data: IToggleGroupLoop = { groupId: group.id, value: !group.loop }
+									ipcRenderer.send(TOGGLE_GROUP_LOOP_CHANNEL, data)
+								}}
+							/>
+							<label htmlFor="loop" className="toggle-label">
+								Loop
+							</label>
+						</div>
+						<TrashBtn
+							onClick={() => {
+								const data: IDeleteGroup = { groupId: group.id }
+								ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
 							}}
 						/>
-						<label htmlFor="loop" className="toggle-label">
-							Loop
-						</label>
 					</div>
-					<TrashBtn
-						onClick={() => {
-							const data: IDeleteGroup = { groupId: props.id }
-							ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
-						}}
-					/>
+				</div>
+				<div className="group__content">
+					{group.rundowns.map((rundown) => (
+						<RundownView
+							key={rundown.id}
+							selectedTimelineObjId={selectedTimelineObjId}
+							rundown={rundown}
+							parentGroup={group}
+							playheadData={playheadData}
+							playheadTime={getRundownPlayhead(rundown.id)}
+						/>
+					))}
+
+					<GroupOptions group={group} />
 				</div>
 			</div>
-			<div className="group__content">{props.children}</div>
-		</div>
+		)
+	}
+}
+
+const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
+	const [newRundownOpen, setNewRundownOpen] = React.useState(false)
+
+	return (
+		<>
+			<div className="group-list__control-row">
+				<button className="btn form" onClick={() => setNewRundownOpen(true)}>
+					New rundown
+				</button>
+			</div>
+			{newRundownOpen && (
+				<Popup onClose={() => setNewRundownOpen(false)}>
+					<Formik
+						initialValues={{ name: '' }}
+						enableReinitialize={true}
+						onSubmit={(values) => {
+							const data: INewRundown = {
+								name: values.name,
+								groupId: props.group.id,
+							}
+
+							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, data)
+							setNewRundownOpen(false)
+						}}
+					>
+						{(formik) => (
+							<Form>
+								<FormRow>
+									<label htmlFor="name">Name</label>
+									<Field id="name" name="name" placeholder="Rundown name" />
+									<ErrorMessage name="name" component="div" />
+								</FormRow>
+								<div className="btn-row-right">
+									<button type="submit" className="btn form">
+										Create
+									</button>
+								</div>
+							</Form>
+						)}
+					</Formik>
+				</Popup>
+			)}
+		</>
 	)
 }

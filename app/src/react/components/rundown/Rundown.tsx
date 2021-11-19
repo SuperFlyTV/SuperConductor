@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
@@ -10,82 +10,91 @@ import {
 	IDeleteRundown,
 	IPlayRundown,
 	PLAY_RUNDOWN_CHANNEL,
-	STOP_RUNDOWN_CHANNEL,
+	STOP_GROUP_CHANNEL,
 } from '@/ipc/channels'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { GroupModel } from '@/models/GroupModel'
+import { RundownModel } from '@/models/RundownModel'
+import { GroupPreparedPlayheadData } from '@/lib/playhead'
 
-type PropsType = {
-	id: string
-	name: string
-	timeline: Timeline.TimelineObject[]
-	selectedTimelineObjId?: string
-	group?: GroupModel
-}
+export const RundownView: React.FC<{
+	selectedTimelineObjId: string | undefined
+	rundown: RundownModel
+	parentGroup: GroupModel
+	playheadData: GroupPreparedPlayheadData | null
+	playheadTime: number | null
+}> = ({ selectedTimelineObjId, rundown, parentGroup, playheadTime }) => {
+	const { maxDuration, resolvedTimeline } = useMemo(() => {
+		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
+		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-export const Rundown = (props: PropsType) => {
-	const resolvedTimeline = Resolver.resolveTimeline(props.timeline, { time: 0 })
-	let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		return { maxDuration, resolvedTimeline }
+	}, [rundown.timeline])
 
 	let startedPlayingTime = 0
-	const [isPlaying, setPlaying] = useState(false)
-	const [elapsedTime, setElapsedTime] = useState(0)
-	const intervalRef = useRef<NodeJS.Timeout>()
+
+	const elapsedTime = 0
+	// const [elapsedTime, setElapsedTime] = useState(0)
+	// const intervalRef = useRef<NodeJS.Timeout>()
+
+	const isPlaying = parentGroup.playing?.startRundownId === rundown.id
 
 	const handlePlayControl = () => {
-		if (!isPlaying) {
-			handleStart()
-		} else {
+		console.log('handlePlayControl')
+		if (isPlaying) {
 			handleStop()
+		} else {
+			handleStart()
 		}
 	}
 
 	const handleStart = () => {
-		const data: IPlayRundown = { rundownId: props.id }
-		const response = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, data)
+		const data: IPlayRundown = { groupId: parentGroup.id, rundownId: rundown.id }
+		ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, data)
 
-		if (response !== false) {
-			startedPlayingTime = response
-			setPlaying(true)
-			intervalRef.current = setInterval(() => {
-				updateElapsedTime()
-			}, 16)
-		}
+		// const response = ipcRenderer.sendSync(PLAY_RUNDOWN_CHANNEL, data)
+		// if (response !== false) {
+		// 	startedPlayingTime = response
+		// setPlaying(true)
+		// intervalRef.current = setInterval(() => {
+		// 	updateElapsedTime()
+		// }, 16)
+		// }
 	}
 
 	const handleStop = () => {
-		setPlaying(false)
-		ipcRenderer.send(STOP_RUNDOWN_CHANNEL, props.timeline)
-		if (intervalRef.current) clearInterval(intervalRef.current)
+		// setPlaying(false)
+		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: parentGroup.id })
+		// if (intervalRef.current) clearInterval(intervalRef.current)
 
-		setElapsedTime(0)
+		// setElapsedTime(0)
 	}
 
 	const handleDelete = () => {
-		const data: IDeleteRundown = { id: props.id }
+		const data: IDeleteRundown = { groupId: parentGroup.id, rundownId: rundown.id }
 		ipcRenderer.send(DELETE_RUNDOWN_CHANNEL, data)
 	}
 
-	const updateElapsedTime = () => {
-		const currentTime = Date.now()
-		const elapsed = currentTime - startedPlayingTime
-		if (elapsed > maxDuration) {
-			if (props.group && props.group.loop) {
-				startedPlayingTime = currentTime
-			} else {
-				handleStop()
-			}
-		} else {
-			setElapsedTime(elapsed)
-		}
-	}
+	// const updateElapsedTime = () => {
+	// 	const currentTime = Date.now()
+	// 	const elapsed = currentTime - startedPlayingTime
+	// 	if (elapsed > maxDuration) {
+	// 		if (props.parentGroup && props.parentGroup.loop) {
+	// 			startedPlayingTime = currentTime
+	// 		} else {
+	// 			handleStop()
+	// 		}
+	// 	} else {
+	// 		setElapsedTime(elapsed)
+	// 	}
+	// }
 
 	return (
 		<div className="rundown">
 			<div className="rundown__meta">
-				<div className="title">{props.name}</div>
+				<div className="title">{rundown.name}</div>
 				<div className="controls">
 					<PlayControlBtn mode={isPlaying ? 'stop' : 'play'} onClick={handlePlayControl} />
 					<QueueBtn />
@@ -93,10 +102,10 @@ export const Rundown = (props: PropsType) => {
 				</div>
 			</div>
 			<div className="rundown__timeline">
-				{elapsedTime ? <div className="rundown__timeline__current-time">{msToTime(elapsedTime)}</div> : ''}
+				{playheadTime ? <div className="rundown__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
 				<div className="rundown__timeline__duration">{msToTime(maxDuration)}</div>
 				<div className="layers-wrapper">
-					<PlayHead percentage={(elapsedTime * 100) / maxDuration + '%'} />
+					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / maxDuration + '%'} /> : null}
 					<div className="layers">
 						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
 							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
@@ -107,7 +116,7 @@ export const Rundown = (props: PropsType) => {
 									totalDuration={maxDuration}
 									timelineObjs={objectsOnLayer}
 									layerId={layerId}
-									selectedTimelineObjId={props.selectedTimelineObjId}
+									selectedTimelineObjId={selectedTimelineObjId}
 								/>
 							)
 						})}

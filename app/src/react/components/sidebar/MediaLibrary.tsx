@@ -5,7 +5,7 @@ import { MediaInfo } from './MediaInfo'
 import { Field, Form, Formik, FormikProps } from 'formik'
 import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel, REFRESH_MEDIA_CHANNEL } from '@/ipc/channels'
 import { bytesToSize } from '@/lib/bytesToSize'
-import { getAllRundowns, getDefaultMappingLayer, getDefaultRundownId } from '@/lib/getDefaults'
+import { getAllRundowns, getDefaultMappingLayer, getDefaultRundown } from '@/lib/getDefaults'
 import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
@@ -19,7 +19,7 @@ export const MediaLibrary = (props: PropsType) => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const defaultRundownId = getDefaultRundownId(props.appData.rundowns)
+	const defaultRundown = getDefaultRundown(props.appData)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
 	useEffect(() => {
@@ -79,17 +79,21 @@ export const MediaLibrary = (props: PropsType) => {
 			{selectedMedia && (
 				<>
 					<MediaInfo media={selectedMedia} />
-					{defaultRundownId && defaultLayer && (
+					{defaultRundown && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik
-								initialValues={{ rundownId: defaultRundownId, layerId: defaultLayer }}
+								initialValues={{ rundownId: defaultRundown.rundown.id, layerId: defaultLayer }}
 								onSubmit={(values, actions) => {
 									if (!values.rundownId || !values.layerId) {
 										return
 									}
 
+									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
+									if (!rd) return
+
 									const data: IAddMediaToTimelineChannel = {
-										rundownId: values.rundownId,
+										groupId: rd.group.id,
+										rundownId: rd.rundown.id,
 										layerId: values.layerId,
 										filename: selectedMedia.name,
 									}
@@ -101,14 +105,12 @@ export const MediaLibrary = (props: PropsType) => {
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
 											<Field as="select" name="rundownId">
-												{getAllRundowns(props.appData.rundowns).map((rd) => {
-													if (rd.type === 'rundown') {
-														return (
-															<option key={rd.id} value={rd.id}>
-																{rd.name}
-															</option>
-														)
-													}
+												{getAllRundowns(props.appData).map((rd) => {
+													return (
+														<option key={rd.rundown.id} value={rd.rundown.id}>
+															{rd.name}
+														</option>
+													)
 												})}
 											</Field>
 											<Field as="select" name="layerId">

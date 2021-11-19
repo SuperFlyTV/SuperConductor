@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react'
-import Rundowns from './components/rundown/Rundowns'
-import { Sidebar } from './components/sidebar/Sidebar'
 const { ipcRenderer } = window.require('electron')
 
 import { AppModel } from '@/models/AppModel'
 import { APP_FEED_CHANNEL, SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 
 import './styles/app.scss'
+import { GroupListView } from './components/rundown/GroupList'
+import { Sidebar } from './components/sidebar/Sidebar'
 
 export const App = () => {
-	const [appData, setAppData] = useState<AppModel>({ rundowns: [], media: [], templates: [], mappings: undefined })
+	const [appData, setAppData] = useState<AppModel>({
+		groups: [],
+		media: [],
+		templates: [],
+		mappings: undefined,
+		selectedTimelineObjId: undefined,
+	})
 
 	/**
 	 * Main feed from backend
@@ -19,8 +25,8 @@ export const App = () => {
 		ipcRenderer.send(APP_FEED_CHANNEL)
 
 		// Save all app data received from backend
-		ipcRenderer.on(APP_FEED_CHANNEL, (event, args: AppModel) => {
-			setAppData(args)
+		ipcRenderer.on(APP_FEED_CHANNEL, (event, appModel: AppModel) => {
+			setAppData(appModel)
 		})
 	}, [])
 
@@ -35,7 +41,7 @@ export const App = () => {
 
 	return (
 		<div className="app" onClick={handleClickAnywhere}>
-			<Rundowns appData={appData} selectedTimelineObjId={appData.selectedTimelineObjId} />
+			<GroupListView appData={appData} selectedTimelineObjId={appData.selectedTimelineObjId} />
 			<Sidebar appData={appData} />
 		</div>
 	)

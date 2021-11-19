@@ -1,84 +1,34 @@
 import React, { useState } from 'react'
-import { AppModel, RundownOrGroupModel } from '@/models/AppModel'
-import { Rundown } from './Rundown'
+import { AppModel } from '@/models/AppModel'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
 import { INewGroup, INewRundown, NEW_GROUP_CHANNEL, NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
-import { Group } from './Group'
-import { GroupModel } from '@/models/GroupModel'
+import { GroupView } from './Group'
 const { ipcRenderer } = window.require('electron')
 
-const RundownsItems = ({
-	rundowns,
-	selectedTimelineObjId,
-	group,
-}: {
-	rundowns: RundownOrGroupModel[]
-	selectedTimelineObjId?: string
-	group?: GroupModel
-}) => {
-	return (
-		<div className="rundown-items">
-			{rundowns.map((rdOrGroup, idx) => {
-				if (rdOrGroup.type === 'rundown') {
-					return (
-						<Rundown
-							key={idx}
-							id={rdOrGroup.id}
-							name={rdOrGroup.name}
-							timeline={rdOrGroup.timeline}
-							selectedTimelineObjId={selectedTimelineObjId}
-							group={group}
-						/>
-					)
-				} else {
-					// Recursively show rundowns and groups
-					return (
-						<Group key={idx} loop={rdOrGroup.loop} id={rdOrGroup.id}>
-							<RundownsItems
-								group={rdOrGroup}
-								rundowns={rdOrGroup.rundowns}
-								selectedTimelineObjId={selectedTimelineObjId}
-							/>
-
-							<NewRundownOptions groupId={rdOrGroup.id} />
-						</Group>
-					)
-				}
-			})}
-		</div>
-	)
-}
-
-type PropsType = {
+export const GroupListView: React.FC<{
 	appData: AppModel
-	selectedTimelineObjId?: string
-}
-
-const Rundowns = (props: PropsType) => {
+	selectedTimelineObjId: string | undefined
+}> = (props) => {
 	return (
-		<div className="rundowns">
-			<RundownsItems rundowns={props.appData.rundowns} selectedTimelineObjId={props.selectedTimelineObjId} />
+		<div className="group-list">
+			{props.appData.groups.map((group, index) => {
+				return <GroupView key={index} group={group} selectedTimelineObjId={props.selectedTimelineObjId} />
+			})}
 
-			<NewRundownOptions />
+			<GroupListOptions />
 		</div>
 	)
 }
 
-export default Rundowns
-
-interface NewRundownOptionsProps {
-	groupId?: string
-}
-
-const NewRundownOptions = (props: NewRundownOptionsProps) => {
+const GroupListOptions: React.FC<{}> = () => {
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 
 	return (
 		<>
-			<div className="rundowns-control-row">
+			<div className="group-list__control-row">
 				<button className="btn form" onClick={() => setNewRundownOpen(true)}>
 					New rundown
 				</button>
@@ -94,7 +44,7 @@ const NewRundownOptions = (props: NewRundownOptionsProps) => {
 						onSubmit={(values, actions) => {
 							const data: INewRundown = {
 								name: values.name,
-								groupId: props.groupId,
+								groupId: null,
 							}
 
 							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, data)
@@ -127,7 +77,6 @@ const NewRundownOptions = (props: NewRundownOptionsProps) => {
 						onSubmit={(values, actions) => {
 							const data: INewGroup = {
 								name: values.name,
-								groupId: props.groupId,
 							}
 
 							ipcRenderer.send(NEW_GROUP_CHANNEL, data)

@@ -8,63 +8,39 @@ const tsr = new TSR()
 let mapping: Mappings | undefined = undefined
 
 const storedTimelines: {
-	[id: string]: Timeline.TimelineObject
+	[id: string]: TSRTimeline
 } = {}
 
-let storedTimeline: TSRTimeline | null = null
-
 function updateTSR() {
-	const timelines = Object.values(storedTimelines)
-	// tsr.conductor.setTimelineAndMappings(Object.values(storedTimelines), tsr.allInputs.mappings)
-	// tsr.conductor.setTimelineAndMappings(timelines, tsr.allInputs.mappings)
-	// console.log('Updating TSR', storedTimeline)
-	tsr.conductor.setTimelineAndMappings(storedTimeline!, mapping)
+	const fullTimeline: TSRTimeline = []
+
+	for (const timeline of Object.values(storedTimelines)) {
+		for (const obj of timeline) {
+			fullTimeline.push(obj)
+		}
+	}
+	console.log('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
+	tsr.conductor.setTimelineAndMappings(fullTimeline, mapping)
 }
 
-const playTimeline = (id: string, groupId: string, newTimeline: TSRTimeline, newMapping: Mappings) => {
-	// create a group
-
-	// storedTimeline = [
-	// 	{
-	// 		id: id,
-	// 		enable: {
-	// 			start: Date.now(),
-	// 		},
-	// 		layer: '',
-	// 		children: newTimeline,
-	// 		isGroup: true,
-	// 		content: { deviceType: DeviceType.ABSTRACT, type: 'empty' },
-	// 	},
-	// ]
-
-	storedTimeline = newTimeline
-
-	// // storedTimelines[id] = newTimeline
-	// storedTimeline = newTimeline.map((nt) => {
-	// 	;(nt.enable as any).start += Date.now()
-	// 	return nt
-	// })
-
-	// // we actually should look up others with the same groupId and remove them:
-	// Object.entries(storedTimelines).forEach(([id, obj]) => {
-	// 	if (obj.layer === groupId) {
-	// 		delete storedTimelines[id]
-	// 	}
-	// })
-
-	mapping = newMapping
+const playTimeline = (id: string, newTimeline: TSRTimeline) => {
+	storedTimelines[id] = newTimeline
 
 	updateTSR()
 	return Date.now()
 }
+const updateMappings = (newMapping: Mappings) => {
+	mapping = newMapping
+	updateTSR()
+}
 
 const stopTimeline = (id: string) => {
-	// delete storedTimelines[id]
-	storedTimeline = []
+	delete storedTimelines[id]
 	updateTSR()
 }
 
 const koaServer = new KoaServer({
 	playTimeline,
 	stopTimeline,
+	updateMappings,
 })

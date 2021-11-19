@@ -39,7 +39,7 @@ const createWindow = (): void => {
 	const tpt = new TimedPlayerThingy(win)
 
 	app.on('window-all-closed', async () => {
-		await tpt.handleOnClose()
+		await tpt.saveAppData()
 		app.quit()
 	})
 }

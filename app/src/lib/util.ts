@@ -1,10 +1,10 @@
 import { mappingsMock } from '@/mocks/mappingsMock'
-import { RundownOrGroupModel } from '@/models/AppModel'
+import { AppModel } from '@/models/AppModel'
 import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
 import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
-import { ResolvedTimeline, Resolver } from 'superfly-timeline'
+import { ResolvedTimeline } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
@@ -19,111 +19,56 @@ export const findTemplate = (templateList: TemplateModel[], filename: string) =>
 	}
 }
 
-export const findRundown = (rundowns: RundownOrGroupModel[], rundownId: string): RundownModel | undefined => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'rundown') {
-			// It's a rundown
-			if (rdOrGroup.id === rundownId) {
-				return rdOrGroup
-			}
-		} else {
-			// It's a group
-			const found = findRundown(rdOrGroup.rundowns, rundownId)
-			if (found) {
-				return found
-			}
-		}
-	}
+export const findGroup = (appData: AppModel, groupId: string): GroupModel | undefined => {
+	return appData.groups.find((g) => g.id === groupId)
 }
-
-export const findParentGroup = (rundowns: RundownOrGroupModel[], rundownId: string): GroupModel | undefined => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'group') {
-			// Look all rundowns in this group and check if any has the target id
-
-			for (const rd of rdOrGroup.rundowns) {
-				if (rd.type === 'rundown') {
-					if (rd.id === rundownId) {
-						return rdOrGroup
-					}
-				} else {
-					return findParentGroup(rdOrGroup.rundowns, rundownId)
+export const findRundown = (group: GroupModel, rundownId: string): RundownModel | undefined => {
+	return group.rundowns.find((r) => r.id === rundownId)
+}
+export const findTimelineObj = (
+	appData: AppModel,
+	timelineObjId: string
+):
+	| {
+			group: GroupModel
+			rundown: RundownModel
+			timelineObj: TSRTimelineObj
+	  }
+	| undefined => {
+	// Note: This is a bit of a hack, but it works for now.
+	for (const group of appData.groups) {
+		for (const rundown of group.rundowns) {
+			for (const timelineObj of rundown.timeline) {
+				if (timelineObj.id === timelineObjId) {
+					return { group, rundown, timelineObj }
 				}
 			}
 		}
 	}
+
+	return undefined
 }
 
-export const findGroup = (rundowns: RundownOrGroupModel[], groupId: string): GroupModel | undefined => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'group') {
-			if (rdOrGroup.id === groupId) {
-				return rdOrGroup
-			} else {
-				const foundInside = findGroup(rdOrGroup.rundowns, groupId)
-				if (foundInside) return foundInside
+export const deleteGroup = (appData: AppModel, groupId: string): void => {
+	appData.groups = appData.groups.filter((g) => g.id !== groupId)
+}
+export const deleteRundown = (group: GroupModel, rundownId: string): void => {
+	group.rundowns = group.rundowns.filter((r) => r.id !== rundownId)
+}
+export const deleteTimelineObj = (
+	appData: AppModel,
+	timelineObjId: string
+): { group: GroupModel; rundown: RundownModel } | undefined => {
+	// Note: This is a bit of a hack, but it works for now.
+	for (const group of appData.groups) {
+		for (const rundown of group.rundowns) {
+			if (rundown.timeline.find((t) => t.id === timelineObjId)) {
+				rundown.timeline = rundown.timeline.filter((t) => t.id !== timelineObjId)
+				return { group, rundown }
 			}
 		}
 	}
-}
-
-export const findTimelineObj = (rundowns: RundownOrGroupModel[], timelineObjId: string): TSRTimelineObj | undefined => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'rundown') {
-			// It's a rundown
-			for (const tObj of rdOrGroup.timeline) {
-				if (tObj.id === timelineObjId) return tObj
-			}
-		} else {
-			// It's a group
-			const found = findTimelineObj(rdOrGroup.rundowns, timelineObjId)
-			if (found) {
-				return found
-			}
-		}
-	}
-}
-
-export const deleteTimelineObj = (rundowns: RundownOrGroupModel[], timelineObjId: string) => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'rundown') {
-			// It's a rundown
-			rdOrGroup.timeline = rdOrGroup.timeline.filter((item) => item.id !== timelineObjId)
-		} else {
-			// It's a group
-			deleteTimelineObj(rdOrGroup.rundowns, timelineObjId)
-		}
-	}
-}
-
-export const deleteRundown = (rundowns: RundownOrGroupModel[], rundownId: string): RundownOrGroupModel[] => {
-	return rundowns.filter((rdOrGroup) => {
-		if (rdOrGroup.type === 'rundown') {
-			if (rdOrGroup.id === rundownId) {
-				return false
-			} else {
-				return true
-			}
-		} else if (rdOrGroup.type === 'group') {
-			rdOrGroup.rundowns = deleteRundown(rdOrGroup.rundowns, rundownId)
-			return true
-		}
-	})
-}
-
-export const deleteGroup = (rundowns: RundownOrGroupModel[], groupId: string): RundownOrGroupModel[] => {
-	return rundowns.filter((rdOrGroup) => {
-		if (rdOrGroup.type === 'group') {
-			if (rdOrGroup.id === groupId) {
-				return false
-			} else {
-				rdOrGroup.rundowns = deleteGroup(rdOrGroup.rundowns, groupId)
-				return true
-			}
-		} else {
-			return true
-		}
-	})
+	return undefined
 }
 
 export const getMappingById = (id: string) => {
@@ -140,4 +85,55 @@ export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimel
 		})
 	})
 	return maxDuration
+}
+
+/**
+ * Returns a string that changes whenever the input changes.
+ * Does NOT depend on the order of object attributes.
+ */
+export function hashObj(obj: unknown): string {
+	if (!obj) {
+		return ''
+	} else if (Array.isArray(obj)) {
+		const strs: string[] = []
+		for (const value of obj) {
+			strs.push(hashObj(value))
+		}
+		return hash(strs.join(','))
+	} else if (typeof obj === 'object') {
+		if (!obj) return 'null'
+
+		// Sort the keys, so that key order doesn't matter:
+		const keys = Object.keys(obj).sort((a, b) => {
+			if (a > b) return 1
+			if (a < b) return -1
+			return 0
+		})
+
+		const strs: string[] = []
+		for (const key of keys) {
+			strs.push(hashObj((obj as any)[key]))
+		}
+		return hash(strs.join('|'))
+	} else {
+		return obj + ''
+	}
+}
+export function hash(str: string): string {
+	// This is not really a hash, but it's good enough for our purposes:
+	return hashCode(str).toString(16)
+}
+
+function hashCode(str: string): number {
+	var hash = 0
+	if (str.length == 0) {
+		return hash
+	}
+	for (var i = 0; i < str.length; i++) {
+		var char = str.charCodeAt(i)
+
+		hash = (hash << 5) - hash + char
+		hash = hash & hash // Convert to 32bit integer
+	}
+	return hash
 }

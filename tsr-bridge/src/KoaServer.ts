@@ -1,10 +1,11 @@
 import Koa from 'koa'
 import bodyParser from 'koa-bodyparser'
 import Router from 'koa-router'
-import { Mappings, TSRTimeline, TSRTimelineObj } from 'timeline-state-resolver'
+import { Mappings, TSRTimeline } from 'timeline-state-resolver'
 
 export type ServerHandles = {
-	playTimeline: (id: string, groupId: string, newTimeline: TSRTimeline, newMappings: Mappings) => number
+	playTimeline: (id: string, timeline: TSRTimeline) => void
+	updateMappings: (mappings: Mappings) => void
 	stopTimeline: (id: string) => void
 }
 
@@ -22,12 +23,17 @@ export class KoaServer {
 		this.router.post('/play-timeline', (ctx, next) => {
 			console.log('POST /play-timeline')
 			const id = ctx.request.body.id
-			const groupId = ctx.request.body.groupId
-			const newTimeline = ctx.request.body.newTimeline
-			const newMappings = ctx.request.body.newMappings
+			const timeline = ctx.request.body.timeline
 
 			ctx.response.status = 200
-			ctx.response.body = serverHandles.playTimeline(id, groupId, newTimeline, newMappings)
+			ctx.response.body = serverHandles.playTimeline(id, timeline)
+		})
+		this.router.post('/update-mappings', (ctx, next) => {
+			console.log('POST /update-mappings')
+			const mappings = ctx.request.body.mappings
+
+			ctx.response.status = 200
+			ctx.response.body = serverHandles.updateMappings(mappings)
 		})
 
 		this.router.post('/stop-timeline', (ctx, next) => {

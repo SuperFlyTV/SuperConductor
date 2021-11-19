@@ -1,8 +1,9 @@
-import { RundownOrGroupModel } from '@/models/AppModel'
+import { AppModel } from '@/models/AppModel'
+import { GroupModel } from '@/models/GroupModel'
 import { RundownModel } from '@/models/RundownModel'
 import { Mappings } from 'timeline-state-resolver-types'
 
-export const getDefaultMappingLayer = (mappings?: Mappings) => {
+export function getDefaultMappingLayer(mappings?: Mappings) {
 	if (mappings) {
 		// Check length
 		const keys = Object.keys(mappings)
@@ -16,27 +17,28 @@ export const getDefaultMappingLayer = (mappings?: Mappings) => {
 	}
 }
 
-export const getDefaultRundownId = (rundowns: RundownOrGroupModel[]): string | undefined => {
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'rundown') {
-			return rdOrGroup.id
-		} else {
-			// It's a group
-			return getDefaultRundownId(rdOrGroup.rundowns)
-		}
-	}
+export function getDefaultRundown(appData: AppModel):
+	| {
+			group: GroupModel
+			rundown: RundownModel
+			name: string
+	  }
+	| undefined {
+	return getAllRundowns(appData)[0]
 }
 
-export const getAllRundowns = (rundowns: RundownOrGroupModel[]): RundownModel[] => {
-	const foundRundowns: RundownModel[] = []
-	for (const rdOrGroup of rundowns) {
-		if (rdOrGroup.type === 'rundown') {
-			foundRundowns.push(rdOrGroup)
-		} else {
-			const groupRds = getAllRundowns(rdOrGroup.rundowns)
-			foundRundowns.push(...groupRds)
+export function getAllRundowns(appData: AppModel): {
+	group: GroupModel
+	rundown: RundownModel
+	name: string
+}[] {
+	const results: { group: GroupModel; rundown: RundownModel; name: string }[] = []
+
+	for (const group of appData.groups) {
+		for (const rundown of group.rundowns) {
+			results.push({ group, rundown, name: group.transparent ? rundown.name : `${group.name}-${rundown.name}` })
 		}
 	}
 
-	return foundRundowns
+	return results
 }
