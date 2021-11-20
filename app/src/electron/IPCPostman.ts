@@ -206,8 +206,11 @@ export class IPCPostman {
 				return
 			}
 
-			deleteGroup(this._appDataRef, group.id)
+			// Stop the group:
+			group.playing = null
+
 			this.updateTimeline(group)
+			deleteGroup(this._appDataRef, group.id)
 			this._updateViewRef()
 		})
 
