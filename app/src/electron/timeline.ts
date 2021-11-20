@@ -1,3 +1,4 @@
+import { prepareGroupPlayhead } from '@/lib/playhead'
 import { findRundown, hashObj } from '@/lib/util'
 import { AppModel } from '@/models/AppModel'
 import { RundownModel } from '@/models/RundownModel'
@@ -14,13 +15,13 @@ export async function updateTimeline(cache: UpdateTimelineCache, appData: AppMod
 	let groupsToPlay: TimelineObjEmpty[] = []
 
 	for (const group of appData.groups) {
-		if (group.playing) {
+		const groupPlayhead = prepareGroupPlayhead(group)
+
+		if (groupPlayhead) {
 			const timelineGroup: TimelineObjEmpty = {
-				id: group.id,
+				id: `group_${group.id}`,
 				enable: {
-					start: group.playing.startTime,
-					// duration: maxDuration,
-					// repeating: maxDuration,
+					start: groupPlayhead.startTime,
 				},
 				layer: '',
 				content: {
@@ -32,35 +33,21 @@ export async function updateTimeline(cache: UpdateTimelineCache, appData: AppMod
 				children: [],
 			}
 
-			const startRundown = findRundown(group, group.playing.startRundownId)
-			if (!startRundown) continue
-
-			// Add the rundown to the timeline:
-			let obj: TimelineObjEmpty | null = rundownToTimelineObj(startRundown, null)
-			timelineGroup.children?.push(obj)
-
-			if (group.autoPlay) {
-				// Add the rest of the rundowns in the group to the timeline:
-				const startRundownIndex = group.rundowns.findIndex((r) => r.id === startRundown.id)
-				const restRundowns = group.rundowns.slice(startRundownIndex + 1)
-
-				for (const rundown of restRundowns) {
-					obj = rundownToTimelineObj(rundown, obj)
-					timelineGroup.children?.push(obj)
-				}
+			// First, add the rundowns that doesn't loop:
+			for (const rundown of groupPlayhead.rundowns) {
+				// Add the rundown to the timeline:
+				let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
+				timelineGroup.children?.push(obj)
 			}
 
-			if (group.loop) {
-				// Add all rundowns in the group to the timeline, for looping:
-
-				const totalDuration = group.rundowns.reduce((acc, r) => acc + r.resolved.duration, 0)
-
+			// Then add the rundowns that loop:
+			if (groupPlayhead.repeating) {
 				const repeatingObj: TimelineObjEmpty = {
-					id: `${group.id}_repeating`,
+					id: `repeating_${group.id}`,
 					enable: {
-						start: `#${obj.id}.end`,
-						duration: totalDuration,
-						repeating: totalDuration,
+						start: groupPlayhead.duration,
+						duration: groupPlayhead.repeating.duration,
+						repeating: groupPlayhead.repeating.duration,
 					},
 					layer: '',
 					content: {
@@ -71,18 +58,16 @@ export async function updateTimeline(cache: UpdateTimelineCache, appData: AppMod
 					isGroup: true,
 					children: [],
 				}
-
-				obj = null
-				for (const rundown of group.rundowns) {
-					obj = rundownToTimelineObj(rundown, obj)
-					changeTimelineId(obj, (id) => {
-						return `${id}_2`
-					})
-
+				for (const rundown of groupPlayhead.repeating.rundowns) {
+					// Add the rundown to the timeline:
+					let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
+					// We have to modify the ids so that they won't collide with the previous ones:
+					changeTimelineId(obj, (id) => `${id}_2`)
 					repeatingObj.children?.push(obj)
 				}
 				timelineGroup.children?.push(repeatingObj)
 			}
+
 			groupsToPlay.push(timelineGroup)
 		}
 	}
@@ -130,11 +115,11 @@ export async function updateTimeline(cache: UpdateTimelineCache, appData: AppMod
 		}
 	}
 }
-function rundownToTimelineObj(rundown: RundownModel, prev: TimelineObjEmpty | null): TimelineObjEmpty {
+function rundownToTimelineObj(rundown: RundownModel, startTime: number): TimelineObjEmpty {
 	const timelineObj: TimelineObjEmpty = {
 		id: rundown.id,
 		enable: {
-			start: prev ? `#${prev.id}.end` : 0,
+			start: startTime,
 			duration: rundown.resolved.duration,
 		},
 		layer: '',

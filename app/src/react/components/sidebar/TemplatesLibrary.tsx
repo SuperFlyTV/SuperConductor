@@ -82,7 +82,6 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
 									if (!rd) return
 
-									console.log(values, rd)
 									const data: IAddTemplateToTimelineChannel = {
 										groupId: rd.group.id,
 										rundownId: rd.rundown.id,

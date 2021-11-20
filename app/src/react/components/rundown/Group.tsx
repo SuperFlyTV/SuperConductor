@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Toggle from '@atlaskit/toggle'
 import {
 	DELETE_GROUP_CHANNEL,
@@ -7,6 +7,7 @@ import {
 	IToggleAutoPlayLoop,
 	IToggleGroupLoop,
 	NEW_RUNDOWN_CHANNEL,
+	STOP_GROUP_CHANNEL,
 	TOGGLE_GROUP_AUTOPLAY_CHANNEL,
 	TOGGLE_GROUP_LOOP_CHANNEL,
 } from '@/ipc/channels'
@@ -17,38 +18,38 @@ import { Formik, Form, Field, ErrorMessage } from 'formik'
 import { Popup } from '../popup/Popup'
 import { FormRow } from '../sidebar/DataRow'
 import { getGroupPlayhead, GroupPlayhead, GroupPreparedPlayheadData, prepareGroupPlayhead } from '@/lib/playhead'
+import { PlayControlBtn } from '../inputs/PlayControlBtn'
 const { ipcRenderer } = window.require('electron')
 
 export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: string | undefined }> = ({
 	group,
 	selectedTimelineObjId,
 }) => {
-	const [playheadData, setPlayheadData] = useState<GroupPreparedPlayheadData | null>(null)
-	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
-
+	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
 	useEffect(() => {
-		setPlayheadData(prepareGroupPlayhead(group))
+		playheadData.current = prepareGroupPlayhead(group)
 	}, [group])
 
+	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
+	const requestRef = useRef<number>(0)
+	const updatePlayhead = () => {
+		setPlayhead(getGroupPlayhead(playheadData.current))
+		requestRef.current = window.requestAnimationFrame(updatePlayhead)
+	}
 	useEffect(() => {
-		let anim = 0
-		const updatePlayhead = () => {
-			const playhead = getGroupPlayhead(playheadData)
-			setPlayhead(playhead)
-			anim = window.requestAnimationFrame(updatePlayhead)
-		}
-		updatePlayhead()
+		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 		return () => {
-			window.cancelAnimationFrame(anim)
+			window.cancelAnimationFrame(requestRef.current)
 		}
-	}, [playheadData])
-
-	// console.log('is playhead', playhead)
+	}, [])
 
 	const getRundownPlayhead = (rundownId: string): number | null => {
 		if (!playhead) return null
 		if (playhead.rundownId === rundownId) return playhead.time
 		return null
+	}
+	const handleStop = () => {
+		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: group.id })
 	}
 
 	if (group.transparent) {
@@ -58,7 +59,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				selectedTimelineObjId={selectedTimelineObjId}
 				rundown={firstRundown}
 				parentGroup={group}
-				playheadData={playheadData}
 				playheadTime={getRundownPlayhead(firstRundown.id)}
 			/>
 		) : null
@@ -101,6 +101,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 								ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
 							}}
 						/>
+						{playhead && <PlayControlBtn mode={'stop'} onClick={handleStop} />}
 					</div>
 				</div>
 				<div className="group__content">
@@ -110,7 +111,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 							selectedTimelineObjId={selectedTimelineObjId}
 							rundown={rundown}
 							parentGroup={group}
-							playheadData={playheadData}
 							playheadTime={getRundownPlayhead(rundown.id)}
 						/>
 					))}

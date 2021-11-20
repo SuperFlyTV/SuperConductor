@@ -35,7 +35,9 @@ export const App = () => {
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.sidebar')
 		if (!isOnLayer && !isOnSidebar) {
-			ipcRenderer.send(SELECT_TIMELINE_OBJ_CHANNEL, undefined)
+			if (!appData.selectedTimelineObjId) {
+				ipcRenderer.send(SELECT_TIMELINE_OBJ_CHANNEL, undefined)
+			}
 		}
 	}
 
