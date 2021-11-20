@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Toggle from '@atlaskit/toggle'
 import {
 	DELETE_GROUP_CHANNEL,
@@ -17,8 +17,10 @@ import { RundownView } from './Rundown'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import { Popup } from '../popup/Popup'
 import { FormRow } from '../sidebar/DataRow'
-import { getGroupPlayhead, GroupPlayhead, GroupPreparedPlayheadData, prepareGroupPlayhead } from '@/lib/playhead'
+import { getGroupPlayhead, GroupPlayhead, prepareGroupPlayhead } from '@/lib/playhead'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
+import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
+import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
 export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: string | undefined }> = ({
@@ -26,8 +28,24 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 	selectedTimelineObjId,
 }) => {
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
+	const activeRundowns = useRef<{ [rundownId: string]: true }>({})
 	useEffect(() => {
-		playheadData.current = prepareGroupPlayhead(group)
+		playheadData.current = group.playheadData
+
+		const activeRundowns0: { [rundownId: string]: true } = {}
+
+		if (group.playheadData) {
+			for (const rundown of group.playheadData.rundowns) {
+				activeRundowns0[rundown.rundown.id] = true
+			}
+			if (group.playheadData.repeating) {
+				for (const rundown of group.playheadData.repeating.rundowns) {
+					activeRundowns0[rundown.rundown.id] = true
+				}
+			}
+		}
+		console.log('activeRundowns0', activeRundowns0)
+		activeRundowns.current = activeRundowns0
 	}, [group])
 
 	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
@@ -43,14 +61,22 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 		}
 	}, [])
 
-	const getRundownPlayhead = (rundownId: string): number | null => {
-		if (!playhead) return null
-		if (playhead.rundownId === rundownId) return playhead.time
-		return null
-	}
-	const handleStop = () => {
-		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: group.id })
-	}
+	/** Whether we're allowed to stop playing */
+	const stopPlayingRef = useRef(true)
+	useEffect(() => {
+		if (group.playheadData && !playhead) {
+			// We believe that we are are playing, but we don't have a playhead.
+			// That probably means that we have reached the end.
+
+			if (stopPlayingRef.current) {
+				console.log('Auto-stopping group', group.id)
+				ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: group.id })
+				stopPlayingRef.current = false
+			}
+		} else {
+			stopPlayingRef.current = true
+		}
+	}, [playhead])
 
 	if (group.transparent) {
 		const firstRundown = group.rundowns[0]
@@ -59,7 +85,8 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				selectedTimelineObjId={selectedTimelineObjId}
 				rundown={firstRundown}
 				parentGroup={group}
-				playheadTime={getRundownPlayhead(firstRundown.id)}
+				playhead={playhead}
+				isActive={!!activeRundowns.current[firstRundown.id]}
 			/>
 		) : null
 	} else {
@@ -101,7 +128,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 								ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
 							}}
 						/>
-						{playhead && <PlayControlBtn mode={'stop'} onClick={handleStop} />}
 					</div>
 				</div>
 				<div className="group__content">
@@ -111,7 +137,8 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 							selectedTimelineObjId={selectedTimelineObjId}
 							rundown={rundown}
 							parentGroup={group}
-							playheadTime={getRundownPlayhead(rundown.id)}
+							playhead={playhead}
+							isActive={!!activeRundowns.current[rundown.id]}
 						/>
 					))}
 

@@ -17,13 +17,16 @@ import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { GroupModel } from '@/models/GroupModel'
 import { RundownModel } from '@/models/RundownModel'
+import { GroupPlayhead } from '@/lib/playhead'
+import classNames from 'classnames'
 
 export const RundownView: React.FC<{
 	selectedTimelineObjId: string | undefined
 	rundown: RundownModel
 	parentGroup: GroupModel
-	playheadTime: number | null
-}> = ({ selectedTimelineObjId, rundown, parentGroup, playheadTime }) => {
+	playhead: GroupPlayhead | null
+	isActive: boolean
+}> = ({ selectedTimelineObjId, rundown, parentGroup, playhead, isActive }) => {
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
@@ -31,15 +34,10 @@ export const RundownView: React.FC<{
 		return { maxDuration, resolvedTimeline }
 	}, [rundown.timeline])
 
-	const isPlaying = parentGroup.playing?.startRundownId === rundown.id
-
-	const handlePlayControl = () => {
-		if (isPlaying) {
-			handleStop()
-		} else {
-			handleStart()
-		}
-	}
+	const isRundownPlaying = playhead?.rundownId === rundown.id
+	const isGroupPlaying = !!playhead
+	const playheadTime = isRundownPlaying ? playhead.playheadTime : 0
+	const countDownTime = isRundownPlaying ? playhead.rundownEndTime - playhead.playheadTime : 0
 
 	const handleStart = () => {
 		const data: IPlayRundown = { groupId: parentGroup.id, rundownId: rundown.id }
@@ -56,17 +54,23 @@ export const RundownView: React.FC<{
 	}
 
 	return (
-		<div className="rundown">
+		<div
+			className={classNames('rundown', {
+				active: isActive,
+			})}
+		>
 			<div className="rundown__meta">
 				<div className="title">{rundown.name}</div>
 				<div className="controls">
-					<PlayControlBtn mode={isPlaying ? 'stop' : 'play'} onClick={handlePlayControl} />
+					<PlayControlBtn mode={'play'} onClick={handleStart} />
+					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!isGroupPlaying} />
 					<QueueBtn />
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
 			<div className="rundown__timeline">
 				{playheadTime ? <div className="rundown__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
+				{countDownTime ? <div className="rundown__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
 				<div className="rundown__timeline__duration">{msToTime(maxDuration)}</div>
 				<div className="layers-wrapper">
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / maxDuration + '%'} /> : null}

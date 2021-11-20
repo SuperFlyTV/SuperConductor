@@ -5,10 +5,14 @@
 
 	margin-top: 2rem;
 
+	&.active {
+		border-color: $rundownActiveColor;
+	}
+
 	&__meta {
 		background-color: $rundownOutlineColor;
 		padding: 1rem 1.5rem;
-		width: 18rem;
+		width: 20rem;
 		flex-shrink: 0;
 
 		& > .title {
@@ -45,6 +49,20 @@
 			color: white;
 			background-color: $accentBg;
 			padding: 0.2rem 0.5rem;
+
+			z-index: 11;
+		}
+		&__remaining-time {
+			position: absolute;
+			transform: translateY(-100%);
+			right: 0;
+			font-size: 1.3rem;
+			margin-top: -1.2rem;
+			color: white;
+			background-color: $accentBg;
+			padding: 0.2rem 0.5rem;
+
+			z-index: 12;
 		}
 
 		&__duration {
@@ -53,6 +71,8 @@
 			right: 0;
 			font-size: 1.3rem;
 			margin-top: -1.2rem;
+
+			z-index: 10;
 		}
 	}
 }

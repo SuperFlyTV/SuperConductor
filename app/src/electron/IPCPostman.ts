@@ -100,8 +100,8 @@ export class IPCPostman {
 				}
 			}
 
+			this.updateTimeline(group)
 			this._updateViewRef()
-			this.updateTimeline()
 		})
 
 		ipcMain.on(STOP_GROUP_CHANNEL, async (event, arg) => {
@@ -113,8 +113,8 @@ export class IPCPostman {
 			// Stop the group:
 			group.playing = null
 
+			this.updateTimeline(group)
 			this._updateViewRef()
-			this.updateTimeline()
 		})
 
 		ipcMain.on(SELECT_TIMELINE_OBJ_CHANNEL, async (event, arg) => {
@@ -161,6 +161,7 @@ export class IPCPostman {
 					autoPlay: false,
 					loop: false,
 					playing: null,
+					playheadData: null,
 				}
 				this._appDataRef.groups.push(newGroup)
 			}
@@ -176,6 +177,7 @@ export class IPCPostman {
 				autoPlay: false,
 				loop: false,
 				playing: null,
+				playheadData: null,
 			}
 			this._appDataRef.groups.push(newGroup)
 			this._updateViewRef()
@@ -195,13 +197,18 @@ export class IPCPostman {
 			}
 
 			this._updateViewRef()
-			this.updateTimeline()
 		})
 
 		ipcMain.on(DELETE_GROUP_CHANNEL, async (event, arg: IDeleteGroup) => {
-			deleteGroup(this._appDataRef, arg.groupId)
+			const group = findGroup(this._appDataRef, arg.groupId)
+			if (!group) {
+				console.error(`Group ${arg.groupId} not found.`)
+				return
+			}
+
+			deleteGroup(this._appDataRef, group.id)
+			this.updateTimeline(group)
 			this._updateViewRef()
-			this.updateTimeline()
 		})
 
 		/**
@@ -254,7 +261,6 @@ export class IPCPostman {
 
 			if (modified?.rundown) this.updateRundown(modified?.rundown)
 			this._updateViewRef()
-			if (modified?.group.playing) this.updateTimeline()
 		})
 
 		ipcMain.on(ADD_MEDIA_TO_TIMELINE_CHANNEL, async (event, arg: IAddMediaToTimelineChannel) => {
@@ -296,7 +302,6 @@ export class IPCPostman {
 
 			this.updateRundown(rundown)
 			this._updateViewRef()
-			if (group.playing) this.updateTimeline()
 		})
 
 		ipcMain.on(ADD_TEMPLATE_TO_TIMELINE_CHANNEL, async (event, arg: IAddTemplateToTimelineChannel) => {
@@ -333,7 +338,6 @@ export class IPCPostman {
 
 			this.updateRundown(rundown)
 			this._updateViewRef()
-			if (group.playing) this.updateTimeline()
 		})
 
 		ipcMain.on(TOGGLE_GROUP_LOOP_CHANNEL, async (event, arg: IToggleGroupLoop) => {
@@ -343,7 +347,6 @@ export class IPCPostman {
 			group.loop = arg.value
 
 			this._updateViewRef()
-			if (group.playing) this.updateTimeline()
 		})
 		ipcMain.on(TOGGLE_GROUP_AUTOPLAY_CHANNEL, async (event, arg: IToggleAutoPlayLoop) => {
 			const group = findGroup(this._appDataRef, arg.groupId)
@@ -352,7 +355,6 @@ export class IPCPostman {
 			group.autoPlay = arg.value
 
 			this._updateViewRef()
-			if (group.playing) this.updateTimeline()
 		})
 	}
 
@@ -365,7 +367,7 @@ export class IPCPostman {
 		}
 	}
 
-	updateTimeline() {
-		updateTimeline(this.updateTimelineCache, this._appDataRef)
+	updateTimeline(group: GroupModel) {
+		group.playheadData = updateTimeline(this.updateTimelineCache, this._appDataRef, group)
 	}
 }

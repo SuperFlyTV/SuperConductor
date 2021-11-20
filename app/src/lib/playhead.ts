@@ -1,4 +1,5 @@
 import { GroupModel } from '@/models/GroupModel'
+import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
 import { RundownModel } from '@/models/RundownModel'
 import { findRundown } from './util'
 
@@ -6,14 +7,13 @@ import { findRundown } from './util'
  * @see GroupPreparedPlayheadData
  */
 export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadData | null {
-	const data: GroupPreparedPlayheadData = {
-		startTime: 0,
-		duration: 0,
-		rundowns: [],
-		repeating: null,
-	}
-
 	if (group.playing) {
+		const data: GroupPreparedPlayheadData = {
+			startTime: 0,
+			duration: 0,
+			rundowns: [],
+			repeating: null,
+		}
 		data.startTime = group.playing.startTime
 
 		const startRundown = findRundown(group, group.playing.startRundownId)
@@ -77,34 +77,9 @@ export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadDa
 				}
 			}
 		}
+		return data
 	}
-	return data
-}
-/**
- * Defines how the rundowns will be played.
- * First there is the array of rundowns that will be played in order.
- * Then there is the repeating array of rundowns that will be played afterwards, and looped.
- */
-export interface GroupPreparedPlayheadData {
-	/** Timestamp, starting time of the first rundown-to-be-played */
-	startTime: number
-	/** Total duration of the rundowns in .rundowns. */
-	duration: number
-	rundowns: {
-		/**
-		 * The point in time the rundown starts to play. (Starts at 0, relative to GroupPreparedPlayheadData.startTime) */
-		startTime: number
-		rundown: RundownModel
-	}[]
-
-	repeating: {
-		duration: number
-		rundowns: {
-			/** The point in time the rundown starts to play. (Starts at 0, relative to when the repeating starts. ie startTime + duration) */
-			startTime: number
-			rundown: RundownModel
-		}[]
-	} | null
+	return null
 }
 
 /**
@@ -117,11 +92,13 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 		if (now >= data.startTime && now < data.startTime + data.duration) {
 			for (const rundown of data.rundowns) {
 				const rundownStartTime = data.startTime + rundown.startTime
+				const rundownEndTime = rundownStartTime + rundown.rundown.resolved.duration
 
-				if (now >= rundownStartTime && now < rundownStartTime + rundown.rundown.resolved.duration) {
+				if (now >= rundownStartTime && now < rundownEndTime) {
 					return {
 						rundownId: rundown.rundown.id,
-						time: now - rundownStartTime,
+						playheadTime: now - rundownStartTime,
+						rundownEndTime: rundown.rundown.resolved.duration,
 					}
 				}
 			}
@@ -136,7 +113,8 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 				if (nowInRepeating >= rundown.startTime && nowInRepeating < rundownEndTime) {
 					return {
 						rundownId: rundown.rundown.id,
-						time: nowInRepeating - rundown.startTime,
+						playheadTime: nowInRepeating - rundown.startTime,
+						rundownEndTime: rundown.rundown.resolved.duration,
 					}
 				}
 			}
@@ -147,5 +125,6 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 }
 export interface GroupPlayhead {
 	rundownId: string
-	time: number
+	playheadTime: number
+	rundownEndTime: number
 }
