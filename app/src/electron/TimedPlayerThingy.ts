@@ -6,33 +6,44 @@ import { IPCPostman } from './IPCPostman'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { GroupModel } from '@/models/GroupModel'
 
 export class TimedPlayerThingy {
-	mainWindow: BrowserWindow
 	appData = appMock
-	ipcPostman: IPCPostman
-	tptCaspar: TPTCasparCG
 
-	constructor(mainWindow: BrowserWindow) {
+	mainWindow?: BrowserWindow
+	ipcPostman?: IPCPostman
+	tptCaspar?: TPTCasparCG
+
+	windowPosition: WindowPosition = {
+		y: 0,
+		x: 0,
+		width: 1200,
+		height: 600,
+	}
+
+	constructor() {
+		this.loadAppData()
+	}
+
+	initWindow(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
 
 		this.ipcPostman = new IPCPostman(
 			this.appData,
 			this.updateView.bind(this),
 			() => {
-				this.tptCaspar.fetchAndSetMedia()
+				this.tptCaspar?.fetchAndSetMedia()
 			},
 			() => {
-				this.tptCaspar.fetchAndSetTemplates()
+				this.tptCaspar?.fetchAndSetTemplates()
 			}
 		)
 		this.tptCaspar = new TPTCasparCG(this.appData, this.updateView.bind(this))
-
-		this.handleOnOpen()
 	}
 
 	updateView() {
-		this.mainWindow.webContents.send(APP_FEED_CHANNEL, this.appData)
+		this.mainWindow?.webContents.send(APP_FEED_CHANNEL, this.appData)
 
 		this.saveAppData()
 	}
@@ -45,14 +56,20 @@ export class TimedPlayerThingy {
 		return path.join(this.getTptDir(), 'appData.json')
 	}
 
-	handleOnOpen() {
+	loadAppData() {
 		try {
 			const read = fs.readFileSync(this.getAppDataPath())
-			const data = read.toString()
 
-			this.appData.groups = JSON.parse(data)
+			const storedData = JSON.parse(read.toString()) as Storage
+
+			console.log('storedData', storedData)
+
+			if (storedData) {
+				if (storedData.groups) this.appData.groups = storedData.groups
+				if (storedData.windowPosition) this.windowPosition = storedData.windowPosition
+			}
 		} catch (error) {
-			console.log('No rundowns.json found.')
+			console.log(`No file found.`)
 		}
 	}
 
@@ -64,9 +81,25 @@ export class TimedPlayerThingy {
 				fs.mkdirSync(tptDirPath)
 			}
 
-			fs.writeFileSync(this.getAppDataPath(), JSON.stringify(this.appData.groups), 'utf-8')
+			const store: Storage = {
+				groups: this.appData.groups,
+				windowPosition: this.windowPosition,
+			}
+
+			fs.writeFileSync(this.getAppDataPath(), JSON.stringify(store), 'utf-8')
 		} catch (e) {
 			alert('Failed to save the file!')
 		}
 	}
+}
+
+interface Storage {
+	groups: GroupModel[]
+	windowPosition: WindowPosition
+}
+interface WindowPosition {
+	y: number
+	x: number
+	width: number
+	height: number
 }
