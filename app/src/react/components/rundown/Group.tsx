@@ -26,7 +26,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 	selectedTimelineObjId,
 }) => {
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
-	const activeRundowns = useRef<{ [rundownId: string]: true }>({})
+	const [activeRundowns, setActiveRundowns] = useState<{ [rundownId: string]: true }>({})
 	useEffect(() => {
 		playheadData.current = group.playheadData
 
@@ -42,7 +42,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				}
 			}
 		}
-		activeRundowns.current = activeRundowns0
+		setActiveRundowns(activeRundowns0)
 	}, [group])
 
 	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
@@ -83,7 +83,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				rundown={firstRundown}
 				parentGroup={group}
 				playhead={playhead}
-				isActive={!!activeRundowns.current[firstRundown.id]}
+				isActive={!!activeRundowns[firstRundown.id]}
 			/>
 		) : null
 	} else {
@@ -135,7 +135,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 							rundown={rundown}
 							parentGroup={group}
 							playhead={playhead}
-							isActive={!!activeRundowns.current[rundown.id]}
+							isActive={!!activeRundowns[rundown.id]}
 						/>
 					))}
 
