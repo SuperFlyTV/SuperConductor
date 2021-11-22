@@ -83,9 +83,12 @@ export function updateTimeline(
 		}).catch(console.error)
 	}
 
+	// This is a hack to make TSR able to survive a restart. We should handle this better in the future.
+	const HACK_ALLWAYS_SEND_MAPPINGS = true
+
 	// Check if the meppings need to be re-rent:
 	const mappingsHash = hashObj(appData.mappings)
-	if (cache.mappingsHash !== mappingsHash) {
+	if (cache.mappingsHash !== mappingsHash || HACK_ALLWAYS_SEND_MAPPINGS) {
 		cache.mappingsHash = mappingsHash
 
 		// The mappings have changed, send updates to TSR:
