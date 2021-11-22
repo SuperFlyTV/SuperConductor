@@ -16,8 +16,8 @@ export class TimedPlayerThingy {
 	tptCaspar?: TPTCasparCG
 
 	windowPosition: WindowPosition = {
-		y: 0,
-		x: 0,
+		y: undefined,
+		x: undefined,
 		width: 1200,
 		height: 600,
 	}
@@ -97,9 +97,17 @@ interface Storage {
 	groups: GroupModel[]
 	windowPosition: WindowPosition
 }
-interface WindowPosition {
-	y: number
-	x: number
-	width: number
-	height: number
-}
+type WindowPosition =
+	| {
+			y: number
+			x: number
+			width: number
+			height: number
+	  }
+	| {
+			// Note: undefined will center the window
+			y: undefined
+			x: undefined
+			width: number
+			height: number
+	  }

@@ -18,9 +18,11 @@ const createWindow = (): void => {
 		},
 	})
 
-	// Hack to make it work on Windows with multi-dpi screens
-	// Ref: https://github.com/electron/electron/pull/10972
-	win.setBounds(tpt.windowPosition)
+	if (tpt.windowPosition.x !== undefined) {
+		// Hack to make it work on Windows with multi-dpi screens
+		// Ref: https://github.com/electron/electron/pull/10972
+		win.setBounds(tpt.windowPosition)
+	}
 
 	tpt.initWindow(win)
 
@@ -61,10 +63,10 @@ const createWindow = (): void => {
 		tpt.windowPosition.width = newBounds.width
 		tpt.windowPosition.height = newBounds.height
 	}
-	win.on('resized', (event: any) => {
+	win.on('resized', () => {
 		updateSizeAndPosition()
 	})
-	win.on('moved', (event: any) => {
+	win.on('moved', () => {
 		updateSizeAndPosition()
 	})
 }
