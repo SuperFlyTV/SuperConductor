@@ -20,6 +20,13 @@ export function updateTimeline(
 ): GroupPreparedPlayheadData | null {
 	const groupPlayhead = prepareGroupPlayhead(group)
 
+	const idCount = new Map<string, number>()
+	const getUniqueId = (id: string): string => {
+		const count = idCount.get(id) || 0
+		idCount.set(id, count + 1)
+		return `${id}:${count}`
+	}
+
 	if (groupPlayhead) {
 		const timelineGroup: TimelineObjEmpty = {
 			id: `group_${group.id}`,
@@ -40,6 +47,8 @@ export function updateTimeline(
 		for (const rundown of groupPlayhead.rundowns) {
 			// Add the rundown to the timeline:
 			let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
+
+			changeTimelineId(obj, (id) => getUniqueId(id))
 			timelineGroup.children?.push(obj)
 		}
 
@@ -65,7 +74,7 @@ export function updateTimeline(
 				// Add the rundown to the timeline:
 				let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
 				// We have to modify the ids so that they won't collide with the previous ones:
-				changeTimelineId(obj, (id) => `${id}_2`)
+				changeTimelineId(obj, (id) => getUniqueId(id))
 				repeatingObj.children?.push(obj)
 			}
 			timelineGroup.children?.push(repeatingObj)

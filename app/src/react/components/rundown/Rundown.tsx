@@ -10,6 +10,7 @@ import {
 	IDeleteRundown,
 	IPlayRundown,
 	PLAY_RUNDOWN_CHANNEL,
+	QUEUE_RUNDOWN_GROUP_CHANNEL,
 	STOP_GROUP_CHANNEL,
 } from '@/ipc/channels'
 import { msToTime } from '@/lib/msToTime'
@@ -39,6 +40,11 @@ export const RundownView: React.FC<{
 	const playheadTime = isRundownPlaying ? playhead.playheadTime : 0
 	const countDownTime = isRundownPlaying ? playhead.rundownEndTime - playhead.playheadTime : 0
 
+	const queuedPositions: number[] = []
+	parentGroup.playing?.queuedRundownIds.forEach((rundownId, index) => {
+		if (rundownId === rundown.id) queuedPositions.push(index)
+	})
+
 	const handleStart = () => {
 		const data: IPlayRundown = { groupId: parentGroup.id, rundownId: rundown.id }
 		ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, data)
@@ -46,6 +52,9 @@ export const RundownView: React.FC<{
 
 	const handleStop = () => {
 		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: parentGroup.id })
+	}
+	const handleQueue = () => {
+		ipcRenderer.send(QUEUE_RUNDOWN_GROUP_CHANNEL, { groupId: parentGroup.id, rundownId: rundown.id })
 	}
 
 	const handleDelete = () => {
@@ -64,7 +73,11 @@ export const RundownView: React.FC<{
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!isGroupPlaying} />
-					<QueueBtn />
+					<QueueBtn
+						label={queuedPositions.map((index) => index + 1).join(',')}
+						onClick={handleQueue}
+						disabled={!isGroupPlaying || playhead.isInRepeating}
+					/>
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>

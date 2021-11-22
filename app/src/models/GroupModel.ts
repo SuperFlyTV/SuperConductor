@@ -18,6 +18,8 @@ export type GroupModel = {
 		startTime: number
 		/** The id of the rundown we started playing */
 		startRundownId: string
+		/** The id of the rundowns queued */
+		queuedRundownIds: string[]
 	} | null
 
 	/** This is populated by the backend, as the timeline is build. */

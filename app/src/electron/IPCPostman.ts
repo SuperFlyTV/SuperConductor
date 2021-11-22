@@ -37,6 +37,8 @@ import {
 	TOGGLE_GROUP_AUTOPLAY_CHANNEL,
 	IToggleAutoPlayLoop,
 	INewGroup,
+	QUEUE_RUNDOWN_GROUP_CHANNEL,
+	IQueueRundown,
 } from '@/ipc/channels'
 
 import {
@@ -96,6 +98,32 @@ export class IPCPostman {
 					group.playing = {
 						startTime: Date.now(),
 						startRundownId: arg.rundownId,
+						queuedRundownIds: [],
+					}
+				}
+			}
+
+			this.updateTimeline(group)
+			this._updateViewRef()
+		})
+
+		ipcMain.on(QUEUE_RUNDOWN_GROUP_CHANNEL, async (event, arg: IQueueRundown) => {
+			const group = findGroup(this._appDataRef, arg.groupId)
+			if (!group) {
+				console.error(`Group ${arg.groupId} not found.`)
+				return
+			} else {
+				const rd = findRundown(group, arg.rundownId)
+				if (!rd) {
+					console.error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
+					return
+				} else {
+					if (group.playing) {
+						// Add the rundown to the queue:
+						group.playing.queuedRundownIds.push(rd.id)
+					} else {
+						console.error(`Rundown ${arg.rundownId} not playing`)
+						return
 					}
 				}
 			}

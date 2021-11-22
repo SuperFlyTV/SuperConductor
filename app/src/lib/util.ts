@@ -6,6 +6,7 @@ import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { prepareGroupPlayhead } from './playhead'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
 	for (const item of mediaList) {
@@ -53,7 +54,18 @@ export const deleteGroup = (appData: AppModel, groupId: string): void => {
 	appData.groups = appData.groups.filter((g) => g.id !== groupId)
 }
 export const deleteRundown = (group: GroupModel, rundownId: string): void => {
+	const rundown = findRundown(group, rundownId)
+
 	group.rundowns = group.rundowns.filter((r) => r.id !== rundownId)
+	if (group.playing) {
+		group.playing.queuedRundownIds = group.playing.queuedRundownIds.filter((id) => id !== rundownId)
+
+		// If we're removing the one which is playing, we need to figure out what to play instead:
+		if (group.playing.startRundownId === rundownId) {
+			// TODO: Should we handle this?
+			// const playheadData = prepareGroupPlayhead(group)
+		}
+	}
 }
 export const deleteTimelineObj = (
 	appData: AppModel,

@@ -18,6 +18,14 @@ export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadDa
 
 		const startRundown = findRundown(group, group.playing.startRundownId)
 		if (startRundown) {
+			let currentRundown: RundownModel = startRundown
+
+			const queuedRundowns: RundownModel[] = []
+			for (const rundownId of group.playing.queuedRundownIds) {
+				const rundown = findRundown(group, rundownId)
+				if (rundown) queuedRundowns.push(rundown)
+			}
+
 			if (group.loop && !group.autoPlay) {
 				// Only loop the one rundown:
 
@@ -34,19 +42,33 @@ export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadDa
 					],
 				}
 			} else {
+				/** The startTime of the next Rundown. */
 				let nextStartTime = 0
 
+				// Add the starting Rundown:
 				data.rundowns.push({
 					startTime: nextStartTime,
 					rundown: startRundown,
 				})
-				data.duration = startRundown.resolved.duration // might be overwritten later..
+				currentRundown = startRundown
 				nextStartTime += startRundown.resolved.duration
+				data.duration = nextStartTime // Note: This might be overwritten later..
+
+				// Add the queued Rundowns:
+				for (const rundown of queuedRundowns) {
+					data.rundowns.push({
+						startTime: nextStartTime,
+						rundown,
+					})
+					currentRundown = rundown
+					nextStartTime += rundown.resolved.duration
+				}
+				data.duration = nextStartTime
 
 				if (group.autoPlay) {
-					// Add the rest of the rundowns in the group into the timeline:
-					const startRundownIndex = group.rundowns.findIndex((r) => r.id === startRundown.id)
-					const restRundowns = group.rundowns.slice(startRundownIndex + 1)
+					// Add the rest of the Rundowns in the group:
+					const currentRundownIndex = group.rundowns.findIndex((r) => r.id === currentRundown.id)
+					const restRundowns = group.rundowns.slice(currentRundownIndex + 1)
 
 					for (const rundown of restRundowns) {
 						data.rundowns.push({
@@ -99,6 +121,8 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 						rundownId: rundown.rundown.id,
 						playheadTime: now - rundownStartTime,
 						rundownEndTime: rundown.rundown.resolved.duration,
+
+						isInRepeating: false,
 					}
 				}
 			}
@@ -115,6 +139,8 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 						rundownId: rundown.rundown.id,
 						playheadTime: nowInRepeating - rundown.startTime,
 						rundownEndTime: rundown.rundown.resolved.duration,
+
+						isInRepeating: true,
 					}
 				}
 			}
@@ -127,4 +153,7 @@ export interface GroupPlayhead {
 	rundownId: string
 	playheadTime: number
 	rundownEndTime: number
+
+	/** Whether the playhead has entered the repeating part of rundowns */
+	isInRepeating: boolean
 }
