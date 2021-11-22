@@ -44,10 +44,10 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 						</tr>
 					</thead>
 					<tbody>
-						{props.appData.templates.map((item) => {
+						{props.appData.templates.map((item, index) => {
 							return (
 								<tr
-									key={item.name}
+									key={index}
 									onClick={() => {
 										if (selectedFilename === item.name) {
 											setSelectedFilename(undefined)

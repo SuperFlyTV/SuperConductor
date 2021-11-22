@@ -49,10 +49,10 @@ export const MediaLibrary = (props: PropsType) => {
 						</tr>
 					</thead>
 					<tbody>
-						{props.appData.media.map((item) => {
+						{props.appData.media.map((item, index) => {
 							return (
 								<tr
-									key={item.name}
+									key={index}
 									onClick={() => {
 										if (selectedFilename === item.name) {
 											setSelectedFilename(undefined)
