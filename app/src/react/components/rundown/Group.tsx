@@ -17,10 +17,8 @@ import { RundownView } from './Rundown'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import { Popup } from '../popup/Popup'
 import { FormRow } from '../sidebar/DataRow'
-import { getGroupPlayhead, GroupPlayhead, prepareGroupPlayhead } from '@/lib/playhead'
-import { PlayControlBtn } from '../inputs/PlayControlBtn'
+import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-import classNames from 'classnames'
 const { ipcRenderer } = window.require('electron')
 
 export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: string | undefined }> = ({
@@ -44,7 +42,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				}
 			}
 		}
-		console.log('activeRundowns0', activeRundowns0)
 		activeRundowns.current = activeRundowns0
 	}, [group])
 
@@ -178,7 +175,7 @@ const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Rundown name" />
+									<Field id="name" name="name" placeholder="Rundown name" autoFocus={true} />
 									<ErrorMessage name="name" component="div" />
 								</FormRow>
 								<div className="btn-row-right">

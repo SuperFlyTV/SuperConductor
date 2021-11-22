@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { Popup } from '../popup/Popup'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { ErrorMessage, Field, Form, Formik, FormikProps } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
 import { INewGroup, INewRundown, NEW_GROUP_CHANNEL, NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { GroupView } from './Group'
@@ -55,7 +55,7 @@ const GroupListOptions: React.FC<{}> = () => {
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Rundown name" />
+									<Field id="name" name="name" placeholder="Rundown name" autoFocus={true} />
 									<ErrorMessage name="name" component="div" />
 								</FormRow>
 								<div className="btn-row-right">
@@ -88,7 +88,7 @@ const GroupListOptions: React.FC<{}> = () => {
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Group name" />
+									<Field id="name" name="name" placeholder="Group name" autoFocus={true} />
 									<ErrorMessage name="name" component="div" />
 								</FormRow>
 								<div className="btn-row-right">
