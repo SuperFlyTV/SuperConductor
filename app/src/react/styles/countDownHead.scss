@@ -1,0 +1,17 @@
+.countDownHead {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 5;
+	height: 100%;
+	width: 100%;
+	pointer-events: none;
+
+	.line {
+		position: absolute;
+		bottom: 0;
+		height: 100%;
+		width: 0.2rem;
+		background-color: $lightGreenColor;
+	}
+}

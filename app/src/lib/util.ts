@@ -6,7 +6,6 @@ import { RundownModel } from '@/models/RundownModel'
 import { TemplateModel } from '@/models/TemplateModel'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { prepareGroupPlayhead } from './playhead'
 
 export const findMedia = (mediaList: MediaModel[], filename: string) => {
 	for (const item of mediaList) {

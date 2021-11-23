@@ -59,9 +59,10 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 	}, [])
 
 	/** Whether we're allowed to stop playing */
+	const wasPlayingRef = useRef(false)
 	const stopPlayingRef = useRef(true)
 	useEffect(() => {
-		if (group.playheadData && !playhead) {
+		if (group.playheadData && !playhead && wasPlayingRef.current) {
 			// We believe that we are are playing, but we don't have a playhead.
 			// That probably means that we have reached the end.
 
@@ -73,6 +74,13 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 		} else {
 			stopPlayingRef.current = true
 		}
+
+		// We are definitely playing
+		if (group.playheadData && playhead) {
+			wasPlayingRef.current = true
+		} else {
+			wasPlayingRef.current = false
+		}
 	}, [playhead])
 
 	if (group.transparent) {
@@ -83,7 +91,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 				rundown={firstRundown}
 				parentGroup={group}
 				playhead={playhead}
-				isActive={!!activeRundowns[firstRundown.id]}
 			/>
 		) : null
 	} else {
@@ -135,7 +142,6 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 							rundown={rundown}
 							parentGroup={group}
 							playhead={playhead}
-							isActive={!!activeRundowns[rundown.id]}
 						/>
 					))}
 

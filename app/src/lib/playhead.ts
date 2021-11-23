@@ -119,22 +119,40 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 	if (data) {
 		const now = Date.now()
 
+		let foundRundown = false
+
+		const playhead: GroupPlayhead = {
+			rundownId: '',
+			playheadTime: 0,
+			rundownEndTime: 0,
+			isInRepeating: false,
+			timeUntilRundowns: {},
+		}
+		const addTimeUntilRundown = (rundown: RundownModel, time: number) => {
+			if (time < 0) return
+
+			if (!playhead.timeUntilRundowns[rundown.id]) playhead.timeUntilRundowns[rundown.id] = []
+			playhead.timeUntilRundowns[rundown.id].push(time)
+		}
+
 		if (now >= data.startTime && now < data.startTime + data.duration) {
 			for (const rundown of data.rundowns) {
 				const rundownStartTime = data.startTime + rundown.startTime
 				const rundownEndTime = rundownStartTime + rundown.rundown.resolved.duration
 
-				if (now >= rundownStartTime && now < rundownEndTime) {
-					return {
-						rundownId: rundown.rundown.id,
-						playheadTime: now - rundownStartTime,
-						rundownEndTime: rundown.rundown.resolved.duration,
+				addTimeUntilRundown(rundown.rundown, rundownStartTime - now)
 
-						isInRepeating: false,
-					}
+				if (now >= rundownStartTime && now < rundownEndTime) {
+					playhead.rundownId = rundown.rundown.id
+					playhead.playheadTime = now - rundownStartTime
+					playhead.rundownEndTime = rundown.rundown.resolved.duration
+					playhead.isInRepeating = false
 				}
 			}
-		} else if (data.repeating && now >= data.startTime + data.duration) {
+		}
+
+		if (data.repeating) {
+			// now >= data.startTime + data.duration
 			// In the repeating section
 
 			const repeatingStartTime = data.startTime + data.duration
@@ -142,17 +160,20 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 
 			for (const rundown of data.repeating.rundowns) {
 				const rundownEndTime = rundown.startTime + rundown.rundown.resolved.duration
-				if (nowInRepeating >= rundown.startTime && nowInRepeating < rundownEndTime) {
-					return {
-						rundownId: rundown.rundown.id,
-						playheadTime: nowInRepeating - rundown.startTime,
-						rundownEndTime: rundown.rundown.resolved.duration,
 
-						isInRepeating: true,
-					}
+				const timeUntilRundown = rundown.startTime - nowInRepeating
+				addTimeUntilRundown(rundown.rundown, timeUntilRundown)
+				addTimeUntilRundown(rundown.rundown, timeUntilRundown + data.repeating.duration) // Also add for the next loop
+
+				if (nowInRepeating >= rundown.startTime && nowInRepeating < rundownEndTime) {
+					playhead.rundownId = rundown.rundown.id
+					playhead.playheadTime = nowInRepeating - rundown.startTime
+					playhead.rundownEndTime = rundown.rundown.resolved.duration
+					playhead.isInRepeating = true
 				}
 			}
 		}
+		return playhead
 	}
 
 	return null
@@ -164,4 +185,6 @@ export interface GroupPlayhead {
 
 	/** Whether the playhead has entered the repeating part of rundowns */
 	isInRepeating: boolean
+
+	timeUntilRundowns: { [rundownId: string]: number[] }
 }

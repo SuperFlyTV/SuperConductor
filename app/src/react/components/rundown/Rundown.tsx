@@ -22,14 +22,14 @@ import { RundownModel } from '@/models/RundownModel'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { getKeyTracker } from '@/lib/KeyTracker'
+import { CountDownHead } from './CountdownHead'
 
 export const RundownView: React.FC<{
 	selectedTimelineObjId: string | undefined
 	rundown: RundownModel
 	parentGroup: GroupModel
 	playhead: GroupPlayhead | null
-	isActive: boolean
-}> = ({ selectedTimelineObjId, rundown, parentGroup, playhead, isActive }) => {
+}> = ({ selectedTimelineObjId, rundown, parentGroup, playhead }) => {
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
@@ -39,6 +39,10 @@ export const RundownView: React.FC<{
 
 	const isRundownPlaying = playhead?.rundownId === rundown.id
 	const isGroupPlaying = !!playhead
+
+	const isActive: 'active' | 'queued' | null = isRundownPlaying ? 'active' : isGroupPlaying ? 'queued' : null
+
+	const timesUntilStart = isGroupPlaying && playhead.timeUntilRundowns[rundown.id]
 	const playheadTime = isRundownPlaying ? playhead.playheadTime : 0
 	const countDownTime = isRundownPlaying ? playhead.rundownEndTime - playhead.playheadTime : 0
 
@@ -92,7 +96,8 @@ export const RundownView: React.FC<{
 	return (
 		<div
 			className={classNames('rundown', {
-				active: isActive,
+				active: isActive === 'active',
+				queued: isActive === 'queued',
 			})}
 		>
 			<div className="rundown__meta">
@@ -120,6 +125,13 @@ export const RundownView: React.FC<{
 				{playheadTime ? <div className="rundown__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
 				{countDownTime ? <div className="rundown__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
 				<div className="rundown__timeline__duration">{msToTime(maxDuration)}</div>
+
+				<div className="countdown-wrapper">
+					{timesUntilStart &&
+						timesUntilStart.map((timeUntilStart, index) => (
+							<CountDownHead key={index} timeUntilStart={timeUntilStart} />
+						))}
+				</div>
 				<div className="layers-wrapper">
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / maxDuration + '%'} /> : null}
 					<div className="layers">

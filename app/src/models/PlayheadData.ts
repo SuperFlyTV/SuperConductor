@@ -18,6 +18,7 @@ export interface GroupPreparedPlayheadData {
 	}[]
 
 	repeating: {
+		/** Total duration of the repeating.rundowns */
 		duration: number
 		rundowns: {
 			/** The point in time the rundown starts to play. (Starts at 0, relative to when the repeating starts. ie startTime + duration) */

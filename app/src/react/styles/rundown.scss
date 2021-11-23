@@ -9,6 +9,10 @@
 		border-color: $rundownActiveColor;
 		background-color: $rundownActiveBg;
 	}
+	&.queued {
+		border-color: $rundownQueuedColor;
+		background-color: $rundownQueuedBg;
+	}
 
 	&__meta {
 		background-color: $rundownOutlineColor;
@@ -32,13 +36,21 @@
 
 	&__timeline {
 		flex-grow: 1;
-		padding: 1rem;
+		padding: 0.3rem 0.3rem 0.3rem 0.3rem;
 		position: relative;
 
 		& > .layers-wrapper {
 			position: relative;
 			height: 100%;
 			overflow: hidden;
+		}
+		& > .countdown-overlay {
+			position: absolute;
+			top: 0.3rem;
+			left: 0.3rem;
+			bottom: 0.3rem;
+			right: 0.3rem;
+			pointer-events: none;
 		}
 
 		&__current-time {
