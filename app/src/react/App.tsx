@@ -7,6 +7,7 @@ import { APP_FEED_CHANNEL, SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 import './styles/app.scss'
 import { GroupListView } from './components/rundown/GroupList'
 import { Sidebar } from './components/sidebar/Sidebar'
+import { setupKeyTracker } from '@/lib/KeyTracker'
 
 export const App = () => {
 	const [appData, setAppData] = useState<AppModel>({
@@ -16,6 +17,8 @@ export const App = () => {
 		mappings: undefined,
 		selectedTimelineObjId: undefined,
 	})
+
+	setupKeyTracker()
 
 	/**
 	 * Main feed from backend

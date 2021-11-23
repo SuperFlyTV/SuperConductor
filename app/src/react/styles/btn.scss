@@ -7,7 +7,7 @@
 	}
 
 	&:disabled {
-		opacity: 0.5;
+		opacity: 0.33;
 	}
 
 	&.play,
@@ -35,15 +35,17 @@
 		}
 	}
 
-	&.queue {
-		display: flex;
+	&.queue,
+	&.un-queue {
+		// display: flex;
 		align-items: center;
 		background-color: $accentBg;
 		color: white;
 		cursor: pointer;
 
-		span {
-			margin-right: 1rem;
+		span.label {
+			width: 5em;
+			display: inline-block;
 		}
 
 		&:hover {

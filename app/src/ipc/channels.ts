@@ -1,6 +1,7 @@
 export const APP_FEED_CHANNEL = 'app-feed'
 export const PLAY_RUNDOWN_CHANNEL = 'play-rundown'
 export const QUEUE_RUNDOWN_GROUP_CHANNEL = 'queue-rundown'
+export const UNQUEUE_RUNDOWN_GROUP_CHANNEL = 'unqueue-rundown'
 export const STOP_GROUP_CHANNEL = 'stop-group'
 export const SELECT_TIMELINE_OBJ_CHANNEL = 'select-timeline-obj'
 export const UPDATE_TIMELINE_OBJ_CHANNEL = 'update-timeline-obj'

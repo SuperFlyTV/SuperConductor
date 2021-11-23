@@ -62,8 +62,6 @@ export class TimedPlayerThingy {
 
 			const storedData = JSON.parse(read.toString()) as Storage
 
-			console.log('storedData', storedData)
-
 			if (storedData) {
 				if (storedData.groups) this.appData.groups = storedData.groups
 				if (storedData.windowPosition) this.windowPosition = storedData.windowPosition

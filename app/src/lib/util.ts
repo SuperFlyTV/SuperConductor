@@ -57,14 +57,11 @@ export const deleteRundown = (group: GroupModel, rundownId: string): void => {
 	const rundown = findRundown(group, rundownId)
 
 	group.rundowns = group.rundowns.filter((r) => r.id !== rundownId)
-	if (group.playing) {
-		group.playing.queuedRundownIds = group.playing.queuedRundownIds.filter((id) => id !== rundownId)
-
+	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
-		if (group.playing.startRundownId === rundownId) {
-			// TODO: Should we handle this?
-			// const playheadData = prepareGroupPlayhead(group)
-		}
+		// TODO: How to handle this?
+
+		group.playout.rundownIds = group.playout.rundownIds.filter((id) => id !== rundownId)
 	}
 }
 export const deleteTimelineObj = (

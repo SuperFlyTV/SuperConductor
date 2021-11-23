@@ -1,104 +1,112 @@
 import { GroupModel } from '@/models/GroupModel'
 import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
 import { RundownModel } from '@/models/RundownModel'
+import { last } from './lib'
 import { findRundown } from './util'
 
 /** Calculates how the rundowns in a group is going to be played
  * @see GroupPreparedPlayheadData
  */
 export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadData | null {
-	if (group.playing) {
+	if (group.playout.startTime && group.playout.rundownIds.length) {
 		const data: GroupPreparedPlayheadData = {
 			startTime: 0,
 			duration: 0,
 			rundowns: [],
 			repeating: null,
 		}
-		data.startTime = group.playing.startTime
+		data.startTime = group.playout.startTime
 
-		const startRundown = findRundown(group, group.playing.startRundownId)
-		if (startRundown) {
-			let currentRundown: RundownModel = startRundown
+		// const startRundown = findRundown(group, group.playout.startRundownId)
+		// if (startRundown) {
 
-			const queuedRundowns: RundownModel[] = []
-			for (const rundownId of group.playing.queuedRundownIds) {
-				const rundown = findRundown(group, rundownId)
-				if (rundown) queuedRundowns.push(rundown)
+		// let currentRundown: RundownModel = startRundown
+
+		const queuedRundowns: RundownModel[] = []
+		for (const rundownId of group.playout.rundownIds) {
+			const rundown = findRundown(group, rundownId)
+			if (rundown) queuedRundowns.push(rundown)
+		}
+
+		if (group.loop && !group.autoPlay) {
+			// Only loop the one rundown (or well, the queued rundowns)
+
+			// Add the rudown into .repeating instead, to make it loop:
+			data.rundowns = []
+			data.duration = 0 // Becase .rundowns is empty
+			data.repeating = {
+				duration: 0, // set later
+				rundowns: [],
 			}
 
-			if (group.loop && !group.autoPlay) {
-				// Only loop the one rundown:
+			let nextStartTime = 0
+			// Add the queued Rundowns:
+			for (const rundown of queuedRundowns) {
+				data.repeating.rundowns.push({
+					startTime: nextStartTime,
+					rundown,
+				})
+				nextStartTime += rundown.resolved.duration
+			}
+			data.repeating.duration = nextStartTime
+		} else {
+			/** The startTime of the next Rundown. */
+			let nextStartTime = 0
 
-				// Add the rudown into .repeating instead, to make it loop:
-				data.rundowns = []
-				data.duration = 0 // Becase .rundowns is empty
-				data.repeating = {
-					duration: startRundown.resolved.duration,
-					rundowns: [
-						{
-							startTime: 0,
-							rundown: startRundown,
-						},
-					],
-				}
-			} else {
-				/** The startTime of the next Rundown. */
-				let nextStartTime = 0
+			// Add the starting Rundown:
+			// data.rundowns.push({
+			// 	startTime: nextStartTime,
+			// 	rundown: startRundown,
+			// })
+			// let currentRundown: RundownModel = startRundown
+			// nextStartTime += startRundown.resolved.duration
+			// data.duration = nextStartTime // Note: This might be overwritten later..
 
-				// Add the starting Rundown:
+			// Add the queued Rundowns:
+			for (const rundown of queuedRundowns) {
 				data.rundowns.push({
 					startTime: nextStartTime,
-					rundown: startRundown,
+					rundown,
 				})
-				currentRundown = startRundown
-				nextStartTime += startRundown.resolved.duration
-				data.duration = nextStartTime // Note: This might be overwritten later..
+				nextStartTime += rundown.resolved.duration
+			}
+			data.duration = nextStartTime // Note: This might be overwritten later.
+			let lastQueuedRundown: RundownModel = last(queuedRundowns) as RundownModel
 
-				// Add the queued Rundowns:
-				for (const rundown of queuedRundowns) {
+			if (group.autoPlay) {
+				// Add the rest of the Rundowns in the group:
+				const currentRundownIndex = group.rundowns.findIndex((r) => r.id === lastQueuedRundown.id)
+				const restRundowns = group.rundowns.slice(currentRundownIndex + 1)
+
+				for (const rundown of restRundowns) {
 					data.rundowns.push({
 						startTime: nextStartTime,
-						rundown,
+						rundown: rundown,
 					})
-					currentRundown = rundown
 					nextStartTime += rundown.resolved.duration
 				}
 				data.duration = nextStartTime
 
-				if (group.autoPlay) {
-					// Add the rest of the Rundowns in the group:
-					const currentRundownIndex = group.rundowns.findIndex((r) => r.id === currentRundown.id)
-					const restRundowns = group.rundowns.slice(currentRundownIndex + 1)
+				// Looping rundowns:
+				if (group.loop) {
+					data.repeating = {
+						duration: 0,
+						rundowns: [],
+					}
 
-					for (const rundown of restRundowns) {
-						data.rundowns.push({
-							startTime: nextStartTime,
+					let startTime = 0
+					for (const rundown of group.rundowns) {
+						data.repeating.rundowns.push({
+							startTime: startTime,
 							rundown: rundown,
 						})
-						nextStartTime += rundown.resolved.duration
+						startTime += rundown.resolved.duration
 					}
-					data.duration = nextStartTime
-
-					// Looping rundowns:
-					if (group.loop) {
-						data.repeating = {
-							duration: 0,
-							rundowns: [],
-						}
-
-						let startTime = 0
-						for (const rundown of group.rundowns) {
-							data.repeating.rundowns.push({
-								startTime: startTime,
-								rundown: rundown,
-							})
-							startTime += rundown.resolved.duration
-						}
-						data.repeating.duration = startTime
-					}
+					data.repeating.duration = startTime
 				}
 			}
 		}
+		// }
 		return data
 	}
 	return null

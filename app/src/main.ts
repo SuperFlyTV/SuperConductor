@@ -5,7 +5,6 @@ import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
 const createWindow = (): void => {
 	const tpt = new TimedPlayerThingy()
 
-	console.log('tpt.windowPosition', tpt.windowPosition)
 	let win = new BrowserWindow({
 		y: tpt.windowPosition.y,
 		x: tpt.windowPosition.x,

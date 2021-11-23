@@ -7,6 +7,7 @@
 
 	&.active {
 		border-color: $rundownActiveColor;
+		background-color: $rundownActiveBg;
 	}
 
 	&__meta {

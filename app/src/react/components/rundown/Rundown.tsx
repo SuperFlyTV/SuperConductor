@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
-import { QueueBtn } from '../inputs/QueueBtn'
+import { QueueBtn, UnQueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import Timeline, { Resolver } from 'superfly-timeline'
@@ -12,6 +12,7 @@ import {
 	PLAY_RUNDOWN_CHANNEL,
 	QUEUE_RUNDOWN_GROUP_CHANNEL,
 	STOP_GROUP_CHANNEL,
+	UNQUEUE_RUNDOWN_GROUP_CHANNEL,
 } from '@/ipc/channels'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
@@ -20,6 +21,7 @@ import { GroupModel } from '@/models/GroupModel'
 import { RundownModel } from '@/models/RundownModel'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
+import { getKeyTracker } from '@/lib/KeyTracker'
 
 export const RundownView: React.FC<{
 	selectedTimelineObjId: string | undefined
@@ -40,23 +42,48 @@ export const RundownView: React.FC<{
 	const playheadTime = isRundownPlaying ? playhead.playheadTime : 0
 	const countDownTime = isRundownPlaying ? playhead.rundownEndTime - playhead.playheadTime : 0
 
-	const queuedPositions: number[] = []
-	parentGroup.playing?.queuedRundownIds.forEach((rundownId, index) => {
-		if (rundownId === rundown.id) queuedPositions.push(index)
-	})
-
+	// Play button:
+	const groupNotPlayingAndQueued: boolean =
+		parentGroup.playout.startTime === null && parentGroup.playout.rundownIds.length > 0
+	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.rundownIds[0] !== rundown.id
 	const handleStart = () => {
 		const data: IPlayRundown = { groupId: parentGroup.id, rundownId: rundown.id }
 		ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, data)
 	}
 
+	// Stop button:
+	const cannotStop: boolean = !isGroupPlaying
 	const handleStop = () => {
 		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: parentGroup.id })
 	}
+
+	// Queue button:
+	const cannotQueue: boolean = isGroupPlaying && playhead.isInRepeating
+	const queuedPositions: number[] = []
+	parentGroup.playout.rundownIds.forEach((rundownId, index) => {
+		if (rundownId === rundown.id) queuedPositions.push(index)
+	})
+	const [showUnqueue, setShowUnqueue] = useState(false)
+	useEffect(() => {
+		const keyTracker = getKeyTracker()
+		const onKey = () => {
+			setShowUnqueue(keyTracker.isKeyDown('shift'))
+		}
+		keyTracker.on('key', onKey)
+		onKey()
+
+		return () => {
+			keyTracker.off('key', onKey)
+		}
+	})
 	const handleQueue = () => {
 		ipcRenderer.send(QUEUE_RUNDOWN_GROUP_CHANNEL, { groupId: parentGroup.id, rundownId: rundown.id })
 	}
+	const handleUnQueue = () => {
+		ipcRenderer.send(UNQUEUE_RUNDOWN_GROUP_CHANNEL, { groupId: parentGroup.id, rundownId: rundown.id })
+	}
 
+	// Delete button:
 	const handleDelete = () => {
 		const data: IDeleteRundown = { groupId: parentGroup.id, rundownId: rundown.id }
 		ipcRenderer.send(DELETE_RUNDOWN_CHANNEL, data)
@@ -71,13 +98,21 @@ export const RundownView: React.FC<{
 			<div className="rundown__meta">
 				<div className="title">{rundown.name}</div>
 				<div className="controls">
-					<PlayControlBtn mode={'play'} onClick={handleStart} />
-					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!isGroupPlaying} />
-					<QueueBtn
-						label={queuedPositions.map((index) => index + 1).join(',')}
-						onClick={handleQueue}
-						disabled={!isGroupPlaying || playhead.isInRepeating}
-					/>
+					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
+					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
+					{showUnqueue ? (
+						<UnQueueBtn
+							label={queuedPositions.map((index) => index + 1).join(', ')}
+							onClick={handleUnQueue}
+							disabled={cannotQueue}
+						/>
+					) : (
+						<QueueBtn
+							label={queuedPositions.map((index) => index + 1).join(', ')}
+							onClick={handleQueue}
+							disabled={cannotQueue}
+						/>
+					)}
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>

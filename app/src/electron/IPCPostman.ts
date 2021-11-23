@@ -39,6 +39,7 @@ import {
 	INewGroup,
 	QUEUE_RUNDOWN_GROUP_CHANNEL,
 	IQueueRundown,
+	UNQUEUE_RUNDOWN_GROUP_CHANNEL,
 } from '@/ipc/channels'
 
 import {
@@ -94,12 +95,21 @@ export class IPCPostman {
 					console.error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
 					return
 				} else {
-					// Start playing the group:
-					group.playing = {
-						startTime: Date.now(),
-						startRundownId: arg.rundownId,
-						queuedRundownIds: [],
+					if (!group.playout.startTime) {
+						// Start playing the queued up items:
+						if (!group.playout.rundownIds.length) {
+							group.playout.rundownIds = [arg.rundownId]
+						} else if (group.playout.rundownIds[0] !== arg.rundownId) {
+							group.playout.rundownIds.unshift(arg.rundownId)
+						}
+					} else {
+						// If we're already playing and we hit Play,
+						// we should just abort whatever's playing and start playing this instead:
+
+						group.playout.rundownIds = [arg.rundownId]
 					}
+					// Start playing the group:
+					group.playout.startTime = Date.now()
 				}
 			}
 
@@ -118,12 +128,29 @@ export class IPCPostman {
 					console.error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
 					return
 				} else {
-					if (group.playing) {
-						// Add the rundown to the queue:
-						group.playing.queuedRundownIds.push(rd.id)
-					} else {
-						console.error(`Rundown ${arg.rundownId} not playing`)
-						return
+					// Add the rundown to the queue:
+					group.playout.rundownIds.push(rd.id)
+				}
+			}
+
+			this.updateTimeline(group)
+			this._updateViewRef()
+		})
+		ipcMain.on(UNQUEUE_RUNDOWN_GROUP_CHANNEL, async (event, arg: IQueueRundown) => {
+			const group = findGroup(this._appDataRef, arg.groupId)
+			if (!group) {
+				console.error(`Group ${arg.groupId} not found.`)
+				return
+			} else {
+				const rd = findRundown(group, arg.rundownId)
+				if (!rd) {
+					console.error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
+					return
+				} else {
+					// Remove the last instance of the rundown from the queue:
+					const lastIndex = group.playout.rundownIds.lastIndexOf(rd.id)
+					if (lastIndex >= 0) {
+						group.playout.rundownIds.splice(lastIndex, 1)
 					}
 				}
 			}
@@ -139,7 +166,10 @@ export class IPCPostman {
 				return
 			}
 			// Stop the group:
-			group.playing = null
+			group.playout = {
+				startTime: null,
+				rundownIds: [],
+			}
 
 			this.updateTimeline(group)
 			this._updateViewRef()
@@ -188,7 +218,10 @@ export class IPCPostman {
 					rundowns: [newRundown],
 					autoPlay: false,
 					loop: false,
-					playing: null,
+					playout: {
+						startTime: null,
+						rundownIds: [],
+					},
 					playheadData: null,
 				}
 				this._appDataRef.groups.push(newGroup)
@@ -204,7 +237,10 @@ export class IPCPostman {
 				rundowns: [],
 				autoPlay: false,
 				loop: false,
-				playing: null,
+				playout: {
+					startTime: null,
+					rundownIds: [],
+				},
 				playheadData: null,
 			}
 			this._appDataRef.groups.push(newGroup)
@@ -234,8 +270,11 @@ export class IPCPostman {
 				return
 			}
 
-			// Stop the group:
-			group.playing = null
+			// Stop the group (so that the updates are sent to TSR):
+			group.playout = {
+				startTime: null,
+				rundownIds: [],
+			}
 
 			this.updateTimeline(group)
 			deleteGroup(this._appDataRef, group.id)

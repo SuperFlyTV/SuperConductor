@@ -12,15 +12,13 @@ export type GroupModel = {
 	loop: boolean
 	rundowns: RundownModel[]
 
-	/** Is set when the group is playing. */
-	playing: {
-		/** Timestamp for when it started playing */
-		startTime: number
-		/** The id of the rundown we started playing */
-		startRundownId: string
-		/** The id of the rundowns queued */
-		queuedRundownIds: string[]
-	} | null
+	/** Data related to the playout of the group */
+	playout: {
+		/** Timestamp for when the rundown (.startRundownId) started playing. null = not playing */
+		startTime: number | null
+		/** The ids of the rundowns to be played (in this order) */
+		rundownIds: string[]
+	}
 
 	/** This is populated by the backend, as the timeline is build. */
 	playheadData: GroupPreparedPlayheadData | null
