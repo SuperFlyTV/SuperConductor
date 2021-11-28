@@ -8,42 +8,42 @@ import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { GroupModel } from '@/models/GroupModel'
-import { RundownModel } from '@/models/RundownModel'
+import { PartModel } from '@/models/PartModel'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { getKeyTracker } from '@/lib/KeyTracker'
 import { CountDownHead } from './CountdownHead'
 import { IPCServerContext } from '@/react/App'
 
-export const RundownView: React.FC<{
-	rundown: RundownModel
+export const PartView: React.FC<{
+	part: PartModel
 	parentGroup: GroupModel
 	playhead: GroupPlayhead | null
-}> = ({ rundown, parentGroup, playhead }) => {
+}> = ({ part, parentGroup, playhead }) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
-		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
+		const resolvedTimeline = Resolver.resolveTimeline(part.timeline, { time: 0 })
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 		return { maxDuration, resolvedTimeline }
-	}, [rundown.timeline])
+	}, [part.timeline])
 
-	const isRundownPlaying = playhead?.rundownId === rundown.id
+	const isPartPlaying = playhead?.partId === part.id
 	const isGroupPlaying = !!playhead
 
-	const isActive: 'active' | 'queued' | null = isRundownPlaying ? 'active' : isGroupPlaying ? 'queued' : null
+	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : isGroupPlaying ? 'queued' : null
 
-	const timesUntilStart = isGroupPlaying && playhead.timeUntilRundowns[rundown.id]
-	const playheadTime = isRundownPlaying ? playhead.playheadTime : 0
-	const countDownTime = isRundownPlaying ? playhead.rundownEndTime - playhead.playheadTime : 0
+	const timesUntilStart = isGroupPlaying && playhead.timeUntilParts[part.id]
+	const playheadTime = isPartPlaying ? playhead.playheadTime : 0
+	const countDownTime = isPartPlaying ? playhead.partEndTime - playhead.playheadTime : 0
 
 	// Play button:
 	const groupNotPlayingAndQueued: boolean =
-		parentGroup.playout.startTime === null && parentGroup.playout.rundownIds.length > 0
-	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.rundownIds[0] !== rundown.id
+		parentGroup.playout.startTime === null && parentGroup.playout.partIds.length > 0
+	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.partIds[0] !== part.id
 	const handleStart = () => {
-		ipcServer.playRundown({ groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.playPart({ groupId: parentGroup.id, partId: part.id })
 	}
 
 	// Stop button:
@@ -55,8 +55,8 @@ export const RundownView: React.FC<{
 	// Queue button:
 	const cannotQueue: boolean = isGroupPlaying && playhead.isInRepeating
 	const queuedPositions: number[] = []
-	parentGroup.playout.rundownIds.forEach((rundownId, index) => {
-		if (rundownId === rundown.id) queuedPositions.push(index)
+	parentGroup.playout.partIds.forEach((partId, index) => {
+		if (partId === part.id) queuedPositions.push(index)
 	})
 	const [showUnqueue, setShowUnqueue] = useState(false)
 	useEffect(() => {
@@ -72,26 +72,26 @@ export const RundownView: React.FC<{
 		}
 	})
 	const handleQueue = () => {
-		ipcServer.queueRundownGroup({ groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.queuePartGroup({ groupId: parentGroup.id, partId: part.id })
 	}
 	const handleUnQueue = () => {
-		ipcServer.unqueueRundownGroup({ groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.unqueuePartGroup({ groupId: parentGroup.id, partId: part.id })
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		ipcServer.deleteRundown({ groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.deletePart({ groupId: parentGroup.id, partId: part.id })
 	}
 
 	return (
 		<div
-			className={classNames('rundown', {
+			className={classNames('part', {
 				active: isActive === 'active',
 				queued: isActive === 'queued',
 			})}
 		>
-			<div className="rundown__meta">
-				<div className="title">{rundown.name}</div>
+			<div className="part__meta">
+				<div className="title">{part.name}</div>
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
@@ -111,10 +111,10 @@ export const RundownView: React.FC<{
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
-			<div className="rundown__timeline">
-				{playheadTime ? <div className="rundown__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
-				{countDownTime ? <div className="rundown__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
-				<div className="rundown__timeline__duration">{msToTime(maxDuration)}</div>
+			<div className="part__timeline">
+				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
+				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
+				<div className="part__timeline__duration">{msToTime(maxDuration)}</div>
 
 				<div className="countdown-wrapper">
 					{timesUntilStart &&

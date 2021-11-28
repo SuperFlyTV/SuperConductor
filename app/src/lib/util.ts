@@ -2,7 +2,7 @@ import { mappingsMock } from '@/mocks/mappingsMock'
 import { AppModel } from '@/models/AppModel'
 import { GroupModel } from '@/models/GroupModel'
 import { MediaModel } from '@/models/MediaModel'
-import { RundownModel } from '@/models/RundownModel'
+import { PartModel } from '@/models/PartModel'
 import { TemplateModel } from '@/models/TemplateModel'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -22,8 +22,8 @@ export const findTemplate = (templateList: TemplateModel[], filename: string) =>
 export const findGroup = (appData: AppModel, groupId: string): GroupModel | undefined => {
 	return appData.groups.find((g) => g.id === groupId)
 }
-export const findRundown = (group: GroupModel, rundownId: string): RundownModel | undefined => {
-	return group.rundowns.find((r) => r.id === rundownId)
+export const findPart = (group: GroupModel, partId: string): PartModel | undefined => {
+	return group.parts.find((r) => r.id === partId)
 }
 export const findTimelineObj = (
 	appData: AppModel,
@@ -31,16 +31,16 @@ export const findTimelineObj = (
 ):
 	| {
 			group: GroupModel
-			rundown: RundownModel
+			part: PartModel
 			timelineObj: TSRTimelineObj
 	  }
 	| undefined => {
 	// Note: This is a bit of a hack, but it works for now.
 	for (const group of appData.groups) {
-		for (const rundown of group.rundowns) {
-			for (const timelineObj of rundown.timeline) {
+		for (const part of group.parts) {
+			for (const timelineObj of part.timeline) {
 				if (timelineObj.id === timelineObjId) {
-					return { group, rundown, timelineObj }
+					return { group, part, timelineObj }
 				}
 			}
 		}
@@ -52,27 +52,27 @@ export const findTimelineObj = (
 export const deleteGroup = (appData: AppModel, groupId: string): void => {
 	appData.groups = appData.groups.filter((g) => g.id !== groupId)
 }
-export const deleteRundown = (group: GroupModel, rundownId: string): void => {
-	const rundown = findRundown(group, rundownId)
+export const deletePart = (group: GroupModel, partId: string): void => {
+	const part = findPart(group, partId)
 
-	group.rundowns = group.rundowns.filter((r) => r.id !== rundownId)
+	group.parts = group.parts.filter((r) => r.id !== partId)
 	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
 		// TODO: How to handle this?
 
-		group.playout.rundownIds = group.playout.rundownIds.filter((id) => id !== rundownId)
+		group.playout.partIds = group.playout.partIds.filter((id) => id !== partId)
 	}
 }
 export const deleteTimelineObj = (
 	appData: AppModel,
 	timelineObjId: string
-): { group: GroupModel; rundown: RundownModel } | undefined => {
+): { group: GroupModel; part: PartModel } | undefined => {
 	// Note: This is a bit of a hack, but it works for now.
 	for (const group of appData.groups) {
-		for (const rundown of group.rundowns) {
-			if (rundown.timeline.find((t) => t.id === timelineObjId)) {
-				rundown.timeline = rundown.timeline.filter((t) => t.id !== timelineObjId)
-				return { group, rundown }
+		for (const part of group.parts) {
+			if (part.timeline.find((t) => t.id === timelineObjId)) {
+				part.timeline = part.timeline.filter((t) => t.id !== timelineObjId)
+				return { group, part }
 			}
 		}
 	}

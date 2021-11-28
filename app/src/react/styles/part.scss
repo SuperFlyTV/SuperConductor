@@ -1,21 +1,21 @@
-.rundown {
+.part {
 	display: flex;
-	border: 0.1rem solid $rundownOutlineColor;
+	border: 0.1rem solid $partOutlineColor;
 	position: relative;
 
 	margin-top: 2rem;
 
 	&.active {
-		border-color: $rundownActiveColor;
-		background-color: $rundownActiveBg;
+		border-color: $partActiveColor;
+		background-color: $partActiveBg;
 	}
 	&.queued {
-		border-color: $rundownQueuedColor;
-		background-color: $rundownQueuedBg;
+		border-color: $partQueuedColor;
+		background-color: $partQueuedBg;
 	}
 
 	&__meta {
-		background-color: $rundownOutlineColor;
+		background-color: $partOutlineColor;
 		padding: 1rem 1.5rem;
 		width: 20rem;
 		flex-shrink: 0;

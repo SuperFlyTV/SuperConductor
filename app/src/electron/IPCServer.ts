@@ -1,17 +1,17 @@
 import {
 	deleteGroup,
-	deleteRundown,
+	deletePart,
 	deleteTimelineObj,
 	findGroup,
 	findMedia,
-	findRundown,
+	findPart,
 	findTemplate,
 	findTimelineObj,
 	getResolvedTimelineTotalDuration,
 } from '@/lib/util'
 import { AppModel } from '@/models/AppModel'
 import { GroupModel } from '@/models/GroupModel'
-import { RundownModel } from '@/models/RundownModel'
+import { PartModel } from '@/models/PartModel'
 import { Resolver, TimelineEnable } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { IPCServerMethods } from '../ipc/IPCAPI'
@@ -49,25 +49,25 @@ export class IPCServer implements IPCServerMethods {
 		this.callbacks.updateViewRef()
 	}
 
-	async playRundown(arg: { groupId: string; rundownId: string }): Promise<void> {
+	async playPart(arg: { groupId: string; partId: string }): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		const rundown = findRundown(group, arg.rundownId)
-		if (!rundown) throw new Error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
+		const part = findPart(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId}.`)
 
 		if (!group.playout.startTime) {
 			// Start playing the queued up items:
-			if (!group.playout.rundownIds.length) {
-				group.playout.rundownIds = [arg.rundownId]
-			} else if (group.playout.rundownIds[0] !== arg.rundownId) {
-				group.playout.rundownIds.unshift(arg.rundownId)
+			if (!group.playout.partIds.length) {
+				group.playout.partIds = [arg.partId]
+			} else if (group.playout.partIds[0] !== arg.partId) {
+				group.playout.partIds.unshift(arg.partId)
 			}
 		} else {
 			// If we're already playing and we hit Play,
 			// we should just abort whatever's playing and start playing this instead:
 
-			group.playout.rundownIds = [arg.rundownId]
+			group.playout.partIds = [arg.partId]
 		}
 		// Start playing the group:
 		group.playout.startTime = Date.now()
@@ -75,30 +75,30 @@ export class IPCServer implements IPCServerMethods {
 		this._updateTimeline(group)
 		this.callbacks.updateViewRef()
 	}
-	async queueRundownGroup(arg: { groupId: string; rundownId: string }): Promise<void> {
+	async queuePartGroup(arg: { groupId: string; partId: string }): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		const rundown = findRundown(group, arg.rundownId)
-		if (!rundown) throw new Error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
+		const part = findPart(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId}.`)
 
-		// Add the rundown to the queue:
-		group.playout.rundownIds.push(rundown.id)
+		// Add the part to the queue:
+		group.playout.partIds.push(part.id)
 
 		this._updateTimeline(group)
 		this.callbacks.updateViewRef()
 	}
-	async unqueueRundownGroup(arg: { groupId: string; rundownId: string }): Promise<void> {
+	async unqueuePartGroup(arg: { groupId: string; partId: string }): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		const rundown = findRundown(group, arg.rundownId)
-		if (!rundown) throw new Error(`Rundown ${arg.rundownId} not found in group ${arg.groupId}.`)
+		const part = findPart(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId}.`)
 
-		// Remove the last instance of the rundown from the queue:
-		const lastIndex = group.playout.rundownIds.lastIndexOf(rundown.id)
+		// Remove the last instance of the part from the queue:
+		const lastIndex = group.playout.partIds.lastIndexOf(part.id)
 		if (lastIndex >= 0) {
-			group.playout.rundownIds.splice(lastIndex, 1)
+			group.playout.partIds.splice(lastIndex, 1)
 		}
 
 		this._updateTimeline(group)
@@ -111,7 +111,7 @@ export class IPCServer implements IPCServerMethods {
 		// Stop the group:
 		group.playout = {
 			startTime: null,
-			rundownIds: [],
+			partIds: [],
 		}
 
 		this._updateTimeline(group)
@@ -132,14 +132,14 @@ export class IPCServer implements IPCServerMethods {
 		found.timelineObj.layer = arg.layer
 
 		this.callbacks.updateViewRef()
-		this._updateRundown(found.rundown)
+		this._updatePart(found.part)
 	}
-	async newRundown(arg: {
+	async newPart(arg: {
 		name: string
-		/** The group to create the rundown into. If null; will create a "transparent group" */
+		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 	}): Promise<string> {
-		const newRundown: RundownModel = {
+		const newPart: PartModel = {
 			id: short.generate(),
 			name: arg.name,
 			timeline: [],
@@ -149,23 +149,23 @@ export class IPCServer implements IPCServerMethods {
 		}
 
 		if (arg.groupId) {
-			// Put rundown into existing group:
+			// Put part into existing group:
 			const group = findGroup(this._appDataRef, arg.groupId)
 			if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-			group.rundowns.push(newRundown)
+			group.parts.push(newPart)
 		} else {
 			// Create a new "transparent group":
 			const newGroup: GroupModel = {
 				id: short.generate(),
 				name: arg.name,
 				transparent: true,
-				rundowns: [newRundown],
+				parts: [newPart],
 				autoPlay: false,
 				loop: false,
 				playout: {
 					startTime: null,
-					rundownIds: [],
+					partIds: [],
 				},
 				playheadData: null,
 			}
@@ -173,19 +173,19 @@ export class IPCServer implements IPCServerMethods {
 		}
 		this.callbacks.updateViewRef()
 
-		return newRundown.id
+		return newPart.id
 	}
 	async newGroup(arg: { name: string }): Promise<string> {
 		const newGroup: GroupModel = {
 			id: short.generate(),
 			name: arg.name,
 			transparent: false,
-			rundowns: [],
+			parts: [],
 			autoPlay: false,
 			loop: false,
 			playout: {
 				startTime: null,
-				rundownIds: [],
+				partIds: [],
 			},
 			playheadData: null,
 		}
@@ -194,13 +194,13 @@ export class IPCServer implements IPCServerMethods {
 
 		return newGroup.id
 	}
-	async deleteRundown(arg: { groupId: string; rundownId: string }): Promise<void> {
+	async deletePart(arg: { groupId: string; partId: string }): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		deleteRundown(group, arg.rundownId)
+		deletePart(group, arg.partId)
 
-		if (group.transparent && group.rundowns.length === 0) {
+		if (group.transparent && group.parts.length === 0) {
 			deleteGroup(this._appDataRef, arg.groupId)
 		}
 
@@ -213,7 +213,7 @@ export class IPCServer implements IPCServerMethods {
 		// Stop the group (so that the updates are sent to TSR):
 		group.playout = {
 			startTime: null,
-			rundownIds: [],
+			partIds: [],
 		}
 
 		this._updateTimeline(group)
@@ -269,20 +269,15 @@ export class IPCServer implements IPCServerMethods {
 	async deleteTimelineObj(arg: { timelineObjId: string }): Promise<void> {
 		const modified = deleteTimelineObj(this._appDataRef, arg.timelineObjId)
 
-		if (modified?.rundown) this._updateRundown(modified?.rundown)
+		if (modified?.part) this._updatePart(modified?.part)
 		this.callbacks.updateViewRef()
 	}
-	async addMediaToTimeline(arg: {
-		groupId: string
-		rundownId: string
-		layerId: string
-		filename: string
-	}): Promise<void> {
+	async addMediaToTimeline(arg: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		const rundown = findRundown(group, arg.rundownId)
-		if (!rundown) throw new Error(`Rundown ${arg.rundownId} not found.`)
+		const part = findPart(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found.`)
 
 		const media = findMedia(this._appDataRef.media, arg.filename)
 		if (!media) throw new Error(`Media ${arg.filename} not found.`)
@@ -306,22 +301,22 @@ export class IPCServer implements IPCServerMethods {
 			},
 		}
 
-		rundown.timeline.push(data)
+		part.timeline.push(data)
 
-		this._updateRundown(rundown)
+		this._updatePart(part)
 		this.callbacks.updateViewRef()
 	}
 	async addTemplateToTimeline(arg: {
 		groupId: string
-		rundownId: string
+		partId: string
 		layerId: string
 		filename: string
 	}): Promise<void> {
 		const group = findGroup(this._appDataRef, arg.groupId)
 		if (!group) throw new Error(`Group ${arg.groupId} not found.`)
 
-		const rundown = findRundown(group, arg.rundownId)
-		if (!rundown) throw new Error(`Rundown ${arg.rundownId} not found.`)
+		const part = findPart(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found.`)
 
 		const template = findTemplate(this._appDataRef.templates, arg.filename)
 		if (!template) throw new Error(`Template ${arg.filename} not found.`)
@@ -343,9 +338,9 @@ export class IPCServer implements IPCServerMethods {
 			},
 		}
 
-		rundown.timeline.push(data)
+		part.timeline.push(data)
 
-		this._updateRundown(rundown)
+		this._updatePart(part)
 		this.callbacks.updateViewRef()
 	}
 	async toggleGroupLoop(arg: { groupId: string; value: boolean }): Promise<void> {
@@ -371,11 +366,11 @@ export class IPCServer implements IPCServerMethods {
 		this.callbacks.refreshTemplatesRef()
 	}
 
-	private _updateRundown(rundown: RundownModel) {
-		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
+	private _updatePart(part: PartModel) {
+		const resolvedTimeline = Resolver.resolveTimeline(part.timeline, { time: 0 })
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		rundown.resolved = {
+		part.resolved = {
 			duration: maxDuration,
 		}
 	}

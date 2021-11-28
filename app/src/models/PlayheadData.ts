@@ -1,29 +1,29 @@
-import { RundownModel } from './RundownModel'
+import { PartModel } from './PartModel'
 
 /**
- * Defines how the rundowns will be played.
- * First there is the array of rundowns that will be played in order.
- * Then there is the repeating array of rundowns that will be played afterwards, and looped.
+ * Defines how the parts will be played.
+ * First there is the array of parts that will be played in order.
+ * Then there is the repeating array of parts that will be played afterwards, and looped.
  */
 export interface GroupPreparedPlayheadData {
-	/** Timestamp, starting time of the first rundown-to-be-played */
+	/** Timestamp, starting time of the first part-to-be-played */
 	startTime: number
-	/** Total duration of the rundowns in .rundowns. */
+	/** Total duration of the parts in .parts. */
 	duration: number
-	rundowns: {
+	parts: {
 		/**
-		 * The point in time the rundown starts to play. (Starts at 0, relative to GroupPreparedPlayheadData.startTime) */
+		 * The point in time the part starts to play. (Starts at 0, relative to GroupPreparedPlayheadData.startTime) */
 		startTime: number
-		rundown: RundownModel
+		part: PartModel
 	}[]
 
 	repeating: {
-		/** Total duration of the repeating.rundowns */
+		/** Total duration of the repeating.parts */
 		duration: number
-		rundowns: {
-			/** The point in time the rundown starts to play. (Starts at 0, relative to when the repeating starts. ie startTime + duration) */
+		parts: {
+			/** The point in time the part starts to play. (Starts at 0, relative to when the repeating starts. ie startTime + duration) */
 			startTime: number
-			rundown: RundownModel
+			part: PartModel
 		}[]
 	} | null
 }

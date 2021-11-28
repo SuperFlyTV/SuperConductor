@@ -4,7 +4,7 @@ const { ipcRenderer } = window.require('electron')
 import { AppModel } from '@/models/AppModel'
 
 import './styles/app.scss'
-import { GroupListView } from './components/rundown/GroupList'
+import { GroupListView } from './components/rundown/GroupListView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { setupKeyTracker } from '@/lib/KeyTracker'
 import { IPCClient } from './api/IPCClient'

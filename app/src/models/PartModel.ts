@@ -1,6 +1,6 @@
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
-export type RundownModel = {
+export type PartModel = {
 	id: string
 	name: string
 	timeline: TSRTimelineObj[]

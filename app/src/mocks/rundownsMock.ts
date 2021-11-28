@@ -1,10 +1,10 @@
 // import { literal } from '@/lib'
-// import { RundownModel } from '@/models/RundownModel'
+// import { PartModel } from '@/models/PartModel'
 // import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
-// export const rundownsMock: RundownModel[] = literal<RundownModel[]>([
+// export const partsMock: PartModel[] = literal<PartModel[]>([
 // 	{
-// 		id: 'rundown1',
+// 		id: 'part1',
 // 		name: 'Introduction',
 // 		timeline: [
 // 			{

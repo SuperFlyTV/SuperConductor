@@ -3,7 +3,7 @@ import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
 import { Field, Form, Formik, FormikProps } from 'formik'
 import { DataRow } from './DataRow'
-import { getAllRundowns, getDefaultMappingLayer, getDefaultRundown } from '@/lib/getDefaults'
+import { getAllParts, getDefaultMappingLayer, getDefaultPart } from '@/lib/getDefaults'
 import classNames from 'classnames'
 import { IPCServerContext } from '@/react/App'
 
@@ -14,7 +14,7 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const defaultRundown = getDefaultRundown(props.appData)
+	const defaultPart = getDefaultPart(props.appData)
 	const defaultLayer = getDefaultMappingLayer(props.appData.mappings)
 
 	useEffect(() => {
@@ -66,21 +66,21 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 					<InfoGroup title="Template">
 						<DataRow label="Filename" value={selectedTemplate.name} />
 					</InfoGroup>
-					{defaultRundown && defaultLayer && (
+					{defaultPart && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik
-								initialValues={{ rundownId: defaultRundown.rundown.id, layerId: defaultLayer }}
+								initialValues={{ partId: defaultPart.part.id, layerId: defaultLayer }}
 								onSubmit={(values, actions) => {
-									if (!values.rundownId || !values.layerId) {
+									if (!values.partId || !values.layerId) {
 										return
 									}
 
-									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
+									const rd = getAllParts(props.appData).find((r) => r.part.id === values.partId)
 									if (!rd) return
 
 									ipcServer.addTemplateToTimeline({
 										groupId: rd.group.id,
-										rundownId: rd.rundown.id,
+										partId: rd.part.id,
 										layerId: values.layerId,
 										filename: selectedTemplate.name,
 									})
@@ -90,10 +90,10 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 									<Form>
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
-											<Field as="select" name="rundownId">
-												{getAllRundowns(props.appData).map((rd) => {
+											<Field as="select" name="partId">
+												{getAllParts(props.appData).map((rd) => {
 													return (
-														<option key={rd.rundown.id} value={rd.rundown.id}>
+														<option key={rd.part.id} value={rd.part.id}>
 															{rd.name}
 														</option>
 													)

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useContext } from 'react'
 import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { GroupModel } from '@/models/GroupModel'
-import { RundownView } from './Rundown'
+import { PartView } from './PartView'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import { Popup } from '../popup/Popup'
 import { FormRow } from '../sidebar/DataRow'
@@ -14,23 +14,23 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
-	const [activeRundowns, setActiveRundowns] = useState<{ [rundownId: string]: true }>({})
+	const [activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
 	useEffect(() => {
 		playheadData.current = group.playheadData
 
-		const activeRundowns0: { [rundownId: string]: true } = {}
+		const activeParts0: { [partId: string]: true } = {}
 
 		if (group.playheadData) {
-			for (const rundown of group.playheadData.rundowns) {
-				activeRundowns0[rundown.rundown.id] = true
+			for (const part of group.playheadData.parts) {
+				activeParts0[part.part.id] = true
 			}
 			if (group.playheadData.repeating) {
-				for (const rundown of group.playheadData.repeating.rundowns) {
-					activeRundowns0[rundown.rundown.id] = true
+				for (const part of group.playheadData.repeating.parts) {
+					activeParts0[part.part.id] = true
 				}
 			}
 		}
-		setActiveRundowns(activeRundowns0)
+		setActiveParts(activeParts0)
 	}, [group])
 
 	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
@@ -73,8 +73,8 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 	}, [playhead])
 
 	if (group.transparent) {
-		const firstRundown = group.rundowns[0]
-		return firstRundown ? <RundownView rundown={firstRundown} parentGroup={group} playhead={playhead} /> : null
+		const firstPart = group.parts[0]
+		return firstPart ? <PartView part={firstPart} parentGroup={group} playhead={playhead} /> : null
 	} else {
 		return (
 			<div className="group">
@@ -114,8 +114,8 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 					</div>
 				</div>
 				<div className="group__content">
-					{group.rundowns.map((rundown) => (
-						<RundownView key={rundown.id} rundown={rundown} parentGroup={group} playhead={playhead} />
+					{group.parts.map((part) => (
+						<PartView key={part.id} part={part} parentGroup={group} playhead={playhead} />
 					))}
 
 					<GroupOptions group={group} />
@@ -127,33 +127,33 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 
 const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
-	const [newRundownOpen, setNewRundownOpen] = React.useState(false)
+	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
 	return (
 		<>
 			<div className="group-list__control-row">
-				<button className="btn form" onClick={() => setNewRundownOpen(true)}>
-					New rundown
+				<button className="btn form" onClick={() => setNewPartOpen(true)}>
+					New part
 				</button>
 			</div>
-			{newRundownOpen && (
-				<Popup onClose={() => setNewRundownOpen(false)}>
+			{newPartOpen && (
+				<Popup onClose={() => setNewPartOpen(false)}>
 					<Formik
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
 						onSubmit={(values) => {
-							ipcServer.newRundown({
+							ipcServer.newPart({
 								name: values.name,
 								groupId: props.group.id,
 							})
-							setNewRundownOpen(false)
+							setNewPartOpen(false)
 						}}
 					>
 						{(formik) => (
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Rundown name" autoFocus={true} />
+									<Field id="name" name="name" placeholder="Part name" autoFocus={true} />
 									<ErrorMessage name="name" component="div" />
 								</FormRow>
 								<div className="btn-row-right">

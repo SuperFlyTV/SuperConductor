@@ -1,9 +1,9 @@
 import { prepareGroupPlayhead } from '@/lib/playhead'
-import { findGroup, findRundown, hashObj } from '@/lib/util'
+import { findGroup, findPart, hashObj } from '@/lib/util'
 import { AppModel } from '@/models/AppModel'
 import { GroupModel } from '@/models/GroupModel'
 import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-import { RundownModel } from '@/models/RundownModel'
+import { PartModel } from '@/models/PartModel'
 import { TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { TsrBridgeApi } from './api/TsrBridge'
@@ -43,16 +43,16 @@ export function updateTimeline(
 			children: [],
 		}
 
-		// First, add the rundowns that doesn't loop:
-		for (const rundown of groupPlayhead.rundowns) {
-			// Add the rundown to the timeline:
-			let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
+		// First, add the parts that doesn't loop:
+		for (const part of groupPlayhead.parts) {
+			// Add the part to the timeline:
+			let obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
 
 			changeTimelineId(obj, (id) => getUniqueId(id))
 			timelineGroup.children?.push(obj)
 		}
 
-		// Then add the rundowns that loop:
+		// Then add the parts that loop:
 		if (groupPlayhead.repeating) {
 			const repeatingObj: TimelineObjEmpty = {
 				id: `repeating_${group.id}`,
@@ -70,9 +70,9 @@ export function updateTimeline(
 				isGroup: true,
 				children: [],
 			}
-			for (const rundown of groupPlayhead.repeating.rundowns) {
-				// Add the rundown to the timeline:
-				let obj: TimelineObjEmpty | null = rundownToTimelineObj(rundown.rundown, rundown.startTime)
+			for (const part of groupPlayhead.repeating.parts) {
+				// Add the part to the timeline:
+				let obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
 				// We have to modify the ids so that they won't collide with the previous ones:
 				changeTimelineId(obj, (id) => getUniqueId(id))
 				repeatingObj.children?.push(obj)
@@ -108,12 +108,12 @@ export function updateTimeline(
 
 	return groupPlayhead || null
 }
-function rundownToTimelineObj(rundown: RundownModel, startTime: number): TimelineObjEmpty {
+function partToTimelineObj(part: PartModel, startTime: number): TimelineObjEmpty {
 	const timelineObj: TimelineObjEmpty = {
-		id: rundown.id,
+		id: part.id,
 		enable: {
 			start: startTime,
-			duration: rundown.resolved.duration,
+			duration: part.resolved.duration,
 		},
 		layer: '',
 		content: {
@@ -122,7 +122,7 @@ function rundownToTimelineObj(rundown: RundownModel, startTime: number): Timelin
 		},
 		classes: [],
 		isGroup: true,
-		children: JSON.parse(JSON.stringify(rundown.timeline)), // clone
+		children: JSON.parse(JSON.stringify(part.timeline)), // clone
 	}
 
 	return timelineObj

@@ -1,5 +1,5 @@
 .group {
-	border: 0.1rem solid $rundownOutlineColor;
+	border: 0.1rem solid $partOutlineColor;
 	position: relative;
 	margin: 2rem 0 1.5rem;
 	padding-bottom: 2rem;
@@ -13,7 +13,7 @@
 		top: 0;
 		transform: translateY(-50%);
 		left: 2rem;
-		background-color: $rundownOutlineColor;
+		background-color: $partOutlineColor;
 		display: flex;
 		align-items: center;
 		font-size: 1.3rem;

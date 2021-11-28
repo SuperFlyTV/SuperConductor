@@ -9,14 +9,14 @@ import { findMedia, findTimelineObj } from '@/lib/util'
 import { MediaLibrary } from './MediaLibrary'
 import { TemplatesLibrary } from './TemplatesLibrary'
 import { GroupModel } from '@/models/GroupModel'
-import { RundownModel } from '@/models/RundownModel'
+import { PartModel } from '@/models/PartModel'
 import { GUIContext } from '@/react/App'
 
 export const Sidebar: React.FC<{ appData: AppModel }> = (props) => {
 	const { gui, updateGUI } = useContext(GUIContext)
 	const [editing, setEditing] = useState<{
 		group: GroupModel
-		rundown: RundownModel
+		part: PartModel
 		timelineObj: TSRTimelineObj
 	}>()
 	const [media, setMedia] = useState<MediaModel>()

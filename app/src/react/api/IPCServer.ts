@@ -12,14 +12,14 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('triggerAppFeed')
 	}
 
-	playRundown(data: { groupId: string; rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('playRundown', data)
+	playPart(data: { groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('playPart', data)
 	}
-	queueRundownGroup(data: { groupId: string; rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('queueRundownGroup', data)
+	queuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('queuePartGroup', data)
 	}
-	unqueueRundownGroup(data: { groupId: string; rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('unqueueRundownGroup', data)
+	unqueuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('unqueuePartGroup', data)
 	}
 	stopGroup(data: { groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
@@ -32,18 +32,18 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}
-	newRundown(data: {
+	newPart(data: {
 		name: string
-		/** The group to create the rundown into. If null; will create a "transparent group" */
+		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 	}): Promise<string> {
-		return this.invokeServerMethod('newRundown', data)
+		return this.invokeServerMethod('newPart', data)
 	}
 	newGroup(data: { name: string }): Promise<string> {
 		return this.invokeServerMethod('newGroup', data)
 	}
-	deleteRundown(data: { groupId: string; rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('deleteRundown', data)
+	deletePart(data: { groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('deletePart', data)
 	}
 	deleteGroup(data: { groupId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteGroup', data)
@@ -65,15 +65,10 @@ export class IPCServer implements IPCServerMethods {
 	deleteTimelineObj(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteTimelineObj', data)
 	}
-	addMediaToTimeline(data: { groupId: string; rundownId: string; layerId: string; filename: string }): Promise<void> {
+	addMediaToTimeline(data: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
 		return this.invokeServerMethod('addMediaToTimeline', data)
 	}
-	addTemplateToTimeline(data: {
-		groupId: string
-		rundownId: string
-		layerId: string
-		filename: string
-	}): Promise<void> {
+	addTemplateToTimeline(data: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
 		return this.invokeServerMethod('})', data)
 	}
 	toggleGroupLoop(data: { groupId: string; value: boolean }): Promise<void> {
