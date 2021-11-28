@@ -1,13 +1,24 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import { AppModel } from '@/models/AppModel'
-import { APP_FEED_CHANNEL, SELECT_TIMELINE_OBJ_CHANNEL } from '@/ipc/channels'
 
 import './styles/app.scss'
 import { GroupListView } from './components/rundown/GroupList'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { setupKeyTracker } from '@/lib/KeyTracker'
+import { IPCClient } from './api/IPCClient'
+import { IPCServer } from './api/IPCServer'
+import { GUIModel } from '@/models/GUIModel'
+
+export const IPCServerContext = React.createContext<IPCServer>({} as IPCServer)
+export const GUIContext = React.createContext<{
+	gui: GUIModel
+	updateGUI: (newGui: Partial<GUIModel>) => void
+}>({
+	gui: {},
+	updateGUI: () => {},
+})
 
 export const App = () => {
 	const [appData, setAppData] = useState<AppModel>({
@@ -15,7 +26,6 @@ export const App = () => {
 		media: [],
 		templates: [],
 		mappings: undefined,
-		selectedTimelineObjId: undefined,
 	})
 
 	setupKeyTracker()
@@ -24,30 +34,66 @@ export const App = () => {
 	 * Main feed from backend
 	 */
 	useEffect(() => {
-		// Ask backend for the data once ready
-		ipcRenderer.send(APP_FEED_CHANNEL)
-
-		// Save all app data received from backend
-		ipcRenderer.on(APP_FEED_CHANNEL, (event, appModel: AppModel) => {
-			setAppData(appModel)
+		new IPCClient(ipcRenderer, {
+			setAppData: (appModel) => {
+				setAppData(appModel)
+			},
 		})
+
+		// const serverApi = new IPCServer(ipcRenderer)
+
+		// // Ask backend for the data once ready
+		// ipcRenderer.send(APP_FEED_CHANNEL)
 	}, [])
+
+	const serverAPI = useMemo(() => {
+		return new IPCServer(ipcRenderer)
+	}, [])
+
+	useEffect(() => {
+		// Ask backend for the data once ready
+		serverAPI.triggerAppFeed()
+	}, [])
+	const [guiData, setGuiData] = useState<GUIModel>({})
+	const guiContextValue = useMemo(() => {
+		return {
+			gui: guiData,
+			updateGUI: (newGui: Partial<GUIModel>) => {
+				setGuiData({
+					...guiData,
+					...newGui,
+				})
+			},
+		}
+	}, [guiData])
 
 	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.sidebar')
 		if (!isOnLayer && !isOnSidebar) {
-			if (appData.selectedTimelineObjId) {
-				ipcRenderer.send(SELECT_TIMELINE_OBJ_CHANNEL, undefined)
-			}
+			setGuiData((guiData) => {
+				if (guiData.selectedTimelineObjId) {
+					return {
+						...guiData,
+						selectedTimelineObjId: undefined,
+					}
+				} else {
+					// no change:
+					return guiData
+				}
+			})
 		}
 	}
 
 	return (
-		<div className="app" onClick={handleClickAnywhere}>
-			<GroupListView appData={appData} selectedTimelineObjId={appData.selectedTimelineObjId} />
-			<Sidebar appData={appData} />
-		</div>
+		<GUIContext.Provider value={guiContextValue}>
+			<IPCServerContext.Provider value={serverAPI}>
+				<div className="app" onClick={handleClickAnywhere}>
+					<GroupListView appData={appData} />
+					<Sidebar appData={appData} />
+				</div>
+			</IPCServerContext.Provider>
+		</GUIContext.Provider>
 	)
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { MediaModel } from '@/models/MediaModel'
 import { AppModel } from '@/models/AppModel'
 import { TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
@@ -10,12 +10,10 @@ import { MediaLibrary } from './MediaLibrary'
 import { TemplatesLibrary } from './TemplatesLibrary'
 import { GroupModel } from '@/models/GroupModel'
 import { RundownModel } from '@/models/RundownModel'
+import { GUIContext } from '@/react/App'
 
-type PropsType = {
-	appData: AppModel
-}
-
-export const Sidebar = (props: PropsType) => {
+export const Sidebar: React.FC<{ appData: AppModel }> = (props) => {
+	const { gui, updateGUI } = useContext(GUIContext)
 	const [editing, setEditing] = useState<{
 		group: GroupModel
 		rundown: RundownModel
@@ -24,8 +22,8 @@ export const Sidebar = (props: PropsType) => {
 	const [media, setMedia] = useState<MediaModel>()
 
 	useEffect(() => {
-		if (props.appData.selectedTimelineObjId) {
-			const found = findTimelineObj(props.appData, props.appData.selectedTimelineObjId)
+		if (gui.selectedTimelineObjId) {
+			const found = findTimelineObj(props.appData, gui.selectedTimelineObjId)
 			if (found) {
 				setEditing(found)
 				const mediaFilename = (found?.timelineObj.content as any).file

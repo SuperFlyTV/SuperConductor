@@ -5,7 +5,6 @@ import { TemplateModel } from './TemplateModel'
 
 export type AppModel = {
 	groups: GroupModel[]
-	selectedTimelineObjId: string | undefined
 	media: MediaModel[]
 	templates: TemplateModel[]
 	mappings: Mappings | undefined

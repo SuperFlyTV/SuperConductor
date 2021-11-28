@@ -1,16 +1,10 @@
-import {
-	DELETE_TIMELINE_OBJ_CHANNEL,
-	IDeleteTimelineObjChannel,
-	IUpdateTimelineObj,
-	UPDATE_TIMELINE_OBJ_CHANNEL,
-} from '@/ipc/channels'
+import { IPCServerContext } from '@/react/App'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import React from 'react'
+import React, { useContext } from 'react'
 import { Mappings, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow, FormRow } from './DataRow'
 import { InfoGroup } from './InfoGroup'
-const { ipcRenderer } = window.require('electron')
 
 type MyFormValues = {
 	enableStart: number
@@ -18,12 +12,12 @@ type MyFormValues = {
 	layer: string | number
 }
 
-type PropsType = {
+export const TimelineObjInfo: React.FC<{
 	timelineObj: TSRTimelineObj
 	appMappings: Mappings | undefined
-}
+}> = (props) => {
+	const ipcServer = useContext(IPCServerContext)
 
-export const TimelineObjInfo = (props: PropsType) => {
 	const initialValues: MyFormValues = {
 		enableStart: (props.timelineObj.enable as any)?.start,
 		enableDuration: (props.timelineObj.enable as any)?.duration,
@@ -38,13 +32,12 @@ export const TimelineObjInfo = (props: PropsType) => {
 				initialValues={initialValues}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					const updateObj: IUpdateTimelineObj = {
+					ipcServer.updateTimelineObj({
 						timelineObjId: props.timelineObj.id,
 						layer: values.layer,
 						enableStart: values.enableStart,
 						enableDuration: values.enableDuration,
-					}
-					ipcRenderer.send(UPDATE_TIMELINE_OBJ_CHANNEL, updateObj)
+					})
 					actions.setSubmitting(false)
 				}}
 			>
@@ -74,8 +67,7 @@ export const TimelineObjInfo = (props: PropsType) => {
 						<div className="btn-row-equal">
 							<TrashBtn
 								onClick={() => {
-									const data: IDeleteTimelineObjChannel = { timelineObjId: props.timelineObj.id }
-									ipcRenderer.send(DELETE_TIMELINE_OBJ_CHANNEL, data)
+									ipcServer.deleteTimelineObj({ timelineObjId: props.timelineObj.id })
 								}}
 							/>
 							<button type="submit" className="btn form">

@@ -1,17 +1,8 @@
 import { Column, useTable } from 'react-table'
-import React from 'react'
+import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
 import { InfoGroup } from './InfoGroup'
-import {
-	DELETE_TEMPLATE_DATA_CHANNEL,
-	IDeleteTemplateDataChannel,
-	INewTemplateDataChannel,
-	IUpdateTemplateDataChannel,
-	NEW_TEMPLATE_DATA_CHANNEL,
-	UPDATE_TEMPLATE_DATA_CHANNEL,
-} from '@/ipc/channels'
-
-const { ipcRenderer } = window.require('electron')
+import { IPCServerContext } from '@/react/App'
 
 type IUpdateData = (rowId: string, columnId: string, oldValue: string, newValue: string) => void
 type IDeleteRow = (rowId: string) => void
@@ -64,36 +55,30 @@ const defaultColumn = {
 	Cell: EditableCell,
 }
 
-interface ITemplateData {
-	timelineObjId: string
-	templateData: { [id: string]: string }
-}
-
-export const TemplateData = (props: ITemplateData) => {
+export const TemplateData: React.FC<{ timelineObjId: string; templateData: { [id: string]: string } }> = (props) => {
+	const ipcServer = useContext(IPCServerContext)
 	const handleUpdateData: IUpdateData = (rowId, columnId, oldValue, newValue) => {
 		if (oldValue === newValue) return
-		const data: IUpdateTemplateDataChannel = {
+
+		ipcServer.updateTemplateData({
 			timelineObjId: props.timelineObjId,
 			key: rowId,
 			changedItemId: columnId,
 			value: newValue,
-		}
-		ipcRenderer.send(UPDATE_TEMPLATE_DATA_CHANNEL, data)
+		})
 	}
 
 	const handleAddNew = () => {
-		const data: INewTemplateDataChannel = {
+		ipcServer.newTemplateData({
 			timelineObjId: props.timelineObjId,
-		}
-		ipcRenderer.send(NEW_TEMPLATE_DATA_CHANNEL, data)
+		})
 	}
 
 	const handleDelete: IDeleteRow = (rowId: string) => {
-		const data: IDeleteTemplateDataChannel = {
+		ipcServer.deleteTemplateData({
 			timelineObjId: props.timelineObjId,
 			key: rowId,
-		}
-		ipcRenderer.send(DELETE_TEMPLATE_DATA_CHANNEL, data)
+		})
 	}
 
 	const data: Array<any> = []

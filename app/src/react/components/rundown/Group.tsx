@@ -1,16 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useContext } from 'react'
 import Toggle from '@atlaskit/toggle'
-import {
-	DELETE_GROUP_CHANNEL,
-	IDeleteGroup,
-	INewRundown,
-	IToggleAutoPlayLoop,
-	IToggleGroupLoop,
-	NEW_RUNDOWN_CHANNEL,
-	STOP_GROUP_CHANNEL,
-	TOGGLE_GROUP_AUTOPLAY_CHANNEL,
-	TOGGLE_GROUP_LOOP_CHANNEL,
-} from '@/ipc/channels'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { GroupModel } from '@/models/GroupModel'
 import { RundownView } from './Rundown'
@@ -19,12 +8,11 @@ import { Popup } from '../popup/Popup'
 import { FormRow } from '../sidebar/DataRow'
 import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-const { ipcRenderer } = window.require('electron')
+import { IPCServerContext } from '@/react/App'
 
-export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: string | undefined }> = ({
-	group,
-	selectedTimelineObjId,
-}) => {
+export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
+	const ipcServer = useContext(IPCServerContext)
+
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
 	const [activeRundowns, setActiveRundowns] = useState<{ [rundownId: string]: true }>({})
 	useEffect(() => {
@@ -68,7 +56,8 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 
 			if (stopPlayingRef.current) {
 				console.log('Auto-stopping group', group.id)
-				ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: group.id })
+
+				ipcServer.stopGroup({ groupId: group.id })
 				stopPlayingRef.current = false
 			}
 		} else {
@@ -85,14 +74,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 
 	if (group.transparent) {
 		const firstRundown = group.rundowns[0]
-		return firstRundown ? (
-			<RundownView
-				selectedTimelineObjId={selectedTimelineObjId}
-				rundown={firstRundown}
-				parentGroup={group}
-				playhead={playhead}
-			/>
-		) : null
+		return firstRundown ? <RundownView rundown={firstRundown} parentGroup={group} playhead={playhead} /> : null
 	} else {
 		return (
 			<div className="group">
@@ -104,8 +86,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 								id="auto-play"
 								isChecked={group.autoPlay}
 								onChange={() => {
-									const data: IToggleAutoPlayLoop = { groupId: group.id, value: !group.autoPlay }
-									ipcRenderer.send(TOGGLE_GROUP_AUTOPLAY_CHANNEL, data)
+									ipcServer.toggleGroupAutoplay({ groupId: group.id, value: !group.autoPlay })
 								}}
 							/>
 							<label htmlFor="auto-play" className="toggle-label">
@@ -118,8 +99,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 								id="loop"
 								isChecked={group.loop}
 								onChange={() => {
-									const data: IToggleGroupLoop = { groupId: group.id, value: !group.loop }
-									ipcRenderer.send(TOGGLE_GROUP_LOOP_CHANNEL, data)
+									ipcServer.toggleGroupLoop({ groupId: group.id, value: !group.loop })
 								}}
 							/>
 							<label htmlFor="loop" className="toggle-label">
@@ -128,21 +108,14 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 						</div>
 						<TrashBtn
 							onClick={() => {
-								const data: IDeleteGroup = { groupId: group.id }
-								ipcRenderer.send(DELETE_GROUP_CHANNEL, data)
+								ipcServer.deleteGroup({ groupId: group.id })
 							}}
 						/>
 					</div>
 				</div>
 				<div className="group__content">
 					{group.rundowns.map((rundown) => (
-						<RundownView
-							key={rundown.id}
-							selectedTimelineObjId={selectedTimelineObjId}
-							rundown={rundown}
-							parentGroup={group}
-							playhead={playhead}
-						/>
+						<RundownView key={rundown.id} rundown={rundown} parentGroup={group} playhead={playhead} />
 					))}
 
 					<GroupOptions group={group} />
@@ -153,6 +126,7 @@ export const GroupView: React.FC<{ group: GroupModel; selectedTimelineObjId: str
 }
 
 const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
+	const ipcServer = useContext(IPCServerContext)
 	const [newRundownOpen, setNewRundownOpen] = React.useState(false)
 
 	return (
@@ -168,12 +142,10 @@ const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
 						onSubmit={(values) => {
-							const data: INewRundown = {
+							ipcServer.newRundown({
 								name: values.name,
 								groupId: props.group.id,
-							}
-
-							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, data)
+							})
 							setNewRundownOpen(false)
 						}}
 					>

@@ -1,18 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
 import { Field, Form, Formik, FormikProps } from 'formik'
-import {
-	ADD_TEMPLATE_TO_TIMELINE_CHANNEL,
-	IAddTemplateToTimelineChannel,
-	REFRESH_TEMPLATES_CHANNEL,
-} from '@/ipc/channels'
 import { DataRow } from './DataRow'
 import { getAllRundowns, getDefaultMappingLayer, getDefaultRundown } from '@/lib/getDefaults'
 import classNames from 'classnames'
-const { ipcRenderer } = window.require('electron')
+import { IPCServerContext } from '@/react/App'
 
 export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
+	const ipcServer = useContext(IPCServerContext)
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
 	const selectedTemplate = props.appData.templates.find((item) => item.name === selectedFilename)
 
@@ -34,7 +30,7 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 				refreshActive={refreshing}
 				onRefreshClick={() => {
 					setRefreshing(true)
-					ipcRenderer.send(REFRESH_TEMPLATES_CHANNEL)
+					ipcServer.refreshTemplates()
 				}}
 			>
 				<table className="selectable">
@@ -82,13 +78,12 @@ export const TemplatesLibrary: React.FC<{ appData: AppModel }> = (props) => {
 									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
 									if (!rd) return
 
-									const data: IAddTemplateToTimelineChannel = {
+									ipcServer.addTemplateToTimeline({
 										groupId: rd.group.id,
 										rundownId: rd.rundown.id,
 										layerId: values.layerId,
 										filename: selectedTemplate.name,
-									}
-									ipcRenderer.send(ADD_TEMPLATE_TO_TIMELINE_CHANNEL, data)
+									})
 								}}
 							>
 								{(fProps: FormikProps<any>) => (

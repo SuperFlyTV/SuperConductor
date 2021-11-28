@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { InfoGroup } from './InfoGroup'
 import { MediaInfo } from './MediaInfo'
 import { Field, Form, Formik, FormikProps } from 'formik'
-import { ADD_MEDIA_TO_TIMELINE_CHANNEL, IAddMediaToTimelineChannel, REFRESH_MEDIA_CHANNEL } from '@/ipc/channels'
 import { bytesToSize } from '@/lib/bytesToSize'
 import { getAllRundowns, getDefaultMappingLayer, getDefaultRundown } from '@/lib/getDefaults'
 import classNames from 'classnames'
-const { ipcRenderer } = window.require('electron')
+import { IPCServerContext } from '@/react/App'
 
 type PropsType = {
 	appData: AppModel
 }
 
 export const MediaLibrary = (props: PropsType) => {
+	const ipcServer = useContext(IPCServerContext)
+
 	const [selectedFilename, setSelectedFilename] = useState<string | undefined>()
 	const selectedMedia = props.appData.media.find((item) => item.name === selectedFilename)
 
@@ -35,7 +36,7 @@ export const MediaLibrary = (props: PropsType) => {
 				refreshActive={refreshing}
 				onRefreshClick={() => {
 					setRefreshing(true)
-					ipcRenderer.send(REFRESH_MEDIA_CHANNEL)
+					ipcServer.refreshMedia()
 				}}
 			>
 				<table className="selectable">
@@ -91,13 +92,12 @@ export const MediaLibrary = (props: PropsType) => {
 									const rd = getAllRundowns(props.appData).find((r) => r.rundown.id === values.rundownId)
 									if (!rd) return
 
-									const data: IAddMediaToTimelineChannel = {
+									ipcServer.addMediaToTimeline({
 										groupId: rd.group.id,
 										rundownId: rd.rundown.id,
 										layerId: values.layerId,
 										filename: selectedMedia.name,
-									}
-									ipcRenderer.send(ADD_MEDIA_TO_TIMELINE_CHANNEL, data)
+									})
 								}}
 							>
 								{(fProps: FormikProps<any>) => (

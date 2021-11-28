@@ -6,5 +6,4 @@ export const appMock: AppModel = {
 	media: [],
 	templates: [],
 	mappings: mappingsMock,
-	selectedTimelineObjId: undefined,
 }

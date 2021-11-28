@@ -1,20 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { AppModel } from '@/models/AppModel'
 import { Popup } from '../popup/Popup'
-import { ErrorMessage, Field, Form, Formik, FormikProps } from 'formik'
+import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { FormRow } from '../sidebar/DataRow'
-import { INewGroup, INewRundown, NEW_GROUP_CHANNEL, NEW_RUNDOWN_CHANNEL } from '@/ipc/channels'
 import { GroupView } from './Group'
-const { ipcRenderer } = window.require('electron')
+import { IPCServerContext } from '@/react/App'
 
 export const GroupListView: React.FC<{
 	appData: AppModel
-	selectedTimelineObjId: string | undefined
 }> = (props) => {
 	return (
 		<div className="group-list">
 			{props.appData.groups.map((group, index) => {
-				return <GroupView key={index} group={group} selectedTimelineObjId={props.selectedTimelineObjId} />
+				return <GroupView key={index} group={group} />
 			})}
 
 			<GroupListOptions />
@@ -23,6 +21,7 @@ export const GroupListView: React.FC<{
 }
 
 const GroupListOptions: React.FC<{}> = () => {
+	const ipcServer = useContext(IPCServerContext)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 
@@ -42,12 +41,10 @@ const GroupListOptions: React.FC<{}> = () => {
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
 						onSubmit={(values, actions) => {
-							const data: INewRundown = {
+							ipcServer.newRundown({
 								name: values.name,
 								groupId: null,
-							}
-
-							ipcRenderer.send(NEW_RUNDOWN_CHANNEL, data)
+							})
 							setNewRundownOpen(false)
 						}}
 					>
@@ -74,12 +71,10 @@ const GroupListOptions: React.FC<{}> = () => {
 					<Formik
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
-						onSubmit={(values, actions) => {
-							const data: INewGroup = {
+						onSubmit={(values, _actions) => {
+							ipcServer.newGroup({
 								name: values.name,
-							}
-
-							ipcRenderer.send(NEW_GROUP_CHANNEL, data)
+							})
 
 							setNewGroupOpen(false)
 						}}

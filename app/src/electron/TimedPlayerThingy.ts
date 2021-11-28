@@ -1,18 +1,21 @@
-import { BrowserWindow } from 'electron'
-import { APP_FEED_CHANNEL } from '@/ipc/channels'
+import { BrowserWindow, ipcMain } from 'electron'
 import { appMock } from '@/mocks/appMock'
 import { TPTCasparCG } from './TPTCasparCG'
-import { IPCPostman } from './IPCPostman'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { GroupModel } from '@/models/GroupModel'
+import { IPCServer } from './IPCServer'
+import { IPCClient } from './IPCClient'
+import { updateTimeline, UpdateTimelineCache } from './timeline'
+import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
 
 export class TimedPlayerThingy {
 	appData = appMock
 
 	mainWindow?: BrowserWindow
-	ipcPostman?: IPCPostman
+	ipcServer?: IPCServer
+	ipcClient?: IPCClient
 	tptCaspar?: TPTCasparCG
 
 	windowPosition: WindowPosition = {
@@ -29,21 +32,26 @@ export class TimedPlayerThingy {
 	initWindow(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
 
-		this.ipcPostman = new IPCPostman(
-			this.appData,
-			this.updateView.bind(this),
-			() => {
+		this.ipcServer = new IPCServer(ipcMain, this.appData, {
+			updateViewRef: () => {
+				this.updateView()
+			},
+			refreshMediaRef: () => {
 				this.tptCaspar?.fetchAndSetMedia()
 			},
-			() => {
+			refreshTemplatesRef: () => {
 				this.tptCaspar?.fetchAndSetTemplates()
-			}
-		)
+			},
+			updateTimeline: (cache: UpdateTimelineCache, group: GroupModel): GroupPreparedPlayheadData | null => {
+				return updateTimeline(cache, this.appData, group)
+			},
+		})
+		this.ipcClient = new IPCClient(this.mainWindow)
 		this.tptCaspar = new TPTCasparCG(this.appData, this.updateView.bind(this))
 	}
 
 	updateView() {
-		this.mainWindow?.webContents.send(APP_FEED_CHANNEL, this.appData)
+		this.ipcClient?.appFeed(this.appData)
 
 		this.saveAppData()
 	}

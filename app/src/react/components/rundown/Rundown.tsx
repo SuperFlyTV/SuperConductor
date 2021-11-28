@@ -1,19 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { PlayControlBtn } from '../inputs/PlayControlBtn'
 import { QueueBtn, UnQueueBtn } from '../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import Timeline, { Resolver } from 'superfly-timeline'
-const { ipcRenderer } = window.require('electron')
-import {
-	DELETE_RUNDOWN_CHANNEL,
-	IDeleteRundown,
-	IPlayRundown,
-	PLAY_RUNDOWN_CHANNEL,
-	QUEUE_RUNDOWN_GROUP_CHANNEL,
-	STOP_GROUP_CHANNEL,
-	UNQUEUE_RUNDOWN_GROUP_CHANNEL,
-} from '@/ipc/channels'
+import { Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
@@ -23,13 +13,15 @@ import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { getKeyTracker } from '@/lib/KeyTracker'
 import { CountDownHead } from './CountdownHead'
+import { IPCServerContext } from '@/react/App'
 
 export const RundownView: React.FC<{
-	selectedTimelineObjId: string | undefined
 	rundown: RundownModel
 	parentGroup: GroupModel
 	playhead: GroupPlayhead | null
-}> = ({ selectedTimelineObjId, rundown, parentGroup, playhead }) => {
+}> = ({ rundown, parentGroup, playhead }) => {
+	const ipcServer = useContext(IPCServerContext)
+
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(rundown.timeline, { time: 0 })
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
@@ -51,14 +43,13 @@ export const RundownView: React.FC<{
 		parentGroup.playout.startTime === null && parentGroup.playout.rundownIds.length > 0
 	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.rundownIds[0] !== rundown.id
 	const handleStart = () => {
-		const data: IPlayRundown = { groupId: parentGroup.id, rundownId: rundown.id }
-		ipcRenderer.send(PLAY_RUNDOWN_CHANNEL, data)
+		ipcServer.playRundown({ groupId: parentGroup.id, rundownId: rundown.id })
 	}
 
 	// Stop button:
 	const cannotStop: boolean = !isGroupPlaying
 	const handleStop = () => {
-		ipcRenderer.send(STOP_GROUP_CHANNEL, { groupId: parentGroup.id })
+		ipcServer.stopGroup({ groupId: parentGroup.id })
 	}
 
 	// Queue button:
@@ -81,16 +72,15 @@ export const RundownView: React.FC<{
 		}
 	})
 	const handleQueue = () => {
-		ipcRenderer.send(QUEUE_RUNDOWN_GROUP_CHANNEL, { groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.queueRundownGroup({ groupId: parentGroup.id, rundownId: rundown.id })
 	}
 	const handleUnQueue = () => {
-		ipcRenderer.send(UNQUEUE_RUNDOWN_GROUP_CHANNEL, { groupId: parentGroup.id, rundownId: rundown.id })
+		ipcServer.unqueueRundownGroup({ groupId: parentGroup.id, rundownId: rundown.id })
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		const data: IDeleteRundown = { groupId: parentGroup.id, rundownId: rundown.id }
-		ipcRenderer.send(DELETE_RUNDOWN_CHANNEL, data)
+		ipcServer.deleteRundown({ groupId: parentGroup.id, rundownId: rundown.id })
 	}
 
 	return (
@@ -138,15 +128,7 @@ export const RundownView: React.FC<{
 						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
 							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
 
-							return (
-								<Layer
-									key={layerId}
-									totalDuration={maxDuration}
-									timelineObjs={objectsOnLayer}
-									layerId={layerId}
-									selectedTimelineObjId={selectedTimelineObjId}
-								/>
-							)
+							return <Layer key={layerId} totalDuration={maxDuration} timelineObjs={objectsOnLayer} layerId={layerId} />
 						})}
 					</div>
 				</div>
