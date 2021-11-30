@@ -69,7 +69,7 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('addMediaToTimeline', data)
 	}
 	addTemplateToTimeline(data: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
-		return this.invokeServerMethod('})', data)
+		return this.invokeServerMethod('addTemplateToTimeline', data)
 	}
 	toggleGroupLoop(data: { groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupLoop', data)

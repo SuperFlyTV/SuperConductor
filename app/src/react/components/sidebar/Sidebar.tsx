@@ -35,7 +35,7 @@ export const Sidebar: React.FC<{ appData: AppModel }> = (props) => {
 		} else {
 			setEditing(undefined)
 		}
-	}, [props.appData])
+	}, [props.appData, gui.selectedTimelineObjId])
 
 	let sidebarTitle = ''
 	if (editing) {
