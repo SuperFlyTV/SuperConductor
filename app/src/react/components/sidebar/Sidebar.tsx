@@ -1,68 +1,79 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { MediaModel } from '@/models/MediaModel'
-import { AppModel } from '@/models/AppModel'
-import { TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
-import { MediaInfo } from './MediaInfo'
-import { TimelineObjInfo } from './TimelineObjInfo'
-import { TemplateData } from './TemplateData'
-import { findMedia, findTimelineObj } from '@/lib/util'
-import { MediaLibrary } from './MediaLibrary'
-import { TemplatesLibrary } from './TemplatesLibrary'
-import { GroupModel } from '@/models/GroupModel'
-import { PartModel } from '@/models/PartModel'
-import { GUIContext } from '@/react/App'
+import { findGroup, findPart, findTimelineObj } from '@/lib/util'
+import { Group } from '@/models/rundown/Group'
+import { Part } from '@/models/rundown/Part'
+import { RundownContext } from '@/react/contexts/Rundown'
+import { GUIContext } from '@/react/contexts/GUI'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { ResourcesContext } from '@/react/contexts/Resources'
+import { ResourceAny } from '@/models/resource/resource'
+import { describeTimelineObject } from '@/lib/TimelineObj'
+import { ResourceInfo } from './ResourceInfo'
+import { ResourceLibrary } from './ResourceLibrary'
 
-export const Sidebar: React.FC<{ appData: AppModel }> = (props) => {
+export const Sidebar: React.FC<{}> = (props) => {
+	const resources = useContext(ResourcesContext)
+	const rundown = useContext(RundownContext)
 	const { gui, updateGUI } = useContext(GUIContext)
+
 	const [editing, setEditing] = useState<{
-		group: GroupModel
-		part: PartModel
-		timelineObj: TSRTimelineObj
+		group: Group
+		part: Part
+		timelineObj: TimelineObj
 	}>()
-	const [media, setMedia] = useState<MediaModel>()
+	const [resource, setResource] = useState<ResourceAny>()
 
 	useEffect(() => {
-		if (gui.selectedTimelineObjId) {
-			const found = findTimelineObj(props.appData, gui.selectedTimelineObjId)
-			if (found) {
-				setEditing(found)
-				const mediaFilename = (found?.timelineObj.content as any).file
-				const foundMedia = findMedia(props.appData.media, mediaFilename)
-				setMedia(foundMedia)
-			} else {
-				setEditing(undefined)
-			}
-		} else {
-			setEditing(undefined)
-		}
-	}, [props.appData, gui.selectedTimelineObjId])
+		let newEditing: typeof editing = undefined
+		let newResource: typeof resource = undefined
 
-	let sidebarTitle = ''
+		if (gui.selectedGroupId && gui.selectedPartId && gui.selectedTimelineObjId) {
+			;(() => {
+				const group = findGroup(rundown, gui.selectedGroupId)
+				if (!group) return
+
+				const part = findPart(group, gui.selectedPartId)
+				if (!part) return
+
+				const timelineObj = findTimelineObj(part, gui.selectedTimelineObjId)
+				if (!timelineObj) return
+
+				setEditing({ group, part, timelineObj })
+
+				if (timelineObj.resourceId) {
+					const resource = resources[timelineObj.resourceId]
+					if (!resource) return
+
+					newResource = resource
+				}
+			})()
+		}
+
+		setEditing(newEditing)
+		setResource(newResource)
+	}, [rundown, resources, gui.selectedGroupId, gui.selectedPartId, gui.selectedTimelineObjId])
+
 	if (editing) {
-		const objContent = editing.timelineObj.content as any
-		if (objContent.type === TimelineContentTypeCasparCg.TEMPLATE) {
-			sidebarTitle = objContent.name
-		} else if (objContent.type === TimelineContentTypeCasparCg.MEDIA) {
-			sidebarTitle = objContent.file
-		}
+		const description = editing ? describeTimelineObject(editing.timelineObj.obj) : undefined
+
+		return (
+			<>
+				{<div className="title">{description?.label}</div>}
+
+				{resource && <ResourceInfo resource={resource} />}
+
+				{/* {<TimelineObjInfo timelineObj={editing.timelineObj} appMappings={props.appData.mappings} />} */}
+
+				{/* {(editing.timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
+					<TemplateData
+						timelineObjId={editing.timelineObj.id}
+						templateData={JSON.parse((editing.timelineObj.content as any)?.data)}
+					/>
+				)} */}
+			</>
+		)
+	} else {
+		// not editing
+		return <ResourceLibrary />
 	}
-
-	return (
-		<div className="sidebar timeline-obj-sidebar">
-			{sidebarTitle && <div className="title">{sidebarTitle}</div>}
-
-			{editing && media && <MediaInfo media={media} />}
-			{editing && <TimelineObjInfo timelineObj={editing.timelineObj} appMappings={props.appData.mappings} />}
-
-			{editing && (editing.timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
-				<TemplateData
-					timelineObjId={editing.timelineObj.id}
-					templateData={JSON.parse((editing.timelineObj.content as any)?.data)}
-				/>
-			)}
-
-			{!editing && <MediaLibrary appData={props.appData} />}
-			{!editing && <TemplatesLibrary appData={props.appData} />}
-		</div>
-	)
 }

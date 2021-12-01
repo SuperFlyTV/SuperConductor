@@ -7,7 +7,7 @@ interface InfoGroupProps {
 	children: React.ReactNode
 	enableRefresh?: boolean
 	refreshActive?: boolean
-	onRefreshClick?: () => void
+	onRefreshClick?: () => Promise<void>
 }
 
 export const InfoGroup = (props: InfoGroupProps) => {
@@ -19,7 +19,7 @@ export const InfoGroup = (props: InfoGroupProps) => {
 					<button
 						className={classNames({ refresh: true, active: props.refreshActive })}
 						onClick={() => {
-							if (props.onRefreshClick) props.onRefreshClick()
+							if (props.onRefreshClick) props.onRefreshClick().catch(console.error)
 						}}
 					>
 						<HiRefresh size={15} color="white" />
@@ -29,4 +29,17 @@ export const InfoGroup = (props: InfoGroupProps) => {
 			<div className="content">{props.children}</div>
 		</div>
 	)
+}
+
+export const DataRow = (props: { label: string; value: any }) => {
+	return (
+		<div className="row">
+			<div className="label">{props.label}</div>
+			<div className="value">{props.value}</div>
+		</div>
+	)
+}
+
+export const FormRow = (props: { children: React.ReactNode }) => {
+	return <div className="row">{props.children}</div>
 }

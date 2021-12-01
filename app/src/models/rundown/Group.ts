@@ -1,7 +1,7 @@
-import { GroupPreparedPlayheadData } from './PlayheadData'
-import { PartModel } from './PartModel'
+import { GroupPreparedPlayheadData } from '../GUI/PreparedPlayhead'
+import { Part } from './Part'
 
-export type GroupModel = {
+export type Group = {
 	id: string
 	name: string
 
@@ -10,7 +10,7 @@ export type GroupModel = {
 
 	autoPlay: boolean
 	loop: boolean
-	parts: PartModel[]
+	parts: Part[]
 
 	/** Data related to the playout of the group */
 	playout: {

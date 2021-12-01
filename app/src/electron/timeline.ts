@@ -1,12 +1,12 @@
 import { prepareGroupPlayhead } from '@/lib/playhead'
-import { findGroup, findPart, hashObj } from '@/lib/util'
-import { AppModel } from '@/models/AppModel'
-import { GroupModel } from '@/models/GroupModel'
-import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-import { PartModel } from '@/models/PartModel'
+import { hashObj } from '@/lib/util'
+import { Group } from '@/models/rundown/Group'
+import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { Part } from '@/models/rundown/Part'
 import { TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { TsrBridgeApi } from './api/TsrBridge'
+import { StorageHandler } from './storageHandler'
 
 export interface UpdateTimelineCache {
 	groupHashes?: { [groupId: string]: string }
@@ -15,8 +15,8 @@ export interface UpdateTimelineCache {
 
 export function updateTimeline(
 	cache: UpdateTimelineCache,
-	appData: AppModel,
-	group: GroupModel
+	storage: StorageHandler,
+	group: Group
 ): GroupPreparedPlayheadData | null {
 	const groupPlayhead = prepareGroupPlayhead(group)
 
@@ -96,19 +96,21 @@ export function updateTimeline(
 	const HACK_ALLWAYS_SEND_MAPPINGS = true
 
 	// Check if the meppings need to be re-rent:
-	const mappingsHash = hashObj(appData.mappings)
+	const project = storage.getProject()
+
+	const mappingsHash = hashObj(project.mappings)
 	if (cache.mappingsHash !== mappingsHash || HACK_ALLWAYS_SEND_MAPPINGS) {
 		cache.mappingsHash = mappingsHash
 
 		// The mappings have changed, send updates to TSR:
 		TsrBridgeApi.updateMappings({
-			mappings: appData.mappings,
+			mappings: project.mappings,
 		}).catch(console.error)
 	}
 
 	return groupPlayhead || null
 }
-function partToTimelineObj(part: PartModel, startTime: number): TimelineObjEmpty {
+function partToTimelineObj(part: Part, startTime: number): TimelineObjEmpty {
 	const timelineObj: TimelineObjEmpty = {
 		id: part.id,
 		enable: {

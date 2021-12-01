@@ -1,13 +1,13 @@
-import { GroupModel } from '@/models/GroupModel'
-import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-import { PartModel } from '@/models/PartModel'
+import { Group } from '@/models/rundown/Group'
+import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { Part } from '@/models/rundown/Part'
 import { last } from './lib'
 import { findPart } from './util'
 
 /** Calculates how the parts in a group is going to be played
  * @see GroupPreparedPlayheadData
  */
-export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadData | null {
+export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | null {
 	if (group.playout.startTime && group.playout.partIds.length) {
 		const data: GroupPreparedPlayheadData = {
 			startTime: 0,
@@ -22,7 +22,7 @@ export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadDa
 
 		// let currentPart: PartModel = startPart
 
-		const queuedParts: PartModel[] = []
+		const queuedParts: Part[] = []
 		for (const partId of group.playout.partIds) {
 			const part = findPart(group, partId)
 			if (part) queuedParts.push(part)
@@ -71,7 +71,7 @@ export function prepareGroupPlayhead(group: GroupModel): GroupPreparedPlayheadDa
 				nextStartTime += part.resolved.duration
 			}
 			data.duration = nextStartTime // Note: This might be overwritten later.
-			let lastQueuedPart: PartModel = last(queuedParts) as PartModel
+			let lastQueuedPart: Part = last(queuedParts) as Part
 
 			if (group.autoPlay) {
 				// Add the rest of the Parts in the group:
@@ -128,7 +128,7 @@ export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupP
 			isInRepeating: false,
 			timeUntilParts: {},
 		}
-		const addTimeUntilPart = (part: PartModel, time: number) => {
+		const addTimeUntilPart = (part: Part, time: number) => {
 			if (time < 0) return
 
 			if (!playhead.timeUntilParts[part.id]) playhead.timeUntilParts[part.id] = []

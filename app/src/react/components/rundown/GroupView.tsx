@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
 import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../inputs/TrashBtn'
-import { GroupModel } from '@/models/GroupModel'
+import { Group } from '@/models/rundown/Group'
 import { PartView } from './PartView'
 import { Formik, Form, Field, ErrorMessage } from 'formik'
 import { Popup } from '../popup/Popup'
-import { FormRow } from '../sidebar/DataRow'
 import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
-import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
-import { IPCServerContext } from '@/react/App'
+import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { IPCServerContext } from '@/react/contexts/IPCServer'
+import { FormRow } from '../sidebar/InfoGroup'
 
-export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
+export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group, rundownId }) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
@@ -57,7 +57,7 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 			if (stopPlayingRef.current) {
 				console.log('Auto-stopping group', group.id)
 
-				ipcServer.stopGroup({ groupId: group.id })
+				ipcServer.stopGroup({ rundownId, groupId: group.id })
 				stopPlayingRef.current = false
 			}
 		} else {
@@ -74,7 +74,9 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 
 	if (group.transparent) {
 		const firstPart = group.parts[0]
-		return firstPart ? <PartView part={firstPart} parentGroup={group} playhead={playhead} /> : null
+		return firstPart ? (
+			<PartView rundownId={rundownId} part={firstPart} parentGroup={group} playhead={playhead} />
+		) : null
 	} else {
 		return (
 			<div className="group">
@@ -86,7 +88,7 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 								id="auto-play"
 								isChecked={group.autoPlay}
 								onChange={() => {
-									ipcServer.toggleGroupAutoplay({ groupId: group.id, value: !group.autoPlay })
+									ipcServer.toggleGroupAutoplay({ rundownId, groupId: group.id, value: !group.autoPlay })
 								}}
 							/>
 							<label htmlFor="auto-play" className="toggle-label">
@@ -99,7 +101,7 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 								id="loop"
 								isChecked={group.loop}
 								onChange={() => {
-									ipcServer.toggleGroupLoop({ groupId: group.id, value: !group.loop })
+									ipcServer.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
 								}}
 							/>
 							<label htmlFor="loop" className="toggle-label">
@@ -108,24 +110,24 @@ export const GroupView: React.FC<{ group: GroupModel }> = ({ group }) => {
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ groupId: group.id })
+								ipcServer.deleteGroup({ rundownId, groupId: group.id })
 							}}
 						/>
 					</div>
 				</div>
 				<div className="group__content">
 					{group.parts.map((part) => (
-						<PartView key={part.id} part={part} parentGroup={group} playhead={playhead} />
+						<PartView key={part.id} rundownId={rundownId} part={part} parentGroup={group} playhead={playhead} />
 					))}
 
-					<GroupOptions group={group} />
+					<GroupOptions rundownId={rundownId} group={group} />
 				</div>
 			</div>
 		)
 	}
 }
 
-const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
+const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
@@ -143,8 +145,9 @@ const GroupOptions: React.FC<{ group: GroupModel }> = (props) => {
 						enableReinitialize={true}
 						onSubmit={(values) => {
 							ipcServer.newPart({
+								rundownId,
 								name: values.name,
-								groupId: props.group.id,
+								groupId: group.id,
 							})
 							setNewPartOpen(false)
 						}}

@@ -1,6 +1,3 @@
-import { AppModel } from '@/models/AppModel'
-import { GroupModel } from '@/models/GroupModel'
-import { PartModel } from '@/models/PartModel'
 import { Mappings } from 'timeline-state-resolver-types'
 
 export function getDefaultMappingLayer(mappings?: Mappings) {
@@ -17,28 +14,28 @@ export function getDefaultMappingLayer(mappings?: Mappings) {
 	}
 }
 
-export function getDefaultPart(appData: AppModel):
-	| {
-			group: GroupModel
-			part: PartModel
-			name: string
-	  }
-	| undefined {
-	return getAllParts(appData)[0]
-}
+// export function getDefaultPart(appData: AppModel):
+// 	| {
+// 			group: Group
+// 			part: Part
+// 			name: string
+// 	  }
+// 	| undefined {
+// 	return getAllParts(appData)[0]
+// }
 
-export function getAllParts(appData: AppModel): {
-	group: GroupModel
-	part: PartModel
-	name: string
-}[] {
-	const results: { group: GroupModel; part: PartModel; name: string }[] = []
+// export function getAllParts(appData: AppModel): {
+// 	group: Group
+// 	part: Part
+// 	name: string
+// }[] {
+// 	const results: { group: Group; part: Part; name: string }[] = []
 
-	for (const group of appData.groups) {
-		for (const part of group.parts) {
-			results.push({ group, part, name: group.transparent ? part.name : `${group.name}-${part.name}` })
-		}
-	}
+// 	for (const group of appData.groups) {
+// 		for (const part of group.parts) {
+// 			results.push({ group, part, name: group.transparent ? part.name : `${group.name}-${part.name}` })
+// 		}
+// 	}
 
-	return results
-}
+// 	return results
+// }

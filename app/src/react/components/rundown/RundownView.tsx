@@ -1,26 +1,28 @@
 import React, { useContext, useState } from 'react'
-import { AppModel } from '@/models/AppModel'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { FormRow } from '../sidebar/DataRow'
 import { GroupView } from './GroupView'
-import { IPCServerContext } from '@/react/App'
+import { RundownContext } from '@/react/contexts/Rundown'
+import { IPCServerContext } from '@/react/contexts/IPCServer'
+import { Rundown } from '@/models/rundown/Rundown'
+import { FormRow } from '../sidebar/InfoGroup'
 
-export const GroupListView: React.FC<{
-	appData: AppModel
-}> = (props) => {
+export const RundownView: React.FC<{}> = (props) => {
+	const rundown = useContext(RundownContext)
+
+	// console.log('rundown', rundown)
 	return (
 		<div className="group-list">
-			{props.appData.groups.map((group, index) => {
-				return <GroupView key={index} group={group} />
+			{rundown.groups.map((group, index) => {
+				return <GroupView key={index} group={group} rundownId={rundown.id} />
 			})}
 
-			<GroupListOptions />
+			<GroupListOptions rundown={rundown} />
 		</div>
 	)
 }
 
-const GroupListOptions: React.FC<{}> = () => {
+const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
@@ -42,6 +44,7 @@ const GroupListOptions: React.FC<{}> = () => {
 						enableReinitialize={true}
 						onSubmit={(values, actions) => {
 							ipcServer.newPart({
+								rundownId: rundown.id,
 								name: values.name,
 								groupId: null,
 							})
@@ -73,6 +76,7 @@ const GroupListOptions: React.FC<{}> = () => {
 						enableReinitialize={true}
 						onSubmit={(values, _actions) => {
 							ipcServer.newGroup({
+								rundownId: rundown.id,
 								name: values.name,
 							})
 

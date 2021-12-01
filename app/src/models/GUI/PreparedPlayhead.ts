@@ -1,4 +1,4 @@
-import { PartModel } from './PartModel'
+import { Part } from '../rundown/Part'
 
 /**
  * Defines how the parts will be played.
@@ -14,7 +14,7 @@ export interface GroupPreparedPlayheadData {
 		/**
 		 * The point in time the part starts to play. (Starts at 0, relative to GroupPreparedPlayheadData.startTime) */
 		startTime: number
-		part: PartModel
+		part: Part
 	}[]
 
 	repeating: {
@@ -23,7 +23,7 @@ export interface GroupPreparedPlayheadData {
 		parts: {
 			/** The point in time the part starts to play. (Starts at 0, relative to when the repeating starts. ie startTime + duration) */
 			startTime: number
-			part: PartModel
+			part: Part
 		}[]
 	} | null
 }

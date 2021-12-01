@@ -7,23 +7,28 @@ import { Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../inputs/TrashBtn'
-import { GroupModel } from '@/models/GroupModel'
-import { PartModel } from '@/models/PartModel'
+import { Group } from '@/models/rundown/Group'
+import { Part } from '@/models/rundown/Part'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { getKeyTracker } from '@/lib/KeyTracker'
 import { CountDownHead } from './CountdownHead'
-import { IPCServerContext } from '@/react/App'
+import { IPCServerContext } from '@/react/contexts/IPCServer'
+import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export const PartView: React.FC<{
-	part: PartModel
-	parentGroup: GroupModel
+	rundownId: string
+	parentGroup: Group
+	part: Part
 	playhead: GroupPlayhead | null
-}> = ({ part, parentGroup, playhead }) => {
+}> = ({ rundownId, parentGroup, part, playhead }) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
-		const resolvedTimeline = Resolver.resolveTimeline(part.timeline, { time: 0 })
+		const resolvedTimeline = Resolver.resolveTimeline(
+			part.timeline.map((o) => o.obj),
+			{ time: 0 }
+		)
 		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 		return { maxDuration, resolvedTimeline }
@@ -43,13 +48,13 @@ export const PartView: React.FC<{
 		parentGroup.playout.startTime === null && parentGroup.playout.partIds.length > 0
 	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.partIds[0] !== part.id
 	const handleStart = () => {
-		ipcServer.playPart({ groupId: parentGroup.id, partId: part.id })
+		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 
 	// Stop button:
 	const cannotStop: boolean = !isGroupPlaying
 	const handleStop = () => {
-		ipcServer.stopGroup({ groupId: parentGroup.id })
+		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id })
 	}
 
 	// Queue button:
@@ -72,15 +77,15 @@ export const PartView: React.FC<{
 		}
 	})
 	const handleQueue = () => {
-		ipcServer.queuePartGroup({ groupId: parentGroup.id, partId: part.id })
+		ipcServer.queuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 	const handleUnQueue = () => {
-		ipcServer.unqueuePartGroup({ groupId: parentGroup.id, partId: part.id })
+		ipcServer.unqueuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		ipcServer.deletePart({ groupId: parentGroup.id, partId: part.id })
+		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 
 	return (
@@ -114,7 +119,7 @@ export const PartView: React.FC<{
 			<div className="part__timeline">
 				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
 				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
-				<div className="part__timeline__duration">{msToTime(maxDuration)}</div>
+				<div className="part__timeline__duration">{msToTime(part.resolved.duration)}</div>
 
 				<div className="countdown-wrapper">
 					{timesUntilStart &&
@@ -123,12 +128,23 @@ export const PartView: React.FC<{
 						))}
 				</div>
 				<div className="layers-wrapper">
-					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / maxDuration + '%'} /> : null}
+					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
 					<div className="layers">
 						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
-							const objectsOnLayer = objectIds.map((objectId) => resolvedTimeline.objects[objectId])
+							const objectsOnLayer: TSRTimelineObj[] = objectIds.map((objectId) => {
+								return resolvedTimeline.objects[objectId] as unknown as TSRTimelineObj
+							})
 
-							return <Layer key={layerId} totalDuration={maxDuration} timelineObjs={objectsOnLayer} layerId={layerId} />
+							return (
+								<Layer
+									key={layerId}
+									groupId={parentGroup.id}
+									partId={part.id}
+									partDuration={maxDuration}
+									objectsOnLayer={objectsOnLayer}
+									layerId={layerId}
+								/>
+							)
 						})}
 					</div>
 				</div>

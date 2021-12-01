@@ -1,58 +1,30 @@
 import { mappingsMock } from '@/mocks/mappingsMock'
-import { AppModel } from '@/models/AppModel'
-import { GroupModel } from '@/models/GroupModel'
-import { MediaModel } from '@/models/MediaModel'
-import { PartModel } from '@/models/PartModel'
-import { TemplateModel } from '@/models/TemplateModel'
+import { Group } from '@/models/rundown/Group'
+import { Part } from '@/models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { Rundown } from '@/models/rundown/Rundown'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
 
-export const findMedia = (mediaList: MediaModel[], filename: string) => {
-	for (const item of mediaList) {
-		if (item.name === filename) return item
-	}
+export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
+	return rundown.groups.find((g) => g.id === groupId)
 }
-
-export const findTemplate = (templateList: TemplateModel[], filename: string) => {
-	for (const item of templateList) {
-		if (item.name === filename) return item
-	}
-}
-
-export const findGroup = (appData: AppModel, groupId: string): GroupModel | undefined => {
-	return appData.groups.find((g) => g.id === groupId)
-}
-export const findPart = (group: GroupModel, partId: string): PartModel | undefined => {
+export const findPart = (group: Group, partId: string): Part | undefined => {
 	return group.parts.find((r) => r.id === partId)
 }
-export const findTimelineObj = (
-	appData: AppModel,
-	timelineObjId: string
-):
-	| {
-			group: GroupModel
-			part: PartModel
-			timelineObj: TSRTimelineObj
-	  }
-	| undefined => {
-	// Note: This is a bit of a hack, but it works for now.
-	for (const group of appData.groups) {
-		for (const part of group.parts) {
-			for (const timelineObj of part.timeline) {
-				if (timelineObj.id === timelineObjId) {
-					return { group, part, timelineObj }
-				}
-			}
+export const findTimelineObj = (part: Part, timelineObjId: string): TimelineObj | undefined => {
+	for (const timelineObj of part.timeline) {
+		if (timelineObj.obj.id === timelineObjId) {
+			return timelineObj
 		}
 	}
 
 	return undefined
 }
 
-export const deleteGroup = (appData: AppModel, groupId: string): void => {
-	appData.groups = appData.groups.filter((g) => g.id !== groupId)
+export const deleteGroup = (rundown: Rundown, groupId: string): void => {
+	rundown.groups = rundown.groups.filter((g) => g.id !== groupId)
 }
-export const deletePart = (group: GroupModel, partId: string): void => {
+export const deletePart = (group: Group, partId: string): void => {
 	const part = findPart(group, partId)
 
 	group.parts = group.parts.filter((r) => r.id !== partId)
@@ -63,20 +35,12 @@ export const deletePart = (group: GroupModel, partId: string): void => {
 		group.playout.partIds = group.playout.partIds.filter((id) => id !== partId)
 	}
 }
-export const deleteTimelineObj = (
-	appData: AppModel,
-	timelineObjId: string
-): { group: GroupModel; part: PartModel } | undefined => {
-	// Note: This is a bit of a hack, but it works for now.
-	for (const group of appData.groups) {
-		for (const part of group.parts) {
-			if (part.timeline.find((t) => t.id === timelineObjId)) {
-				part.timeline = part.timeline.filter((t) => t.id !== timelineObjId)
-				return { group, part }
-			}
-		}
+export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean => {
+	if (part.timeline.find((t) => t.obj.id === timelineObjId)) {
+		part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObjId)
+		return true
 	}
-	return undefined
+	return false
 }
 
 export const getMappingById = (id: string) => {

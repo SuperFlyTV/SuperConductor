@@ -1,119 +1,62 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { appMock } from '@/mocks/appMock'
-import { TPTCasparCG } from './TPTCasparCG'
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
-import { GroupModel } from '@/models/GroupModel'
+import { Group } from '@/models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
 import { updateTimeline, UpdateTimelineCache } from './timeline'
-import { GroupPreparedPlayheadData } from '@/models/PlayheadData'
+import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { StorageHandler } from './storageHandler'
+import { AppData } from '@/models/App/AppData'
+import { Project } from '@/models/project/Project'
+import { Rundown } from '@/models/rundown/Rundown'
+import { SessionHandler } from './sessionHandler'
+import { ResourceAny } from '@/models/resource/resource'
 
 export class TimedPlayerThingy {
-	appData = appMock
-
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient
-	tptCaspar?: TPTCasparCG
+	// tptCaspar?: TPTCasparCG
 
-	windowPosition: WindowPosition = {
-		y: undefined,
-		x: undefined,
-		width: 1200,
-		height: 600,
-	}
+	session: SessionHandler
+	storage: StorageHandler
 
 	constructor() {
-		this.loadAppData()
+		this.session = new SessionHandler()
+		this.storage = new StorageHandler({
+			// Default window position:
+			y: undefined,
+			x: undefined,
+			width: 1200,
+			height: 600,
+		})
+
+		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
+			this.ipcClient?.updateResource(id, resource)
+		})
+		this.storage.on('appData', (appData: AppData) => {
+			// todo?
+		})
+		this.storage.on('project', (project: Project) => {
+			this.ipcClient?.updateProject(project)
+		})
+		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
+			this.ipcClient?.updateRundown(fileName, rundown)
+		})
 	}
 
 	initWindow(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
 
-		this.ipcServer = new IPCServer(ipcMain, this.appData, {
-			updateViewRef: () => {
-				this.updateView()
+		this.ipcServer = new IPCServer(ipcMain, this.storage, this.session, {
+			refreshResources: () => {
+				// this.tptCaspar?.fetchAndSetMedia()
+				// this.tptCaspar?.fetchAndSetTemplates()
 			},
-			refreshMediaRef: () => {
-				this.tptCaspar?.fetchAndSetMedia()
-			},
-			refreshTemplatesRef: () => {
-				this.tptCaspar?.fetchAndSetTemplates()
-			},
-			updateTimeline: (cache: UpdateTimelineCache, group: GroupModel): GroupPreparedPlayheadData | null => {
-				return updateTimeline(cache, this.appData, group)
+			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayheadData | null => {
+				return updateTimeline(cache, this.storage, group)
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
-		this.tptCaspar = new TPTCasparCG(this.appData, this.updateView.bind(this))
-	}
-
-	updateView() {
-		this.ipcClient?.appFeed(this.appData)
-
-		this.saveAppData()
-	}
-
-	private getTptDir() {
-		const homeDirPath = os.homedir()
-		return path.join(homeDirPath, 'Documents', 'Timed-Player-Thingy')
-	}
-	private getAppDataPath(): string {
-		return path.join(this.getTptDir(), 'appData.json')
-	}
-
-	loadAppData() {
-		try {
-			const read = fs.readFileSync(this.getAppDataPath())
-
-			const storedData = JSON.parse(read.toString()) as Storage
-
-			if (storedData) {
-				if (storedData.groups) this.appData.groups = storedData.groups
-				if (storedData.windowPosition) this.windowPosition = storedData.windowPosition
-			}
-		} catch (error) {
-			console.log(`No file found.`)
-		}
-	}
-
-	saveAppData() {
-		const tptDirPath = this.getTptDir()
-
-		try {
-			if (!fs.existsSync(tptDirPath)) {
-				fs.mkdirSync(tptDirPath)
-			}
-
-			const store: Storage = {
-				groups: this.appData.groups,
-				windowPosition: this.windowPosition,
-			}
-
-			fs.writeFileSync(this.getAppDataPath(), JSON.stringify(store), 'utf-8')
-		} catch (e) {
-			alert('Failed to save the file!')
-		}
+		// this.tptCaspar = new TPTCasparCG(this.session)
 	}
 }
-
-interface Storage {
-	groups: GroupModel[]
-	windowPosition: WindowPosition
-}
-type WindowPosition =
-	| {
-			y: number
-			x: number
-			width: number
-			height: number
-	  }
-	| {
-			// Note: undefined will center the window
-			y: undefined
-			x: undefined
-			width: number
-			height: number
-	  }

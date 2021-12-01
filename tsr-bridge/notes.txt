@@ -1,0 +1,23 @@
+
+
+todo:
+
+features:
+* Rundowns & Settings
+* mono-repo
+    * react
+    * tsr-bridge lib
+    * tsr-bridge app
+    *
+* Edit (all) Timeline objects
+* Drag n drop
+* re-order Parts in group
+* re-order groups
+* move parts between groups
+* Handles for timeline
+
+
+fixes:
+* folder structure
+* un-hardcode layers & settings
+* Issue with zoom-scaling

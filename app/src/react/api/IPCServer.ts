@@ -8,8 +8,11 @@ export class IPCServer implements IPCServerMethods {
 		return this.ipcRenderer.invoke(methodname, ...args)
 	}
 
-	triggerAppFeed(): Promise<void> {
-		return this.invokeServerMethod('triggerAppFeed')
+	triggerSendAll(): Promise<void> {
+		return this.invokeServerMethod('triggerSendAll')
+	}
+	triggerSendRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('triggerSendRundown', data)
 	}
 
 	playPart(data: { groupId: string; partId: string }): Promise<void> {
@@ -33,6 +36,8 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}
 	newPart(data: {
+		rundownId: string
+
 		name: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
@@ -65,11 +70,8 @@ export class IPCServer implements IPCServerMethods {
 	deleteTimelineObj(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteTimelineObj', data)
 	}
-	addMediaToTimeline(data: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
-		return this.invokeServerMethod('addMediaToTimeline', data)
-	}
-	addTemplateToTimeline(data: { groupId: string; partId: string; layerId: string; filename: string }): Promise<void> {
-		return this.invokeServerMethod('addTemplateToTimeline', data)
+	addResourceToTimeline(data: { groupId: string; partId: string; layerId: string; resourceId: string }): Promise<void> {
+		return this.invokeServerMethod('addResourceToTimeline', data)
 	}
 	toggleGroupLoop(data: { groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupLoop', data)
@@ -77,8 +79,8 @@ export class IPCServer implements IPCServerMethods {
 	toggleGroupAutoplay(data: { groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupAutoplay', data)
 	}
-	refreshMedia(): Promise<void> {
-		return this.invokeServerMethod('refreshMedia')
+	refreshResources(): Promise<void> {
+		return this.invokeServerMethod('refreshResources')
 	}
 	refreshTemplates(): Promise<void> {
 		return this.invokeServerMethod('refreshTemplates')

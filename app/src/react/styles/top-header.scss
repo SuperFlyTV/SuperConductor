@@ -1,0 +1,16 @@
+@use 'sass:color';
+
+.top-header {
+	display: flex;
+
+	> .tab {
+		padding: 0.5rem 0.5rem;
+		border-right: 1px solid grey;
+
+		cursor: pointer;
+
+		&:hover {
+			background-color: color.scale($topheaderBg, $lightness: 30%);
+		}
+	}
+}
