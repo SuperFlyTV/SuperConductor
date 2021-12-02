@@ -9,14 +9,14 @@ type PropsType = {
 export const Popup = (props: PropsType) => {
 	return (
 		<div className="popup-shade">
-			<div className="popup">
+			<dialog open className="popup">
 				<div className="popup__header">
 					<button onClick={props.onClose}>
 						<AiOutlineCloseSquare size={25} />
 					</button>
 				</div>
 				<div className="popup__content">{props.children}</div>
-			</div>
+			</dialog>
 		</div>
 	)
 }
