@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
 import Toggle from '@atlaskit/toggle'
-import { TrashBtn } from '../inputs/TrashBtn'
+import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
 import { PartView } from './PartView'
-import { Formik, Form, Field, ErrorMessage } from 'formik'
-import { Popup } from '../popup/Popup'
 import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
-import { FormRow } from '../sidebar/InfoGroup'
+import { PartPropertiesDialog } from './PartPropertiesDialog'
 
 export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group, rundownId }) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -139,35 +137,18 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 				</button>
 			</div>
 			{newPartOpen && (
-				<Popup onClose={() => setNewPartOpen(false)}>
-					<Formik
-						initialValues={{ name: '' }}
-						enableReinitialize={true}
-						onSubmit={(values) => {
-							ipcServer.newPart({
-								rundownId,
-								name: values.name,
-								groupId: group.id,
-							})
-							setNewPartOpen(false)
-						}}
-					>
-						{(formik) => (
-							<Form>
-								<FormRow>
-									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Part name" autoFocus={true} />
-									<ErrorMessage name="name" component="div" />
-								</FormRow>
-								<div className="btn-row-right">
-									<button type="submit" className="btn form">
-										Create
-									</button>
-								</div>
-							</Form>
-						)}
-					</Formik>
-				</Popup>
+				<PartPropertiesDialog
+					acceptLabel="Create"
+					onAccepted={(part) => {
+						ipcServer.newPart({
+							rundownId,
+							name: part.name,
+							groupId: group.id,
+						})
+						setNewPartOpen(false)
+					}}
+					onDiscarded={() => setNewPartOpen(false)}
+				/>
 			)}
 		</>
 	)

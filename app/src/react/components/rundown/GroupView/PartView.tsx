@@ -1,20 +1,21 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react'
-import { PlayControlBtn } from '../inputs/PlayControlBtn'
-import { QueueBtn, UnQueueBtn } from '../inputs/QueueBtn'
+import { PlayControlBtn } from '../../inputs/PlayControlBtn'
+import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
-import { TrashBtn } from '../inputs/TrashBtn'
+import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
 import { Part } from '@/models/rundown/Part'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
-import { CountDownHead } from './CountdownHead'
+import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
+import { PartPropertiesDialog } from './PartPropertiesDialog'
 
 export const PartView: React.FC<{
 	rundownId: string
@@ -24,6 +25,8 @@ export const PartView: React.FC<{
 }> = ({ rundownId, parentGroup, part, playhead }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
+
+	const [partPropsOpen, setPartPropsOpen] = useState(false)
 
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(
@@ -105,7 +108,9 @@ export const PartView: React.FC<{
 			})}
 		>
 			<div className="part__meta">
-				<div className="title">{part.name}</div>
+				<div className="title" onDoubleClick={() => setPartPropsOpen(true)}>
+					{part.name}
+				</div>
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
@@ -158,6 +163,21 @@ export const PartView: React.FC<{
 					</div>
 				</div>
 			</div>
+			{partPropsOpen && (
+				<PartPropertiesDialog
+					initial={part}
+					onAccepted={() => {
+						// ipcServer.newPart({
+						// 	rundownId,
+						// 	name: part.name,
+						// })
+						setPartPropsOpen(false)
+					}}
+					onDiscarded={() => {
+						setPartPropsOpen(false)
+					}}
+				/>
+			)}
 		</div>
 	)
 }

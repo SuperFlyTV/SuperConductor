@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GroupView } from './GroupView'
+import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '@/react/contexts/Rundown'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { Rundown } from '@/models/rundown/Rundown'
