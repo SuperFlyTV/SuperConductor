@@ -1,3 +1,5 @@
+@import './objectTypeStyling.scss';
+
 .layer {
 	width: 100%;
 	height: $layerHeight;
@@ -18,7 +20,7 @@
 			padding: 0 0.5rem;
 			box-sizing: border-box;
 			cursor: pointer;
-			transition: all 150ms ease;
+			transition: $default-transition;
 
 			&:hover {
 				opacity: 0.8;
@@ -32,17 +34,11 @@
 				transition: none;
 			}
 
-			&.template {
-				background: $templateLayerColor;
-			}
-
-			&.media {
-				background: $mediaLayerColor;
-			}
-
 			.title {
 				font-size: 1.2rem;
 			}
+
+			@include useObjectTypeStyles();
 		}
 	}
 }

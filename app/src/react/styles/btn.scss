@@ -62,7 +62,7 @@
 		color: white;
 		text-transform: uppercase;
 		cursor: pointer;
-		transition: all 150ms ease;
+		transition: $default-transition;
 		display: flex;
 		align-items: center;
 
@@ -83,7 +83,7 @@
 		color: white;
 		text-transform: uppercase;
 		cursor: pointer;
-		transition: all 150ms ease;
+		transition: $default-transition;
 
 		&:not(:disabled):hover {
 			background-color: $accentLightBg;

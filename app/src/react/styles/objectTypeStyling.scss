@@ -1,0 +1,11 @@
+@import './globals.scss';
+
+@mixin useObjectTypeStyles() {
+	&.template {
+		background: $templateLayerColor;
+	}
+
+	&.media {
+		background: $mediaLayerColor;
+	}
+}
