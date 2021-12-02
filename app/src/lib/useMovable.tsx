@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type HTMLElementEventHandler<T, E extends HTMLElement = HTMLElement> = (this: HTMLElement, ev: T) => any
-type ReleaseEventHandler = (delta: { deltaX: number; deltaY: number }) => any
 
-export function useMovable(el: HTMLElement | null, onRelease?: ReleaseEventHandler): [boolean, number, number] {
+export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 	const [isDragging, setIsDragging] = useState(false)
-	const onReleaseHandler = useRef(onRelease)
 	const [pointerPosition, setPointerPosition] = useState({
 		clientX: 0,
 		clientY: 0,
@@ -23,13 +21,6 @@ export function useMovable(el: HTMLElement | null, onRelease?: ReleaseEventHandl
 	const onPointerUp = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
 		setIsDragging(false)
 		ev.preventDefault()
-
-		if (onReleaseHandler.current) {
-			onReleaseHandler.current({
-				deltaX: pointerPosition.clientX - originPointerPosition.clientX,
-				deltaY: pointerPosition.clientY - originPointerPosition.clientY,
-			})
-		}
 	}, [])
 	const onPointerDown = useCallback<HTMLElementEventHandler<PointerEvent>>(
 		(ev) => {
@@ -65,10 +56,6 @@ export function useMovable(el: HTMLElement | null, onRelease?: ReleaseEventHandl
 			el.removeEventListener('pointerdown', onPointerDown)
 		}
 	}, [el])
-
-	useEffect(() => {
-		onReleaseHandler.current = onRelease
-	}, [onRelease])
 
 	return [
 		isDragging,
