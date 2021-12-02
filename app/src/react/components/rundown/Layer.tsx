@@ -1,9 +1,6 @@
-import { describeTimelineObject } from '@/lib/TimelineObj'
-import { TimelineObj } from '@/models/rundown/TimelineObj'
-import { GUIContext } from '@/react/contexts/GUI'
-import classNames from 'classnames'
-import React, { useContext } from 'react'
+import React from 'react'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TimelineObject } from './TimelineObject'
 
 export const Layer: React.FC<{
 	groupId: string
@@ -27,43 +24,6 @@ export const Layer: React.FC<{
 					)
 				})}
 			</div>
-		</div>
-	)
-}
-
-const TimelineObject: React.FC<{
-	groupId: string
-	partId: string
-	partDuration: number
-	obj: TSRTimelineObj
-}> = ({ groupId, partId, obj, partDuration }) => {
-	const { gui, updateGUI } = useContext(GUIContext)
-
-	const start = (obj.enable as any).start
-	const duration = (obj.enable as any).duration
-
-	const widthPercentage = (duration / partDuration) * 100 + '%'
-	const startPercentage = (start / partDuration) * 100 + '%'
-
-	const description = describeTimelineObject(obj)
-
-	return (
-		<div
-			className={classNames({
-				object: true,
-				[description.contentType]: true,
-				selected: gui.selectedTimelineObjId === obj.id,
-			})}
-			style={{ width: widthPercentage, left: startPercentage }}
-			onClick={() => {
-				updateGUI({
-					selectedGroupId: groupId,
-					selectedPartId: partId,
-					selectedTimelineObjId: obj.id,
-				})
-			}}
-		>
-			<div className="title">{description.label}</div>
 		</div>
 	)
 }

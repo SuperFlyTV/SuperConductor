@@ -28,6 +28,10 @@
 				box-shadow: inset 0px 0px 0px 3px #ffffff85;
 			}
 
+			&.moved {
+				transition: none;
+			}
+
 			&.template {
 				background: $templateLayerColor;
 			}

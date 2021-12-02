@@ -76,6 +76,7 @@ export const ResourceLibrary: React.FC<{}> = ({}) => {
 
 						return (
 							<ResourecLibraryItem
+								key={resource.id}
 								resource={resource}
 								selected={resource.id === selectedResourceId}
 								onClick={() => {
