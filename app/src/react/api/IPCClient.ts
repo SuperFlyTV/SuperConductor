@@ -1,4 +1,5 @@
 import { IPCClientMethods } from '@/ipc/IPCAPI'
+import { BridgeStatus } from '@/models/project/Bridge'
 import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
@@ -12,6 +13,7 @@ export class IPCClient implements IPCClientMethods {
 			updateProject: (project: Project) => void
 			updateRundown: (fileName: string, rundown: Rundown) => void
 			updateResource: (id: string, resource: ResourceAny | null) => void
+			updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 		}
 	) {
 		this.ipcRenderer.on('callMethod', (event, methodname: string, ...args: any[]) => {
@@ -32,5 +34,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateResource(id: string, resource: ResourceAny | null): void {
 		this.callbacks.updateResource(id, resource)
+	}
+	updateBridgeStatus(id: string, resource: BridgeStatus | null): void {
+		this.callbacks.updateBridgeStatus(id, resource)
 	}
 }

@@ -1,8 +1,7 @@
-import { DeviceType, TSRTimelineObj } from 'timeline-state-resolver'
-import { Mappings, Timeline, TSRTimeline } from 'timeline-state-resolver-types'
+import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { BridgeAPI } from './api/bridgeAPI'
+import { ResourceAny } from './api/resource/resource'
 import { WebsocketConnection, WebsocketServer } from './api/WebsocketServer'
-import { KoaServer } from './KoaServer'
 import { assertNever } from './lib'
 import { TSR } from './TSR'
 
@@ -11,6 +10,8 @@ const SERVER_PORT = 5401
 
 const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
+
+	tsr.newConnection = true
 
 	connection.on('connected', () => {
 		console.log('Connected!')
@@ -30,7 +31,17 @@ const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection
 		} else if (msg.type === 'setMappings') {
 			updateMappings(msg.mappings)
 		} else if (msg.type === 'setSettings') {
-			tsr.updateDevices(msg.devices)
+			tsr.updateDevices(msg.devices, send)
+		} else if (msg.type === 'refreshResources') {
+			console.log('refreshResources 0')
+			tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
+				console.log('refreshResources cg', deviceId, resources.length)
+				send({
+					type: 'updatedResources',
+					deviceId,
+					resources,
+				})
+			})
 		} else {
 			assertNever(msg)
 		}

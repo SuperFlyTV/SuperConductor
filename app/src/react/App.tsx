@@ -17,6 +17,7 @@ import { IPCServerMethods } from '@/ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny, ResourceType } from '@/models/resource/resource'
 import { RundownContext } from './contexts/Rundown'
+import { BridgeStatus } from '@/models/project/Bridge'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 
@@ -35,23 +36,7 @@ export const App = () => {
 	setupKeyTracker()
 
 	const [resources, setResources] = useState<Resources>({})
-	/*
-		{
-			someResource0: {
-				resourceType: ResourceType.CASPARCG_MEDIA,
-				deviceId: 'casparcg0',
-				type: 'video',
-				changed: 0,
-				duration: 1000,
-				frameRate: 25,
-				frameTime: '0:00:01',
-				frames: 1000,
-				name: 'Some weird file',
-				id: 'someResource0',
-				size: 5000,
-			},
-		}
-	*/
+	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
@@ -90,6 +75,17 @@ export const App = () => {
 						delete newResources[resourceId]
 					}
 					return newResources
+				})
+			},
+			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) => {
+				setBridgeStatuses((resources) => {
+					const newStatuses = { ...resources }
+					if (status) {
+						newStatuses[bridgeId] = status
+					} else {
+						delete newStatuses[bridgeId]
+					}
+					return newStatuses
 				})
 			},
 		})

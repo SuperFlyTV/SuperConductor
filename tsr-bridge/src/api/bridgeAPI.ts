@@ -1,10 +1,12 @@
 // Note: This file is a copy of the one in the electron folder.
 // This is a temporary solution, should be DRY:ed when we have a mono repo.
+
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { ResourceAny } from './resource/resource'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
-		export type Any = InitRequestId | Init | Status | DeviceStatus
+		export type Any = InitRequestId | Init | Status | DeviceStatus | UpdatedResources
 
 		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -24,12 +26,19 @@ export namespace BridgeAPI {
 		export interface DeviceStatus extends MessageBase {
 			type: 'deviceStatus'
 			deviceId: string
-			version: number
+
+			ok: boolean
+			message: string
+		}
+		export interface UpdatedResources extends MessageBase {
+			type: 'updatedResources'
+			deviceId: string
+			resources: ResourceAny[]
 		}
 	}
 
 	export namespace FromTPT {
-		export type Any = SetId | SetSettings | AddTimeline | RemoveTimeline | SetMappings
+		export type Any = SetId | SetSettings | AddTimeline | RemoveTimeline | SetMappings | RefreshResources
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
@@ -57,6 +66,9 @@ export namespace BridgeAPI {
 			type: 'setMappings'
 
 			mappings: Mappings
+		}
+		export interface RefreshResources extends MessageBase {
+			type: 'refreshResources'
 		}
 	}
 

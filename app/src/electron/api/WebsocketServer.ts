@@ -1,6 +1,8 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
 
+const DEBUG = false
+
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
 /*
@@ -54,7 +56,9 @@ export class WebsocketServer extends EventEmitter {
 	connectToServer(url: string): WebsocketConnection {
 		const bridge = new WebsocketConnection(url)
 		this.connections.push(bridge)
-		this.onConnection(bridge)
+		setImmediate(() => {
+			this.onConnection(bridge)
+		})
 		return bridge
 	}
 }
@@ -64,6 +68,7 @@ export class WebsocketServer extends EventEmitter {
  *
  */
 export class WebsocketConnection extends EventEmitter {
+	public connectionId: number = Date.now() + Math.random()
 	private _connected = false
 
 	private pingInterval: NodeJS.Timeout | null = null
@@ -114,11 +119,15 @@ export class WebsocketConnection extends EventEmitter {
 		if (!this._connected) throw new Error('Not connected')
 		if (!this.ws) throw new Error('No ws connection')
 
+		if (DEBUG) console.log('send', message.type)
+
 		this.ws.send(JSON.stringify(message))
 	}
 
 	private _onMessage(messageStr: string) {
-		this.emit('message', JSON.parse(messageStr))
+		const msg = JSON.parse(messageStr)
+		if (DEBUG) console.log('received', msg.type)
+		this.emit('message', msg)
 	}
 
 	private get isServer(): boolean {

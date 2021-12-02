@@ -11,6 +11,8 @@ import { Rundown } from '@/models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@/models/resource/resource'
 import { BridgeHandler } from './bridgeHandler'
+import _ from 'lodash'
+import { BridgeStatus } from '@/models/project/Bridge'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -31,10 +33,28 @@ export class TimedPlayerThingy {
 			width: 1200,
 			height: 600,
 		})
-		this.bridgeHandler = new BridgeHandler(this.session, this.storage)
+		this.bridgeHandler = new BridgeHandler(this.session, this.storage, {
+			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
+				// Added/Updated:
+				const newResouceIds = new Set<string>()
+				for (const resource of resources) {
+					newResouceIds.add(resource.id)
+					if (!_.isEqual(this.session.getResource(resource.id), resource)) {
+						this.session.updateResource(resource.id, resource)
+					}
+				}
+				// Removed:
+				for (const id of this.session.getResourceIds(deviceId)) {
+					if (!newResouceIds.has(id)) this.session.updateResource(id, null)
+				}
+			},
+		})
 
 		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
 			this.ipcClient?.updateResource(id, resource)
+		})
+		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
+			this.ipcClient?.updateBridgeStatus(id, status)
 		})
 		this.storage.on('appData', (appData: AppData) => {
 			// todo?
@@ -54,6 +74,7 @@ export class TimedPlayerThingy {
 			refreshResources: () => {
 				// this.tptCaspar?.fetchAndSetMedia()
 				// this.tptCaspar?.fetchAndSetTemplates()
+				this.bridgeHandler.refreshResources()
 			},
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayheadData | null => {
 				return updateTimeline(cache, this.storage, this.bridgeHandler, group)
