@@ -15,8 +15,10 @@ import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
 import { IPCServerMethods } from '@/ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
-import { ResourceAny } from '@/models/resource/resource'
+import { ResourceAny, ResourceType } from '@/models/resource/resource'
 import { RundownContext } from './contexts/Rundown'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -32,7 +34,21 @@ export const App = () => {
 
 	setupKeyTracker()
 
-	const [resources, setResources] = useState<Resources>({})
+	const [resources, setResources] = useState<Resources>({
+		someResource0: {
+			resourceType: ResourceType.CASPARCG_MEDIA,
+			deviceId: 'casparcg0',
+			type: 'video',
+			changed: 0,
+			duration: 1000,
+			frameRate: 25,
+			frameTime: '0:00:01',
+			frames: 1000,
+			name: 'Some weird file',
+			id: 'someResource0',
+			size: 5000,
+		},
+	})
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
@@ -128,36 +144,38 @@ export const App = () => {
 	}))
 
 	return (
-		<GUIContext.Provider value={guiContextValue}>
-			<IPCServerContext.Provider value={serverAPI}>
-				<ProjectContext.Provider value={project}>
-					<ResourcesContext.Provider value={resources}>
-						<div className="app" onClick={handleClickAnywhere}>
-							<div className="top-header">
-								<TopHeader
-									rundowns={rundowns0}
-									onSelect={(rundownId) => {
-										setCurrentRundownId(rundownId)
-									}}
-								/>
-							</div>
+		<DndProvider backend={HTML5Backend}>
+			<GUIContext.Provider value={guiContextValue}>
+				<IPCServerContext.Provider value={serverAPI}>
+					<ProjectContext.Provider value={project}>
+						<ResourcesContext.Provider value={resources}>
+							<div className="app" onClick={handleClickAnywhere}>
+								<div className="top-header">
+									<TopHeader
+										rundowns={rundowns0}
+										onSelect={(rundownId) => {
+											setCurrentRundownId(rundownId)
+										}}
+									/>
+								</div>
 
-							{currentRundown ? (
-								<RundownContext.Provider value={currentRundown}>
-									<div className="main-area">
-										<RundownView />
-									</div>
-									<div className="side-bar">
-										<Sidebar />
-									</div>
-								</RundownContext.Provider>
-							) : (
-								<div>Loading...</div>
-							)}
-						</div>
-					</ResourcesContext.Provider>
-				</ProjectContext.Provider>
-			</IPCServerContext.Provider>
-		</GUIContext.Provider>
+								{currentRundown ? (
+									<RundownContext.Provider value={currentRundown}>
+										<div className="main-area">
+											<RundownView />
+										</div>
+										<div className="side-bar">
+											<Sidebar />
+										</div>
+									</RundownContext.Provider>
+								) : (
+									<div>Loading...</div>
+								)}
+							</div>
+						</ResourcesContext.Provider>
+					</ProjectContext.Provider>
+				</IPCServerContext.Provider>
+			</GUIContext.Provider>
+		</DndProvider>
 	)
 }

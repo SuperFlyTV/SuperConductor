@@ -51,18 +51,20 @@
   "dependencies": {
     "@atlaskit/toggle": "^12.3.0",
     "axios": "^0.23.0",
+    "bufferutil": "^4.0.1",
     "casparcg-connection": "^5.1.0",
     "classnames": "^2.3.1",
     "formik": "^2.2.9",
     "moment": "^2.29.1",
     "react-contexify": "^5.0.0",
+    "react-dnd": "^14.0.4",
+    "react-dnd-html5-backend": "^14.0.2",
     "react-icons": "^4.3.1",
     "react-table": "^7.7.0",
     "short-uuid": "^4.2.0",
     "timeline-state-resolver-types": "^6.2.0-release37.4",
-    "yup": "^0.32.11",
-    "ws": "^6.2.1",
     "utf-8-validate": "^5.0.2",
-    "bufferutil": "^4.0.1"
+    "ws": "^6.2.1",
+    "yup": "^0.32.11"
   }
 }
