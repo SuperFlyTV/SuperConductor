@@ -4,13 +4,20 @@ import { BridgeStatus } from '@/models/project/Bridge'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
-	private resources: { [id: string]: ResourceAny } = {}
-	private resourcesHasChanged: { [id: string]: true } = {}
+	private resources: { [resourceId: string]: ResourceAny } = {}
+	private resourcesHasChanged: { [resourceId: string]: true } = {}
 
-	private bridgeStatuses: { [id: string]: BridgeStatus } = {}
-	private bridgeStatusesHasChanged: { [id: string]: true } = {}
+	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
+	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
 
 	private emitTimeout: NodeJS.Timeout | null = null
+
+	private emitEverything = false
+
+	triggerEmitAll() {
+		this.emitEverything = true
+		this.triggerUpdate()
+	}
 
 	getResources() {
 		return this.resources
@@ -62,9 +69,22 @@ export class SessionHandler extends EventEmitter {
 		}
 	}
 	private emitChanges() {
-		for (const id of Object.keys(this.resourcesHasChanged)) {
-			this.emit('resource', id, this.resources[id] ?? null)
-			delete this.resourcesHasChanged[id]
+		if (this.emitEverything) {
+			for (const resourceId of Object.keys(this.resources)) {
+				this.resourcesHasChanged[resourceId] = true
+			}
+			for (const bridgeId of Object.keys(this.bridgeStatuses)) {
+				this.bridgeStatusesHasChanged[bridgeId] = true
+			}
+		}
+
+		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
+			this.emit('resource', resourceId, this.resources[resourceId] ?? null)
+			delete this.resourcesHasChanged[resourceId]
+		}
+		for (const bridgeId of Object.keys(this.bridgeStatusesHasChanged)) {
+			this.emit('bridgeStatus', bridgeId, this.bridgeStatuses[bridgeId] ?? null)
+			delete this.bridgeStatusesHasChanged[bridgeId]
 		}
 	}
 }

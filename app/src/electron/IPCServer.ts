@@ -75,6 +75,7 @@ export class IPCServer implements IPCServerMethods {
 	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
+		this.session.triggerEmitAll()
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)

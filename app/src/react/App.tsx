@@ -17,6 +17,7 @@ import { IPCServerMethods } from '@/ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@/models/resource/resource'
 import { RundownContext } from './contexts/Rundown'
+import { BridgeStatus } from '@/models/project/Bridge'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -33,6 +34,7 @@ export const App = () => {
 	setupKeyTracker()
 
 	const [resources, setResources] = useState<Resources>({})
+	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
@@ -71,6 +73,17 @@ export const App = () => {
 						delete newResources[resourceId]
 					}
 					return newResources
+				})
+			},
+			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) => {
+				setBridgeStatuses((resources) => {
+					const newStatuses = { ...resources }
+					if (status) {
+						newStatuses[bridgeId] = status
+					} else {
+						delete newStatuses[bridgeId]
+					}
+					return newStatuses
 				})
 			},
 		})

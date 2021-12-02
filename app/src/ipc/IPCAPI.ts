@@ -1,3 +1,4 @@
+import { BridgeStatus } from '@/models/project/Bridge'
 import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
@@ -83,4 +84,5 @@ export interface IPCClientMethods {
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void
+	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 }

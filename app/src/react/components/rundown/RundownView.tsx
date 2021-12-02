@@ -10,7 +10,6 @@ import { FormRow } from '../sidebar/InfoGroup'
 export const RundownView: React.FC<{}> = (props) => {
 	const rundown = useContext(RundownContext)
 
-	// console.log('rundown', rundown)
 	return (
 		<div className="group-list">
 			{rundown.groups.map((group, index) => {

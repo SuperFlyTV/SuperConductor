@@ -1,3 +1,4 @@
+import { BridgeStatus } from '@/models/project/Bridge'
 import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
@@ -17,5 +18,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateResource(id: string, resource: ResourceAny | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateResource', id, resource)
+	}
+	updateBridgeStatus(id: string, status: BridgeStatus | null): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateBridgeStatus', id, status)
 	}
 }

@@ -18,5 +18,11 @@ export interface Bridge {
 export interface BridgeStatus {
 	connected: boolean
 
-	devices: {} // todo: add device statuses?
+	devices: {
+		[deviceId: string]: {
+			connectionId: number
+			ok: boolean
+			message: string
+		}
+	} // todo: add device statuses?
 }

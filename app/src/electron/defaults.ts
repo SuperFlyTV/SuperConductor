@@ -46,7 +46,15 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 				outgoing: true,
 				url: 'http://localhost:5401',
 				settings: {
-					devices: {}, // todo: add some default devices
+					devices: {
+						casparcg0: {
+							type: DeviceType.CASPARCG,
+							options: {
+								host: '127.0.0.1',
+								port: 5250,
+							},
+						},
+					}, // todo: add some default devices
 				},
 			},
 		},
