@@ -50,6 +50,10 @@
 
 		background-color: $sidebarBg;
 	}
+
+	*:not(input) {
+		user-select: none;
+	}
 }
 
 @import './btn.scss';
