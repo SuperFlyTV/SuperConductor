@@ -17,6 +17,7 @@
     "@types/koa-bodyparser": "^4.3.3",
     "@types/koa-router": "^7.4.4",
     "@types/node": "^16.10.3",
+    "@types/ws": "^7.4.0",
     "nodemon": "^2.0.13",
     "rimraf": "^3.0.2",
     "ts-node": "^10.3.0",
@@ -26,7 +27,9 @@
     "koa": "^2.13.3",
     "koa-bodyparser": "^4.3.0",
     "koa-router": "^10.1.1",
-    "timeline-state-resolver": "^6.2.0-release37.4"
+    "timeline-state-resolver": "^6.2.0-release37.4",
+    "underscore": "^1.9.1",
+    "ws": "^6.2.1"
   },
   "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
 }

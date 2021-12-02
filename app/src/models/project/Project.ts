@@ -2,6 +2,7 @@ import { Mappings } from 'timeline-state-resolver-types'
 import { Bridge } from './Bridge'
 
 export interface Project {
+	id: string
 	name: string
 
 	mappings: Mappings

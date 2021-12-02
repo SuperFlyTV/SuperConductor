@@ -1,12 +1,11 @@
 import { prepareGroupPlayhead } from '@/lib/playhead'
-import { hashObj } from '@/lib/util'
 import { Group } from '@/models/rundown/Group'
 import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { Part } from '@/models/rundown/Part'
 import { TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimelineObjBase } from 'timeline-state-resolver-types'
-import { TsrBridgeApi } from './api/TsrBridge'
 import { StorageHandler } from './storageHandler'
+import { BridgeHandler } from './bridgeHandler'
 
 export interface UpdateTimelineCache {
 	groupHashes?: { [groupId: string]: string }
@@ -16,6 +15,7 @@ export interface UpdateTimelineCache {
 export function updateTimeline(
 	cache: UpdateTimelineCache,
 	storage: StorageHandler,
+	bridgeHandler: BridgeHandler,
 	group: Group
 ): GroupPreparedPlayheadData | null {
 	const groupPlayhead = prepareGroupPlayhead(group)
@@ -80,33 +80,32 @@ export function updateTimeline(
 			timelineGroup.children?.push(repeatingObj)
 		}
 
-		// Send updates to TSR:
-		TsrBridgeApi.playTimeline({
-			id: group.id,
-			timeline: [timelineGroup],
-		}).catch(console.error)
+		// Send updates to devices
+
+		bridgeHandler.updateTimeline(group.id, [timelineGroup])
 	} else {
 		// The timeline objects doesn't exist anymore, send updates to TSR:
-		TsrBridgeApi.stopTimeline({
-			id: group.id,
-		}).catch(console.error)
+		bridgeHandler.updateTimeline(group.id, null)
 	}
 
-	// This is a hack to make TSR able to survive a restart. We should handle this better in the future.
-	const HACK_ALLWAYS_SEND_MAPPINGS = true
-
-	// Check if the meppings need to be re-rent:
 	const project = storage.getProject()
+	bridgeHandler.updateMappings(project.mappings)
 
-	const mappingsHash = hashObj(project.mappings)
-	if (cache.mappingsHash !== mappingsHash || HACK_ALLWAYS_SEND_MAPPINGS) {
-		cache.mappingsHash = mappingsHash
+	// // This is a hack to make TSR able to survive a restart. We should handle this better in the future.
+	// const HACK_ALLWAYS_SEND_MAPPINGS = true
 
-		// The mappings have changed, send updates to TSR:
-		TsrBridgeApi.updateMappings({
-			mappings: project.mappings,
-		}).catch(console.error)
-	}
+	// // Check if the meppings need to be re-rent:
+	// const project = storage.getProject()
+
+	// const mappingsHash = hashObj(project.mappings)
+	// if (cache.mappingsHash !== mappingsHash || HACK_ALLWAYS_SEND_MAPPINGS) {
+	// 	cache.mappingsHash = mappingsHash
+
+	// 	// The mappings have changed, send updates to TSR:
+	// 	TsrBridgeApi.updateMappings({
+	// 		mappings: project.mappings,
+	// 	}).catch(console.error)
+	// }
 
 	return groupPlayhead || null
 }

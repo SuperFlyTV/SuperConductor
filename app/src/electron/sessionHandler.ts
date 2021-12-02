@@ -1,10 +1,14 @@
 import EventEmitter from 'events'
 import { ResourceAny } from '@/models/resource/resource'
+import { BridgeStatus } from '@/models/project/Bridge'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
 	private resources: { [id: string]: ResourceAny } = {}
 	private resourcesHasChanged: { [id: string]: true } = {}
+
+	private bridgeStatuses: { [id: string]: BridgeStatus } = {}
+	private bridgeStatusesHasChanged: { [id: string]: true } = {}
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
@@ -27,6 +31,23 @@ export class SessionHandler extends EventEmitter {
 		} else {
 			delete this.resources[id]
 			this.resourcesHasChanged[id] = true
+		}
+
+		this.triggerUpdate()
+	}
+
+	getBridgeStatuses() {
+		return this.bridgeStatuses
+	}
+	getBridgeStatus(id: string): BridgeStatus | undefined {
+		return this.bridgeStatuses[id]
+	}
+	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null) {
+		if (bridgeStatus) {
+			this.bridgeStatuses[id] = bridgeStatus
+		} else {
+			delete this.bridgeStatuses[id]
+			this.bridgeStatusesHasChanged[id] = true
 		}
 
 		this.triggerUpdate()

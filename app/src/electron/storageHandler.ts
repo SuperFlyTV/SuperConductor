@@ -9,6 +9,7 @@ import { Rundown } from '@/models/rundown/Rundown'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { AppData, WindowPosition } from '@/models/App/AppData'
 import { omit } from '@/lib/lib'
+import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
 const fsReadDir = promisify(fs.readdir)
@@ -83,7 +84,10 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	getProject(): Project {
-		return this.project.project
+		return {
+			id: this.appData.appData.project.fileName,
+			...this.project.project,
+		}
 	}
 	updateProject(project: Project) {
 		this.project.project = project
@@ -234,84 +238,16 @@ export class StorageHandler extends EventEmitter {
 			},
 		}
 	}
-	private getDefaultProject(newName = 'Default Project'): FileProject {
+	private getDefaultProject(newName?: string): FileProject {
 		return {
-			version: 0,
-			project: {
-				name: newName,
-
-				mappings: {
-					'casparcg-1-10': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 10',
-					},
-					'casparcg-1-20': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 20',
-					},
-					'casparcg-1-30': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 30',
-					},
-					'casparcg-2-10': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 10',
-					},
-					'casparcg-2-20': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 20',
-					},
-					'casparcg-2-30': {
-						device: DeviceType.CASPARCG,
-						deviceId: 'casparcg0',
-						layerName: 'CasparCG 1 30',
-					},
-				},
-				bridges: {},
-
-				settings: {},
-			},
+			version: CURRENT_VERSION,
+			project: getDefaultProject(newName),
 		}
 	}
-	private getDefaultRundown(newName = 'Default Rundown'): FileRundown {
+	private getDefaultRundown(newName?: string): FileRundown {
 		return {
-			version: 0,
-			rundown: {
-				name: newName,
-
-				groups: [
-					{
-						id: short.generate(),
-						name: 'Main',
-
-						transparent: false,
-
-						autoPlay: false,
-						loop: false,
-						parts: [
-							{
-								id: short.generate(),
-								name: 'Part 1',
-								timeline: [],
-
-								resolved: {
-									duration: 0,
-								},
-							},
-						],
-						playout: {
-							startTime: null,
-							partIds: [],
-						},
-						playheadData: null,
-					},
-				],
-			},
+			version: CURRENT_VERSION,
+			rundown: getDefaultRundown(newName),
 		}
 	}
 
@@ -412,4 +348,5 @@ interface FileRundown {
 	version: number
 	rundown: Omit<Rundown, 'id'>
 }
+/** Current version, used to migrate old data structures into new ones */
 const CURRENT_VERSION = 0

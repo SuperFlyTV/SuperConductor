@@ -10,6 +10,7 @@ import { Project } from '@/models/project/Project'
 import { Rundown } from '@/models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@/models/resource/resource'
+import { BridgeHandler } from './bridgeHandler'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -19,6 +20,7 @@ export class TimedPlayerThingy {
 
 	session: SessionHandler
 	storage: StorageHandler
+	bridgeHandler: BridgeHandler
 
 	constructor() {
 		this.session = new SessionHandler()
@@ -29,6 +31,7 @@ export class TimedPlayerThingy {
 			width: 1200,
 			height: 600,
 		})
+		this.bridgeHandler = new BridgeHandler(this.session, this.storage)
 
 		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
 			this.ipcClient?.updateResource(id, resource)
@@ -53,7 +56,7 @@ export class TimedPlayerThingy {
 				// this.tptCaspar?.fetchAndSetTemplates()
 			},
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayheadData | null => {
-				return updateTimeline(cache, this.storage, group)
+				return updateTimeline(cache, this.storage, this.bridgeHandler, group)
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)

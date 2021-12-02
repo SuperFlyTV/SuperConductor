@@ -1,4 +1,5 @@
-import { Conductor, ConductorOptions, DeviceType } from 'timeline-state-resolver'
+import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
+import * as _ from 'underscore'
 
 export class TSR {
 	casparCGDevice: any = {
@@ -9,7 +10,8 @@ export class TSR {
 		},
 	}
 
-	conductor: Conductor
+	public conductor: Conductor
+	private devices: { [deviceId: string]: DeviceOptionsAny } = {}
 
 	constructor() {
 		const c: ConductorOptions = {
@@ -30,9 +32,31 @@ export class TSR {
 			console.log('Warning: TSR', msg, ...args)
 		})
 
-		this.conductor.addDevice('caspar0', this.casparCGDevice).catch(console.error)
-
 		this.conductor.setTimelineAndMappings([], undefined)
 		this.conductor.init().catch(console.error)
+	}
+
+	public async updateDevices(newDevices: { [deviceId: string]: DeviceOptionsAny }) {
+		// Added/updated:
+		for (const deviceId in newDevices) {
+			const newDevice = newDevices[deviceId]
+			const existingDevice = this.devices[deviceId]
+
+			if (!existingDevice || !_.isEqual(existingDevice, newDevice)) {
+				if (existingDevice) {
+					await this.conductor.removeDevice(deviceId)
+				}
+
+				await this.conductor.addDevice(deviceId, newDevice)
+				this.devices[deviceId] = newDevice
+			}
+		}
+		// Removed:
+		for (const deviceId in this.devices) {
+			if (!newDevices[deviceId]) {
+				await this.conductor.removeDevice(deviceId)
+				delete this.devices[deviceId]
+			}
+		}
 	}
 }

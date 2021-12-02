@@ -1,30 +1,22 @@
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 
 export interface Bridge {
-	connected: boolean
-
+	id: string
 	name: string
-	connection: BridgeConnection
+
+	outgoing: boolean
+
+	url: string
 
 	settings: {
 		devices: {
-			[deviceId: string]: any // DeviceOptionsAnyInternal
+			[deviceId: string]: DeviceOptionsAny
 		}
 	}
 }
 
-export type BridgeConnection = BridgeConnectionIncoming | BridgeConnectionOutgoing
-interface BridgeConnectionBase {
-	type: 'incoming' | 'outgoing'
-}
+export interface BridgeStatus {
+	connected: boolean
 
-/** When a TSR-bridge connects to us */
-export interface BridgeConnectionIncoming extends BridgeConnectionBase {
-	type: 'incoming'
-}
-/** When we connect to a TSR-bridge */
-export interface BridgeConnectionOutgoing extends BridgeConnectionBase {
-	type: 'outgoing'
-
-	url: string
+	devices: {} // todo: add device statuses?
 }
