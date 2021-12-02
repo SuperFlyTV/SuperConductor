@@ -1,7 +1,6 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
 
-const SERVER_PORT = 5400
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
 /*
@@ -22,9 +21,9 @@ export class WebsocketServer extends EventEmitter {
 
 	private connections: WebsocketConnection[] = []
 
-	constructor(private onConnection: (connection: WebsocketConnection) => void) {
+	constructor(port: number, private onConnection: (connection: WebsocketConnection) => void) {
 		super()
-		this.wss = new WebSocket.Server({ port: SERVER_PORT })
+		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
 			console.log('Websocket server closed')
@@ -65,7 +64,7 @@ export class WebsocketServer extends EventEmitter {
  *
  */
 export class WebsocketConnection extends EventEmitter {
-	private connected = false
+	private _connected = false
 
 	private pingInterval: NodeJS.Timeout | null = null
 	private lastPingReceived: number = 0
@@ -95,6 +94,9 @@ export class WebsocketConnection extends EventEmitter {
 			this._onConnected()
 		}
 	}
+	get connected(): boolean {
+		return this._connected
+	}
 
 	terminate() {
 		this.ws?.close()
@@ -109,7 +111,7 @@ export class WebsocketConnection extends EventEmitter {
 		this.removeAllListeners()
 	}
 	send(message: any) {
-		if (!this.connected) throw new Error('Not connected')
+		if (!this._connected) throw new Error('Not connected')
 		if (!this.ws) throw new Error('No ws connection')
 
 		this.ws.send(JSON.stringify(message))
@@ -151,7 +153,7 @@ export class WebsocketConnection extends EventEmitter {
 		}
 
 		this.reconnectInterval = setInterval(() => {
-			if (this.connected) {
+			if (this._connected) {
 				if (this.reconnectInterval) clearInterval(this.reconnectInterval)
 			} else {
 				// Is not connected
@@ -180,8 +182,8 @@ export class WebsocketConnection extends EventEmitter {
 		})
 	}
 	private _onConnected() {
-		const wasConnected = this.connected
-		this.connected = true
+		const wasConnected = this._connected
+		this._connected = true
 		this.lastPingReceived = Date.now()
 
 		// Monitor and send pings:
@@ -207,8 +209,8 @@ export class WebsocketConnection extends EventEmitter {
 		}
 	}
 	private _onDisconnected() {
-		const wasConnected = this.connected
-		this.connected = false
+		const wasConnected = this._connected
+		this._connected = false
 
 		if (this.pingInterval) {
 			clearInterval(this.pingInterval)

@@ -7,8 +7,9 @@ import { assertNever } from './lib'
 import { TSR } from './TSR'
 
 const CURRENT_VERSION = 0
+const SERVER_PORT = 5401
 
-const server = new WebsocketServer((connection: WebsocketConnection) => {
+const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
 
 	connection.on('connected', () => {

@@ -8,6 +8,8 @@ import { assertNever } from '@/lib/lib'
 import _ from 'lodash'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 
+const SERVER_PORT = 5400
+
 /** This handles connected bridges */
 export class BridgeHandler {
 	server: WebsocketServer
@@ -24,7 +26,7 @@ export class BridgeHandler {
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
 
 	constructor(private session: SessionHandler, private storage: StorageHandler) {
-		this.server = new WebsocketServer((connection: WebsocketConnection) => {
+		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
 
 			const bridge = new BridgeConnection(this.session, this.storage, connection)
@@ -208,7 +210,7 @@ export class BridgeConnection {
 		this.send({ type: 'setMappings', mappings })
 	}
 	private send(msg: BridgeAPI.FromTPT.Any) {
-		this.connection.send(msg)
+		if (this.connection.connected) this.connection.send(msg)
 	}
 
 	private onInit(id: string) {

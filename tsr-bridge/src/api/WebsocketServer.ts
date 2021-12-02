@@ -3,7 +3,6 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
 
-const SERVER_PORT = 5400
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
 /*
@@ -24,9 +23,9 @@ export class WebsocketServer extends EventEmitter {
 
 	private connections: WebsocketConnection[] = []
 
-	constructor(private onConnection: (connection: WebsocketConnection) => void) {
+	constructor(port: number, private onConnection: (connection: WebsocketConnection) => void) {
 		super()
-		this.wss = new WebSocket.Server({ port: SERVER_PORT })
+		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
 			console.log('Websocket server closed')
