@@ -34,21 +34,24 @@ export const App = () => {
 
 	setupKeyTracker()
 
-	const [resources, setResources] = useState<Resources>({
-		someResource0: {
-			resourceType: ResourceType.CASPARCG_MEDIA,
-			deviceId: 'casparcg0',
-			type: 'video',
-			changed: 0,
-			duration: 1000,
-			frameRate: 25,
-			frameTime: '0:00:01',
-			frames: 1000,
-			name: 'Some weird file',
-			id: 'someResource0',
-			size: 5000,
-		},
-	})
+	const [resources, setResources] = useState<Resources>({})
+	/*
+		{
+			someResource0: {
+				resourceType: ResourceType.CASPARCG_MEDIA,
+				deviceId: 'casparcg0',
+				type: 'video',
+				changed: 0,
+				duration: 1000,
+				frameRate: 25,
+				frameTime: '0:00:01',
+				frames: 1000,
+				name: 'Some weird file',
+				id: 'someResource0',
+				size: 5000,
+			},
+		}
+	*/
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
