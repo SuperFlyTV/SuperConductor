@@ -1,9 +1,7 @@
-import { DeviceType, TSRTimelineObj } from 'timeline-state-resolver'
-import { Mappings, Timeline, TSRTimeline } from 'timeline-state-resolver-types'
+import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { BridgeAPI } from './api/bridgeAPI'
 import { ResourceAny } from './api/resource/resource'
 import { WebsocketConnection, WebsocketServer } from './api/WebsocketServer'
-import { KoaServer } from './KoaServer'
 import { assertNever } from './lib'
 import { TSR } from './TSR'
 
