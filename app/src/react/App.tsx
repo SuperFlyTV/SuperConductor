@@ -15,9 +15,11 @@ import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
 import { IPCServerMethods } from '@/ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
-import { ResourceAny } from '@/models/resource/resource'
+import { ResourceAny, ResourceType } from '@/models/resource/resource'
 import { RundownContext } from './contexts/Rundown'
 import { BridgeStatus } from '@/models/project/Bridge'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -141,36 +143,38 @@ export const App = () => {
 	}))
 
 	return (
-		<GUIContext.Provider value={guiContextValue}>
-			<IPCServerContext.Provider value={serverAPI}>
-				<ProjectContext.Provider value={project}>
-					<ResourcesContext.Provider value={resources}>
-						<div className="app" onClick={handleClickAnywhere}>
-							<div className="top-header">
-								<TopHeader
-									rundowns={rundowns0}
-									onSelect={(rundownId) => {
-										setCurrentRundownId(rundownId)
-									}}
-								/>
-							</div>
+		<DndProvider backend={HTML5Backend}>
+			<GUIContext.Provider value={guiContextValue}>
+				<IPCServerContext.Provider value={serverAPI}>
+					<ProjectContext.Provider value={project}>
+						<ResourcesContext.Provider value={resources}>
+							<div className="app" onClick={handleClickAnywhere}>
+								<div className="top-header">
+									<TopHeader
+										rundowns={rundowns0}
+										onSelect={(rundownId) => {
+											setCurrentRundownId(rundownId)
+										}}
+									/>
+								</div>
 
-							{currentRundown ? (
-								<RundownContext.Provider value={currentRundown}>
-									<div className="main-area">
-										<RundownView />
-									</div>
-									<div className="side-bar">
-										<Sidebar />
-									</div>
-								</RundownContext.Provider>
-							) : (
-								<div>Loading...</div>
-							)}
-						</div>
-					</ResourcesContext.Provider>
-				</ProjectContext.Provider>
-			</IPCServerContext.Provider>
-		</GUIContext.Provider>
+								{currentRundown ? (
+									<RundownContext.Provider value={currentRundown}>
+										<div className="main-area">
+											<RundownView />
+										</div>
+										<div className="side-bar">
+											<Sidebar />
+										</div>
+									</RundownContext.Provider>
+								) : (
+									<div>Loading...</div>
+								)}
+							</div>
+						</ResourcesContext.Provider>
+					</ProjectContext.Provider>
+				</IPCServerContext.Provider>
+			</GUIContext.Provider>
+		</DndProvider>
 	)
 }

@@ -17,10 +17,11 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 	}
 
 	// @ts-expect-error type
-	const contentType = `${obj.content.deviceType}_${obj.content.type}`
+	const type: string = obj.content.type
+	const contentTypeClassNames: string[] = [`device-${DeviceType[obj.content.deviceType]}`, type]
 
 	return {
 		label,
-		contentType,
+		contentTypeClassNames,
 	}
 }

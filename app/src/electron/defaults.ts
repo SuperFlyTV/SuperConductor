@@ -1,7 +1,7 @@
 import short from 'short-uuid'
 import { Project } from '@/models/project/Project'
 import { Rundown } from '@/models/rundown/Rundown'
-import { DeviceType } from 'timeline-state-resolver-types'
+import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {
@@ -79,10 +79,27 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 					{
 						id: short.generate(),
 						name: 'Part 1',
-						timeline: [],
+						timeline: [
+							{
+								resourceId: 'someResource0',
+								obj: {
+									id: 'random0',
+									enable: {
+										start: 0,
+										duration: 5000,
+									},
+									layer: 'casparcg-1-10',
+									content: {
+										type: TimelineContentTypeCasparCg.MEDIA,
+										file: 'AMB',
+										deviceType: DeviceType.CASPARCG,
+									},
+								},
+							},
+						],
 
 						resolved: {
-							duration: 0,
+							duration: 10000,
 						},
 					},
 				],

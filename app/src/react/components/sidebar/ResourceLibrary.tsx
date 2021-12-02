@@ -1,12 +1,12 @@
 import React, { useContext, useState } from 'react'
 import { InfoGroup } from './InfoGroup'
 import { bytesToSize } from '@/lib/bytesToSize'
-import classNames from 'classnames'
 import { ResourcesContext } from '@/react/contexts/Resources'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { ResourceAny, ResourceType } from '@/models/resource/resource'
 import { assertNever } from '@/lib/lib'
 import { ResourceInfo } from './ResourceInfo'
+import { ResourecLibraryItem } from './ResourceLibraryItem'
 
 export const ResourceLibrary: React.FC<{}> = ({}) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -75,11 +75,10 @@ export const ResourceLibrary: React.FC<{}> = ({}) => {
 						const child: JSX.Element = d[1]
 
 						return (
-							<div
+							<ResourecLibraryItem
 								key={resource.id}
-								className={classNames('resource', 'resource-media', {
-									selected: resource.id === selectedResourceId,
-								})}
+								resource={resource}
+								selected={resource.id === selectedResourceId}
 								onClick={() => {
 									if (selectedResourceId === resource.id) {
 										setSelectedResourceId(undefined)
@@ -89,7 +88,7 @@ export const ResourceLibrary: React.FC<{}> = ({}) => {
 								}}
 							>
 								{child}
-							</div>
+							</ResourecLibraryItem>
 						)
 					})}
 			</InfoGroup>
