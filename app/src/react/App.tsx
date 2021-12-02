@@ -4,7 +4,7 @@ const { ipcRenderer } = window.require('electron')
 import './styles/app.scss'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
-import { setupKeyTracker } from '@/lib/KeyTracker'
+import sorensen from '@sofie-automation/sorensen'
 import { IPCClient } from './api/IPCClient'
 import { IPCServer } from './api/IPCServer'
 import { Project } from '@/models/project/Project'
@@ -20,6 +20,7 @@ import { RundownContext } from './contexts/Rundown'
 import { BridgeStatus } from '@/models/project/Bridge'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { HotkeyContext } from './contexts/Hotkey'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -32,8 +33,6 @@ export const App = () => {
 	// 	templates: [],
 	// 	mappings: undefined,
 	// })
-
-	setupKeyTracker()
 
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
@@ -133,6 +132,10 @@ export const App = () => {
 		}
 	}
 
+	useEffect(() => {
+		sorensen.init()
+	}, [])
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
@@ -144,37 +147,39 @@ export const App = () => {
 
 	return (
 		<DndProvider backend={HTML5Backend}>
-			<GUIContext.Provider value={guiContextValue}>
-				<IPCServerContext.Provider value={serverAPI}>
-					<ProjectContext.Provider value={project}>
-						<ResourcesContext.Provider value={resources}>
-							<div className="app" onClick={handleClickAnywhere}>
-								<div className="top-header">
-									<TopHeader
-										rundowns={rundowns0}
-										onSelect={(rundownId) => {
-											setCurrentRundownId(rundownId)
-										}}
-									/>
-								</div>
+			<HotkeyContext.Provider value={sorensen}>
+				<GUIContext.Provider value={guiContextValue}>
+					<IPCServerContext.Provider value={serverAPI}>
+						<ProjectContext.Provider value={project}>
+							<ResourcesContext.Provider value={resources}>
+								<div className="app" onClick={handleClickAnywhere}>
+									<div className="top-header">
+										<TopHeader
+											rundowns={rundowns0}
+											onSelect={(rundownId) => {
+												setCurrentRundownId(rundownId)
+											}}
+										/>
+									</div>
 
-								{currentRundown ? (
-									<RundownContext.Provider value={currentRundown}>
-										<div className="main-area">
-											<RundownView />
-										</div>
-										<div className="side-bar">
-											<Sidebar />
-										</div>
-									</RundownContext.Provider>
-								) : (
-									<div>Loading...</div>
-								)}
-							</div>
-						</ResourcesContext.Provider>
-					</ProjectContext.Provider>
-				</IPCServerContext.Provider>
-			</GUIContext.Provider>
+									{currentRundown ? (
+										<RundownContext.Provider value={currentRundown}>
+											<div className="main-area">
+												<RundownView />
+											</div>
+											<div className="side-bar">
+												<Sidebar />
+											</div>
+										</RundownContext.Provider>
+									) : (
+										<div>Loading...</div>
+									)}
+								</div>
+							</ResourcesContext.Provider>
+						</ProjectContext.Provider>
+					</IPCServerContext.Provider>
+				</GUIContext.Provider>
+			</HotkeyContext.Provider>
 		</DndProvider>
 	)
 }

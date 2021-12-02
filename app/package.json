@@ -50,6 +50,7 @@
   "prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
   "dependencies": {
     "@atlaskit/toggle": "^12.3.0",
+    "@sofie-automation/sorensen": "^1.2.0",
     "axios": "^0.23.0",
     "bufferutil": "^4.0.1",
     "casparcg-connection": "^5.1.0",

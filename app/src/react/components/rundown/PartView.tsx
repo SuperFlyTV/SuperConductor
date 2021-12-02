@@ -11,10 +11,10 @@ import { Group } from '@/models/rundown/Group'
 import { Part } from '@/models/rundown/Part'
 import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
-import { getKeyTracker } from '@/lib/KeyTracker'
 import { CountDownHead } from './CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { HotkeyContext } from '@/react/contexts/Hotkey'
 
 export const PartView: React.FC<{
 	rundownId: string
@@ -23,6 +23,7 @@ export const PartView: React.FC<{
 	playhead: GroupPlayhead | null
 }> = ({ rundownId, parentGroup, part, playhead }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const keyTracker = useContext(HotkeyContext)
 
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(
@@ -65,17 +66,25 @@ export const PartView: React.FC<{
 	})
 	const [showUnqueue, setShowUnqueue] = useState(false)
 	useEffect(() => {
-		const keyTracker = getKeyTracker()
 		const onKey = () => {
-			setShowUnqueue(keyTracker.isKeyDown('shift'))
+			const pressed = keyTracker.getPressedKeys()
+			setShowUnqueue(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
-		keyTracker.on('key', onKey)
 		onKey()
 
+		keyTracker.bind('Shift', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Shift', onKey, {
+			up: true,
+			global: true,
+		})
+
 		return () => {
-			keyTracker.off('key', onKey)
+			keyTracker.unbind('Shift', onKey)
 		}
-	})
+	}, [])
 	const handleQueue = () => {
 		ipcServer.queuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
