@@ -28,14 +28,14 @@ const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection
 			playTimeline(msg.timelineId, msg.timeline)
 		} else if (msg.type === 'removeTimeline') {
 			stopTimeline(msg.timelineId)
+		} else if (msg.type === 'getTimelineIds') {
+			send({ type: 'timelineIds', timelineIds: Object.keys(storedTimelines) })
 		} else if (msg.type === 'setMappings') {
 			updateMappings(msg.mappings)
 		} else if (msg.type === 'setSettings') {
 			tsr.updateDevices(msg.devices, send)
 		} else if (msg.type === 'refreshResources') {
-			console.log('refreshResources 0')
 			tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
-				console.log('refreshResources cg', deviceId, resources.length)
 				send({
 					type: 'updatedResources',
 					deviceId,
@@ -76,6 +76,8 @@ function updateTSR() {
 		}
 	}
 	// console.log('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
+	// console.log('mapping', JSON.stringify(mapping, undefined, 2))
+
 	tsr.conductor.setTimelineAndMappings(fullTimeline, mapping)
 }
 

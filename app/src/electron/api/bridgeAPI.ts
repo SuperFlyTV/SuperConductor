@@ -3,7 +3,7 @@ import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
-		export type Any = InitRequestId | Init | Status | DeviceStatus | UpdatedResources
+		export type Any = InitRequestId | Init | Status | DeviceStatus | UpdatedResources | TimelineIds
 
 		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -32,10 +32,22 @@ export namespace BridgeAPI {
 			deviceId: string
 			resources: ResourceAny[]
 		}
+		export interface TimelineIds extends MessageBase {
+			type: 'timelineIds'
+			timelineIds: string[]
+			// A reply to GetTimelineIds
+		}
 	}
 
 	export namespace FromTPT {
-		export type Any = SetId | SetSettings | AddTimeline | RemoveTimeline | SetMappings | RefreshResources
+		export type Any =
+			| SetId
+			| SetSettings
+			| AddTimeline
+			| RemoveTimeline
+			| GetTimelineIds
+			| SetMappings
+			| RefreshResources
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
@@ -58,6 +70,10 @@ export namespace BridgeAPI {
 			type: 'removeTimeline'
 
 			timelineId: string
+		}
+		export interface GetTimelineIds extends MessageBase {
+			type: 'getTimelineIds'
+			// Bridge will reply with "timelineIds"
 		}
 		export interface SetMappings extends MessageBase {
 			type: 'setMappings'

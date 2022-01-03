@@ -54,6 +54,7 @@ export class BridgeHandler {
 
 		this.server.on('close', () => {
 			// todo: handle server close?
+			console.log('Server closed')
 		})
 
 		this.storage.on('project', (project: Project) => {
@@ -132,16 +133,10 @@ export class BridgeHandler {
 			}
 		}
 	}
-	updateSettings(bridgeId: string, settings: Bridge['settings'], force = false) {
-		for (const bridgeConnection of this.connectedBridges) {
-			if (bridgeConnection.bridgeId === bridgeId) {
-				if (!_.isEqual(bridgeConnection.sentSettings, settings) || force) {
-					bridgeConnection.sentSettings = settings
-					bridgeConnection.setSettings(settings.devices)
-				}
-
-				break
-			}
+	updateSettings(bridgeId: string, settings: Bridge['settings']) {
+		const bridgeConnection = this.connectedBridges.find((bc) => bc.bridgeId === bridgeId)
+		if (bridgeConnection) {
+			bridgeConnection.setSettings(settings)
 		}
 	}
 	refreshResources() {
@@ -154,7 +149,9 @@ export class BridgeHandler {
 export class BridgeConnection {
 	public bridgeId: string | null = null
 
-	public sentSettings: Bridge['settings'] | null = null
+	private sentSettings: Bridge['settings'] | null = null
+	private sentMappings: any | null = null
+	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
 		private parent: BridgeHandler,
@@ -219,25 +216,49 @@ export class BridgeConnection {
 				this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
 			} else if (msg.type === 'updatedResources') {
 				this.callbacks.updatedResources(msg.deviceId, msg.resources)
+			} else if (msg.type === 'timelineIds') {
+				this._syncTimelineIds(msg.timelineIds)
 			} else {
 				assertNever(msg)
 			}
 		})
 	}
-	setSettings(devices: { [deviceId: string]: DeviceOptionsAny }) {
-		this.send({ type: 'setSettings', devices })
+	setSettings(settings: Bridge['settings'], force = false) {
+		if (force || !_.isEqual(this.sentSettings, settings)) {
+			this.sentSettings = settings
+			this.send({ type: 'setSettings', ...settings })
+		}
 	}
 	addTimeline(timelineId: string, timeline: TSRTimeline) {
+		this.sentTimelines[timelineId] = timeline
 		this.send({ type: 'addTimeline', timelineId, timeline })
 	}
 	removeTimeline(timelineId: string) {
+		delete this.sentTimelines[timelineId]
 		this.send({ type: 'removeTimeline', timelineId })
 	}
-	setMappings(mappings: Mappings) {
-		this.send({ type: 'setMappings', mappings })
+	setMappings(mappings: Mappings, force = false) {
+		if (force || !_.isEqual(this.sentMappings, mappings)) {
+			this.sentMappings = mappings
+			this.send({ type: 'setMappings', mappings })
+		}
 	}
 	refreshResources() {
 		this.send({ type: 'refreshResources' })
+	}
+
+	getTimelineIds() {
+		// Request a list of the current timelineIds from the Bridge.
+		// The bridge will reply with its timelineIds, and we'll pipe them into this._syncTimelineIds()
+		this.send({ type: 'getTimelineIds' })
+	}
+	private _syncTimelineIds(bridgeTimelineIds: string[]) {
+		// Sync the timelineIds reported from the bridge with our own:
+		for (const timelineId of bridgeTimelineIds) {
+			if (!this.sentTimelines) {
+				this.removeTimeline(timelineId)
+			}
+		}
 	}
 	private send(msg: BridgeAPI.FromTPT.Any) {
 		if (this.connection.connected) {
@@ -258,15 +279,18 @@ export class BridgeConnection {
 		const project = this.storage.getProject()
 		const bridge = project.bridges[this.bridgeId]
 		if (bridge) {
-			this.parent.updateSettings(this.bridgeId, bridge.settings, true)
+			this.setSettings(bridge.settings, true)
 		} else {
-			console.log(`Error: settings bridge "${this.bridgeId}" not found`)
+			console.log(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
-		// this.parent.onUpdatedProject(project)
-
-		// this.setSettings
-
-		// this.refreshResources()
+		if (this.sentMappings) {
+			this.setMappings(this.sentMappings, true)
+		}
+		for (const [timelineId, timeline] of Object.entries(this.sentTimelines)) {
+			this.addTimeline(timelineId, timeline)
+		}
+		// Sync timelineIds:
+		this.getTimelineIds()
 	}
 	private onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')

@@ -91,22 +91,6 @@ export function updateTimeline(
 	const project = storage.getProject()
 	bridgeHandler.updateMappings(project.mappings)
 
-	// // This is a hack to make TSR able to survive a restart. We should handle this better in the future.
-	// const HACK_ALLWAYS_SEND_MAPPINGS = true
-
-	// // Check if the meppings need to be re-rent:
-	// const project = storage.getProject()
-
-	// const mappingsHash = hashObj(project.mappings)
-	// if (cache.mappingsHash !== mappingsHash || HACK_ALLWAYS_SEND_MAPPINGS) {
-	// 	cache.mappingsHash = mappingsHash
-
-	// 	// The mappings have changed, send updates to TSR:
-	// 	TsrBridgeApi.updateMappings({
-	// 		mappings: project.mappings,
-	// 	}).catch(console.error)
-	// }
-
 	return groupPlayhead || null
 }
 function partToTimelineObj(part: Part, startTime: number): TimelineObjEmpty {
@@ -123,7 +107,8 @@ function partToTimelineObj(part: Part, startTime: number): TimelineObjEmpty {
 		},
 		classes: [],
 		isGroup: true,
-		children: JSON.parse(JSON.stringify(part.timeline)), // clone
+
+		children: part.timeline.map((o) => deepClone(o.obj)),
 	}
 
 	return timelineObj
@@ -151,4 +136,7 @@ function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObj
 	// 		changeTimelineIdInner(changedIds, keyframe, changeId)
 	// 	}
 	// }
+}
+function deepClone<T>(data: T): T {
+	return JSON.parse(JSON.stringify(data))
 }
