@@ -4,7 +4,10 @@ export function last<T>(arr: T[]): T | undefined {
 export function first<T>(arr: T[]): T | undefined {
 	return arr[0]
 }
-/** Helper function to simply assert that the value is of the type never */
+/**
+ * Helper function to simply assert that the value is of the type never.
+ * Usage: at the end of if/else or switch, to ensure that there is no fallthrough.
+ */
 export function assertNever(_value: never): void {
 	// does nothing
 }
