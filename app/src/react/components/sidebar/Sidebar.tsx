@@ -10,48 +10,51 @@ import { ResourceAny } from '@/models/resource/resource'
 import { describeTimelineObject } from '@/lib/TimelineObj'
 import { ResourceInfo } from './ResourceInfo'
 import { ResourceLibrary } from './ResourceLibrary'
+import { EditTimelineObj } from './TimelineObj'
 
 export const Sidebar: React.FC<{}> = (props) => {
 	const resources = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
-	const { gui, updateGUI } = useContext(GUIContext)
+	const { gui } = useContext(GUIContext)
 
 	const [editing, setEditing] = useState<{
 		group: Group
 		part: Part
 		timelineObj: TimelineObj
-	}>()
-	const [resource, setResource] = useState<ResourceAny>()
+	} | null>(null)
+	const [resource, setResource] = useState<ResourceAny | null>(null)
 
 	useEffect(() => {
-		let newEditing: typeof editing = undefined
-		let newResource: typeof resource = undefined
-
 		if (gui.selectedGroupId && gui.selectedPartId && gui.selectedTimelineObjId) {
-			;(() => {
-				const group = findGroup(rundown, gui.selectedGroupId)
-				if (!group) return
-
+			const group = findGroup(rundown, gui.selectedGroupId)
+			if (group) {
 				const part = findPart(group, gui.selectedPartId)
-				if (!part) return
-
-				const timelineObj = findTimelineObj(part, gui.selectedTimelineObjId)
-				if (!timelineObj) return
-
-				setEditing({ group, part, timelineObj })
-
-				if (timelineObj.resourceId) {
-					const resource = resources[timelineObj.resourceId]
-					if (!resource) return
-
-					newResource = resource
+				if (part) {
+					const timelineObj = findTimelineObj(part, gui.selectedTimelineObjId)
+					if (timelineObj) {
+						setEditing({ group, part, timelineObj })
+						return
+					}
 				}
-			})()
+			}
+		}
+		// else:
+		setEditing(null)
+	}, [rundown, resources, gui.selectedGroupId, gui.selectedPartId, gui.selectedTimelineObjId])
+
+	useEffect(() => {
+		if (editing) {
+			if (editing.timelineObj.resourceId) {
+				const newResource = resources[editing.timelineObj.resourceId]
+				if (newResource) {
+					setResource(newResource)
+					return
+				}
+			}
 		}
 
-		setEditing(newEditing)
-		setResource(newResource)
-	}, [rundown, resources, gui.selectedGroupId, gui.selectedPartId, gui.selectedTimelineObjId])
+		setResource(null)
+	}, [editing])
 
 	if (editing) {
 		const description = editing ? describeTimelineObject(editing.timelineObj.obj) : undefined
@@ -61,6 +64,7 @@ export const Sidebar: React.FC<{}> = (props) => {
 				{<div className="title">{description?.label}</div>}
 
 				{resource && <ResourceInfo resource={resource} />}
+				{editing.timelineObj && <EditTimelineObj obj={editing.timelineObj.obj} />}
 
 				{/* {<TimelineObjInfo timelineObj={editing.timelineObj} appMappings={props.appData.mappings} />} */}
 

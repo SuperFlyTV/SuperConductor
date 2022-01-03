@@ -229,21 +229,16 @@ export class IPCServer implements IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-
 		timelineObjId: string
-		enableStart: number
-		enableDuration: number
-		layer: string | number
+
+		timelineObj: TimelineObj
 	}): Promise<void> {
 		const { rundown, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 
-		const enable = timelineObj.obj.enable as TimelineEnable
-		enable.start = arg.enableStart
-		enable.duration = arg.enableDuration
-		timelineObj.obj.layer = arg.layer
+		Object.assign(timelineObj, arg.timelineObj)
 
 		this._updatePart(part)
 		this.storage.updateRundown(arg.rundownId, rundown)

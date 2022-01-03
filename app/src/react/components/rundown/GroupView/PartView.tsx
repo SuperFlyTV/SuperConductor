@@ -3,7 +3,7 @@ import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { Resolver } from 'superfly-timeline'
+import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
 import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
@@ -13,9 +13,10 @@ import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { compact } from '@/lib/lib'
 
 export const PartView: React.FC<{
 	rundownId: string
@@ -145,9 +146,22 @@ export const PartView: React.FC<{
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
 					<div className="layers">
 						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
-							const objectsOnLayer: TSRTimelineObj[] = objectIds.map((objectId) => {
-								return resolvedTimeline.objects[objectId] as unknown as TSRTimelineObj
-							})
+							const objectsOnLayer: {
+								resolved: ResolvedTimelineObject['resolved']
+								timelineObj: TimelineObj
+							}[] = compact(
+								objectIds.map((objectId) => {
+									const resolvedObj = resolvedTimeline.objects[objectId]
+									const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
+
+									if (resolvedObj && timelineObj) {
+										return {
+											resolved: resolvedObj.resolved,
+											timelineObj: timelineObj,
+										}
+									}
+								})
+							)
 
 							return (
 								<Layer

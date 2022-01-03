@@ -4,6 +4,10 @@ export function last<T>(arr: T[]): T | undefined {
 export function first<T>(arr: T[]): T | undefined {
 	return arr[0]
 }
+/** Remove all falsy values from array */
+export function compact<T>(arr: (T | undefined | null | false)[]): T[] {
+	return arr.filter(Boolean) as T[]
+}
 /**
  * Helper function to simply assert that the value is of the type never.
  * Usage: at the end of if/else or switch, to ensure that there is no fallthrough.

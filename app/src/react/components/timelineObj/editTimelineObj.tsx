@@ -52,7 +52,7 @@ import { EditTimelineObjUnknown } from './timelineObjs/unknown'
 import { EditTimelineObjVIZMSEAny } from './timelineObjs/vizMSE'
 import { EditTimelineObjVMixAny } from './timelineObjs/vMix'
 
-export const EditTimelineObj: React.FC<{
+export const EditTimelineObjContent: React.FC<{
 	obj: TSRTimelineObj
 	onSave: OnSave
 }> = ({ obj, onSave }) => {

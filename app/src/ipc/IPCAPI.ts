@@ -2,7 +2,7 @@ import { BridgeStatus } from '@/models/project/Bridge'
 import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
-import { Resources } from '@/react/contexts/Resources'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
@@ -28,17 +28,14 @@ export interface IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-
 		timelineObjId: string
-		enableStart: number
-		enableDuration: number
-		layer: string | number
+
+		timelineObj: TimelineObj
 	}) => Promise<void>
 	deleteTimelineObj: (data: {
 		rundownId: string
 		groupId: string
 		partId: string
-
 		timelineObjId: string
 	}) => Promise<void>
 	addResourceToTimeline: (data: {
