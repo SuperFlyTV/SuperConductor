@@ -38,14 +38,14 @@ export const PartView: React.FC<{
 		return { maxDuration, resolvedTimeline }
 	}, [part.timeline])
 
-	const isPartPlaying = playhead?.partId === part.id
 	const isGroupPlaying = !!playhead
+	const isPartPlaying = isGroupPlaying && playhead.partId === part.id
 
-	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : isGroupPlaying ? 'queued' : null
-
-	const timesUntilStart = isGroupPlaying && playhead.timeUntilParts[part.id]
+	const timesUntilStart = (isGroupPlaying && playhead.timeUntilParts[part.id]) || null
 	const playheadTime = isPartPlaying ? playhead.playheadTime : 0
 	const countDownTime = isPartPlaying ? playhead.partEndTime - playhead.playheadTime : 0
+
+	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
 	const groupNotPlayingAndQueued: boolean =
@@ -62,7 +62,7 @@ export const PartView: React.FC<{
 	}
 
 	// Queue button:
-	const cannotQueue: boolean = isGroupPlaying && playhead.isInRepeating
+	const cannotQueue: boolean = !!(isGroupPlaying && playhead.isInRepeating)
 	const queuedPositions: number[] = []
 	parentGroup.playout.partIds.forEach((partId, index) => {
 		if (partId === part.id) queuedPositions.push(index)
