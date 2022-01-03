@@ -11,6 +11,15 @@ export const findGroup = (rundown: Rundown, groupId: string): Group | undefined 
 export const findPart = (group: Group, partId: string): Part | undefined => {
 	return group.parts.find((r) => r.id === partId)
 }
+export const findPartInRundown = (rundown: Rundown, partId: string): { part: Part; group: Group } | undefined => {
+	for (const group of rundown.groups) {
+		const part = findPart(group, partId)
+		if (part) {
+			return { part, group }
+		}
+	}
+	return undefined
+}
 export const findTimelineObj = (part: Part, timelineObjId: string): TimelineObj | undefined => {
 	for (const timelineObj of part.timeline) {
 		if (timelineObj.obj.id === timelineObjId) {
