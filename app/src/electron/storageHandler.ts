@@ -41,7 +41,9 @@ export class StorageHandler extends EventEmitter {
 		this.rundowns = this.loadRundowns()
 	}
 
-	init() {}
+	init() {
+		// Nothing here yet
+	}
 
 	/** Returns a list of available projects */
 	async listProjects(): Promise<{ fileName: string }[]> {
@@ -78,9 +80,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	updateAppData(appData: AppData) {
 		this.appData.appData = appData
-		this.appDataHasChanged = true
-		this.appDataNeedsWrite = true
-		this.triggerUpdate()
+		this.triggerUpdate({ appData: true })
 	}
 
 	getProject(): Project {
@@ -91,9 +91,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	updateProject(project: Project) {
 		this.project.project = project
-		this.projectHasChanged = true
-		this.projectNeedsWrite = true
-		this.triggerUpdate()
+		this.triggerUpdate({ project: true })
 	}
 
 	getRundown(fileName: string): Rundown | undefined {
@@ -109,42 +107,55 @@ export class StorageHandler extends EventEmitter {
 	updateRundown(fileName: string, rundown: Rundown) {
 		this.rundowns[fileName].rundown = omit(rundown, 'id')
 		this.rundownsHasChanged[fileName] = true
-		this.triggerUpdate()
+		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 
-	newProject(name: string) {
+	async newProject(name: string) {
+		if (this.project) {
+			// Write any pending changes before switching project
+			// to ensure that any changes are saved
+			await this.writeChangesNow()
+		}
 		this.appData.appData.project.fileName = `${this.nameToFilename(name)}.project.json`
 		this.project = this.loadProject(name)
-		this.triggerUpdate()
+		this.triggerUpdate({ project: true, appData: true })
 	}
-	openProject(fileName: string) {
+	async openProject(fileName: string) {
+		if (this.project) {
+			// Write any pending changes before switching project
+			// to ensure that any changes are saved
+			await this.writeChangesNow()
+		}
 		this.appData.appData.project.fileName = fileName
 		this.project = this.loadProject()
-		this.triggerUpdate()
+		this.triggerUpdate({ project: true, appData: true })
 	}
 
 	newRundown(name: string) {
 		const fileName = `${this.nameToFilename(name)}.rundown.json`
 		this.rundowns[fileName] = this._loadRundown(fileName, name)
-		this.triggerUpdate()
+		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 	openRundown(fileName: string) {
 		this.rundowns[fileName] = this._loadRundown(fileName)
 		this.rundownsHasChanged[fileName] = true
-		this.triggerUpdate()
+		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
-	closeRundown(fileName: string) {
+	async closeRundown(fileName: string) {
+		// Write any pending changes before closing the rundown,
+		// to ensure that any changes are saved, and that no further changes are written after it has closed.
+		await this.writeChangesNow()
+
 		delete this.rundowns[fileName]
-		delete this.rundownsHasChanged[fileName]
 	}
 
 	triggerEmitAll() {
 		this.emitEverything = true
-		this.triggerUpdate()
+		this.triggerUpdate({})
 	}
 	triggerEmitRundown(rundownId: string) {
 		this.rundownsHasChanged[rundownId] = true
-		this.triggerUpdate()
+		this.triggerUpdate({})
 	}
 	async writeChangesNow() {
 		if (this.writeTimeout) {
@@ -159,7 +170,22 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Triggered when the stored data has been updated */
-	private triggerUpdate() {
+	private triggerUpdate(updates: { appData?: true; project?: true; rundowns?: { [rundownId: string]: true } }): void {
+		if (updates.appData) {
+			this.appDataHasChanged = true
+			this.appDataNeedsWrite = true
+		}
+		if (updates.project) {
+			this.projectHasChanged = true
+			this.projectNeedsWrite = true
+		}
+		if (updates.rundowns) {
+			for (const rundownId of Object.keys(updates.rundowns)) {
+				this.rundownsHasChanged[rundownId] = true
+				this.rundownsNeedsWrite[rundownId] = true
+			}
+		}
+
 		if (!this.emitTimeout) {
 			this.emitTimeout = setTimeout(() => {
 				this.emitTimeout = null
@@ -182,6 +208,7 @@ export class StorageHandler extends EventEmitter {
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
+				this.appDataNeedsWrite = true
 				return this.getDefaultAppData(defaultWindowPosition)
 			} else {
 				throw error
@@ -195,6 +222,7 @@ export class StorageHandler extends EventEmitter {
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
+				this.projectNeedsWrite = true
 				return this.getDefaultProject(newName)
 			} else {
 				throw error
@@ -215,6 +243,7 @@ export class StorageHandler extends EventEmitter {
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
+				this.rundownsNeedsWrite[fileName] = true
 				return this.getDefaultRundown(newName)
 			} else {
 				throw error
@@ -279,6 +308,12 @@ export class StorageHandler extends EventEmitter {
 		if (!fs.existsSync(this._baseFolder)) {
 			fs.mkdirSync(this._baseFolder)
 		}
+		if (!fs.existsSync(this._pojectFolder)) {
+			fs.mkdirSync(this._pojectFolder)
+		}
+		if (!fs.existsSync(this._rundownsFolder)) {
+			fs.mkdirSync(this._rundownsFolder)
+		}
 
 		// Store AppData:
 		if (this.appDataNeedsWrite) {
@@ -319,22 +354,6 @@ export class StorageHandler extends EventEmitter {
 		return path.join(homeDirPath, 'Documents', 'Timed-Player-Thingy')
 	}
 }
-
-// export interface StoredData {
-// 	project: StoredProject
-// 	rundowns: StoredRundown[]
-// }
-
-// interface StoredProject {
-// 	// fileName: string
-
-// 	project: Project
-// }
-// interface StoredRundown {
-// 	fileName: string
-
-// 	rundown: Rundown
-// }
 
 interface FileAppData {
 	version: number
