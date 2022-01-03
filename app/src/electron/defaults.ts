@@ -1,43 +1,56 @@
 import short from 'short-uuid'
 import { Project } from '@/models/project/Project'
 import { Rundown } from '@/models/rundown/Rundown'
-import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { literal } from '@/lib'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {
 		name: newName,
 
 		mappings: {
-			'casparcg-1-10': {
+			'casparcg-1-10': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 10',
-			},
-			'casparcg-1-20': {
+				layerName: 'CasparCG 1-10',
+				channel: 1,
+				layer: 10,
+			}),
+			'casparcg-1-20': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 20',
-			},
-			'casparcg-1-30': {
+				layerName: 'CasparCG 1-20',
+				channel: 1,
+				layer: 20,
+			}),
+			'casparcg-1-30': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 30',
-			},
-			'casparcg-2-10': {
+				layerName: 'CasparCG 1-30',
+				channel: 1,
+				layer: 30,
+			}),
+			'casparcg-2-10': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 10',
-			},
-			'casparcg-2-20': {
+				layerName: 'CasparCG 2-10',
+				channel: 2,
+				layer: 10,
+			}),
+			'casparcg-2-20': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 20',
-			},
-			'casparcg-2-30': {
+				layerName: 'CasparCG 2-20',
+				channel: 2,
+				layer: 20,
+			}),
+			'casparcg-2-30': literal<MappingCasparCG>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
-				layerName: 'CasparCG 1 30',
-			},
+				layerName: 'CasparCG 2-30',
+				channel: 2,
+				layer: 30,
+			}),
 		},
 		bridges: {
 			bridget: {
