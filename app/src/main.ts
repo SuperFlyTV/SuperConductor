@@ -28,7 +28,7 @@ const createWindow = (): void => {
 	tpt.initWindow(win)
 
 	win.webContents.openDevTools()
-	win.loadURL(isDev ? 'http://localhost:8080' : `file://${app.getAppPath()}/index.html`)
+	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/index.html`)
 
 	const isMac = process.platform === 'darwin'
 
