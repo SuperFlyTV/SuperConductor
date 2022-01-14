@@ -17,6 +17,14 @@
 		opacity: 0;
 	}
 
+	&__drag-handle {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: #5a5a5a;
+		cursor: grab;
+	}
+
 	&__meta {
 		background-color: $partOutlineColor;
 		padding: 1rem 1.5rem;

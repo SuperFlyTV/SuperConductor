@@ -18,6 +18,7 @@ import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { ItemTypes } from '../../../api/ItemTypes'
+import { MdOutlineDragIndicator } from 'react-icons/md'
 
 interface DragItem {
 	index: number
@@ -112,7 +113,8 @@ export const PartView: React.FC<{
 	// Drag n' Drop re-ordering:
 	// Adapted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
 	const partIndex = parentGroup.parts.findIndex(({ id }) => id === part.id)
-	const ref = useRef<HTMLDivElement>(null)
+	const dragRef = useRef<HTMLDivElement>(null)
+	const previewRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop({
 		accept: ItemTypes.PART_ITEM,
 		collect(monitor) {
@@ -121,7 +123,7 @@ export const PartView: React.FC<{
 			}
 		},
 		hover(item: DragItem, monitor: DropTargetMonitor) {
-			if (!ref.current) {
+			if (!previewRef.current) {
 				return
 			}
 			const dragIndex = item.index
@@ -133,7 +135,7 @@ export const PartView: React.FC<{
 			}
 
 			// Determine rectangle on screen
-			const hoverBoundingRect = ref.current?.getBoundingClientRect()
+			const hoverBoundingRect = previewRef.current?.getBoundingClientRect()
 
 			// Get vertical middle
 			const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
@@ -168,7 +170,7 @@ export const PartView: React.FC<{
 			item.index = hoverIndex
 		},
 	})
-	const [{ isDragging }, drag] = useDrag({
+	const [{ isDragging }, drag, preview] = useDrag({
 		type: ItemTypes.PART_ITEM,
 		item: () => {
 			return { id: part.id, index: partIndex }
@@ -177,17 +179,21 @@ export const PartView: React.FC<{
 			isDragging: monitor.isDragging(),
 		}),
 	})
-	drag(drop(ref))
+	drag(dragRef)
+	drop(preview(previewRef))
 
 	return (
 		<div
-			ref={ref}
+			ref={previewRef}
 			className={classNames('part', {
 				active: isActive === 'active',
 				queued: isActive === 'queued',
 				dragging: isDragging,
 			})}
 		>
+			<div ref={dragRef} className="part__drag-handle">
+				<MdOutlineDragIndicator />
+			</div>
 			<div className="part__meta">
 				<div className="title" onDoubleClick={() => setPartPropsOpen(true)}>
 					{part.name}
