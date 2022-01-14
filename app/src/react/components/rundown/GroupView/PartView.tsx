@@ -152,6 +152,7 @@ export const PartView: React.FC<{
 							return (
 								<Layer
 									key={layerId}
+									rundownId={rundownId}
 									groupId={parentGroup.id}
 									partId={part.id}
 									partDuration={maxDuration}

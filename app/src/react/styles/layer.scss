@@ -10,6 +10,11 @@
 		margin-bottom: 0.3rem;
 	}
 
+	&.isOver {
+		box-shadow: inset 0px 0px 0px 3px #ffffff85;
+		opacity: 0.8;
+	}
+
 	&__content {
 		.object {
 			height: $layerHeight;
