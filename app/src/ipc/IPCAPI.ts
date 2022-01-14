@@ -23,6 +23,10 @@ export interface IPCServerMethods {
 	newGroup: (data: { rundownId: string; name: string }) => Promise<string>
 	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
 	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<void>
+	movePart: (data: {
+		from: { rundownId: string; groupId: string; partId: string }
+		to: { rundownId: string; groupId: string; position: number }
+	}) => Promise<void>
 
 	updateTimelineObj: (data: {
 		rundownId: string

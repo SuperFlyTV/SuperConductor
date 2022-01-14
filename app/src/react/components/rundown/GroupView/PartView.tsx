@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
@@ -16,13 +16,22 @@ import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
+import { ItemTypes } from '../../../api/ItemTypes'
+
+interface DragItem {
+	index: number
+	id: string
+	type: string
+}
 
 export const PartView: React.FC<{
 	rundownId: string
 	parentGroup: Group
 	part: Part
 	playhead: GroupPlayhead | null
-}> = ({ rundownId, parentGroup, part, playhead }) => {
+	movePart: (dragIndex: number, hoverIndex: number) => void
+}> = ({ rundownId, parentGroup, part, playhead, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
 
@@ -100,11 +109,83 @@ export const PartView: React.FC<{
 		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 
+	// Drag n' Drop re-ordering:
+	// Adapted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
+	const partIndex = parentGroup.parts.findIndex(({ id }) => id === part.id)
+	const ref = useRef<HTMLDivElement>(null)
+	const [{ handlerId }, drop] = useDrop({
+		accept: ItemTypes.PART_ITEM,
+		collect(monitor) {
+			return {
+				handlerId: monitor.getHandlerId(),
+			}
+		},
+		hover(item: DragItem, monitor: DropTargetMonitor) {
+			if (!ref.current) {
+				return
+			}
+			const dragIndex = item.index
+			const hoverIndex = partIndex
+
+			// Don't replace items with themselves
+			if (dragIndex === hoverIndex) {
+				return
+			}
+
+			// Determine rectangle on screen
+			const hoverBoundingRect = ref.current?.getBoundingClientRect()
+
+			// Get vertical middle
+			const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+
+			// Determine mouse position
+			const clientOffset = monitor.getClientOffset()
+
+			// Get pixels to the top
+			const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+
+			// Only perform the move when the mouse has crossed half of the items height
+			// When dragging downwards, only move when the cursor is below 50%
+			// When dragging upwards, only move when the cursor is above 50%
+
+			// Dragging downwards
+			if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+				return
+			}
+
+			// Dragging upwards
+			if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+				return
+			}
+
+			// Time to actually perform the action
+			movePart(dragIndex, hoverIndex)
+
+			// Note: we're mutating the monitor item here!
+			// Generally it's better to avoid mutations,
+			// but it's good here for the sake of performance
+			// to avoid expensive index searches.
+			item.index = hoverIndex
+		},
+	})
+	const [{ isDragging }, drag] = useDrag({
+		type: ItemTypes.PART_ITEM,
+		item: () => {
+			return { id: part.id, index: partIndex }
+		},
+		collect: (monitor: any) => ({
+			isDragging: monitor.isDragging(),
+		}),
+	})
+	drag(drop(ref))
+
 	return (
 		<div
+			ref={ref}
 			className={classNames('part', {
 				active: isActive === 'active',
 				queued: isActive === 'queued',
+				dragging: isDragging,
 			})}
 		>
 			<div className="part__meta">

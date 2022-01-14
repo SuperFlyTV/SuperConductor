@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
@@ -70,10 +70,29 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 		}
 	}, [playhead])
 
+	const movePart = useCallback(
+		(dragIndex: number, hoverIndex: number) => {
+			const dragPart = group.parts[dragIndex]
+			ipcServer.movePart({
+				from: {
+					rundownId,
+					groupId: group.id,
+					partId: dragPart.id,
+				},
+				to: {
+					rundownId,
+					groupId: group.id,
+					position: hoverIndex,
+				},
+			})
+		},
+		[rundownId, group]
+	)
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<PartView rundownId={rundownId} part={firstPart} parentGroup={group} playhead={playhead} />
+			<PartView rundownId={rundownId} part={firstPart} parentGroup={group} playhead={playhead} movePart={movePart} />
 		) : null
 	} else {
 		return (
@@ -115,7 +134,14 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 				</div>
 				<div className="group__content">
 					{group.parts.map((part) => (
-						<PartView key={part.id} rundownId={rundownId} part={part} parentGroup={group} playhead={playhead} />
+						<PartView
+							key={part.id}
+							rundownId={rundownId}
+							part={part}
+							parentGroup={group}
+							playhead={playhead}
+							movePart={movePart}
+						/>
 					))}
 
 					<GroupOptions rundownId={rundownId} group={group} />

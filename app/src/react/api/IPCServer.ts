@@ -53,6 +53,12 @@ export class IPCServer implements IPCServerMethods {
 	deleteGroup(data: { groupId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteGroup', data)
 	}
+	movePart(data: {
+		from: { rundownId: string; groupId: string; partId: string }
+		to: { rundownId: string; groupId: string; position: number }
+	}): Promise<void> {
+		return this.invokeServerMethod('movePart', data)
+	}
 	newTemplateData(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('newTemplateData', data)
 	}
