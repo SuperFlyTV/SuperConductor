@@ -22,8 +22,9 @@ import { MdOutlineDragIndicator } from 'react-icons/md'
 
 interface DragItem {
 	index: number
-	id: string
 	type: string
+	group: Group
+	part: Part
 }
 
 export const PartView: React.FC<{
@@ -31,7 +32,7 @@ export const PartView: React.FC<{
 	parentGroup: Group
 	part: Part
 	playhead: GroupPlayhead | null
-	movePart: (dragIndex: number, hoverIndex: number) => void
+	movePart: (data: { dragGroup: Group; dragPart: Part; hoverGroup: Group; hoverIndex: number }) => void
 }> = ({ rundownId, parentGroup, part, playhead, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
@@ -126,11 +127,14 @@ export const PartView: React.FC<{
 			if (!previewRef.current) {
 				return
 			}
+			const dragGroup = item.group
+			const dragPart = item.part
 			const dragIndex = item.index
 			const hoverIndex = partIndex
+			const hoverGroup = parentGroup
 
 			// Don't replace items with themselves
-			if (dragIndex === hoverIndex) {
+			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
 				return
 			}
 
@@ -161,21 +165,22 @@ export const PartView: React.FC<{
 			}
 
 			// Time to actually perform the action
-			movePart(dragIndex, hoverIndex)
+			movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
 
 			// Note: we're mutating the monitor item here!
 			// Generally it's better to avoid mutations,
 			// but it's good here for the sake of performance
 			// to avoid expensive index searches.
 			item.index = hoverIndex
+			item.group = hoverGroup
 		},
 	})
 	const [{ isDragging }, drag, preview] = useDrag({
 		type: ItemTypes.PART_ITEM,
-		item: () => {
-			return { id: part.id, index: partIndex }
+		item: (): DragItem => {
+			return { type: ItemTypes.PART_ITEM, group: parentGroup, part: part, index: partIndex }
 		},
-		collect: (monitor: any) => ({
+		collect: (monitor) => ({
 			isDragging: monitor.isDragging(),
 		}),
 	})
@@ -184,6 +189,7 @@ export const PartView: React.FC<{
 
 	return (
 		<div
+			data-handler-id={handlerId}
 			ref={previewRef}
 			className={classNames('part', {
 				active: isActive === 'active',

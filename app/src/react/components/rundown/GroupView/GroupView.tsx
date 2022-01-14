@@ -7,6 +7,7 @@ import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { Part } from '../../../../models/rundown/Part'
 
 export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group, rundownId }) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -71,22 +72,21 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 	}, [playhead])
 
 	const movePart = useCallback(
-		(dragIndex: number, hoverIndex: number) => {
-			const dragPart = group.parts[dragIndex]
+		(data: { dragGroup: Group; dragPart: Part; hoverGroup: Group; hoverIndex: number }) => {
 			ipcServer.movePart({
 				from: {
 					rundownId,
-					groupId: group.id,
-					partId: dragPart.id,
+					groupId: data.dragGroup.id,
+					partId: data.dragPart.id,
 				},
 				to: {
 					rundownId,
-					groupId: group.id,
-					position: hoverIndex,
+					groupId: data.hoverGroup.id,
+					position: data.hoverIndex,
 				},
 			})
 		},
-		[rundownId, group]
+		[rundownId]
 	)
 
 	if (group.transparent) {
