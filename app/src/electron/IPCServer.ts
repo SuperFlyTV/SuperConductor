@@ -234,12 +234,14 @@ export class IPCServer implements IPCServerMethods {
 		// Remove the part from its original group.
 		fromGroup.parts = fromGroup.parts.filter((part) => part.id !== arg.from.partId)
 
-		// Add the part to its new group.
+		// Add the part to its new group, in its new position.
 		toGroup.parts.splice(arg.to.position, 0, part)
 
 		// Commit the changes.
 		this.storage.updateRundown(arg.from.rundownId, fromRundown)
-		this.storage.updateRundown(arg.to.rundownId, toRundown)
+		if (arg.from.rundownId !== arg.to.rundownId) {
+			this.storage.updateRundown(arg.to.rundownId, toRundown)
+		}
 	}
 
 	async updateTimelineObj(arg: {
