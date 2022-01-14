@@ -14,6 +14,7 @@ import { Field, Form, Formik, FormikProps } from 'formik'
 import { findPartInRundown } from '@/lib/util'
 import { Rundown } from '@/models/rundown/Rundown'
 import { Group } from '@/models/rundown/Group'
+import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 
 export const ResourceLibrary: React.FC<{}> = () => {
 	const ipcServer = useContext(IPCServerContext)
@@ -32,7 +33,7 @@ export const ResourceLibrary: React.FC<{}> = () => {
 	return (
 		<div className="sidebar media-library-sidebar">
 			<InfoGroup
-				title="Available resources"
+				title="Available Assets"
 				enableRefresh={true}
 				refreshActive={refreshing}
 				onRefreshClick={async () => {
@@ -52,9 +53,11 @@ export const ResourceLibrary: React.FC<{}> = () => {
 								resource,
 								<>
 									<div>
-										<img className="thumbnail" src={resource.thumbnail} alt={resource.name} />
+										<ResourceLibraryItemThumbnail resource={resource} />
 									</div>
-									<div>{resource.name}</div>
+									<div className="resource__name" title={resource.name}>
+										{resource.name}
+									</div>
 									<div>{resource.type}</div>
 									<div>{bytesToSize(resource.size)}</div>
 									<div>{resource.duration}</div>
@@ -79,20 +82,23 @@ export const ResourceLibrary: React.FC<{}> = () => {
 						const child: JSX.Element = d[1]
 
 						return (
-							<ResourecLibraryItem
-								key={resource.id}
-								resource={resource}
-								selected={resource.id === selectedResourceId}
-								onClick={() => {
-									if (selectedResourceId === resource.id) {
-										setSelectedResourceId(undefined)
-									} else {
-										setSelectedResourceId(resource.id)
-									}
-								}}
-							>
-								{child}
-							</ResourecLibraryItem>
+							<>
+								<ResourecLibraryItem
+									key={resource.id}
+									resource={resource}
+									selected={resource.id === selectedResourceId}
+									onClick={() => {
+										if (selectedResourceId === resource.id) {
+											setSelectedResourceId(undefined)
+										} else {
+											setSelectedResourceId(resource.id)
+										}
+									}}
+								>
+									{child}
+								</ResourecLibraryItem>
+								<hr key={resource.id + '_hr'} />
+							</>
 						)
 					})}
 			</InfoGroup>

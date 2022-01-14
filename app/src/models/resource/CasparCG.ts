@@ -11,7 +11,7 @@ export interface CasparCGServer extends ResourceBase {
 export interface CasparCGMedia extends ResourceBase {
 	resourceType: ResourceType.CASPARCG_MEDIA
 
-	type: 'image' | 'video'
+	type: 'image' | 'video' | 'audio'
 	name: string
 	size: number
 	changed: number

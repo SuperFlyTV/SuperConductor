@@ -1,9 +1,11 @@
 .resource {
 	display: grid;
 	grid-template-rows: [header] min-content [attributes] min-content;
-	grid-template-columns: [thumbnail] 2em [info] auto;
+	grid-template-columns: [thumbnail] 4em [info] auto;
+	column-gap: 0.5em;
 	box-shadow: inset 0px 0px 0px 0px #ffffff85;
 	transition: $default-transition;
+	padding: 0.2em;
 
 	@include useObjectTypeStyles();
 
@@ -13,5 +15,22 @@
 
 	&.dragged {
 		opacity: 0.5;
+	}
+
+	.resource__name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+.thumbnail {
+	max-width: 100%;
+	max-height: 100%;
+
+	&.thumbnail--video-fallback,
+	&.thumbnail--audio,
+	&.thumbnail--unknown {
+		width: 100%;
+		height: 100%;
 	}
 }
