@@ -233,6 +233,9 @@ export class IPCServer implements IPCServerMethods {
 
 		// Remove the part from its original group.
 		fromGroup.parts = fromGroup.parts.filter((part) => part.id !== arg.from.partId)
+		if (fromGroup.transparent && fromGroup.parts.length === 0) {
+			this.deleteGroup(arg.from)
+		}
 
 		// Add the part to its new group, in its new position.
 		toGroup.parts.splice(arg.to.position, 0, part)
