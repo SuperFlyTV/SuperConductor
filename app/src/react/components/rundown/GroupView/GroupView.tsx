@@ -2,14 +2,20 @@ import React, { useEffect, useRef, useState, useContext, useCallback } from 'rea
 import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
-import { PartView } from './PartView'
+import { PartDragItem, PartView } from './PartView'
 import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { Part } from '../../../../models/rundown/Part'
+import { ItemTypes } from '../../../api/ItemTypes'
+import { DropTargetMonitor, useDrop } from 'react-dnd'
 
-export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group, rundownId }) => {
+export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: number }> = ({
+	group,
+	groupIndex,
+	rundownId,
+}) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
@@ -71,6 +77,43 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 		}
 	}, [playhead])
 
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const [{ handlerId }, drop] = useDrop({
+		accept: ItemTypes.PART_ITEM,
+		collect(monitor) {
+			return {
+				handlerId: monitor.getHandlerId(),
+			}
+		},
+		hover(item: PartDragItem, monitor: DropTargetMonitor) {
+			// Don't use the GroupView as a drop target when there are Parts present.
+			if (group.parts.length > 0) {
+				return
+			}
+
+			const dragGroup = item.group
+			const dragPart = item.part
+			const dragIndex = item.index
+			const hoverIndex = 0
+			const hoverGroup = group
+
+			// Don't replace items with themselves
+			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
+				return
+			}
+
+			// Time to actually perform the action
+			movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
+
+			// Note: we're mutating the monitor item here!
+			// Generally it's better to avoid mutations,
+			// but it's good here for the sake of performance
+			// to avoid expensive index searches.
+			item.index = hoverIndex
+			item.group = hoverGroup
+		},
+	})
+	drop(wrapperRef)
 	const movePart = useCallback(
 		(data: { dragGroup: Group; dragPart: Part; hoverGroup: Group; hoverIndex: number }) => {
 			ipcServer.movePart({
@@ -92,11 +135,20 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<PartView rundownId={rundownId} part={firstPart} parentGroup={group} playhead={playhead} movePart={movePart} />
+			<div ref={wrapperRef}>
+				<PartView
+					rundownId={rundownId}
+					part={firstPart}
+					parentGroup={group}
+					parentGroupIndex={groupIndex}
+					playhead={playhead}
+					movePart={movePart}
+				/>
+			</div>
 		) : null
 	} else {
 		return (
-			<div className="group">
+			<div ref={wrapperRef} className="group">
 				<div className="group__header">
 					<div className="title">{group.name}</div>
 					<div className="controls">
@@ -139,6 +191,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group }> = ({ group
 							rundownId={rundownId}
 							part={part}
 							parentGroup={group}
+							parentGroupIndex={groupIndex}
 							playhead={playhead}
 							movePart={movePart}
 						/>

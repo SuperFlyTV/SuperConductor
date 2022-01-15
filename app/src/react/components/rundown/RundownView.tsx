@@ -13,7 +13,7 @@ export const RundownView: React.FC<{}> = (props) => {
 	return (
 		<div className="group-list">
 			{rundown.groups.map((group, index) => {
-				return <GroupView key={index} group={group} rundownId={rundown.id} />
+				return <GroupView key={index} group={group} groupIndex={index} rundownId={rundown.id} />
 			})}
 
 			<GroupListOptions rundown={rundown} />

@@ -20,20 +20,22 @@ import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { ItemTypes } from '../../../api/ItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 
-interface DragItem {
+export interface PartDragItem {
 	index: number
 	type: string
 	group: Group
+	groupIndex: number
 	part: Part
 }
 
 export const PartView: React.FC<{
 	rundownId: string
 	parentGroup: Group
+	parentGroupIndex: number
 	part: Part
 	playhead: GroupPlayhead | null
 	movePart: (data: { dragGroup: Group; dragPart: Part; hoverGroup: Group; hoverIndex: number }) => void
-}> = ({ rundownId, parentGroup, part, playhead, movePart }) => {
+}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
 
@@ -123,15 +125,17 @@ export const PartView: React.FC<{
 				handlerId: monitor.getHandlerId(),
 			}
 		},
-		hover(item: DragItem, monitor: DropTargetMonitor) {
+		hover(item: PartDragItem, monitor: DropTargetMonitor) {
 			if (!previewRef.current) {
 				return
 			}
 			const dragGroup = item.group
+			const dragGroupIndex = item.groupIndex
 			const dragPart = item.part
 			const dragIndex = item.index
-			const hoverIndex = partIndex
+			let hoverIndex = partIndex
 			const hoverGroup = parentGroup
+			const hoverGroupIndex = parentGroupIndex
 
 			// Don't replace items with themselves
 			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
@@ -154,13 +158,21 @@ export const PartView: React.FC<{
 			// When dragging downwards, only move when the cursor is below 50%
 			// When dragging upwards, only move when the cursor is above 50%
 
+			const isDraggingToNewGroup = dragGroup.id !== hoverGroup.id
+			const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && dragIndex > hoverIndex
+			const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && dragIndex < hoverIndex
+			const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
+
 			// Dragging downwards
-			if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+			if (isDraggingUpFromAnotherGroup && hoverClientY > hoverMiddleY) {
+				hoverIndex += 1
+			}
+			if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
 				return
 			}
 
 			// Dragging upwards
-			if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+			if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
 				return
 			}
 
@@ -177,8 +189,14 @@ export const PartView: React.FC<{
 	})
 	const [{ isDragging }, drag, preview] = useDrag({
 		type: ItemTypes.PART_ITEM,
-		item: (): DragItem => {
-			return { type: ItemTypes.PART_ITEM, group: parentGroup, part: part, index: partIndex }
+		item: (): PartDragItem => {
+			return {
+				type: ItemTypes.PART_ITEM,
+				group: parentGroup,
+				groupIndex: parentGroupIndex,
+				part: part,
+				index: partIndex,
+			}
 		},
 		collect: (monitor) => ({
 			isDragging: monitor.isDragging(),
