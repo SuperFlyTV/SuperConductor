@@ -183,6 +183,9 @@ export const PartView: React.FC<{
 		collect: (monitor) => ({
 			isDragging: monitor.isDragging(),
 		}),
+		isDragging: (monitor) => {
+			return part.id === monitor.getItem().part.id
+		},
 	})
 	drag(dragRef)
 	drop(preview(previewRef))
