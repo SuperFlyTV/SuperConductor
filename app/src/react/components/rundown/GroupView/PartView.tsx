@@ -164,14 +164,15 @@ export const PartView: React.FC<{
 			const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
 
 			// Dragging downwards
-			if (isDraggingUpFromAnotherGroup && hoverClientY > hoverMiddleY) {
-				hoverIndex += 1
-			}
 			if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
 				return
 			}
 
 			// Dragging upwards
+			const isHoveringOverLastPartInGroup = hoverIndex === hoverGroup.parts.length - 1
+			if (isDraggingUpFromAnotherGroup && isHoveringOverLastPartInGroup && hoverClientY > hoverMiddleY) {
+				hoverIndex += 1
+			}
 			if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
 				return
 			}
