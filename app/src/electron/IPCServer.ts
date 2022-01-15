@@ -228,23 +228,16 @@ export class IPCServer implements IPCServerMethods {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string; position: number }
 	}): Promise<void> {
-		const { rundown: fromRundown, group: fromGroup, part } = this.getPart(arg.from)
+		const { part } = this.getPart(arg.from)
 		const { rundown: toRundown, group: toGroup } = this.getGroup(arg.to)
 
-		// Remove the part from its original group.
-		fromGroup.parts = fromGroup.parts.filter((part) => part.id !== arg.from.partId)
-		if (fromGroup.transparent && fromGroup.parts.length === 0) {
-			this.deleteGroup(arg.from)
-		}
+		this.deletePart(arg.from)
 
 		// Add the part to its new group, in its new position.
 		toGroup.parts.splice(arg.to.position, 0, part)
 
 		// Commit the changes.
-		this.storage.updateRundown(arg.from.rundownId, fromRundown)
-		if (arg.from.rundownId !== arg.to.rundownId) {
-			this.storage.updateRundown(arg.to.rundownId, toRundown)
-		}
+		this.storage.updateRundown(arg.to.rundownId, toRundown)
 	}
 
 	async updateTimelineObj(arg: {
