@@ -237,9 +237,35 @@ export class IPCServer implements IPCServerMethods {
 		// Add the part to its new group, in its new position.
 		toGroup.parts.splice(arg.to.position, 0, part)
 
-		// Update playout and playhead data (currently only supports intra-group moves).
-		if (fromGroup.playheadData) {
-			this._updateTimeline(fromGroup)
+		// Update playout and playhead data.
+		if (fromGroup.playheadData && fromGroup.playout.startTime) {
+			if (fromGroup.id === toGroup.id) {
+				const playheadPart = fromGroup.playheadData.parts.find((data) => data.part.id === arg.from.partId)
+				if (playheadPart) {
+					// Update fromGroup.playout such that re-ordering parts is seamless and does what the user expects.
+					const playoutDelta = Date.now() - fromGroup.playout.startTime
+					const currentlyPlayingPart = fromGroup.playheadData.parts.find((data) => {
+						return playoutDelta - data.startTime < data.part.resolved.duration
+					})
+					if (currentlyPlayingPart) {
+						const timeIntoPart = playoutDelta - currentlyPlayingPart.startTime
+						fromGroup.playout.startTime = Date.now() - timeIntoPart
+						fromGroup.playout.partIds = [currentlyPlayingPart.part.id]
+					}
+					this._updateTimeline(fromGroup)
+				}
+			} else {
+				const isPlaying = fromGroup.playout.partIds.includes(arg.from.partId)
+				fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
+				if (isPlaying) {
+					toGroup.playout.partIds.push(arg.from.partId)
+					if (!toGroup.playout.startTime) {
+						toGroup.playout.startTime = fromGroup.playout.startTime
+					}
+				}
+				this._updateTimeline(fromGroup)
+				this._updateTimeline(toGroup)
+			}
 		}
 
 		// Commit the changes.
