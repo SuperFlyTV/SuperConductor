@@ -10,6 +10,7 @@ import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { Part } from '../../../../models/rundown/Part'
 import { ItemTypes } from '../../../api/ItemTypes'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
+import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 
 export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: number }> = ({
 	group,
@@ -77,6 +78,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 		}
 	}, [playhead])
 
+	const isGroupPlaying = !!playhead
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop({
 		accept: ItemTypes.PART_ITEM,
@@ -85,9 +87,32 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 				handlerId: monitor.getHandlerId(),
 			}
 		},
+		canDrop: (item: PartDragItem) => {
+			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
+			const movedPartIsPlaying = Boolean(
+				fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
+			)
+			const isMovingToNewGroup = item.group.id !== group.id
+			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				return false
+			}
+
+			return true
+		},
 		hover(item: PartDragItem, monitor: DropTargetMonitor) {
 			// Don't use the GroupView as a drop target when there are Parts present.
 			if (group.parts.length > 0) {
+				return
+			}
+
+			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
+			const movedPartIsPlaying = Boolean(
+				fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
+			)
+			const isMovingToNewGroup = item.group.id !== group.id
+			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
 				return
 			}
 

@@ -5,6 +5,7 @@ import {
 	findGroup,
 	findPart,
 	findTimelineObj,
+	getCurrentlyPlayingInfo,
 	getResolvedTimelineTotalDuration,
 } from '@/lib/util'
 import { Group } from '@/models/rundown/Group'
@@ -57,7 +58,7 @@ export class IPCServer implements IPCServerMethods {
 		const { rundown } = this.getRundown(arg)
 
 		const group = findGroup(rundown, arg.groupId)
-		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}".`)
+		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
@@ -69,7 +70,7 @@ export class IPCServer implements IPCServerMethods {
 		const { rundown, group } = this.getGroup(arg)
 
 		const part = findPart(group, arg.partId)
-		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId}.`)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
@@ -230,6 +231,20 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		const { rundown: fromRundown, group: fromGroup, part } = this.getPart(arg.from)
 		const { rundown: toRundown, group: toGroup } = this.getGroup(arg.to)
+		const isMovingToNewGroup = fromGroup.id !== toGroup.id
+
+		// Get information about currently-playing Parts.
+		const { playoutDelta: fromGroupPlayoutDelta, partPlayheadData: fromGroupPartPlayheadData } =
+			getCurrentlyPlayingInfo(fromGroup)
+		const movedPartIsPlaying = Boolean(
+			fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === arg.from.partId
+		)
+		const toGroupIsPlaying = Boolean(toGroup.playheadData)
+
+		// Don't allow moving a currently-playing Part into a Group which is already playing.
+		if (movedPartIsPlaying && isMovingToNewGroup && toGroupIsPlaying) {
+			return
+		}
 
 		// Remove the part from its original group.
 		fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
@@ -237,35 +252,23 @@ export class IPCServer implements IPCServerMethods {
 		// Add the part to its new group, in its new position.
 		toGroup.parts.splice(arg.to.position, 0, part)
 
-		// Update playout and playhead data.
-		if (fromGroup.playheadData && fromGroup.playout.startTime) {
-			if (fromGroup.id === toGroup.id) {
-				const playheadPart = fromGroup.playheadData.parts.find((data) => data.part.id === arg.from.partId)
-				if (playheadPart) {
-					// Update fromGroup.playout such that re-ordering parts is seamless and does what the user expects.
-					const playoutDelta = Date.now() - fromGroup.playout.startTime
-					const currentlyPlayingPart = fromGroup.playheadData.parts.find((data) => {
-						return playoutDelta - data.startTime < data.part.resolved.duration
-					})
-					if (currentlyPlayingPart) {
-						const timeIntoPart = playoutDelta - currentlyPlayingPart.startTime
-						fromGroup.playout.startTime = Date.now() - timeIntoPart
-						fromGroup.playout.partIds = [currentlyPlayingPart.part.id]
-					}
-					this._updateTimeline(fromGroup)
-				}
-			} else {
-				const isPlaying = fromGroup.playout.partIds.includes(arg.from.partId)
-				fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
-				if (isPlaying) {
-					toGroup.playout.partIds.push(arg.from.partId)
-					if (!toGroup.playout.startTime) {
-						toGroup.playout.startTime = fromGroup.playout.startTime
-					}
-				}
-				this._updateTimeline(fromGroup)
-				this._updateTimeline(toGroup)
+		if (fromGroup.id === toGroup.id) {
+			// Intra-group move.
+			if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
+				const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
+				fromGroup.playout.startTime = Date.now() - timeIntoPart
+				fromGroup.playout.partIds = [fromGroupPartPlayheadData.part.id]
 			}
+			this._updateTimeline(fromGroup)
+		} else {
+			// Inter-group move.
+			if (movedPartIsPlaying && !toGroupIsPlaying) {
+				fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
+				toGroup.playout.partIds.push(arg.from.partId)
+				toGroup.playout.startTime = fromGroup.playout.startTime
+			}
+			this._updateTimeline(fromGroup)
+			this._updateTimeline(toGroup)
 		}
 
 		// Commit the changes.

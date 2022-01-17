@@ -5,7 +5,7 @@ import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
-import { getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
+import { getCurrentlyPlayingInfo, getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
 import { Part } from '@/models/rundown/Part'
@@ -125,6 +125,19 @@ export const PartView: React.FC<{
 				handlerId: monitor.getHandlerId(),
 			}
 		},
+		canDrop: (item: PartDragItem) => {
+			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
+			const movedPartIsPlaying = Boolean(
+				fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
+			)
+			const isMovingToNewGroup = item.group.id !== parentGroup.id
+			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				return false
+			}
+
+			return true
+		},
 		hover(item: PartDragItem, monitor: DropTargetMonitor) {
 			if (!previewRef.current) {
 				return
@@ -136,6 +149,14 @@ export const PartView: React.FC<{
 			let hoverIndex = partIndex
 			const hoverGroup = parentGroup
 			const hoverGroupIndex = parentGroupIndex
+
+			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
+			const movedPartIsPlaying = Boolean(fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === dragPart.id)
+			const isMovingToNewGroup = dragGroup.id !== hoverGroup.id
+			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				return
+			}
 
 			// Don't replace items with themselves
 			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
