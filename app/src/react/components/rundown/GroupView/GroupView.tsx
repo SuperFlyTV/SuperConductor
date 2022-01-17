@@ -88,6 +88,11 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 			}
 		},
 		canDrop: (item: PartDragItem) => {
+			// Don't allow dropping into a transparent group.
+			if (group.transparent) {
+				return false
+			}
+
 			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
 			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
 			const movedPartIsPlaying = Boolean(
@@ -121,6 +126,11 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 			const dragIndex = item.index
 			const hoverIndex = 0
 			const hoverGroup = group
+
+			// Don't allow dropping into a transparent group.
+			if (hoverGroup.transparent) {
+				return
+			}
 
 			// Don't replace items with themselves
 			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {

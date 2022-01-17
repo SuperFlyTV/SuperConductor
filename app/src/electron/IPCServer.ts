@@ -233,6 +233,11 @@ export class IPCServer implements IPCServerMethods {
 		const { rundown: toRundown, group: toGroup } = this.getGroup(arg.to)
 		const isMovingToNewGroup = fromGroup.id !== toGroup.id
 
+		// Don't allow moving into a transparent group.
+		if (toGroup.transparent) {
+			return
+		}
+
 		// Get information about currently-playing Parts.
 		const { playoutDelta: fromGroupPlayoutDelta, partPlayheadData: fromGroupPartPlayheadData } =
 			getCurrentlyPlayingInfo(fromGroup)

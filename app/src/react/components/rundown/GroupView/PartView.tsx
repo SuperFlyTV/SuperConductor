@@ -126,6 +126,11 @@ export const PartView: React.FC<{
 			}
 		},
 		canDrop: (item: PartDragItem) => {
+			// Don't allow dropping into a transparent group.
+			if (parentGroup.transparent) {
+				return false
+			}
+
 			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
 			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
 			const movedPartIsPlaying = Boolean(
@@ -149,6 +154,11 @@ export const PartView: React.FC<{
 			let hoverIndex = partIndex
 			const hoverGroup = parentGroup
 			const hoverGroupIndex = parentGroupIndex
+
+			// Don't allow dropping into a transparent group.
+			if (hoverGroup.transparent) {
+				return
+			}
 
 			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
 			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
