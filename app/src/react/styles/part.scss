@@ -14,7 +14,7 @@
 		background-color: $partQueuedBg;
 	}
 	&.dragging {
-		opacity: 0;
+		opacity: 0.35;
 	}
 
 	&__drag-handle {
