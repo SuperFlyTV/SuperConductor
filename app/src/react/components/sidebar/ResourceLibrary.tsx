@@ -8,7 +8,7 @@ import { ProjectContext } from '@/react/contexts/Project'
 import { ResourceAny, ResourceType } from '@/models/resource/resource'
 import { assertNever } from '@/lib/lib'
 import { ResourceInfo } from './ResourceInfo'
-import { ResourecLibraryItem } from './ResourceLibraryItem'
+import { ResourceLibraryItem } from './ResourceLibraryItem'
 import { Part } from '@/models/rundown/Part'
 import { Field, Form, Formik, FormikProps } from 'formik'
 import { findPartInRundown } from '@/lib/util'
@@ -83,7 +83,7 @@ export const ResourceLibrary: React.FC<{}> = () => {
 
 						return (
 							<>
-								<ResourecLibraryItem
+								<ResourceLibraryItem
 									key={resource.id}
 									resource={resource}
 									selected={resource.id === selectedResourceId}
@@ -96,7 +96,7 @@ export const ResourceLibrary: React.FC<{}> = () => {
 									}}
 								>
 									{child}
-								</ResourecLibraryItem>
+								</ResourceLibraryItem>
 								<hr key={resource.id + '_hr'} />
 							</>
 						)

@@ -7,7 +7,7 @@ import { describeResource } from '@/lib/Resources'
 
 type IProps = React.PropsWithChildren<{ resource: ResourceAny; selected: boolean; onClick?: React.MouseEventHandler }>
 
-export const ResourecLibraryItem = function ResourecLibraryItem({ resource, selected, onClick, children }: IProps) {
+export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onClick, children }: IProps) {
 	const [{ dragged }, dragRef] = useDrag(
 		() => ({
 			type: ItemTypes.RESOURCE_ITEM,
