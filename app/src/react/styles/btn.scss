@@ -53,6 +53,19 @@
 		}
 	}
 
+	&.un-group {
+		background-color: $accentBg;
+		padding: 0.3rem 0.7rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+
+		&:hover {
+			background-color: $accentLightBg;
+		}
+	}
+
 	&.delete,
 	&.trash {
 		font-weight: bold;

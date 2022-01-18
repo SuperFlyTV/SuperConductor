@@ -27,6 +27,7 @@ export interface IPCServerMethods {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string; position: number }
 	}) => Promise<void>
+	ungroupPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
 
 	updateTimelineObj: (data: {
 		rundownId: string

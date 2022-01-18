@@ -282,6 +282,33 @@ export class IPCServer implements IPCServerMethods {
 			this.storage.updateRundown(arg.from.rundownId, fromRundown)
 		}
 	}
+	async ungroupPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const { rundown, group, part } = this.getPart(data)
+
+		// Remove the part from its original group.
+		group.parts = group.parts.filter((p) => p.id !== data.partId)
+
+		// Make a new transparent group containing this part.
+		const newGroup: Group = {
+			id: short.generate(),
+			name: part.name,
+			transparent: true,
+			parts: [part],
+			autoPlay: false,
+			loop: false,
+			playout: {
+				startTime: null,
+				partIds: [],
+			},
+			playheadData: null,
+		}
+
+		// Add the new transparent group to the rundown.
+		rundown.groups.push(newGroup)
+
+		// Commit the changes.
+		this.storage.updateRundown(data.rundownId, rundown)
+	}
 
 	async updateTimelineObj(arg: {
 		rundownId: string

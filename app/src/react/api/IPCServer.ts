@@ -59,6 +59,9 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('movePart', data)
 	}
+	ungroupPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('ungroupPart', data)
+	}
 	newTemplateData(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('newTemplateData', data)
 	}

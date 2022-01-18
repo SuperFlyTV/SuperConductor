@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
-import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
+import { UnGroupBtn } from '../../inputs/UnGroupBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { Resolver } from 'superfly-timeline'
@@ -74,38 +74,10 @@ export const PartView: React.FC<{
 		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id })
 	}
 
-	// Queue button:
-	const cannotQueue: boolean = !!(isGroupPlaying && playhead.isInRepeating)
-	const queuedPositions: number[] = []
-	parentGroup.playout.partIds.forEach((partId, index) => {
-		if (partId === part.id) queuedPositions.push(index)
-	})
-	const [showUnqueue, setShowUnqueue] = useState(false)
-	useEffect(() => {
-		const onKey = () => {
-			const pressed = keyTracker.getPressedKeys()
-			setShowUnqueue(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
-		}
-		onKey()
-
-		keyTracker.bind('Shift', onKey, {
-			up: false,
-			global: true,
-		})
-		keyTracker.bind('Shift', onKey, {
-			up: true,
-			global: true,
-		})
-
-		return () => {
-			keyTracker.unbind('Shift', onKey)
-		}
-	}, [])
-	const handleQueue = () => {
-		ipcServer.queuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
-	}
-	const handleUnQueue = () => {
-		ipcServer.unqueuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
+	// Ungroup Button:
+	const showUngroup = !parentGroup.transparent
+	const handleUngroup = () => {
+		ipcServer.ungroupPart({ rundownId, groupId: parentGroup.id, partId: part.id })
 	}
 
 	// Delete button:
@@ -260,19 +232,7 @@ export const PartView: React.FC<{
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
-					{showUnqueue ? (
-						<UnQueueBtn
-							label={queuedPositions.map((index) => index + 1).join(', ')}
-							onClick={handleUnQueue}
-							disabled={cannotQueue}
-						/>
-					) : (
-						<QueueBtn
-							label={queuedPositions.map((index) => index + 1).join(', ')}
-							onClick={handleQueue}
-							disabled={cannotQueue}
-						/>
-					)}
+					{showUngroup && <UnGroupBtn onClick={handleUngroup} />}
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
