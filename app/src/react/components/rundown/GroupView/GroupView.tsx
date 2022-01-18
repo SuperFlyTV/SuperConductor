@@ -170,7 +170,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<div ref={wrapperRef}>
+			<div ref={wrapperRef} data-handler-id={handlerId}>
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
@@ -183,7 +183,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 		) : null
 	} else {
 		return (
-			<div ref={wrapperRef} className="group">
+			<div ref={wrapperRef} className="group" data-handler-id={handlerId}>
 				<div className="group__header">
 					<div className="title">{group.name}</div>
 					<div className="controls">
