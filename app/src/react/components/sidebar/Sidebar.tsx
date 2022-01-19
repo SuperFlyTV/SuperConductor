@@ -11,6 +11,8 @@ import { describeTimelineObject } from '@/lib/TimelineObj'
 import { ResourceInfo } from './ResourceInfo'
 import { ResourceLibrary } from './ResourceLibrary'
 import { EditTimelineObj } from './TimelineObj'
+import { TemplateData } from './TemplateData'
+import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
 export const Sidebar: React.FC<{}> = (props) => {
 	const resources = useContext(ResourcesContext)
@@ -68,12 +70,15 @@ export const Sidebar: React.FC<{}> = (props) => {
 
 				{/* {<TimelineObjInfo timelineObj={editing.timelineObj} appMappings={props.appData.mappings} />} */}
 
-				{/* {(editing.timelineObj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
+				{(editing.timelineObj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 					<TemplateData
-						timelineObjId={editing.timelineObj.id}
-						templateData={JSON.parse((editing.timelineObj.content as any)?.data)}
+						rundownId={rundown.id}
+						groupId={editing.group.id}
+						partId={editing.part.id}
+						timelineObjId={editing.timelineObj.obj.id}
+						templateData={JSON.parse((editing.timelineObj.obj.content as any)?.data)}
 					/>
-				)} */}
+				)}
 			</div>
 		)
 	} else {
