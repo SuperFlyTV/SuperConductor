@@ -227,15 +227,53 @@ export class IPCServer implements IPCServerMethods {
 	}
 	async movePart(arg: {
 		from: { rundownId: string; groupId: string; partId: string }
-		to: { rundownId: string; groupId: string; position: number }
-	}): Promise<void> {
-		const { rundown: fromRundown, group: fromGroup, part } = this.getPart(arg.from)
-		const { rundown: toRundown, group: toGroup } = this.getGroup(arg.to)
-		const isMovingToNewGroup = fromGroup.id !== toGroup.id
-
-		// Don't allow moving into a transparent group.
-		if (toGroup.transparent) {
+		to: { rundownId: string; groupId: string | null; position: number }
+	}): Promise<Group | undefined> {
+		let fromRundown: Rundown
+		let fromGroup: Group
+		let part: Part
+		// @TODO (Alex Van Camp): I'm not sure why this try/catch is necessary, but it is.
+		try {
+			const getPartResult = this.getPart(arg.from)
+			fromRundown = getPartResult.rundown
+			fromGroup = getPartResult.group
+			part = getPartResult.part
+		} catch (error) {
+			// Ignore
+			console.log('movePart caught error:', (error as any).message)
 			return
+		}
+		const isMovingToNewGroup = arg.from.groupId !== arg.to.groupId
+		let toRundown: Rundown
+		let toGroup: Group
+		let madeNewTransparentGroup = false
+		let isTransparentGroupMove =
+			arg.from.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
+
+		if (arg.to.groupId) {
+			const getGroupResult = this.getGroup({ rundownId: arg.to.rundownId, groupId: arg.to.groupId })
+			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : getGroupResult.rundown
+			toGroup = getGroupResult.group
+		} else {
+			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : this.getRundown(arg.to).rundown
+			if (isTransparentGroupMove) {
+				toGroup = fromGroup
+			} else {
+				toGroup = {
+					id: short.generate(),
+					name: part.name,
+					transparent: true,
+					parts: [part],
+					autoPlay: false,
+					loop: false,
+					playout: {
+						startTime: null,
+						partIds: [],
+					},
+					playheadData: null,
+				}
+				madeNewTransparentGroup = true
+			}
 		}
 
 		// Get information about currently-playing Parts.
@@ -251,36 +289,57 @@ export class IPCServer implements IPCServerMethods {
 			return
 		}
 
-		// Remove the part from its original group.
-		fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
+		if (!isTransparentGroupMove) {
+			// Remove the part from its original group.
+			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
+		}
 
-		// Add the part to its new group, in its new position.
-		toGroup.parts.splice(arg.to.position, 0, part)
+		if (madeNewTransparentGroup) {
+			// Add the new transparent group to the rundown.
+			toRundown.groups.splice(arg.to.position, 0, toGroup)
+		} else if (isTransparentGroupMove) {
+			// Move the transparent group to its new position.
+			fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
+			toRundown.groups.splice(arg.to.position, 0, toGroup)
+		} else if (!isTransparentGroupMove) {
+			// Add the part to its new group, in its new position.
+			toGroup.parts.splice(arg.to.position, 0, part)
+		}
 
-		if (fromGroup.id === toGroup.id) {
-			// Intra-group move.
-			if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
-				const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
-				fromGroup.playout.startTime = Date.now() - timeIntoPart
-				fromGroup.playout.partIds = [fromGroupPartPlayheadData.part.id]
+		// Clean up leftover empty transparent groups.
+		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
+			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
+		}
+
+		// Update timelines.
+		if (!isTransparentGroupMove) {
+			if (fromGroup.id === toGroup.id) {
+				// Intra-group move.
+				if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
+					const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
+					fromGroup.playout.startTime = Date.now() - timeIntoPart
+					fromGroup.playout.partIds = [fromGroupPartPlayheadData.part.id]
+				}
+				this._updateTimeline(fromGroup)
+			} else {
+				// Inter-group move.
+				if (movedPartIsPlaying && !toGroupIsPlaying) {
+					fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
+					toGroup.playout.partIds.push(arg.from.partId)
+					toGroup.playout.startTime = fromGroup.playout.startTime
+				}
+				this._updateTimeline(fromGroup)
+				this._updateTimeline(toGroup)
 			}
-			this._updateTimeline(fromGroup)
-		} else {
-			// Inter-group move.
-			if (movedPartIsPlaying && !toGroupIsPlaying) {
-				fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
-				toGroup.playout.partIds.push(arg.from.partId)
-				toGroup.playout.startTime = fromGroup.playout.startTime
-			}
-			this._updateTimeline(fromGroup)
-			this._updateTimeline(toGroup)
 		}
 
 		// Commit the changes.
 		this.storage.updateRundown(arg.to.rundownId, toRundown)
-		if (arg.to.rundownId !== arg.from.rundownId) {
+		if (fromRundown !== toRundown) {
 			this.storage.updateRundown(arg.from.rundownId, fromRundown)
 		}
+
+		return toGroup
 	}
 
 	async updateTimelineObj(arg: {
