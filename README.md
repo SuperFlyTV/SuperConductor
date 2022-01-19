@@ -1,4 +1,4 @@
-# Timed Player Thingy
+# SuperConductor
 
 The project consists of 3 applications:
 

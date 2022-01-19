@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useCallback, useContext, useRef, useState } from 'react'
 import { Popup } from '../popup/Popup'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GroupView } from './GroupView/GroupView'
@@ -6,14 +6,83 @@ import { RundownContext } from '@/react/contexts/Rundown'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { Rundown } from '@/models/rundown/Rundown'
 import { FormRow } from '../sidebar/InfoGroup'
+import { DropTargetMonitor, useDrop } from 'react-dnd'
+import { ItemTypes } from '../../api/ItemTypes'
+import { MovePartFn, PartDragItem } from './GroupView/PartView'
+import { Group } from '../../../models/rundown/Group'
+import { Part } from '../../../models/rundown/Part'
 
 export const RundownView: React.FC<{}> = (props) => {
 	const rundown = useContext(RundownContext)
+	const ipcServer = useContext(IPCServerContext)
+
+	// Drag n' Drop:
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const movePart: MovePartFn = useCallback(
+		(data: { dragGroup: Group; dragPart: Part; hoverGroup: Group | null; hoverIndex: number }) => {
+			return ipcServer.movePart({
+				from: {
+					rundownId: rundown.id,
+					groupId: data.dragGroup.id,
+					partId: data.dragPart.id,
+				},
+				to: {
+					rundownId: rundown.id,
+					groupId: data.hoverGroup?.id ?? null,
+					position: data.hoverIndex,
+				},
+			})
+		},
+		[rundown.id]
+	)
+	const [{ handlerId }, drop] = useDrop(
+		{
+			accept: ItemTypes.PART_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+				}
+			},
+			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
+				const dragGroup = item.group
+				const dragPart = item.part
+				const dragIndex = item.index
+				const hoverIndex = rundown.groups.length
+				const hoverGroup = null
+
+				// Don't replace items with themselves
+				if (dragGroup.transparent) {
+					return
+				}
+
+				// Ignore nested hover targets
+				if (!monitor.isOver({ shallow: true })) {
+					return
+				}
+
+				// Time to actually perform the action
+				const newGroup = await movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
+				if (!newGroup) {
+					// The backend rejected the move, so do nothing.
+					return
+				}
+
+				// Note: we're mutating the monitor item here!
+				// Generally it's better to avoid mutations,
+				// but it's good here for the sake of performance
+				// to avoid expensive index searches.
+				item.index = hoverIndex
+				item.group = newGroup
+			},
+		},
+		[rundown.groups]
+	)
+	drop(wrapperRef)
 
 	return (
-		<div className="group-list">
+		<div className="group-list" ref={wrapperRef} data-handler-id={handlerId}>
 			{rundown.groups.map((group, index) => {
-				return <GroupView key={index} group={group} rundownId={rundown.id} />
+				return <GroupView key={group.id} group={group} groupIndex={index} rundownId={rundown.id} movePart={movePart} />
 			})}
 
 			<GroupListOptions rundown={rundown} />

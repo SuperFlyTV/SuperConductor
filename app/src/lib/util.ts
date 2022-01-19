@@ -68,6 +68,29 @@ export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimel
 	return maxDuration
 }
 
+export const getCurrentlyPlayingInfo = (
+	group: Group
+): {
+	playoutDelta: number | undefined
+	partPlayheadData: { startTime: number; part: Part } | undefined
+} => {
+	let playoutDelta: number | undefined = undefined
+	let partPlayheadData: { startTime: number; part: Part } | undefined = undefined
+	if (group.playout.startTime) {
+		playoutDelta = Date.now() - group.playout.startTime
+	}
+	if (typeof playoutDelta === 'number' && group.playheadData) {
+		const found = group.playheadData.parts.find((data) => {
+			return (playoutDelta as number) - data.startTime < data.part.resolved.duration
+		})
+		if (found) {
+			partPlayheadData = found
+		}
+	}
+
+	return { playoutDelta, partPlayheadData }
+}
+
 /**
  * Returns a string that changes whenever the input changes.
  * Does NOT depend on the order of object attributes.

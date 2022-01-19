@@ -161,13 +161,20 @@ export class TSR {
 								id: media.name,
 								...media,
 							}
+
+							try {
+								const thumbnail = await ccg.thumbnailRetrieve(media.name)
+								resource.thumbnail = thumbnail.response.data
+							} catch (error) {
+								console.error(`Could not set thumbnail for media "${media.name}".`, error)
+							}
+
 							const id = `${resource.deviceId}_${resource.id}`
 							resources[id] = resource
 						}
 					}
 
 					// Refresh templates:
-
 					{
 						const res = await ccg.tls()
 						const templatesList = res.response.data as {

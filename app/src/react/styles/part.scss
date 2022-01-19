@@ -13,6 +13,17 @@
 		border-color: $partQueuedColor;
 		background-color: $partQueuedBg;
 	}
+	&.dragging {
+		opacity: 0.35;
+	}
+
+	&__drag-handle {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		background-color: $partDragHandleColor;
+		cursor: grab;
+	}
 
 	&__meta {
 		background-color: $partOutlineColor;

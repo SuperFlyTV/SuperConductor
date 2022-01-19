@@ -69,6 +69,7 @@
 			overflow-y: auto;
 			overflow-x: hidden;
 			max-height: calc(100vh - 200px);
+			padding: 0 0.6em;
 		}
 	}
 
@@ -136,5 +137,13 @@
 		color: silver;
 		border: 0;
 		padding: 0.5rem 1rem;
+	}
+
+	hr {
+		border-color: black;
+
+		&:last-of-type {
+			display: none;
+		}
 	}
 }
