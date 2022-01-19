@@ -114,7 +114,7 @@ export const App = () => {
 	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
-		const isOnSidebar = tarEl.closest('.sidebar')
+		const isOnSidebar = tarEl.closest('.side-bar')
 		if (!isOnLayer && !isOnSidebar) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjId) {
