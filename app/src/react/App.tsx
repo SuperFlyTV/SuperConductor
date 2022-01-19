@@ -159,6 +159,7 @@ export const App = () => {
 											onSelect={(rundownId) => {
 												setCurrentRundownId(rundownId)
 											}}
+											bridgeStatuses={bridgeStatuses}
 										/>
 									</div>
 
