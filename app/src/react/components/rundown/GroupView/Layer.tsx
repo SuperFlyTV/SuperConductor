@@ -18,8 +18,9 @@ export const Layer: React.FC<{
 		timelineObj: TimelineObj
 	}[]
 	layerId: string
+	layerName: string
 	partDuration: number
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration }) => {
+}> = ({ rundownId, layerId, layerName, groupId, partId, objectsOnLayer, partDuration }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
@@ -42,6 +43,7 @@ export const Layer: React.FC<{
 
 	return (
 		<div ref={drop} className={classNames('layer', { isOver })}>
+			<div className="layer__name">{layerName}</div>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
 					return (

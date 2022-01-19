@@ -20,6 +20,7 @@ import { ItemTypes } from '../../../api/ItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { compact } from '@/lib/lib'
+import { Mappings } from 'timeline-state-resolver-types'
 
 export interface PartDragItem {
 	index: number
@@ -42,8 +43,9 @@ export const PartView: React.FC<{
 	parentGroupIndex: number
 	part: Part
 	playhead: GroupPlayhead | null
+	mappings: Mappings
 	movePart: MovePartFn
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, movePart }) => {
+}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
 
@@ -339,6 +341,7 @@ export const PartView: React.FC<{
 									partDuration={maxDuration}
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
+									layerName={mappings[layerId].layerName ?? layerId}
 								/>
 							)
 						})}

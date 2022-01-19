@@ -15,7 +15,6 @@ export class IPCClient implements IPCClientMethods {
 			updateRundown: (fileName: string, rundown: Rundown) => void
 			updateResource: (id: string, resource: ResourceAny | null) => void
 			updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
-			updateMapping: (id: string, mapping: Mapping | null) => void
 		}
 	) {
 		this.ipcRenderer.on('callMethod', (event, methodname: string, ...args: any[]) => {
@@ -39,8 +38,5 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateBridgeStatus(id: string, resource: BridgeStatus | null): void {
 		this.callbacks.updateBridgeStatus(id, resource)
-	}
-	updateMapping(id: string, mapping: Mapping | null): void {
-		this.callbacks.updateMapping(id, mapping)
 	}
 }

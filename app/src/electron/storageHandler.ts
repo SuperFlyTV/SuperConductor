@@ -264,7 +264,6 @@ export class StorageHandler extends EventEmitter {
 						fileName: 'default.rundown.json',
 					},
 				],
-				mappings: {},
 			},
 		}
 	}

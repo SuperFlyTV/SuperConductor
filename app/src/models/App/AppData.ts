@@ -8,7 +8,6 @@ export interface AppData {
 	rundowns: {
 		fileName: string
 	}[]
-	mappings: Mappings
 }
 export type WindowPosition =
 	| {

@@ -51,7 +51,6 @@ export const TimelineObject: React.FC<{
 						groupId: groupId,
 						timelineObjId: obj.id,
 						timelineObj: timelineObj,
-						layer: obj.layer,
 					})
 				}
 			}

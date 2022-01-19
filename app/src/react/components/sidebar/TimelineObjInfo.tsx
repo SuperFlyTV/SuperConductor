@@ -19,7 +19,7 @@ export const TimelineObjInfo: React.FC<{
 	groupId: string
 	partId: string
 	timelineObj: TimelineObj
-	appMappings: Mappings | undefined
+	mappings: Mappings | undefined
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
 
@@ -42,13 +42,13 @@ export const TimelineObjInfo: React.FC<{
 						editedTimelineObj.obj.enable.start = values.enableStart
 						editedTimelineObj.obj.enable.duration = values.enableDuration
 					}
+					editedTimelineObj.obj.layer = values.layer
 					ipcServer.updateTimelineObj({
 						rundownId: props.rundownId,
 						groupId: props.groupId,
 						partId: props.partId,
 						timelineObjId: props.timelineObj.obj.id,
 						timelineObj: editedTimelineObj,
-						layer: values.layer,
 					})
 					actions.setSubmitting(false)
 				}}
@@ -58,10 +58,10 @@ export const TimelineObjInfo: React.FC<{
 						<FormRow>
 							<label htmlFor="layer">Layer</label>
 							<Field as="select" name="layer">
-								{props.appMappings &&
-									Object.keys(props.appMappings).map((key) => (
+								{props.mappings &&
+									Object.entries(props.mappings).map(([key, value]) => (
 										<option key={key} value={key}>
-											{key}
+											{value.layerName ?? key}
 										</option>
 									))}
 							</Field>

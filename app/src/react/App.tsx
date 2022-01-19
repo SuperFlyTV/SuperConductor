@@ -89,17 +89,6 @@ export const App = () => {
 					return newStatuses
 				})
 			},
-			updateMapping: (layerId: string, mapping: Mapping | null) => {
-				setMappings((mappings) => {
-					const newMappings = { ...mappings }
-					if (mapping) {
-						newMappings[layerId] = mapping
-					} else {
-						delete newMappings[layerId]
-					}
-					return newMappings
-				})
-			},
 		})
 	}, [])
 
@@ -178,10 +167,10 @@ export const App = () => {
 									{currentRundown ? (
 										<RundownContext.Provider value={currentRundown}>
 											<div className="main-area">
-												<RundownView />
+												<RundownView mappings={project.mappings} />
 											</div>
 											<div className="side-bar">
-												<Sidebar mappings={mappings} />
+												<Sidebar mappings={project.mappings} />
 											</div>
 										</RundownContext.Provider>
 									) : (
