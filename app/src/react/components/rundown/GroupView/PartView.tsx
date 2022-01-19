@@ -28,13 +28,20 @@ export interface PartDragItem {
 	part: Part
 }
 
+export type MovePartFn = (data: {
+	dragGroup: Group
+	dragPart: Part
+	hoverGroup: Group | null
+	hoverIndex: number
+}) => Promise<Group | undefined>
+
 export const PartView: React.FC<{
 	rundownId: string
 	parentGroup: Group
 	parentGroupIndex: number
 	part: Part
 	playhead: GroupPlayhead | null
-	movePart: (data: { dragGroup: Group; dragPart: Part; hoverGroup: Group; hoverIndex: number }) => void
+	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
@@ -118,107 +125,121 @@ export const PartView: React.FC<{
 	const partIndex = parentGroup.parts.findIndex(({ id }) => id === part.id)
 	const dragRef = useRef<HTMLDivElement>(null)
 	const previewRef = useRef<HTMLDivElement>(null)
-	const [{ handlerId }, drop] = useDrop({
-		accept: ItemTypes.PART_ITEM,
-		collect(monitor) {
-			return {
-				handlerId: monitor.getHandlerId(),
-			}
+	const [{ handlerId }, drop] = useDrop(
+		{
+			accept: ItemTypes.PART_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+				}
+			},
+			canDrop: (item: PartDragItem) => {
+				// Don't allow dropping into a transparent group.
+				if (parentGroup.transparent) {
+					return false
+				}
+
+				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
+				const movedPartIsPlaying = Boolean(
+					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
+				)
+				const isMovingToNewGroup = item.group.id !== parentGroup.id
+				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+					return false
+				}
+
+				return true
+			},
+			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
+				if (!previewRef.current) {
+					return
+				}
+				const dragGroup = item.group
+				const dragGroupIndex = item.groupIndex
+				const dragPart = item.part
+				const dragIndex = item.index
+				let hoverIndex = partIndex
+				let hoverGroup: Group | null = parentGroup
+				const hoverGroupIndex = parentGroupIndex
+
+				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
+				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
+				const movedPartIsPlaying = Boolean(
+					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === dragPart.id
+				)
+				const isMovingToNewGroup = dragGroup.id !== hoverGroup.id
+				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+					return
+				}
+
+				// Don't replace items with themselves
+				if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
+					return
+				}
+
+				// Determine rectangle on screen
+				const hoverBoundingRect = previewRef.current?.getBoundingClientRect()
+
+				// Get vertical middle
+				const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+
+				// Determine mouse position
+				const clientOffset = monitor.getClientOffset()
+
+				// Get pixels to the top
+				const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+
+				// Only perform the move when the mouse has crossed half of the items height
+				// When dragging downwards, only move when the cursor is below 50%
+				// When dragging upwards, only move when the cursor is above 50%
+
+				const isDraggingToNewGroup = dragGroup.id !== hoverGroup.id
+				const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && dragIndex > hoverIndex
+				const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && dragIndex < hoverIndex
+				const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
+				const isDraggingDownFromAnotherGroup = dragGroupIndex < hoverGroupIndex
+
+				// Dragging downwards
+				if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
+					return
+				}
+
+				// Dragging upwards
+				const isHoveringOverLastPartInGroup = hoverIndex === hoverGroup.parts.length - 1
+				if (isDraggingUpFromAnotherGroup && isHoveringOverLastPartInGroup && hoverClientY > hoverMiddleY) {
+					hoverIndex += 1
+				}
+				if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
+					return
+				}
+
+				// Handle so-called "transparent group moves".
+				if (hoverGroup.transparent) {
+					hoverGroup = null
+					hoverIndex = hoverGroupIndex
+					if (hoverClientY > hoverMiddleY) {
+						hoverIndex = hoverGroupIndex + 1
+					}
+				}
+
+				// Time to actually perform the action
+				const newGroup = await movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
+				if (!newGroup) {
+					// The backend rejected the move, so do nothing.
+					return
+				}
+
+				// Note: we're mutating the monitor item here!
+				// Generally it's better to avoid mutations,
+				// but it's good here for the sake of performance
+				// to avoid expensive index searches.
+				item.index = hoverIndex
+				item.group = newGroup
+			},
 		},
-		canDrop: (item: PartDragItem) => {
-			// Don't allow dropping into a transparent group.
-			if (parentGroup.transparent) {
-				return false
-			}
-
-			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
-			const movedPartIsPlaying = Boolean(
-				fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
-			)
-			const isMovingToNewGroup = item.group.id !== parentGroup.id
-			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
-				return false
-			}
-
-			return true
-		},
-		hover(item: PartDragItem, monitor: DropTargetMonitor) {
-			if (!previewRef.current) {
-				return
-			}
-			const dragGroup = item.group
-			const dragGroupIndex = item.groupIndex
-			const dragPart = item.part
-			const dragIndex = item.index
-			let hoverIndex = partIndex
-			const hoverGroup = parentGroup
-			const hoverGroupIndex = parentGroupIndex
-
-			// Don't allow dropping into a transparent group.
-			if (hoverGroup.transparent) {
-				return
-			}
-
-			// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-			const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
-			const movedPartIsPlaying = Boolean(fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === dragPart.id)
-			const isMovingToNewGroup = dragGroup.id !== hoverGroup.id
-			if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
-				return
-			}
-
-			// Don't replace items with themselves
-			if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
-				return
-			}
-
-			// Determine rectangle on screen
-			const hoverBoundingRect = previewRef.current?.getBoundingClientRect()
-
-			// Get vertical middle
-			const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
-
-			// Determine mouse position
-			const clientOffset = monitor.getClientOffset()
-
-			// Get pixels to the top
-			const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
-
-			// Only perform the move when the mouse has crossed half of the items height
-			// When dragging downwards, only move when the cursor is below 50%
-			// When dragging upwards, only move when the cursor is above 50%
-
-			const isDraggingToNewGroup = dragGroup.id !== hoverGroup.id
-			const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && dragIndex > hoverIndex
-			const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && dragIndex < hoverIndex
-			const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
-
-			// Dragging downwards
-			if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
-				return
-			}
-
-			// Dragging upwards
-			const isHoveringOverLastPartInGroup = hoverIndex === hoverGroup.parts.length - 1
-			if (isDraggingUpFromAnotherGroup && isHoveringOverLastPartInGroup && hoverClientY > hoverMiddleY) {
-				hoverIndex += 1
-			}
-			if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
-				return
-			}
-
-			// Time to actually perform the action
-			movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
-
-			// Note: we're mutating the monitor item here!
-			// Generally it's better to avoid mutations,
-			// but it's good here for the sake of performance
-			// to avoid expensive index searches.
-			item.index = hoverIndex
-			item.group = hoverGroup
-		},
-	})
+		[parentGroup, parentGroupIndex, partIndex]
+	)
 	const [{ isDragging }, drag, preview] = useDrag({
 		type: ItemTypes.PART_ITEM,
 		item: (): PartDragItem => {
