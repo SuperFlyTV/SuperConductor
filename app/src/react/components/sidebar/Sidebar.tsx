@@ -12,9 +12,11 @@ import { ResourceInfo } from './ResourceInfo'
 import { ResourceLibrary } from './ResourceLibrary'
 import { EditTimelineObj } from './TimelineObj'
 import { TemplateData } from './TemplateData'
+import { TimelineObjInfo } from './TimelineObjInfo'
 import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { AppData } from '@/models/App/AppData'
 
-export const Sidebar: React.FC<{}> = (props) => {
+export const Sidebar: React.FC<{ mappings: AppData['mappings'] }> = (props) => {
 	const resources = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
 	const { gui } = useContext(GUIContext)
@@ -66,9 +68,17 @@ export const Sidebar: React.FC<{}> = (props) => {
 				{<div className="title">{description?.label}</div>}
 
 				{resource && <ResourceInfo resource={resource} />}
-				{editing.timelineObj && <EditTimelineObj obj={editing.timelineObj.obj} />}
+				{/* {editing.timelineObj && <EditTimelineObj obj={editing.timelineObj.obj} />} */}
 
-				{/* {<TimelineObjInfo timelineObj={editing.timelineObj} appMappings={props.appData.mappings} />} */}
+				{
+					<TimelineObjInfo
+						rundownId={rundown.id}
+						groupId={editing.group.id}
+						partId={editing.part.id}
+						timelineObj={editing.timelineObj}
+						appMappings={props.mappings}
+					/>
+				}
 
 				{(editing.timelineObj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 					<TemplateData

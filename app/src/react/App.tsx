@@ -21,6 +21,7 @@ import { BridgeStatus } from '@/models/project/Bridge'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
+import { Mapping } from 'timeline-state-resolver-types'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -37,6 +38,7 @@ export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
+	const [mappings, setMappings] = useState<{ [layerId: string]: Mapping }>({})
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
@@ -85,6 +87,17 @@ export const App = () => {
 						delete newStatuses[bridgeId]
 					}
 					return newStatuses
+				})
+			},
+			updateMapping: (layerId: string, mapping: Mapping | null) => {
+				setMappings((mappings) => {
+					const newMappings = { ...mappings }
+					if (mapping) {
+						newMappings[layerId] = mapping
+					} else {
+						delete newMappings[layerId]
+					}
+					return newMappings
 				})
 			},
 		})
@@ -168,7 +181,7 @@ export const App = () => {
 												<RundownView />
 											</div>
 											<div className="side-bar">
-												<Sidebar />
+												<Sidebar mappings={mappings} />
 											</div>
 										</RundownContext.Provider>
 									) : (

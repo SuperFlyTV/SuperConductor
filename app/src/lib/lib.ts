@@ -20,3 +20,6 @@ export function omit<T, K extends keyof T>(obj: T, arg: K): Omit<T, K> {
 	delete copy[arg]
 	return copy
 }
+export function deepClone<T>(data: T): T {
+	return JSON.parse(JSON.stringify(data))
+}

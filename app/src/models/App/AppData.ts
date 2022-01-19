@@ -1,3 +1,5 @@
+import { Mappings } from 'timeline-state-resolver-types'
+
 export interface AppData {
 	windowPosition: WindowPosition
 	project: {
@@ -6,6 +8,7 @@ export interface AppData {
 	rundowns: {
 		fileName: string
 	}[]
+	mappings: Mappings
 }
 export type WindowPosition =
 	| {

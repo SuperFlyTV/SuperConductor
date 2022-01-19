@@ -35,8 +35,8 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-
 		timelineObj: TimelineObj
+		layer: string | number
 	}) => Promise<void>
 	deleteTimelineObj: (data: {
 		rundownId: string

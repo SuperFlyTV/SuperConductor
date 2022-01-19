@@ -347,8 +347,8 @@ export class IPCServer implements IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-
 		timelineObj: TimelineObj
+		layer: string | number
 	}): Promise<void> {
 		const { rundown, part } = this.getPart(arg)
 
@@ -356,6 +356,7 @@ export class IPCServer implements IPCServerMethods {
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 
 		Object.assign(timelineObj, arg.timelineObj)
+		timelineObj.obj.layer = arg.layer
 
 		this._updatePart(part)
 		this.storage.updateRundown(arg.rundownId, rundown)

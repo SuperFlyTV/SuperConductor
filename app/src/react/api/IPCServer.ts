@@ -29,7 +29,14 @@ export class IPCServer implements IPCServerMethods {
 	stopGroup(data: { groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}
-	updateTimelineObj(data: { timelineObjId: string; timelineObj: TimelineObj }): Promise<void> {
+	updateTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+		timelineObj: TimelineObj
+		layer: string | number
+	}): Promise<void> {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}
 	newPart(data: {

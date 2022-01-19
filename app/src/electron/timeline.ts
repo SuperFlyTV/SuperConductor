@@ -6,6 +6,7 @@ import { TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { StorageHandler } from './storageHandler'
 import { BridgeHandler } from './bridgeHandler'
+import { deepClone } from '@/lib/lib'
 
 export interface UpdateTimelineCache {
 	groupHashes?: { [groupId: string]: string }
@@ -136,7 +137,4 @@ function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObj
 	// 		changeTimelineIdInner(changedIds, keyframe, changeId)
 	// 	}
 	// }
-}
-function deepClone<T>(data: T): T {
-	return JSON.parse(JSON.stringify(data))
 }
