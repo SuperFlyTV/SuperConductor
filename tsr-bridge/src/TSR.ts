@@ -144,7 +144,7 @@ export class TSR {
 					{
 						const res = await ccg.cls()
 						const mediaList = res.response.data as {
-							type: 'image' | 'video'
+							type: 'image' | 'video' | 'audio'
 							name: string
 							size: number
 							changed: number
@@ -162,11 +162,13 @@ export class TSR {
 								...media,
 							}
 
-							try {
-								const thumbnail = await ccg.thumbnailRetrieve(media.name)
-								resource.thumbnail = thumbnail.response.data
-							} catch (error) {
-								console.error(`Could not set thumbnail for media "${media.name}".`, error)
+							if (media.type === 'image' || media.type === 'video') {
+								try {
+									const thumbnail = await ccg.thumbnailRetrieve(media.name)
+									resource.thumbnail = thumbnail.response.data
+								} catch (error) {
+									console.error(`Could not set thumbnail for media "${media.name}".`, error)
+								}
 							}
 
 							const id = `${resource.deviceId}_${resource.id}`
