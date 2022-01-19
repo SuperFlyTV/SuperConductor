@@ -300,6 +300,11 @@ export const PartView: React.FC<{
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
+			<div className="part__layer-names">
+				{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId]) => {
+					return <div className="part__layer-names__name">{mappings[layerId].layerName ?? layerId}</div>
+				})}
+			</div>
 			<div className="part__timeline">
 				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
 				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
@@ -341,7 +346,6 @@ export const PartView: React.FC<{
 									partDuration={maxDuration}
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
-									layerName={mappings[layerId].layerName ?? layerId}
 								/>
 							)
 						})}

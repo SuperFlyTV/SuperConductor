@@ -11,13 +11,9 @@
 		margin-bottom: 0.3rem;
 	}
 
-	&:nth-child(even) {
-		.layer__name {
-			background-color: black;
-		}
-
+	&:nth-child(odd) {
 		.layer__content {
-			background-color: #111111;
+			background: rgba(255, 255, 255, 0.1);
 		}
 	}
 

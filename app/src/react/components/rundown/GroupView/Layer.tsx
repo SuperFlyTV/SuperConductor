@@ -2,7 +2,6 @@ import classNames from 'classnames'
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { ResourceAny } from '../../../../models/resource/resource'
 import { ItemTypes } from '../../../api/ItemTypes'
@@ -18,9 +17,8 @@ export const Layer: React.FC<{
 		timelineObj: TimelineObj
 	}[]
 	layerId: string
-	layerName: string
 	partDuration: number
-}> = ({ rundownId, layerId, layerName, groupId, partId, objectsOnLayer, partDuration }) => {
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
@@ -43,7 +41,6 @@ export const Layer: React.FC<{
 
 	return (
 		<div ref={drop} className={classNames('layer', { isOver })}>
-			<div className="layer__name">{layerName}</div>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
 					return (

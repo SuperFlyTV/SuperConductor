@@ -96,6 +96,8 @@
 			flex-shrink: 0;
 			font-size: 1.3rem;
 			box-sizing: border-box;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		input {
