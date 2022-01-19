@@ -3,6 +3,7 @@ import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
 import { Resources } from '@/react/contexts/Resources'
+import { Group } from '../models/rundown/Group'
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
@@ -23,6 +24,10 @@ export interface IPCServerMethods {
 	newGroup: (data: { rundownId: string; name: string }) => Promise<string>
 	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
 	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<void>
+	movePart: (data: {
+		from: { rundownId: string; groupId: string; partId: string }
+		to: { rundownId: string; groupId: string | null; position: number }
+	}) => Promise<Group | undefined>
 
 	updateTimelineObj: (data: {
 		rundownId: string

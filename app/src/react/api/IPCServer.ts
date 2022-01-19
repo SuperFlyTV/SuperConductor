@@ -1,4 +1,5 @@
 import { IPCServerMethods } from '@/ipc/IPCAPI'
+import { Group } from '../../models/rundown/Group'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -52,6 +53,12 @@ export class IPCServer implements IPCServerMethods {
 	}
 	deleteGroup(data: { groupId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteGroup', data)
+	}
+	movePart(data: {
+		from: { rundownId: string; groupId: string; partId: string }
+		to: { rundownId: string; groupId: string | null; position: number }
+	}): Promise<Group | undefined> {
+		return this.invokeServerMethod('movePart', data)
 	}
 	newTemplateData(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('newTemplateData', data)

@@ -5,6 +5,7 @@ import {
 	findGroup,
 	findPart,
 	findTimelineObj,
+	getCurrentlyPlayingInfo,
 	getResolvedTimelineTotalDuration,
 } from '@/lib/util'
 import { Group } from '@/models/rundown/Group'
@@ -57,7 +58,7 @@ export class IPCServer implements IPCServerMethods {
 		const { rundown } = this.getRundown(arg)
 
 		const group = findGroup(rundown, arg.groupId)
-		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}".`)
+		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
@@ -69,7 +70,7 @@ export class IPCServer implements IPCServerMethods {
 		const { rundown, group } = this.getGroup(arg)
 
 		const part = findPart(group, arg.partId)
-		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId}.`)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
@@ -223,6 +224,122 @@ export class IPCServer implements IPCServerMethods {
 		this._updateTimeline(group)
 		deleteGroup(rundown, group.id)
 		this.storage.updateRundown(arg.rundownId, rundown)
+	}
+	async movePart(arg: {
+		from: { rundownId: string; groupId: string; partId: string }
+		to: { rundownId: string; groupId: string | null; position: number }
+	}): Promise<Group | undefined> {
+		let fromRundown: Rundown
+		let fromGroup: Group
+		let part: Part
+		// @TODO (Alex Van Camp): I'm not sure why this try/catch is necessary, but it is.
+		try {
+			const getPartResult = this.getPart(arg.from)
+			fromRundown = getPartResult.rundown
+			fromGroup = getPartResult.group
+			part = getPartResult.part
+		} catch (error) {
+			// Ignore
+			console.log('movePart caught error:', (error as any).message)
+			return
+		}
+		const isMovingToNewGroup = arg.from.groupId !== arg.to.groupId
+		let toRundown: Rundown
+		let toGroup: Group
+		let madeNewTransparentGroup = false
+		let isTransparentGroupMove =
+			arg.from.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
+
+		if (arg.to.groupId) {
+			const getGroupResult = this.getGroup({ rundownId: arg.to.rundownId, groupId: arg.to.groupId })
+			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : getGroupResult.rundown
+			toGroup = getGroupResult.group
+		} else {
+			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : this.getRundown(arg.to).rundown
+			if (isTransparentGroupMove) {
+				toGroup = fromGroup
+			} else {
+				toGroup = {
+					id: short.generate(),
+					name: part.name,
+					transparent: true,
+					parts: [part],
+					autoPlay: false,
+					loop: false,
+					playout: {
+						startTime: null,
+						partIds: [],
+					},
+					playheadData: null,
+				}
+				madeNewTransparentGroup = true
+			}
+		}
+
+		// Get information about currently-playing Parts.
+		const { playoutDelta: fromGroupPlayoutDelta, partPlayheadData: fromGroupPartPlayheadData } =
+			getCurrentlyPlayingInfo(fromGroup)
+		const movedPartIsPlaying = Boolean(
+			fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === arg.from.partId
+		)
+		const toGroupIsPlaying = Boolean(toGroup.playheadData)
+
+		// Don't allow moving a currently-playing Part into a Group which is already playing.
+		if (movedPartIsPlaying && isMovingToNewGroup && toGroupIsPlaying) {
+			return
+		}
+
+		if (!isTransparentGroupMove) {
+			// Remove the part from its original group.
+			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
+		}
+
+		if (madeNewTransparentGroup) {
+			// Add the new transparent group to the rundown.
+			toRundown.groups.splice(arg.to.position, 0, toGroup)
+		} else if (isTransparentGroupMove) {
+			// Move the transparent group to its new position.
+			fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
+			toRundown.groups.splice(arg.to.position, 0, toGroup)
+		} else if (!isTransparentGroupMove) {
+			// Add the part to its new group, in its new position.
+			toGroup.parts.splice(arg.to.position, 0, part)
+		}
+
+		// Clean up leftover empty transparent groups.
+		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
+			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
+		}
+
+		// Update timelines.
+		if (!isTransparentGroupMove) {
+			if (fromGroup.id === toGroup.id) {
+				// Intra-group move.
+				if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
+					const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
+					fromGroup.playout.startTime = Date.now() - timeIntoPart
+					fromGroup.playout.partIds = [fromGroupPartPlayheadData.part.id]
+				}
+				this._updateTimeline(fromGroup)
+			} else {
+				// Inter-group move.
+				if (movedPartIsPlaying && !toGroupIsPlaying) {
+					fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
+					toGroup.playout.partIds.push(arg.from.partId)
+					toGroup.playout.startTime = fromGroup.playout.startTime
+				}
+				this._updateTimeline(fromGroup)
+				this._updateTimeline(toGroup)
+			}
+		}
+
+		// Commit the changes.
+		this.storage.updateRundown(arg.to.rundownId, toRundown)
+		if (fromRundown !== toRundown) {
+			this.storage.updateRundown(arg.from.rundownId, fromRundown)
+		}
+
+		return toGroup
 	}
 
 	async updateTimelineObj(arg: {
