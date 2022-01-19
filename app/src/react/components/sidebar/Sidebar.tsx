@@ -60,7 +60,7 @@ export const Sidebar: React.FC<{}> = (props) => {
 		const description = editing ? describeTimelineObject(editing.timelineObj.obj) : undefined
 
 		return (
-			<>
+			<div className="sidebar timeline-obj-sidebar">
 				{<div className="title">{description?.label}</div>}
 
 				{resource && <ResourceInfo resource={resource} />}
@@ -74,7 +74,7 @@ export const Sidebar: React.FC<{}> = (props) => {
 						templateData={JSON.parse((editing.timelineObj.content as any)?.data)}
 					/>
 				)} */}
-			</>
+			</div>
 		)
 	} else {
 		// not editing
