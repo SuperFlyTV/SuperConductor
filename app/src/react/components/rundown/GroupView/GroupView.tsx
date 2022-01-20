@@ -8,7 +8,7 @@ import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { Part } from '../../../../models/rundown/Part'
-import { ItemTypes, PartDragItem } from '../../../api/ItemTypes'
+import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
 import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -85,7 +85,7 @@ export const GroupView: React.FC<{
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(
 		{
-			accept: ItemTypes.PART_ITEM,
+			accept: DragItemTypes.PART_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),

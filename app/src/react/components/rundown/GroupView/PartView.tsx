@@ -16,7 +16,7 @@ import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
-import { ItemTypes, PartDragItem } from '../../../api/ItemTypes'
+import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { compact } from '@/lib/lib'
@@ -122,7 +122,7 @@ export const PartView: React.FC<{
 	const previewRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(
 		{
-			accept: ItemTypes.PART_ITEM,
+			accept: DragItemTypes.PART_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),
@@ -236,10 +236,10 @@ export const PartView: React.FC<{
 		[parentGroup, parentGroupIndex, partIndex]
 	)
 	const [{ isDragging }, drag, preview] = useDrag({
-		type: ItemTypes.PART_ITEM,
+		type: DragItemTypes.PART_ITEM,
 		item: (): PartDragItem => {
 			return {
-				type: ItemTypes.PART_ITEM,
+				type: DragItemTypes.PART_ITEM,
 				group: parentGroup,
 				groupIndex: parentGroupIndex,
 				part: part,

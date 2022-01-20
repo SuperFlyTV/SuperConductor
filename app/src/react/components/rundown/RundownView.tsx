@@ -7,7 +7,7 @@ import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { Rundown } from '@/models/rundown/Rundown'
 import { FormRow } from '../sidebar/InfoGroup'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
-import { ItemTypes, PartDragItem } from '../../api/ItemTypes'
+import { DragItemTypes, PartDragItem } from '../../api/DragItemTypes'
 import { MovePartFn } from './GroupView/PartView'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
@@ -38,7 +38,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	)
 	const [{ handlerId }, drop] = useDrop(
 		{
-			accept: ItemTypes.PART_ITEM,
+			accept: DragItemTypes.PART_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),

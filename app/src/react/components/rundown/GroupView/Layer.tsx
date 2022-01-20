@@ -3,8 +3,7 @@ import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
-import { ResourceAny } from '../../../../models/resource/resource'
-import { ItemTypes } from '../../../api/ItemTypes'
+import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { TimelineObject } from './TimelineObject'
 
@@ -22,8 +21,8 @@ export const Layer: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
-			accept: ItemTypes.RESOURCE_ITEM,
-			drop: (item: { resource: ResourceAny }) => {
+			accept: DragItemTypes.RESOURCE_ITEM,
+			drop: (item: ResourceDragItem) => {
 				ipcServer.addResourceToTimeline({
 					rundownId,
 					groupId,
