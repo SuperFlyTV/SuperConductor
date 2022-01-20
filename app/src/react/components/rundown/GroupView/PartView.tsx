@@ -284,7 +284,7 @@ export const PartView: React.FC<{
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
-					{showUnqueue ? (
+					{/* {showUnqueue ? (
 						<UnQueueBtn
 							label={queuedPositions.map((index) => index + 1).join(', ')}
 							onClick={handleUnQueue}
@@ -296,7 +296,7 @@ export const PartView: React.FC<{
 							onClick={handleQueue}
 							disabled={cannotQueue}
 						/>
-					)}
+					)} */}
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
