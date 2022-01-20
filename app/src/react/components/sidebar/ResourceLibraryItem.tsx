@@ -2,7 +2,7 @@ import React from 'react'
 import classNames from 'classnames'
 import { ResourceAny } from '@/models/resource/resource'
 import { useDrag } from 'react-dnd'
-import { DragItemTypes } from '@/react/api/DragItemTypes'
+import { DragItemTypes, ResourceDragItem } from '@/react/api/DragItemTypes'
 import { describeResource } from '@/lib/Resources'
 
 type IProps = React.PropsWithChildren<{ resource: ResourceAny; selected: boolean; onClick?: React.MouseEventHandler }>
@@ -11,7 +11,9 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 	const [{ dragged }, dragRef] = useDrag(
 		() => ({
 			type: DragItemTypes.RESOURCE_ITEM,
-			item: { resource },
+			item: (): ResourceDragItem => {
+				return { type: DragItemTypes.RESOURCE_ITEM, resource }
+			},
 			collect: (monitor) => ({
 				dragged: monitor.isDragging() ? true : false,
 			}),

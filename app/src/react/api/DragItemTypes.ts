@@ -8,6 +8,7 @@ export enum DragItemTypes {
 }
 
 export interface ResourceDragItem {
+	type: DragItemTypes.RESOURCE_ITEM
 	resource: ResourceAny
 }
 
