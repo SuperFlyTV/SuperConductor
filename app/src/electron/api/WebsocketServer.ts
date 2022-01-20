@@ -235,6 +235,8 @@ export class WebsocketConnection extends EventEmitter {
 			}
 		}
 
-		this._triggerReconnect()
+		if (this.isClient) {
+			this._triggerReconnect()
+		}
 	}
 }
