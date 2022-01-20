@@ -11,8 +11,9 @@ import { ItemTypes } from '../../api/ItemTypes'
 import { MovePartFn, PartDragItem } from './GroupView/PartView'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
+import { Mappings } from 'timeline-state-resolver-types'
 
-export const RundownView: React.FC<{}> = (props) => {
+export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
 	const ipcServer = useContext(IPCServerContext)
 
@@ -82,7 +83,16 @@ export const RundownView: React.FC<{}> = (props) => {
 	return (
 		<div className="group-list" ref={wrapperRef} data-handler-id={handlerId}>
 			{rundown.groups.map((group, index) => {
-				return <GroupView key={group.id} group={group} groupIndex={index} rundownId={rundown.id} movePart={movePart} />
+				return (
+					<GroupView
+						key={group.id}
+						group={group}
+						groupIndex={index}
+						rundownId={rundown.id}
+						mappings={mappings}
+						movePart={movePart}
+					/>
+				)
 			})}
 
 			<GroupListOptions rundown={rundown} />

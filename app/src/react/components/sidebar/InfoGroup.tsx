@@ -34,8 +34,12 @@ export const InfoGroup = (props: InfoGroupProps) => {
 export const DataRow = (props: { label: string; value: any }) => {
 	return (
 		<div className="row">
-			<div className="label">{props.label}</div>
-			<div className="value">{props.value}</div>
+			<div className="label" title={props.label}>
+				{props.label}
+			</div>
+			<div className="value" title={props.value}>
+				{props.value}
+			</div>
 		</div>
 	)
 }

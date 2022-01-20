@@ -45,6 +45,27 @@
 		}
 	}
 
+	&__layer-names {
+		background-color: black;
+		display: flex;
+		flex-direction: column;
+		flex-shrink: 0;
+		padding: 0.3rem 0;
+
+		&__name {
+			display: flex;
+			justify-content: end;
+			align-items: center;
+			height: $layerHeight;
+			padding: 0 0.3rem;
+			font-size: 1.2rem;
+
+			&:nth-child(odd) {
+				background: rgba(255, 255, 255, 0.1);
+			}
+		}
+	}
+
 	&__timeline {
 		flex-grow: 1;
 		padding: 0.3rem 0.3rem 0.3rem 0.3rem;

@@ -3,7 +3,7 @@ import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { Resolver } from 'superfly-timeline'
+import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
 import { getCurrentlyPlayingInfo, getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
@@ -13,12 +13,14 @@ import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { ItemTypes } from '../../../api/ItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { compact } from '@/lib/lib'
+import { Mappings } from 'timeline-state-resolver-types'
 
 export interface PartDragItem {
 	index: number
@@ -41,8 +43,9 @@ export const PartView: React.FC<{
 	parentGroupIndex: number
 	part: Part
 	playhead: GroupPlayhead | null
+	mappings: Mappings
 	movePart: MovePartFn
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, movePart }) => {
+}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const keyTracker = useContext(HotkeyContext)
 
@@ -297,6 +300,15 @@ export const PartView: React.FC<{
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
+			<div className="part__layer-names">
+				{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId]) => {
+					return (
+						<div className="part__layer-names__name" key={layerId}>
+							{mappings[layerId].layerName ?? layerId}
+						</div>
+					)
+				})}
+			</div>
 			<div className="part__timeline">
 				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
 				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
@@ -312,9 +324,22 @@ export const PartView: React.FC<{
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
 					<div className="layers">
 						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
-							const objectsOnLayer: TSRTimelineObj[] = objectIds.map((objectId) => {
-								return resolvedTimeline.objects[objectId] as unknown as TSRTimelineObj
-							})
+							const objectsOnLayer: {
+								resolved: ResolvedTimelineObject['resolved']
+								timelineObj: TimelineObj
+							}[] = compact(
+								objectIds.map((objectId) => {
+									const resolvedObj = resolvedTimeline.objects[objectId]
+									const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
+
+									if (resolvedObj && timelineObj) {
+										return {
+											resolved: resolvedObj.resolved,
+											timelineObj: timelineObj,
+										}
+									}
+								})
+							)
 
 							return (
 								<Layer

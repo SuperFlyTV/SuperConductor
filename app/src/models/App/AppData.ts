@@ -1,3 +1,5 @@
+import { Mappings } from 'timeline-state-resolver-types'
+
 export interface AppData {
 	windowPosition: WindowPosition
 	project: {

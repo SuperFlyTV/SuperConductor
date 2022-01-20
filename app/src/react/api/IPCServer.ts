@@ -1,4 +1,5 @@
 import { IPCServerMethods } from '@/ipc/IPCAPI'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 
 /** This class is used client-side, to send requests to the server */
@@ -29,10 +30,11 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('stopGroup', data)
 	}
 	updateTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
 		timelineObjId: string
-		enableStart: number
-		enableDuration: number
-		layer: string | number
+		timelineObj: TimelineObj
 	}): Promise<void> {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}

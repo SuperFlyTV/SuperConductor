@@ -21,6 +21,7 @@ import { BridgeStatus } from '@/models/project/Bridge'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
+import { Mapping } from 'timeline-state-resolver-types'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -37,6 +38,7 @@ export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
+	const [mappings, setMappings] = useState<{ [layerId: string]: Mapping }>({})
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
@@ -114,7 +116,7 @@ export const App = () => {
 	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
-		const isOnSidebar = tarEl.closest('.sidebar')
+		const isOnSidebar = tarEl.closest('.side-bar')
 		if (!isOnLayer && !isOnSidebar) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjId) {
@@ -166,10 +168,10 @@ export const App = () => {
 									{currentRundown ? (
 										<RundownContext.Provider value={currentRundown}>
 											<div className="main-area">
-												<RundownView />
+												<RundownView mappings={project.mappings} />
 											</div>
 											<div className="side-bar">
-												<Sidebar />
+												<Sidebar mappings={project.mappings} />
 											</div>
 										</RundownContext.Provider>
 									) : (

@@ -5,9 +5,16 @@
 	height: $layerHeight;
 	background: $emptyLayerColor;
 	position: relative;
+	display: flex;
 
 	&:not(:last-child) {
 		margin-bottom: 0.3rem;
+	}
+
+	&:nth-child(odd) {
+		.layer__content {
+			background: rgba(255, 255, 255, 0.1);
+		}
 	}
 
 	&.isOver {
@@ -15,7 +22,20 @@
 		opacity: 0.8;
 	}
 
+	&__name {
+		flex-shrink: 0;
+		background-color: #191919;
+		display: flex;
+		align-items: center;
+		justify-content: right;
+		padding: 0em 0.3em;
+	}
+
 	&__content {
+		position: relative;
+		flex: 1;
+		background-color: #282828;
+
 		.object {
 			height: $layerHeight;
 			display: flex;

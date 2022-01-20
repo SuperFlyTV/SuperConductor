@@ -2,6 +2,7 @@ import { BridgeStatus } from '@/models/project/Bridge'
 import { Project } from '@/models/project/Project'
 import { ResourceAny } from '@/models/resource/resource'
 import { Rundown } from '@/models/rundown/Rundown'
+import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { Resources } from '@/react/contexts/Resources'
 import { Group } from '../models/rundown/Group'
 
@@ -33,17 +34,13 @@ export interface IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-
 		timelineObjId: string
-		enableStart: number
-		enableDuration: number
-		layer: string | number
+		timelineObj: TimelineObj
 	}) => Promise<void>
 	deleteTimelineObj: (data: {
 		rundownId: string
 		groupId: string
 		partId: string
-
 		timelineObjId: string
 	}) => Promise<void>
 	addResourceToTimeline: (data: {

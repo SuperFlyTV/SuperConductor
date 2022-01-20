@@ -3,6 +3,7 @@
 	width: 100%;
 	position: absolute;
 	top: 0;
+	box-sizing: border-box;
 
 	&.timeline-obj-sidebar {
 		padding: 1.5rem 2.5rem;
@@ -95,6 +96,8 @@
 			flex-shrink: 0;
 			font-size: 1.3rem;
 			box-sizing: border-box;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		input {
@@ -136,7 +139,7 @@
 		background-color: black;
 		color: silver;
 		border: 0;
-		padding: 0.5rem 1rem;
+		padding: 0.5rem 0;
 	}
 
 	hr {

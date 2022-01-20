@@ -11,13 +11,15 @@ import { Part } from '../../../../models/rundown/Part'
 import { ItemTypes } from '../../../api/ItemTypes'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
 import { getCurrentlyPlayingInfo } from '../../../../lib/util'
+import { Mappings } from 'timeline-state-resolver-types'
 
-export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: number; movePart: MovePartFn }> = ({
-	group,
-	groupIndex,
-	rundownId,
-	movePart,
-}) => {
+export const GroupView: React.FC<{
+	rundownId: string
+	group: Group
+	groupIndex: number
+	mappings: Mappings
+	movePart: MovePartFn
+}> = ({ group, groupIndex, rundownId, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
@@ -168,6 +170,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 					parentGroup={group}
 					parentGroupIndex={groupIndex}
 					playhead={playhead}
+					mappings={mappings}
 					movePart={movePart}
 				/>
 			</div>
@@ -219,6 +222,7 @@ export const GroupView: React.FC<{ rundownId: string; group: Group; groupIndex: 
 							parentGroup={group}
 							parentGroupIndex={groupIndex}
 							playhead={playhead}
+							mappings={mappings}
 							movePart={movePart}
 						/>
 					))}
