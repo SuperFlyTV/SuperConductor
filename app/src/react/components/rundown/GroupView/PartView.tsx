@@ -16,19 +16,11 @@ import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
-import { ItemTypes } from '../../../api/ItemTypes'
+import { ItemTypes, PartDragItem } from '../../../api/ItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { compact } from '@/lib/lib'
 import { Mappings } from 'timeline-state-resolver-types'
-
-export interface PartDragItem {
-	index: number
-	type: string
-	group: Group
-	groupIndex: number
-	part: Part
-}
 
 export type MovePartFn = (data: {
 	dragGroup: Group
