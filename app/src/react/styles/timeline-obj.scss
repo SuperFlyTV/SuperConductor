@@ -1,26 +1,4 @@
 .edit-timeline-obj {
-	display: block;
-
-	div.settings {
-		display: block;
-
-		div.setting {
-			display: block;
-			padding: 0.5rem 0.5rem;
-
-			background-color: rgba(255, 255, 255, 0.1);
-			&:nth-child(even) {
-				background-color: rgba(0, 0, 0, 0.1);
-			}
-
-			label {
-				display: block;
-			}
-
-			input,
-			select {
-				display: block;
-			}
-		}
-	}
+	border-bottom: 1px solid silver;
+	margin: 1.5rem 0;
 }

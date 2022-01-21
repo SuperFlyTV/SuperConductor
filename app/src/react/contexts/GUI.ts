@@ -5,12 +5,14 @@ export const GUIContext = React.createContext<{
 	gui: GUI
 	updateGUI: (newGui: Partial<GUI>) => void
 }>({
-	gui: {},
+	gui: {
+		selectedTimelineObjIds: [],
+	},
 	updateGUI: () => {},
 })
 
 export interface GUI {
 	selectedGroupId?: string
 	selectedPartId?: string
-	selectedTimelineObjId?: string
+	selectedTimelineObjIds: string[]
 }

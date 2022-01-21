@@ -4,6 +4,7 @@ import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { GUIContext } from '@/react/contexts/GUI'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { RundownContext } from '@/react/contexts/Rundown'
+import { HotkeyContext } from '@/react/contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
@@ -23,6 +24,7 @@ export const TimelineObject: React.FC<{
 	const ref = useRef<HTMLDivElement>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [isMoved, deltaX] = useMovable(ref.current)
+	const keyTracker = useContext(HotkeyContext)
 
 	useLayoutEffect(() => {
 		if (isMoved && ref.current && ref.current.parentElement) {
@@ -62,11 +64,33 @@ export const TimelineObject: React.FC<{
 
 	const description = describeTimelineObject(obj)
 
+	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
+	useEffect(() => {
+		const onKey = () => {
+			const pressed = keyTracker.getPressedKeys()
+			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+		}
+		onKey()
+
+		keyTracker.bind('Shift', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Shift', onKey, {
+			up: true,
+			global: true,
+		})
+
+		return () => {
+			keyTracker.unbind('Shift', onKey)
+		}
+	}, [])
+
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
-				selected: gui.selectedTimelineObjId === obj.id,
+				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 				moved: isMoved,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
@@ -74,7 +98,10 @@ export const TimelineObject: React.FC<{
 				updateGUI({
 					selectedGroupId: groupId,
 					selectedPartId: partId,
-					selectedTimelineObjId: obj.id,
+					selectedTimelineObjIds:
+						gui.selectedGroupId === groupId && gui.selectedPartId === partId && allowMultiSelection
+							? [...gui.selectedTimelineObjIds, obj.id]
+							: [obj.id],
 				})
 			}}
 		>

@@ -100,7 +100,7 @@ export const App = () => {
 		serverAPI.triggerSendAll()
 	}, [])
 
-	const [guiData, setGuiData] = useState<GUI>({})
+	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
 	const guiContextValue = useMemo(() => {
 		return {
 			gui: guiData,
@@ -119,12 +119,12 @@ export const App = () => {
 		const isOnSidebar = tarEl.closest('.side-bar')
 		if (!isOnLayer && !isOnSidebar) {
 			setGuiData((guiData) => {
-				if (guiData.selectedTimelineObjId) {
+				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {
 						...guiData,
 						selectedGroupId: undefined,
 						selectedPartId: undefined,
-						selectedTimelineObjId: undefined,
+						selectedTimelineObjIds: [],
 					}
 				} else {
 					// no change:
