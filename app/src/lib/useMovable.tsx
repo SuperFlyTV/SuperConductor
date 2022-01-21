@@ -55,9 +55,9 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 
 	useEffect(() => {
 		const horizontalMoveMeetsThreshold =
-			Math.abs(pointerPosition.clientX - originPointerPosition.clientX) > MIN_DRAG_DISTANCE
+			Math.abs(pointerPosition.clientX - originPointerPosition.clientX) >= MIN_DRAG_DISTANCE
 		const verticalMoveMeetsThreshold =
-			Math.abs(pointerPosition.clientY - originPointerPosition.clientY) > MIN_DRAG_DISTANCE
+			Math.abs(pointerPosition.clientY - originPointerPosition.clientY) >= MIN_DRAG_DISTANCE
 		if (isPointerDown && (horizontalMoveMeetsThreshold || verticalMoveMeetsThreshold)) {
 			setIsDragging(true)
 		} else {
