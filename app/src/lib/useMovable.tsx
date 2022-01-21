@@ -2,8 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 type HTMLElementEventHandler<T, E extends HTMLElement = HTMLElement> = (this: HTMLElement, ev: T) => any
 
+/**
+ * The minimum distance, in pixels, that a drag must be performed before isDragging is set to true.
+ */
+const MIN_DRAG_DISTANCE = 1
+
 export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 	const [isDragging, setIsDragging] = useState(false)
+	const [isPointerDown, setIsPointerDown] = useState(false)
 	const [pointerPosition, setPointerPosition] = useState({
 		clientX: 0,
 		clientY: 0,
@@ -19,7 +25,7 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 		})
 	}, [])
 	const onPointerUp = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
-		setIsDragging(false)
+		setIsPointerDown(false)
 		ev.preventDefault()
 	}, [])
 	const onPointerDown = useCallback<HTMLElementEventHandler<PointerEvent>>(
@@ -30,7 +36,8 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 
 			document.body.addEventListener('pointerup', onPointerUp)
 			document.body.addEventListener('pointermove', onPointerMove)
-			setIsDragging(true)
+
+			// These are order-sensitive.
 			setOriginPointerPosition({
 				clientX: ev.clientX,
 				clientY: ev.clientY,
@@ -39,11 +46,24 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 				clientX: ev.clientX,
 				clientY: ev.clientY,
 			})
+			setIsPointerDown(true)
 
 			ev.preventDefault()
 		},
 		[onPointerUp]
 	)
+
+	useEffect(() => {
+		const horizontalMoveMeetsThreshold =
+			Math.abs(pointerPosition.clientX - originPointerPosition.clientX) > MIN_DRAG_DISTANCE
+		const verticalMoveMeetsThreshold =
+			Math.abs(pointerPosition.clientY - originPointerPosition.clientY) > MIN_DRAG_DISTANCE
+		if (isPointerDown && (horizontalMoveMeetsThreshold || verticalMoveMeetsThreshold)) {
+			setIsDragging(true)
+		} else {
+			setIsDragging(false)
+		}
+	}, [isPointerDown, pointerPosition, originPointerPosition])
 
 	useEffect(() => {
 		if (!el) return
