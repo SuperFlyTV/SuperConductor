@@ -349,7 +349,7 @@ export class IPCServer implements IPCServerMethods {
 		timelineObjId: string
 		timelineObj: TimelineObj
 	}): Promise<void> {
-		const { rundown, part } = this.getPart(arg)
+		const { rundown, group, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -357,6 +357,7 @@ export class IPCServer implements IPCServerMethods {
 		Object.assign(timelineObj, arg.timelineObj)
 
 		this._updatePart(part)
+		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
 	}
 	async deleteTimelineObj(arg: {
