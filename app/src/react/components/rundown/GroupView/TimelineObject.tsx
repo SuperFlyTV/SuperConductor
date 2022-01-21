@@ -21,7 +21,6 @@ export const TimelineObject: React.FC<{
 }> = ({ groupId, partId, timelineObj, partDuration }) => {
 	const { gui, updateGUI } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
-	const moveRef = useRef(move)
 	const [dragStartValue, setDragStartValue] = useState<number>()
 	const dragDelta = useRef(0)
 	const rundown = useContext(RundownContext)
@@ -31,8 +30,6 @@ export const TimelineObject: React.FC<{
 	const [isMoved, deltaX] = useMovable(ref.current)
 	const [wasMoved, setWasMoved] = useState(false)
 	const keyTracker = useContext(HotkeyContext)
-
-	moveRef.current = move
 
 	// Initialize trackWidth.
 	useLayoutEffect(() => {
@@ -81,8 +78,12 @@ export const TimelineObject: React.FC<{
 				// A move has completed.
 
 				// Update this timeline object.
+				let startDiff: number | undefined
 				if (!Array.isArray(obj.enable)) {
-					obj.enable.start = Math.max(0, start + dragDelta.current * partDuration)
+					const oldStart = obj.enable.start as any
+					const newStart = Math.max(0, start + dragDelta.current * partDuration)
+					startDiff = newStart - oldStart
+					obj.enable.start = newStart
 					ipcServer.updateTimelineObj({
 						rundownId: rundown.id,
 						partId: partId,
@@ -93,37 +94,35 @@ export const TimelineObject: React.FC<{
 				}
 
 				// Update the other selected timeline objects which were also part of this move.
-				gui.selectedTimelineObjIds
-					.filter((id) => id !== obj.id)
-					.forEach((id) => {
-						const group = findGroup(rundown, groupId)
-						if (!group) {
-							return
-						}
+				if (startDiff) {
+					gui.selectedTimelineObjIds
+						.filter((id) => id !== obj.id)
+						.forEach((id) => {
+							const group = findGroup(rundown, groupId)
+							if (!group) {
+								return
+							}
 
-						const part = findPart(group, partId)
-						if (!part) {
-							return
-						}
+							const part = findPart(group, partId)
+							if (!part) {
+								return
+							}
 
-						const otherTimelineObj = findTimelineObj(part, id)
-						if (
-							otherTimelineObj &&
-							!Array.isArray(otherTimelineObj.obj.enable) &&
-							moveRef.current &&
-							typeof moveRef.current.dragDelta === 'number'
-						) {
-							const newStart = (otherTimelineObj.obj.enable as any).start + moveRef.current.dragDelta * partDuration
-							otherTimelineObj.obj.enable.start = Math.max(0, newStart)
-							ipcServer.updateTimelineObj({
-								rundownId: rundown.id,
-								partId: partId,
-								groupId: groupId,
-								timelineObjId: id,
-								timelineObj: otherTimelineObj,
-							})
-						}
-					})
+							const otherTimelineObj = findTimelineObj(part, id)
+							if (otherTimelineObj && !Array.isArray(otherTimelineObj.obj.enable)) {
+								const oldStart = (otherTimelineObj.obj.enable as any).start
+								const newStart = oldStart + startDiff
+								otherTimelineObj.obj.enable.start = Math.max(0, newStart)
+								ipcServer.updateTimelineObj({
+									rundownId: rundown.id,
+									partId: partId,
+									groupId: groupId,
+									timelineObjId: id,
+									timelineObj: otherTimelineObj,
+								})
+							}
+						})
+				}
 
 				// Clear relevant context state.
 				updateMove({
