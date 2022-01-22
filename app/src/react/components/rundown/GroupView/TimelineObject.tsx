@@ -161,9 +161,16 @@ export const TimelineObject: React.FC<{
 	useEffect(() => {
 		if (isMoved && typeof dragStartValue === 'number') {
 			let newDragDelta = dragDelta.current
+
+			// Clamp the drag delta such that the other TimelineObjects which are part of
+			// this move won't continue moving left if this TimelineObject is already at timecode zero.
+			// In other words: this helps ensure that all selected TimelineObjects always move as a group,
+			// and don't slide around on top of each other.
 			if (dragStartValue + dragDelta.current < 0) {
 				newDragDelta = -dragStartValue
 			}
+
+			// Store the modified drag delta so that the other TimelineObjects can use it.
 			updateMoveRef.current({
 				isMoving: true,
 				dragDelta: newDragDelta,
