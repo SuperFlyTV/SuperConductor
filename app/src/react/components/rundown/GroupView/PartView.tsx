@@ -14,7 +14,6 @@ import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { HotkeyContext } from '@/react/contexts/Hotkey'
-import { TimelineObjectMove, TimelineObjectMoveContext } from '@/react/contexts/TimelineObjectMove'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
@@ -257,19 +256,6 @@ export const PartView: React.FC<{
 	drag(dragRef)
 	drop(preview(previewRef))
 
-	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({})
-	const timelineObjectMoveContextValue = useMemo(() => {
-		return {
-			move: timelineObjectMoveData,
-			updateMove: (newData: Partial<TimelineObjectMove>) => {
-				setTimelineObjectMoveData({
-					...timelineObjectMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [timelineObjectMoveData])
-
 	return (
 		<div
 			data-handler-id={handlerId}
@@ -329,38 +315,36 @@ export const PartView: React.FC<{
 				<div className="layers-wrapper">
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
 					<div className="layers">
-						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-							{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
-								const objectsOnLayer: {
-									resolved: ResolvedTimelineObject['resolved']
-									timelineObj: TimelineObj
-								}[] = compact(
-									objectIds.map((objectId) => {
-										const resolvedObj = resolvedTimeline.objects[objectId]
-										const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
+						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
+							const objectsOnLayer: {
+								resolved: ResolvedTimelineObject['resolved']
+								timelineObj: TimelineObj
+							}[] = compact(
+								objectIds.map((objectId) => {
+									const resolvedObj = resolvedTimeline.objects[objectId]
+									const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
 
-										if (resolvedObj && timelineObj) {
-											return {
-												resolved: resolvedObj.resolved,
-												timelineObj: timelineObj,
-											}
+									if (resolvedObj && timelineObj) {
+										return {
+											resolved: resolvedObj.resolved,
+											timelineObj: timelineObj,
 										}
-									})
-								)
+									}
+								})
+							)
 
-								return (
-									<Layer
-										key={layerId}
-										rundownId={rundownId}
-										groupId={parentGroup.id}
-										partId={part.id}
-										partDuration={maxDuration}
-										objectsOnLayer={objectsOnLayer}
-										layerId={layerId}
-									/>
-								)
-							})}
-						</TimelineObjectMoveContext.Provider>
+							return (
+								<Layer
+									key={layerId}
+									rundownId={rundownId}
+									groupId={parentGroup.id}
+									partId={part.id}
+									partDuration={maxDuration}
+									objectsOnLayer={objectsOnLayer}
+									layerId={layerId}
+								/>
+							)
+						})}
 					</div>
 				</div>
 			</div>

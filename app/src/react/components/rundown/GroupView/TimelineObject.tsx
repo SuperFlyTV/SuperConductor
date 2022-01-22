@@ -28,8 +28,10 @@ export const TimelineObject: React.FC<{
 	const ref = useRef<HTMLDivElement>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [isMoved, deltaX] = useMovable(ref.current)
-	const [wasMoved, setWasMoved] = useState(false)
 	const keyTracker = useContext(HotkeyContext)
+	const updateMoveRef = useRef(updateMove)
+
+	updateMoveRef.current = updateMove
 
 	// Initialize trackWidth.
 	useLayoutEffect(() => {
@@ -71,7 +73,7 @@ export const TimelineObject: React.FC<{
 	useEffect(() => {
 		if (isMoved) {
 			// A move has begun.
-			setWasMoved(true)
+			updateMoveRef.current({ wasMoved: true })
 			setDragStartValue(startValue)
 
 			return () => {
@@ -125,7 +127,8 @@ export const TimelineObject: React.FC<{
 				}
 
 				// Clear relevant context state.
-				updateMove({
+				updateMoveRef.current({
+					isMoving: false,
 					dragDelta: undefined,
 				})
 			}
@@ -161,7 +164,8 @@ export const TimelineObject: React.FC<{
 			if (dragStartValue + dragDelta.current < 0) {
 				newDragDelta = -dragStartValue
 			}
-			updateMove({
+			updateMoveRef.current({
+				isMoving: true,
 				dragDelta: newDragDelta,
 			})
 		}
@@ -175,18 +179,39 @@ export const TimelineObject: React.FC<{
 				moved: isMoved || isPartOfGroupMove,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onClick={() => {
-				if (!wasMoved) {
+			onPointerDown={() => {
+				const isMultiSelected = gui.selectedTimelineObjIds.length > 1
+				if (isMultiSelected) {
+					if (
+						gui.selectedGroupId === groupId &&
+						gui.selectedPartId === partId &&
+						gui.selectedTimelineObjIds.includes(obj.id)
+					) {
+						return
+					}
+				}
+
+				if (allowMultiSelection) {
+					if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
+						if (!gui.selectedTimelineObjIds.includes(obj.id)) {
+							updateGUI({
+								selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
+							})
+						}
+					} else {
+						updateGUI({
+							selectedGroupId: groupId,
+							selectedPartId: partId,
+							selectedTimelineObjIds: [obj.id],
+						})
+					}
+				} else {
 					updateGUI({
 						selectedGroupId: groupId,
 						selectedPartId: partId,
-						selectedTimelineObjIds:
-							gui.selectedGroupId === groupId && gui.selectedPartId === partId && allowMultiSelection
-								? [...gui.selectedTimelineObjIds, obj.id]
-								: [obj.id],
+						selectedTimelineObjIds: [obj.id],
 					})
 				}
-				setWasMoved(false)
 			}}
 		>
 			<div className="title">{description.label}</div>
