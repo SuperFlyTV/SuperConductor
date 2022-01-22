@@ -22,6 +22,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { Mapping } from 'timeline-state-resolver-types'
+import { TimelineObjectMove, TimelineObjectMoveContext } from '@/react/contexts/TimelineObjectMove'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -100,7 +101,7 @@ export const App = () => {
 		serverAPI.triggerSendAll()
 	}, [])
 
-	const [guiData, setGuiData] = useState<GUI>({})
+	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
 	const guiContextValue = useMemo(() => {
 		return {
 			gui: guiData,
@@ -113,18 +114,34 @@ export const App = () => {
 		}
 	}, [guiData])
 
-	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
+	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
+		isMoving: false,
+		wasMoved: false,
+	})
+	const timelineObjectMoveContextValue = useMemo(() => {
+		return {
+			move: timelineObjectMoveData,
+			updateMove: (newData: Partial<TimelineObjectMove>) => {
+				setTimelineObjectMoveData({
+					...timelineObjectMoveData,
+					...newData,
+				})
+			},
+		}
+	}, [timelineObjectMoveData])
+
+	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.side-bar')
-		if (!isOnLayer && !isOnSidebar) {
+		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.wasMoved) {
 			setGuiData((guiData) => {
-				if (guiData.selectedTimelineObjId) {
+				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {
 						...guiData,
 						selectedGroupId: undefined,
 						selectedPartId: undefined,
-						selectedTimelineObjId: undefined,
+						selectedTimelineObjIds: [],
 					}
 				} else {
 					// no change:
@@ -132,6 +149,7 @@ export const App = () => {
 				}
 			})
 		}
+		timelineObjectMoveContextValue.updateMove({ wasMoved: false })
 	}
 
 	useEffect(() => {
@@ -154,30 +172,32 @@ export const App = () => {
 					<IPCServerContext.Provider value={serverAPI}>
 						<ProjectContext.Provider value={project}>
 							<ResourcesContext.Provider value={resources}>
-								<div className="app" onClick={handleClickAnywhere}>
-									<div className="top-header">
-										<TopHeader
-											rundowns={rundowns0}
-											onSelect={(rundownId) => {
-												setCurrentRundownId(rundownId)
-											}}
-											bridgeStatuses={bridgeStatuses}
-										/>
-									</div>
+								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
+									<div className="app" onPointerDown={handlePointerDownAnywhere}>
+										<div className="top-header">
+											<TopHeader
+												rundowns={rundowns0}
+												onSelect={(rundownId) => {
+													setCurrentRundownId(rundownId)
+												}}
+												bridgeStatuses={bridgeStatuses}
+											/>
+										</div>
 
-									{currentRundown ? (
-										<RundownContext.Provider value={currentRundown}>
-											<div className="main-area">
-												<RundownView mappings={project.mappings} />
-											</div>
-											<div className="side-bar">
-												<Sidebar mappings={project.mappings} />
-											</div>
-										</RundownContext.Provider>
-									) : (
-										<div>Loading...</div>
-									)}
-								</div>
+										{currentRundown ? (
+											<RundownContext.Provider value={currentRundown}>
+												<div className="main-area">
+													<RundownView mappings={project.mappings} />
+												</div>
+												<div className="side-bar">
+													<Sidebar mappings={project.mappings} />
+												</div>
+											</RundownContext.Provider>
+										) : (
+											<div>Loading...</div>
+										)}
+									</div>
+								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>
 						</ProjectContext.Provider>
 					</IPCServerContext.Provider>
