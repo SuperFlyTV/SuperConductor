@@ -5,7 +5,7 @@ import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
 import { msToTime } from '@/lib/msToTime'
-import { getCurrentlyPlayingInfo, getMappingById, getResolvedTimelineTotalDuration } from '@/lib/util'
+import { getCurrentlyPlayingInfo, getResolvedTimelineTotalDuration } from '@/lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
 import { Part } from '@/models/rundown/Part'
@@ -293,7 +293,7 @@ export const PartView: React.FC<{
 				</div>
 			</div>
 			<div className="part__layer-names">
-				{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId]) => {
+				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					return (
 						<div className="part__layer-names__name" key={layerId}>
 							{mappings[layerId].layerName ?? layerId}
@@ -315,7 +315,7 @@ export const PartView: React.FC<{
 				<div className="layers-wrapper">
 					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
 					<div className="layers">
-						{sortLayers(Object.entries(resolvedTimeline.layers)).map(([layerId, objectIds]) => {
+						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
 								timelineObj: TimelineObj
@@ -369,17 +369,25 @@ export const PartView: React.FC<{
 
 type TEntries = [string, string[]][]
 
-const sortLayers = (entries: TEntries) => {
+const sortLayers = (entries: TEntries, mappings: Mappings) => {
 	return entries.sort((a, b) => {
 		const aLayerId = a[0]
 		const bLayerId = b[0]
 
-		const aMappingInfo = getMappingById(aLayerId)
-		const bMappingInfo = getMappingById(bLayerId)
+		const aMappingInfo = mappings[aLayerId]
+		const bMappingInfo = mappings[bLayerId]
 
-		const aLayer = (aMappingInfo as any)?.layer
-		const bLayer = (bMappingInfo as any)?.layer
+		const aLayer = aMappingInfo?.layerName ?? ''
+		const bLayer = bMappingInfo?.layerName ?? ''
 
-		return bLayer - aLayer
+		if (aLayer > bLayer) {
+			return 1
+		}
+
+		if (aLayer < bLayer) {
+			return -1
+		}
+
+		return 0
 	})
 }

@@ -4,6 +4,7 @@ import { Part } from '@/models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { Rundown } from '@/models/rundown/Rundown'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { Mapping } from 'timeline-state-resolver-types'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -50,10 +51,6 @@ export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean =>
 		return true
 	}
 	return false
-}
-
-export const getMappingById = (id: string) => {
-	return mappingsMock[id]
 }
 
 export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimeline) => {
