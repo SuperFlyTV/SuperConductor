@@ -1,10 +1,8 @@
-import { IPCClientMethods } from '@/ipc/IPCAPI'
-import { BridgeStatus } from '@/models/project/Bridge'
-import { Project } from '@/models/project/Project'
-import { ResourceAny } from '@/models/resource/resource'
-import { Rundown } from '@/models/rundown/Rundown'
-import { Mapping } from 'timeline-state-resolver-types'
-import { Resources } from '../contexts/Resources'
+import { IPCClientMethods } from '../../ipc/IPCAPI'
+import { BridgeStatus } from '../../models/project/Bridge'
+import { Project } from '../../models/project/Project'
+import { ResourceAny } from '../../models/resource/resource'
+import { Rundown } from '../../models/rundown/Rundown'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {

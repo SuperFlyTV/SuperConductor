@@ -1,7 +1,7 @@
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import React, { useContext } from 'react'
-import { Mappings, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '@/models/rundown/TimelineObj'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow, FormRow } from './InfoGroup'
@@ -43,17 +43,19 @@ export const TimelineObjInfo: React.FC<{
 						editedTimelineObj.obj.enable.duration = values.enableDuration
 					}
 					editedTimelineObj.obj.layer = values.layer
-					ipcServer.updateTimelineObj({
-						rundownId: props.rundownId,
-						groupId: props.groupId,
-						partId: props.partId,
-						timelineObjId: props.timelineObj.obj.id,
-						timelineObj: editedTimelineObj,
-					})
+					ipcServer
+						.updateTimelineObj({
+							rundownId: props.rundownId,
+							groupId: props.groupId,
+							partId: props.partId,
+							timelineObjId: props.timelineObj.obj.id,
+							timelineObj: editedTimelineObj,
+						})
+						.catch(console.error)
 					actions.setSubmitting(false)
 				}}
 			>
-				{(formik) => (
+				{() => (
 					<Form>
 						<FormRow>
 							<label htmlFor="layer">Layer</label>
@@ -79,12 +81,14 @@ export const TimelineObjInfo: React.FC<{
 						<div className="btn-row-equal">
 							<TrashBtn
 								onClick={() => {
-									ipcServer.deleteTimelineObj({
-										rundownId: props.rundownId,
-										groupId: props.groupId,
-										partId: props.partId,
-										timelineObjId: props.timelineObj.obj.id,
-									})
+									ipcServer
+										.deleteTimelineObj({
+											rundownId: props.rundownId,
+											groupId: props.groupId,
+											partId: props.partId,
+											timelineObjId: props.timelineObj.obj.id,
+										})
+										.catch(console.error)
 								}}
 							/>
 							<button type="submit" className="btn form">

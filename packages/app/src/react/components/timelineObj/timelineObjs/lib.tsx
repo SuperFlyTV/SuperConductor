@@ -33,7 +33,10 @@ export const NOT_IMPLEMENTED_SETTINGS = (
 	<div className="setting">
 		<label>Not implemented</label>
 		<div>
-			<i>Support for this type of timeline object hasn't been implemented yet. Feel free to submit a pull request!</i>
+			<i>
+				Support for this type of timeline object hasn&apos;t been implemented yet. Feel free to submit a pull
+				request!
+			</i>
 		</div>
 	</div>
 )

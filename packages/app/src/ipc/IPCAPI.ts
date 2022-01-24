@@ -1,9 +1,8 @@
-import { BridgeStatus } from '@/models/project/Bridge'
-import { Project } from '@/models/project/Project'
-import { ResourceAny } from '@/models/resource/resource'
-import { Rundown } from '@/models/rundown/Rundown'
-import { TimelineObj } from '@/models/rundown/TimelineObj'
-import { Resources } from '@/react/contexts/Resources'
+import { BridgeStatus } from '../models/project/Bridge'
+import { Project } from '../models/project/Project'
+import { ResourceAny } from '../models/resource/resource'
+import { Rundown } from '../models/rundown/Rundown'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Group } from '../models/rundown/Group'
 
 /** Methods that can be called on the server, by the client */

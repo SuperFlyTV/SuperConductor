@@ -7,22 +7,21 @@ import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
 import { IPCClient } from './api/IPCClient'
 import { IPCServer } from './api/IPCServer'
-import { Project } from '@/models/project/Project'
-import { Rundown } from '@/models/rundown/Rundown'
+import { Project } from '../models/project/Project'
+import { Rundown } from '../models/rundown/Rundown'
 import { GUI, GUIContext } from './contexts/GUI'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
-import { IPCServerMethods } from '@/ipc/IPCAPI'
+import { IPCServerMethods } from '../ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
-import { ResourceAny, ResourceType } from '@/models/resource/resource'
+import { ResourceAny } from '../models/resource/resource'
 import { RundownContext } from './contexts/Rundown'
-import { BridgeStatus } from '@/models/project/Bridge'
+import { BridgeStatus } from '../models/project/Bridge'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
-import { Mapping } from 'timeline-state-resolver-types'
-import { TimelineObjectMove, TimelineObjectMoveContext } from '@/react/contexts/TimelineObjectMove'
+import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -39,7 +38,6 @@ export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
-	const [mappings, setMappings] = useState<{ [layerId: string]: Mapping }>({})
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
@@ -98,7 +96,7 @@ export const App = () => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		serverAPI.triggerSendAll()
+		serverAPI.triggerSendAll().catch(console.error)
 	}, [])
 
 	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
@@ -153,7 +151,7 @@ export const App = () => {
 	}
 
 	useEffect(() => {
-		sorensen.init()
+		sorensen.init().catch(console.error)
 	}, [])
 
 	if (!project) {

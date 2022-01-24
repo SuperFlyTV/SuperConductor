@@ -8,7 +8,7 @@ import { TSR } from './TSR'
 const CURRENT_VERSION = 0
 const SERVER_PORT = 5401
 
-const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
+const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
 
 	tsr.newConnection = true
@@ -33,7 +33,7 @@ const server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection
 		} else if (msg.type === 'setMappings') {
 			updateMappings(msg.mappings)
 		} else if (msg.type === 'setSettings') {
-			tsr.updateDevices(msg.devices, send)
+			tsr.updateDevices(msg.devices, send).catch(console.error)
 		} else if (msg.type === 'refreshResources') {
 			tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
 				send({

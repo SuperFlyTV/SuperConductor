@@ -1,6 +1,5 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useContext, useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
-import { QueueBtn, UnQueueBtn } from '../../inputs/QueueBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
@@ -13,7 +12,6 @@ import { GroupPlayhead } from '@/lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
-import { HotkeyContext } from '@/react/contexts/Hotkey'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
@@ -39,7 +37,6 @@ export const PartView: React.FC<{
 	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const keyTracker = useContext(HotkeyContext)
 
 	const [partPropsOpen, setPartPropsOpen] = useState(false)
 
@@ -48,7 +45,7 @@ export const PartView: React.FC<{
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 		return { maxDuration, resolvedTimeline }
 	}, [part.timeline])
@@ -67,52 +64,18 @@ export const PartView: React.FC<{
 		parentGroup.playout.startTime === null && parentGroup.playout.partIds.length > 0
 	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.partIds[0] !== part.id
 	const handleStart = () => {
-		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id })
+		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
 	}
 
 	// Stop button:
-	const cannotStop: boolean = !isGroupPlaying
+	const cannotStop = !isGroupPlaying
 	const handleStop = () => {
-		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id })
-	}
-
-	// Queue button:
-	const cannotQueue: boolean = !!(isGroupPlaying && playhead.isInRepeating)
-	const queuedPositions: number[] = []
-	parentGroup.playout.partIds.forEach((partId, index) => {
-		if (partId === part.id) queuedPositions.push(index)
-	})
-	const [showUnqueue, setShowUnqueue] = useState(false)
-	useEffect(() => {
-		const onKey = () => {
-			const pressed = keyTracker.getPressedKeys()
-			setShowUnqueue(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
-		}
-		onKey()
-
-		keyTracker.bind('Shift', onKey, {
-			up: false,
-			global: true,
-		})
-		keyTracker.bind('Shift', onKey, {
-			up: true,
-			global: true,
-		})
-
-		return () => {
-			keyTracker.unbind('Shift', onKey)
-		}
-	}, [])
-	const handleQueue = () => {
-		ipcServer.queuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
-	}
-	const handleUnQueue = () => {
-		ipcServer.unqueuePartGroup({ rundownId, groupId: parentGroup.id, partId: part.id })
+		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id }).catch(console.error)
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id })
+		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -193,7 +156,6 @@ export const PartView: React.FC<{
 				const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && dragIndex > hoverIndex
 				const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && dragIndex < hoverIndex
 				const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
-				const isDraggingDownFromAnotherGroup = dragGroupIndex < hoverGroupIndex
 
 				// Dragging downwards
 				if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
@@ -276,19 +238,6 @@ export const PartView: React.FC<{
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
-					{/* {showUnqueue ? (
-						<UnQueueBtn
-							label={queuedPositions.map((index) => index + 1).join(', ')}
-							onClick={handleUnQueue}
-							disabled={cannotQueue}
-						/>
-					) : (
-						<QueueBtn
-							label={queuedPositions.map((index) => index + 1).join(', ')}
-							onClick={handleQueue}
-							disabled={cannotQueue}
-						/>
-					)} */}
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
@@ -313,7 +262,9 @@ export const PartView: React.FC<{
 						))}
 				</div>
 				<div className="layers-wrapper">
-					{playheadTime ? <PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} /> : null}
+					{playheadTime ? (
+						<PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} />
+					) : null}
 					<div className="layers">
 						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
 							const objectsOnLayer: {

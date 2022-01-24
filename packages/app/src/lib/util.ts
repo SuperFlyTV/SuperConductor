@@ -1,10 +1,8 @@
-import { mappingsMock } from '@/mocks/mappingsMock'
-import { Group } from '@/models/rundown/Group'
-import { Part } from '@/models/rundown/Part'
+import { Group } from '../models/rundown/Group'
+import { Part } from '../models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
-import { Rundown } from '@/models/rundown/Rundown'
-import { TimelineObj } from '@/models/rundown/TimelineObj'
-import { Mapping } from 'timeline-state-resolver-types'
+import { Rundown } from '../models/rundown/Rundown'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -35,8 +33,6 @@ export const deleteGroup = (rundown: Rundown, groupId: string): void => {
 	rundown.groups = rundown.groups.filter((g) => g.id !== groupId)
 }
 export const deletePart = (group: Group, partId: string): void => {
-	const part = findPart(group, partId)
-
 	group.parts = group.parts.filter((r) => r.id !== partId)
 	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
@@ -126,12 +122,12 @@ export function hash(str: string): string {
 }
 
 function hashCode(str: string): number {
-	var hash = 0
+	let hash = 0
 	if (str.length == 0) {
 		return hash
 	}
-	for (var i = 0; i < str.length; i++) {
-		var char = str.charCodeAt(i)
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i)
 
 		hash = (hash << 5) - hash + char
 		hash = hash & hash // Convert to 32bit integer

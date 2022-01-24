@@ -1,5 +1,5 @@
-import { IPCServerMethods } from '@/ipc/IPCAPI'
-import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 
 /** This class is used client-side, to send requests to the server */
@@ -79,7 +79,12 @@ export class IPCServer implements IPCServerMethods {
 	deleteTimelineObj(data: { timelineObjId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteTimelineObj', data)
 	}
-	addResourceToTimeline(data: { groupId: string; partId: string; layerId: string; resourceId: string }): Promise<void> {
+	addResourceToTimeline(data: {
+		groupId: string
+		partId: string
+		layerId: string
+		resourceId: string
+	}): Promise<void> {
 		return this.invokeServerMethod('addResourceToTimeline', data)
 	}
 	toggleGroupLoop(data: { groupId: string; value: boolean }): Promise<void> {

@@ -7,7 +7,7 @@ const createWindow = (): void => {
 
 	const appData = tpt.storage.getAppData()
 
-	let win = new BrowserWindow({
+	const win = new BrowserWindow({
 		y: appData.windowPosition.y,
 		x: appData.windowPosition.x,
 		width: appData.windowPosition.width,
@@ -28,9 +28,7 @@ const createWindow = (): void => {
 	tpt.initWindow(win)
 
 	win.webContents.openDevTools()
-	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/index.html`)
-
-	const isMac = process.platform === 'darwin'
+	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/index.html`).catch(console.error)
 
 	const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
 		{
@@ -48,7 +46,7 @@ const createWindow = (): void => {
 		},
 	]
 
-	const menu = Menu.buildFromTemplate(template)
+	const _menu = Menu.buildFromTemplate(template)
 	// Menu.setApplicationMenu(menu)
 
 	app.on('window-all-closed', async () => {

@@ -7,21 +7,21 @@ import {
 	findTimelineObj,
 	getCurrentlyPlayingInfo,
 	getResolvedTimelineTotalDuration,
-} from '@/lib/util'
-import { Group } from '@/models/rundown/Group'
-import { Part } from '@/models/rundown/Part'
-import { Resolver, TimelineEnable } from 'superfly-timeline'
+} from '../lib/util'
+import { Group } from '../models/rundown/Group'
+import { Part } from '../models/rundown/Part'
+import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { IPCServerMethods } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
-import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
-import { Rundown } from '@/models/rundown/Rundown'
+import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceType } from '@/models/resource/resource'
-import { assertNever } from '@/lib/lib'
-import { TimelineObj } from '@/models/rundown/TimelineObj'
+import { ResourceType } from '../models/resource/resource'
+import { assertNever } from '../lib/lib'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 
 /** This class is used server-side, to handle requests from the client */
 export class IPCServer implements IPCServerMethods {
@@ -39,6 +39,7 @@ export class IPCServer implements IPCServerMethods {
 	) {
 		for (const methodName of Object.keys(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
+				// eslint-disable-next-line @typescript-eslint/ban-types
 				const fcn = (this as any)[methodName] as Function
 				if (fcn) {
 					ipcMain.handle(methodName, async (event, ...args) => {
@@ -83,7 +84,7 @@ export class IPCServer implements IPCServerMethods {
 	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		const { rundown, group, part } = this.getPart(arg)
+		const { rundown, group } = this.getPart(arg)
 
 		if (!group.playout.startTime) {
 			// Start playing the queued up items:
@@ -247,7 +248,7 @@ export class IPCServer implements IPCServerMethods {
 		let toRundown: Rundown
 		let toGroup: Group
 		let madeNewTransparentGroup = false
-		let isTransparentGroupMove =
+		const isTransparentGroupMove =
 			arg.from.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
 
 		if (arg.to.groupId) {
@@ -469,7 +470,7 @@ export class IPCServer implements IPCServerMethods {
 		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
 
 		// @ts-expect-error duration
-		let duration = (resource.duration || 5) * 1000
+		const duration = (resource.duration || 5) * 1000
 
 		let obj: TSRTimelineObj
 
@@ -545,7 +546,7 @@ export class IPCServer implements IPCServerMethods {
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		let maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 		part.resolved = {
 			duration: maxDuration,

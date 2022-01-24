@@ -16,7 +16,7 @@ import { Rundown } from '@/models/rundown/Rundown'
 import { Group } from '@/models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 
-export const ResourceLibrary: React.FC<{}> = () => {
+export const ResourceLibrary: React.FC = () => {
 	const ipcServer = useContext(IPCServerContext)
 	const resources = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
@@ -110,7 +110,7 @@ export const ResourceLibrary: React.FC<{}> = () => {
 						<div className="add-to-timeline">
 							<Formik
 								initialValues={{ partId: defaultPart.id, layerId: defaultLayer }}
-								onSubmit={(values, actions) => {
+								onSubmit={(values) => {
 									if (!values.partId || !values.layerId) {
 										return
 									}
@@ -118,13 +118,15 @@ export const ResourceLibrary: React.FC<{}> = () => {
 									const part = findPartInRundown(rundown, values.partId)
 									if (!part) return
 
-									ipcServer.addResourceToTimeline({
-										rundownId: rundown.id,
-										groupId: part.group.id,
-										partId: part.part.id,
-										layerId: values.layerId,
-										resourceId: selectedResource.id,
-									})
+									ipcServer
+										.addResourceToTimeline({
+											rundownId: rundown.id,
+											groupId: part.group.id,
+											partId: part.part.id,
+											layerId: values.layerId,
+											resourceId: selectedResource.id,
+										})
+										.catch(console.error)
 								}}
 							>
 								{(_fProps: FormikProps<any>) => (
@@ -135,7 +137,9 @@ export const ResourceLibrary: React.FC<{}> = () => {
 												{getAllPartsInRundown(rundown).map((p) => {
 													return (
 														<option key={p.part.id} value={p.part.id}>
-															{p.group.transparent ? p.part.name : `${p.group.name}: ${p.part.name}`}
+															{p.group.transparent
+																? p.part.name
+																: `${p.group.name}: ${p.part.name}`}
 														</option>
 													)
 												})}

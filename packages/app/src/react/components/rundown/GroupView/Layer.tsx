@@ -23,13 +23,15 @@ export const Layer: React.FC<{
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
 			drop: (item: ResourceDragItem) => {
-				ipcServer.addResourceToTimeline({
-					rundownId,
-					groupId,
-					partId,
-					layerId,
-					resourceId: item.resource.id,
-				})
+				ipcServer
+					.addResourceToTimeline({
+						rundownId,
+						groupId,
+						partId,
+						layerId,
+						resourceId: item.resource.id,
+					})
+					.catch(console.error)
 			},
 			collect: (monitor) => ({
 				isOver: !!monitor.isOver(),

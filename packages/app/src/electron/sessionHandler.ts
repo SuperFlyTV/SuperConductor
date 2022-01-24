@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
-import { ResourceAny } from '@/models/resource/resource'
-import { BridgeStatus } from '@/models/project/Bridge'
+import { ResourceAny } from '../models/resource/resource'
+import { BridgeStatus } from '../models/project/Bridge'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {

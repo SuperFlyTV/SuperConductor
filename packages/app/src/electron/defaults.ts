@@ -1,8 +1,8 @@
 import short from 'short-uuid'
-import { Project } from '@/models/project/Project'
-import { Rundown } from '@/models/rundown/Rundown'
+import { Project } from '../models/project/Project'
+import { Rundown } from '../models/rundown/Rundown'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
-import { literal } from '@/lib'
+import { literal } from '../lib'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {

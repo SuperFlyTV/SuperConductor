@@ -1,8 +1,7 @@
-import { BridgeStatus } from '@/models/project/Bridge'
-import { Project } from '@/models/project/Project'
-import { ResourceAny } from '@/models/resource/resource'
-import { Rundown } from '@/models/rundown/Rundown'
-import { Resources } from '@/react/contexts/Resources'
+import { BridgeStatus } from '../models/project/Bridge'
+import { Project } from '../models/project/Project'
+import { ResourceAny } from '../models/resource/resource'
+import { Rundown } from '../models/rundown/Rundown'
 import { BrowserWindow } from 'electron'
 import { IPCClientMethods } from '../ipc/IPCAPI'
 

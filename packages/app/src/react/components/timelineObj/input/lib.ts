@@ -3,7 +3,8 @@ export function parseDuration(str: string): number | undefined {
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d{1,3})$/) // hh:mm:ss.xxx
-		if (m) return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000 + parseMilliseconds(m[4])
+		if (m)
+			return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000 + parseMilliseconds(m[4])
 	}
 
 	{

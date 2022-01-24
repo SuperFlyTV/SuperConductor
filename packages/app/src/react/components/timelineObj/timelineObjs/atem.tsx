@@ -4,14 +4,9 @@ import {
 	AtemTransitionStyle,
 	TimelineContentTypeAtem,
 	TimelineObjAtemAny,
-	TimelineObjAtemAudioChannel,
 	TimelineObjAtemAUX,
 	TimelineObjAtemDSK,
-	TimelineObjAtemMacroPlayer,
 	TimelineObjAtemME,
-	TimelineObjAtemMediaPlayer,
-	TimelineObjAtemSsrc,
-	TimelineObjAtemSsrcProps,
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../input/boolean'
 import { SelectEnum } from '../input/enum'
@@ -23,7 +18,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 
 	const obj0 = obj
 	if (obj.content.type === TimelineContentTypeAtem.ME) {
-		let obj = obj0 as TimelineObjAtemME
+		const obj = obj0 as TimelineObjAtemME
 		settings = (
 			<>
 				<div className="setting">
@@ -92,7 +87,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
-		let obj = obj0 as TimelineObjAtemDSK
+		const obj = obj0 as TimelineObjAtemDSK
 
 		settings = (
 			<>
@@ -144,7 +139,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeAtem.AUX) {
-		let obj = obj0 as TimelineObjAtemAUX
+		const obj = obj0 as TimelineObjAtemAUX
 		settings = (
 			<>
 				<div className="setting">
@@ -161,32 +156,31 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeAtem.SSRC) {
-		let obj = obj0 as TimelineObjAtemSsrc
-
+		// const obj = obj0 as TimelineObjAtemSsrc
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
 	} else if (obj.content.type === TimelineContentTypeAtem.SSRCPROPS) {
-		let obj = obj0 as TimelineObjAtemSsrcProps
+		// const obj = obj0 as TimelineObjAtemSsrcProps
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
 	} else if (obj.content.type === TimelineContentTypeAtem.MEDIAPLAYER) {
-		let obj = obj0 as TimelineObjAtemMediaPlayer
+		// const obj = obj0 as TimelineObjAtemMediaPlayer
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
 	} else if (obj.content.type === TimelineContentTypeAtem.MACROPLAYER) {
-		let obj = obj0 as TimelineObjAtemMacroPlayer
+		// const obj = obj0 as TimelineObjAtemMacroPlayer
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
 	} else if (obj.content.type === TimelineContentTypeAtem.AUDIOCHANNEL) {
-		let obj = obj0 as TimelineObjAtemAudioChannel
+		// const obj = obj0 as TimelineObjAtemAudioChannel
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS

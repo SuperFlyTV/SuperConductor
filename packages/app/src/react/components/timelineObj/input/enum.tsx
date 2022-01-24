@@ -13,7 +13,7 @@ export const SelectEnum: React.FC<{
 
 	let foundAny = false
 	// If the enum has numbers as values:
-	for (let key in options) {
+	for (const key in options) {
 		if (!isNaN(Number(key))) {
 			foundAny = true
 			allOptions[key] = { value: Number(key), label: options[key] }
@@ -21,7 +21,7 @@ export const SelectEnum: React.FC<{
 	}
 	if (!foundAny) {
 		// If the enum has strings as values:
-		for (let key in options) {
+		for (const key in options) {
 			if (isNaN(Number(key))) {
 				foundAny = true
 				allOptions[options[key]] = { value: options[key], label: key }

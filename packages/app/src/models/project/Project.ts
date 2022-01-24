@@ -13,6 +13,7 @@ export interface Project {
 	settings: Settings
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface Settings {
 	// TODO: add settings
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useContext } from 'react'
 import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '@/models/rundown/Group'
@@ -7,9 +7,8 @@ import { getGroupPlayhead, GroupPlayhead } from '@/lib/playhead'
 import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '@/react/contexts/IPCServer'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
-import { Part } from '../../../../models/rundown/Part'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
-import { DropTargetMonitor, useDrop } from 'react-dnd'
+import { useDrop } from 'react-dnd'
 import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
 
@@ -23,7 +22,7 @@ export const GroupView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
-	const [activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
+	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
 	useEffect(() => {
 		playheadData.current = group.playheadData
 
@@ -66,7 +65,7 @@ export const GroupView: React.FC<{
 			if (stopPlayingRef.current) {
 				console.log('Auto-stopping group', group.id)
 
-				ipcServer.stopGroup({ rundownId, groupId: group.id })
+				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(console.error)
 				stopPlayingRef.current = false
 			}
 		} else {
@@ -109,7 +108,7 @@ export const GroupView: React.FC<{
 
 				return true
 			},
-			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
+			async hover(item: PartDragItem) {
 				// Don't use the GroupView as a drop target when there are Parts present.
 				if (group.parts.length > 0) {
 					return
@@ -186,7 +185,13 @@ export const GroupView: React.FC<{
 								id="auto-play"
 								isChecked={group.autoPlay}
 								onChange={() => {
-									ipcServer.toggleGroupAutoplay({ rundownId, groupId: group.id, value: !group.autoPlay })
+									ipcServer
+										.toggleGroupAutoplay({
+											rundownId,
+											groupId: group.id,
+											value: !group.autoPlay,
+										})
+										.catch(console.error)
 								}}
 							/>
 							<label htmlFor="auto-play" className="toggle-label">
@@ -199,7 +204,9 @@ export const GroupView: React.FC<{
 								id="loop"
 								isChecked={group.loop}
 								onChange={() => {
-									ipcServer.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
+									ipcServer
+										.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
+										.catch(console.error)
 								}}
 							/>
 							<label htmlFor="loop" className="toggle-label">
@@ -208,7 +215,7 @@ export const GroupView: React.FC<{
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ rundownId, groupId: group.id })
+								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(console.error)
 							}}
 						/>
 					</div>
@@ -249,11 +256,13 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 				<PartPropertiesDialog
 					acceptLabel="Create"
 					onAccepted={(part) => {
-						ipcServer.newPart({
-							rundownId,
-							name: part.name,
-							groupId: group.id,
-						})
+						ipcServer
+							.newPart({
+								rundownId,
+								name: part.name,
+								groupId: group.id,
+							})
+							.catch(console.error)
 						setNewPartOpen(false)
 					}}
 					onDiscarded={() => setNewPartOpen(false)}

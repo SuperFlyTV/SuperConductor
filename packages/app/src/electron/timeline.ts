@@ -1,12 +1,12 @@
-import { prepareGroupPlayhead } from '@/lib/playhead'
-import { Group } from '@/models/rundown/Group'
-import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
-import { Part } from '@/models/rundown/Part'
+import { prepareGroupPlayhead } from '../lib/playhead'
+import { Group } from '../models/rundown/Group'
+import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
+import { Part } from '../models/rundown/Part'
 import { TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { StorageHandler } from './storageHandler'
 import { BridgeHandler } from './bridgeHandler'
-import { deepClone } from '@/lib/lib'
+import { deepClone } from '../lib/lib'
 
 export interface UpdateTimelineCache {
 	groupHashes?: { [groupId: string]: string }
@@ -47,7 +47,7 @@ export function updateTimeline(
 		// First, add the parts that doesn't loop:
 		for (const part of groupPlayhead.parts) {
 			// Add the part to the timeline:
-			let obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
+			const obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
 
 			changeTimelineId(obj, (id) => getUniqueId(id))
 			timelineGroup.children?.push(obj)
@@ -73,7 +73,7 @@ export function updateTimeline(
 			}
 			for (const part of groupPlayhead.repeating.parts) {
 				// Add the part to the timeline:
-				let obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
+				const obj: TimelineObjEmpty | null = partToTimelineObj(part.part, part.startTime)
 				// We have to modify the ids so that they won't collide with the previous ones:
 				changeTimelineId(obj, (id) => getUniqueId(id))
 				repeatingObj.children?.push(obj)

@@ -1,4 +1,4 @@
-import { ResourceAny } from '@/models/resource/resource'
+import { ResourceAny } from '../../models/resource/resource'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 
 export namespace BridgeAPI {

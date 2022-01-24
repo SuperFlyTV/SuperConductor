@@ -1,4 +1,4 @@
-import { ResourceAny, ResourceType } from '@/models/resource/resource'
+import { ResourceAny, ResourceType } from '../models/resource/resource'
 import { assertNever } from './lib'
 
 enum GeneralResourceType {

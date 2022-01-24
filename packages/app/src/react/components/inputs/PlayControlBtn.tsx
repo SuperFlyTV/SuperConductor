@@ -14,7 +14,11 @@ export const PlayControlBtn: React.FC<{
 		}
 	}
 	return (
-		<button className={classNames({ btn: true, [props.mode]: true })} onClick={handleOnClick} disabled={props.disabled}>
+		<button
+			className={classNames({ btn: true, [props.mode]: true })}
+			onClick={handleOnClick}
+			disabled={props.disabled}
+		>
 			{props.mode === 'play' ? <BsFillPlayFill color="white" size={20} /> : <FaStop color="white" size={12} />}
 		</button>
 	)

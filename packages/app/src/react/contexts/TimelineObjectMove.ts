@@ -5,6 +5,7 @@ export const TimelineObjectMoveContext = React.createContext<{
 	updateMove: (newGui: Partial<TimelineObjectMove>) => void
 }>({
 	move: { isMoving: false, wasMoved: false },
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	updateMove: () => {},
 })
 

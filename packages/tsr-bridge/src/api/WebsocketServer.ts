@@ -74,7 +74,7 @@ export class WebsocketConnection extends EventEmitter {
 	private _connected = false
 
 	private pingInterval: NodeJS.Timeout | null = null
-	private lastPingReceived: number = 0
+	private lastPingReceived = 0
 
 	private reconnectInterval: NodeJS.Timeout | null = null
 

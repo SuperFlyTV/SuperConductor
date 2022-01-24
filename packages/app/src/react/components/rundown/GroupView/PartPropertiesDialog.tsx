@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { Popup } from '../../popup/Popup'
 import { FormRow } from '../../sidebar/InfoGroup'

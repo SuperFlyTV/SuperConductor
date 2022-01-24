@@ -66,34 +66,40 @@ export const TemplateData: React.FC<{
 	const handleUpdateData: IUpdateData = (rowId, columnId, oldValue, newValue) => {
 		if (oldValue === newValue) return
 
-		ipcServer.updateTemplateData({
-			rundownId: props.rundownId,
-			groupId: props.groupId,
-			partId: props.partId,
-			timelineObjId: props.timelineObjId,
-			key: rowId,
-			changedItemId: columnId,
-			value: newValue,
-		})
+		ipcServer
+			.updateTemplateData({
+				rundownId: props.rundownId,
+				groupId: props.groupId,
+				partId: props.partId,
+				timelineObjId: props.timelineObjId,
+				key: rowId,
+				changedItemId: columnId,
+				value: newValue,
+			})
+			.catch(console.error)
 	}
 
 	const handleAddNew = () => {
-		ipcServer.newTemplateData({
-			rundownId: props.rundownId,
-			groupId: props.groupId,
-			partId: props.partId,
-			timelineObjId: props.timelineObjId,
-		})
+		ipcServer
+			.newTemplateData({
+				rundownId: props.rundownId,
+				groupId: props.groupId,
+				partId: props.partId,
+				timelineObjId: props.timelineObjId,
+			})
+			.catch(console.error)
 	}
 
 	const handleDelete: IDeleteRow = (rowId: string) => {
-		ipcServer.deleteTemplateData({
-			rundownId: props.rundownId,
-			groupId: props.groupId,
-			partId: props.partId,
-			timelineObjId: props.timelineObjId,
-			key: rowId,
-		})
+		ipcServer
+			.deleteTemplateData({
+				rundownId: props.rundownId,
+				groupId: props.groupId,
+				partId: props.partId,
+				timelineObjId: props.timelineObjId,
+				key: rowId,
+			})
+			.catch(console.error)
 	}
 
 	const data: Array<any> = []
@@ -134,8 +140,10 @@ export const TemplateData: React.FC<{
 				<table {...getTableProps()} className="editable template-data">
 					<thead>
 						{headerGroups.map((headerGroup) => (
+							// eslint-disable-next-line react/jsx-key
 							<tr {...headerGroup.getHeaderGroupProps()}>
 								{headerGroup.headers.map((column) => (
+									// eslint-disable-next-line react/jsx-key
 									<th {...column.getHeaderProps()}>{column.render('Header')}</th>
 								))}
 							</tr>
@@ -145,11 +153,16 @@ export const TemplateData: React.FC<{
 						{rows.map((row) => {
 							prepareRow(row)
 							return (
+								// eslint-disable-next-line react/jsx-key
 								<tr {...row.getRowProps()}>
 									{row.cells.map((cell) => {
 										return (
+											// eslint-disable-next-line react/jsx-key
 											<td {...cell.getCellProps()}>
-												{cell.render('Cell', { onUpdateData: handleUpdateData, onDelete: handleDelete })}
+												{cell.render('Cell', {
+													onUpdateData: handleUpdateData,
+													onDelete: handleDelete,
+												})}
 											</td>
 										)
 									})}

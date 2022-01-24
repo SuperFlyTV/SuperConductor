@@ -47,7 +47,6 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
 				const dragGroup = item.group
 				const dragPart = item.part
-				const dragIndex = item.index
 				const hoverIndex = rundown.groups.length
 				const hoverGroup = null
 
@@ -120,16 +119,18 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 					<Formik
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
-						onSubmit={(values, actions) => {
-							ipcServer.newPart({
-								rundownId: rundown.id,
-								name: values.name,
-								groupId: null,
-							})
+						onSubmit={(values) => {
+							ipcServer
+								.newPart({
+									rundownId: rundown.id,
+									name: values.name,
+									groupId: null,
+								})
+								.catch(console.error)
 							setNewPartOpen(false)
 						}}
 					>
-						{(formik) => (
+						{() => (
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>
@@ -153,15 +154,17 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 						initialValues={{ name: '' }}
 						enableReinitialize={true}
 						onSubmit={(values, _actions) => {
-							ipcServer.newGroup({
-								rundownId: rundown.id,
-								name: values.name,
-							})
+							ipcServer
+								.newGroup({
+									rundownId: rundown.id,
+									name: values.name,
+								})
+								.catch(console.error)
 
 							setNewGroupOpen(false)
 						}}
 					>
-						{(formik) => (
+						{() => (
 							<Form>
 								<FormRow>
 									<label htmlFor="name">Name</label>

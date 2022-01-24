@@ -1,18 +1,18 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import { Group } from '@/models/rundown/Group'
+import { Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
 import { updateTimeline, UpdateTimelineCache } from './timeline'
-import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
-import { AppData } from '@/models/App/AppData'
-import { Project } from '@/models/project/Project'
-import { Rundown } from '@/models/rundown/Rundown'
+import { AppData } from '../models/App/AppData'
+import { Project } from '../models/project/Project'
+import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny } from '@/models/resource/resource'
+import { ResourceAny } from '../models/resource/resource'
 import { BridgeHandler } from './bridgeHandler'
 import _ from 'lodash'
-import { BridgeStatus } from '@/models/project/Bridge'
+import { BridgeStatus } from '../models/project/Bridge'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -56,7 +56,7 @@ export class TimedPlayerThingy {
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
-		this.storage.on('appData', (appData: AppData) => {
+		this.storage.on('appData', (_appData: AppData) => {
 			// todo?
 		})
 		this.storage.on('project', (project: Project) => {

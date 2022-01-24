@@ -86,13 +86,15 @@ export const TimelineObject: React.FC<{
 					const newStart = Math.max(0, start + dragDelta.current * partDuration)
 					startDiff = newStart - oldStart
 					obj.enable.start = newStart
-					ipcServer.updateTimelineObj({
-						rundownId: rundown.id,
-						partId: partId,
-						groupId: groupId,
-						timelineObjId: obj.id,
-						timelineObj: timelineObj,
-					})
+					ipcServer
+						.updateTimelineObj({
+							rundownId: rundown.id,
+							partId: partId,
+							groupId: groupId,
+							timelineObjId: obj.id,
+							timelineObj: timelineObj,
+						})
+						.catch(console.error)
 				}
 
 				// Update the other selected timeline objects which were also part of this move.
@@ -115,13 +117,15 @@ export const TimelineObject: React.FC<{
 								const oldStart = (otherTimelineObj.obj.enable as any).start
 								const newStart = oldStart + startDiff
 								otherTimelineObj.obj.enable.start = Math.max(0, newStart)
-								ipcServer.updateTimelineObj({
-									rundownId: rundown.id,
-									partId: partId,
-									groupId: groupId,
-									timelineObjId: id,
-									timelineObj: otherTimelineObj,
-								})
+								ipcServer
+									.updateTimelineObj({
+										rundownId: rundown.id,
+										partId: partId,
+										groupId: groupId,
+										timelineObjId: id,
+										timelineObj: otherTimelineObj,
+									})
+									.catch(console.error)
 							}
 						})
 				}

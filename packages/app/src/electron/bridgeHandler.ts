@@ -1,13 +1,13 @@
 import { WebsocketConnection, WebsocketServer } from './api/WebsocketServer'
 import { BridgeAPI } from './api/bridgeAPI'
-import { Project } from '@/models/project/Project'
-import { Bridge } from '@/models/project/Bridge'
+import { Project } from '../models/project/Project'
+import { Bridge } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
 import { StorageHandler } from './storageHandler'
-import { assertNever } from '@/lib/lib'
+import { assertNever } from '../lib/lib'
 import _ from 'lodash'
-import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { ResourceAny } from '@/models/resource/resource'
+import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { ResourceAny } from '../models/resource/resource'
 
 const SERVER_PORT = 5400
 

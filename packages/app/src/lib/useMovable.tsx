@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-type HTMLElementEventHandler<T, E extends HTMLElement = HTMLElement> = (this: HTMLElement, ev: T) => any
+type HTMLElementEventHandler<T> = (this: HTMLElement, ev: T) => any
 
 /**
  * The minimum distance, in pixels, that a drag must be performed before isDragging is set to true.

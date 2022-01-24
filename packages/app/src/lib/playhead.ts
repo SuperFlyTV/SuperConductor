@@ -1,6 +1,6 @@
-import { Group } from '@/models/rundown/Group'
-import { GroupPreparedPlayheadData } from '@/models/GUI/PreparedPlayhead'
-import { Part } from '@/models/rundown/Part'
+import { Group } from '../models/rundown/Group'
+import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
+import { Part } from '../models/rundown/Part'
 import { last } from './lib'
 import { findPart } from './util'
 
@@ -71,7 +71,7 @@ export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | 
 				nextStartTime += part.resolved.duration
 			}
 			data.duration = nextStartTime // Note: This might be overwritten later.
-			let lastQueuedPart: Part = last(queuedParts) as Part
+			const lastQueuedPart: Part = last(queuedParts) as Part
 
 			if (group.autoPlay) {
 				// Add the rest of the Parts in the group:
@@ -118,8 +118,6 @@ export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | 
 export function getGroupPlayhead(data: GroupPreparedPlayheadData | null): GroupPlayhead | null {
 	if (data) {
 		const now = Date.now()
-
-		let foundPart = false
 
 		const playhead: GroupPlayhead = {
 			partId: '',

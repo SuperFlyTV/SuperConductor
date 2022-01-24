@@ -1,6 +1,6 @@
-import { ResourceAny } from '@/models/resource/resource'
-import { Group } from '@/models/rundown/Group'
-import { Part } from '@/models/rundown/Part'
+import { ResourceAny } from '../../models/resource/resource'
+import { Group } from '../../models/rundown/Group'
+import { Part } from '../../models/rundown/Part'
 
 export enum DragItemTypes {
 	RESOURCE_ITEM = 'resource_item',

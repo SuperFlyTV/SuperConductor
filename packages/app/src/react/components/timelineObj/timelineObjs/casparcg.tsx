@@ -112,22 +112,10 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		</a>
 	)
 
-	const notImplementedSettings = (
-		<div className="setting">
-			<label>Not implemented</label>
-			<div>
-				<i>Support for this type of timeline object hasn't been implemented yet. Feel free to submit a pull request!</i>
-				<div>
-					<pre>{JSON.stringify(obj.content, undefined, 2)}</pre>
-				</div>
-			</div>
-		</div>
-	)
-
 	const obj0 = obj
 
 	if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
-		let obj = obj0 as TimelineObjCCGMedia
+		const obj = obj0 as TimelineObjCCGMedia
 		settings = (
 			<>
 				<div className="setting">
@@ -235,7 +223,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>Input Type (eg "decklink")</label>
+					<label>Input Type (eg &quot;decklink&quot;)</label>
 					<TextInput
 						currentValue={obj.content.inputType}
 						onChange={(v) => {

@@ -3,12 +3,10 @@ import os from 'os'
 import path from 'path'
 import EventEmitter from 'events'
 import { promisify } from 'util'
-import short from 'short-uuid'
-import { Project } from '@/models/project/Project'
-import { Rundown } from '@/models/rundown/Rundown'
-import { DeviceType } from 'timeline-state-resolver-types'
-import { AppData, WindowPosition } from '@/models/App/AppData'
-import { omit } from '@/lib/lib'
+import { Project } from '../models/project/Project'
+import { Rundown } from '../models/rundown/Rundown'
+import { AppData, WindowPosition } from '../models/App/AppData'
+import { omit } from '../lib/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
@@ -323,7 +321,11 @@ export class StorageHandler extends EventEmitter {
 
 		// Store Project:
 		if (this.projectNeedsWrite) {
-			await fsWriteFile(this.projectPath(this.appData.appData.project.fileName), JSON.stringify(this.project), 'utf-8')
+			await fsWriteFile(
+				this.projectPath(this.appData.appData.project.fileName),
+				JSON.stringify(this.project),
+				'utf-8'
+			)
 			this.projectNeedsWrite = false
 		}
 		// Store Rundowns:
