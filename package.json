@@ -1,0 +1,12 @@
+{
+  "name": "super-conductor-monorepo",
+  "version": "1.0.0",
+  "repository": "https://github.com/SuperFlyTV/SuperConductor",
+  "private": true,
+  "workspaces": [
+      "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  }
+}
