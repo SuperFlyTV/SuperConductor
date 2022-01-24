@@ -1,0 +1,48 @@
+{
+	"name": "tsr-bridge",
+	"version": "0.1.0",
+	"description": "",
+	"main": "index.js",
+	"engines": {
+		"node": "^12.20 || ^14.18.1 || 16"
+	},
+	"scripts": {
+		"dev": "nodemon",
+		"start": "yarn build && node dist/index.js",
+		"build": "rimraf ./dist && tsc",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"precommit": "lint-staged",
+		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+	},
+	"author": "",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/koa": "^2.13.4",
+		"@types/koa-bodyparser": "^4.3.3",
+		"@types/koa-router": "^7.4.4",
+		"@types/node": "^16.10.3",
+		"@types/underscore": "^1.11.4",
+		"nodemon": "^2.0.13",
+		"rimraf": "^3.0.2",
+		"ts-node": "^10.3.0"
+	},
+	"dependencies": {
+		"@shared/api": "*",
+		"@shared/lib": "*",
+		"@shared/models": "*",
+		"koa": "^2.13.3",
+		"koa-bodyparser": "^4.3.0",
+		"koa-router": "^10.1.1",
+		"timeline-state-resolver": "^6.2.0-release37.4",
+		"underscore": "^1.9.1"
+	},
+	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
+	}
+}
