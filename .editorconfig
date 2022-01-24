@@ -1,0 +1,5 @@
+[*]
+indent_style = tab
+
+[*.{css,scss,js,jsx,ts,tsx,json}]
+indent_size = 4
