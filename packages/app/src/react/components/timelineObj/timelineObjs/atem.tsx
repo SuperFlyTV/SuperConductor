@@ -57,7 +57,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							options={AtemTransitionStyle}
 							onChange={(v) => {
 								if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
-								if (!obj.content.me.transitionSettings.mix) obj.content.me.transitionSettings.mix = { rate: v }
+								if (!obj.content.me.transitionSettings.mix)
+									obj.content.me.transitionSettings.mix = { rate: v }
 
 								obj.content.me.transitionSettings.mix.rate = v
 								onSave(obj)
@@ -74,7 +75,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								options={AtemTransitionStyle}
 								onChange={(v) => {
 									if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
-									if (!obj.content.me.transitionSettings.wipe) obj.content.me.transitionSettings.wipe = {}
+									if (!obj.content.me.transitionSettings.wipe)
+										obj.content.me.transitionSettings.wipe = {}
 
 									obj.content.me.transitionSettings.wipe.rate = v
 									onSave(obj)
@@ -183,12 +185,12 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
-		// } else if (obj.content.type === TimelineContentTypeAtem.AUDIOCHANNEL) {
+	} else if (obj.content.type === TimelineContentTypeAtem.AUDIOCHANNEL) {
+		let obj = obj0 as TimelineObjAtemAudioChannel
 		{
 			/* Note: There are more options that could be implemented here, feel free to submit a PR! */
 			NOT_IMPLEMENTED_SETTINGS
 		}
-		// 	let obj = obj0 as TimelineObjAtemAudioChannel
 	} else {
 		assertNever(obj.content)
 	}
