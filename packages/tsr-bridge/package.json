@@ -10,7 +10,9 @@
 		"dev": "nodemon",
 		"start": "yarn build && node dist/index.js",
 		"build": "rimraf ./dist && tsc",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"precommit": "lint-staged",
+		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
 	"author": "",
 	"license": "ISC",
@@ -33,5 +35,13 @@
 		"underscore": "^1.9.1",
 		"ws": "^6.2.1"
 	},
-	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
+	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
+	}
 }

@@ -12,7 +12,9 @@
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",
 		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"precommit": "lint-staged",
+		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
 	"repository": {
 		"type": "git",
@@ -69,5 +71,13 @@
 		"utf-8-validate": "^5.0.2",
 		"ws": "^6.2.1",
 		"yup": "^0.32.11"
+	},
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
 	}
 }

@@ -10,6 +10,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"prepare": "husky install",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"lintfix": "yarn lint --fix",
 		"lint:changed": "lerna exec --since origin/master --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx"
