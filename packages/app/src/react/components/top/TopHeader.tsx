@@ -1,4 +1,4 @@
-import { BridgeStatus } from '@/models/project/Bridge'
+import { BridgeStatus } from '../../../models/project/Bridge'
 import classNames from 'classnames'
 import React from 'react'
 

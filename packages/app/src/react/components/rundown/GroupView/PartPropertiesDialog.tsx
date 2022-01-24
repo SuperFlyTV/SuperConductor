@@ -2,7 +2,7 @@ import React from 'react'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { Popup } from '../../popup/Popup'
 import { FormRow } from '../../sidebar/InfoGroup'
-import { Part } from '@/models/rundown/Part'
+import { Part } from '../../../../models/rundown/Part'
 
 interface IProps {
 	initial?: Part

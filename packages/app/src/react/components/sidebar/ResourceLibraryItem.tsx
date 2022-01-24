@@ -1,9 +1,9 @@
 import React from 'react'
 import classNames from 'classnames'
-import { ResourceAny } from '@/models/resource/resource'
+import { ResourceAny } from '../../../models/resource/resource'
 import { useDrag } from 'react-dnd'
-import { DragItemTypes, ResourceDragItem } from '@/react/api/DragItemTypes'
-import { describeResource } from '@/lib/Resources'
+import { DragItemTypes, ResourceDragItem } from '../../api/DragItemTypes'
+import { describeResource } from '../../../lib/Resources'
 
 type IProps = React.PropsWithChildren<{ resource: ResourceAny; selected: boolean; onClick?: React.MouseEventHandler }>
 

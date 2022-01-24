@@ -1,4 +1,4 @@
-import { assertNever } from '@/lib/lib'
+import { assertNever } from '../../../lib/lib'
 import React from 'react'
 import {
 	DeviceType,

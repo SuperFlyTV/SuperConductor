@@ -1,5 +1,5 @@
 import React from 'react'
-import { assertNever } from '@/lib/lib'
+import { assertNever } from '../../../../lib/lib'
 import {
 	ChannelFormat,
 	TimelineContentTypeCasparCg,

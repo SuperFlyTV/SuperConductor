@@ -2,7 +2,7 @@ import { Column, useTable } from 'react-table'
 import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
 import { InfoGroup } from './InfoGroup'
-import { IPCServerContext } from '@/react/contexts/IPCServer'
+import { IPCServerContext } from '../../contexts/IPCServer'
 
 type IUpdateData = (rowId: string, columnId: string, oldValue: string, newValue: string) => void
 type IDeleteRow = (rowId: string) => void

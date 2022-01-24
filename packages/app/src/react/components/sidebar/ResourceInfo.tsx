@@ -1,9 +1,9 @@
 import React from 'react'
 import { InfoGroup, DataRow } from './InfoGroup'
-import { bytesToSize } from '@/lib/bytesToSize'
+import { bytesToSize } from '../../../lib/bytesToSize'
 import moment from 'moment'
-import { ResourceAny, ResourceType } from '@/models/resource/resource'
-import { assertNever } from '@/lib/lib'
+import { ResourceAny, ResourceType } from '../../../models/resource/resource'
+import { assertNever } from '../../../lib/lib'
 
 export const ResourceInfo: React.FC<{ resource: ResourceAny }> = ({ resource }) => {
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
