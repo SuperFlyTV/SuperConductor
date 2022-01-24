@@ -1,0 +1,47 @@
+{
+	"name": "@shared/api",
+	"version": "0.1.0",
+	"description": "",
+	"author": "",
+	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
+	"license": "MIT",
+	"private": true,
+	"engines": {
+		"node": "^12.20 || ^14.18.1 || 16"
+	},
+	"main": "dist/index",
+	"types": "dist/index",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/SuperFlyTV/SuperConductor.git"
+	},
+	"scripts": {
+		"build": "rimraf dist && yarn build:main",
+		"build:main": "tsc -p tsconfig.json",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"precommit": "lint-staged",
+		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+	},
+	"bugs": {
+		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
+	},
+	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
+	},
+	"dependencies": {
+		"@shared/models": "*",
+		"ws": "^8.4.2"
+	},
+	"devDependencies": {
+		"@types/ws": "^8.2.2"
+	}
+}
