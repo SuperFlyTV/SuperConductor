@@ -27,7 +27,9 @@ const createWindow = (): void => {
 
 	tpt.initWindow(win)
 
-	win.webContents.openDevTools()
+	if (isDev) {
+		win.webContents.openDevTools()
+	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/index.html`).catch(console.error)
 
 	const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
