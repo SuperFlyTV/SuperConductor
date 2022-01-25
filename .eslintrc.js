@@ -13,6 +13,12 @@ module.exports = {
 	ignorePatterns: ['**/dist/**/*'],
 	rules: {
 		'no-console': 'off',
+		'node/no-unpublished-import': [
+			'error',
+			{
+				allowModules: ['electron'],
+			},
+		],
 		'node/no-unpublished-require': [
 			'error',
 			{

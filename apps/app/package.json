@@ -2,12 +2,12 @@
 	"name": "super-conductor",
 	"version": "0.1.0",
 	"description": "",
-	"main": "index.js",
+	"main": "dist/main.js",
 	"engines": {
 		"node": "^12.20 || ^14.18.1 || 16"
 	},
 	"scripts": {
-		"build": "webpack",
+		"build": "webpack && electron-builder",
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",
@@ -34,6 +34,8 @@
 		"@types/react-table": "^7.7.7",
 		"concurrently": "^6.3.0",
 		"css-loader": "^6.3.0",
+		"electron": "^15.1.0",
+		"electron-builder": "^22.14.5",
 		"html-webpack-plugin": "^5.3.2",
 		"nodemon": "^2.0.13",
 		"sass": "^1.42.1",
@@ -55,7 +57,6 @@
 		"bufferutil": "^4.0.1",
 		"casparcg-connection": "^5.1.0",
 		"classnames": "^2.3.1",
-		"electron": "^15.1.0",
 		"electron-is-dev": "^2.0.0",
 		"formik": "^2.2.9",
 		"lodash": "^4.17.21",
@@ -79,6 +80,16 @@
 		],
 		"*.{ts,tsx,js,jsx}": [
 			"yarn lint:raw --fix"
+		]
+	},
+	"build": {
+		"appId": "super-conductor.superfly.tv",
+		"mac": {
+			"category": "public.app-category.utilities"
+		},
+		"electronVersion": "15.3.5",
+		"files": [
+			"dist/**/*"
 		]
 	}
 }
