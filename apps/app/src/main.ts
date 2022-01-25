@@ -1,6 +1,8 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import isDev from 'electron-is-dev'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
+
+const isMac = process.platform === 'darwin'
 
 const createWindow = (): void => {
 	const tpt = new TimedPlayerThingy()
@@ -32,24 +34,118 @@ const createWindow = (): void => {
 	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
 
-	const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
-		{
-			label: 'File',
-			submenu: [
-				{
-					label: 'Save',
-					click: () => alert('Hello!'),
-				},
-				{
-					label: 'Load',
-					click: () => alert('Hello!'),
-				},
-			],
-		},
-	]
+	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
-	const _menu = Menu.buildFromTemplate(template)
-	// Menu.setApplicationMenu(menu)
+	if (isMac) {
+		// { role: 'appMenu' }
+		menuTemplate.push({
+			label: app.name,
+			submenu: [
+				{ role: 'about' },
+				{ type: 'separator' },
+				{ role: 'services' },
+				{ type: 'separator' },
+				{ role: 'hide' },
+				{ role: 'hideOthers' },
+				{ role: 'unhide' },
+				{ type: 'separator' },
+				{ role: 'quit' },
+			],
+		})
+	}
+
+	// { role: 'fileMenu' }
+	menuTemplate.push({
+		label: 'File',
+		submenu: [
+			{
+				label: 'Settings',
+				click: async () => {
+					tpt.ipcClient?.openSettings()
+				},
+			},
+			isMac ? { role: 'close' } : { role: 'quit' },
+		],
+	})
+
+	// { role: 'editMenu' }
+	menuTemplate.push({
+		label: 'Edit',
+		submenu: [
+			{ role: 'undo' },
+			{ role: 'redo' },
+			{ type: 'separator' },
+			{ role: 'cut' },
+			{ role: 'copy' },
+			{ role: 'paste' },
+			...(isMac
+				? [
+						{ role: 'pasteAndMatchStyle' as const },
+						{ role: 'delete' as const },
+						{ role: 'selectAll' as const },
+						{ type: 'separator' as const },
+						{
+							label: 'Speech',
+							submenu: [{ role: 'startSpeaking' as const }, { role: 'stopSpeaking' as const }],
+						},
+				  ]
+				: [{ role: 'delete' as const }, { type: 'separator' as const }, { role: 'selectAll' as const }]),
+		],
+	})
+
+	// { role: 'viewMenu' }
+	menuTemplate.push({
+		label: 'View',
+		submenu: [
+			{ role: 'reload' },
+			{ role: 'forceReload' },
+			{ role: 'toggleDevTools' },
+			{ type: 'separator' },
+			{ role: 'resetZoom' },
+			{ role: 'zoomIn' },
+			{ role: 'zoomOut' },
+			{ type: 'separator' },
+			{ role: 'togglefullscreen' },
+		],
+	})
+
+	// { role: 'windowMenu' }
+	menuTemplate.push({
+		label: 'Window',
+		submenu: [
+			{ role: 'minimize' },
+			{ role: 'zoom' },
+			...(isMac
+				? [
+						{ type: 'separator' as const },
+						{ role: 'front' as const },
+						{ type: 'separator' as const },
+						{ role: 'window' as const },
+				  ]
+				: [{ role: 'close' as const }]),
+		],
+	})
+
+	menuTemplate.push({
+		role: 'help',
+		submenu: [
+			{
+				label: 'Documentation',
+				click: async () => {
+					await shell.openExternal('https://github.com/SuperFlyTV/SuperConductor')
+				},
+			},
+			{
+				label: 'Search Issues',
+				click: async () => {
+					await shell.openExternal('https://github.com/SuperFlyTV/SuperConductor/issues')
+				},
+			},
+		],
+	})
+
+	const menu = Menu.buildFromTemplate(menuTemplate)
+	Menu.setApplicationMenu(menu)
 
 	app.on('window-all-closed', async () => {
 		await tpt.storage.writeChangesNow()

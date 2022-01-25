@@ -22,6 +22,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
+import { Popup } from './components/popup/Popup'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -42,6 +43,7 @@ export const App = () => {
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
+	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	useEffect(() => {
 		new IPCClient(ipcRenderer, {
@@ -87,6 +89,9 @@ export const App = () => {
 					}
 					return newStatuses
 				})
+			},
+			openSettings: () => {
+				setSettingsOpen(true)
 			},
 		})
 	}, [])
@@ -193,6 +198,10 @@ export const App = () => {
 											</RundownContext.Provider>
 										) : (
 											<div>Loading...</div>
+										)}
+
+										{settingsOpen && (
+											<Popup onClose={() => setSettingsOpen(false)}>Hello world.</Popup>
 										)}
 									</div>
 								</TimelineObjectMoveContext.Provider>

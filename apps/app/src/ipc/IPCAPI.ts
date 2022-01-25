@@ -86,4 +86,5 @@ export interface IPCClientMethods {
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
+	openSettings: () => void
 }
