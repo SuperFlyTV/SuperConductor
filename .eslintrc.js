@@ -37,6 +37,9 @@ module.exports = {
 		jest: {
 			version: 'latest',
 		},
+		react: {
+			version: 'detect',
+		},
 	},
 	overrides: [
 		// Note: these replace the values defined above, so make sure to extend them if they are needed
