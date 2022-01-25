@@ -7,7 +7,8 @@
 		"node": "^12.20 || ^14.18.1 || 16"
 	},
 	"scripts": {
-		"build": "webpack && electron-builder",
+		"build": "webpack",
+		"build:binary": "electron-builder",
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",

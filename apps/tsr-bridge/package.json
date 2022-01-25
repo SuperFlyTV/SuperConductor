@@ -9,7 +9,8 @@
 	"scripts": {
 		"dev": "nodemon",
 		"start": "yarn build && node dist/index.js",
-		"build": "rimraf ./dist && tsc && nexe --build --resource \"../../node_modules/timeline-state-resolver/dist/*.js\" --input dist/index.js --output dist/tsr-bridge.exe",
+		"build": "rimraf ./dist && tsc",
+		"build:binary": "nexe --build --resource \"../../node_modules/timeline-state-resolver/dist/*.js\" --input dist/index.js --output dist/tsr-bridge",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"precommit": "lint-staged",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"

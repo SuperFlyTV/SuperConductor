@@ -1,5 +1,5 @@
 import React from 'react'
-import { AiOutlineCloseSquare } from 'react-icons/Ai'
+import { AiOutlineCloseSquare } from 'react-icons/ai'
 
 type PropsType = {
 	children: React.ReactNode
