@@ -6,6 +6,7 @@ import { HotkeyContext } from '../../contexts/Hotkey'
 type PropsType = {
 	children: React.ReactNode
 	className?: React.HTMLAttributes<HTMLElement>['className']
+	title?: string
 	onClose: () => void
 }
 
@@ -40,6 +41,7 @@ export const Popup = (props: PropsType) => {
 		<div className={classNames('popup-shade', props.className)}>
 			<dialog open className="popup">
 				<div className="popup__header">
+					<div className="popup__header__title">{props.title}</div>
 					<button onClick={props.onClose}>
 						<AiOutlineCloseSquare size={25} />
 					</button>

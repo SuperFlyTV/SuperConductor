@@ -25,9 +25,14 @@
 
 		&__header {
 			display: flex;
-			justify-content: flex-end;
+			justify-content: space-between;
 			margin-bottom: 1rem;
 			flex-shrink: 0;
+
+			&__title {
+				font-size: 2rem;
+				text-transform: uppercase;
+			}
 
 			button {
 				background: transparent;

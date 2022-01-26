@@ -203,7 +203,11 @@ export const App = () => {
 										)}
 
 										{settingsOpen && (
-											<Popup className="popup-settings" onClose={() => setSettingsOpen(false)}>
+											<Popup
+												className="popup-settings"
+												title="Settings"
+												onClose={() => setSettingsOpen(false)}
+											>
 												<Settings project={project}></Settings>
 											</Popup>
 										)}
