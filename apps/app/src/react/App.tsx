@@ -214,7 +214,7 @@ export const App = () => {
 											</Popup>
 										)}
 
-										<ToastContainer />
+										<ToastContainer theme="colored" />
 									</div>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>
