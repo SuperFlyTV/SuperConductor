@@ -20,7 +20,7 @@ export const ProjectSettings: React.FC<{ project: Project }> = ({ project }) => 
 	const updateSuccess = () => {
 		if (toastId.current) {
 			toast.update(toastId.current, {
-				render: 'Project Settings saved! ✓',
+				render: 'Project Settings saved!',
 				type: toast.TYPE.SUCCESS,
 				autoClose: 5000,
 			})

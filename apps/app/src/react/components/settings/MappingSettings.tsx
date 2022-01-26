@@ -23,7 +23,7 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 	const notify = () => (toastId.current = toast('Saving Mappings...', { autoClose: false }))
 	const updateSuccess = () => {
 		if (toastId.current) {
-			toast.update(toastId.current, { render: 'Mappings saved! ✓', type: toast.TYPE.SUCCESS, autoClose: 5000 })
+			toast.update(toastId.current, { render: 'Mappings saved!', type: toast.TYPE.SUCCESS, autoClose: 5000 })
 		}
 	}
 	const updateFail = (message: string) => {

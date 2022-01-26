@@ -24,7 +24,7 @@ export const DevicesSettings: React.FC<{ project: Project; bridgeId: string }> =
 	const notify = () => (toastId.current = toast('Saving Devices...', { autoClose: false }))
 	const updateSuccess = () => {
 		if (toastId.current) {
-			toast.update(toastId.current, { render: 'Devices saved! ✓', type: toast.TYPE.SUCCESS, autoClose: 5000 })
+			toast.update(toastId.current, { render: 'Devices saved!', type: toast.TYPE.SUCCESS, autoClose: 5000 })
 		}
 	}
 	const updateFail = (message: string) => {

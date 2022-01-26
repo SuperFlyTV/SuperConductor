@@ -28,7 +28,7 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 	const notify = () => (toastId.current = toast('Saving Bridges...', { autoClose: false }))
 	const updateSuccess = () => {
 		if (toastId.current) {
-			toast.update(toastId.current, { render: 'Bridges saved! ✓', type: toast.TYPE.SUCCESS, autoClose: 5000 })
+			toast.update(toastId.current, { render: 'Bridges saved!', type: toast.TYPE.SUCCESS, autoClose: 5000 })
 		}
 	}
 	const updateFail = (message: string) => {
