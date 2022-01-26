@@ -69,9 +69,12 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 										</FormRow>
 
 										<FormRow>
-											<label>
-												Outgoing <Field name={`bridges.${index}.1.outgoing`} type="checkbox" />
-											</label>
+											<label htmlFor={`bridges.${index}.1.outgoing`}>Outgoing</label>
+											<Field
+												id={`bridges.${index}.1.outgoing`}
+												name={`bridges.${index}.1.outgoing`}
+												type="checkbox"
+											/>
 										</FormRow>
 
 										<FormRow>
