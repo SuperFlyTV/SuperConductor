@@ -23,6 +23,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Popup } from './components/popup/Popup'
+import { Settings } from './components/settings/Settings'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -201,7 +202,12 @@ export const App = () => {
 										)}
 
 										{settingsOpen && (
-											<Popup onClose={() => setSettingsOpen(false)}>Hello world.</Popup>
+											<Popup onClose={() => setSettingsOpen(false)}>
+												<Settings
+													project={project}
+													onSubmit={() => setSettingsOpen(false)}
+												></Settings>
+											</Popup>
 										)}
 									</div>
 								</TimelineObjectMoveContext.Provider>

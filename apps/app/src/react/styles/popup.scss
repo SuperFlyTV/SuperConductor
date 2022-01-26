@@ -15,11 +15,17 @@
 		padding: 1rem 1.5rem;
 		background: $silverBg;
 		min-width: 30rem;
+		color: white;
+		border-color: black;
+		max-height: 95vh;
+		display: flex;
+		flex-direction: column;
 
 		&__header {
 			display: flex;
 			justify-content: flex-end;
 			margin-bottom: 1rem;
+			flex-shrink: 0;
 
 			button {
 				background: transparent;
@@ -39,6 +45,9 @@
 		}
 
 		&__content {
+			overflow-y: auto;
+			flex-shrink: 1;
+
 			form .row {
 				display: flex;
 				margin-bottom: 0.2rem;

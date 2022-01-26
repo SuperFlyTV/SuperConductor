@@ -22,6 +22,7 @@ import { SessionHandler } from './sessionHandler'
 import { ResourceType } from '@shared/models'
 import { assertNever } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
+import { Project } from '../models/project/Project'
 
 /** This class is used server-side, to handle requests from the client */
 export class IPCServer implements IPCServerMethods {
@@ -539,6 +540,9 @@ export class IPCServer implements IPCServerMethods {
 	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
+	}
+	async updateProject(data: { id: string; project: Project }): Promise<void> {
+		this.storage.updateProject(data.project)
 	}
 
 	private _updatePart(part: Part) {
