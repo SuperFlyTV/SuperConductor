@@ -3,6 +3,7 @@ const { ipcRenderer } = window.require('electron')
 
 import './styles/app.scss'
 import 'react-tabs/style/react-tabs.css'
+import 'react-toastify/dist/ReactToastify.css'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
@@ -25,6 +26,7 @@ import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Popup } from './components/popup/Popup'
 import { Settings } from './components/settings/Settings'
+import { ToastContainer } from 'react-toastify'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -211,6 +213,8 @@ export const App = () => {
 												<Settings project={project}></Settings>
 											</Popup>
 										)}
+
+										<ToastContainer />
 									</div>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>

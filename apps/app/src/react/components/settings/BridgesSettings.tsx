@@ -1,6 +1,6 @@
 import { deepClone } from '@shared/lib'
 import { ErrorMessage, Field, FieldArray, Form, Formik } from 'formik'
-import React, { useContext, useState } from 'react'
+import React, { ReactText, useContext, useRef, useState } from 'react'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { Bridge } from '../../../models/project/Bridge'
@@ -10,6 +10,7 @@ import { TrashBtn } from '../inputs/TrashBtn'
 import { FormRow } from '../sidebar/InfoGroup'
 import { Popup } from '../popup/Popup'
 import { DevicesSettings } from './DevicesSettings'
+import { toast } from 'react-toastify'
 
 type BridgesFormValues = {
 	bridges: Array<[string, Bridge]>
@@ -19,8 +20,25 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 	const ipcServer = useContext(IPCServerContext)
 	const [bridgeIdForEditDevices, setBridgeIdForEditDevices] = useState<string>()
 	const [devicesOpen, setDevicesOpen] = useState(false)
+	const toastId = useRef<ReactText>()
 	const initialValues: BridgesFormValues = {
 		bridges: Object.entries(deepClone(project.bridges)),
+	}
+
+	const notify = () => (toastId.current = toast('Saving Bridges...', { autoClose: false }))
+	const updateSuccess = () => {
+		if (toastId.current) {
+			toast.update(toastId.current, { render: 'Bridges saved! ✓', type: toast.TYPE.SUCCESS, autoClose: 5000 })
+		}
+	}
+	const updateFail = (message: string) => {
+		if (toastId.current) {
+			toast.update(toastId.current, {
+				render: `Error when saving Bridges: ${message}`,
+				type: toast.TYPE.ERROR,
+				autoClose: 5000,
+			})
+		}
 	}
 
 	return (
@@ -29,6 +47,7 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 				initialValues={initialValues}
 				enableReinitialize={true}
 				onSubmit={async (values, actions) => {
+					notify()
 					const editedBridges = Object.fromEntries(values.bridges)
 					const editedProject: Project = {
 						...project,
@@ -36,8 +55,10 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 					}
 					try {
 						await ipcServer.updateProject({ id: editedProject.id, project: editedProject })
+						updateSuccess()
 					} catch (error) {
 						console.error(error)
+						updateFail((error as any).message)
 					}
 					actions.setSubmitting(false)
 				}}
@@ -144,7 +165,7 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 						</FieldArray>
 
 						<div className="btn-row-equal">
-							<button type="submit" className="btn form">
+							<button type="submit" className="btn form" disabled={formik.isSubmitting}>
 								Save
 							</button>
 						</div>

@@ -1,12 +1,13 @@
 import { deepClone } from '@shared/lib'
 import { ErrorMessage, Field, FieldArray, Form, Formik } from 'formik'
-import React, { useContext } from 'react'
+import React, { ReactText, useContext, useRef } from 'react'
 import { DeviceType, Mapping, MappingCasparCG } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { FormRow } from '../sidebar/InfoGroup'
+import { toast } from 'react-toastify'
 
 type MappingsFormValues = {
 	mappings: Array<[string, Mapping]>
@@ -14,8 +15,25 @@ type MappingsFormValues = {
 
 export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const toastId = useRef<ReactText>()
 	const initialValues: MappingsFormValues = {
 		mappings: Object.entries(deepClone(project.mappings)),
+	}
+
+	const notify = () => (toastId.current = toast('Saving Mappings...', { autoClose: false }))
+	const updateSuccess = () => {
+		if (toastId.current) {
+			toast.update(toastId.current, { render: 'Mappings saved! ✓', type: toast.TYPE.SUCCESS, autoClose: 5000 })
+		}
+	}
+	const updateFail = (message: string) => {
+		if (toastId.current) {
+			toast.update(toastId.current, {
+				render: `Error when saving Mappings: ${message}`,
+				type: toast.TYPE.ERROR,
+				autoClose: 5000,
+			})
+		}
 	}
 
 	return (
@@ -23,6 +41,7 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 			initialValues={initialValues}
 			enableReinitialize={true}
 			onSubmit={async (values, actions) => {
+				notify()
 				const editedMappings = Object.fromEntries(values.mappings)
 				const editedProject: Project = {
 					...project,
@@ -30,8 +49,10 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 				}
 				try {
 					await ipcServer.updateProject({ id: editedProject.id, project: editedProject })
+					updateSuccess()
 				} catch (error) {
 					console.error(error)
+					updateFail((error as any).message)
 				}
 				actions.setSubmitting(false)
 			}}
@@ -140,7 +161,7 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 					</FieldArray>
 
 					<div className="btn-row-equal">
-						<button type="submit" className="btn form">
+						<button type="submit" className="btn form" disabled={formik.isSubmitting}>
 							Save
 						</button>
 					</div>
