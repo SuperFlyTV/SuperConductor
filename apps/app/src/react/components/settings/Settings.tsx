@@ -1,10 +1,12 @@
 import { deepClone } from '@shared/lib'
 import { ErrorMessage, Field, FieldArray, Form, Formik } from 'formik'
 import React, { useContext } from 'react'
-import { DeviceType, Mapping } from 'timeline-state-resolver-types'
+import { DeviceType, Mapping, MappingCasparCG } from 'timeline-state-resolver-types'
+import { literal } from '@shared/lib'
 import { Bridge } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
+import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow, FormRow, InfoGroup } from '../sidebar/InfoGroup'
 
 type ProjectFormValues = {
@@ -20,6 +22,8 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 		mappings: Object.entries(deepClone(project.mappings)),
 		bridges: Object.entries(deepClone(project.bridges)),
 	}
+
+	console.log(project.bridges)
 
 	return (
 		<InfoGroup title="Project settings">
@@ -59,6 +63,8 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 
 						<hr />
 
+						<div className="title">Mappings</div>
+
 						<FieldArray name="mappings">
 							{({ remove, push }) => (
 								<div>
@@ -95,13 +101,13 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 
 											<FormRow>
 												<label htmlFor={`mappings.${index}.1.deviceId`}>Device ID</label>
-												<Field
-													id={`mappings.${index}.1.deviceId`}
-													name={`mappings.${index}.1.deviceId`}
-													type="text"
-													placeholder="Device ID"
-												/>
-												<ErrorMessage name={`mappings.${index}.1.deviceId`} component="div" />
+												<Field as="select" name={`mappings.${index}.1.deviceId`}>
+													{listAvailableDeviceIDs(formik.values.bridges).map((deviceId) => (
+														<option key={deviceId} value={deviceId}>
+															{deviceId}
+														</option>
+													))}
+												</Field>
 											</FormRow>
 
 											<FormRow>
@@ -126,26 +132,31 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 												<ErrorMessage name={`mappings.${index}.1.layer`} component="div" />
 											</FormRow>
 
-											<button type="button" onClick={() => remove(index)}>
-												X
-											</button>
+											<div className="btn-row-equal">
+												<TrashBtn
+													onClick={() => {
+														remove(index)
+													}}
+												/>
+											</div>
 
-											<hr />
+											<hr style={{ width: '80%' }} />
 										</React.Fragment>
 									))}
 
 									<button
+										className="btn form"
 										type="button"
 										onClick={() =>
 											push([
 												'new-mapping',
-												{
+												literal<MappingCasparCG>({
 													device: DeviceType.CASPARCG,
 													deviceId: 'casparcg0',
 													layerName: 'New Mapping',
 													channel: 1,
 													layer: 10,
-												},
+												}),
 											])
 										}
 									>
@@ -155,14 +166,101 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 							)}
 						</FieldArray>
 
-						{/* <FormRow>
-							<label htmlFor="enableDuration">Duration (ms)</label>
-							<Field id="enableDuration" name="enableDuration" type="number" placeholder="0" />
-							<ErrorMessage name="enableDuration" component="div" />
-						</FormRow> */}
+						<hr />
+
+						<div className="title">Bridges</div>
+
+						<FieldArray name="bridges">
+							{({ remove, push }) => (
+								<div>
+									{formik.values.bridges.map((_, index) => (
+										<React.Fragment key={index}>
+											<FormRow>
+												<label htmlFor={`bridges.${index}.0`}>Bridge ID</label>
+												<Field
+													id={`bridges.${index}.0`}
+													name={`bridges.${index}.0`}
+													type="text"
+													placeholder="ID"
+												/>
+												<ErrorMessage name={`bridges.${index}.0`} component="div" />
+											</FormRow>
+
+											<FormRow>
+												<label htmlFor={`bridges.${index}.1.name`}>Bridge Name</label>
+												<Field
+													id={`bridges.${index}.1.name`}
+													name={`bridges.${index}.1.name`}
+													type="text"
+													placeholder="Name"
+												/>
+												<ErrorMessage name={`bridges.${index}.1.name`} component="div" />
+											</FormRow>
+
+											<FormRow>
+												<label>
+													Outgoing{' '}
+													<Field name={`bridges.${index}.1.outgoing`} type="checkbox" />
+												</label>
+											</FormRow>
+
+											<FormRow>
+												<label htmlFor={`bridges.${index}.1.url`}>URL</label>
+												<Field
+													id={`bridges.${index}.1.url`}
+													name={`bridges.${index}.1.url`}
+													type="text"
+													placeholder="URL"
+												/>
+												<ErrorMessage name={`bridges.${index}.1.url`} component="div" />
+											</FormRow>
+
+											<div className="btn-row-equal">
+												<TrashBtn
+													onClick={() => {
+														remove(index)
+													}}
+												/>
+											</div>
+
+											<hr style={{ width: '80%' }} />
+										</React.Fragment>
+									))}
+
+									<button
+										className="btn form"
+										type="button"
+										onClick={() =>
+											push([
+												'new-bridge',
+												literal<Bridge>({
+													id: 'new-bridge',
+													name: 'New Bridge',
+													outgoing: true,
+													url: 'ws://localhost:5401',
+													settings: {
+														devices: {
+															casparcg0: {
+																type: DeviceType.CASPARCG,
+																options: { host: '127.0.0.1', port: 5250 },
+															},
+														},
+													},
+												}),
+											])
+										}
+									>
+										Add Bridge
+									</button>
+								</div>
+							)}
+						</FieldArray>
+
+						<hr />
+
 						<div className="btn-row-equal">
 							<button type="submit" className="btn form">
-								Save
+								Save All
 							</button>
 						</div>
 					</Form>
@@ -170,4 +268,14 @@ export const Settings: React.FC<{ project: Project; onSubmit?: () => void }> = (
 			</Formik>
 		</InfoGroup>
 	)
+}
+
+function listAvailableDeviceIDs(bridges: ProjectFormValues['bridges']): string[] {
+	const deviceIDs = new Set<string>()
+	for (const [_bridgeId, bridge] of bridges) {
+		for (const deviceId in bridge.settings.devices) {
+			deviceIDs.add(deviceId)
+		}
+	}
+	return Array.from(deviceIDs)
 }
