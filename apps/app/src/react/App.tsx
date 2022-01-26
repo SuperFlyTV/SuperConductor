@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import './styles/app.scss'
+import 'react-tabs/style/react-tabs.css'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
@@ -202,11 +203,8 @@ export const App = () => {
 										)}
 
 										{settingsOpen && (
-											<Popup onClose={() => setSettingsOpen(false)}>
-												<Settings
-													project={project}
-													onSubmit={() => setSettingsOpen(false)}
-												></Settings>
+											<Popup className="popup-settings" onClose={() => setSettingsOpen(false)}>
+												<Settings project={project}></Settings>
 											</Popup>
 										)}
 									</div>

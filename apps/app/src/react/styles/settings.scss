@@ -1,0 +1,43 @@
+.popup-settings {
+	.popup {
+		width: 60rem;
+		height: 60rem;
+
+		&__content {
+			display: flex;
+			flex-direction: column;
+			flex-grow: 1;
+		}
+	}
+
+	.react-tabs {
+		display: flex;
+		flex-direction: column;
+		flex-shrink: 1;
+		flex-grow: 1;
+		min-height: 1px;
+
+		&__tab-panel--selected {
+			display: flex;
+			flex-direction: column;
+			flex-shrink: 1;
+			flex-grow: 1;
+			min-height: 1px;
+		}
+	}
+
+	form {
+		display: flex;
+		flex-direction: column;
+		flex-shrink: 1;
+		flex-grow: 1;
+		min-height: 1px;
+
+		.form-body {
+			flex-shrink: 1;
+			flex-grow: 1;
+			min-height: 1px;
+			overflow-y: auto;
+		}
+	}
+}

@@ -1,9 +1,11 @@
+import classNames from 'classnames'
 import React, { useContext, useEffect } from 'react'
 import { AiOutlineCloseSquare } from 'react-icons/ai'
 import { HotkeyContext } from '../../contexts/Hotkey'
 
 type PropsType = {
 	children: React.ReactNode
+	className?: React.HTMLAttributes<HTMLElement>['className']
 	onClose: () => void
 }
 
@@ -35,7 +37,7 @@ export const Popup = (props: PropsType) => {
 	}, [])
 
 	return (
-		<div className="popup-shade">
+		<div className={classNames('popup-shade', props.className)}>
 			<dialog open className="popup">
 				<div className="popup__header">
 					<button onClick={props.onClose}>

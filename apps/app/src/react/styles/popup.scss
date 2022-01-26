@@ -20,6 +20,8 @@
 		max-height: 95vh;
 		display: flex;
 		flex-direction: column;
+		box-sizing: border-box;
+		margin: 0;
 
 		&__header {
 			display: flex;
@@ -45,8 +47,8 @@
 		}
 
 		&__content {
-			overflow-y: auto;
 			flex-shrink: 1;
+			min-height: 1px;
 
 			form .row {
 				display: flex;
