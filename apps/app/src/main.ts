@@ -45,6 +45,7 @@ const createWindow = (): void => {
 				{ type: 'separator' },
 				{
 					label: 'Preferences',
+					accelerator: 'Command+P',
 					click: async () => {
 						tpt.ipcClient?.openSettings()
 					},
@@ -62,30 +63,25 @@ const createWindow = (): void => {
 	}
 
 	// { role: 'fileMenu' }
-	if (isMac) {
-		menuTemplate.push({
-			label: 'File',
-			submenu: [{ role: 'close' }],
-		})
-	} else {
-		menuTemplate.push({
-			label: 'File',
-			submenu: [
-				{
-					label: 'Settings',
-					click: async () => {
-						tpt.ipcClient?.openSettings()
-					},
-				},
-				{ role: 'quit' },
-			],
-		})
-	}
+	menuTemplate.push({
+		label: 'File',
+		submenu: [{ role: isMac ? 'close' : 'quit' }],
+	})
 
 	// { role: 'editMenu' }
 	menuTemplate.push({
 		label: 'Edit',
 		submenu: [
+			...(isMac
+				? []
+				: [
+						{
+							label: 'Preferences',
+							click: async () => {
+								tpt.ipcClient?.openSettings()
+							},
+						},
+				  ]),
 			{ role: 'undo' },
 			{ role: 'redo' },
 			{ type: 'separator' },

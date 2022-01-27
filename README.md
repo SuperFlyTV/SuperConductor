@@ -52,7 +52,7 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 If you've installed the SuperConductor UI and `tsr-bridge` on two different computers, then you'll need to configure the SuperConductor UI with the IP/host of the computer where `tsr-bridge` is running:
 
 1. Open the SuperConductor UI.
-2. Navigate to `File > Settings` (`SuperConductor > Preferences` on macOS).
+2. Navigate to `Edit > Preferences` (`SuperConductor > Preferences` on macOS).
 3. Click on the "Bridges" tab.
 4. Edit the `URL` field to point to the computer where `tsr-bridge` is running by replacing `localhost` with the IP address of that computer.
 
