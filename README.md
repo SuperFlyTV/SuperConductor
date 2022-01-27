@@ -67,3 +67,11 @@ The project consists of 3 applications:
 - TSR Bridge (node app that exposes HTTP server and executes TSR)
 
 Instructions for running each app are in their respective folder.
+
+### Making a new release
+
+1. Run `lerna version` in the root of the repo to bump the appropriate version numbers in the various `package.json` files.
+2. Commit and push the change as `chore: release vX.Y.Z`
+3. Tag that commit as `vX.Y.Z` and push the tag
+4. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish
+5. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release
