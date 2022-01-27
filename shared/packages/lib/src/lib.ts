@@ -23,3 +23,6 @@ export function omit<T, K extends keyof T>(obj: T, arg: K): Omit<T, K> {
 export function deepClone<T>(data: T): T {
 	return JSON.parse(JSON.stringify(data))
 }
+export function literal<T>(o: T) {
+	return o
+}

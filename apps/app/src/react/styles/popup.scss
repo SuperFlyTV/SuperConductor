@@ -15,11 +15,24 @@
 		padding: 1rem 1.5rem;
 		background: $silverBg;
 		min-width: 30rem;
+		color: white;
+		border-color: black;
+		max-height: 95vh;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		margin: 0;
 
 		&__header {
 			display: flex;
-			justify-content: flex-end;
+			justify-content: space-between;
 			margin-bottom: 1rem;
+			flex-shrink: 0;
+
+			&__title {
+				font-size: 2rem;
+				text-transform: uppercase;
+			}
 
 			button {
 				background: transparent;
@@ -39,6 +52,9 @@
 		}
 
 		&__content {
+			flex-shrink: 1;
+			min-height: 1px;
+
 			form .row {
 				display: flex;
 				margin-bottom: 0.2rem;

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import './styles/app.scss'
+import 'react-tabs/style/react-tabs.css'
+import 'react-toastify/dist/ReactToastify.css'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
@@ -22,6 +24,9 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
+import { Popup } from './components/popup/Popup'
+import { Settings } from './components/settings/Settings'
+import { ToastContainer } from 'react-toastify'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -42,6 +47,7 @@ export const App = () => {
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
+	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	useEffect(() => {
 		new IPCClient(ipcRenderer, {
@@ -87,6 +93,9 @@ export const App = () => {
 					}
 					return newStatuses
 				})
+			},
+			openSettings: () => {
+				setSettingsOpen(true)
 			},
 		})
 	}, [])
@@ -194,6 +203,18 @@ export const App = () => {
 										) : (
 											<div>Loading...</div>
 										)}
+
+										{settingsOpen && (
+											<Popup
+												className="popup-settings"
+												title="Settings"
+												onClose={() => setSettingsOpen(false)}
+											>
+												<Settings project={project}></Settings>
+											</Popup>
+										)}
+
+										<ToastContainer theme="colored" />
 									</div>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>

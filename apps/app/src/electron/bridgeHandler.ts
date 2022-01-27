@@ -79,7 +79,6 @@ export class BridgeHandler {
 				}
 
 				if (addNew) {
-					console.log(bridge)
 					const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
 					// connection.id = bridge.id
 

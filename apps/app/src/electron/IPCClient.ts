@@ -21,4 +21,7 @@ export class IPCClient implements IPCClientMethods {
 	updateBridgeStatus(id: string, status: BridgeStatus | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateBridgeStatus', id, status)
 	}
+	openSettings(): void {
+		this.mainWindow?.webContents.send('callMethod', 'openSettings')
+	}
 }

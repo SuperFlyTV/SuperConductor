@@ -80,10 +80,13 @@ export interface IPCServerMethods {
 	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<void>
 	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<void>
 	refreshResources: () => Promise<void>
+
+	updateProject: (data: { id: string; project: Project }) => Promise<void>
 }
 export interface IPCClientMethods {
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
+	openSettings: () => void
 }
