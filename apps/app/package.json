@@ -1,7 +1,7 @@
 {
 	"name": "super-conductor",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "",
 	"main": "dist/main.js",
 	"engines": {
@@ -56,9 +56,9 @@
 	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
 	"dependencies": {
 		"@atlaskit/toggle": "^12.3.0",
-		"@shared/api": "*",
-		"@shared/lib": "*",
-		"@shared/models": "*",
+		"@shared/api": "^0.1.1",
+		"@shared/lib": "^0.1.1",
+		"@shared/models": "^0.1.1",
 		"@sofie-automation/sorensen": "^1.2.0",
 		"axios": "^0.23.0",
 		"bufferutil": "^4.0.1",

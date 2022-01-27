@@ -1,6 +1,10 @@
 {
-	"packages": ["shared/**", "apps/**", "tests/**"],
-	"version": "0.1.0",
+	"packages": [
+		"shared/**",
+		"apps/**",
+		"tests/**"
+	],
+	"version": "0.1.1",
 	"npmClient": "yarn",
 	"useWorkspaces": true
 }

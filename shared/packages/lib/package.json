@@ -1,6 +1,6 @@
 {
 	"name": "@shared/lib",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -42,6 +42,6 @@
 		]
 	},
 	"dependencies": {
-		"@shared/models": "*"
+		"@shared/models": "^0.1.1"
 	}
 }
