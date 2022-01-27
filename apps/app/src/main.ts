@@ -43,6 +43,13 @@ const createWindow = (): void => {
 			submenu: [
 				{ role: 'about' },
 				{ type: 'separator' },
+				{
+					label: 'Preferences',
+					click: async () => {
+						tpt.ipcClient?.openSettings()
+					},
+				},
+				{ type: 'separator' },
 				{ role: 'services' },
 				{ type: 'separator' },
 				{ role: 'hide' },
@@ -55,18 +62,25 @@ const createWindow = (): void => {
 	}
 
 	// { role: 'fileMenu' }
-	menuTemplate.push({
-		label: 'File',
-		submenu: [
-			{
-				label: 'Settings',
-				click: async () => {
-					tpt.ipcClient?.openSettings()
+	if (isMac) {
+		menuTemplate.push({
+			label: 'File',
+			submenu: [{ role: 'close' }],
+		})
+	} else {
+		menuTemplate.push({
+			label: 'File',
+			submenu: [
+				{
+					label: 'Settings',
+					click: async () => {
+						tpt.ipcClient?.openSettings()
+					},
 				},
-			},
-			isMac ? { role: 'close' } : { role: 'quit' },
-		],
-	})
+				{ role: 'quit' },
+			],
+		})
+	}
 
 	// { role: 'editMenu' }
 	menuTemplate.push({
