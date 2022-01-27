@@ -5,14 +5,6 @@ import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@sha
 import { BridgeAPI } from '@shared/api'
 
 export class TSR {
-	casparCGDevice: any = {
-		type: DeviceType.CASPARCG,
-		options: {
-			host: '127.0.0.1',
-			port: 5250,
-		},
-	}
-
 	public newConnection = false
 	public conductor: Conductor
 	private devices: { [deviceId: string]: DeviceOptionsAny } = {}
