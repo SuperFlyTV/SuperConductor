@@ -2,12 +2,16 @@
 	"name": "@shared/lib",
 	"version": "0.1.0",
 	"description": "",
-	"author": "",
+	"author": {
+		"name": "SuperFlyTV AB",
+		"email": "info@superfly.tv",
+		"url": "https://superfly.tv"
+	},
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"license": "MIT",
 	"private": true,
 	"engines": {
-		"node": "^12.20 || ^14.18.1 || 16"
+		"node": "^12.20 || ^14.15.3 || 16"
 	},
 	"main": "dist/index",
 	"types": "dist/index",

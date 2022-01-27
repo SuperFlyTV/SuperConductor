@@ -1,10 +1,15 @@
 {
 	"name": "super-conductor-monorepo",
-	"version": "1.0.0",
+	"version": "0.1.0",
+	"author": {
+		"name": "SuperFlyTV AB",
+		"email": "info@superfly.tv",
+		"url": "https://superfly.tv"
+	},
 	"repository": "https://github.com/SuperFlyTV/SuperConductor",
 	"private": true,
 	"engines": {
-		"node": "^12.20 || ^14.18.1 || 16"
+		"node": "^12.20 || ^14.15.3 || 16"
 	},
 	"workspaces": [
 		"shared/**",
