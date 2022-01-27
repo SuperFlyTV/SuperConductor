@@ -1,21 +1,26 @@
 {
 	"name": "tsr-bridge",
+	"private": true,
 	"version": "0.1.0",
 	"description": "",
 	"main": "index.js",
 	"engines": {
-		"node": "^12.20 || ^14.18.1 || 16"
+		"node": "^12.20 || ^14.15.3 || 16"
 	},
 	"scripts": {
 		"dev": "nodemon",
 		"start": "yarn build && node dist/index.js",
 		"build": "rimraf ./dist && tsc",
-		"build:binary": "nexe --build --resource \"../../node_modules/timeline-state-resolver/dist/*.js\" --input dist/index.js --output dist/tsr-bridge",
+		"build:binary": "nexe --resource \"../../node_modules/timeline-state-resolver/dist/*.js\" --input dist/index.js --output dist/tsr-bridge",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"precommit": "lint-staged",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
-	"author": "",
+	"author": {
+		"name": "SuperFlyTV AB",
+		"email": "info@superfly.tv",
+		"url": "https://superfly.tv"
+	},
 	"license": "MIT",
 	"devDependencies": {
 		"@types/koa": "^2.13.4",
