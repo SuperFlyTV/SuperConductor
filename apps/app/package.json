@@ -1,7 +1,7 @@
 {
 	"name": "super-conductor",
 	"private": true,
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "",
 	"main": "dist/main.js",
 	"engines": {
