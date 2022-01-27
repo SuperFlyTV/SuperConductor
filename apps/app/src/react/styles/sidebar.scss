@@ -1,0 +1,66 @@
+.sidebar {
+	background-color: $silverBg;
+	width: 100%;
+	position: absolute;
+	top: 0;
+	box-sizing: border-box;
+
+	&.timeline-obj-sidebar {
+		padding: 0 2.5rem;
+		// overflow-y: auto;
+	}
+
+	&.media-library-sidebar {
+		padding: 1.5rem 0;
+	}
+
+	.sep {
+		width: 100%;
+		height: 1px;
+		background: silver;
+	}
+
+	.title {
+		font-size: 1.8rem;
+		margin-bottom: 2rem;
+		font-weight: bold;
+	}
+
+	.content {
+		overflow: auto;
+	}
+
+	.template-data {
+		.title {
+			font-weight: bold;
+		}
+	}
+
+	.add-to-timeline {
+		.label {
+			font-size: 1.2rem;
+			margin-bottom: 0.5rem;
+			color: silver;
+		}
+
+		.dropdowns {
+			display: flex;
+
+			select {
+				flex-basis: 50%;
+
+				&:not(:last-child) {
+					margin-right: 1rem;
+				}
+			}
+		}
+	}
+
+	hr {
+		border-color: black;
+
+		&:last-of-type {
+			display: none;
+		}
+	}
+}

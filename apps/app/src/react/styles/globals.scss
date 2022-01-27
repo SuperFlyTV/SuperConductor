@@ -1,0 +1,67 @@
+$accentDarkBg: #d45f05;
+$accentBg: #e96703;
+$accentLightBg: #fa7713;
+$accentText: white;
+
+$silverBg: #4b4b4b;
+
+$topheaderBg: #24203a;
+$sidebarBg: #4b4b4b;
+$mainBg: #1a1a1a;
+
+$mediaLayerColor: #1769ff;
+$templateLayerColor: #5fa852;
+$movieLayerColor: #6817ff;
+$stillLayerColor: #ffe817;
+$audioLayerColor: #308579;
+
+$greenColor: #5fa852;
+$lightGreenColor: #76c469;
+$darkGreenColor: #5ab44a;
+$redColor: #c24242;
+$redBg: #c24242;
+$redLightBg: #d85353;
+$lightRedColor: #d44e4e;
+
+$lightGreenColor: #5afc3e;
+
+$mainFont: 'Trebuchet MS', 'Arial', sans-serif;
+$partOutlineColor: #4b4b4b;
+$partDragHandleColor: #5a5a5a;
+
+$partActiveColor: #bd4343;
+$partActiveBg: #130000;
+
+$partQueuedColor: #2f883b;
+$partQueuedBg: #001304;
+
+$layerHeight: 2.5rem;
+$emptyLayerColor: #1f1f1f;
+
+$borderRadius: 0.3rem;
+
+$sidebar-padding: 1rem;
+
+$default-transition: all 150ms ease;
+
+$deviceOfflineColor: #ff0000;
+$deviceOnlineColor: #148c00;
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-size: 1.6rem;
+	color: white;
+	background-color: black;
+	font-family: $mainFont;
+}
+
+input,
+button,
+textarea {
+	font-family: $mainFont;
+}

@@ -1,0 +1,39 @@
+{
+	"name": "super-conductor-monorepo",
+	"version": "0.1.0",
+	"author": {
+		"name": "SuperFlyTV AB",
+		"email": "info@superfly.tv",
+		"url": "https://superfly.tv"
+	},
+	"repository": "https://github.com/SuperFlyTV/SuperConductor",
+	"private": true,
+	"engines": {
+		"node": "^12.20 || ^14.15.3 || 16"
+	},
+	"workspaces": [
+		"shared/**",
+		"apps/**",
+		"tests/**"
+	],
+	"scripts": {
+		"setup": "lerna bootstrap",
+		"prepare": "husky install",
+		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
+		"lintfix": "yarn lint --fix",
+		"lint:changed": "lerna exec --since origin/master --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
+		"build": "lerna run build",
+		"build:binary": "lerna run build:binary"
+	},
+	"devDependencies": {
+		"@sofie-automation/code-standard-preset": "^1.0.0",
+		"@types/node": "^17.0.10",
+		"eslint-plugin-react": "^7.28.0",
+		"lerna": "^4.0.0",
+		"nexe": "^4.0.0-beta.19",
+		"rimraf": "^3.0.2",
+		"ts-lib": "^0.0.5",
+		"typescript": "^4.5.5"
+	},
+	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
+}

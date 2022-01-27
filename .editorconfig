@@ -1,0 +1,7 @@
+[*]
+indent_style = tab
+end_of_line = lf
+insert_final_newline = true
+
+[*.{css,scss,js,jsx,ts,tsx,json}]
+indent_size = 4

@@ -1,0 +1,145 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag_name.outputs.SOURCE_TAG }}
+      tag_name_hyphenated: ${{ steps.tag_name.outputs.SOURCE_TAG_HYPHENATED }}
+      release_upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      # Adapted from https://github.community/t/how-to-get-just-the-tag-name/16241/11
+      - id: tag_name
+        name: Save tag name
+        run: |
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+      - id: create_release
+        name: Create Release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+  build-windows-binaries:
+    name: Build Windows Binaries
+    runs-on: windows-latest
+    needs: create-release
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      # 14.15.3 is the latest release of Node 14 that nexe provides prebuilt binaries for.
+      - name: Use Node.js 14.15.3
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.15.3'
+      - name: restore node_modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload tsr-bridge artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.release_upload_url }}
+          asset_path: apps/tsr-bridge/dist/tsr-bridge.exe
+          asset_name: tsr-bridge-${{ needs.create-release.outputs.tag_name }}-windows.exe
+          asset_content_type: application/octet-stream
+  build-linux-binaries:
+    name: Build Linux Binaries
+    runs-on: ubuntu-latest
+    needs: create-release
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      # 14.15.3 is the latest release of Node 14 that nexe provides prebuilt binaries for.
+      - name: Use Node.js 14.15.3
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.15.3'
+      - name: restore node_modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload tsr-bridge artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.release_upload_url }}
+          asset_path: apps/tsr-bridge/dist/tsr-bridge
+          asset_name: tsr-bridge-${{ needs.create-release.outputs.tag_name }}-linux
+          asset_content_type: application/octet-stream
+  build-macos-binaries:
+    name: Build MacOS Binaries
+    runs-on: macos-latest
+    needs: create-release
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      # 14.15.3 is the latest release of Node 14 that nexe provides prebuilt binaries for.
+      - name: Use Node.js 14.15.3
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.15.3'
+      - name: restore node_modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload tsr-bridge artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.release_upload_url }}
+          asset_path: apps/tsr-bridge/dist/tsr-bridge
+          # No version number because it contains dots which make macOS think they're part of a file extension.
+          asset_name: tsr-bridge-macos
+          asset_content_type: application/octet-stream

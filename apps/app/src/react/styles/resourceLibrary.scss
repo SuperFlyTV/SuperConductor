@@ -1,0 +1,36 @@
+.resource {
+	display: grid;
+	grid-template-rows: [header] min-content [attributes] min-content;
+	grid-template-columns: [thumbnail] 4em [info] auto;
+	column-gap: 0.5em;
+	box-shadow: inset 0px 0px 0px 0px #ffffff85;
+	transition: $default-transition;
+	padding: 0.2em;
+
+	@include useObjectTypeStyles();
+
+	&.selected {
+		box-shadow: inset 0px 0px 0px 3px #ffffff85;
+	}
+
+	&.dragged {
+		opacity: 0.5;
+	}
+
+	&__name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+.thumbnail {
+	max-width: 100%;
+	max-height: 100%;
+
+	&--video-fallback,
+	&--audio,
+	&--unknown {
+		width: 100%;
+		height: 100%;
+	}
+}

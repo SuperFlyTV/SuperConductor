@@ -1,0 +1,41 @@
+@use 'sass:color';
+
+.top-header {
+	display: flex;
+
+	> .tab {
+		padding: 0.5rem 0.5rem;
+		border-right: 1px solid grey;
+
+		cursor: pointer;
+
+		&:hover {
+			background-color: color.scale($topheaderBg, $lightness: 30%);
+		}
+	}
+
+	.device-status {
+		display: flex;
+		align-items: center;
+		margin-left: auto;
+		padding: 0 0.5rem;
+		color: $deviceOfflineColor;
+
+		&__dot {
+			margin-left: 0.35rem;
+			border-radius: 50%;
+			width: 1rem;
+			height: 1rem;
+			background-color: $deviceOfflineColor;
+			flex-shrink: 0;
+		}
+
+		&.ok {
+			color: $deviceOnlineColor;
+
+			.device-status__dot {
+				background-color: $deviceOnlineColor;
+			}
+		}
+	}
+}
