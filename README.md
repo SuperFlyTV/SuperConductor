@@ -52,7 +52,7 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 If you've installed the SuperConductor UI and `tsr-bridge` on two different computers, then you'll need to configure the SuperConductor UI with the IP/host of the computer where `tsr-bridge` is running:
 
 1. Open the SuperConductor UI.
-2. Navigate to `File > Settings`.
+2. Navigate to `Edit > Preferences` (`SuperConductor > Preferences` on macOS).
 3. Click on the "Bridges" tab.
 4. Edit the `URL` field to point to the computer where `tsr-bridge` is running by replacing `localhost` with the IP address of that computer.
 
@@ -68,10 +68,33 @@ The project consists of 3 applications:
 
 Instructions for running each app are in their respective folder.
 
+### Installing Dependencies
+
+This project is a Lerna monorepo, which means that installing dependencies is handled a little differently. To properly bootstrap this project, install all dependencies, and cross-link the various packages, execute the following commands in the root of the project:
+
+```bash
+# Installs all dependencies, including Lerna.
+yarn
+
+# Installs all dependencies and symlinks projects together, using Lerna.
+yarn setup
+```
+
+### Building the project
+
+```bash
+# Compile Typescript, run Webpack, etc:
+yarn build
+
+# Make binaries for the SuperConductor UI and tsr-bridge. Must have run "yarn build" first.
+# The SuperConductor UI binary will be located at apps/app/dist.
+# The tsr-bridge binary will be located at apps/tsr-bridge/dist.
+# This command should work on all platforms (Windows, macOS, and Linux).
+yarn build:binary
+```
+
 ### Making a new release
 
-1. Run `lerna version` in the root of the repo to bump the appropriate version numbers in the various `package.json` files.
-2. Commit and push the change as `chore: release vX.Y.Z`
-3. Tag that commit as `vX.Y.Z` and push the tag
-4. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish
-5. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release
+1. Run `lerna version` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
+2. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish.
+3. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release.

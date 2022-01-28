@@ -1,7 +1,7 @@
 {
 	"name": "tsr-bridge",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "",
 	"main": "index.js",
 	"engines": {
@@ -33,9 +33,9 @@
 		"ts-node": "^10.3.0"
 	},
 	"dependencies": {
-		"@shared/api": "*",
-		"@shared/lib": "*",
-		"@shared/models": "*",
+		"@shared/api": "^0.1.1",
+		"@shared/lib": "^0.1.1",
+		"@shared/models": "^0.1.1",
 		"koa": "^2.13.3",
 		"koa-bodyparser": "^4.3.0",
 		"koa-router": "^10.1.1",
