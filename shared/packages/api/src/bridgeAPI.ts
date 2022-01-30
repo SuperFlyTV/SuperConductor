@@ -14,7 +14,7 @@ export namespace BridgeAPI {
 		export interface Init extends MessageBase {
 			type: 'init'
 			id: string
-			version: number
+			version: string
 		}
 		export interface Status extends MessageBase {
 			type: 'status'

@@ -1,11 +1,37 @@
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { Octokit } from '@octokit/rest'
+import semver from 'semver'
 import { ResourceAny } from '@shared/models'
 import { WebsocketConnection, WebsocketServer, BridgeAPI } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { TSR } from './TSR'
 
-const CURRENT_VERSION = 0
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
 const SERVER_PORT = 5401
+
+console.log('TSR-Bridge current version:', CURRENT_VERSION)
+
+const octokit = new Octokit()
+octokit.rest.repos
+	.listReleases({
+		owner: 'SuperFlyTV',
+		repo: 'SuperConductor',
+		per_page: 1,
+		page: 1,
+	})
+	.then((response) => {
+		const latestVersion = response.data[0].tag_name
+		if (semver.lt(CURRENT_VERSION, response.data[0].tag_name)) {
+			console.warn(
+				'TSR-Bridge is out of date! Current version: v%s, latest version: %s',
+				CURRENT_VERSION,
+				latestVersion
+			)
+			console.warn('Visit https://github.com/SuperFlyTV/SuperConductor/releases to download the latest version.')
+		}
+	})
+	.catch(console.error)
 
 const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
