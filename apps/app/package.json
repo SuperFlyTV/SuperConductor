@@ -65,6 +65,7 @@
 		"casparcg-connection": "^5.1.0",
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
+		"electron-updater": "^4.6.1",
 		"formik": "^2.2.9",
 		"lodash": "^4.17.21",
 		"moment": "^2.29.1",
@@ -95,14 +96,7 @@
 		"productName": "SuperConductor",
 		"appId": "super-conductor.superfly.tv",
 		"mac": {
-			"category": "public.app-category.utilities",
-			"target": "dmg"
-		},
-		"linux": {
-			"target": [
-				"AppImage",
-				"deb"
-			]
+			"category": "public.app-category.utilities"
 		},
 		"electronVersion": "15.3.5",
 		"files": [

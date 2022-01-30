@@ -24,22 +24,15 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 
 ### Linux (Ubuntu)
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `super-conductor_X.Y.Z_amd64.deb` (or `SuperConductor-X.Y.Z.AppImage`) and `tsr-bridge-vX.Y.Z-linux`.
-2. If you downloaded the `.deb` package, you can install it by double clicking on it or by running the following:
-
-   ```bash
-   # Replace X.Y.Z with the actual version number.
-   sudo dpkg -i super-conductor_X.Y.Z._amd64.deb
-   ```
-
-3. If you downloaded the `.AppImage` package, execute the following before double-clicking on it to run it:
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.AppImage` and `tsr-bridge-vX.Y.Z-linux`.
+2. Execute the following before double-clicking on the AppImage it to run it:
 
    ```bash
    # Replace X.Y.Z with the actual version number.
    chmod +x Downloads/SuperConductor-X.Y.Z.AppImage
    ```
 
-4. Run `tsr-bridge`:
+3. Run `tsr-bridge`:
 
    ```bash
    # Replace X.Y.Z with the actual version number.

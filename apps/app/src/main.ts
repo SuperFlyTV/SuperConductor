@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, shell } from 'electron'
 import isDev from 'electron-is-dev'
+import { autoUpdater } from 'electron-updater'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
 
 const isMac = process.platform === 'darwin'
@@ -33,6 +34,8 @@ const createWindow = (): void => {
 		win.webContents.openDevTools()
 	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
+
+	autoUpdater.checkForUpdatesAndNotify().catch(console.error)
 
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 

@@ -1773,6 +1773,11 @@
   resolved "https://registry.yarnpkg.com/@types/scheduler/-/scheduler-0.16.2.tgz#1a62f89525723dde24ba1b01b092bf5df8ad4d39"
   integrity sha512-hppQEBDmlwhFAXKJX2KnWLYu5yMfi91yazPb2l+lbJiwW+wdo1gNeRA+3RgNSO39WYX2euey41KEwnqesU2Jew==
 
+"@types/semver@^7.3.6":
+  version "7.3.9"
+  resolved "https://registry.yarnpkg.com/@types/semver/-/semver-7.3.9.tgz#152c6c20a7688c30b967ec1841d31ace569863fc"
+  integrity sha512-L/TMpyURfBkf+o/526Zb6kd/tchUP3iBDEPjqjb+U2MAJhVRxxrmr2fwpe08E7QsV7YLcpq0tUaQ9O9x97ZIxQ==
+
 "@types/serve-index@^1.9.1":
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/@types/serve-index/-/serve-index-1.9.1.tgz#1b5e85370a192c01ec6cec4735cf2917337a6278"
@@ -4125,6 +4130,20 @@ electron-to-chromium@^1.4.17:
   version "1.4.52"
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.52.tgz#ce44c6d6cc449e7688a4356b8c261cfeafa26833"
   integrity sha512-JGkh8HEh5PnVrhU4HbpyyO0O791dVY6k7AdqfDeqbcRMeoGxtNHWT77deR2nhvbLe4dKpxjlDEvdEwrvRLGu2Q==
+
+electron-updater@^4.6.1:
+  version "4.6.1"
+  resolved "https://registry.yarnpkg.com/electron-updater/-/electron-updater-4.6.1.tgz#80ca805c4f51b2e682aac29d18fed75d6a533d32"
+  integrity sha512-YsU1mHqXLrXXmBMsxhxy24PrbaB8rnpZDPmFa2gOkTYk/Ch13+R0fjsRSpPYvqtskVVY0ux8fu+HnUkVkqc7og==
+  dependencies:
+    "@types/semver" "^7.3.6"
+    builder-util-runtime "8.9.1"
+    fs-extra "^10.0.0"
+    js-yaml "^4.1.0"
+    lazy-val "^1.0.5"
+    lodash.escaperegexp "^4.1.2"
+    lodash.isequal "^4.5.0"
+    semver "^7.3.5"
 
 electron@^15.1.0:
   version "15.3.5"
@@ -6511,6 +6530,16 @@ lodash._reinterpolate@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
   integrity sha1-DM8tiRZq8Ds2Y8eWU4t1rG4RTZ0=
+
+lodash.escaperegexp@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/lodash.escaperegexp/-/lodash.escaperegexp-4.1.2.tgz#64762c48618082518ac3df4ccf5d5886dae20347"
+  integrity sha1-ZHYsSGGAglGKw99Mz11YhtriA0c=
+
+lodash.isequal@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
+  integrity sha1-QVxEePK8wwEgwizhDtMib30+GOA=
 
 lodash.ismatch@^4.4.0:
   version "4.4.0"
