@@ -15,7 +15,6 @@ import { GUI, GUIContext } from './contexts/GUI'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
-import { IPCServerMethods } from '../ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
@@ -100,7 +99,7 @@ export const App = () => {
 		})
 	}, [])
 
-	const serverAPI = useMemo<IPCServerMethods>(() => {
+	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
 	}, [])
 	useEffect(() => {

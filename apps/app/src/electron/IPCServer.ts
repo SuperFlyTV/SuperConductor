@@ -5,6 +5,7 @@ import {
 	findGroup,
 	findPart,
 	findTimelineObj,
+	findTimelineObjIndex,
 	getCurrentlyPlayingInfo,
 	getResolvedTimelineTotalDuration,
 } from '../lib/util'
@@ -12,7 +13,7 @@ import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
-import { IPCServerMethods } from '../ipc/IPCAPI'
+import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
 import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
@@ -20,13 +21,40 @@ import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceType } from '@shared/models'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
+import EventEmitter from 'events'
+import TypedEmitter from 'typed-emitter'
+
+type UndoLedger = Action[]
+type UndoPointer = number
+
+type IPCServerEvents = {
+	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
+}
+
+function isUndoable(result: unknown): result is UndoableResult {
+	if (typeof result !== 'object' || result === null) {
+		return false
+	}
+
+	if (typeof (result as any).undo !== 'function') {
+		return false
+	}
+
+	if (typeof (result as any).description !== 'string') {
+		return false
+	}
+
+	return true
+}
 
 /** This class is used server-side, to handle requests from the client */
-export class IPCServer implements IPCServerMethods {
+export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>) implements IPCServerMethods {
 	private updateTimelineCache: UpdateTimelineCache = {}
+	private undoLedger: UndoLedger = []
+	private undoPointer: UndoPointer = -1
 
 	constructor(
 		ipcMain: Electron.IpcMain,
@@ -38,13 +66,30 @@ export class IPCServer implements IPCServerMethods {
 			refreshResources: () => void
 		}
 	) {
+		super()
 		for (const methodName of Object.keys(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
-				// eslint-disable-next-line @typescript-eslint/ban-types
-				const fcn = (this as any)[methodName] as Function
+				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
 					ipcMain.handle(methodName, async (event, ...args) => {
-						return fcn.apply(this, args)
+						const result = await fcn(...args)
+						if (isUndoable(result)) {
+							this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
+							this.undoLedger.push({
+								description: result.description,
+								arguments: args,
+								undo: result.undo,
+								redo: fcn,
+							})
+							if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
+								this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
+							}
+							this.undoPointer = this.undoLedger.length - 1
+							this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+							return result.result
+						} else {
+							return result
+						}
 					})
 				}
 			}
@@ -75,6 +120,34 @@ export class IPCServer implements IPCServerMethods {
 		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId} ("${group.name}").`)
 
 		return { rundown, group, part }
+	}
+	async undo(): Promise<void> {
+		const action = this.undoLedger[this.undoPointer]
+		try {
+			action.undo()
+			this.undoPointer--
+		} catch (error) {
+			console.error('Error when undoing:', error)
+
+			// Clear
+			this.undoLedger.splice(0, this.undoLedger.length)
+			this.undoPointer = -1
+		}
+		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	}
+	async redo(): Promise<void> {
+		const action = this.undoLedger[this.undoPointer + 1]
+		try {
+			action.undo = (await action.redo(...action.arguments)).undo
+			this.undoPointer++
+		} catch (error) {
+			console.error('Error when redoing:', error)
+
+			// Clear
+			this.undoLedger.splice(0, this.undoLedger.length)
+			this.undoPointer = -1
+		}
+		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
@@ -144,7 +217,7 @@ export class IPCServer implements IPCServerMethods {
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 		name: string
-	}): Promise<string> {
+	}): Promise<UndoableResult<string>> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -156,6 +229,7 @@ export class IPCServer implements IPCServerMethods {
 
 		const { rundown } = this.getRundown(arg)
 
+		let transparentGroupId: string | undefined
 		if (arg.groupId) {
 			// Put part into existing group:
 			const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
@@ -176,13 +250,29 @@ export class IPCServer implements IPCServerMethods {
 				},
 				playheadData: null,
 			}
+			transparentGroupId = newGroup.id
 			rundown.groups.push(newGroup)
 		}
 		this.storage.updateRundown(arg.rundownId, rundown)
 
-		return newPart.id
+		return {
+			undo: () => {
+				const { rundown } = this.getRundown(arg)
+				if (transparentGroupId) {
+					// Remove the entire group.
+					rundown.groups = rundown.groups.filter((g) => g.id !== transparentGroupId)
+				} else if (arg.groupId) {
+					// Remove the part from its group.
+					const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
+					group.parts = group.parts.filter((p) => p.id !== newPart.id)
+				}
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.NewPart,
+			result: newPart.id,
+		}
 	}
-	async newGroup(arg: { rundownId: string; name: string }): Promise<string> {
+	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
 			id: short.generate(),
 			name: arg.name,
@@ -201,20 +291,53 @@ export class IPCServer implements IPCServerMethods {
 		rundown.groups.push(newGroup)
 		this.storage.updateRundown(arg.rundownId, rundown)
 
-		return newGroup.id
+		return {
+			undo: () => {
+				const { rundown } = this.getRundown(arg)
+				rundown.groups = rundown.groups.filter((g) => g.id !== newGroup.id)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.NewGroup,
+			result: newGroup.id,
+		}
 	}
-	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 
-		deletePart(group, arg.partId)
+		const deletedPartIndex = group.parts.findIndex((p) => p.id === arg.partId)
+		const deletedPart = deletePart(group, arg.partId)
 
+		let deletedTransparentGroupIndex = -1
+		let deletedTransparentGroup: Group | undefined
 		if (group.transparent && group.parts.length === 0) {
-			deleteGroup(rundown, group.id)
+			deletedTransparentGroupIndex = rundown.groups.findIndex((g) => g.id === arg.groupId)
+			deletedTransparentGroup = deleteGroup(rundown, group.id)
 		}
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				if (!deletedPart) {
+					return
+				}
+
+				const { rundown } = this.getRundown(arg)
+
+				if (deletedTransparentGroup) {
+					deletedTransparentGroup.parts.push(deletedPart)
+					rundown.groups.splice(deletedTransparentGroupIndex, 0, deletedTransparentGroup)
+				} else {
+					const { group } = this.getGroup(arg)
+					group.parts.splice(deletedPartIndex, 0, deletedPart)
+				}
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DeletePart,
+		}
 	}
-	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 
 		// Stop the group (so that the updates are sent to TSR):
@@ -224,13 +347,27 @@ export class IPCServer implements IPCServerMethods {
 		}
 
 		this._updateTimeline(group)
-		deleteGroup(rundown, group.id)
+		const deletedGroupIndex = rundown.groups.findIndex((g) => g.id === group.id)
+		const deletedGroup = deleteGroup(rundown, group.id)
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				if (!deletedGroup) {
+					return
+				}
+
+				const { rundown } = this.getRundown(arg)
+				rundown.groups.splice(deletedGroupIndex, 0, deletedGroup)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DeleteGroup,
+		}
 	}
 	async movePart(arg: {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<Group | undefined> {
+	}): Promise<UndoableResult<Group> | undefined> {
 		let fromRundown: Rundown
 		let fromGroup: Group
 		let part: Part
@@ -291,6 +428,11 @@ export class IPCServer implements IPCServerMethods {
 			return
 		}
 
+		// Save the original position for use in undo.
+		const originalPosition = fromGroup.transparent
+			? fromRundown.groups.findIndex((g) => g.id === arg.from.groupId)
+			: fromGroup.parts.findIndex((p) => p.id === arg.from.partId)
+
 		if (!isTransparentGroupMove) {
 			// Remove the part from its original group.
 			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
@@ -341,7 +483,24 @@ export class IPCServer implements IPCServerMethods {
 			this.storage.updateRundown(arg.from.rundownId, fromRundown)
 		}
 
-		return toGroup
+		return {
+			undo: () => {
+				return this.movePart({
+					from: {
+						rundownId: arg.to.rundownId,
+						groupId: toGroup.id,
+						partId: arg.from.partId,
+					},
+					to: {
+						rundownId: arg.from.rundownId,
+						groupId: fromGroup.transparent ? null : fromGroup.id,
+						position: originalPosition,
+					},
+				})
+			},
+			description: ActionDescription.MovePart,
+			result: toGroup,
+		}
 	}
 
 	async updateTimelineObj(arg: {
@@ -350,30 +509,61 @@ export class IPCServer implements IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+		const timelineObjPreChange = deepClone(timelineObj)
+		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		Object.assign(timelineObj, arg.timelineObj)
 
 		this._updatePart(part)
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				// Overwrite the changed timeline object with the pre-change copy we made.
+				part.timeline.splice(timelineObjIndex, 1, timelineObjPreChange)
+				this._updatePart(part)
+				this._updateTimeline(group)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.UpdateTimelineObj,
+		}
 	}
 	async deleteTimelineObj(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
+
+		const timelineObj = findTimelineObj(part, arg.timelineObjId)
+		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
 		if (modified) this._updatePart(part)
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				// Re-insert the timelineObj in its original position.
+				part.timeline.splice(timelineObjIndex, 0, timelineObj)
+				this._updatePart(part)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DeleteTimelineObj,
+		}
 	}
 
 	async newTemplateData(arg: {
@@ -381,7 +571,7 @@ export class IPCServer implements IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -397,6 +587,27 @@ export class IPCServer implements IPCServerMethods {
 		} else throw new Error('Not a template')
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				const timelineObj = findTimelineObj(part, arg.timelineObjId)
+				if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+
+				if (
+					timelineObj.obj.content.deviceType === DeviceType.CASPARCG &&
+					timelineObj.obj.content.type === TimelineContentTypeCasparCg.TEMPLATE
+				) {
+					const data = JSON.parse(timelineObj.obj.content.data)
+					delete data['']
+					timelineObj.obj.content.data = JSON.stringify(data)
+				}
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.NewTemplateData,
+		}
 	}
 	async updateTemplateData(arg: {
 		rundownId: string
@@ -407,16 +618,20 @@ export class IPCServer implements IPCServerMethods {
 		key: string
 		changedItemId: string
 		value: string
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 
+		// Store a snapshot of the data for use in undo.
+		let snapshot: string
+
 		if (
 			timelineObj.obj.content.deviceType === DeviceType.CASPARCG &&
 			timelineObj.obj.content.type === TimelineContentTypeCasparCg.TEMPLATE
 		) {
+			snapshot = timelineObj.obj.content.data
 			const data = JSON.parse(timelineObj.obj.content.data)
 
 			if (arg.changedItemId === 'key') {
@@ -433,6 +648,25 @@ export class IPCServer implements IPCServerMethods {
 		} else throw new Error('Not a template')
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				const timelineObj = findTimelineObj(part, arg.timelineObjId)
+				if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+
+				if (
+					timelineObj.obj.content.deviceType === DeviceType.CASPARCG &&
+					timelineObj.obj.content.type === TimelineContentTypeCasparCg.TEMPLATE
+				) {
+					timelineObj.obj.content.data = snapshot
+				}
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.UpdateTemplateData,
+		}
 	}
 	async deleteTemplateData(arg: {
 		rundownId: string
@@ -440,22 +674,45 @@ export class IPCServer implements IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		key: string
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 
+		// Store a snapshot of the data for use in undo.
+		let snapshot: string
+
 		if (
 			timelineObj.obj.content.deviceType === DeviceType.CASPARCG &&
 			timelineObj.obj.content.type === TimelineContentTypeCasparCg.TEMPLATE
 		) {
+			snapshot = timelineObj.obj.content.data
 			const data = JSON.parse(timelineObj.obj.content.data)
 			delete data[arg.key]
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				const timelineObj = findTimelineObj(part, arg.timelineObjId)
+				if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+
+				if (
+					timelineObj.obj.content.deviceType === DeviceType.CASPARCG &&
+					timelineObj.obj.content.type === TimelineContentTypeCasparCg.TEMPLATE
+				) {
+					timelineObj.obj.content.data = snapshot
+				}
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DeleteTemplateData,
+		}
 	}
 
 	async addResourceToTimeline(arg: {
@@ -464,7 +721,7 @@ export class IPCServer implements IPCServerMethods {
 		partId: string
 		layerId: string
 		resourceId: string
-	}): Promise<void> {
+	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
 
 		const resource = this.session.getResource(arg.resourceId)
@@ -523,20 +780,50 @@ export class IPCServer implements IPCServerMethods {
 
 		this._updatePart(part)
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
+				this._updatePart(part)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.AddResourceToTimeline,
+		}
 	}
-	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 
+		const originalValue = group.loop
 		group.loop = arg.value
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+				group.loop = originalValue
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupLoop,
+		}
 	}
-	async toggleGroupAutoplay(arg: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+	async toggleGroupAutoplay(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 
+		const originalValue = group.autoPlay
 		group.autoPlay = arg.value
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+				group.autoPlay = originalValue
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupAutoplay,
+		}
 	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()

@@ -1,4 +1,4 @@
-import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { IPCServer } from '../api/IPCServer'
 import React from 'react'
 /** Used to communicate with the backend */
-export const IPCServerContext = React.createContext<IPCServerMethods>({} as IPCServerMethods)
+export const IPCServerContext = React.createContext<IPCServer>({} as IPCServer)
