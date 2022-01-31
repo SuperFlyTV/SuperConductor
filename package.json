@@ -19,11 +19,16 @@
 	"scripts": {
 		"setup": "lerna bootstrap",
 		"prepare": "husky install",
+		"lerna": "lerna",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"lintfix": "yarn lint --fix",
 		"lint:changed": "lerna exec --since origin/master --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "lerna run build",
-		"build:binary": "lerna run build:binary"
+		"build:binary": "lerna run build:binary",
+		"build:shared": "lerna run build --stream --scope=@shared/*",
+		"start:all": "lerna run build:shared && lerna run dev --stream",
+		"dev:electron": "lerna run dev --stream --scope=super-conductor",
+		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge"
 	},
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^1.0.0",
