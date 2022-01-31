@@ -10,7 +10,6 @@ import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
-const fsReadDir = promisify(fs.readdir)
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -44,24 +43,25 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Returns a list of available projects */
-	async listProjects(): Promise<{ fileName: string }[]> {
-		// list all files in the project folder
-		const files = await fsReadDir(this._projectsFolder)
+	listProjects(): { dirName: string; fileName: string }[] {
+		// list all files and directories in the project folder
+		const projectsDirents = fs.readdirSync(this._projectsFolder, { withFileTypes: true })
 
-		// filter out non-json files
-		const jsonFiles = files.filter((file) => file.endsWith('.json'))
+		// filter out non-directories
+		const directories = projectsDirents.filter((dirent) => dirent.isDirectory())
 
-		return jsonFiles.map((file) => {
+		return directories.map((directory) => {
 			return {
-				fileName: file,
+				dirName: directory.name,
+				fileName: path.join(directory.name, 'project.json'),
 			}
 		})
 	}
 
 	/** Returns a list of available rundowns */
-	async listRundowns(): Promise<{ fileName: string }[]> {
+	listRundownsInProject(projectId: string): { fileName: string }[] {
 		// list all files in the rundowns folder
-		const files = await fsReadDir(this._rundownsFolder)
+		const files = fs.readdirSync(this.rundownsDir(projectId))
 
 		// filter out non-json files
 		const jsonFiles = files.filter((file) => file.endsWith('.json'))
@@ -83,7 +83,7 @@ export class StorageHandler extends EventEmitter {
 
 	getProject(): Project {
 		return {
-			id: this.appData.appData.project.fileName,
+			id: this.appData.appData.project.id,
 			...this.project.project,
 		}
 	}
@@ -114,28 +114,28 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.fileName = `${this.nameToFilename(name)}.project.json`
+		this.appData.appData.project.id = this.nameToFilename(name)
 		this.project = this.loadProject(name)
 		this.triggerUpdate({ project: true, appData: true })
 	}
-	async openProject(fileName: string) {
+	async openProject(id: string) {
 		if (this.project) {
 			// Write any pending changes before switching project
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.fileName = fileName
+		this.appData.appData.project.id = id
 		this.project = this.loadProject()
 		this.triggerUpdate({ project: true, appData: true })
 	}
 
 	newRundown(name: string) {
 		const fileName = `${this.nameToFilename(name)}.rundown.json`
-		this.rundowns[fileName] = this._loadRundown(fileName, name)
+		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 	openRundown(fileName: string) {
-		this.rundowns[fileName] = this._loadRundown(fileName)
+		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName)
 		this.rundownsHasChanged[fileName] = true
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
@@ -215,7 +215,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	private loadProject(newName?: string): FileProject {
 		try {
-			const read = fs.readFileSync(this.projectPath(this.appData.appData.project.fileName), 'utf8')
+			const read = fs.readFileSync(this.projectPath(this._projectId), 'utf8')
 			return JSON.parse(read) as FileProject
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
@@ -229,14 +229,17 @@ export class StorageHandler extends EventEmitter {
 	}
 	private loadRundowns(): { [fileName: string]: FileRundown } {
 		const rundowns: { [fileName: string]: FileRundown } = {}
-		for (const rundown of this.appData.appData.rundowns) {
-			rundowns[rundown.fileName] = this._loadRundown(rundown.fileName)
+
+		const rundownList = this.listRundownsInProject(this._projectId)
+		for (const rundown of rundownList) {
+			rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
 		}
+
 		return rundowns
 	}
-	private _loadRundown(fileName: string, newName?: string): FileRundown {
+	private _loadRundown(projectName: string, fileName: string, newName?: string): FileRundown {
 		try {
-			const read = fs.readFileSync(this.rundownPath(fileName), 'utf8')
+			const read = fs.readFileSync(this.rundownPath(projectName, fileName), 'utf8')
 			return JSON.parse(read) as FileRundown
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
@@ -255,19 +258,15 @@ export class StorageHandler extends EventEmitter {
 			appData: {
 				windowPosition: defaultWindowPosition,
 				project: {
-					fileName: 'default.project.json',
+					id: 'default',
 				},
-				rundowns: [
-					{
-						fileName: 'default.rundown.json',
-					},
-				],
 			},
 		}
 	}
 	private getDefaultProject(newName?: string): FileProject {
 		return {
 			version: CURRENT_VERSION,
+			id: 'default',
 			project: getDefaultProject(newName),
 		}
 	}
@@ -309,8 +308,11 @@ export class StorageHandler extends EventEmitter {
 		if (!fs.existsSync(this._projectsFolder)) {
 			fs.mkdirSync(this._projectsFolder)
 		}
-		if (!fs.existsSync(this._rundownsFolder)) {
-			fs.mkdirSync(this._rundownsFolder)
+		if (!fs.existsSync(this.projectDir(this._projectId))) {
+			fs.mkdirSync(this.projectDir(this._projectId))
+		}
+		if (!fs.existsSync(this.rundownsDir(this._projectId))) {
+			fs.mkdirSync(this.rundownsDir(this._projectId))
 		}
 
 		// Store AppData:
@@ -321,32 +323,35 @@ export class StorageHandler extends EventEmitter {
 
 		// Store Project:
 		if (this.projectNeedsWrite) {
-			await fsWriteFile(
-				this.projectPath(this.appData.appData.project.fileName),
-				JSON.stringify(this.project),
-				'utf-8'
-			)
+			await fsWriteFile(this.projectPath(this._projectId), JSON.stringify(this.project), 'utf-8')
 			this.projectNeedsWrite = false
 		}
 		// Store Rundowns:
 		for (const fileName of Object.keys(this.rundownsNeedsWrite)) {
-			await fsWriteFile(this.rundownPath(fileName), JSON.stringify(this.rundowns[fileName]), 'utf-8')
+			await fsWriteFile(
+				this.rundownPath(this._projectId, fileName),
+				JSON.stringify(this.rundowns[fileName]),
+				'utf-8'
+			)
 
 			delete this.rundownsNeedsWrite[fileName]
 		}
 	}
 
-	private rundownPath(fileName: string): string {
-		return path.join(this._rundownsFolder, fileName)
+	private rundownsDir(projectId: string): string {
+		return path.join(this.projectDir(projectId), 'rundowns')
 	}
-	private projectPath(fileName: string): string {
-		return path.join(this._projectsFolder, fileName)
+	private rundownPath(projectId: string, rundownFileName: string): string {
+		return path.join(this.rundownsDir(projectId), rundownFileName)
+	}
+	private projectDir(projectId: string): string {
+		return path.join(this._projectsFolder, projectId)
+	}
+	private projectPath(projectId: string): string {
+		return path.join(this.projectDir(projectId), 'project.json')
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
-	}
-	private get _rundownsFolder() {
-		return path.join(this._baseFolder, 'Rundowns')
 	}
 	private get _projectsFolder() {
 		return path.join(this._baseFolder, 'Projects')
@@ -354,6 +359,9 @@ export class StorageHandler extends EventEmitter {
 	private get _baseFolder() {
 		const homeDirPath = os.homedir()
 		return path.join(homeDirPath, 'Documents', 'SuperConductor')
+	}
+	private get _projectId() {
+		return this.appData.appData.project.id
 	}
 }
 
@@ -363,6 +371,7 @@ interface FileAppData {
 }
 interface FileProject {
 	version: number
+	id: string
 	project: Omit<Project, 'id'>
 }
 interface FileRundown {
