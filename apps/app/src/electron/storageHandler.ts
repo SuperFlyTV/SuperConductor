@@ -353,7 +353,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	private get _baseFolder() {
 		const homeDirPath = os.homedir()
-		return path.join(homeDirPath, 'Documents', 'Timed-Player-Thingy')
+		return path.join(homeDirPath, 'Documents', 'SuperConductor')
 	}
 }
 
