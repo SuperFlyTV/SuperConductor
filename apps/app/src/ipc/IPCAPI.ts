@@ -3,31 +3,61 @@ import { Project } from '../models/project/Project'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { Group } from '../models/rundown/Group'
+
+export const MAX_UNDO_LEDGER_LENGTH = 100
+
+export const enum ActionDescription {
+	NewPart = 'create new part',
+	NewGroup = 'create new group',
+	DeletePart = 'delete part',
+	DeleteGroup = 'delete group',
+	MovePart = 'move part',
+	UpdateTimelineObj = 'update timeline object',
+	DeleteTimelineObj = 'delete timeline object',
+	NewTemplateData = 'add new template data',
+	UpdateTemplateData = 'update template data',
+	DeleteTemplateData = 'delete template data',
+	AddResourceToTimeline = 'add resource to timeline',
+	ToggleGroupLoop = 'toggle group loop',
+	ToggleGroupAutoplay = 'toggle group autoplay',
+}
+
+export type UndoFunction = () => void
+
+export type UndoableResult<T = unknown> = { undo: UndoFunction; description: ActionDescription; result?: T }
+
+export type UndoableFunction = (...args: any[]) => Promise<UndoableResult>
+
+export interface Action {
+	description: ActionDescription
+	arguments: any[]
+	redo: UndoableFunction
+	undo: UndoFunction
+}
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
-	triggerSendAll: () => Promise<void>
-	triggerSendRundown: (data: { rundownId: string }) => Promise<void>
+	triggerSendAll: () => Promise<unknown>
+	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
-	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
-	queuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
-	unqueuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
-	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<void>
+	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	queuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	unqueuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 
 		name: string
-	}) => Promise<string>
-	newGroup: (data: { rundownId: string; name: string }) => Promise<string>
-	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<void>
-	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<void>
+	}) => Promise<unknown>
+	newGroup: (data: { rundownId: string; name: string }) => Promise<unknown>
+	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	movePart: (data: {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
-	}) => Promise<Group | undefined>
+	}) => Promise<unknown>
 
 	updateTimelineObj: (data: {
 		rundownId: string
@@ -35,13 +65,13 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}) => Promise<void>
+	}) => Promise<unknown>
 	deleteTimelineObj: (data: {
 		rundownId: string
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}) => Promise<void>
+	}) => Promise<unknown>
 	addResourceToTimeline: (data: {
 		rundownId: string
 		groupId: string
@@ -49,7 +79,7 @@ export interface IPCServerMethods {
 
 		layerId: string
 		resourceId: string
-	}) => Promise<void>
+	}) => Promise<unknown>
 
 	newTemplateData: (data: {
 		rundownId: string
@@ -57,7 +87,7 @@ export interface IPCServerMethods {
 		partId: string
 
 		timelineObjId: string
-	}) => Promise<void>
+	}) => Promise<unknown>
 	updateTemplateData: (data: {
 		rundownId: string
 		groupId: string
@@ -67,7 +97,7 @@ export interface IPCServerMethods {
 		key: string
 		changedItemId: string
 		value: string
-	}) => Promise<void>
+	}) => Promise<unknown>
 	deleteTemplateData: (data: {
 		rundownId: string
 		groupId: string
@@ -75,13 +105,13 @@ export interface IPCServerMethods {
 
 		timelineObjId: string
 		key: string
-	}) => Promise<void>
+	}) => Promise<unknown>
 
-	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<void>
-	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<void>
-	refreshResources: () => Promise<void>
+	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	refreshResources: () => Promise<unknown>
 
-	updateProject: (data: { id: string; project: Project }) => Promise<void>
+	updateProject: (data: { id: string; project: Project }) => Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateProject: (project: Project) => void

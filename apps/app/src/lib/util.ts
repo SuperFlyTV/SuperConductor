@@ -28,18 +28,41 @@ export const findTimelineObj = (part: Part, timelineObjId: string): TimelineObj 
 
 	return undefined
 }
-
-export const deleteGroup = (rundown: Rundown, groupId: string): void => {
-	rundown.groups = rundown.groups.filter((g) => g.id !== groupId)
+export const findTimelineObjIndex = (part: Part, timelineObjId: string): number => {
+	return part.timeline.findIndex((timelineObj) => {
+		return timelineObj.obj.id === timelineObjId
+	})
 }
-export const deletePart = (group: Group, partId: string): void => {
-	group.parts = group.parts.filter((r) => r.id !== partId)
+
+export const deleteGroup = (rundown: Rundown, groupId: string): Group | undefined => {
+	let deletedGroup: Group | undefined
+	rundown.groups = rundown.groups.filter((g) => {
+		if (g.id === groupId) {
+			deletedGroup = g
+			return false
+		}
+
+		return true
+	})
+	return deletedGroup
+}
+export const deletePart = (group: Group, partId: string): Part | undefined => {
+	let deletedPart: Part | undefined
+	group.parts = group.parts.filter((p) => {
+		if (p.id === partId) {
+			deletedPart = p
+			return false
+		}
+
+		return true
+	})
 	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
 		// TODO: How to handle this?
 
 		group.playout.partIds = group.playout.partIds.filter((id) => id !== partId)
 	}
+	return deletedPart
 }
 export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean => {
 	if (part.timeline.find((t) => t.obj.id === timelineObjId)) {
