@@ -9,6 +9,8 @@ import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 const SERVER_PORT = 5400
 
 /** This handles connected bridges */
@@ -31,6 +33,7 @@ export class BridgeHandler {
 		private storage: StorageHandler,
 		private callbacks: {
 			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
+			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
 		}
 	) {
 		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
@@ -39,6 +42,9 @@ export class BridgeHandler {
 			const bridge = new BridgeConnection(this, this.session, this.storage, connection, {
 				updatedResources: (deviceId: string, resources: ResourceAny[]) => {
 					this.callbacks.updatedResources(deviceId, resources)
+				},
+				onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => {
+					this.callbacks.onVersionMismatch(bridgeId, bridgeVersion, ourVersion)
 				},
 			})
 
@@ -160,6 +166,7 @@ export class BridgeConnection {
 		private connection: WebsocketConnection,
 		private callbacks: {
 			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
+			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
 		}
 	) {
 		const setConnected = () => {
@@ -209,7 +216,7 @@ export class BridgeConnection {
 			if (msg.type === 'initRequestId') {
 				this.onInitRequestId()
 			} else if (msg.type === 'init') {
-				this.onInit(msg.id)
+				this.onInit(msg.id, msg.version)
 			} else if (msg.type === 'status') {
 				// todo
 			} else if (msg.type === 'deviceStatus') {
@@ -271,11 +278,15 @@ export class BridgeConnection {
 		}
 	}
 
-	private onInit(id: string) {
+	private onInit(id: string, version: string) {
 		if (!this.bridgeId) {
 			this.bridgeId = id
 		} else if (this.bridgeId !== id) {
 			throw new Error(`bridgeId ID mismatch: "${this.bridgeId}" vs "${id}"`)
+		}
+
+		if (version !== CURRENT_VERSION) {
+			this.callbacks.onVersionMismatch(id, version, CURRENT_VERSION)
 		}
 
 		// Send initial commands:
