@@ -46,7 +46,7 @@ export class StorageHandler extends EventEmitter {
 	/** Returns a list of available projects */
 	async listProjects(): Promise<{ fileName: string }[]> {
 		// list all files in the project folder
-		const files = await fsReadDir(this._pojectFolder)
+		const files = await fsReadDir(this._projectsFolder)
 
 		// filter out non-json files
 		const jsonFiles = files.filter((file) => file.endsWith('.json'))
@@ -306,8 +306,8 @@ export class StorageHandler extends EventEmitter {
 		if (!fs.existsSync(this._baseFolder)) {
 			fs.mkdirSync(this._baseFolder)
 		}
-		if (!fs.existsSync(this._pojectFolder)) {
-			fs.mkdirSync(this._pojectFolder)
+		if (!fs.existsSync(this._projectsFolder)) {
+			fs.mkdirSync(this._projectsFolder)
 		}
 		if (!fs.existsSync(this._rundownsFolder)) {
 			fs.mkdirSync(this._rundownsFolder)
@@ -340,7 +340,7 @@ export class StorageHandler extends EventEmitter {
 		return path.join(this._rundownsFolder, fileName)
 	}
 	private projectPath(fileName: string): string {
-		return path.join(this._pojectFolder, fileName)
+		return path.join(this._projectsFolder, fileName)
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
@@ -348,7 +348,7 @@ export class StorageHandler extends EventEmitter {
 	private get _rundownsFolder() {
 		return path.join(this._baseFolder, 'Rundowns')
 	}
-	private get _pojectFolder() {
+	private get _projectsFolder() {
 		return path.join(this._baseFolder, 'Projects')
 	}
 	private get _baseFolder() {
