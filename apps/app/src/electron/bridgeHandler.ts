@@ -231,16 +231,16 @@ export class BridgeConnection {
 	}
 	addTimeline(timelineId: string, timeline: TSRTimeline) {
 		this.sentTimelines[timelineId] = timeline
-		this.send({ type: 'addTimeline', timelineId, timeline })
+		this.send({ type: 'addTimeline', timelineId, timeline, currentTime: this.getCurrentTime() })
 	}
 	removeTimeline(timelineId: string) {
 		delete this.sentTimelines[timelineId]
-		this.send({ type: 'removeTimeline', timelineId })
+		this.send({ type: 'removeTimeline', timelineId, currentTime: this.getCurrentTime() })
 	}
 	setMappings(mappings: Mappings, force = false) {
 		if (force || !_.isEqual(this.sentMappings, mappings)) {
 			this.sentMappings = mappings
-			this.send({ type: 'setMappings', mappings })
+			this.send({ type: 'setMappings', mappings, currentTime: this.getCurrentTime() })
 		}
 	}
 	refreshResources() {
@@ -251,6 +251,9 @@ export class BridgeConnection {
 		// Request a list of the current timelineIds from the Bridge.
 		// The bridge will reply with its timelineIds, and we'll pipe them into this._syncTimelineIds()
 		this.send({ type: 'getTimelineIds' })
+	}
+	private getCurrentTime() {
+		return Date.now()
 	}
 	private _syncTimelineIds(bridgeTimelineIds: string[]) {
 		// Sync the timelineIds reported from the bridge with our own:

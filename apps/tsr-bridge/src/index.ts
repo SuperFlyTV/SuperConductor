@@ -50,13 +50,13 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 			// Reply to TPT with our id
 			send({ type: 'init', id: bridgeId, version: CURRENT_VERSION })
 		} else if (msg.type === 'addTimeline') {
-			playTimeline(msg.timelineId, msg.timeline)
+			playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
-			stopTimeline(msg.timelineId)
+			stopTimeline(msg.timelineId, msg.currentTime)
 		} else if (msg.type === 'getTimelineIds') {
 			send({ type: 'timelineIds', timelineIds: Object.keys(storedTimelines) })
 		} else if (msg.type === 'setMappings') {
-			updateMappings(msg.mappings)
+			updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
 			tsr.updateDevices(msg.devices, send).catch(console.error)
 		} else if (msg.type === 'refreshResources') {
@@ -92,7 +92,9 @@ const storedTimelines: {
 	[id: string]: TSRTimeline
 } = {}
 
-function updateTSR() {
+function updateTSR(currentTime: number) {
+	tsr.setCurrentTime(currentTime)
+
 	const fullTimeline: TSRTimeline = []
 
 	for (const timeline of Object.values(storedTimelines)) {
@@ -106,18 +108,18 @@ function updateTSR() {
 	tsr.conductor.setTimelineAndMappings(fullTimeline, mapping)
 }
 
-function playTimeline(id: string, newTimeline: TSRTimeline) {
+function playTimeline(id: string, newTimeline: TSRTimeline, currentTime: number) {
 	storedTimelines[id] = newTimeline
 
-	updateTSR()
+	updateTSR(currentTime)
 	return Date.now()
 }
-function updateMappings(newMapping: Mappings) {
+function updateMappings(newMapping: Mappings, currentTime: number) {
 	mapping = newMapping
-	updateTSR()
+	updateTSR(currentTime)
 }
 
-function stopTimeline(id: string) {
+function stopTimeline(id: string, currentTime: number) {
 	delete storedTimelines[id]
-	updateTSR()
+	updateTSR(currentTime)
 }

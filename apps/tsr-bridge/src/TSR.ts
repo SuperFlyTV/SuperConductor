@@ -14,10 +14,11 @@ export class TSR {
 			refreshResources: () => Promise<ResourceAny[]>
 		}
 	} = {}
+	private currentTimeDiff = 0
 
 	constructor() {
 		const c: ConductorOptions = {
-			getCurrentTime: Date.now,
+			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,
 			multiThreadedResolver: false,
 			proActiveResolve: true,
@@ -36,6 +37,16 @@ export class TSR {
 
 		this.conductor.setTimelineAndMappings([], undefined)
 		this.conductor.init().catch(console.error)
+	}
+	/**
+	 * Syncs the currentTime, this is useful when TSR-bridge runs on another computer than SuperConductor,
+	 * where the local time might differ from the SuperConductor.
+	 */
+	public setCurrentTime(currentTime: number) {
+		this.currentTimeDiff = currentTime - Date.now()
+	}
+	public getCurrentTime(): number {
+		return Date.now() + this.currentTimeDiff
 	}
 
 	public async updateDevices(
