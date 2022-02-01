@@ -25,7 +25,7 @@ $lightRedColor: #d44e4e;
 
 $lightGreenColor: #5afc3e;
 
-$mainFont: 'Trebuchet MS', 'Arial', sans-serif;
+$mainFont: 'Roboto', 'Arial', sans-serif;
 $partOutlineColor: #4b4b4b;
 $partDragHandleColor: #5a5a5a;
 
@@ -47,14 +47,9 @@ $default-transition: all 150ms ease;
 $deviceOfflineColor: #ff0000;
 $deviceOnlineColor: #148c00;
 
-html {
-	font-size: 62.5%;
-}
-
 body {
 	margin: 0;
 	padding: 0;
-	font-size: 1.6rem;
 	color: white;
 	background-color: black;
 	font-family: $mainFont;

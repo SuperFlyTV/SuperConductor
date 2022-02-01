@@ -1,47 +1,49 @@
 import { deepClone } from '@shared/lib'
-import { ErrorMessage, Field, FieldArray, Form, Formik } from 'formik'
-import React, { ReactText, useContext, useRef } from 'react'
-import { DeviceType, Mapping, MappingCasparCG } from 'timeline-state-resolver-types'
+import { Field, FieldArray, Form, Formik } from 'formik'
+import React, { useContext } from 'react'
+import { DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
-import { TrashBtn } from '../inputs/TrashBtn'
-import { FormRow } from '../sidebar/InfoGroup'
-import { toast } from 'react-toastify'
+import { Button, Grid, MenuItem } from '@mui/material'
+import * as Yup from 'yup'
+import { TextField } from 'formik-mui'
+import { useSnackbar } from 'notistack'
 
 type MappingsFormValues = {
-	mappings: Array<[string, Mapping]>
+	mappings: Array<[string, MappingCasparCG]>
 }
+
+const validationSchema = Yup.object({
+	mappings: Yup.array().of(
+		Yup.tuple([
+			Yup.string().label('ID').required(),
+			Yup.object({
+				device: Yup.number().label('Device').required(),
+				deviceId: Yup.string().label('Device ID').required(),
+				layerName: Yup.string().label('Mapping Name').required(),
+				channel: Yup.number().label('Channel').required().integer().moreThan(0),
+				layer: Yup.number().label('Layer').required().integer().moreThan(0),
+			}),
+		])
+	),
+})
 
 export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const toastId = useRef<ReactText>()
-	const initialValues: MappingsFormValues = {
-		mappings: Object.entries(deepClone(project.mappings)),
-	}
+	const { enqueueSnackbar } = useSnackbar()
 
-	const notify = () => (toastId.current = toast('Saving Mappings...', { autoClose: false }))
-	const updateSuccess = () => {
-		if (toastId.current) {
-			toast.update(toastId.current, { render: 'Mappings saved!', type: toast.TYPE.SUCCESS, autoClose: 5000 })
-		}
-	}
-	const updateFail = (message: string) => {
-		if (toastId.current) {
-			toast.update(toastId.current, {
-				render: `Error when saving Mappings: ${message}`,
-				type: toast.TYPE.ERROR,
-				autoClose: 5000,
-			})
-		}
+	const initialValues: MappingsFormValues = {
+		mappings: Object.entries(deepClone(project.mappings as any)),
 	}
 
 	return (
 		<Formik
 			initialValues={initialValues}
 			enableReinitialize={true}
+			validationSchema={validationSchema}
 			onSubmit={async (values, actions) => {
-				notify()
+				enqueueSnackbar('Saving Mappings...', { variant: 'info' })
 				const editedMappings = Object.fromEntries(values.mappings)
 				const editedProject: Project = {
 					...project,
@@ -49,10 +51,12 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 				}
 				try {
 					await ipcServer.updateProject({ id: editedProject.id, project: editedProject })
-					updateSuccess()
+					enqueueSnackbar('Mappings saved!', { variant: 'success' })
 				} catch (error) {
 					console.error(error)
-					updateFail((error as any).message)
+					enqueueSnackbar(`Error when saving Mappings: ${(error as any).message}`, {
+						variant: 'error',
+					})
 				}
 				actions.setSubmitting(false)
 			}}
@@ -64,84 +68,84 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 							<div className="form-body">
 								{formik.values.mappings.map((_, index) => (
 									<React.Fragment key={index}>
-										<FormRow>
-											<label htmlFor={`mappings.${index}.0`}>Mapping ID</label>
-											<Field
-												id={`mappings.${index}.0`}
-												name={`mappings.${index}.0`}
-												type="text"
-												placeholder="ID"
-											/>
-											<ErrorMessage name={`mappings.${index}.0`} component="div" />
-										</FormRow>
+										<Field
+											component={TextField}
+											margin="normal"
+											fullWidth
+											name={`mappings.${index}.0`}
+											type="text"
+											label="Mapping ID"
+										/>
 
-										<FormRow>
-											<label htmlFor={`mappings.${index}.1.layerName`}>Mapping Name</label>
-											<Field
-												id={`mappings.${index}.1.layerName`}
-												name={`mappings.${index}.1.layerName`}
-												type="text"
-												placeholder="Name"
-											/>
-											<ErrorMessage name={`mappings.${index}.1.layerName`} component="div" />
-										</FormRow>
+										<Field
+											component={TextField}
+											margin="normal"
+											fullWidth
+											name={`mappings.${index}.1.layerName`}
+											type="text"
+											label="Mapping Name"
+										/>
 
-										{/* <FormRow>
-												<label htmlFor={`mappings.${index}.1.device`}>Device Type</label>
-												<Field as="select" name={`mappings.${index}.1.device`}>
-													<option value={DeviceType.CASPARCG}>CasparCG</option>
-												</Field>
-											</FormRow> */}
+										<Field
+											component={TextField}
+											select
+											margin="normal"
+											fullWidth
+											name={`mappings.${index}.1.deviceId`}
+											label="Device ID"
+										>
+											{listAvailableDeviceIDs(project.bridges).map((deviceId) => (
+												<MenuItem key={deviceId} value={deviceId}>
+													{deviceId}
+												</MenuItem>
+											))}
+										</Field>
 
-										<FormRow>
-											<label htmlFor={`mappings.${index}.1.deviceId`}>Device ID</label>
-											<Field as="select" name={`mappings.${index}.1.deviceId`}>
-												{listAvailableDeviceIDs(project.bridges).map((deviceId) => (
-													<option key={deviceId} value={deviceId}>
-														{deviceId}
-													</option>
-												))}
-											</Field>
-										</FormRow>
+										<Grid container spacing={2}>
+											<Grid item xs={6}>
+												<Field
+													component={TextField}
+													margin="normal"
+													fullWidth
+													name={`mappings.${index}.1.channel`}
+													type="number"
+													label="Channel"
+													inputProps={{ min: 1 }}
+												/>
+											</Grid>
+											<Grid item xs={6}>
+												<Field
+													component={TextField}
+													margin="normal"
+													fullWidth
+													name={`mappings.${index}.1.layer`}
+													type="number"
+													label="Layer"
+													inputProps={{ min: 1 }}
+												/>
+											</Grid>
+										</Grid>
 
-										<FormRow>
-											<label htmlFor={`mappings.${index}.1.channel`}>Channel</label>
-											<Field
-												id={`mappings.${index}.1.channel`}
-												name={`mappings.${index}.1.channel`}
-												type="number"
-												placeholder="1"
-											/>
-											<ErrorMessage name={`mappings.${index}.1.channel`} component="div" />
-										</FormRow>
-
-										<FormRow>
-											<label htmlFor={`mappings.${index}.1.layer`}>Layer</label>
-											<Field
-												id={`mappings.${index}.1.layer`}
-												name={`mappings.${index}.1.layer`}
-												type="number"
-												placeholder="1"
-											/>
-											<ErrorMessage name={`mappings.${index}.1.layer`} component="div" />
-										</FormRow>
-
-										<div className="btn-row-equal">
-											<TrashBtn
-												onClick={() => {
-													remove(index)
-												}}
-											/>
-										</div>
+										<Button
+											color="error"
+											variant="contained"
+											fullWidth
+											onClick={() => {
+												remove(index)
+											}}
+										>
+											Remove Mapping
+										</Button>
 
 										<hr />
 									</React.Fragment>
 								))}
 
-								<button
-									className="btn form"
-									type="button"
-									onClick={() =>
+								<Button
+									color="info"
+									variant="contained"
+									fullWidth
+									onClick={() => {
 										push([
 											'new-mapping',
 											literal<MappingCasparCG>({
@@ -152,19 +156,19 @@ export const MappingSettings: React.FC<{ project: Project }> = ({ project }) => 
 												layer: 10,
 											}),
 										])
-									}
+									}}
 								>
 									Add Mapping
-								</button>
+								</Button>
 							</div>
 						)}
 					</FieldArray>
 
-					<div className="btn-row-equal">
-						<button type="submit" className="btn form" disabled={formik.isSubmitting}>
-							Save
-						</button>
-					</div>
+					<hr />
+
+					<Button type="submit" color="primary" variant="contained" fullWidth disabled={formik.isSubmitting}>
+						Save
+					</Button>
 				</Form>
 			)}
 		</Formik>
