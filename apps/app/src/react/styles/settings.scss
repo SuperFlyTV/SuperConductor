@@ -1,11 +1,13 @@
+$maxMuiDialogWidth: 552px;
+
 .settings-dialog {
-	height: 37.5312rem;
-	width: 37.5312rem;
+	height: $maxMuiDialogWidth;
+	width: $maxMuiDialogWidth;
 }
 
 .devices-dialog {
-	height: 30rem;
-	width: 30rem;
+	height: calc($maxMuiDialogWidth - 80px);
+	width: calc($maxMuiDialogWidth - 80px);
 }
 
 .popup-settings {

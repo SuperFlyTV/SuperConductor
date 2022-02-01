@@ -26,16 +26,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
-import {
-	createTheme,
-	ThemeProvider,
-	CssBaseline,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
-	Button,
-} from '@mui/material'
+import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { SnackbarProvider } from 'notistack'
 
 export const App = () => {
@@ -63,6 +54,13 @@ export const App = () => {
 		return createTheme({
 			palette: {
 				mode: 'dark',
+			},
+			typography: {
+				/**
+				 * This is needed to counteract the `font-size: 62.5%` style on the <html> tag.
+				 * See https://mui.com/customization/typography/#font-size for more details.
+				 */
+				fontSize: 14 * 1.6,
 			},
 		})
 	}, [])
@@ -204,7 +202,6 @@ export const App = () => {
 								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
 									<ThemeProvider theme={theme}>
 										<SnackbarProvider maxSnack={1}>
-											<CssBaseline />
 											<div className="app" onPointerDown={handlePointerDownAnywhere}>
 												<div className="top-header">
 													<TopHeader
