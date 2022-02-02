@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
-import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { MovePartFn, PartView } from './PartView'
 import { getGroupPlayhead, GroupPlayhead } from '../../../../lib/playhead'
 import { GroupPreparedPlayheadData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Switch } from '@mui/material'
+import { Field, Form, Formik } from 'formik'
+import { TextField } from 'formik-mui'
+import * as Yup from 'yup'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -181,37 +183,39 @@ export const GroupView: React.FC<{
 					<div className="title">{group.name}</div>
 					<div className="controls">
 						<div className="toggle">
-							<Toggle
-								id="auto-play"
-								isChecked={group.autoPlay}
-								onChange={() => {
-									ipcServer
-										.toggleGroupAutoplay({
-											rundownId,
-											groupId: group.id,
-											value: !group.autoPlay,
-										})
-										.catch(console.error)
-								}}
+							<FormControlLabel
+								control={
+									<Switch
+										checked={group.autoPlay}
+										onChange={() => {
+											ipcServer
+												.toggleGroupAutoplay({
+													rundownId,
+													groupId: group.id,
+													value: !group.autoPlay,
+												})
+												.catch(console.error)
+										}}
+									/>
+								}
+								label="Auto-play"
 							/>
-							<label htmlFor="auto-play" className="toggle-label">
-								Auto-play
-							</label>
 						</div>
 
 						<div className="toggle">
-							<Toggle
-								id="loop"
-								isChecked={group.loop}
-								onChange={() => {
-									ipcServer
-										.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
-										.catch(console.error)
-								}}
+							<FormControlLabel
+								control={
+									<Switch
+										checked={group.loop}
+										onChange={() => {
+											ipcServer
+												.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
+												.catch(console.error)
+										}}
+									/>
+								}
+								label="Loop"
 							/>
-							<label htmlFor="loop" className="toggle-label">
-								Loop
-							</label>
 						</div>
 						<TrashBtn
 							onClick={() => {
@@ -241,33 +245,73 @@ export const GroupView: React.FC<{
 	}
 }
 
+const newPartValidationSchema = Yup.object({
+	name: Yup.string().label('Part Name').required(),
+})
+
 const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
+	const handleNewPartClose = () => {
+		setNewPartOpen(false)
+	}
+
 	return (
 		<>
 			<div className="group-list__control-row">
-				<button className="btn form" onClick={() => setNewPartOpen(true)}>
+				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</button>
+				</Button>
 			</div>
-			{newPartOpen && (
-				<PartPropertiesDialog
-					acceptLabel="Create"
-					onAccepted={(part) => {
-						ipcServer
-							.newPart({
-								rundownId,
-								name: part.name,
-								groupId: group.id,
-							})
-							.catch(console.error)
-						setNewPartOpen(false)
-					}}
-					onDiscarded={() => setNewPartOpen(false)}
-				/>
-			)}
+
+			<Formik
+				initialValues={{ name: '' }}
+				validationSchema={newPartValidationSchema}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					ipcServer
+						.newPart({
+							rundownId,
+							name: values.name,
+							groupId: group.id,
+						})
+						.catch(console.error)
+					setNewPartOpen(false)
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => (
+					<Dialog open={newPartOpen} onClose={handleNewPartClose}>
+						<DialogTitle>New Part</DialogTitle>
+						<DialogContent>
+							<Form>
+								<Field
+									component={TextField}
+									margin="normal"
+									fullWidth
+									name="name"
+									type="text"
+									label="Part Name"
+									autoFocus={true}
+									required
+								/>
+							</Form>
+						</DialogContent>
+						<DialogActions>
+							<Button
+								onClick={() => {
+									formik.submitForm().catch(console.error)
+								}}
+							>
+								Create
+							</Button>
+							<Button onClick={handleNewPartClose}>Cancel</Button>
+						</DialogActions>
+					</Dialog>
+				)}
+			</Formik>
 		</>
 	)
 }

@@ -54,6 +54,9 @@ export const App = () => {
 		return createTheme({
 			palette: {
 				mode: 'dark',
+				primary: {
+					main: '#e96703',
+				},
 			},
 			typography: {
 				/**

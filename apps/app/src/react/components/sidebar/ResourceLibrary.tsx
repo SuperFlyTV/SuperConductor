@@ -9,11 +9,13 @@ import { assertNever, bytesToSize } from '@shared/lib'
 import { ResourceInfo } from './ResourceInfo'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
 import { Part } from '../../../models/rundown/Part'
-import { Field, Form, Formik, FormikProps } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import { findPartInRundown } from '../../../lib/util'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { Group } from '../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
+import { Button, Grid, MenuItem } from '@mui/material'
+import { TextField } from 'formik-mui'
 
 export const ResourceLibrary: React.FC = () => {
 	const ipcServer = useContext(IPCServerContext)
@@ -109,13 +111,17 @@ export const ResourceLibrary: React.FC = () => {
 						<div className="add-to-timeline">
 							<Formik
 								initialValues={{ partId: defaultPart.id, layerId: defaultLayer }}
-								onSubmit={(values) => {
+								onSubmit={(values, actions) => {
 									if (!values.partId || !values.layerId) {
+										actions.setSubmitting(false)
 										return
 									}
 
 									const part = findPartInRundown(rundown, values.partId)
-									if (!part) return
+									if (!part) {
+										actions.setSubmitting(false)
+										return
+									}
 
 									ipcServer
 										.addResourceToTimeline({
@@ -126,35 +132,57 @@ export const ResourceLibrary: React.FC = () => {
 											resourceId: selectedResource.id,
 										})
 										.catch(console.error)
+									actions.setSubmitting(false)
 								}}
 							>
-								{(_fProps: FormikProps<any>) => (
+								{() => (
 									<Form>
 										<div className="label">Add to timeline</div>
 										<div className="dropdowns">
-											<Field as="select" name="partId">
-												{getAllPartsInRundown(rundown).map((p) => {
-													return (
-														<option key={p.part.id} value={p.part.id}>
-															{p.group.transparent
-																? p.part.name
-																: `${p.group.name}: ${p.part.name}`}
-														</option>
-													)
-												})}
-											</Field>
-											<Field as="select" name="layerId">
-												{Object.entries(project.mappings).map(([layerId, mapping]) => (
-													<option key={layerId} value={layerId}>
-														{mapping.layerName || layerId}
-													</option>
-												))}
-											</Field>
+											<Grid container spacing={2}>
+												<Grid item xs={6}>
+													<Field
+														component={TextField}
+														select
+														margin="normal"
+														fullWidth
+														name="partId"
+														label="Part"
+													>
+														{getAllPartsInRundown(rundown).map((p) => {
+															return (
+																<MenuItem key={p.part.id} value={p.part.id}>
+																	{p.group.transparent
+																		? p.part.name
+																		: `${p.group.name}: ${p.part.name}`}
+																</MenuItem>
+															)
+														})}
+													</Field>
+												</Grid>
+
+												<Grid item xs={6}>
+													<Field
+														component={TextField}
+														select
+														margin="normal"
+														fullWidth
+														name="layerId"
+														label="Layer"
+													>
+														{Object.entries(project.mappings).map(([layerId, mapping]) => (
+															<MenuItem key={layerId} value={layerId}>
+																{mapping.layerName || layerId}
+															</MenuItem>
+														))}
+													</Field>
+												</Grid>
+											</Grid>
 										</div>
 										<div className="btn-row-right">
-											<button className="btn form" type="submit">
+											<Button className="btn" variant="contained" type="submit">
 												Add
-											</button>
+											</Button>
 										</div>
 									</Form>
 								)}

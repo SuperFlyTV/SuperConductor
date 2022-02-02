@@ -44,7 +44,7 @@ export const Settings: React.FC<{ project: Project }> = ({ project }) => {
 	return (
 		<>
 			<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-				<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+				<Tabs value={value} onChange={handleChange} aria-label="settings tabs">
 					<Tab label="Project Settings" {...a11yProps(0)} />
 					<Tab label="Mappings" {...a11yProps(1)} />
 					<Tab label="Bridges" {...a11yProps(2)} />

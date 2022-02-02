@@ -1,8 +1,16 @@
 $maxMuiDialogWidth: 552px;
 
 .settings-dialog {
+	display: flex;
+	flex-direction: column;
 	height: $maxMuiDialogWidth;
 	width: $maxMuiDialogWidth;
+
+	> div[role='tabpanel'] {
+		flex-shrink: 1;
+		min-height: 1px;
+		overflow-y: auto;
+	}
 }
 
 .devices-dialog {

@@ -7,6 +7,7 @@ import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow, FormRow } from './InfoGroup'
 import { InfoGroup } from './InfoGroup'
 import { deepClone } from '@shared/lib'
+import { Button } from '@mui/material'
 
 type MyFormValues = {
 	enableStart: number
@@ -91,9 +92,9 @@ export const TimelineObjInfo: React.FC<{
 										.catch(console.error)
 								}}
 							/>
-							<button type="submit" className="btn form">
+							<Button type="submit" className="btn" variant="contained">
 								Save
-							</button>
+							</Button>
 						</div>
 					</Form>
 				)}

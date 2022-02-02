@@ -39,6 +39,10 @@
 			display: flex;
 			align-items: stretch;
 
+			& > * {
+				flex: 1;
+			}
+
 			& > *:not(:last-child) {
 				margin-right: 1rem;
 			}
