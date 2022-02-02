@@ -28,6 +28,7 @@
 			align-items: center;
 
 			.toggle {
+				flex-shrink: 0;
 				margin: 0 1rem;
 				display: flex;
 				align-items: center;
@@ -42,9 +43,8 @@
 				}
 			}
 
-			.btn.trash {
+			button {
 				margin-left: 1rem;
-				padding: 0.4rem;
 			}
 		}
 	}

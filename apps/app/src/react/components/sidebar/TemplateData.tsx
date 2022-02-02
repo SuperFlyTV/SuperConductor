@@ -3,6 +3,7 @@ import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
 import { InfoGroup } from './InfoGroup'
 import { IPCServerContext } from '../../contexts/IPCServer'
+import { Button } from '@mui/material'
 
 type IUpdateData = (rowId: string, columnId: string, oldValue: string, newValue: string) => void
 type IDeleteRow = (rowId: string) => void
@@ -173,9 +174,9 @@ export const TemplateData: React.FC<{
 				</table>
 
 				<div className="btn-row-right">
-					<button className="btn form" onClick={handleAddNew}>
+					<Button className="btn" variant="contained" onClick={handleAddNew}>
 						Add
-					</button>
+					</Button>
 				</div>
 			</div>
 		</InfoGroup>

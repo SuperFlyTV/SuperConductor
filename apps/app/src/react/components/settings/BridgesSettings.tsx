@@ -1,44 +1,45 @@
 import { deepClone } from '@shared/lib'
-import { ErrorMessage, Field, FieldArray, Form, Formik } from 'formik'
-import React, { ReactText, useContext, useRef, useState } from 'react'
+import { Field, FieldArray, Form, Formik } from 'formik'
+import React, { useContext, useState } from 'react'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { Bridge } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
-import { TrashBtn } from '../inputs/TrashBtn'
-import { FormRow } from '../sidebar/InfoGroup'
-import { Popup } from '../popup/Popup'
 import { DevicesSettings } from './DevicesSettings'
-import { toast } from 'react-toastify'
+import * as Yup from 'yup'
+import { TextField } from 'formik-mui'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid } from '@mui/material'
+import { useSnackbar } from 'notistack'
 
 type BridgesFormValues = {
 	bridges: Array<[string, Bridge]>
 }
 
+const validationSchema = Yup.object({
+	bridges: Yup.array().of(
+		Yup.tuple([
+			Yup.string().label('ID').required(),
+			Yup.object({
+				name: Yup.string().label('Name').required(),
+				url: Yup.string().label('URL').required(),
+			}),
+		])
+	),
+})
+
 export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [bridgeIdForEditDevices, setBridgeIdForEditDevices] = useState<string>()
 	const [devicesOpen, setDevicesOpen] = useState(false)
-	const toastId = useRef<ReactText>()
+	const { enqueueSnackbar } = useSnackbar()
+
 	const initialValues: BridgesFormValues = {
 		bridges: Object.entries(deepClone(project.bridges)),
 	}
 
-	const notify = () => (toastId.current = toast('Saving Bridges...', { autoClose: false }))
-	const updateSuccess = () => {
-		if (toastId.current) {
-			toast.update(toastId.current, { render: 'Bridges saved!', type: toast.TYPE.SUCCESS, autoClose: 5000 })
-		}
-	}
-	const updateFail = (message: string) => {
-		if (toastId.current) {
-			toast.update(toastId.current, {
-				render: `Error when saving Bridges: ${message}`,
-				type: toast.TYPE.ERROR,
-				autoClose: 5000,
-			})
-		}
+	const handleDevicesClose = () => {
+		setDevicesOpen(false)
 	}
 
 	return (
@@ -46,8 +47,9 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 			<Formik
 				initialValues={initialValues}
 				enableReinitialize={true}
+				validationSchema={validationSchema}
 				onSubmit={async (values, actions) => {
-					notify()
+					enqueueSnackbar('Saving Bridges...', { variant: 'info' })
 					const editedBridges = Object.fromEntries(values.bridges)
 					const editedProject: Project = {
 						...project,
@@ -55,10 +57,12 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 					}
 					try {
 						await ipcServer.updateProject({ id: editedProject.id, project: editedProject })
-						updateSuccess()
+						enqueueSnackbar('Bridges saved!', { variant: 'success' })
 					} catch (error) {
 						console.error(error)
-						updateFail((error as any).message)
+						enqueueSnackbar(`Error when saving Bridges: ${(error as any).message}`, {
+							variant: 'error',
+						})
 					}
 					actions.setSubmitting(false)
 				}}
@@ -70,75 +74,70 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 								<div className="form-body">
 									{formik.values.bridges.map((_, index) => (
 										<React.Fragment key={index}>
-											<FormRow>
-												<label htmlFor={`bridges.${index}.0`}>Bridge ID</label>
-												<Field
-													id={`bridges.${index}.0`}
-													name={`bridges.${index}.0`}
-													type="text"
-													placeholder="ID"
-												/>
-												<ErrorMessage name={`bridges.${index}.0`} component="div" />
-											</FormRow>
+											<Field
+												component={TextField}
+												margin="normal"
+												fullWidth
+												name={`bridges.${index}.0`}
+												type="text"
+												label="Bridge ID"
+											/>
 
-											<FormRow>
-												<label htmlFor={`bridges.${index}.1.name`}>Bridge Name</label>
-												<Field
-													id={`bridges.${index}.1.name`}
-													name={`bridges.${index}.1.name`}
-													type="text"
-													placeholder="Name"
-												/>
-												<ErrorMessage name={`bridges.${index}.1.name`} component="div" />
-											</FormRow>
+											<Field
+												component={TextField}
+												margin="normal"
+												fullWidth
+												name={`bridges.${index}.1.name`}
+												type="text"
+												label="Bridge Name"
+											/>
 
-											<FormRow>
-												<label htmlFor={`bridges.${index}.1.outgoing`}>Outgoing</label>
-												<Field
-													id={`bridges.${index}.1.outgoing`}
-													name={`bridges.${index}.1.outgoing`}
-													type="checkbox"
-												/>
-											</FormRow>
+											<Field
+												component={TextField}
+												margin="normal"
+												fullWidth
+												name={`bridges.${index}.1.url`}
+												type="text"
+												label="URL"
+											/>
 
-											<FormRow>
-												<label htmlFor={`bridges.${index}.1.url`}>URL</label>
-												<Field
-													id={`bridges.${index}.1.url`}
-													name={`bridges.${index}.1.url`}
-													type="text"
-													placeholder="URL"
-												/>
-												<ErrorMessage name={`bridges.${index}.1.url`} component="div" />
-											</FormRow>
-
-											<div className="btn-row-equal">
-												<TrashBtn
-													onClick={() => {
-														remove(index)
-													}}
-												/>
-
-												<button
-													className="btn form"
-													type="button"
-													onClick={() => {
-														setBridgeIdForEditDevices(formik.values.bridges[index][0])
-														setDevicesOpen(true)
-													}}
-												>
-													Edit Devices
-												</button>
-											</div>
+											<Grid container spacing={2}>
+												<Grid item xs={6}>
+													<Button
+														color="error"
+														variant="contained"
+														fullWidth
+														onClick={() => {
+															remove(index)
+														}}
+													>
+														Remove Bridge
+													</Button>
+												</Grid>
+												<Grid item xs={6}>
+													<Button
+														color="info"
+														variant="outlined"
+														fullWidth
+														onClick={() => {
+															setBridgeIdForEditDevices(formik.values.bridges[index][0])
+															setDevicesOpen(true)
+														}}
+													>
+														Edit Devices
+													</Button>
+												</Grid>
+											</Grid>
 
 											<hr />
 										</React.Fragment>
 									))}
 
-									<button
-										className="btn form"
-										type="button"
-										onClick={() =>
+									<Button
+										color="info"
+										variant="contained"
+										fullWidth
+										onClick={() => {
 											push([
 												'new-bridge',
 												literal<Bridge>({
@@ -156,31 +155,39 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 													},
 												}),
 											])
-										}
+										}}
 									>
 										Add Bridge
-									</button>
+									</Button>
 								</div>
 							)}
 						</FieldArray>
 
-						<div className="btn-row-equal">
-							<button type="submit" className="btn form" disabled={formik.isSubmitting}>
-								Save
-							</button>
-						</div>
+						<hr />
+
+						<Button
+							type="submit"
+							color="primary"
+							variant="contained"
+							fullWidth
+							disabled={formik.isSubmitting}
+						>
+							Save
+						</Button>
 					</Form>
 				)}
 			</Formik>
 
-			{devicesOpen && bridgeIdForEditDevices && (
-				<Popup
-					className="popup-devices"
-					title={`Edit Bridge "${bridgeIdForEditDevices}" Devices`}
-					onClose={() => setDevicesOpen(false)}
-				>
-					<DevicesSettings project={project} bridgeId={bridgeIdForEditDevices} />
-				</Popup>
+			{bridgeIdForEditDevices && (
+				<Dialog open={devicesOpen} onClose={handleDevicesClose}>
+					<DialogTitle>Devices for Bridge &quot;{bridgeIdForEditDevices}&quot;</DialogTitle>
+					<DialogContent className="devices-dialog">
+						<DevicesSettings project={project} bridgeId={bridgeIdForEditDevices} />
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleDevicesClose}>Close</Button>
+					</DialogActions>
+				</Dialog>
 			)}
 		</>
 	)

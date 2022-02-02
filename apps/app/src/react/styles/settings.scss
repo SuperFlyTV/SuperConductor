@@ -1,31 +1,24 @@
-.popup-settings {
-	.popup {
-		width: 60rem;
-		height: 60rem;
+$maxMuiDialogWidth: 552px;
 
-		&__content {
-			display: flex;
-			flex-direction: column;
-			flex-grow: 1;
-		}
-	}
+.settings-dialog {
+	display: flex;
+	flex-direction: column;
+	height: $maxMuiDialogWidth;
+	width: $maxMuiDialogWidth;
 
-	.react-tabs {
-		display: flex;
-		flex-direction: column;
+	> div[role='tabpanel'] {
 		flex-shrink: 1;
-		flex-grow: 1;
 		min-height: 1px;
-
-		&__tab-panel--selected {
-			display: flex;
-			flex-direction: column;
-			flex-shrink: 1;
-			flex-grow: 1;
-			min-height: 1px;
-		}
+		overflow-y: auto;
 	}
+}
 
+.devices-dialog {
+	height: calc($maxMuiDialogWidth - 80px);
+	width: calc($maxMuiDialogWidth - 80px);
+}
+
+.popup-settings {
 	form {
 		display: flex;
 		flex-direction: column;
@@ -39,12 +32,5 @@
 			min-height: 1px;
 			overflow-y: auto;
 		}
-	}
-}
-
-.popup-devices {
-	.popup {
-		width: 50rem;
-		height: 50rem;
 	}
 }

@@ -1,7 +1,7 @@
+import { Button } from '@mui/material'
 import classNames from 'classnames'
 import React, { MouseEventHandler } from 'react'
-import { BsFillPlayFill } from 'react-icons/bs'
-import { FaStop } from 'react-icons/fa'
+import { BsPlay, BsStop } from 'react-icons/bs'
 
 export const PlayControlBtn: React.FC<{
 	onClick: MouseEventHandler<HTMLButtonElement>
@@ -14,12 +14,14 @@ export const PlayControlBtn: React.FC<{
 		}
 	}
 	return (
-		<button
-			className={classNames({ btn: true, [props.mode]: true })}
+		<Button
+			variant="contained"
+			color="primary"
+			className={classNames('btn', 'btn--small', { [props.mode]: true })}
 			onClick={handleOnClick}
 			disabled={props.disabled}
 		>
-			{props.mode === 'play' ? <BsFillPlayFill color="white" size={20} /> : <FaStop color="white" size={12} />}
-		</button>
+			{props.mode === 'play' ? <BsPlay color="white" size={24} /> : <BsStop color="white" size={20} />}
+		</Button>
 	)
 }

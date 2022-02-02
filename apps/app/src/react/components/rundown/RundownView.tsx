@@ -1,17 +1,18 @@
 import React, { useCallback, useContext, useRef, useState } from 'react'
-import { Popup } from '../popup/Popup'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { Field, Form, Formik } from 'formik'
 import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
-import { FormRow } from '../sidebar/InfoGroup'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../api/DragItemTypes'
 import { MovePartFn } from './GroupView/PartView'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { Mappings } from 'timeline-state-resolver-types'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
+import { TextField } from 'formik-mui'
+import * as Yup from 'yup'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -99,88 +100,132 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	)
 }
 
+const newPartValidationSchema = Yup.object({
+	name: Yup.string().label('Part Name').required(),
+})
+
+const newGroupValidationSchema = Yup.object({
+	name: Yup.string().label('Group Name').required(),
+})
+
 const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 
+	const handleNewPartClose = () => {
+		setNewPartOpen(false)
+	}
+
+	const handleNewGroupClose = () => {
+		setNewGroupOpen(false)
+	}
+
 	return (
 		<>
 			<div className="group-list__control-row">
-				<button className="btn form" onClick={() => setNewPartOpen(true)}>
+				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</button>
-				<button className="btn form" onClick={() => setNewGroupOpen(true)}>
+				</Button>
+				<Button className="btn" variant="contained" onClick={() => setNewGroupOpen(true)}>
 					New group
-				</button>
+				</Button>
 			</div>
-			{newPartOpen && (
-				<Popup onClose={() => setNewPartOpen(false)}>
-					<Formik
-						initialValues={{ name: '' }}
-						enableReinitialize={true}
-						onSubmit={(values) => {
-							ipcServer
-								.newPart({
-									rundownId: rundown.id,
-									name: values.name,
-									groupId: null,
-								})
-								.catch(console.error)
-							setNewPartOpen(false)
-						}}
-					>
-						{() => (
-							<Form>
-								<FormRow>
-									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Part name" autoFocus={true} />
-									<ErrorMessage name="name" component="div" />
-								</FormRow>
-								<div className="btn-row-right">
-									<button type="submit" className="btn form">
-										Create
-									</button>
-								</div>
-							</Form>
-						)}
-					</Formik>
-				</Popup>
-			)}
 
-			{newGroupOpen && (
-				<Popup onClose={() => setNewGroupOpen(false)}>
-					<Formik
-						initialValues={{ name: '' }}
-						enableReinitialize={true}
-						onSubmit={(values, _actions) => {
-							ipcServer
-								.newGroup({
-									rundownId: rundown.id,
-									name: values.name,
-								})
-								.catch(console.error)
-
-							setNewGroupOpen(false)
-						}}
-					>
-						{() => (
+			<Formik
+				initialValues={{ name: '' }}
+				validationSchema={newPartValidationSchema}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					ipcServer
+						.newPart({
+							rundownId: rundown.id,
+							name: values.name,
+							groupId: null,
+						})
+						.catch(console.error)
+					setNewPartOpen(false)
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => (
+					<Dialog open={newPartOpen} onClose={handleNewPartClose}>
+						<DialogTitle>New Part</DialogTitle>
+						<DialogContent>
 							<Form>
-								<FormRow>
-									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Group name" autoFocus={true} />
-									<ErrorMessage name="name" component="div" />
-								</FormRow>
-								<div className="btn-row-right">
-									<button type="submit" className="btn form">
-										Create
-									</button>
-								</div>
+								<Field
+									component={TextField}
+									margin="normal"
+									fullWidth
+									name="name"
+									type="text"
+									label="Part Name"
+									autoFocus={true}
+									required
+								/>
 							</Form>
-						)}
-					</Formik>
-				</Popup>
-			)}
+						</DialogContent>
+						<DialogActions>
+							<Button
+								onClick={() => {
+									formik.submitForm().catch(console.error)
+								}}
+							>
+								Create
+							</Button>
+							<Button onClick={handleNewPartClose}>Cancel</Button>
+						</DialogActions>
+					</Dialog>
+				)}
+			</Formik>
+
+			<Formik
+				initialValues={{ name: '' }}
+				validationSchema={newGroupValidationSchema}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					ipcServer
+						.newGroup({
+							rundownId: rundown.id,
+							name: values.name,
+						})
+						.catch(console.error)
+					setNewGroupOpen(false)
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => (
+					<Dialog open={newGroupOpen} onClose={handleNewGroupClose}>
+						<DialogTitle>New Group</DialogTitle>
+						<DialogContent>
+							<Form>
+								<Field
+									component={TextField}
+									margin="normal"
+									fullWidth
+									name="name"
+									type="text"
+									label="Group Name"
+									autoFocus={true}
+									required
+								/>
+							</Form>
+						</DialogContent>
+						<DialogActions>
+							<Button
+								onClick={() => {
+									formik.submitForm().catch(console.error)
+								}}
+							>
+								Create
+							</Button>
+							<Button onClick={handleNewGroupClose}>Cancel</Button>
+						</DialogActions>
+					</Dialog>
+				)}
+			</Formik>
 		</>
 	)
 }

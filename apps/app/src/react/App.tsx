@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 import './styles/app.scss'
-import 'react-tabs/style/react-tabs.css'
-import 'react-toastify/dist/ReactToastify.css'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
@@ -23,9 +25,9 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
-import { Popup } from './components/popup/Popup'
 import { Settings } from './components/settings/Settings'
-import { ToastContainer } from 'react-toastify'
+import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { SnackbarProvider } from 'notistack'
 
 export const App = () => {
 	// 	this.ipcClient?.updateProject(project)
@@ -47,6 +49,24 @@ export const App = () => {
 
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
 	const [settingsOpen, setSettingsOpen] = useState(false)
+
+	const theme = React.useMemo(() => {
+		return createTheme({
+			palette: {
+				mode: 'dark',
+				primary: {
+					main: '#e96703',
+				},
+			},
+			typography: {
+				/**
+				 * This is needed to counteract the `font-size: 62.5%` style on the <html> tag.
+				 * See https://mui.com/customization/typography/#font-size for more details.
+				 */
+				fontSize: 14 * 1.6,
+			},
+		})
+	}, [])
 
 	useEffect(() => {
 		new IPCClient(ipcRenderer, {
@@ -162,6 +182,10 @@ export const App = () => {
 		sorensen.init().catch(console.error)
 	}, [])
 
+	const handleSettingsClose = () => {
+		setSettingsOpen(false)
+	}
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
@@ -179,42 +203,44 @@ export const App = () => {
 						<ProjectContext.Provider value={project}>
 							<ResourcesContext.Provider value={resources}>
 								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-									<div className="app" onPointerDown={handlePointerDownAnywhere}>
-										<div className="top-header">
-											<TopHeader
-												rundowns={rundowns0}
-												onSelect={(rundownId) => {
-													setCurrentRundownId(rundownId)
-												}}
-												bridgeStatuses={bridgeStatuses}
-											/>
-										</div>
-
-										{currentRundown ? (
-											<RundownContext.Provider value={currentRundown}>
-												<div className="main-area">
-													<RundownView mappings={project.mappings} />
+									<ThemeProvider theme={theme}>
+										<SnackbarProvider maxSnack={1}>
+											<div className="app" onPointerDown={handlePointerDownAnywhere}>
+												<div className="top-header">
+													<TopHeader
+														rundowns={rundowns0}
+														onSelect={(rundownId) => {
+															setCurrentRundownId(rundownId)
+														}}
+														bridgeStatuses={bridgeStatuses}
+													/>
 												</div>
-												<div className="side-bar">
-													<Sidebar mappings={project.mappings} />
-												</div>
-											</RundownContext.Provider>
-										) : (
-											<div>Loading...</div>
-										)}
 
-										{settingsOpen && (
-											<Popup
-												className="popup-settings"
-												title="Settings"
-												onClose={() => setSettingsOpen(false)}
-											>
-												<Settings project={project}></Settings>
-											</Popup>
-										)}
+												{currentRundown ? (
+													<RundownContext.Provider value={currentRundown}>
+														<div className="main-area">
+															<RundownView mappings={project.mappings} />
+														</div>
+														<div className="side-bar">
+															<Sidebar mappings={project.mappings} />
+														</div>
+													</RundownContext.Provider>
+												) : (
+													<div>Loading...</div>
+												)}
 
-										<ToastContainer theme="colored" />
-									</div>
+												<Dialog open={settingsOpen} onClose={handleSettingsClose}>
+													<DialogTitle>Preferences</DialogTitle>
+													<DialogContent className="settings-dialog">
+														<Settings project={project} />
+													</DialogContent>
+													<DialogActions>
+														<Button onClick={handleSettingsClose}>Close</Button>
+													</DialogActions>
+												</Dialog>
+											</div>
+										</SnackbarProvider>
+									</ThemeProvider>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>
 						</ProjectContext.Provider>
