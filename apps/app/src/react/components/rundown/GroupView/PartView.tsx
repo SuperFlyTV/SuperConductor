@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useRef } from 'react'
+import React, { useContext, useMemo, useRef, useState } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
@@ -11,6 +11,7 @@ import { GroupPlayhead } from '../../../../lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
@@ -35,6 +36,8 @@ export const PartView: React.FC<{
 	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
+
+	const [partPropsOpen, setPartPropsOpen] = useState(false)
 
 	const { maxDuration, resolvedTimeline } = useMemo(() => {
 		const resolvedTimeline = Resolver.resolveTimeline(
@@ -228,7 +231,14 @@ export const PartView: React.FC<{
 				<MdOutlineDragIndicator />
 			</div>
 			<div className="part__meta">
-				<div className="title">{part.name}</div>
+				<div
+					className="title"
+					onDoubleClick={() => {
+						setPartPropsOpen(true)
+					}}
+				>
+					{part.name}
+				</div>
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
@@ -293,6 +303,30 @@ export const PartView: React.FC<{
 					</div>
 				</div>
 			</div>
+
+			<PartPropertiesDialog
+				initial={part}
+				open={partPropsOpen}
+				title="Edit Part"
+				acceptLabel="Save"
+				onAccepted={(updatedPart) => {
+					ipcServer
+						.updatePart({
+							rundownId,
+							groupId: parentGroup.id,
+							partId: part.id,
+							part: {
+								...part,
+								name: updatedPart.name,
+							},
+						})
+						.catch(console.error)
+					setPartPropsOpen(false)
+				}}
+				onDiscarded={() => {
+					setPartPropsOpen(false)
+				}}
+			/>
 		</div>
 	)
 }

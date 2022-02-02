@@ -2,6 +2,7 @@ import { IPCServerMethods } from '../../ipc/IPCAPI'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 import { Project } from '../../models/project/Project'
+import { Part } from '../../models/rundown/Part'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -47,6 +48,9 @@ export class IPCServer implements IPCServerMethods {
 		groupId: string | null
 	}): Promise<string> {
 		return this.invokeServerMethod('newPart', data)
+	}
+	updatePart(data: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<void> {
+		return this.invokeServerMethod('updatePart', data)
 	}
 	newGroup(data: { rundownId: string; name: string }): Promise<string> {
 		return this.invokeServerMethod('newGroup', data)

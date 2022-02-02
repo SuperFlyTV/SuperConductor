@@ -3,11 +3,13 @@ import { Project } from '../models/project/Project'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
+import { Part } from '../models/rundown/Part'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
+	UpdatePart = 'update part',
 	NewGroup = 'create new group',
 	DeletePart = 'delete part',
 	DeleteGroup = 'delete group',
@@ -51,6 +53,7 @@ export interface IPCServerMethods {
 
 		name: string
 	}) => Promise<unknown>
+	updatePart: (data: { rundownId: string; groupId: string; partId: string; part: Part }) => Promise<unknown>
 	newGroup: (data: { rundownId: string; name: string }) => Promise<unknown>
 	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>

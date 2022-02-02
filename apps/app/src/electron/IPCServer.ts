@@ -272,6 +272,27 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: newPart.id,
 		}
 	}
+	async updatePart(arg: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<UndoableResult> {
+		const { rundown, part } = this.getPart(arg)
+
+		const partPreChange = deepClone(part)
+		Object.assign(part, arg.part)
+
+		this._updatePart(part)
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				Object.assign(part, partPreChange)
+
+				this._updatePart(part)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.UpdatePart,
+		}
+	}
 	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
 			id: short.generate(),

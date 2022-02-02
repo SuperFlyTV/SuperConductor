@@ -9,10 +9,8 @@ import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Switch } from '@mui/material'
-import { Field, Form, Formik } from 'formik'
-import { TextField } from 'formik-mui'
-import * as Yup from 'yup'
+import { Button, FormControlLabel, Switch } from '@mui/material'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -245,17 +243,9 @@ export const GroupView: React.FC<{
 	}
 }
 
-const newPartValidationSchema = Yup.object({
-	name: Yup.string().label('Part Name').required(),
-})
-
 const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
-
-	const handleNewPartClose = () => {
-		setNewPartOpen(false)
-	}
 
 	return (
 		<>
@@ -265,53 +255,24 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 				</Button>
 			</div>
 
-			<Formik
-				initialValues={{ name: '' }}
-				validationSchema={newPartValidationSchema}
-				enableReinitialize={true}
-				onSubmit={(values, actions) => {
+			<PartPropertiesDialog
+				open={newPartOpen}
+				title="New Part"
+				acceptLabel="Create"
+				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
 							rundownId,
-							name: values.name,
+							name: newPart.name,
 							groupId: group.id,
 						})
 						.catch(console.error)
 					setNewPartOpen(false)
-					actions.setSubmitting(false)
-					actions.resetForm()
 				}}
-			>
-				{(formik) => (
-					<Dialog open={newPartOpen} onClose={handleNewPartClose}>
-						<DialogTitle>New Part</DialogTitle>
-						<DialogContent>
-							<Form>
-								<Field
-									component={TextField}
-									margin="normal"
-									fullWidth
-									name="name"
-									type="text"
-									label="Part Name"
-									autoFocus={true}
-									required
-								/>
-							</Form>
-						</DialogContent>
-						<DialogActions>
-							<Button
-								onClick={() => {
-									formik.submitForm().catch(console.error)
-								}}
-							>
-								Create
-							</Button>
-							<Button onClick={handleNewPartClose}>Cancel</Button>
-						</DialogActions>
-					</Dialog>
-				)}
-			</Formik>
+				onDiscarded={() => {
+					setNewPartOpen(false)
+				}}
+			/>
 		</>
 	)
 }
