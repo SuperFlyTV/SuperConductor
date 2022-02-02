@@ -45,8 +45,6 @@ export interface IPCServerMethods {
 	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
-	queuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
-	unqueuePartGroup: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string

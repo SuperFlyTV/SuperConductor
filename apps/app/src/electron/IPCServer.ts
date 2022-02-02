@@ -160,42 +160,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getPart(arg)
 
-		if (!group.playout.startTime) {
-			// Start playing the queued up items:
-			if (!group.playout.partIds.length) {
-				group.playout.partIds = [arg.partId]
-			} else if (group.playout.partIds[0] !== arg.partId) {
-				group.playout.partIds.unshift(arg.partId)
-			}
-		} else {
-			// If we're already playing and we hit Play,
-			// we should just abort whatever's playing and start playing this instead:
+		// If we're already playing and we hit Play,
+		// we should just abort whatever's playing and start playing this instead:
+		group.playout.partId = arg.partId
 
-			group.playout.partIds = [arg.partId]
-		}
 		// Start playing the group:
 		group.playout.startTime = Date.now()
-
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
-	}
-	async queuePartGroup(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		// Add the part to the queue:
-		group.playout.partIds.push(part.id)
-
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
-	}
-	async unqueuePartGroup(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		// Remove the last instance of the part from the queue:
-		const lastIndex = group.playout.partIds.lastIndexOf(part.id)
-		if (lastIndex >= 0) {
-			group.playout.partIds.splice(lastIndex, 1)
-		}
 
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
@@ -206,7 +176,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		// Stop the group:
 		group.playout = {
 			startTime: null,
-			partIds: [],
+			partId: '',
 		}
 
 		this._updateTimeline(group)
@@ -246,7 +216,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				loop: false,
 				playout: {
 					startTime: null,
-					partIds: [],
+					partId: '',
 				},
 				playheadData: null,
 			}
@@ -303,7 +273,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			loop: false,
 			playout: {
 				startTime: null,
-				partIds: [],
+				partId: '',
 			},
 			playheadData: null,
 		}
@@ -384,7 +354,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		// Stop the group (so that the updates are sent to TSR):
 		group.playout = {
 			startTime: null,
-			partIds: [],
+			partId: '',
 		}
 
 		this._updateTimeline(group)
@@ -448,7 +418,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					loop: false,
 					playout: {
 						startTime: null,
-						partIds: [],
+						partId: '',
 					},
 					playheadData: null,
 				}
@@ -503,14 +473,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
 					const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
 					fromGroup.playout.startTime = Date.now() - timeIntoPart
-					fromGroup.playout.partIds = [fromGroupPartPlayheadData.part.id]
+					fromGroup.playout.partId = fromGroupPartPlayheadData.part.id
 				}
 				this._updateTimeline(fromGroup)
 			} else {
 				// Inter-group move.
 				if (movedPartIsPlaying && !toGroupIsPlaying) {
-					fromGroup.playout.partIds = fromGroup.playout.partIds.filter((id) => id !== arg.from.partId)
-					toGroup.playout.partIds.push(arg.from.partId)
+					fromGroup.playout.partId = ''
+					toGroup.playout.partId = arg.from.partId
 					toGroup.playout.startTime = fromGroup.playout.startTime
 				}
 				this._updateTimeline(fromGroup)

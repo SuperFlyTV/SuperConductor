@@ -118,7 +118,7 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 				],
 				playout: {
 					startTime: null,
-					partIds: [],
+					partId: '',
 				},
 				playheadData: null,
 			},

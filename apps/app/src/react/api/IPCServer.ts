@@ -22,12 +22,6 @@ export class IPCServer implements IPCServerMethods {
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}
-	queuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('queuePartGroup', data)
-	}
-	unqueuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('unqueuePartGroup', data)
-	}
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}

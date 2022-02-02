@@ -14,10 +14,10 @@ export type Group = {
 
 	/** Data related to the playout of the group */
 	playout: {
-		/** Timestamp for when the part (.startPartId) started playing. null = not playing */
+		/** Timestamp for when the part (.partId) started playing. null = not playing */
 		startTime: number | null
-		/** The ids of the parts to be played (in this order) */
-		partIds: string[]
+		/** The ids of the part to be played */
+		partId: string
 	}
 
 	/** This is populated by the backend, as the timeline is build. */

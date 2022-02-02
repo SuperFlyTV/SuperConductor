@@ -59,8 +59,9 @@ export const deletePart = (group: Group, partId: string): Part | undefined => {
 	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
 		// TODO: How to handle this?
-
-		group.playout.partIds = group.playout.partIds.filter((id) => id !== partId)
+		if (group.playout.partId === partId) {
+			group.playout.partId = ''
+		}
 	}
 	return deletedPart
 }

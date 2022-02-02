@@ -1,14 +1,13 @@
 import { Group } from '../models/rundown/Group'
 import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
-import { last } from '@shared/lib'
 import { findPart } from './util'
 
 /** Calculates how the parts in a group is going to be played
  * @see GroupPreparedPlayheadData
  */
 export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | null {
-	if (group.playout.startTime && group.playout.partIds.length) {
+	if (group.playout.startTime && group.playout.partId) {
 		const data: GroupPreparedPlayheadData = {
 			startTime: 0,
 			duration: 0,
@@ -17,19 +16,13 @@ export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | 
 		}
 		data.startTime = group.playout.startTime
 
-		// const startPart = findPart(group, group.playout.startPartId)
-		// if (startPart) {
-
-		// let currentPart: PartModel = startPart
-
-		const queuedParts: Part[] = []
-		for (const partId of group.playout.partIds) {
-			const part = findPart(group, partId)
-			if (part) queuedParts.push(part)
+		const part = findPart(group, group.playout.partId)
+		if (!part) {
+			return null
 		}
 
 		if (group.loop && !group.autoPlay) {
-			// Only loop the one part (or well, the queued parts)
+			// Only loop the one part
 
 			// Add the rudown into .repeating instead, to make it loop:
 			data.parts = []
@@ -40,14 +33,12 @@ export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | 
 			}
 
 			let nextStartTime = 0
-			// Add the queued Parts:
-			for (const part of queuedParts) {
-				data.repeating.parts.push({
-					startTime: nextStartTime,
-					part,
-				})
-				nextStartTime += part.resolved.duration
-			}
+			// Add the part
+			data.repeating.parts.push({
+				startTime: nextStartTime,
+				part,
+			})
+			nextStartTime += part.resolved.duration
 			data.repeating.duration = nextStartTime
 		} else {
 			/** The startTime of the next Part. */
@@ -62,20 +53,16 @@ export function prepareGroupPlayhead(group: Group): GroupPreparedPlayheadData | 
 			// nextStartTime += startPart.resolved.duration
 			// data.duration = nextStartTime // Note: This might be overwritten later..
 
-			// Add the queued Parts:
-			for (const part of queuedParts) {
-				data.parts.push({
-					startTime: nextStartTime,
-					part,
-				})
-				nextStartTime += part.resolved.duration
-			}
+			data.parts.push({
+				startTime: nextStartTime,
+				part,
+			})
+			nextStartTime += part.resolved.duration
 			data.duration = nextStartTime // Note: This might be overwritten later.
-			const lastQueuedPart: Part = last(queuedParts) as Part
 
 			if (group.autoPlay) {
 				// Add the rest of the Parts in the group:
-				const currentPartIndex = group.parts.findIndex((r) => r.id === lastQueuedPart.id)
+				const currentPartIndex = group.parts.findIndex((r) => r.id === part.id)
 				const restParts = group.parts.slice(currentPartIndex + 1)
 
 				for (const part of restParts) {

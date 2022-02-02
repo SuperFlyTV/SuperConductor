@@ -59,9 +59,6 @@ export const PartView: React.FC<{
 	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
-	const groupNotPlayingAndQueued: boolean =
-		parentGroup.playout.startTime === null && parentGroup.playout.partIds.length > 0
-	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.partIds[0] !== part.id
 	const handleStart = () => {
 		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
 	}
@@ -240,7 +237,7 @@ export const PartView: React.FC<{
 					{part.name}
 				</div>
 				<div className="controls">
-					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
+					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
 					<TrashBtn onClick={handleDelete} />
 				</div>
