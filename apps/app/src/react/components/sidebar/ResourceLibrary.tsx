@@ -83,9 +83,8 @@ export const ResourceLibrary: React.FC = () => {
 						const child: JSX.Element = d[1]
 
 						return (
-							<>
+							<React.Fragment key={resource.id}>
 								<ResourceLibraryItem
-									key={resource.id}
 									resource={resource}
 									selected={resource.id === selectedResourceId}
 									onClick={() => {
@@ -98,8 +97,8 @@ export const ResourceLibrary: React.FC = () => {
 								>
 									{child}
 								</ResourceLibraryItem>
-								<hr key={resource.id + '_hr'} />
-							</>
+								<hr />
+							</React.Fragment>
 						)
 					})}
 			</InfoGroup>
