@@ -55,6 +55,9 @@ export class IPCServer implements IPCServerMethods {
 	newGroup(data: { rundownId: string; name: string }): Promise<string> {
 		return this.invokeServerMethod('newGroup', data)
 	}
+	updateGroup(data: { rundownId: string; groupId: string; group: Group }): Promise<void> {
+		return this.invokeServerMethod('updateGroup', data)
+	}
 	deletePart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('deletePart', data)
 	}

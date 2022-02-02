@@ -322,6 +322,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: newGroup.id,
 		}
 	}
+	async updateGroup(arg: { rundownId: string; groupId: string; group: Group }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+
+		const groupPreChange = deepClone(group)
+		Object.assign(group, arg.group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				// @TODO: Don't overwrite playout-related properties?
+				Object.assign(group, groupPreChange)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.UpdateGroup,
+		}
+	}
 	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 

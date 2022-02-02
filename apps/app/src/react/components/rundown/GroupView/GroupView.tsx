@@ -11,6 +11,7 @@ import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, FormControlLabel, Switch } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
+import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -20,6 +21,8 @@ export const GroupView: React.FC<{
 	movePart: MovePartFn
 }> = ({ group, groupIndex, rundownId, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
+
+	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -178,7 +181,14 @@ export const GroupView: React.FC<{
 		return (
 			<div ref={wrapperRef} className="group" data-handler-id={handlerId}>
 				<div className="group__header">
-					<div className="title">{group.name}</div>
+					<div
+						className="title"
+						onDoubleClick={() => {
+							setGroupPropsOpen(true)
+						}}
+					>
+						{group.name}
+					</div>
 					<div className="controls">
 						<div className="toggle">
 							<FormControlLabel
@@ -238,6 +248,29 @@ export const GroupView: React.FC<{
 
 					<GroupOptions rundownId={rundownId} group={group} />
 				</div>
+
+				<GroupPropertiesDialog
+					initial={group}
+					open={groupPropsOpen}
+					title="Edit Group"
+					acceptLabel="Save"
+					onAccepted={(updatedGroup) => {
+						ipcServer
+							.updateGroup({
+								rundownId,
+								groupId: group.id,
+								group: {
+									...group,
+									name: updatedGroup.name,
+								},
+							})
+							.catch(console.error)
+						setGroupPropsOpen(false)
+					}}
+					onDiscarded={() => {
+						setGroupPropsOpen(false)
+					}}
+				/>
 			</div>
 		)
 	}

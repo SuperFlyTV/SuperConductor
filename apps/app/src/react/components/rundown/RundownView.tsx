@@ -1,5 +1,4 @@
 import React, { useCallback, useContext, useRef, useState } from 'react'
-import { Field, Form, Formik } from 'formik'
 import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
@@ -10,10 +9,9 @@ import { MovePartFn } from './GroupView/PartView'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
-import { TextField } from 'formik-mui'
-import * as Yup from 'yup'
+import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -101,18 +99,10 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	)
 }
 
-const newGroupValidationSchema = Yup.object({
-	name: Yup.string().label('Group Name').required(),
-})
-
 const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
-
-	const handleNewGroupClose = () => {
-		setNewGroupOpen(false)
-	}
 
 	return (
 		<>
@@ -144,52 +134,23 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				}}
 			/>
 
-			<Formik
-				initialValues={{ name: '' }}
-				validationSchema={newGroupValidationSchema}
-				enableReinitialize={true}
-				onSubmit={(values, actions) => {
+			<GroupPropertiesDialog
+				open={newGroupOpen}
+				title="New Group"
+				acceptLabel="Create"
+				onAccepted={(newGroup) => {
 					ipcServer
 						.newGroup({
 							rundownId: rundown.id,
-							name: values.name,
+							name: newGroup.name,
 						})
 						.catch(console.error)
 					setNewGroupOpen(false)
-					actions.setSubmitting(false)
-					actions.resetForm()
 				}}
-			>
-				{(formik) => (
-					<Dialog open={newGroupOpen} onClose={handleNewGroupClose}>
-						<DialogTitle>New Group</DialogTitle>
-						<DialogContent>
-							<Form>
-								<Field
-									component={TextField}
-									margin="normal"
-									fullWidth
-									name="name"
-									type="text"
-									label="Group Name"
-									autoFocus={true}
-									required
-								/>
-							</Form>
-						</DialogContent>
-						<DialogActions>
-							<Button
-								onClick={() => {
-									formik.submitForm().catch(console.error)
-								}}
-							>
-								Create
-							</Button>
-							<Button onClick={handleNewGroupClose}>Cancel</Button>
-						</DialogActions>
-					</Dialog>
-				)}
-			</Formik>
+				onDiscarded={() => {
+					setNewGroupOpen(false)
+				}}
+			/>
 		</>
 	)
 }
