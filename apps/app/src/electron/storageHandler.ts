@@ -236,8 +236,14 @@ export class StorageHandler extends EventEmitter {
 		const rundowns: { [fileName: string]: FileRundown } = {}
 
 		const rundownList = this.listRundownsInProject(this._projectId)
-		for (const rundown of rundownList) {
-			rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+		if (rundownList.length > 0) {
+			for (const rundown of rundownList) {
+				rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+			}
+		} else {
+			// If the project has no rundowns, create a default rundown.
+			const defaultRundownFilename = 'default.rundown.json'
+			rundowns[defaultRundownFilename] = this._loadRundown(this._projectId, defaultRundownFilename)
 		}
 
 		return rundowns
