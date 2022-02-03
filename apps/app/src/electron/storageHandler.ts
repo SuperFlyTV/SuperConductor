@@ -61,7 +61,12 @@ export class StorageHandler extends EventEmitter {
 	/** Returns a list of available rundowns */
 	listRundownsInProject(projectId: string): { fileName: string }[] {
 		// list all files in the rundowns folder
-		const files = fs.readdirSync(this.rundownsDir(projectId))
+		let files: string[] = []
+		try {
+			files = fs.readdirSync(this.rundownsDir(projectId))
+		} catch (e) {
+			// ignore, it's probably because the folder doesn't exist yet
+		}
 
 		// filter out non-json files
 		const jsonFiles = files.filter((file) => file.endsWith('.json'))

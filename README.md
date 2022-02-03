@@ -57,7 +57,7 @@ If you've installed the SuperConductor UI and `tsr-bridge` on two different comp
 - `cd >>path-to-this-folder<<`
 - `yarn`
 - `yarn setup`
-- `yarn start:electron` (Starts both the Superconductor and TSR-bridge)
+- `yarn dev:electron` (Starts both the Superconductor and TSR-bridge)
 
 ### Architecture Overview
 
