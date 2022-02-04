@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/roboto/300.css'
@@ -30,27 +30,20 @@ import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogA
 import { SnackbarProvider } from 'notistack'
 
 export const App = () => {
-	// 	this.ipcClient?.updateProject(project)
-	// })
-	// this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-	// 	this.ipcClient?.updateRundown(fileName, rundown)
-
-	// 	groups: [],
-	// 	media: [],
-	// 	templates: [],
-	// 	mappings: undefined,
-	// })
-
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
-
+	const currentRundownIdRef = useRef<string>()
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
 	const [closedRundowns, setClosedRundowns] =
 		useState<{ fileName: string; version: number; name: string; open: boolean }[]>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
+
+	useEffect(() => {
+		currentRundownIdRef.current = currentRundownId
+	}, [currentRundownId])
 
 	const theme = React.useMemo(() => {
 		return createTheme({
@@ -76,10 +69,10 @@ export const App = () => {
 				setProject(project)
 			},
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				if (!currentRundownId) {
+				if (!currentRundownIdRef.current) {
 					setCurrentRundownId(rundownId)
 					setCurrentRundown(rundown)
-				} else if (currentRundownId === rundownId) {
+				} else if (currentRundownIdRef.current === rundownId) {
 					setCurrentRundown(rundown)
 				}
 
@@ -155,8 +148,9 @@ export const App = () => {
 	}, [guiData])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		isMoving: false,
-		wasMoved: false,
+		moveType: null,
+		wasMoved: null,
+		partId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
@@ -174,7 +168,7 @@ export const App = () => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.side-bar')
-		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.wasMoved) {
+		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {
@@ -189,7 +183,6 @@ export const App = () => {
 				}
 			})
 		}
-		timelineObjectMoveContextValue.updateMove({ wasMoved: false })
 	}
 
 	useEffect(() => {

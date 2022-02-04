@@ -1,8 +1,8 @@
-import React, { useContext, useMemo, useRef, useState } from 'react'
+import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
+import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
 import { getCurrentlyPlayingInfo, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
@@ -18,6 +18,16 @@ import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
+import { EmptyLayer } from './EmptyLayer'
+import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { GUIContext } from '../../../contexts/GUI'
+import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
+import { HotkeyContext } from '../../../contexts/Hotkey'
+
+/**
+ * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
+ */
+const SNAP_DISTANCE_IN_PIXELS = 10
 
 export type MovePartFn = (data: {
 	dragGroup: Group
@@ -36,18 +46,188 @@ export const PartView: React.FC<{
 	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { gui } = useContext(GUIContext)
+	const { move, updateMove } = useContext(TimelineObjectMoveContext)
+	const keyTracker = useContext(HotkeyContext)
+	const layersDivRef = useRef<HTMLDivElement>(null)
+	const changedObjects = useRef<TimelineObj[]>([])
+	const [trackWidth, setTrackWidth] = useState(0)
+	const [bypassSnapping, setBypassSnapping] = useState(false)
+	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
+	const updateMoveRef = useRef(updateMove)
+	updateMoveRef.current = updateMove
+
+	const cache = useRef<ResolverCache>({})
 
 	const [partPropsOpen, setPartPropsOpen] = useState(false)
 
-	const { maxDuration, resolvedTimeline } = useMemo(() => {
-		const resolvedTimeline = Resolver.resolveTimeline(
+	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
+		const orgResolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),
-			{ time: 0 }
+			{ time: 0, cache: cache.current }
 		)
+		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline)
+		const msPerPixel = orgMaxDuration / trackWidth
+		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
+
+		return { orgResolvedTimeline, orgMaxDuration, msPerPixel, snapDistanceInMilliseconds }
+	}, [part.timeline, trackWidth])
+
+	const snapPoints = useMemo(() => {
+		const snapPoints: Array<SnapPoint> = []
+
+		for (const timelineObj of Object.values(orgResolvedTimeline.objects)) {
+			if (Array.isArray(timelineObj.enable)) {
+				return
+			}
+			const instance = timelineObj.resolved.instances[0]
+
+			snapPoints.push({
+				timelineObjId: timelineObj.id,
+				time: instance.start,
+				expression: `#${timelineObj.id}.start`,
+			})
+			if (instance.end) {
+				snapPoints.push({
+					timelineObjId: timelineObj.id,
+					time: instance.end,
+					expression: `#${timelineObj.id}.end`,
+				})
+			}
+		}
+		snapPoints.sort(sortSnapPoints)
+		return snapPoints
+	}, [orgResolvedTimeline])
+
+	/**
+	 * This useEffect hook is part of a solution to the problem of
+	 * timelineObjs briefly flashing back to their original start position
+	 * after the user releases their mouse button after performing a drag move.
+	 *
+	 * In other words: this solves a purely aesthetic problem.
+	 */
+	useEffect(() => {
+		if (waitingForBackendUpdate) {
+			// A move has completed and we're waiting for the backend to give us the updated timelineObjs.
+
+			return () => {
+				// The backend has updated us (we know because `part` now points to a new object)
+				// and we can clear the partId of the `move` context so that we stop displaying
+				// timelineObjs with a drag delta applied.
+				//
+				// This is where a move operation has truly completed, including the backend response.
+				updateMoveRef.current({
+					partId: null,
+				})
+			}
+		}
+	}, [waitingForBackendUpdate, part])
+
+	// Initialize trackWidth.
+	useLayoutEffect(() => {
+		if (layersDivRef.current) {
+			const size = layersDivRef.current.getBoundingClientRect()
+			setTrackWidth(size.width)
+		}
+	}, [])
+
+	// Update trackWidth at the end of a move.
+	// @TODO: Update trackWidth _during_ a move?
+	useLayoutEffect(() => {
+		if (move.moveType && move.partId === part.id && layersDivRef.current) {
+			const size = layersDivRef.current.getBoundingClientRect()
+			setTrackWidth(size.width)
+		}
+	}, [move.moveType, move.partId, part.id])
+
+	const { resolvedTimeline, newChangedObjects } = useMemo(() => {
+		let resolvedTimeline: ResolvedTimeline
+		let newChangedObjects: TimelineObj[] = []
+
+		const dragDelta = move.dragDelta
+		if (dragDelta && move.partId === part.id && move.leaderTimelineObjId) {
+			// Handle snapping
+
+			const o = applyMovementToTimeline(
+				part.timeline,
+				orgResolvedTimeline,
+				bypassSnapping ? [] : snapPoints || [],
+				snapDistanceInMilliseconds,
+				dragDelta,
+				// The use of wasMoved here helps prevent a brief flash at the
+				// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+				move.moveType ?? move.wasMoved,
+				move.leaderTimelineObjId,
+				gui.selectedTimelineObjIds,
+				cache.current
+			)
+			resolvedTimeline = o.resolvedTimeline
+			newChangedObjects = o.changedObjects
+		} else {
+			resolvedTimeline = orgResolvedTimeline
+		}
+
 		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		return { maxDuration, resolvedTimeline }
-	}, [part.timeline])
+		return { maxDuration, resolvedTimeline, newChangedObjects }
+	}, [
+		move,
+		part.id,
+		part.timeline,
+		orgResolvedTimeline,
+		bypassSnapping,
+		snapPoints,
+		snapDistanceInMilliseconds,
+		gui.selectedTimelineObjIds,
+	])
+
+	useEffect(() => {
+		if (newChangedObjects.length) {
+			changedObjects.current = newChangedObjects
+		}
+	}, [newChangedObjects])
+
+	useEffect(() => {
+		// Handle when we stop moving:
+		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null) {
+			setWaitingForBackendUpdate(true)
+			for (const obj of changedObjects.current) {
+				ipcServer
+					.updateTimelineObj({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: obj.obj.id,
+						timelineObj: obj,
+					})
+					.catch((error) => {
+						setWaitingForBackendUpdate(false)
+						console.error(error)
+					})
+			}
+		}
+	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
+
+	useEffect(() => {
+		const onKey = () => {
+			const pressed = keyTracker.getPressedKeys()
+			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+		}
+		onKey()
+
+		keyTracker.bind('Shift', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Shift', onKey, {
+			up: true,
+			global: true,
+		})
+
+		return () => {
+			keyTracker.unbind('Shift', onKey)
+		}
+	}, [keyTracker])
 
 	const isGroupPlaying = !!playhead
 	const isPartPlaying = isGroupPlaying && playhead.partId === part.id
@@ -266,7 +446,7 @@ export const PartView: React.FC<{
 					{playheadTime ? (
 						<PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} />
 					) : null}
-					<div className="layers">
+					<div className="layers" ref={layersDivRef}>
 						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
@@ -291,12 +471,15 @@ export const PartView: React.FC<{
 									rundownId={rundownId}
 									groupId={parentGroup.id}
 									partId={part.id}
-									partDuration={maxDuration}
+									partDuration={orgMaxDuration}
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
+									msPerPixel={msPerPixel}
 								/>
 							)
 						})}
+
+						<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
 					</div>
 				</div>
 			</div>
@@ -351,4 +534,16 @@ const sortLayers = (entries: TEntries, mappings: Mappings) => {
 
 		return 0
 	})
+}
+
+const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
+	if (a.time < b.time) {
+		return -1
+	}
+
+	if (a.time > b.time) {
+		return 1
+	}
+
+	return 0
 }

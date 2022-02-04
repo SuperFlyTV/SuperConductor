@@ -104,7 +104,8 @@ export class IPCServer implements IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-		layerId: string
+		/** What layer to insert resource into. null = insert into a new layer */
+		layerId: string | null
 		resourceId: string
 	}): Promise<void> {
 		return this.invokeServerMethod('addResourceToTimeline', data)

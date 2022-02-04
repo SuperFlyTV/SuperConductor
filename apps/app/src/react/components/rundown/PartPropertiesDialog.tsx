@@ -50,6 +50,7 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 						</Form>
 					</DialogContent>
 					<DialogActions>
+						<Button onClick={onDiscarded}>Cancel</Button>
 						<Button
 							onClick={() => {
 								formik.submitForm().catch(console.error)
@@ -57,7 +58,6 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 						>
 							{acceptLabel}
 						</Button>
-						<Button onClick={onDiscarded}>Cancel</Button>
 					</DialogActions>
 				</Dialog>
 			)}
