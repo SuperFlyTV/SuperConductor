@@ -15,7 +15,7 @@ export function applyMovementToTimeline(
 	snapPoints: SnapPoint[],
 	snapDistanceInMilliseconds: number,
 	dragDelta: number,
-	move: TimelineObjectMove,
+	moveType: TimelineObjectMove['moveType'],
 	leaderTimelineObjId: string,
 	selectedTimelineObjIds: string[],
 	cache: ResolverCache | undefined
@@ -111,7 +111,7 @@ export function applyMovementToTimeline(
 				const orgObj = orgResolvedTimeline.objects[obj.obj.id]
 				const orgInstance = orgObj.resolved.instances[0]
 
-				if (move.moveType === 'whole') {
+				if (moveType === 'whole') {
 					if (selectedTimelineObjIds.length === 1) {
 						// If the user specifically has selected the timelineObj, the object should be moved, no matter what
 

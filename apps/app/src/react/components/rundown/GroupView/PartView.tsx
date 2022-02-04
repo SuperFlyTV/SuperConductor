@@ -52,6 +52,7 @@ export const PartView: React.FC<{
 	const changedObjects = useRef<TimelineObj[]>([])
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
+	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
 	const updateMoveRef = useRef(updateMove)
 	updateMoveRef.current = updateMove
 
@@ -97,6 +98,30 @@ export const PartView: React.FC<{
 		return snapPoints
 	}, [orgResolvedTimeline])
 
+	/**
+	 * This useEffect hook is part of a solution to the problem of
+	 * timelineObjs briefly flashing back to their original start position
+	 * after the user releases their mouse button after performing a drag move.
+	 *
+	 * In other words: this solves a purely aesthetic problem.
+	 */
+	useEffect(() => {
+		if (waitingForBackendUpdate) {
+			// A move has completed and we're waiting for the backend to give us the updated timelineObjs.
+
+			return () => {
+				// The backend has updated us (we know because `part` now points to a new object)
+				// and we can clear the partId of the `move` context so that we stop displaying
+				// timelineObjs with a drag delta applied.
+				//
+				// This is where a move operation has truly completed, including the backend response.
+				updateMoveRef.current({
+					partId: null,
+				})
+			}
+		}
+	}, [waitingForBackendUpdate, part])
+
 	// Initialize trackWidth.
 	useLayoutEffect(() => {
 		if (layersDivRef.current) {
@@ -128,7 +153,9 @@ export const PartView: React.FC<{
 				bypassSnapping ? [] : snapPoints || [],
 				snapDistanceInMilliseconds,
 				dragDelta,
-				move,
+				// The use of wasMoved here helps prevent a brief flash at the
+				// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+				move.moveType ?? move.wasMoved,
 				move.leaderTimelineObjId,
 				gui.selectedTimelineObjIds,
 				cache.current
@@ -162,6 +189,7 @@ export const PartView: React.FC<{
 	useEffect(() => {
 		// Handle when we stop moving:
 		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null) {
+			setWaitingForBackendUpdate(true)
 			for (const obj of changedObjects.current) {
 				ipcServer
 					.updateTimelineObj({
@@ -171,12 +199,11 @@ export const PartView: React.FC<{
 						timelineObjId: obj.obj.id,
 						timelineObj: obj,
 					})
-					.catch(console.error)
+					.catch((error) => {
+						setWaitingForBackendUpdate(false)
+						console.error(error)
+					})
 			}
-
-			updateMoveRef.current({
-				partId: null,
-			})
 		}
 	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
 
