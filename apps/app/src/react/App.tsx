@@ -30,17 +30,6 @@ import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogA
 import { SnackbarProvider } from 'notistack'
 
 export const App = () => {
-	// 	this.ipcClient?.updateProject(project)
-	// })
-	// this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-	// 	this.ipcClient?.updateRundown(fileName, rundown)
-
-	// 	groups: [],
-	// 	media: [],
-	// 	templates: [],
-	// 	mappings: undefined,
-	// })
-
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
@@ -143,6 +132,7 @@ export const App = () => {
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
 		moveType: null,
 		wasMoved: null,
+		partId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {

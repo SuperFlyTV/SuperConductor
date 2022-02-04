@@ -4,7 +4,7 @@ export const TimelineObjectMoveContext = React.createContext<{
 	move: TimelineObjectMove
 	updateMove: (newGui: Partial<TimelineObjectMove>) => void
 }>({
-	move: { moveType: null, wasMoved: null },
+	move: { moveType: null, wasMoved: null, partId: null },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	updateMove: () => {},
 })
@@ -25,4 +25,6 @@ export interface TimelineObjectMove {
 	leaderTimelineObjId?: string
 	/** Is true while (and just after) a move is done. Used to avoid a case where drag-end leads to a selection. */
 	wasMoved: null | 'whole' | 'duration' | 'start'
+	/** The ID of the Part in which this move is being performed. null = not moving */
+	partId: null | string
 }

@@ -45,11 +45,12 @@ export const PartView: React.FC<{
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { gui } = useContext(GUIContext)
-	const { move } = useContext(TimelineObjectMoveContext)
+	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<TimelineObj[]>([])
 	const [trackWidth, setTrackWidth] = useState(0)
-	// const updateMoveRef = useRef(updateMove)
+	const updateMoveRef = useRef(updateMove)
+	updateMoveRef.current = updateMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -104,18 +105,18 @@ export const PartView: React.FC<{
 	// Update trackWidth at the end of a move.
 	// @TODO: Update trackWidth _during_ a move?
 	useLayoutEffect(() => {
-		if (move.moveType && layersDivRef.current) {
+		if (move.moveType && move.partId === part.id && layersDivRef.current) {
 			const size = layersDivRef.current.getBoundingClientRect()
 			setTrackWidth(size.width)
 		}
-	}, [move.moveType])
+	}, [move.moveType, move.partId, part.id])
 
 	const { resolvedTimeline, newChangedObjects } = useMemo(() => {
 		let resolvedTimeline: ResolvedTimeline
 		let newChangedObjects: TimelineObj[] = []
 
 		const dragDelta = move.dragDelta
-		if (dragDelta && move.leaderTimelineObjId) {
+		if (dragDelta && move.partId === part.id && move.leaderTimelineObjId) {
 			// Handle snapping
 
 			const o = applyMovementToTimeline(
@@ -138,7 +139,15 @@ export const PartView: React.FC<{
 		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
 		return { maxDuration, resolvedTimeline, newChangedObjects }
-	}, [move, part.timeline, orgResolvedTimeline, snapPoints, snapDistanceInMilliseconds, gui.selectedTimelineObjIds])
+	}, [
+		move,
+		part.id,
+		part.timeline,
+		orgResolvedTimeline,
+		snapPoints,
+		snapDistanceInMilliseconds,
+		gui.selectedTimelineObjIds,
+	])
 
 	useEffect(() => {
 		if (newChangedObjects.length) {
@@ -148,7 +157,7 @@ export const PartView: React.FC<{
 
 	useEffect(() => {
 		// Handle when we stop moving:
-		if (move.moveType === null && move.wasMoved !== null) {
+		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null) {
 			console.log('Stop moving')
 
 			console.log('o.changedObjects', changedObjects)
@@ -163,6 +172,11 @@ export const PartView: React.FC<{
 					})
 					.catch(console.error)
 			}
+
+			// Clear relevant context state.
+			updateMoveRef.current({
+				partId: null,
+			})
 		}
 	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
 
