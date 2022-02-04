@@ -43,7 +43,7 @@ export class TSR {
 	 * where the local time might differ from the SuperConductor.
 	 */
 	public setCurrentTime(currentTime: number) {
-		this.currentTimeDiff = currentTime - Date.now()
+		if (currentTime) this.currentTimeDiff = currentTime - Date.now()
 	}
 	public getCurrentTime(): number {
 		return Date.now() + this.currentTimeDiff

@@ -30,17 +30,6 @@ import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogA
 import { SnackbarProvider } from 'notistack'
 
 export const App = () => {
-	// 	this.ipcClient?.updateProject(project)
-	// })
-	// this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-	// 	this.ipcClient?.updateRundown(fileName, rundown)
-
-	// 	groups: [],
-	// 	media: [],
-	// 	templates: [],
-	// 	mappings: undefined,
-	// })
-
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [project, setProject] = useState<Project>()
@@ -145,8 +134,9 @@ export const App = () => {
 	}, [guiData])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		isMoving: false,
-		wasMoved: false,
+		moveType: null,
+		wasMoved: null,
+		partId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
@@ -164,7 +154,7 @@ export const App = () => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.side-bar')
-		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.wasMoved) {
+		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {
@@ -179,7 +169,6 @@ export const App = () => {
 				}
 			})
 		}
-		timelineObjectMoveContextValue.updateMove({ wasMoved: false })
 	}
 
 	useEffect(() => {

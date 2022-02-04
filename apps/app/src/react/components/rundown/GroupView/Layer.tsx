@@ -17,7 +17,8 @@ export const Layer: React.FC<{
 	}[]
 	layerId: string
 	partDuration: number
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration }) => {
+	msPerPixel: number
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
@@ -52,6 +53,7 @@ export const Layer: React.FC<{
 							timelineObj={objectOnLayer.timelineObj}
 							resolved={objectOnLayer.resolved}
 							partDuration={partDuration}
+							msPerPixel={msPerPixel}
 						></TimelineObject>
 					)
 				})}
