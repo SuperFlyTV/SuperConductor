@@ -116,7 +116,7 @@ export const App = () => {
 		return () => {
 			ipcClient.destroy()
 		}
-	}, [currentRundownId])
+	}, [])
 
 	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
@@ -215,6 +215,7 @@ export const App = () => {
 											<div className="app" onPointerDown={handlePointerDownAnywhere}>
 												<div className="top-header">
 													<TopHeader
+														selectedRundownId={currentRundownId}
 														openRundowns={rundowns0}
 														closedRundowns={closedRundowns}
 														onSelect={(rundownId) => {

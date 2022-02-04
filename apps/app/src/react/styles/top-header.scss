@@ -4,10 +4,16 @@
 	display: flex;
 
 	> .tab {
+		display: flex;
+		align-items: center;
 		padding: 0.5rem 0.5rem;
 		border-right: 1px solid grey;
 
 		cursor: pointer;
+
+		&--selected {
+			background-color: color.scale($topheaderBg, $lightness: 20%);
+		}
 
 		&:hover {
 			background-color: color.scale($topheaderBg, $lightness: 30%);

@@ -18,6 +18,7 @@ import {
 import { MdAdd, MdClose } from 'react-icons/md'
 
 export const TopHeader: React.FC<{
+	selectedRundownId?: string
 	openRundowns: { rundownId: string; name: string }[]
 	closedRundowns?: { fileName: string; version: number; name: string; open: boolean }[]
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
@@ -26,7 +27,17 @@ export const TopHeader: React.FC<{
 	onOpenDialogOpened: () => void
 	onOpen: (rundownFileName: string) => void
 	onCreate: (rundownName: string) => void
-}> = ({ openRundowns, closedRundowns, bridgeStatuses, onSelect, onClose, onOpenDialogOpened, onOpen, onCreate }) => {
+}> = ({
+	selectedRundownId,
+	openRundowns,
+	closedRundowns,
+	bridgeStatuses,
+	onSelect,
+	onClose,
+	onOpenDialogOpened,
+	onOpen,
+	onCreate,
+}) => {
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 	const [newRundownName, setNewRundownName] = useState('')
@@ -52,7 +63,7 @@ export const TopHeader: React.FC<{
 				return (
 					<div
 						key={rundown.rundownId}
-						className="tab"
+						className={classNames('tab', { 'tab--selected': rundown.rundownId === selectedRundownId })}
 						onClick={() => {
 							onSelect(rundown.rundownId)
 						}}
@@ -65,6 +76,7 @@ export const TopHeader: React.FC<{
 							onClick={(event) => {
 								onClose(rundown.rundownId)
 								event.stopPropagation()
+								event.preventDefault()
 							}}
 						>
 							<MdClose />
