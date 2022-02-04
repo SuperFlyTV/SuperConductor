@@ -141,8 +141,8 @@ export const App = () => {
 	}, [guiData])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		isMoving: false,
-		wasMoved: false,
+		moveType: null,
+		wasMoved: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
@@ -175,7 +175,7 @@ export const App = () => {
 				}
 			})
 		}
-		timelineObjectMoveContextValue.updateMove({ wasMoved: false })
+		timelineObjectMoveContextValue.updateMove({ wasMoved: null })
 	}
 
 	useEffect(() => {
