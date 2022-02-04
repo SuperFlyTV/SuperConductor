@@ -60,7 +60,6 @@ export const TimelineObject: React.FC<{
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
-			// setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
 		onKey()
 

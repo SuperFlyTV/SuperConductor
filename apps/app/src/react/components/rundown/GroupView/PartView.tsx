@@ -21,6 +21,7 @@ import { Mappings } from 'timeline-state-resolver-types'
 import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
+import { HotkeyContext } from '../../../contexts/Hotkey'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -46,9 +47,11 @@ export const PartView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { gui } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
+	const keyTracker = useContext(HotkeyContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<TimelineObj[]>([])
 	const [trackWidth, setTrackWidth] = useState(0)
+	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const updateMoveRef = useRef(updateMove)
 	updateMoveRef.current = updateMove
 
@@ -122,7 +125,7 @@ export const PartView: React.FC<{
 			const o = applyMovementToTimeline(
 				part.timeline,
 				orgResolvedTimeline,
-				snapPoints || [],
+				bypassSnapping ? [] : snapPoints || [],
 				snapDistanceInMilliseconds,
 				dragDelta,
 				move,
@@ -144,6 +147,7 @@ export const PartView: React.FC<{
 		part.id,
 		part.timeline,
 		orgResolvedTimeline,
+		bypassSnapping,
 		snapPoints,
 		snapDistanceInMilliseconds,
 		gui.selectedTimelineObjIds,
@@ -179,6 +183,27 @@ export const PartView: React.FC<{
 			})
 		}
 	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
+
+	useEffect(() => {
+		const onKey = () => {
+			const pressed = keyTracker.getPressedKeys()
+			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+		}
+		onKey()
+
+		keyTracker.bind('Shift', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Shift', onKey, {
+			up: true,
+			global: true,
+		})
+
+		return () => {
+			keyTracker.unbind('Shift', onKey)
+		}
+	}, [keyTracker])
 
 	const isGroupPlaying = !!playhead
 	const isPartPlaying = isGroupPlaying && playhead.partId === part.id
