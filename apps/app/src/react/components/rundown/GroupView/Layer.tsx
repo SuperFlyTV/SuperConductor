@@ -5,6 +5,7 @@ import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { IPCServerContext } from '../../../contexts/IPCServer'
+import { SnapPoint } from './PartView'
 import { TimelineObject } from './TimelineObject'
 
 export const Layer: React.FC<{
@@ -17,7 +18,8 @@ export const Layer: React.FC<{
 	}[]
 	layerId: string
 	partDuration: number
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration }) => {
+	snapPoints: SnapPoint[]
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, snapPoints }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
@@ -52,6 +54,7 @@ export const Layer: React.FC<{
 							timelineObj={objectOnLayer.timelineObj}
 							resolved={objectOnLayer.resolved}
 							partDuration={partDuration}
+							snapPoints={snapPoints}
 						></TimelineObject>
 					)
 				})}

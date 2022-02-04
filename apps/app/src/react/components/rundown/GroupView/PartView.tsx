@@ -19,6 +19,11 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 
+export type SnapPoint = {
+	timelineObjId: string
+	time: number
+}
+
 export type MovePartFn = (data: {
 	dragGroup: Group
 	dragPart: Part
@@ -214,6 +219,32 @@ export const PartView: React.FC<{
 	drag(dragRef)
 	drop(preview(previewRef))
 
+	const snapPoints: Array<SnapPoint> = []
+	part.timeline.forEach((timelineObj) => {
+		if (Array.isArray(timelineObj.obj.enable)) {
+			return
+		}
+
+		const start = timelineObj.obj.enable.start
+		const duration = timelineObj.obj.enable.duration
+		if (typeof start !== 'number' || typeof duration !== 'number') {
+			return
+		}
+
+		const end = start + duration
+		snapPoints.push(
+			{
+				timelineObjId: timelineObj.obj.id,
+				time: start,
+			},
+			{
+				timelineObjId: timelineObj.obj.id,
+				time: end,
+			}
+		)
+	})
+	snapPoints.sort(sortSnapPoints)
+
 	return (
 		<div
 			data-handler-id={handlerId}
@@ -294,6 +325,7 @@ export const PartView: React.FC<{
 									partDuration={maxDuration}
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
+									snapPoints={snapPoints}
 								/>
 							)
 						})}
@@ -351,4 +383,16 @@ const sortLayers = (entries: TEntries, mappings: Mappings) => {
 
 		return 0
 	})
+}
+
+const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
+	if (a.time < b.time) {
+		return -1
+	}
+
+	if (a.time > b.time) {
+		return 1
+	}
+
+	return 0
 }

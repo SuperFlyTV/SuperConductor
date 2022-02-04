@@ -11,6 +11,14 @@ import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { SnapPoint } from './PartView'
+
+type SnapPointType = 'start' | 'end'
+
+/**
+ * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
+ */
+const SNAP_DISTANCE_IN_PIXELS = 10
 
 export const TimelineObject: React.FC<{
 	groupId: string
@@ -18,7 +26,8 @@ export const TimelineObject: React.FC<{
 	partDuration: number
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
-}> = ({ groupId, partId, timelineObj, partDuration }) => {
+	snapPoints: SnapPoint[]
+}> = ({ groupId, partId, timelineObj, partDuration, snapPoints }) => {
 	const { gui, updateGUI } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const [dragStartValue, setDragStartValue] = useState<number>()
@@ -30,7 +39,11 @@ export const TimelineObject: React.FC<{
 	const [isMoved, deltaX] = useMovable(ref.current)
 	const keyTracker = useContext(HotkeyContext)
 	const updateMoveRef = useRef(updateMove)
+	const [snapPoint, setSnapPoint] = useState<SnapPoint & { type: SnapPointType }>()
+	const snapPointRef = useRef<SnapPoint & { type: SnapPointType }>()
+	const [bypassSnapping, setBypassSnapping] = useState(false)
 
+	snapPointRef.current = snapPoint
 	updateMoveRef.current = updateMove
 
 	// Initialize trackWidth.
@@ -47,12 +60,12 @@ export const TimelineObject: React.FC<{
 			const size = ref.current.parentElement.getBoundingClientRect()
 			setTrackWidth(size.width)
 		}
-	}, [isMoved, ref.current])
+	}, [isMoved])
 
 	const obj: TSRTimelineObj = timelineObj.obj
 
-	const start = (obj.enable as any).start
-	const duration = (obj.enable as any).duration
+	const start: number = (obj.enable as any).start
+	const duration: number = (obj.enable as any).duration
 
 	if (isMoved) {
 		dragDelta.current = deltaX / trackWidth
@@ -67,8 +80,77 @@ export const TimelineObject: React.FC<{
 		// Therefore, it needs to follow the timeline object actually being dragged
 		// such that it moves in unison with it.
 		startValue = Math.max(0, start / partDuration + (move as any).dragDelta)
+	} else if (snapPoint) {
+		if (snapPoint.type === 'start') {
+			startValue = Math.max(0, snapPoint.time / partDuration)
+		} else {
+			startValue = Math.max(0, (snapPoint.time - (timelineObj.obj.enable as any).duration) / partDuration)
+		}
 	}
 	const startPercentage = startValue * 100 + '%'
+
+	useEffect(() => {
+		if (!isMoved) {
+			setSnapPoint(undefined)
+			return
+		}
+
+		/**
+		 * How many milliseconds are represented by each column of pixels on the track.
+		 */
+		const msPerPixel = partDuration / trackWidth
+
+		/**
+		 * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in milliseconds).
+		 */
+		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
+
+		const startValueInMilliseconds = Math.max(0, start + dragDelta.current * partDuration)
+		const endValueInMilliseconds = startValueInMilliseconds + duration
+
+		let snapPointType: SnapPointType | undefined
+		const closestSnapPoint = snapPoints.find((sp) => {
+			// Ignore own snap points.
+			if (sp.timelineObjId === timelineObj.obj.id) {
+				return
+			}
+
+			// Ignore snap points belonging to other selected timeline objects.
+			if (gui.selectedTimelineObjIds.includes(sp.timelineObjId)) {
+				return
+			}
+
+			if (Math.abs(sp.time - startValueInMilliseconds) <= snapDistanceInMilliseconds) {
+				snapPointType = 'start'
+				return sp
+			}
+
+			if (Math.abs(sp.time - endValueInMilliseconds) <= snapDistanceInMilliseconds) {
+				snapPointType = 'end'
+				return sp
+			}
+		})
+
+		if (!bypassSnapping && closestSnapPoint && snapPointType) {
+			setSnapPoint({
+				...closestSnapPoint,
+				type: snapPointType,
+			})
+		} else {
+			setSnapPoint(undefined)
+		}
+	}, [
+		duration,
+		isMoved,
+		partDuration,
+		snapPoints,
+		start,
+		timelineObj.obj.id,
+		trackWidth,
+		deltaX,
+		bypassSnapping,
+		gui.selectedTimelineObjIds,
+	])
 
 	useEffect(() => {
 		if (isMoved) {
@@ -83,7 +165,16 @@ export const TimelineObject: React.FC<{
 				let startDiff: number | undefined
 				if (!Array.isArray(obj.enable)) {
 					const oldStart = obj.enable.start as any
-					const newStart = Math.max(0, start + dragDelta.current * partDuration)
+					let newStart: number
+					if (snapPointRef.current) {
+						if (snapPointRef.current.type === 'start') {
+							newStart = snapPointRef.current.time
+						} else {
+							newStart = snapPointRef.current.time - (timelineObj.obj.enable as any).duration
+						}
+					} else {
+						newStart = Math.max(0, start + dragDelta.current * partDuration)
+					}
 					startDiff = newStart - oldStart
 					obj.enable.start = newStart
 					ipcServer
@@ -146,6 +237,7 @@ export const TimelineObject: React.FC<{
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
 		onKey()
 
@@ -166,11 +258,18 @@ export const TimelineObject: React.FC<{
 		if (isMoved && typeof dragStartValue === 'number') {
 			let newDragDelta = dragDelta.current
 
-			// Clamp the drag delta such that the other TimelineObjects which are part of
-			// this move won't continue moving left if this TimelineObject is already at timecode zero.
-			// In other words: this helps ensure that all selected TimelineObjects always move as a group,
-			// and don't slide around on top of each other.
-			if (dragStartValue + dragDelta.current < 0) {
+			if (snapPoint) {
+				// @TODO: this math is wrong
+				// @TODO: account for heads/tails
+				const snapPointPercentage = snapPoint.time / partDuration
+				const snapPointDelta = dragStartValue - snapPointPercentage
+				console.log({ dragStartValue, snapPointPercentage })
+				newDragDelta = dragStartValue - snapPointDelta
+			} else if (dragStartValue + dragDelta.current < 0) {
+				// Clamp the drag delta such that the other TimelineObjects which are part of
+				// this move won't continue moving left if this TimelineObject is already at timecode zero.
+				// In other words: this helps ensure that all selected TimelineObjects always move as a group,
+				// and don't slide around on top of each other.
 				newDragDelta = -dragStartValue
 			}
 
@@ -180,7 +279,10 @@ export const TimelineObject: React.FC<{
 				dragDelta: newDragDelta,
 			})
 		}
-	}, [isMoved, dragStartValue, dragDelta.current])
+
+		// This effect stops working as intended if dragDelta.current is removed as a dependency.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isMoved, dragStartValue, snapPoint, partDuration, dragDelta.current])
 
 	return (
 		<div
