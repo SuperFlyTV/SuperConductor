@@ -10,6 +10,7 @@ import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
+const fsRm = promisify(fs.rm)
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -59,11 +60,12 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Returns a list of available rundowns */
-	listRundownsInProject(projectId: string): { fileName: string }[] {
+	listRundownsInProject(projectId: string): { fileName: string; version: number; name: string; open: boolean }[] {
 		// list all files in the rundowns folder
+		const rundownsDir = this.rundownsDir(projectId)
 		let files: string[] = []
 		try {
-			files = fs.readdirSync(this.rundownsDir(projectId))
+			files = fs.readdirSync(rundownsDir)
 		} catch (e) {
 			// ignore, it's probably because the folder doesn't exist yet
 		}
@@ -71,9 +73,16 @@ export class StorageHandler extends EventEmitter {
 		// filter out non-json files
 		const jsonFiles = files.filter((file) => file.endsWith('.json'))
 
-		return jsonFiles.map((file) => {
+		// read the files to parse some data out of them for display purposes
+		return jsonFiles.map((fileName) => {
+			const fullFilePath = path.join(rundownsDir, fileName)
+			const unparsed = fs.readFileSync(fullFilePath, 'utf8')
+			const parsed = JSON.parse(unparsed) as FileRundown
 			return {
-				fileName: file,
+				fileName,
+				name: parsed.rundown.name,
+				version: parsed.version,
+				open: this.rundowns ? fileName in this.rundowns : false,
 			}
 		})
 	}
@@ -119,7 +128,7 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.id = this.nameToFilename(name)
+		this.appData.appData.project.id = this.convertToFilename(name)
 		this.project = this.loadProject(name)
 		this.triggerUpdate({ project: true, appData: true })
 	}
@@ -135,7 +144,7 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	newRundown(name: string) {
-		const fileName = `${this.nameToFilename(name)}.rundown.json`
+		const fileName = `${this.convertToFilename(name)}.rundown.json`
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
@@ -148,8 +157,40 @@ export class StorageHandler extends EventEmitter {
 		// Write any pending changes before closing the rundown,
 		// to ensure that any changes are saved, and that no further changes are written after it has closed.
 		await this.writeChangesNow()
-
 		delete this.rundowns[fileName]
+		this.triggerEmitAll()
+	}
+	async deleteRundown(fileName: string) {
+		await this.closeRundown(fileName)
+
+		const fullPath = this.rundownPath(this._projectId, fileName)
+		try {
+			await fsRm(fullPath)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// The file is already gone, do nothing.
+			} else {
+				throw error
+			}
+		}
+	}
+
+	/**
+	 * Restores a deleted rundown.
+	 * Used to undo a deleteRundown operation.
+	 */
+	restoreRundown(rundown: Rundown) {
+		const fileName = this.convertToFilename(rundown.id)
+		this.rundowns[fileName] = {
+			version: CURRENT_VERSION,
+			id: rundown.id,
+			rundown: {
+				...omit(rundown, 'id'),
+			},
+		}
+		this.rundownsHasChanged[rundown.id] = true
+		this.rundownsNeedsWrite[rundown.id] = true
+		this.triggerUpdate({ rundowns: { [rundown.id]: true } })
 	}
 
 	triggerEmitAll() {
@@ -168,8 +209,8 @@ export class StorageHandler extends EventEmitter {
 		await this.writeChanges()
 	}
 
-	private nameToFilename(name: string): string {
-		return name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+	convertToFilename(str: string): string {
+		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
 
 	/** Triggered when the stored data has been updated */
@@ -284,6 +325,7 @@ export class StorageHandler extends EventEmitter {
 	private getDefaultRundown(newName?: string): FileRundown {
 		return {
 			version: CURRENT_VERSION,
+			id: newName ? this.convertToFilename(newName) : 'default',
 			rundown: getDefaultRundown(newName),
 		}
 	}
@@ -387,6 +429,7 @@ interface FileProject {
 }
 interface FileRundown {
 	version: number
+	id: string
 	rundown: Omit<Rundown, 'id'>
 }
 /** Current version, used to migrate old data structures into new ones */

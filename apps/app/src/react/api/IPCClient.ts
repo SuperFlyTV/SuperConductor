@@ -16,14 +16,17 @@ export class IPCClient implements IPCClientMethods {
 			openSettings: () => void
 		}
 	) {
-		this.ipcRenderer.on('callMethod', (event, methodname: string, ...args: any[]) => {
-			const fcn = (this as any)[methodname]
-			if (!fcn) {
-				console.error(`IPCClient: method ${methodname} not found`)
-			} else {
-				fcn.apply(this, args)
-			}
-		})
+		this.handleCallMethod = this.handleCallMethod.bind(this)
+		this.ipcRenderer.on('callMethod', this.handleCallMethod)
+	}
+
+	private handleCallMethod(_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void {
+		const fcn = (this as any)[methodname]
+		if (!fcn) {
+			console.error(`IPCClient: method ${methodname} not found`)
+		} else {
+			fcn.apply(this, args)
+		}
 	}
 
 	updateProject(project: Project): void {
@@ -40,5 +43,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	openSettings(): void {
 		this.callbacks.openSettings()
+	}
+	destroy(): void {
+		this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 }

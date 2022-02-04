@@ -24,9 +24,13 @@ export const enum ActionDescription {
 	AddResourceToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
+	NewRundown = 'new rundown',
+	DeleteRundown = 'delete rundown',
+	OpenRundown = 'open rundown',
+	CloseRundown = 'close rundown',
 }
 
-export type UndoFunction = () => void
+export type UndoFunction = () => Promise<void> | void
 
 export type UndoableResult<T = unknown> = { undo: UndoFunction; description: ActionDescription; result?: T }
 
@@ -116,6 +120,14 @@ export interface IPCServerMethods {
 	refreshResources: () => Promise<unknown>
 
 	updateProject: (data: { id: string; project: Project }) => Promise<unknown>
+
+	newRundown: (data: { name: string }) => Promise<unknown>
+	deleteRundown: (data: { rundownId: string }) => Promise<unknown>
+	openRundown: (data: { rundownId: string }) => Promise<unknown>
+	closeRundown: (data: { rundownId: string }) => Promise<unknown>
+	listRundowns: (data: {
+		projectId: string
+	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
 }
 export interface IPCClientMethods {
 	updateProject: (project: Project) => void

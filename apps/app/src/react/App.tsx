@@ -48,6 +48,8 @@ export const App = () => {
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
+	const [closedRundowns, setClosedRundowns] =
+		useState<{ fileName: string; version: number; name: string; open: boolean }[]>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	const theme = React.useMemo(() => {
@@ -69,7 +71,7 @@ export const App = () => {
 	}, [])
 
 	useEffect(() => {
-		new IPCClient(ipcRenderer, {
+		const ipcClient = new IPCClient(ipcRenderer, {
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
@@ -117,7 +119,11 @@ export const App = () => {
 				setSettingsOpen(true)
 			},
 		})
-	}, [])
+
+		return () => {
+			ipcClient.destroy()
+		}
+	}, [currentRundownId])
 
 	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
@@ -125,7 +131,15 @@ export const App = () => {
 	useEffect(() => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(console.error)
-	}, [])
+	}, [serverAPI])
+	useEffect(() => {
+		// Ask the backend for the rundown whenever currentRundownId changes.
+		if (currentRundownId) {
+			serverAPI.triggerSendRundown({ rundownId: currentRundownId }).catch(console.error)
+		} else {
+			setCurrentRundown(undefined)
+		}
+	}, [currentRundownId, serverAPI])
 
 	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
 	const guiContextValue = useMemo(() => {
@@ -208,9 +222,40 @@ export const App = () => {
 											<div className="app" onPointerDown={handlePointerDownAnywhere}>
 												<div className="top-header">
 													<TopHeader
-														rundowns={rundowns0}
+														openRundowns={rundowns0}
+														closedRundowns={closedRundowns}
 														onSelect={(rundownId) => {
 															setCurrentRundownId(rundownId)
+														}}
+														onClose={(rundownId) => {
+															serverAPI.closeRundown({ rundownId }).catch(console.error)
+															if (rundowns0.length > 0) {
+																setCurrentRundownId(rundowns0[0].rundownId)
+															} else {
+																setCurrentRundownId(undefined)
+															}
+														}}
+														onOpenDialogOpened={async () => {
+															// Refresh the list of closed rundowns whenever the "open rundown" dialog is opened.
+															try {
+																const allRundowns = await serverAPI.listRundowns({
+																	projectId: project.id,
+																})
+																const closedRundowns = allRundowns.filter(
+																	(rundown) => rundown.open === false
+																)
+																setClosedRundowns(closedRundowns)
+															} catch (error) {
+																console.error(error)
+															}
+														}}
+														onOpen={(rundownId) => {
+															serverAPI.openRundown({ rundownId }).catch(console.error)
+														}}
+														onCreate={(rundownName: string) => {
+															serverAPI
+																.newRundown({ name: rundownName })
+																.catch(console.error)
 														}}
 														bridgeStatuses={bridgeStatuses}
 													/>
