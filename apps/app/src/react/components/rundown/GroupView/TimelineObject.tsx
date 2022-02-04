@@ -83,7 +83,7 @@ export const TimelineObject: React.FC<{
 				let startDiff: number | undefined
 				if (!Array.isArray(obj.enable)) {
 					const oldStart = obj.enable.start as any
-					const newStart = Math.max(0, start + dragDelta.current * partDuration)
+					const newStart = Math.floor(Math.max(0, start + dragDelta.current * partDuration))
 					startDiff = newStart - oldStart
 					obj.enable.start = newStart
 					ipcServer

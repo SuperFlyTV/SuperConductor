@@ -81,7 +81,7 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 
-		layerId: string
+		layerId: string | null
 		resourceId: string
 	}) => Promise<unknown>
 

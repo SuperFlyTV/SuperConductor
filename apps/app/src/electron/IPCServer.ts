@@ -26,6 +26,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
+import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -94,6 +95,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				}
 			}
 		}
+	}
+	private getProject(): Project {
+		return this.storage.getProject()
 	}
 	private getRundown(arg: { rundownId: string }): { rundown: Rundown } {
 		const rundown = this.storage.getRundown(arg.rundownId)
@@ -730,7 +734,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		layerId: string
+		layerId: string | null
 		resourceId: string
 	}): Promise<UndoableResult> {
 		const { rundown, part } = this.getPart(arg)
@@ -746,7 +750,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 			obj = {
 				id: short.generate(),
-				layer: arg.layerId,
+				layer: '', // set later
 				enable: {
 					start: 0,
 					duration,
@@ -760,7 +764,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 			obj = {
 				id: short.generate(),
-				layer: arg.layerId,
+				layer: '', // set later
 				enable: {
 					start: 0,
 					duration: 5 * 1000,
@@ -781,6 +785,64 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			// @ts-expect-error never
 			throw new Error(`Unknown resource type "${resource.resourceType}"`)
 		}
+
+		const project = this.getProject()
+		let addToLayerId: string | null = arg.layerId
+
+		if (!addToLayerId) {
+			// First, try to pick next free layer:
+			const possibleLayers: { [layerId: string]: number } = {}
+			for (const [checkLayerId, checkLayer] of Object.entries(project.mappings)) {
+				// Is the layer compatible?
+				if (filterMapping(checkLayer, obj)) {
+					// Is the layer free?
+					if (!part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === checkLayerId)) {
+						possibleLayers[checkLayerId] = 1
+					}
+				}
+			}
+			// Pick the best layer, ie check which layer contains the most similar objects in other parts:
+			const rundown = this.getRundown({ rundownId: arg.rundownId })
+			for (const group of rundown.rundown.groups) {
+				for (const part of group.parts) {
+					for (const timelineObj of part.timeline) {
+						if (possibleLayers[timelineObj.obj.layer]) {
+							for (const property of Object.keys(timelineObj.obj.content)) {
+								if ((timelineObj.obj.content as any)[property] === (obj.content as any)[property]) {
+									possibleLayers[timelineObj.obj.layer]++
+								}
+							}
+						}
+					}
+				}
+			}
+			const bestLayer = Object.entries(possibleLayers).reduce(
+				(prev, current) => {
+					if (current[1] > prev[1]) return current
+					return prev
+				},
+				['', 0]
+			)
+			if (bestLayer[0]) {
+				addToLayerId = bestLayer[0]
+			}
+		}
+		if (!addToLayerId) {
+			// If no layer was found, create a new layer:
+			const newMapping = getMappingFromTimelineObject(obj, resource.deviceId)
+			// TODO: Add a new layer to the project
+			console.log('TODO: Add a new layer to the project', addToLayerId, newMapping)
+		}
+
+		if (!addToLayerId) throw new Error('No layer found')
+
+		// Check that the layer exists:
+		const layer = addToLayerId ? project.mappings[addToLayerId] : undefined
+		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
+
+		// Verify that the layer is OK:
+		if (!filterMapping(layer, obj)) throw new Error('Not a valid mapping for that timeline-object.')
+		obj.layer = addToLayerId
 
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,

@@ -18,6 +18,7 @@ import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
+import { EmptyLayer } from './EmptyLayer'
 
 export type MovePartFn = (data: {
 	dragGroup: Group
@@ -297,6 +298,8 @@ export const PartView: React.FC<{
 								/>
 							)
 						})}
+
+						<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
 					</div>
 				</div>
 			</div>
