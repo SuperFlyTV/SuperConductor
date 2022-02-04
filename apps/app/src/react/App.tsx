@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/roboto/300.css'
@@ -46,9 +46,13 @@ export const App = () => {
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
-
+	const currentRundownIdRef = useRef<string>()
 	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
 	const [settingsOpen, setSettingsOpen] = useState(false)
+
+	useEffect(() => {
+		currentRundownIdRef.current = currentRundownId
+	}, [currentRundownId])
 
 	const theme = React.useMemo(() => {
 		return createTheme({
@@ -74,10 +78,10 @@ export const App = () => {
 				setProject(project)
 			},
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				if (!currentRundownId) {
+				if (!currentRundownIdRef.current) {
 					setCurrentRundownId(rundownId)
 					setCurrentRundown(rundown)
-				} else if (currentRundownId === rundownId) {
+				} else if (currentRundownIdRef.current === rundownId) {
 					setCurrentRundown(rundown)
 				}
 
