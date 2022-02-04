@@ -162,9 +162,6 @@ export const PartView: React.FC<{
 	useEffect(() => {
 		// Handle when we stop moving:
 		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null) {
-			console.log('Stop moving')
-
-			console.log('o.changedObjects', changedObjects)
 			for (const obj of changedObjects.current) {
 				ipcServer
 					.updateTimelineObj({
@@ -177,7 +174,6 @@ export const PartView: React.FC<{
 					.catch(console.error)
 			}
 
-			// Clear relevant context state.
 			updateMoveRef.current({
 				partId: null,
 			})

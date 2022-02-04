@@ -38,13 +38,10 @@ export const TimelineObject: React.FC<{
 	useEffect(() => {
 		if (isMoved) {
 			// A move has begun.
-
 			updateMoveRef.current({ wasMoved: null, partId })
 
 			return () => {
 				// A move has completed.
-
-				// Clear relevant context state.
 				updateMoveRef.current({
 					moveType: null,
 					wasMoved: move.moveType,

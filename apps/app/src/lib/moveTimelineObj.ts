@@ -92,7 +92,6 @@ export function applyMovementToTimeline(
 
 	// Snap
 	if (closestSnapPoint.distanceToSnapPoint < Infinity) {
-		// console.log('snapping', closestSnapPoint.resultingDragDelta)
 		dragDelta = closestSnapPoint.resultingDragDelta
 	}
 
