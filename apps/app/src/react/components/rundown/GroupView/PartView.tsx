@@ -120,6 +120,7 @@ export const PartView: React.FC<{
 				// timelineObjs with a drag delta applied.
 				//
 				// This is where a move operation has truly completed, including the backend response.
+				setWaitingForBackendUpdate(false)
 				updateMoveRef.current({
 					partId: null,
 				})
@@ -203,7 +204,7 @@ export const PartView: React.FC<{
 
 	useEffect(() => {
 		// Handle when we stop moving:
-		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null) {
+		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null && !waitingForBackendUpdate) {
 			setWaitingForBackendUpdate(true)
 			for (const obj of changedObjects.current) {
 				ipcServer
@@ -220,7 +221,7 @@ export const PartView: React.FC<{
 					})
 			}
 		}
-	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
+	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, waitingForBackendUpdate])
 
 	useEffect(() => {
 		const onKey = () => {
