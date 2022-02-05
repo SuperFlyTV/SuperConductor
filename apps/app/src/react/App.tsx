@@ -247,8 +247,11 @@ export const App = () => {
 													}}
 													onClose={(rundownId) => {
 														serverAPI.closeRundown({ rundownId }).catch(handleError)
-														if (openRundowns.length > 0) {
-															setCurrentRundownId(openRundowns[0].rundownId)
+														const nextRundown = openRundowns.find(
+															(rd) => rd.rundownId !== rundownId
+														)
+														if (nextRundown) {
+															setCurrentRundownId(nextRundown.rundownId)
 														} else {
 															setCurrentRundownId(undefined)
 														}
