@@ -453,7 +453,7 @@ export const PartView: React.FC<{
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					return (
 						<div className="part__layer-names__name" key={layerId}>
-							{mappings[layerId].layerName ?? layerId}
+							{mappings[layerId]?.layerName ?? layerId}
 						</div>
 					)
 				})}

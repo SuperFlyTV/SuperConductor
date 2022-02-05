@@ -126,6 +126,14 @@ export class StorageHandler extends EventEmitter {
 			}
 		} else return rundown
 	}
+	getAllRundowns(): Rundown[] {
+		return Object.entries(this.rundowns).map(([fileName, fileRundown]) => {
+			return {
+				id: fileName,
+				...fileRundown.rundown,
+			}
+		})
+	}
 	updateRundown(fileName: string, rundown: Rundown) {
 		this.rundowns[fileName].rundown = omit(rundown, 'id')
 		this.rundownsHasChanged[fileName] = true

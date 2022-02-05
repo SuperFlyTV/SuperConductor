@@ -921,6 +921,36 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
+		const rundowns = this.storage.getAllRundowns()
+
+		for (const rundown of rundowns) {
+			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed.
+			let modifiedTimeline = false
+			for (const group of rundown.groups) {
+				for (const part of group.parts) {
+					const timelineObjsToRemove: TimelineObj[] = []
+					for (const timelineObj of part.timeline) {
+						if (!(timelineObj.obj.layer in data.project.mappings)) {
+							timelineObjsToRemove.push(timelineObj)
+						}
+					}
+					if (timelineObjsToRemove.length) {
+						part.timeline = part.timeline.filter(
+							(timelineObj) => !timelineObjsToRemove.includes(timelineObj)
+						)
+						modifiedTimeline = true
+						this._updatePart(part)
+					}
+				}
+				if (modifiedTimeline) {
+					this._updateTimeline(group)
+				}
+			}
+			if (modifiedTimeline) {
+				this.storage.updateRundown(rundown.id, rundown)
+			}
+		}
+
 		this.storage.updateProject(data.project)
 	}
 	async newRundown(data: { name: string }): Promise<UndoableResult> {
