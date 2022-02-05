@@ -32,7 +32,6 @@ export const TimelineObject: React.FC<{
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
-	const isPartOfMultiMove = typeof move.dragDelta === 'number' && gui.selectedTimelineObjIds.includes(obj.id)
 	const startPercentage = startValue * 100 + '%'
 
 	useEffect(() => {
@@ -88,7 +87,6 @@ export const TimelineObject: React.FC<{
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
-				moved: isMoved || isPartOfMultiMove,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={() => {

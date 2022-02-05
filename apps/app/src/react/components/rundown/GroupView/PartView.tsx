@@ -82,7 +82,7 @@ export const PartView: React.FC<{
 			}
 			const instance = timelineObj.resolved.instances[0]
 
-			const referring: string = instance.references.join(',')
+			const referring: string = [...instance.references, ...timelineObj.resolved.directReferences].join(',')
 
 			snapPoints.push({
 				timelineObjId: timelineObj.id,
@@ -171,9 +171,11 @@ export const PartView: React.FC<{
 			} catch (e) {
 				// If there was an error applying the movement (for example a circular dependency),
 				// reset the movement to the original state:
+
+				console.error('Error when resolving the moved timeline, reverting to original state.')
+				console.error(e)
 				resolvedTimeline = orgResolvedTimeline
 				newChangedObjects = []
-				console.log(e)
 			}
 		} else {
 			resolvedTimeline = orgResolvedTimeline
@@ -458,7 +460,12 @@ export const PartView: React.FC<{
 					{playheadTime ? (
 						<PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} />
 					) : null}
-					<div className="layers" ref={layersDivRef}>
+					<div
+						className={classNames('layers', {
+							moving: move.moveType !== null,
+						})}
+						ref={layersDivRef}
+					>
 						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']

@@ -67,3 +67,13 @@
 		}
 	}
 }
+// Don't transition when moving:
+.layers.moving {
+	.layer {
+		.layer__content {
+			.object {
+				transition: none;
+			}
+		}
+	}
+}
