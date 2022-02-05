@@ -85,6 +85,7 @@ export const TopHeader: React.FC<{
 
 						<IconButton
 							color="error"
+							title="Close Rundown"
 							aria-label="close rundown"
 							onClick={(event) => {
 								onClose(rundown.rundownId)
@@ -100,7 +101,8 @@ export const TopHeader: React.FC<{
 
 			<IconButton
 				color="primary"
-				aria-label="create new rundown"
+				title="Create/Open Rundown"
+				aria-label="open or create new rundown"
 				onClick={() => {
 					if (closedRundowns && closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
