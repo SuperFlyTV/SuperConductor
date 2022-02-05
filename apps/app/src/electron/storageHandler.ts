@@ -272,7 +272,7 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
-	private convertToFilename(str: string): string {
+	convertToFilename(str: string): string {
 		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
 

@@ -828,11 +828,22 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				addToLayerId = bestLayer[0]
 			}
 		}
+
+		let newLayerId = ''
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			const newMapping = getMappingFromTimelineObject(obj, resource.deviceId)
-			// TODO: Add a new layer to the project
-			console.log('TODO: Add a new layer to the project', addToLayerId, newMapping)
+
+			if (newMapping && newMapping.layerName) {
+				// Add the new layer to the project
+				newLayerId = this.storage.convertToFilename(newMapping.layerName)
+				project.mappings = {
+					...project.mappings,
+					[newLayerId]: newMapping,
+				}
+				this.storage.updateProject(project)
+				addToLayerId = newLayerId
+			}
 		}
 
 		if (!addToLayerId) throw new Error('No layer found')
@@ -857,6 +868,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		return {
 			undo: () => {
+				const project = this.getProject()
+				if (newLayerId) {
+					// If a new layer was added, remove it.
+					delete project.mappings[newLayerId]
+					this.storage.updateProject(project)
+				}
+
 				const { rundown, part } = this.getPart(arg)
 				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
 				this._updatePart(part)
