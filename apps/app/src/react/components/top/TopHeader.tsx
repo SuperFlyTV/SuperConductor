@@ -7,16 +7,13 @@ import {
 	DialogActions,
 	DialogContent,
 	DialogTitle,
-	FormControl,
 	FormControlLabel,
-	FormLabel,
 	IconButton,
 	Radio,
-	RadioGroup,
 } from '@mui/material'
 import { MdAdd, MdClose } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
-import { TextField } from 'formik-mui'
+import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
 
 const newRundownValidationSchema = Yup.object({
@@ -30,18 +27,19 @@ export const TopHeader: React.FC<{
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
 	onSelect: (rundownId: string) => void
 	onClose: (rundownId: string) => void
-	onOpen: (rundownFileName: string) => void
+	onOpen: (rundownId: string) => void
 	onCreate: (rundownName: string) => void
 }> = ({ selectedRundownId, openRundowns, closedRundowns, bridgeStatuses, onSelect, onClose, onOpen, onCreate }) => {
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
-	const [rundownToOpen, setRundownToOpen] = useState('')
 
 	const handleOpenRundownClose = () => {
 		setOpenRundownOpen(false)
+		setNewRundownOpen(false)
 	}
 
 	const handleNewRundownClose = () => {
+		setOpenRundownOpen(false)
 		setNewRundownOpen(false)
 	}
 
@@ -103,50 +101,56 @@ export const TopHeader: React.FC<{
 				})
 			})}
 
-			<Dialog open={openRundownOpen} onClose={handleOpenRundownClose}>
-				<DialogTitle>Open Rundown</DialogTitle>
-				<DialogContent>
-					<FormControl>
-						<FormLabel id="rundowns-radio-buttons-group-label">Rundowns</FormLabel>
-						<RadioGroup
-							aria-labelledby="rundowns-radio-buttons-group-label"
-							name="rundowns-radio-buttons-group"
-							value={rundownToOpen}
-							onChange={(event) => {
-								setRundownToOpen(event.target.value)
-							}}
-						>
-							{closedRundowns &&
-								closedRundowns.map((rundown) => (
-									<FormControlLabel
-										key={rundown.rundownId}
-										value={rundown.rundownId}
-										control={<Radio />}
-										label={rundown.name}
-									/>
-								))}
-						</RadioGroup>
-					</FormControl>
-				</DialogContent>
-				<DialogActions>
-					<Button
-						onClick={() => {
-							setNewRundownOpen(true)
-						}}
-					>
-						New Rundown
-					</Button>
-					<Button
-						onClick={() => {
-							onOpen(rundownToOpen)
-							setOpenRundownOpen(false)
-						}}
-					>
-						Open
-					</Button>
-					<Button onClick={handleOpenRundownClose}>Close</Button>
-				</DialogActions>
-			</Dialog>
+			<Formik
+				initialValues={{ rundownId: closedRundowns.length > 0 ? closedRundowns[0].rundownId : '' }}
+				onSubmit={(values, actions) => {
+					onOpen(values.rundownId)
+					handleOpenRundownClose()
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => {
+					return (
+						<Dialog open={openRundownOpen} onClose={handleOpenRundownClose}>
+							<DialogTitle>Open Rundown</DialogTitle>
+							<DialogContent>
+								<Form>
+									<Field component={RadioGroup} name="rundownId">
+										{closedRundowns &&
+											closedRundowns.map((rundown) => (
+												<FormControlLabel
+													key={rundown.rundownId}
+													value={rundown.rundownId}
+													control={<Radio disabled={formik.isSubmitting} />}
+													label={rundown.name}
+													disabled={formik.isSubmitting}
+												/>
+											))}
+									</Field>
+								</Form>
+							</DialogContent>
+							<DialogActions>
+								<Button
+									onClick={() => {
+										setNewRundownOpen(true)
+									}}
+								>
+									New Rundown
+								</Button>
+								<Button
+									onClick={() => {
+										formik.submitForm().catch(console.error)
+									}}
+								>
+									Open
+								</Button>
+								<Button onClick={handleOpenRundownClose}>Close</Button>
+							</DialogActions>
+						</Dialog>
+					)
+				}}
+			</Formik>
 
 			<Formik
 				initialValues={{ name: 'New Rundown' }}
@@ -154,7 +158,7 @@ export const TopHeader: React.FC<{
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
 					onCreate(values.name)
-					setNewRundownOpen(false)
+					handleNewRundownClose()
 					actions.setSubmitting(false)
 					actions.resetForm()
 				}}

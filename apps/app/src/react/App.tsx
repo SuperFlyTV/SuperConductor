@@ -215,10 +215,6 @@ export const App = () => {
 			}))
 	}, [appData])
 
-	useEffect(() => {
-		console.log('closedRundowns changed:', closedRundowns)
-	}, [closedRundowns])
-
 	if (!project) {
 		return <div>Loading...</div>
 	}
@@ -253,7 +249,7 @@ export const App = () => {
 														onOpen={(rundownId) => {
 															serverAPI.openRundown({ rundownId }).catch(console.error)
 														}}
-														onCreate={(rundownName: string) => {
+														onCreate={(rundownName) => {
 															serverAPI
 																.newRundown({ name: rundownName })
 																.catch(console.error)

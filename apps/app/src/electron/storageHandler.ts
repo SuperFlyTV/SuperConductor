@@ -298,14 +298,35 @@ export class StorageHandler extends EventEmitter {
 		const rundowns: { [fileName: string]: FileRundown } = {}
 
 		const rundownList = this.listRundownsInProject(this._projectId)
+
+		// Go through the appData and remove any rundowns which no longer exist on disk.
+		for (const fileName in this.appData.appData.rundowns) {
+			const rundownListEntry = rundownList.find((listEntry) => {
+				return listEntry.fileName === fileName
+			})
+			if (!rundownListEntry) {
+				delete this.appData.appData.rundowns[fileName]
+			}
+		}
+
 		if (rundownList.length > 0) {
+			// If the project has rundowns, load them.
 			for (const rundown of rundownList) {
-				if (this.appData.appData.rundowns[rundown.fileName].open) {
-					rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+				if (rundown.fileName in this.appData.appData.rundowns) {
+					// If the rundown exists in the appData and it is marked as open, load it.
+					if (this.appData.appData.rundowns[rundown.fileName].open) {
+						rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+					}
+				} else {
+					// If the rundown doesn't exist in the appData, add it as closed.
+					this.appData.appData.rundowns[rundown.fileName] = {
+						name: rundown.name,
+						open: false,
+					}
 				}
 			}
 		} else {
-			// If the project has no rundowns, create a default rundown.
+			// The project has no rundowns, create a default rundown.
 			const defaultRundownFilename = this.getRundownFilename('default')
 			rundowns[defaultRundownFilename] = this._loadRundown(this._projectId, defaultRundownFilename)
 			this.appData.appData.rundowns[defaultRundownFilename] = {
@@ -313,6 +334,10 @@ export class StorageHandler extends EventEmitter {
 				open: true,
 			}
 		}
+
+		// Blindly handle any of the above cases where appData was modified.
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
 
 		return rundowns
 	}
