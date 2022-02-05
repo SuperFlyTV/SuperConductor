@@ -264,8 +264,6 @@ export class StorageHandler extends EventEmitter {
 		}
 		delete this.rundowns[rundownId]
 
-		console.log(this.rundowns)
-
 		this.appDataNeedsWrite = true
 		this.rundownsNeedsWrite[newFileName] = true
 		this.triggerEmitAll()
