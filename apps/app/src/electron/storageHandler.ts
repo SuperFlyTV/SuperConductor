@@ -10,6 +10,17 @@ import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
+const fsRm = promisify(fs.rm)
+const fsAccess = promisify(fs.access)
+const fsExists = async (filePath: string): Promise<boolean> => {
+	try {
+		await fsAccess(filePath)
+		return true
+	} catch {
+		return false
+	}
+}
+const fsRename = promisify(fs.rename)
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -59,11 +70,12 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Returns a list of available rundowns */
-	listRundownsInProject(projectId: string): { fileName: string }[] {
+	listRundownsInProject(projectId: string): { fileName: string; version: number; name: string; open: boolean }[] {
 		// list all files in the rundowns folder
+		const rundownsDir = this.rundownsDir(projectId)
 		let files: string[] = []
 		try {
-			files = fs.readdirSync(this.rundownsDir(projectId))
+			files = fs.readdirSync(rundownsDir)
 		} catch (e) {
 			// ignore, it's probably because the folder doesn't exist yet
 		}
@@ -71,9 +83,16 @@ export class StorageHandler extends EventEmitter {
 		// filter out non-json files
 		const jsonFiles = files.filter((file) => file.endsWith('.json'))
 
-		return jsonFiles.map((file) => {
+		// read the files to parse some data out of them for display purposes
+		return jsonFiles.map((fileName) => {
+			const fullFilePath = path.join(rundownsDir, fileName)
+			const unparsed = fs.readFileSync(fullFilePath, 'utf8')
+			const parsed = JSON.parse(unparsed) as FileRundown
 			return {
-				fileName: file,
+				fileName,
+				name: parsed.rundown.name,
+				version: parsed.version,
+				open: this.rundowns ? fileName in this.rundowns : false,
 			}
 		})
 	}
@@ -119,7 +138,7 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.id = this.nameToFilename(name)
+		this.appData.appData.project.id = this.convertToFilename(name)
 		this.project = this.loadProject(name)
 		this.triggerUpdate({ project: true, appData: true })
 	}
@@ -135,21 +154,65 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	newRundown(name: string) {
-		const fileName = `${this.nameToFilename(name)}.rundown.json`
+		const fileName = this.getRundownFilename(name)
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
-		this.triggerUpdate({ rundowns: { [fileName]: true } })
+		this.appData.appData.rundowns[fileName] = {
+			name: name,
+			open: true,
+		}
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
+		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
 	}
 	openRundown(fileName: string) {
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName)
 		this.rundownsHasChanged[fileName] = true
-		this.triggerUpdate({ rundowns: { [fileName]: true } })
+		this.appData.appData.rundowns[fileName].open = true
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
+		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
 	}
 	async closeRundown(fileName: string) {
 		// Write any pending changes before closing the rundown,
 		// to ensure that any changes are saved, and that no further changes are written after it has closed.
+		this.appData.appData.rundowns[fileName].open = false
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
 		await this.writeChangesNow()
-
 		delete this.rundowns[fileName]
+		this.triggerEmitAll()
+	}
+	async deleteRundown(fileName: string) {
+		await this.closeRundown(fileName)
+
+		const fullPath = this.rundownPath(this._projectId, fileName)
+		try {
+			await fsRm(fullPath)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// The file is already gone, do nothing.
+			} else {
+				throw error
+			}
+		}
+	}
+
+	/**
+	 * Restores a deleted rundown.
+	 * Used to undo a deleteRundown operation.
+	 */
+	restoreRundown(rundown: Rundown) {
+		const fileName = this.convertToFilename(rundown.id)
+		this.rundowns[fileName] = {
+			version: CURRENT_VERSION,
+			id: rundown.id,
+			rundown: {
+				...omit(rundown, 'id'),
+			},
+		}
+		this.rundownsHasChanged[rundown.id] = true
+		this.rundownsNeedsWrite[rundown.id] = true
+		this.triggerUpdate({ rundowns: { [rundown.id]: true } })
 	}
 
 	triggerEmitAll() {
@@ -168,12 +231,58 @@ export class StorageHandler extends EventEmitter {
 		await this.writeChanges()
 	}
 
-	private nameToFilename(name: string): string {
-		return name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+	getRundownFilename(rundownId: string): string {
+		return `${this.convertToFilename(rundownId)}.rundown.json`
+	}
+
+	async renameRundown(rundownId: string, newName: string): Promise<string> {
+		const newFileName = this.getRundownFilename(this.convertToFilename(newName))
+
+		// Rename the file on disk
+		const oldFilePath = this.rundownPath(this._projectId, rundownId)
+		const newFilePath = this.rundownPath(this._projectId, newFileName)
+		if (await fsExists(newFilePath)) {
+			throw new Error(
+				`Failed to rename rundown "${rundownId}" to "${newFileName}": a rundown with that filename already exists`
+			)
+		}
+		await fsRename(oldFilePath, newFilePath)
+
+		// Change the rundown in memory
+		this.appData.appData.rundowns[newFileName] = {
+			name: newName,
+			open: true, // If a rundown is being renamed, then it must be open.
+		}
+		delete this.appData.appData.rundowns[rundownId]
+		this.rundowns[newFileName] = {
+			version: this.rundowns[rundownId].version,
+			id: newFileName,
+			rundown: {
+				...this.rundowns[rundownId].rundown,
+				name: newName,
+			},
+		}
+		delete this.rundowns[rundownId]
+
+		this.appDataNeedsWrite = true
+		this.rundownsNeedsWrite[newFileName] = true
+		this.triggerEmitAll()
+		await this.writeChanges()
+
+		return newFileName
+	}
+
+	private convertToFilename(str: string): string {
+		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
 
 	/** Triggered when the stored data has been updated */
-	private triggerUpdate(updates: { appData?: true; project?: true; rundowns?: { [rundownId: string]: true } }): void {
+	private triggerUpdate(updates: {
+		appData?: true
+		project?: true
+		rundowns?: { [rundownId: string]: true }
+		closedRundowns?: true
+	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
 			this.appDataNeedsWrite = true
@@ -236,15 +345,46 @@ export class StorageHandler extends EventEmitter {
 		const rundowns: { [fileName: string]: FileRundown } = {}
 
 		const rundownList = this.listRundownsInProject(this._projectId)
+
+		// Go through the appData and remove any rundowns which no longer exist on disk.
+		for (const fileName in this.appData.appData.rundowns) {
+			const rundownListEntry = rundownList.find((listEntry) => {
+				return listEntry.fileName === fileName
+			})
+			if (!rundownListEntry) {
+				delete this.appData.appData.rundowns[fileName]
+			}
+		}
+
 		if (rundownList.length > 0) {
+			// If the project has rundowns, load them.
 			for (const rundown of rundownList) {
-				rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+				if (rundown.fileName in this.appData.appData.rundowns) {
+					// If the rundown exists in the appData and it is marked as open, load it.
+					if (this.appData.appData.rundowns[rundown.fileName].open) {
+						rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+					}
+				} else {
+					// If the rundown doesn't exist in the appData, add it as closed.
+					this.appData.appData.rundowns[rundown.fileName] = {
+						name: rundown.name,
+						open: false,
+					}
+				}
 			}
 		} else {
-			// If the project has no rundowns, create a default rundown.
-			const defaultRundownFilename = 'default.rundown.json'
+			// The project has no rundowns, create a default rundown.
+			const defaultRundownFilename = this.getRundownFilename('default')
 			rundowns[defaultRundownFilename] = this._loadRundown(this._projectId, defaultRundownFilename)
+			this.appData.appData.rundowns[defaultRundownFilename] = {
+				name: 'Default Rundown',
+				open: true,
+			}
 		}
+
+		// Blindly handle any of the above cases where appData was modified.
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
 
 		return rundowns
 	}
@@ -271,6 +411,7 @@ export class StorageHandler extends EventEmitter {
 				project: {
 					id: 'default',
 				},
+				rundowns: {},
 			},
 		}
 	}
@@ -284,6 +425,7 @@ export class StorageHandler extends EventEmitter {
 	private getDefaultRundown(newName?: string): FileRundown {
 		return {
 			version: CURRENT_VERSION,
+			id: newName ? this.convertToFilename(newName) : 'default',
 			rundown: getDefaultRundown(newName),
 		}
 	}
@@ -387,6 +529,7 @@ interface FileProject {
 }
 interface FileRundown {
 	version: number
+	id: string
 	rundown: Omit<Rundown, 'id'>
 }
 /** Current version, used to migrate old data structures into new ones */

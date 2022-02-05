@@ -128,7 +128,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async undo(): Promise<void> {
 		const action = this.undoLedger[this.undoPointer]
 		try {
-			action.undo()
+			await action.undo()
 			this.undoPointer--
 		} catch (error) {
 			console.error('Error when undoing:', error)
@@ -142,7 +142,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async redo(): Promise<void> {
 		const action = this.undoLedger[this.undoPointer + 1]
 		try {
-			action.undo = (await action.redo(...action.arguments)).undo
+			const redoResult = await action.redo(...action.arguments)
+			action.undo = redoResult.undo
 			this.undoPointer++
 		} catch (error) {
 			console.error('Error when redoing:', error)
@@ -499,8 +500,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 
 		return {
-			undo: () => {
-				return this.movePart({
+			undo: async () => {
+				await this.movePart({
 					from: {
 						rundownId: arg.to.rundownId,
 						groupId: toGroup.id,
@@ -903,6 +904,74 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		this.storage.updateProject(data.project)
+	}
+	async newRundown(data: { name: string }): Promise<UndoableResult> {
+		this.storage.newRundown(data.name)
+
+		return {
+			undo: async () => {
+				await this.storage.deleteRundown(data.name)
+			},
+			description: ActionDescription.NewRundown,
+		}
+	}
+	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		const { rundown } = this.getRundown(data)
+
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		}
+
+		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
+		await this.storage.deleteRundown(rundownFileName)
+
+		return {
+			undo: () => {
+				this.storage.restoreRundown(rundown)
+			},
+			description: ActionDescription.DeleteRundown,
+		}
+	}
+	async openRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		await this.storage.openRundown(data.rundownId)
+
+		return {
+			undo: async () => {
+				await this.storage.closeRundown(data.rundownId)
+			},
+			description: ActionDescription.OpenRundown,
+		}
+	}
+	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		await this.storage.closeRundown(data.rundownId)
+
+		return {
+			undo: async () => {
+				await this.storage.openRundown(data.rundownId)
+			},
+			description: ActionDescription.CloseRundown,
+		}
+	}
+	async listRundowns(data: {
+		projectId: string
+	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
+		return this.storage.listRundownsInProject(data.projectId)
+	}
+	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult> {
+		const rundown = this.storage.getRundown(data.rundownId)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		const originalName = rundown.name
+		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+
+		return {
+			undo: async () => {
+				await this.storage.renameRundown(newRundownId, originalName)
+			},
+			description: ActionDescription.RenameRundown,
+		}
 	}
 
 	private _updatePart(part: Part) {

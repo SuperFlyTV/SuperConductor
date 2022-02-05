@@ -12,6 +12,7 @@ import { Mappings } from 'timeline-state-resolver-types'
 import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -103,6 +104,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
+	const { handleError } = useContext(ErrorHandlerContext)
 
 	return (
 		<>
@@ -126,7 +128,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 							name: newPart.name,
 							groupId: null,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					setNewPartOpen(false)
 				}}
 				onDiscarded={() => {
@@ -144,7 +146,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 							rundownId: rundown.id,
 							name: newGroup.name,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					setNewGroupOpen(false)
 				}}
 				onDiscarded={() => {

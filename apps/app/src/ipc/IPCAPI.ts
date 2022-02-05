@@ -5,6 +5,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
+import { AppData } from '../models/App/AppData'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -24,9 +25,14 @@ export const enum ActionDescription {
 	AddResourceToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
+	NewRundown = 'new rundown',
+	DeleteRundown = 'delete rundown',
+	OpenRundown = 'open rundown',
+	CloseRundown = 'close rundown',
+	RenameRundown = 'rename rundown',
 }
 
-export type UndoFunction = () => void
+export type UndoFunction = () => Promise<void> | void
 
 export type UndoableResult<T = unknown> = { undo: UndoFunction; description: ActionDescription; result?: T }
 
@@ -116,8 +122,18 @@ export interface IPCServerMethods {
 	refreshResources: () => Promise<unknown>
 
 	updateProject: (data: { id: string; project: Project }) => Promise<unknown>
+
+	newRundown: (data: { name: string }) => Promise<unknown>
+	deleteRundown: (data: { rundownId: string }) => Promise<unknown>
+	openRundown: (data: { rundownId: string }) => Promise<unknown>
+	closeRundown: (data: { rundownId: string }) => Promise<unknown>
+	listRundowns: (data: {
+		projectId: string
+	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
+	renameRundown: (data: { rundownId: string; newName: string }) => Promise<unknown>
 }
 export interface IPCClientMethods {
+	updateAppData: (appData: AppData) => void
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void

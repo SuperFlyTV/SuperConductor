@@ -4,11 +4,15 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { BrowserWindow } from 'electron'
 import { IPCClientMethods } from '../ipc/IPCAPI'
+import { AppData } from '../models/App/AppData'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {
 	constructor(private mainWindow: BrowserWindow) {}
 
+	updateAppData(appData: AppData): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateAppData', appData)
+	}
 	updateProject(project: Project): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateProject', project)
 	}

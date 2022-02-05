@@ -40,8 +40,8 @@ export class TimedPlayerThingy {
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
-		this.storage.on('appData', (_appData: AppData) => {
-			// todo?
+		this.storage.on('appData', (appData: AppData) => {
+			this.ipcClient?.updateAppData(appData)
 		})
 		this.storage.on('project', (project: Project) => {
 			this.ipcClient?.updateProject(project)

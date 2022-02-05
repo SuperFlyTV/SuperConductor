@@ -9,6 +9,7 @@ import { InfoGroup } from './InfoGroup'
 import { deepClone } from '@shared/lib'
 import { Button } from '@mui/material'
 import { TimelineEnable } from 'superfly-timeline'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 type MyFormValues = {
 	enableStartNum: number
@@ -26,6 +27,7 @@ export const TimelineObjInfo: React.FC<{
 	mappings: Mappings | undefined
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 
 	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
 		? props.timelineObj.obj.enable[0]
@@ -67,7 +69,7 @@ export const TimelineObjInfo: React.FC<{
 							timelineObjId: props.timelineObj.obj.id,
 							timelineObj: editedTimelineObj,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					actions.setSubmitting(false)
 				}}
 			>
@@ -130,7 +132,7 @@ export const TimelineObjInfo: React.FC<{
 											partId: props.partId,
 											timelineObjId: props.timelineObj.obj.id,
 										})
-										.catch(console.error)
+										.catch(handleError)
 								}}
 							/>
 							<Button type="submit" className="btn" variant="contained">

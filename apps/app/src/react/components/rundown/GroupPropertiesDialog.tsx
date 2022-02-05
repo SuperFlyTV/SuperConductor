@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { TextField } from 'formik-mui'
 import { Group } from '../../../models/rundown/Group'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface IProps {
 	initial?: Group
@@ -19,6 +20,8 @@ const groupValidationSchema = Yup.object({
 })
 
 export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAccepted, onDiscarded }: IProps) {
+	const { handleError } = useContext(ErrorHandlerContext)
+
 	return (
 		<Formik
 			initialValues={{ name: initial?.name ?? '' }}
@@ -52,7 +55,7 @@ export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAcc
 					<DialogActions>
 						<Button
 							onClick={() => {
-								formik.submitForm().catch(console.error)
+								formik.submitForm().catch(handleError)
 							}}
 						>
 							{acceptLabel}

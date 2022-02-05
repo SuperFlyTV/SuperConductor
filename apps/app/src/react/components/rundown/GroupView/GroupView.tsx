@@ -12,6 +12,7 @@ import { Mappings } from 'timeline-state-resolver-types'
 import { Button, FormControlLabel, Switch } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -21,7 +22,7 @@ export const GroupView: React.FC<{
 	movePart: MovePartFn
 }> = ({ group, groupIndex, rundownId, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
-
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
 
 	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
@@ -69,7 +70,7 @@ export const GroupView: React.FC<{
 				// Stop the group, so that the "stop"-buttons reflect the correct state.
 				console.log('Auto-stopping group', group.id)
 
-				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(console.error)
+				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 				stopPlayingRef.current = false
 			}
 		} else {
@@ -203,7 +204,7 @@ export const GroupView: React.FC<{
 													groupId: group.id,
 													value: !group.autoPlay,
 												})
-												.catch(console.error)
+												.catch(handleError)
 										}}
 									/>
 								}
@@ -219,7 +220,7 @@ export const GroupView: React.FC<{
 										onChange={() => {
 											ipcServer
 												.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
-												.catch(console.error)
+												.catch(handleError)
 										}}
 									/>
 								}
@@ -228,7 +229,7 @@ export const GroupView: React.FC<{
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(console.error)
+								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 							}}
 						/>
 					</div>
@@ -265,7 +266,7 @@ export const GroupView: React.FC<{
 									name: updatedGroup.name,
 								},
 							})
-							.catch(console.error)
+							.catch(handleError)
 						setGroupPropsOpen(false)
 					}}
 					onDiscarded={() => {
@@ -279,6 +280,7 @@ export const GroupView: React.FC<{
 
 const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
 	return (
@@ -300,7 +302,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 							name: newPart.name,
 							groupId: group.id,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					setNewPartOpen(false)
 				}}
 				onDiscarded={() => {

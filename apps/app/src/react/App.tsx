@@ -26,43 +26,36 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
-import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
-import { SnackbarProvider } from 'notistack'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { useSnackbar } from 'notistack'
+import { AppData } from '../models/App/AppData'
+import { ErrorHandlerContext } from './contexts/ErrorHandler'
+
+/**
+ * Used to remove unnecessary cruft from error messages.
+ */
+const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
 export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
+	const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 	const currentRundownIdRef = useRef<string>()
-	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
 	const [settingsOpen, setSettingsOpen] = useState(false)
+	const { enqueueSnackbar } = useSnackbar()
 
 	useEffect(() => {
 		currentRundownIdRef.current = currentRundownId
 	}, [currentRundownId])
 
-	const theme = React.useMemo(() => {
-		return createTheme({
-			palette: {
-				mode: 'dark',
-				primary: {
-					main: '#e96703',
-				},
-			},
-			typography: {
-				/**
-				 * This is needed to counteract the `font-size: 62.5%` style on the <html> tag.
-				 * See https://mui.com/customization/typography/#font-size for more details.
-				 */
-				fontSize: 14 * 1.6,
-			},
-		})
-	}, [])
-
 	useEffect(() => {
-		new IPCClient(ipcRenderer, {
+		const ipcClient = new IPCClient(ipcRenderer, {
+			updateAppData: (appData: AppData) => {
+				setAppData(appData)
+			},
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
@@ -73,16 +66,6 @@ export const App = () => {
 				} else if (currentRundownIdRef.current === rundownId) {
 					setCurrentRundown(rundown)
 				}
-
-				setOpenRundowns((openRundowns) => {
-					const newOpenRundowns = { ...openRundowns }
-					if (rundown) {
-						newOpenRundowns[rundownId] = { name: rundown.name }
-					} else {
-						delete newOpenRundowns[rundownId]
-					}
-					return newOpenRundowns
-				})
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
 				setResources((resources) => {
@@ -110,15 +93,46 @@ export const App = () => {
 				setSettingsOpen(true)
 			},
 		})
+
+		return () => {
+			ipcClient.destroy()
+		}
 	}, [])
+
+	const handleError = useMemo(() => {
+		return (error: unknown): void => {
+			console.error(error)
+			if (typeof error === 'object' && error !== null && 'message' in error) {
+				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
+			} else if (typeof error === 'string') {
+				enqueueSnackbar(error.replace(ErrorCruftRegex, ''), { variant: 'error' })
+			} else {
+				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
+			}
+		}
+	}, [enqueueSnackbar])
+
+	const errorHandlerContextValue = useMemo(() => {
+		return {
+			handleError,
+		}
+	}, [handleError])
 
 	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		serverAPI.triggerSendAll().catch(console.error)
-	}, [])
+		serverAPI.triggerSendAll().catch(handleError)
+	}, [handleError, serverAPI])
+	useEffect(() => {
+		// Ask the backend for the rundown whenever currentRundownId changes.
+		if (currentRundownId) {
+			serverAPI.triggerSendRundown({ rundownId: currentRundownId }).catch(handleError)
+		} else {
+			setCurrentRundown(undefined)
+		}
+	}, [currentRundownId, handleError, serverAPI])
 
 	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
 	const guiContextValue = useMemo(() => {
@@ -179,14 +193,39 @@ export const App = () => {
 		setSettingsOpen(false)
 	}
 
+	const openRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === true
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
+	const closedRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === false
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
-
-	const rundowns0 = Object.entries(openRundowns).map(([rundownId, openRundown]) => ({
-		rundownId,
-		name: openRundown.name,
-	}))
 
 	return (
 		<DndProvider backend={HTML5Backend}>
@@ -196,44 +235,63 @@ export const App = () => {
 						<ProjectContext.Provider value={project}>
 							<ResourcesContext.Provider value={resources}>
 								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-									<ThemeProvider theme={theme}>
-										<SnackbarProvider maxSnack={1}>
-											<div className="app" onPointerDown={handlePointerDownAnywhere}>
-												<div className="top-header">
-													<TopHeader
-														rundowns={rundowns0}
-														onSelect={(rundownId) => {
-															setCurrentRundownId(rundownId)
-														}}
-														bridgeStatuses={bridgeStatuses}
-													/>
-												</div>
-
-												{currentRundown ? (
-													<RundownContext.Provider value={currentRundown}>
-														<div className="main-area">
-															<RundownView mappings={project.mappings} />
-														</div>
-														<div className="side-bar">
-															<Sidebar mappings={project.mappings} />
-														</div>
-													</RundownContext.Provider>
-												) : (
-													<div>Loading...</div>
-												)}
-
-												<Dialog open={settingsOpen} onClose={handleSettingsClose}>
-													<DialogTitle>Preferences</DialogTitle>
-													<DialogContent className="settings-dialog">
-														<Settings project={project} />
-													</DialogContent>
-													<DialogActions>
-														<Button onClick={handleSettingsClose}>Close</Button>
-													</DialogActions>
-												</Dialog>
+									<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+										<div className="app" onPointerDown={handlePointerDownAnywhere}>
+											<div className="top-header">
+												<TopHeader
+													selectedRundownId={currentRundownId}
+													openRundowns={openRundowns}
+													closedRundowns={closedRundowns}
+													onSelect={(rundownId) => {
+														setCurrentRundownId(rundownId)
+													}}
+													onClose={(rundownId) => {
+														serverAPI.closeRundown({ rundownId }).catch(handleError)
+														if (openRundowns.length > 0) {
+															setCurrentRundownId(openRundowns[0].rundownId)
+														} else {
+															setCurrentRundownId(undefined)
+														}
+													}}
+													onOpen={(rundownId) => {
+														serverAPI.openRundown({ rundownId }).catch(handleError)
+													}}
+													onCreate={(rundownName) => {
+														serverAPI.newRundown({ name: rundownName }).catch(handleError)
+													}}
+													onRename={(rundownId, newName) => {
+														serverAPI
+															.renameRundown({ rundownId, newName })
+															.catch(handleError)
+													}}
+													bridgeStatuses={bridgeStatuses}
+												/>
 											</div>
-										</SnackbarProvider>
-									</ThemeProvider>
+
+											{currentRundown ? (
+												<RundownContext.Provider value={currentRundown}>
+													<div className="main-area">
+														<RundownView mappings={project.mappings} />
+													</div>
+													<div className="side-bar">
+														<Sidebar mappings={project.mappings} />
+													</div>
+												</RundownContext.Provider>
+											) : (
+												<div>Loading...</div>
+											)}
+
+											<Dialog open={settingsOpen} onClose={handleSettingsClose}>
+												<DialogTitle>Preferences</DialogTitle>
+												<DialogContent className="settings-dialog">
+													<Settings project={project} />
+												</DialogContent>
+												<DialogActions>
+													<Button onClick={handleSettingsClose}>Close</Button>
+												</DialogActions>
+											</Dialog>
+										</div>
+									</ErrorHandlerContext.Provider>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>
 						</ProjectContext.Provider>

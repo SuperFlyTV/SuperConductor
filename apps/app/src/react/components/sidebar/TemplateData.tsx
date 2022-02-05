@@ -4,6 +4,7 @@ import { BsFillTrashFill } from 'react-icons/bs'
 import { InfoGroup } from './InfoGroup'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Button } from '@mui/material'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 type IUpdateData = (rowId: string, columnId: string, oldValue: string, newValue: string) => void
 type IDeleteRow = (rowId: string) => void
@@ -64,6 +65,8 @@ export const TemplateData: React.FC<{
 	templateData: { [id: string]: string }
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
 	const handleUpdateData: IUpdateData = (rowId, columnId, oldValue, newValue) => {
 		if (oldValue === newValue) return
 
@@ -77,7 +80,7 @@ export const TemplateData: React.FC<{
 				changedItemId: columnId,
 				value: newValue,
 			})
-			.catch(console.error)
+			.catch(handleError)
 	}
 
 	const handleAddNew = () => {
@@ -88,7 +91,7 @@ export const TemplateData: React.FC<{
 				partId: props.partId,
 				timelineObjId: props.timelineObjId,
 			})
-			.catch(console.error)
+			.catch(handleError)
 	}
 
 	const handleDelete: IDeleteRow = (rowId: string) => {
@@ -100,7 +103,7 @@ export const TemplateData: React.FC<{
 				timelineObjId: props.timelineObjId,
 				key: rowId,
 			})
-			.catch(console.error)
+			.catch(handleError)
 	}
 
 	const data: Array<any> = []

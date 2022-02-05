@@ -125,4 +125,24 @@ export class IPCServer implements IPCServerMethods {
 	updateProject(data: { id: string; project: Project }): Promise<void> {
 		return this.invokeServerMethod('updateProject', data)
 	}
+	newRundown(data: { name: string }): Promise<void> {
+		return this.invokeServerMethod('newRundown', data)
+	}
+	deleteRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('deleteRundown', data)
+	}
+	openRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('openRundown', data)
+	}
+	closeRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('closeRundown', data)
+	}
+	listRundowns(data: {
+		projectId: string
+	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
+		return this.invokeServerMethod('listRundowns', data)
+	}
+	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
+		return this.invokeServerMethod('renameRundown', data)
+	}
 }

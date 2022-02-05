@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Field, Form, Formik } from 'formik'
 import { Part } from '../../../models/rundown/Part'
 import * as Yup from 'yup'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { TextField } from 'formik-mui'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface IProps {
 	initial?: Part
@@ -19,6 +20,8 @@ const partValidationSchema = Yup.object({
 })
 
 export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAccepted, onDiscarded }: IProps) {
+	const { handleError } = useContext(ErrorHandlerContext)
+
 	return (
 		<Formik
 			initialValues={{ name: initial?.name ?? '' }}
@@ -53,7 +56,7 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 						<Button onClick={onDiscarded}>Cancel</Button>
 						<Button
 							onClick={() => {
-								formik.submitForm().catch(console.error)
+								formik.submitForm().catch(handleError)
 							}}
 						>
 							{acceptLabel}
