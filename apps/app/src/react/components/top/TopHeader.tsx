@@ -1,6 +1,6 @@
 import { BridgeStatus } from '../../../models/project/Bridge'
 import classNames from 'classnames'
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
 import {
 	Button,
 	Dialog,
@@ -15,6 +15,7 @@ import { MdAdd, MdClose } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -45,6 +46,7 @@ export const TopHeader: React.FC<{
 	onCreate,
 	onRename,
 }) => {
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)
@@ -166,7 +168,7 @@ export const TopHeader: React.FC<{
 								</Button>
 								<Button
 									onClick={() => {
-										formik.submitForm().catch(console.error)
+										formik.submitForm().catch(handleError)
 									}}
 								>
 									Open
@@ -211,7 +213,7 @@ export const TopHeader: React.FC<{
 							<DialogActions>
 								<Button
 									onClick={() => {
-										formik.submitForm().catch(console.error)
+										formik.submitForm().catch(handleError)
 									}}
 								>
 									Create
@@ -258,7 +260,7 @@ export const TopHeader: React.FC<{
 							<DialogActions>
 								<Button
 									onClick={() => {
-										formik.submitForm().catch(console.error)
+										formik.submitForm().catch(handleError)
 									}}
 								>
 									Rename

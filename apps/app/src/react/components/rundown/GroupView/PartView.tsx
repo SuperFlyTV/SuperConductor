@@ -23,6 +23,7 @@ import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -49,6 +50,7 @@ export const PartView: React.FC<{
 	const { gui } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const keyTracker = useContext(HotkeyContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<TimelineObj[]>([])
 	const [trackWidth, setTrackWidth] = useState(0)
@@ -202,11 +204,11 @@ export const PartView: React.FC<{
 					})
 					.catch((error) => {
 						setWaitingForBackendUpdate(false)
-						console.error(error)
+						handleError(error)
 					})
 			}
 		}
-	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects])
+	}, [move, part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroup.id, changedObjects, handleError])
 
 	useEffect(() => {
 		const onKey = () => {
@@ -240,18 +242,18 @@ export const PartView: React.FC<{
 
 	// Play button:
 	const handleStart = () => {
-		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
+		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Stop button:
 	const cannotStop = !isGroupPlaying
 	const handleStop = () => {
-		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id }).catch(console.error)
+		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id }).catch(handleError)
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
+		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -500,7 +502,7 @@ export const PartView: React.FC<{
 								name: updatedPart.name,
 							},
 						})
-						.catch(console.error)
+						.catch(handleError)
 					setPartPropsOpen(false)
 				}}
 				onDiscarded={() => {

@@ -16,12 +16,14 @@ import { Group } from '../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 import { Button, Grid, MenuItem } from '@mui/material'
 import { TextField } from 'formik-mui'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const ResourceLibrary: React.FC = () => {
 	const ipcServer = useContext(IPCServerContext)
 	const resources = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
 	const project = useContext(ProjectContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 
 	const defaultPart = rundown.groups[0]?.parts[0] as Part | undefined
 	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
@@ -42,7 +44,7 @@ export const ResourceLibrary: React.FC = () => {
 					try {
 						await ipcServer.refreshResources()
 					} catch (err) {
-						console.error(err)
+						handleError(err)
 					}
 					setRefreshing(false)
 				}}
@@ -130,7 +132,7 @@ export const ResourceLibrary: React.FC = () => {
 											layerId: values.layerId,
 											resourceId: selectedResource.id,
 										})
-										.catch(console.error)
+										.catch(handleError)
 									actions.setSubmitting(false)
 								}}
 							>

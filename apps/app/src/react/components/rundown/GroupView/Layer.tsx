@@ -4,6 +4,7 @@ import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { TimelineObject } from './TimelineObject'
 
@@ -20,6 +21,7 @@ export const Layer: React.FC<{
 	msPerPixel: number
 }> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
@@ -32,7 +34,7 @@ export const Layer: React.FC<{
 						layerId,
 						resourceId: item.resource.id,
 					})
-					.catch(console.error)
+					.catch(handleError)
 			},
 			collect: (monitor) => ({
 				isOver: !!monitor.isOver(),

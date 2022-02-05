@@ -1,6 +1,7 @@
 import classNames from 'classnames'
-import React from 'react'
+import React, { useContext } from 'react'
 import { HiRefresh } from 'react-icons/hi'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface InfoGroupProps {
 	title: string
@@ -11,6 +12,8 @@ interface InfoGroupProps {
 }
 
 export const InfoGroup = (props: InfoGroupProps) => {
+	const { handleError } = useContext(ErrorHandlerContext)
+
 	return (
 		<div className="info-group">
 			<div className="title">
@@ -19,7 +22,7 @@ export const InfoGroup = (props: InfoGroupProps) => {
 					<button
 						className={classNames({ refresh: true, active: props.refreshActive })}
 						onClick={() => {
-							if (props.onRefreshClick) props.onRefreshClick().catch(console.error)
+							if (props.onRefreshClick) props.onRefreshClick().catch(handleError)
 						}}
 					>
 						<HiRefresh size={15} color="white" />

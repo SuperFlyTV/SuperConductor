@@ -2,6 +2,7 @@ import classNames from 'classnames'
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 
 export const EmptyLayer: React.FC<{
@@ -10,6 +11,7 @@ export const EmptyLayer: React.FC<{
 	partId: string
 }> = ({ rundownId, groupId, partId }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
@@ -23,7 +25,7 @@ export const EmptyLayer: React.FC<{
 						layerId: null,
 						resourceId: item.resource.id,
 					})
-					.catch(console.error)
+					.catch(handleError)
 			},
 			collect: (monitor) => ({
 				isOver: !!monitor.isOver(),

@@ -8,6 +8,7 @@ import { DataRow, FormRow } from './InfoGroup'
 import { InfoGroup } from './InfoGroup'
 import { deepClone } from '@shared/lib'
 import { Button } from '@mui/material'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 type MyFormValues = {
 	enableStart: number
@@ -23,6 +24,7 @@ export const TimelineObjInfo: React.FC<{
 	mappings: Mappings | undefined
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 
 	const initialValues: MyFormValues = {
 		enableStart: (props.timelineObj.obj.enable as any)?.start,
@@ -52,7 +54,7 @@ export const TimelineObjInfo: React.FC<{
 							timelineObjId: props.timelineObj.obj.id,
 							timelineObj: editedTimelineObj,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					actions.setSubmitting(false)
 				}}
 			>
@@ -89,7 +91,7 @@ export const TimelineObjInfo: React.FC<{
 											partId: props.partId,
 											timelineObjId: props.timelineObj.obj.id,
 										})
-										.catch(console.error)
+										.catch(handleError)
 								}}
 							/>
 							<Button type="submit" className="btn" variant="contained">
