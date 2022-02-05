@@ -11,6 +11,16 @@ import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
 const fsRm = promisify(fs.rm)
+const fsAccess = promisify(fs.access)
+const fsExists = async (filePath: string): Promise<boolean> => {
+	try {
+		await fsAccess(filePath)
+		return true
+	} catch {
+		return false
+	}
+}
+const fsRename = promisify(fs.rename)
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -223,6 +233,45 @@ export class StorageHandler extends EventEmitter {
 
 	getRundownFilename(rundownId: string): string {
 		return `${this.convertToFilename(rundownId)}.rundown.json`
+	}
+
+	async renameRundown(rundownId: string, newName: string): Promise<string> {
+		const newFileName = this.getRundownFilename(this.convertToFilename(newName))
+
+		// Rename the file on disk
+		const oldFilePath = this.rundownPath(this._projectId, rundownId)
+		const newFilePath = this.rundownPath(this._projectId, newFileName)
+		if (await fsExists(newFilePath)) {
+			throw new Error(
+				`Failed to rename rundown "${rundownId}" to "${newFileName}": a rundown with that filename already exists`
+			)
+		}
+		await fsRename(oldFilePath, newFilePath)
+
+		// Change the rundown in memory
+		this.appData.appData.rundowns[newFileName] = {
+			name: newName,
+			open: true, // If a rundown is being renamed, then it must be open.
+		}
+		delete this.appData.appData.rundowns[rundownId]
+		this.rundowns[newFileName] = {
+			version: this.rundowns[rundownId].version,
+			id: newFileName,
+			rundown: {
+				...this.rundowns[rundownId].rundown,
+				name: newName,
+			},
+		}
+		delete this.rundowns[rundownId]
+
+		console.log(this.rundowns)
+
+		this.appDataNeedsWrite = true
+		this.rundownsNeedsWrite[newFileName] = true
+		this.triggerEmitAll()
+		await this.writeChanges()
+
+		return newFileName
 	}
 
 	private convertToFilename(str: string): string {

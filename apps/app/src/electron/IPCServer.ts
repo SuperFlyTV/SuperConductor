@@ -957,6 +957,22 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
 		return this.storage.listRundownsInProject(data.projectId)
 	}
+	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult> {
+		const rundown = this.storage.getRundown(data.rundownId)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		const originalName = rundown.name
+		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+
+		return {
+			undo: async () => {
+				await this.storage.renameRundown(newRundownId, originalName)
+			},
+			description: ActionDescription.RenameRundown,
+		}
+	}
 
 	private _updatePart(part: Part) {
 		const resolvedTimeline = Resolver.resolveTimeline(

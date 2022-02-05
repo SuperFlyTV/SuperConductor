@@ -29,6 +29,7 @@ export const enum ActionDescription {
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
 	CloseRundown = 'close rundown',
+	RenameRundown = 'rename rundown',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -129,6 +130,7 @@ export interface IPCServerMethods {
 	listRundowns: (data: {
 		projectId: string
 	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
+	renameRundown: (data: { rundownId: string; newName: string }) => Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void
