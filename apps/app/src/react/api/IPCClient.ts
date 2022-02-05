@@ -3,12 +3,14 @@ import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
+import { AppData } from '../../models/App/AppData'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
 	constructor(
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
+			updateAppData: (appData: AppData) => void
 			updateProject: (project: Project) => void
 			updateRundown: (fileName: string, rundown: Rundown) => void
 			updateResource: (id: string, resource: ResourceAny | null) => void
@@ -29,6 +31,9 @@ export class IPCClient implements IPCClientMethods {
 		}
 	}
 
+	updateAppData(appData: AppData): void {
+		this.callbacks.updateAppData(appData)
+	}
 	updateProject(project: Project): void {
 		this.callbacks.updateProject(project)
 	}

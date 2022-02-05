@@ -5,6 +5,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
+import { AppData } from '../models/App/AppData'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -130,6 +131,7 @@ export interface IPCServerMethods {
 	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
 }
 export interface IPCClientMethods {
+	updateAppData: (appData: AppData) => void
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void

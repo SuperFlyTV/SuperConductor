@@ -28,17 +28,16 @@ import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/Timeli
 import { Settings } from './components/settings/Settings'
 import { createTheme, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { SnackbarProvider } from 'notistack'
+import { AppData } from '../models/App/AppData'
 
 export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
+	const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
 	const currentRundownIdRef = useRef<string>()
-	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
-	const [closedRundowns, setClosedRundowns] =
-		useState<{ fileName: string; version: number; name: string; open: boolean }[]>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 
 	useEffect(() => {
@@ -65,6 +64,9 @@ export const App = () => {
 
 	useEffect(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
+			updateAppData: (appData: AppData) => {
+				setAppData(appData)
+			},
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
@@ -75,16 +77,6 @@ export const App = () => {
 				} else if (currentRundownIdRef.current === rundownId) {
 					setCurrentRundown(rundown)
 				}
-
-				setOpenRundowns((openRundowns) => {
-					const newOpenRundowns = { ...openRundowns }
-					if (rundown) {
-						newOpenRundowns[rundownId] = { name: rundown.name }
-					} else {
-						delete newOpenRundowns[rundownId]
-					}
-					return newOpenRundowns
-				})
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
 				setResources((resources) => {
@@ -193,14 +185,43 @@ export const App = () => {
 		setSettingsOpen(false)
 	}
 
+	const openRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === true
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
+	const closedRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === false
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
+	useEffect(() => {
+		console.log('closedRundowns changed:', closedRundowns)
+	}, [closedRundowns])
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
-
-	const rundowns0 = Object.entries(openRundowns).map(([rundownId, openRundown]) => ({
-		rundownId,
-		name: openRundown.name,
-	}))
 
 	return (
 		<DndProvider backend={HTML5Backend}>
@@ -216,31 +237,17 @@ export const App = () => {
 												<div className="top-header">
 													<TopHeader
 														selectedRundownId={currentRundownId}
-														openRundowns={rundowns0}
+														openRundowns={openRundowns}
 														closedRundowns={closedRundowns}
 														onSelect={(rundownId) => {
 															setCurrentRundownId(rundownId)
 														}}
 														onClose={(rundownId) => {
 															serverAPI.closeRundown({ rundownId }).catch(console.error)
-															if (rundowns0.length > 0) {
-																setCurrentRundownId(rundowns0[0].rundownId)
+															if (openRundowns.length > 0) {
+																setCurrentRundownId(openRundowns[0].rundownId)
 															} else {
 																setCurrentRundownId(undefined)
-															}
-														}}
-														onOpenDialogOpened={async () => {
-															// Refresh the list of closed rundowns whenever the "open rundown" dialog is opened.
-															try {
-																const allRundowns = await serverAPI.listRundowns({
-																	projectId: project.id,
-																})
-																const closedRundowns = allRundowns.filter(
-																	(rundown) => rundown.open === false
-																)
-																setClosedRundowns(closedRundowns)
-															} catch (error) {
-																console.error(error)
 															}
 														}}
 														onOpen={(rundownId) => {

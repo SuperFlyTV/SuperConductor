@@ -3,6 +3,12 @@ export interface AppData {
 	project: {
 		id: string
 	}
+	rundowns: {
+		[fileName: string]: {
+			name: string
+			open: boolean
+		}
+	}
 }
 export type WindowPosition =
 	| {

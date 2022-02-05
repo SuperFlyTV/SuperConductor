@@ -922,7 +922,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
 		}
 
-		const rundownFileName = this.storage.convertToFilename(rundown.id)
+		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
 
 		return {
@@ -933,23 +933,21 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async openRundown(data: { rundownId: string }): Promise<UndoableResult> {
-		const rundownFileName = this.storage.convertToFilename(data.rundownId)
-		await this.storage.openRundown(rundownFileName)
+		await this.storage.openRundown(data.rundownId)
 
 		return {
 			undo: async () => {
-				await this.storage.closeRundown(rundownFileName)
+				await this.storage.closeRundown(data.rundownId)
 			},
 			description: ActionDescription.OpenRundown,
 		}
 	}
 	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
-		const rundownFileName = this.storage.convertToFilename(data.rundownId)
-		await this.storage.closeRundown(rundownFileName)
+		await this.storage.closeRundown(data.rundownId)
 
 		return {
 			undo: async () => {
-				await this.storage.openRundown(rundownFileName)
+				await this.storage.openRundown(data.rundownId)
 			},
 			description: ActionDescription.CloseRundown,
 		}

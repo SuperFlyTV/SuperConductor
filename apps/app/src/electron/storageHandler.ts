@@ -144,18 +144,30 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	newRundown(name: string) {
-		const fileName = `${this.convertToFilename(name)}.rundown.json`
+		const fileName = this.getRundownFilename(name)
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
-		this.triggerUpdate({ rundowns: { [fileName]: true } })
+		this.appData.appData.rundowns[fileName] = {
+			name: name,
+			open: true,
+		}
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
+		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
 	}
 	openRundown(fileName: string) {
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName)
 		this.rundownsHasChanged[fileName] = true
-		this.triggerUpdate({ rundowns: { [fileName]: true } })
+		this.appData.appData.rundowns[fileName].open = true
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
+		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
 	}
 	async closeRundown(fileName: string) {
 		// Write any pending changes before closing the rundown,
 		// to ensure that any changes are saved, and that no further changes are written after it has closed.
+		this.appData.appData.rundowns[fileName].open = false
+		this.appDataHasChanged = true
+		this.appDataNeedsWrite = true
 		await this.writeChangesNow()
 		delete this.rundowns[fileName]
 		this.triggerEmitAll()
@@ -209,12 +221,21 @@ export class StorageHandler extends EventEmitter {
 		await this.writeChanges()
 	}
 
-	convertToFilename(str: string): string {
+	getRundownFilename(rundownId: string): string {
+		return `${this.convertToFilename(rundownId)}.rundown.json`
+	}
+
+	private convertToFilename(str: string): string {
 		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
 
 	/** Triggered when the stored data has been updated */
-	private triggerUpdate(updates: { appData?: true; project?: true; rundowns?: { [rundownId: string]: true } }): void {
+	private triggerUpdate(updates: {
+		appData?: true
+		project?: true
+		rundowns?: { [rundownId: string]: true }
+		closedRundowns?: true
+	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
 			this.appDataNeedsWrite = true
@@ -279,12 +300,18 @@ export class StorageHandler extends EventEmitter {
 		const rundownList = this.listRundownsInProject(this._projectId)
 		if (rundownList.length > 0) {
 			for (const rundown of rundownList) {
-				rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+				if (this.appData.appData.rundowns[rundown.fileName].open) {
+					rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+				}
 			}
 		} else {
 			// If the project has no rundowns, create a default rundown.
-			const defaultRundownFilename = 'default.rundown.json'
+			const defaultRundownFilename = this.getRundownFilename('default')
 			rundowns[defaultRundownFilename] = this._loadRundown(this._projectId, defaultRundownFilename)
+			this.appData.appData.rundowns[defaultRundownFilename] = {
+				name: 'Default Rundown',
+				open: true,
+			}
 		}
 
 		return rundowns
@@ -312,6 +339,7 @@ export class StorageHandler extends EventEmitter {
 				project: {
 					id: 'default',
 				},
+				rundowns: {},
 			},
 		}
 	}

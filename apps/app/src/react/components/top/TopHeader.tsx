@@ -1,6 +1,6 @@
 import { BridgeStatus } from '../../../models/project/Bridge'
 import classNames from 'classnames'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
 	Button,
 	Dialog,
@@ -13,41 +13,29 @@ import {
 	IconButton,
 	Radio,
 	RadioGroup,
-	TextField,
 } from '@mui/material'
 import { MdAdd, MdClose } from 'react-icons/md'
+import { Field, Form, Formik } from 'formik'
+import { TextField } from 'formik-mui'
+import * as Yup from 'yup'
+
+const newRundownValidationSchema = Yup.object({
+	name: Yup.string().label('Rundown Name').required(),
+})
 
 export const TopHeader: React.FC<{
 	selectedRundownId?: string
 	openRundowns: { rundownId: string; name: string }[]
-	closedRundowns?: { fileName: string; version: number; name: string; open: boolean }[]
+	closedRundowns: { rundownId: string; name: string }[]
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
 	onSelect: (rundownId: string) => void
 	onClose: (rundownId: string) => void
-	onOpenDialogOpened: () => void
 	onOpen: (rundownFileName: string) => void
 	onCreate: (rundownName: string) => void
-}> = ({
-	selectedRundownId,
-	openRundowns,
-	closedRundowns,
-	bridgeStatuses,
-	onSelect,
-	onClose,
-	onOpenDialogOpened,
-	onOpen,
-	onCreate,
-}) => {
+}> = ({ selectedRundownId, openRundowns, closedRundowns, bridgeStatuses, onSelect, onClose, onOpen, onCreate }) => {
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
-	const [newRundownName, setNewRundownName] = useState('')
 	const [rundownToOpen, setRundownToOpen] = useState('')
-
-	useEffect(() => {
-		if (openRundownOpen) {
-			onOpenDialogOpened()
-		}
-	}, [openRundownOpen, onOpenDialogOpened])
 
 	const handleOpenRundownClose = () => {
 		setOpenRundownOpen(false)
@@ -131,8 +119,8 @@ export const TopHeader: React.FC<{
 							{closedRundowns &&
 								closedRundowns.map((rundown) => (
 									<FormControlLabel
-										key={rundown.fileName}
-										value={rundown.fileName}
+										key={rundown.rundownId}
+										value={rundown.rundownId}
 										control={<Radio />}
 										label={rundown.name}
 									/>
@@ -160,30 +148,49 @@ export const TopHeader: React.FC<{
 				</DialogActions>
 			</Dialog>
 
-			<Dialog open={newRundownOpen} onClose={handleNewRundownClose}>
-				<DialogTitle>Create New Rundown</DialogTitle>
-				<DialogContent>
-					<TextField
-						label="New Rundown Name"
-						margin="normal"
-						value={newRundownName}
-						onChange={(event) => {
-							setNewRundownName(event.target.value)
-						}}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<Button
-						onClick={() => {
-							onCreate(newRundownName)
-							setNewRundownOpen(false)
-						}}
-					>
-						Create
-					</Button>
-					<Button onClick={handleNewRundownClose}>Cancel</Button>
-				</DialogActions>
-			</Dialog>
+			<Formik
+				initialValues={{ name: 'New Rundown' }}
+				validationSchema={newRundownValidationSchema}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					onCreate(values.name)
+					setNewRundownOpen(false)
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => {
+					return (
+						<Dialog open={newRundownOpen} onClose={handleNewRundownClose}>
+							<DialogTitle>Create New Rundown</DialogTitle>
+							<DialogContent>
+								<Form>
+									<Field
+										component={TextField}
+										margin="normal"
+										fullWidth
+										name="name"
+										type="text"
+										label="New Rundown Name"
+										autoFocus
+										required
+									/>
+								</Form>
+							</DialogContent>
+							<DialogActions>
+								<Button
+									onClick={() => {
+										formik.submitForm().catch(console.error)
+									}}
+								>
+									Create
+								</Button>
+								<Button onClick={handleNewRundownClose}>Cancel</Button>
+							</DialogActions>
+						</Dialog>
+					)
+				}}
+			</Formik>
 		</>
 	)
 }
