@@ -7,6 +7,8 @@ export type SnapPoint = {
 	timelineObjId: string
 	time: number
 	expression: string
+	/** string, containing t ids of which other objects this snapPoint is referring. Used to filter out snapPoints that would cause circular dependencies */
+	referring: string
 }
 
 export function applyMovementToTimeline(
@@ -37,47 +39,59 @@ export function applyMovementToTimeline(
 	const movedDuration = orgDuration
 	const movedEndTime = movedDuration ? movedStartTime + movedDuration : null
 
+	let dragSnap: {
+		timelineObjId: string
+		expression: string
+	} | null = null
+
 	const closestSnapPoints: {
 		distanceToSnapPoint: number
 		resultingDragDelta: number
+		expression: string
 	}[] = []
 
-	snapPoints
-		.filter((sp) => {
-			// Ignore own snap points.
-			if (sp.timelineObjId === leaderTimelineObjId) {
-				return false
-			}
+	const validSnapPoints = snapPoints.filter((sp) => {
+		// Ignore own snap points.
+		if (sp.timelineObjId === leaderTimelineObjId) {
+			return false
+		}
 
-			// Ignore snap points belonging to other selected timeline objects.
-			if (selectedTimelineObjIds.includes(sp.timelineObjId)) {
-				return false
-			}
+		// Ignore snap points belonging to other selected timeline objects.
+		if (selectedTimelineObjIds.includes(sp.timelineObjId)) {
+			return false
+		}
 
-			return true
-		})
-		.map((sp) => {
-			{
-				const distance = Math.abs(sp.time - movedStartTime)
+		// Ignore snap points that are referring to the moved timeline object.
+		if (sp.referring.includes(leaderTimelineObjId)) {
+			return false
+		}
+
+		return true
+	})
+	validSnapPoints.forEach((sp) => {
+		{
+			const distance = Math.abs(sp.time - movedStartTime)
+			if (distance <= snapDistanceInMilliseconds) {
+				closestSnapPoints.push({
+					distanceToSnapPoint: distance,
+					resultingDragDelta: sp.time - orgStartTime,
+					expression: sp.expression,
+				})
+			}
+		}
+		{
+			if (orgEndTime && movedEndTime) {
+				const distance = Math.abs(sp.time - movedEndTime)
 				if (distance <= snapDistanceInMilliseconds) {
 					closestSnapPoints.push({
 						distanceToSnapPoint: distance,
-						resultingDragDelta: sp.time - orgStartTime,
+						resultingDragDelta: sp.time - orgEndTime,
+						expression: sp.expression,
 					})
 				}
 			}
-			{
-				if (orgEndTime && movedEndTime) {
-					const distance = Math.abs(sp.time - movedEndTime)
-					if (distance <= snapDistanceInMilliseconds) {
-						closestSnapPoints.push({
-							distanceToSnapPoint: distance,
-							resultingDragDelta: sp.time - orgEndTime,
-						})
-					}
-				}
-			}
-		})
+		}
+	})
 
 	const closestSnapPoint = closestSnapPoints.reduce(
 		(prev, current) => {
@@ -87,12 +101,18 @@ export function applyMovementToTimeline(
 		{
 			distanceToSnapPoint: Infinity,
 			resultingDragDelta: 0,
+			expression: '',
 		}
 	)
 
 	// Snap
 	if (closestSnapPoint.distanceToSnapPoint < Infinity) {
 		dragDelta = closestSnapPoint.resultingDragDelta
+
+		dragSnap = {
+			timelineObjId: leaderTimelineObjId,
+			expression: closestSnapPoint.expression,
+		}
 	}
 
 	const applyDragDelta = (
@@ -108,27 +128,36 @@ export function applyMovementToTimeline(
 			// Check if the object is selected (ie to be moved)
 			if (selectedTimelineObjIds.includes(obj.obj.id)) {
 				const enable = obj.obj.enable as TimelineEnable
-				const orgObj = orgResolvedTimeline.objects[obj.obj.id]
-				const orgInstance = orgObj.resolved.instances[0]
+				const orgResolvedObj = orgResolvedTimeline.objects[obj.obj.id]
+				const orgInstance = orgResolvedObj.resolved.instances[0]
 
 				if (moveType === 'whole') {
 					if (selectedTimelineObjIds.length === 1) {
 						// If the user specifically has selected the timelineObj, the object should be moved, no matter what
 
-						enable.start = orgInstance.start + dragDelta
+						if (dragSnap?.timelineObjId === obj.obj.id) {
+							enable.start = dragSnap.expression
+						} else {
+							enable.start = Math.floor(orgInstance.start + dragDelta)
+						}
 						if (orgInstance.end) {
-							// ?
-							enable.duration = orgInstance.end - orgInstance.start
+							// Set the duration to a specific value (ie overwrite any previous duration expression)
+							enable.duration = Math.floor(orgInstance.end - orgInstance.start)
 							delete enable.end
 						}
 						changed = true
 					} else {
 						// Only move objects with numeric starts (ie not strings (expressions))
 						if (typeof enable.start === 'number') {
-							enable.start = enable.start + dragDelta
+							if (dragSnap?.timelineObjId === obj.obj.id) {
+								enable.start = dragSnap.expression
+							} else {
+								enable.start = Math.floor(orgInstance.start + dragDelta)
+							}
+
 							if (orgInstance.end) {
-								// ?
-								enable.duration = orgInstance.end - orgInstance.start
+								// Set the duration to a specific value (ie overwrite any previous duration expression)
+								enable.duration = Math.floor(orgInstance.end - orgInstance.start)
 								delete enable.end
 							}
 							changed = true
@@ -146,10 +175,16 @@ export function applyMovementToTimeline(
 	const draggedTimeline = o.all
 
 	let changedObjects = o.changed
-	let resolvedTimeline = Resolver.resolveTimeline(
-		draggedTimeline.map((o) => o.obj),
-		{ time: 0, cache: cache }
-	)
+	let resolvedTimeline: ResolvedTimeline
+	try {
+		resolvedTimeline = Resolver.resolveTimeline(
+			draggedTimeline.map((o) => o.obj),
+			{ time: 0, cache: cache }
+		)
+	} catch (e) {
+		console.error(o)
+		throw e
+	}
 
 	// Go through all objects, making sure that none of them starts before 0
 	let deltaTimeAdjust = 0

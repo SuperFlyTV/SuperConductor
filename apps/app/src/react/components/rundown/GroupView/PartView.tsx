@@ -82,16 +82,20 @@ export const PartView: React.FC<{
 			}
 			const instance = timelineObj.resolved.instances[0]
 
+			const referring: string = instance.references.join(',')
+
 			snapPoints.push({
 				timelineObjId: timelineObj.id,
 				time: instance.start,
 				expression: `#${timelineObj.id}.start`,
+				referring,
 			})
 			if (instance.end) {
 				snapPoints.push({
 					timelineObjId: timelineObj.id,
 					time: instance.end,
 					expression: `#${timelineObj.id}.end`,
+					referring,
 				})
 			}
 		}
@@ -148,21 +152,29 @@ export const PartView: React.FC<{
 		if (dragDelta && move.partId === part.id && move.leaderTimelineObjId) {
 			// Handle snapping
 
-			const o = applyMovementToTimeline(
-				part.timeline,
-				orgResolvedTimeline,
-				bypassSnapping ? [] : snapPoints || [],
-				snapDistanceInMilliseconds,
-				dragDelta,
-				// The use of wasMoved here helps prevent a brief flash at the
-				// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-				move.moveType ?? move.wasMoved,
-				move.leaderTimelineObjId,
-				gui.selectedTimelineObjIds,
-				cache.current
-			)
-			resolvedTimeline = o.resolvedTimeline
-			newChangedObjects = o.changedObjects
+			try {
+				const o = applyMovementToTimeline(
+					part.timeline,
+					orgResolvedTimeline,
+					bypassSnapping ? [] : snapPoints || [],
+					snapDistanceInMilliseconds,
+					dragDelta,
+					// The use of wasMoved here helps prevent a brief flash at the
+					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+					move.moveType ?? move.wasMoved,
+					move.leaderTimelineObjId,
+					gui.selectedTimelineObjIds,
+					cache.current
+				)
+				resolvedTimeline = o.resolvedTimeline
+				newChangedObjects = o.changedObjects
+			} catch (e) {
+				// If there was an error applying the movement (for example a circular dependency),
+				// reset the movement to the original state:
+				resolvedTimeline = orgResolvedTimeline
+				newChangedObjects = []
+				console.log(e)
+			}
 		} else {
 			resolvedTimeline = orgResolvedTimeline
 		}
