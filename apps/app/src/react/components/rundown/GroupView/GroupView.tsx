@@ -61,11 +61,12 @@ export const GroupView: React.FC<{
 	const wasPlayingRef = useRef(false)
 	const stopPlayingRef = useRef(true)
 	useEffect(() => {
-		if (group.playheadData && !playhead && wasPlayingRef.current) {
-			// We believe that we are are playing, but we don't have a playhead.
+		if (group.playheadData && wasPlayingRef.current && (!playhead || !playhead.partId)) {
+			// We believe that we are are playing, but the playhead says otherwise.
 			// That probably means that we have reached the end.
 
 			if (stopPlayingRef.current) {
+				// Stop the group, so that the "stop"-buttons reflect the correct state.
 				console.log('Auto-stopping group', group.id)
 
 				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(console.error)
