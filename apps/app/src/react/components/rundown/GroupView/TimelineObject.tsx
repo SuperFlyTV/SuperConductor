@@ -24,6 +24,7 @@ export const TimelineObject: React.FC<{
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX] = useMovable(ref.current)
 	const keyTracker = useContext(HotkeyContext)
+	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const updateMoveRef = useRef(updateMove)
 	updateMoveRef.current = updateMove
 
@@ -32,23 +33,22 @@ export const TimelineObject: React.FC<{
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
-	const isPartOfMultiMove = typeof move.dragDelta === 'number' && gui.selectedTimelineObjIds.includes(obj.id)
+	const isPartOfMultiMove = typeof move.moveType !== null && gui.selectedTimelineObjIds.includes(obj.id)
 	const startPercentage = startValue * 100 + '%'
 
 	useEffect(() => {
-		if (isMoved) {
+		if (isMoved && !handledMoveStart) {
 			// A move has begun.
-			updateMoveRef.current({ wasMoved: null, partId })
-
-			return () => {
-				// A move has completed.
-				updateMoveRef.current({
-					moveType: null,
-					wasMoved: move.moveType,
-				})
-			}
+			setHandledMoveStart(true)
+		} else if (!isMoved && handledMoveStart) {
+			// A move has completed.
+			setHandledMoveStart(false)
+			updateMove({
+				moveType: null,
+				wasMoved: move.moveType,
+			})
 		}
-	}, [isMoved, move.moveType, partId])
+	}, [handledMoveStart, isMoved, move.moveType, partId, updateMove])
 
 	const description = describeTimelineObject(obj)
 
@@ -76,12 +76,14 @@ export const TimelineObject: React.FC<{
 	useEffect(() => {
 		if (isMoved) {
 			updateMoveRef.current({
+				wasMoved: null,
+				partId,
 				leaderTimelineObjId: timelineObj.obj.id,
 				moveType: 'whole',
 				dragDelta: deltaX * msPerPixel,
 			})
 		}
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id])
+	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId])
 
 	return (
 		<div
