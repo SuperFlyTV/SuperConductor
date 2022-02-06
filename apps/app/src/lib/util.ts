@@ -3,6 +3,7 @@ import { Part } from '../models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
+import { getGroupPlayData, GroupPlayData } from './playhead'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -59,9 +60,7 @@ export const deletePart = (group: Group, partId: string): Part | undefined => {
 	if (group.playout) {
 		// If we're removing the one which is playing, we need to figure out what to play instead:
 		// TODO: How to handle this?
-		if (group.playout.partId === partId) {
-			group.playout.partId = ''
-		}
+		delete group.playout.playingParts[partId]
 	}
 	return deletedPart
 }
@@ -85,27 +84,52 @@ export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimel
 	return maxDuration
 }
 
-export const getCurrentlyPlayingInfo = (
-	group: Group
+export function allowMovingItemIntoGroup(
+	movedPartId: string,
+	fromGroup: Group,
+	toGroup: Group
 ): {
-	playoutDelta: number | undefined
-	partPlayheadData: { startTime: number; part: Part } | undefined
-} => {
-	let playoutDelta: number | undefined = undefined
-	let partPlayheadData: { startTime: number; part: Part } | undefined = undefined
-	if (group.playout.startTime) {
-		playoutDelta = Date.now() - group.playout.startTime
-	}
-	if (typeof playoutDelta === 'number' && group.playheadData) {
-		const found = group.playheadData.parts.find((data) => {
-			return (playoutDelta as number) - data.startTime < data.part.resolved.duration
-		})
-		if (found) {
-			partPlayheadData = found
-		}
+	now: number
+	fromPlayhead: GroupPlayData
+	toPlayhead: GroupPlayData
+} | null {
+	if (toGroup.transparent) {
+		// Don't allow dropping into a transparent group.
+		return null
 	}
 
-	return { playoutDelta, partPlayheadData }
+	const isMovingToNewGroup = fromGroup.id !== toGroup.id
+
+	const now = Date.now()
+	const fromPlayhead = getGroupPlayData(fromGroup.preparedPlayData, now)
+	const toPlayhead = getGroupPlayData(toGroup.preparedPlayData, now)
+	const movedPartIsPlaying = fromPlayhead.playheads[movedPartId]
+
+	// Don't allow moving a currently-playing Part into a Group which is already playing.
+	if (isMovingToNewGroup && movedPartIsPlaying && toPlayhead.groupIsPlaying) {
+		return null
+	}
+
+	return {
+		now,
+		fromPlayhead,
+		toPlayhead,
+	}
+}
+/**
+ * Update Group playing properties, so that they reflect the current playing status
+ * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
+ */
+export function updateGroupPlaying(group: Group) {
+	const now = Date.now()
+	const playhead = getGroupPlayData(group.preparedPlayData, now)
+
+	group.playout.playingParts = {}
+	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
+		group.playout.playingParts[partId] = {
+			startTime: playingPart.partStartTime,
+		}
+	}
 }
 
 /**

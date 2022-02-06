@@ -1,6 +1,7 @@
 import short from 'short-uuid'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
+import { Group } from '../models/rundown/Group'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 
@@ -81,13 +82,10 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 
 		groups: [
 			{
+				...getDefaultGroup(),
 				id: short.generate(),
 				name: 'Main',
 
-				transparent: false,
-
-				autoPlay: false,
-				loop: false,
 				parts: [
 					{
 						id: short.generate(),
@@ -116,12 +114,21 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 						},
 					},
 				],
-				playout: {
-					startTime: null,
-					partId: '',
-				},
-				playheadData: null,
 			},
 		],
+	}
+}
+export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
+	return {
+		transparent: false,
+
+		oneAtATime: false,
+		autoPlay: false,
+		loop: false,
+		parts: [],
+		playout: {
+			playingParts: {},
+		},
+		preparedPlayData: null,
 	}
 }

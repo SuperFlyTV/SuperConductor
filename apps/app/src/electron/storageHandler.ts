@@ -238,7 +238,9 @@ export class StorageHandler extends EventEmitter {
 		const rundownList = this.listRundownsInProject(this._projectId)
 		if (rundownList.length > 0) {
 			for (const rundown of rundownList) {
-				rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+				const fileRundown = this._loadRundown(this._projectId, rundown.fileName)
+				this.ensureCompatibilityRundown(fileRundown.rundown)
+				rundowns[rundown.fileName] = fileRundown
 			}
 		} else {
 			// If the project has no rundowns, create a default rundown.
@@ -346,6 +348,16 @@ export class StorageHandler extends EventEmitter {
 			)
 
 			delete this.rundownsNeedsWrite[fileName]
+		}
+	}
+
+	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
+		for (const group of rundown.groups) {
+			if (!group.playout.playingParts) {
+				group.playout = {
+					playingParts: {},
+				}
+			}
 		}
 	}
 
