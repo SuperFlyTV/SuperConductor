@@ -37,6 +37,7 @@ export const EmptyLayer: React.FC<{
 	return (
 		<div ref={drop} className={classNames('layer', { isOver })}>
 			<div className="layer__content">{/* empty */}</div>
+			<div className="layer__outline">{/* empty */}</div>
 		</div>
 	)
 }

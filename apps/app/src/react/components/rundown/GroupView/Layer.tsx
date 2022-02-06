@@ -60,6 +60,7 @@ export const Layer: React.FC<{
 					)
 				})}
 			</div>
+			<div className="layer__outline">{/* empty */}</div>
 		</div>
 	)
 }
