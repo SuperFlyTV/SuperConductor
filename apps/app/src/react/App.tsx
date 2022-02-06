@@ -267,6 +267,9 @@ export const App = () => {
 															.renameRundown({ rundownId, newName })
 															.catch(handleError)
 													}}
+													onSettingsClick={() => {
+														setSettingsOpen(true)
+													}}
 													bridgeStatuses={bridgeStatuses}
 												/>
 											</div>

@@ -11,7 +11,7 @@ import {
 	IconButton,
 	Radio,
 } from '@mui/material'
-import { MdAdd, MdClose } from 'react-icons/md'
+import { MdAdd, MdClose, MdSettings } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
@@ -35,6 +35,7 @@ export const TopHeader: React.FC<{
 	onOpen: (rundownId: string) => void
 	onCreate: (rundownName: string) => void
 	onRename: (rundownId: string, newName: string) => void
+	onSettingsClick: () => void
 }> = ({
 	selectedRundownId,
 	openRundowns,
@@ -45,6 +46,7 @@ export const TopHeader: React.FC<{
 	onOpen,
 	onCreate,
 	onRename,
+	onSettingsClick,
 }) => {
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
@@ -129,6 +131,10 @@ export const TopHeader: React.FC<{
 					)
 				})
 			})}
+
+			<IconButton title="Open Preferences" aria-label="open preferences" onClick={onSettingsClick}>
+				<MdSettings />
+			</IconButton>
 
 			{/* Open Rundown dialog */}
 			<Formik
