@@ -468,7 +468,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			if (fromGroup.id === toGroup.id) {
 				// Intra-group move.
 
-				if (movedPartIsPlaying && !toGroup.oneAtATime) {
+				updateGroupPlaying(toGroup)
+				if (movedPartIsPlaying && toGroup.oneAtATime) {
 					// Update the group's playhead, so that the currently playing
 					// part continues to play as if nothing happened:
 					toGroup.playout.playingParts = {
