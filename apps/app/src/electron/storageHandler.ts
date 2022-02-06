@@ -370,7 +370,9 @@ export class StorageHandler extends EventEmitter {
 				if (rundown.fileName in this.appData.appData.rundowns) {
 					// If the rundown exists in the appData and it is marked as open, load it.
 					if (this.appData.appData.rundowns[rundown.fileName].open) {
-						rundowns[rundown.fileName] = this._loadRundown(this._projectId, rundown.fileName)
+						const fileRundown = this._loadRundown(this._projectId, rundown.fileName)
+						this.ensureCompatibilityRundown(fileRundown.rundown)
+						rundowns[rundown.fileName] = fileRundown
 					}
 				} else {
 					// If the rundown doesn't exist in the appData, add it as closed.
@@ -496,6 +498,16 @@ export class StorageHandler extends EventEmitter {
 			)
 
 			delete this.rundownsNeedsWrite[fileName]
+		}
+	}
+
+	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
+		for (const group of rundown.groups) {
+			if (!group.playout.playingParts) {
+				group.playout = {
+					playingParts: {},
+				}
+			}
 		}
 	}
 

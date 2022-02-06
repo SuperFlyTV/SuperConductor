@@ -3,11 +3,11 @@ import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
-import { getCurrentlyPlayingInfo, getResolvedTimelineTotalDuration } from '../../../../lib/util'
+import { allowMovingItemIntoGroup, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
-import { GroupPlayhead } from '../../../../lib/playhead'
+import { GroupPlayData } from '../../../../lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -42,7 +42,7 @@ export const PartView: React.FC<{
 	parentGroup: Group
 	parentGroupIndex: number
 	part: Part
-	playhead: GroupPlayhead | null
+	playhead: GroupPlayData
 	mappings: Mappings
 	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
@@ -256,14 +256,17 @@ export const PartView: React.FC<{
 		}
 	}, [keyTracker])
 
-	const isGroupPlaying = !!playhead
-	const isPartPlaying = isGroupPlaying && playhead.partId === part.id
+	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
+	const partIsPlaying = partPlayhead !== undefined
 
-	const timesUntilStart = (isGroupPlaying && playhead.timeUntilParts[part.id]) || null
-	const playheadTime = isPartPlaying ? playhead.playheadTime : 0
-	const countDownTime = isPartPlaying ? playhead.partEndTime - playhead.playheadTime : 0
+	const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
 
-	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
+	const playheadTime = partPlayhead ? partPlayhead.playheadTime : 0
+	const countDownTime = partPlayhead
+		? partPlayhead.partEndTime - partPlayhead.partStartTime - partPlayhead.playheadTime
+		: 0
+
+	const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
 	const handleStart = () => {
@@ -271,9 +274,9 @@ export const PartView: React.FC<{
 	}
 
 	// Stop button:
-	const cannotStop = !isGroupPlaying
+	const canStop = parentGroup.oneAtATime ? playhead.groupIsPlaying : partIsPlaying
 	const handleStop = () => {
-		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id }).catch(handleError)
+		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Delete button:
@@ -294,43 +297,22 @@ export const PartView: React.FC<{
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			canDrop: (item: PartDragItem) => {
-				// Don't allow dropping into a transparent group.
-				if (parentGroup.transparent) {
-					return false
-				}
-
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
-				)
-				const isMovingToNewGroup = item.group.id !== parentGroup.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
-					return false
-				}
-
-				return true
+			canDrop: (movedItem: PartDragItem) => {
+				return !!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)
 			},
-			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
+			async hover(movedItem: PartDragItem, monitor: DropTargetMonitor) {
 				if (!previewRef.current) {
 					return
 				}
-				const dragGroup = item.group
-				const dragGroupIndex = item.groupIndex
-				const dragPart = item.part
-				const dragIndex = item.index
+				const dragGroup = movedItem.group
+				const dragGroupIndex = movedItem.groupIndex
+				const dragPart = movedItem.part
+				const dragIndex = movedItem.index
 				let hoverIndex = partIndex
 				let hoverGroup: Group | null = parentGroup
 				const hoverGroupIndex = parentGroupIndex
 
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === dragPart.id
-				)
-				const isMovingToNewGroup = dragGroup.id !== hoverGroup.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				if (!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)) {
 					return
 				}
 
@@ -394,8 +376,8 @@ export const PartView: React.FC<{
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				item.index = hoverIndex
-				item.group = newGroup
+				movedItem.index = hoverIndex
+				movedItem.group = newGroup
 			},
 		},
 		[parentGroup, parentGroupIndex, partIndex]
@@ -445,7 +427,7 @@ export const PartView: React.FC<{
 				</div>
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
-					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
+					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>

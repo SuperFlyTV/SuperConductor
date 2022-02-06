@@ -22,6 +22,9 @@ export class IPCServer implements IPCServerMethods {
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}
+	stopPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('stopPart', data)
+	}
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}
@@ -115,6 +118,9 @@ export class IPCServer implements IPCServerMethods {
 	}
 	toggleGroupAutoplay(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupAutoplay', data)
+	}
+	toggleGroupOneAtATime(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('toggleGroupOneAtATime', data)
 	}
 	refreshResources(): Promise<void> {
 		return this.invokeServerMethod('refreshResources')

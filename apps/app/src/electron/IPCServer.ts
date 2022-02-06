@@ -1,4 +1,5 @@
 import {
+	allowMovingItemIntoGroup,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -6,8 +7,8 @@ import {
 	findPart,
 	findTimelineObj,
 	findTimelineObjIndex,
-	getCurrentlyPlayingInfo,
 	getResolvedTimelineTotalDuration,
+	updateGroupPlaying,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
@@ -16,7 +17,7 @@ import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timelin
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
-import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
@@ -27,6 +28,7 @@ import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
+import { getDefaultGroup } from './defaults'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -63,7 +65,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		private session: SessionHandler,
 		private callbacks: {
 			// updateViewRef: () => void
-			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayheadData | null
+			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
 			refreshResources: () => void
 		}
 	) {
@@ -165,12 +167,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getPart(arg)
 
-		// If we're already playing and we hit Play,
-		// we should just abort whatever's playing and start playing this instead:
-		group.playout.partId = arg.partId
+		if (group.oneAtATime) {
+			// Anything already playing should be stopped:
+			group.playout.playingParts = {}
+		}
+		if (!group.playout.playingParts) group.playout.playingParts = {}
+		// Start playing this Part:
+		group.playout.playingParts[arg.partId] = {
+			startTime: Date.now(),
+		}
 
-		// Start playing the group:
-		group.playout.startTime = Date.now()
+		this._updateTimeline(group)
+		this.storage.updateRundown(arg.rundownId, rundown)
+	}
+	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const { rundown, group } = this.getGroup(arg)
+
+		if (group.oneAtATime) {
+			// Stop the group:
+			group.playout.playingParts = {}
+		} else {
+			// Stop the part:
+			delete group.playout.playingParts[arg.partId]
+		}
 
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
@@ -179,10 +198,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Stop the group:
-		group.playout = {
-			startTime: null,
-			partId: '',
-		}
+		group.playout.playingParts = {}
 
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
@@ -213,17 +229,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		} else {
 			// Create a new "transparent group":
 			const newGroup: Group = {
+				...getDefaultGroup(),
 				id: short.generate(),
 				name: arg.name,
 				transparent: true,
 				parts: [newPart],
-				autoPlay: false,
-				loop: false,
-				playout: {
-					startTime: null,
-					partId: '',
-				},
-				playheadData: null,
 			}
 			transparentGroupId = newGroup.id
 			rundown.groups.push(newGroup)
@@ -270,17 +280,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
+			...getDefaultGroup(),
 			id: short.generate(),
 			name: arg.name,
-			transparent: false,
-			parts: [],
-			autoPlay: false,
-			loop: false,
-			playout: {
-				startTime: null,
-				partId: '',
-			},
-			playheadData: null,
 		}
 		const { rundown } = this.getRundown(arg)
 
@@ -358,8 +360,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		// Stop the group (so that the updates are sent to TSR):
 		group.playout = {
-			startTime: null,
-			partId: '',
+			playingParts: {},
 		}
 
 		this._updateTimeline(group)
@@ -398,7 +399,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			console.log('movePart caught error:', (error as any).message)
 			return
 		}
-		const isMovingToNewGroup = arg.from.groupId !== arg.to.groupId
 		let toRundown: Rundown
 		let toGroup: Group
 		let madeNewTransparentGroup = false
@@ -415,34 +415,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				toGroup = fromGroup
 			} else {
 				toGroup = {
+					...getDefaultGroup(),
+
 					id: short.generate(),
 					name: part.name,
-					transparent: true,
+
 					parts: [part],
-					autoPlay: false,
-					loop: false,
-					playout: {
-						startTime: null,
-						partId: '',
-					},
-					playheadData: null,
 				}
 				madeNewTransparentGroup = true
 			}
 		}
 
-		// Get information about currently-playing Parts.
-		const { playoutDelta: fromGroupPlayoutDelta, partPlayheadData: fromGroupPartPlayheadData } =
-			getCurrentlyPlayingInfo(fromGroup)
-		const movedPartIsPlaying = Boolean(
-			fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === arg.from.partId
-		)
-		const toGroupIsPlaying = Boolean(toGroup.playheadData)
+		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
-		// Don't allow moving a currently-playing Part into a Group which is already playing.
-		if (movedPartIsPlaying && isMovingToNewGroup && toGroupIsPlaying) {
+		if (!allow) {
 			return
 		}
+
+		const fromPlayhead = allow.fromPlayhead
+		const toPlayhead = allow.toPlayhead
+		const movedPartIsPlaying = fromPlayhead.playheads[arg.from.partId]
 
 		// Save the original position for use in undo.
 		const originalPosition = fromGroup.transparent
@@ -475,18 +467,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (!isTransparentGroupMove) {
 			if (fromGroup.id === toGroup.id) {
 				// Intra-group move.
-				if (typeof fromGroupPlayoutDelta === 'number' && fromGroupPartPlayheadData) {
-					const timeIntoPart = fromGroupPlayoutDelta - fromGroupPartPlayheadData.startTime
-					fromGroup.playout.startTime = Date.now() - timeIntoPart
-					fromGroup.playout.partId = fromGroupPartPlayheadData.part.id
+
+				if (movedPartIsPlaying && !toGroup.oneAtATime) {
+					// Update the group's playhead, so that the currently playing
+					// part continues to play as if nothing happened:
+					toGroup.playout.playingParts = {
+						[arg.from.partId]: {
+							startTime: movedPartIsPlaying.partStartTime,
+						},
+					}
 				}
 				this._updateTimeline(fromGroup)
 			} else {
 				// Inter-group move.
-				if (movedPartIsPlaying && !toGroupIsPlaying) {
-					fromGroup.playout.partId = ''
-					toGroup.playout.partId = arg.from.partId
-					toGroup.playout.startTime = fromGroup.playout.startTime
+				if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
+					// Update the playhead, so that the currently playing
+					// part continues to play as if nothing happened.
+					// This means that the target Group will start playing
+					// while the source Group stops.
+
+					// Move over the playout-data:
+					toGroup.playout.playingParts = fromGroup.playout.playingParts
+					fromGroup.playout.playingParts = {}
 				}
 				this._updateTimeline(fromGroup)
 				this._updateTimeline(toGroup)
@@ -885,16 +887,22 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
-
 		const originalValue = group.loop
+
+		updateGroupPlaying(group)
 		group.loop = arg.value
+		this._updateTimeline(group)
 
 		this.storage.updateRundown(arg.rundownId, rundown)
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
+
+				updateGroupPlaying(group)
 				group.loop = originalValue
+				this._updateTimeline(group)
+
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.ToggleGroupLoop,
@@ -902,19 +910,48 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async toggleGroupAutoplay(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
-
 		const originalValue = group.autoPlay
+
+		updateGroupPlaying(group)
 		group.autoPlay = arg.value
+		this._updateTimeline(group)
 
 		this.storage.updateRundown(arg.rundownId, rundown)
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
+
+				updateGroupPlaying(group)
 				group.autoPlay = originalValue
+				this._updateTimeline(group)
+
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.ToggleGroupAutoplay,
+		}
+	}
+	async toggleGroupOneAtATime(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.oneAtATime
+
+		updateGroupPlaying(group)
+		group.oneAtATime = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				updateGroupPlaying(group)
+				group.oneAtATime = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.toggleGroupOneAtATime,
 		}
 	}
 	async refreshResources(): Promise<void> {
@@ -1034,6 +1071,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	private _updateTimeline(group: Group) {
-		group.playheadData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
 	}
 }

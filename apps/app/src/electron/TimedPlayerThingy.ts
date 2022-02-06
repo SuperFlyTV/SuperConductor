@@ -3,7 +3,7 @@ import { Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
 import { updateTimeline, UpdateTimelineCache } from './timeline'
-import { GroupPreparedPlayheadData } from '../models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { AppData } from '../models/App/AppData'
 import { Project } from '../models/project/Project'
@@ -90,7 +90,7 @@ export class TimedPlayerThingy {
 				// this.tptCaspar?.fetchAndSetTemplates()
 				bridgeHandler.refreshResources()
 			},
-			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayheadData | null => {
+			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
 			},
 		})

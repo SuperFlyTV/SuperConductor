@@ -25,6 +25,7 @@ export const enum ActionDescription {
 	AddResourceToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
+	toggleGroupOneAtATime = 'toggle group one-at-a-time',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -51,6 +52,7 @@ export interface IPCServerMethods {
 	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
