@@ -92,15 +92,19 @@ export const TimelineObject: React.FC<{
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={() => {
-				const isMultiSelected = gui.selectedTimelineObjIds.length > 1
-				if (isMultiSelected) {
-					if (
-						gui.selectedGroupId === groupId &&
-						gui.selectedPartId === partId &&
-						gui.selectedTimelineObjIds.includes(obj.id)
-					) {
-						return
+				if (
+					gui.selectedGroupId === groupId &&
+					gui.selectedPartId === partId &&
+					gui.selectedTimelineObjIds.includes(obj.id)
+				) {
+					if (allowMultiSelection) {
+						// Deselect this timelineObj.
+						updateGUI({
+							selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
+						})
 					}
+
+					return
 				}
 
 				if (allowMultiSelection) {
