@@ -4,7 +4,7 @@ export const TimelineObjectMoveContext = React.createContext<{
 	move: TimelineObjectMove
 	updateMove: (newGui: Partial<TimelineObjectMove>) => void
 }>({
-	move: { moveType: null, wasMoved: null, partId: null },
+	move: { moveType: null, wasMoved: null, partId: null, hoveredLayerId: null },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	updateMove: () => {},
 })
@@ -27,4 +27,14 @@ export interface TimelineObjectMove {
 	wasMoved: null | 'whole' | 'duration' | 'start'
 	/** The ID of the Part in which this move is being performed. null = not moving */
 	partId: null | string
+	/** The corresponding layer ID of the layer element that the user's mouse is hovering over. null = not over a valid layer */
+	hoveredLayerId: null | string
+	/** The current client X position of the pointer [pixels] */
+	pointerX?: number
+	/** The current client Y position of the pointer [pixels] */
+	pointerY?: number
+	/** The origin client X position of the pointer when the move began [pixels] */
+	originX?: number
+	/** The origin client Y position of the pointer when the move began [pixels] */
+	originY?: number
 }

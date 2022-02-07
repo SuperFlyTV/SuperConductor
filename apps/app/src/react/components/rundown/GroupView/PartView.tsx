@@ -24,6 +24,9 @@ import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { ProjectContext } from '../../../contexts/Project'
+import _ from 'lodash'
+import { filterMapping } from '../../../../lib/TSRMappings'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -51,8 +54,11 @@ export const PartView: React.FC<{
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const keyTracker = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const project = useContext(ProjectContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
-	const changedObjects = useRef<TimelineObj[]>([])
+	const changedObjects = useRef<{
+		[objectId: string]: TimelineObj
+	} | null>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
@@ -149,11 +155,25 @@ export const PartView: React.FC<{
 
 	const { resolvedTimeline, newChangedObjects } = useMemo(() => {
 		let resolvedTimeline: ResolvedTimeline
-		let newChangedObjects: TimelineObj[] = []
+		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
 
-		const dragDelta = move.dragDelta
-		if (dragDelta && move.partId === part.id && move.leaderTimelineObjId) {
-			// Handle snapping
+		const dragDelta = move.dragDelta || 0
+		const leaderObj = part.timeline.find((obj) => obj.obj.id === move.leaderTimelineObjId)
+		const leaderObjOriginalLayerId = leaderObj?.obj.layer
+		const leaderObjLayerChanged = leaderObjOriginalLayerId !== move.hoveredLayerId
+
+		if ((dragDelta || leaderObjLayerChanged) && move.partId === part.id && leaderObj && move.leaderTimelineObjId) {
+			// Handle movement, snapping
+
+			// Check the the layer movement is legal:
+			let moveToLayerId = move.hoveredLayerId
+			if (moveToLayerId) {
+				const newLayerMapping = project.mappings[moveToLayerId]
+				if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+					moveToLayerId = null
+					handleError('Unable to move to that layer (incompatible layer type)')
+				}
+			}
 
 			try {
 				const o = applyMovementToTimeline(
@@ -167,18 +187,32 @@ export const PartView: React.FC<{
 					move.moveType ?? move.wasMoved,
 					move.leaderTimelineObjId,
 					gui.selectedTimelineObjIds,
-					cache.current
+					cache.current,
+					moveToLayerId
 				)
 				resolvedTimeline = o.resolvedTimeline
 				newChangedObjects = o.changedObjects
+
+				if (
+					typeof leaderObjOriginalLayerId === 'string' &&
+					!resolvedTimeline.layers[leaderObjOriginalLayerId]
+				) {
+					// If the leaderObj's original layer is now empty, it won't be rendered,
+					// making it impossible for the user to move the leaderObj back to whence it came.
+					// So, we add an empty layer object here to force it to remain visible.
+					resolvedTimeline.layers[leaderObjOriginalLayerId] = []
+				}
 			} catch (e) {
 				// If there was an error applying the movement (for example a circular dependency),
 				// reset the movement to the original state:
 
 				console.error('Error when resolving the moved timeline, reverting to original state.')
 				console.error(e)
+
+				handleError('There was an error when trying to move')
+
 				resolvedTimeline = orgResolvedTimeline
-				newChangedObjects = []
+				newChangedObjects = null
 			}
 		} else {
 			resolvedTimeline = orgResolvedTimeline
@@ -189,8 +223,10 @@ export const PartView: React.FC<{
 		return { maxDuration, resolvedTimeline, newChangedObjects }
 	}, [
 		move,
-		part.id,
 		part.timeline,
+		part.id,
+		project.mappings,
+		handleError,
 		orgResolvedTimeline,
 		bypassSnapping,
 		snapPoints,
@@ -199,7 +235,7 @@ export const PartView: React.FC<{
 	])
 
 	useEffect(() => {
-		if (newChangedObjects.length) {
+		if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
 		}
 	}, [newChangedObjects])
@@ -208,19 +244,21 @@ export const PartView: React.FC<{
 		// Handle when we stop moving:
 		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null && !waitingForBackendUpdate) {
 			setWaitingForBackendUpdate(true)
-			for (const obj of changedObjects.current) {
-				ipcServer
-					.updateTimelineObj({
-						rundownId: rundownId,
-						partId: part.id,
-						groupId: parentGroup.id,
-						timelineObjId: obj.obj.id,
-						timelineObj: obj,
-					})
-					.catch((error) => {
-						setWaitingForBackendUpdate(false)
-						handleError(error)
-					})
+			if (changedObjects.current) {
+				for (const obj of Object.values(changedObjects.current)) {
+					ipcServer
+						.updateTimelineObj({
+							rundownId: rundownId,
+							partId: part.id,
+							groupId: parentGroup.id,
+							timelineObjId: obj.obj.id,
+							timelineObj: obj,
+						})
+						.catch((error) => {
+							setWaitingForBackendUpdate(false)
+							handleError(error)
+						})
+				}
 			}
 		}
 	}, [
@@ -406,6 +444,7 @@ export const PartView: React.FC<{
 	return (
 		<div
 			data-handler-id={handlerId}
+			data-part-id={part.id}
 			ref={previewRef}
 			className={classNames('part', {
 				active: isActive === 'active',

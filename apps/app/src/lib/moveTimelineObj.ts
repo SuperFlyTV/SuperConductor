@@ -25,25 +25,39 @@ export function applyMovementToTimeline(
 	moveType: TimelineObjectMove['moveType'],
 	leaderTimelineObjId: string,
 	selectedTimelineObjIds: string[],
-	cache: ResolverCache | undefined
+	cache: ResolverCache | undefined,
+	leaderTimelineObjNewLayer: string | null
 ): {
 	resolvedTimeline: ResolvedTimeline
-	changedObjects: TimelineObj[]
+	changedObjects: { [objectId: string]: TimelineObj } | null
 } {
-	if (Math.round(dragDelta) === 0) {
+	if (selectedTimelineObjIds.length > 1) {
+		// Don't allow layer changes when moving more than one timelineObj
+		leaderTimelineObjNewLayer = null
+	}
+
+	if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 		// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 		return {
 			resolvedTimeline: orgResolvedTimeline,
-			changedObjects: [],
+			changedObjects: null,
 		}
 	}
 
+	let changedObjects: { [objectId: string]: TimelineObj } = {}
 	const modifiedTimeline = deepClone(orgTimeline)
 
 	const orgLeaderObj = orgResolvedTimeline.objects[leaderTimelineObjId]
 	if (!orgLeaderObj) throw new Error(`Leader obj "${leaderTimelineObjId}" not found`)
 	const orgLeaderInstance = orgLeaderObj.resolved.instances[0]
 	if (!orgLeaderInstance) throw new Error(`No instance of leader obj "${leaderTimelineObjId}"`)
+
+	// Moving a timelineObj to another layer:
+	const modifiedLeaderObj = modifiedTimeline.find((o) => o.obj.id === leaderTimelineObjId)
+	if (modifiedLeaderObj && leaderTimelineObjNewLayer && modifiedLeaderObj.obj.layer !== leaderTimelineObjNewLayer) {
+		modifiedLeaderObj.obj.layer = leaderTimelineObjNewLayer
+		changedObjects[modifiedLeaderObj.obj.id] = modifiedLeaderObj
+	}
 
 	const orgStartTime = Math.max(0, orgLeaderInstance.start)
 	// const orgDuration = orgLeaderInstance.end ? orgLeaderInstance.end - orgLeaderInstance.start : null
@@ -133,11 +147,11 @@ export function applyMovementToTimeline(
 			type: closestSnapPoint.type,
 		}
 	}
-	if (Math.round(dragDelta) === 0) {
+	if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 		// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 		return {
 			resolvedTimeline: orgResolvedTimeline,
-			changedObjects: [],
+			changedObjects: null,
 		}
 	}
 
@@ -151,7 +165,7 @@ export function applyMovementToTimeline(
 	)
 	const draggedTimeline = o.all
 
-	let changedObjects = o.changed
+	changedObjects = { ...changedObjects, ...o.changed }
 	let resolvedTimeline: ResolvedTimeline
 
 	try {
@@ -177,11 +191,11 @@ export function applyMovementToTimeline(
 	if (deltaTimeAdjust) {
 		dragDelta = dragDelta + deltaTimeAdjust
 
-		if (Math.round(dragDelta) === 0) {
+		if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 			// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 			return {
 				resolvedTimeline: orgResolvedTimeline,
-				changedObjects: [],
+				changedObjects: null,
 			}
 		}
 
@@ -194,7 +208,7 @@ export function applyMovementToTimeline(
 			dragSnap
 		)
 		const draggedTimeline2 = o.all
-		changedObjects = o.changed
+		changedObjects = { ...changedObjects, ...o.changed }
 		// Resolve it again...
 		try {
 			resolvedTimeline = Resolver.resolveTimeline(
@@ -220,9 +234,9 @@ function applyDragDelta(
 	moveType: TimelineObjectMove['moveType'],
 	orgResolvedTimeline: ResolvedTimeline,
 	dragSnap: DragSnap | null
-): { all: TimelineObj[]; changed: TimelineObj[] } {
+): { all: TimelineObj[]; changed: { [objectId: string]: TimelineObj } } {
 	const appliedTimeline: TimelineObj[] = []
-	const changedObjects: TimelineObj[] = []
+	const changedObjects: { [objectId: string]: TimelineObj } = {}
 	for (const orgObj of timeline) {
 		const obj = deepClone(orgObj)
 		appliedTimeline.push(obj)
@@ -271,7 +285,7 @@ function applyDragDelta(
 			}
 		}
 		if (changed) {
-			changedObjects.push(obj)
+			changedObjects[obj.obj.id] = obj
 		}
 	}
 	return { all: appliedTimeline, changed: changedObjects }

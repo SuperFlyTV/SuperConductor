@@ -7,7 +7,7 @@ import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 
 export const TimelineObject: React.FC<{
 	groupId: string
@@ -22,7 +22,13 @@ export const TimelineObject: React.FC<{
 	const { gui, updateGUI } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
-	const [isMoved, deltaX] = useMovable(ref.current)
+	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
+		dragging: move.leaderTimelineObjId === timelineObj.obj.id && Boolean(move.moveType),
+		pointerX: move.pointerX ?? 0,
+		pointerY: move.pointerY ?? 0,
+		originX: move.originX ?? 0,
+		originY: move.originY ?? 0,
+	})
 	const keyTracker = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const updateMoveRef = useRef(updateMove)
@@ -73,16 +79,37 @@ export const TimelineObject: React.FC<{
 		}
 	}, [keyTracker])
 	useEffect(() => {
-		if (isMoved) {
-			updateMoveRef.current({
-				wasMoved: null,
-				partId,
-				leaderTimelineObjId: timelineObj.obj.id,
-				moveType: 'whole',
-				dragDelta: deltaX * msPerPixel,
-			})
+		if (!isMoved) {
+			return
 		}
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId])
+
+		const update: Partial<TimelineObjectMove> = {
+			wasMoved: null,
+			partId,
+			leaderTimelineObjId: timelineObj.obj.id,
+			moveType: 'whole',
+			dragDelta: deltaX * msPerPixel,
+			pointerX,
+			pointerY,
+			originX,
+			originY,
+		}
+
+		const hoveredEl = document.elementFromPoint(pointerX, pointerY)
+		const hoveredPartEl = hoveredEl?.closest('.part')
+		if (hoveredPartEl) {
+			const hoveredPartId = hoveredPartEl.getAttribute('data-part-id')
+			if (hoveredPartId === partId) {
+				const hoveredLayerEl = hoveredEl?.closest('.layer')
+				if (hoveredLayerEl) {
+					const hoveredLayerId = hoveredLayerEl.getAttribute('data-layer-id')
+					update.hoveredLayerId = hoveredLayerId
+				}
+			}
+		}
+
+		updateMoveRef.current(update)
+	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY])
 
 	return (
 		<div

@@ -44,7 +44,7 @@ export const Layer: React.FC<{
 	)
 
 	return (
-		<div ref={drop} className={classNames('layer', { isOver })}>
+		<div ref={drop} className={classNames('layer', { isOver })} data-layer-id={layerId}>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
 					return (
