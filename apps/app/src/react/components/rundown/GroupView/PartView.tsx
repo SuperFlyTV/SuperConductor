@@ -61,7 +61,7 @@ export const PartView: React.FC<{
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { gui } = useContext(GUIContext)
-	const { move, updateMove } = useContext(TimelineObjectMoveContext)
+	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const keyTracker = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
@@ -75,8 +75,8 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
-	const updateMoveRef = useRef(updateMove)
-	updateMoveRef.current = updateMove
+	const updateMoveRef = useRef(updateTimelineObjMove)
+	updateMoveRef.current = updateTimelineObjMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -162,11 +162,11 @@ export const PartView: React.FC<{
 	// Update trackWidth at the end of a move.
 	// @TODO: Update trackWidth _during_ a move?
 	useLayoutEffect(() => {
-		if (move.moveType && move.partId === part.id && layersDivRef.current) {
+		if (timelineObjMove.moveType && timelineObjMove.partId === part.id && layersDivRef.current) {
 			const size = layersDivRef.current.getBoundingClientRect()
 			setTrackWidth(size.width)
 		}
-	}, [move.moveType, move.partId, part.id])
+	}, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
 
 	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects } = useMemo(() => {
 		let modifiedTimeline: TimelineObj[]
@@ -174,23 +174,23 @@ export const PartView: React.FC<{
 		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
 		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
 
-		const dragDelta = move.dragDelta || 0
-		const leaderObj = part.timeline.find((obj) => obj.obj.id === move.leaderTimelineObjId)
+		const dragDelta = timelineObjMove.dragDelta || 0
+		const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
 		const leaderObjOriginalLayerId = leaderObj?.obj.layer
-		const leaderObjLayerChanged = leaderObjOriginalLayerId !== move.hoveredLayerId
+		const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
 
 		if (
 			(dragDelta || leaderObjLayerChanged) &&
-			move.partId === part.id &&
+			timelineObjMove.partId === part.id &&
 			leaderObj &&
-			move.leaderTimelineObjId &&
-			move.moveId !== null &&
-			!HANDLED_MOVE_IDS.includes(move.moveId)
+			timelineObjMove.leaderTimelineObjId &&
+			timelineObjMove.moveId !== null &&
+			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
 		) {
 			// Handle movement, snapping
 
 			// Check the the layer movement is legal:
-			let moveToLayerId = move.hoveredLayerId
+			let moveToLayerId = timelineObjMove.hoveredLayerId
 			if (moveToLayerId) {
 				const newLayerMapping = project.mappings[moveToLayerId]
 				if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
@@ -208,12 +208,12 @@ export const PartView: React.FC<{
 					dragDelta,
 					// The use of wasMoved here helps prevent a brief flash at the
 					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-					move.moveType ?? move.wasMoved,
-					move.leaderTimelineObjId,
+					timelineObjMove.moveType ?? timelineObjMove.wasMoved,
+					timelineObjMove.leaderTimelineObjId,
 					gui.selectedTimelineObjIds,
 					cache.current,
 					moveToLayerId,
-					Boolean(move.duplicate)
+					Boolean(timelineObjMove.duplicate)
 				)
 				modifiedTimeline = o.modifiedTimeline
 				resolvedTimeline = o.resolvedTimeline
@@ -252,7 +252,7 @@ export const PartView: React.FC<{
 
 		return { maxDuration, modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects }
 	}, [
-		move,
+		timelineObjMove,
 		part.timeline,
 		part.id,
 		project.mappings,
@@ -279,15 +279,15 @@ export const PartView: React.FC<{
 	useEffect(() => {
 		// Handle when we stop moving:
 		if (
-			move.partId === part.id &&
-			move.moveType === null &&
-			move.wasMoved !== null &&
-			move.moveId !== null &&
+			timelineObjMove.partId === part.id &&
+			timelineObjMove.moveType === null &&
+			timelineObjMove.wasMoved !== null &&
+			timelineObjMove.moveId !== null &&
 			!waitingForBackendUpdate &&
-			!HANDLED_MOVE_IDS.includes(move.moveId)
+			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
 		) {
 			setWaitingForBackendUpdate(true)
-			HANDLED_MOVE_IDS.unshift(move.moveId)
+			HANDLED_MOVE_IDS.unshift(timelineObjMove.moveId)
 
 			// Prevent the list of handled move IDs from growing infinitely:
 			if (HANDLED_MOVE_IDS.length > MAX_HANDLED_MOVE_IDS) {
@@ -354,10 +354,10 @@ export const PartView: React.FC<{
 		parentGroup.id,
 		waitingForBackendUpdate,
 		handleError,
-		move.partId,
-		move.moveType,
-		move.wasMoved,
-		move.moveId,
+		timelineObjMove.partId,
+		timelineObjMove.moveType,
+		timelineObjMove.wasMoved,
+		timelineObjMove.moveId,
 	])
 
 	useEffect(() => {
@@ -583,7 +583,7 @@ export const PartView: React.FC<{
 					) : null}
 					<div
 						className={classNames('layers', {
-							moving: move.moveType !== null,
+							moving: timelineObjMove.moveType !== null,
 						})}
 						ref={layersDivRef}
 					>

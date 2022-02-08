@@ -1,12 +1,12 @@
 import React from 'react'
 
 export const TimelineObjectMoveContext = React.createContext<{
-	move: TimelineObjectMove
-	updateMove: (newGui: Partial<TimelineObjectMove>) => void
+	timelineObjMove: TimelineObjectMove
+	updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => void
 }>({
-	move: { moveType: null, wasMoved: null, partId: null, hoveredLayerId: null, moveId: null },
+	timelineObjMove: { moveType: null, wasMoved: null, partId: null, hoveredLayerId: null, moveId: null },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	updateMove: () => {},
+	updateTimelineObjMove: () => {},
 })
 
 export interface TimelineObjectMove {

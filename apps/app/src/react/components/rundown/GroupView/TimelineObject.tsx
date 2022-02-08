@@ -21,21 +21,21 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 }> = ({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
 	const { gui, updateGUI } = useContext(GUIContext)
-	const { move, updateMove } = useContext(TimelineObjectMoveContext)
+	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
-		dragging: move.leaderTimelineObjId === timelineObj.obj.id && Boolean(move.moveType),
-		pointerX: move.pointerX ?? 0,
-		pointerY: move.pointerY ?? 0,
-		originX: move.originX ?? 0,
-		originY: move.originY ?? 0,
+		dragging: timelineObjMove.leaderTimelineObjId === timelineObj.obj.id && Boolean(timelineObjMove.moveType),
+		pointerX: timelineObjMove.pointerX ?? 0,
+		pointerY: timelineObjMove.pointerY ?? 0,
+		originX: timelineObjMove.originX ?? 0,
+		originY: timelineObjMove.originY ?? 0,
 	})
 	const keyTracker = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
-	const updateMoveRef = useRef(updateMove)
-	updateMoveRef.current = updateMove
+	const updateMoveRef = useRef(updateTimelineObjMove)
+	updateMoveRef.current = updateTimelineObjMove
 
 	const obj: TSRTimelineObj = timelineObj.obj
 	const instance = resolved.instances[0]
@@ -117,19 +117,19 @@ export const TimelineObject: React.FC<{
 			// A move has begun.
 
 			setHandledMoveStart(true)
-			updateMove({
+			updateTimelineObjMove({
 				moveId: short.generate(),
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.
 
 			setHandledMoveStart(false)
-			updateMove({
+			updateTimelineObjMove({
 				moveType: null,
-				wasMoved: move.moveType,
+				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [handledMoveStart, isMoved, move.moveType, updateMove])
+	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
 	return (
 		<div
