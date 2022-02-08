@@ -42,6 +42,7 @@
 		]
 	},
 	"dependencies": {
-		"@shared/models": "^0.1.1"
+		"@shared/models": "^0.1.1",
+		"fast-copy": "^2.1.1"
 	}
 }
