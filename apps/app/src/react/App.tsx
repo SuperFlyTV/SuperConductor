@@ -156,8 +156,8 @@ export const App = () => {
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
-			move: timelineObjectMoveData,
-			updateMove: (newData: Partial<TimelineObjectMove>) => {
+			timelineObjMove: timelineObjectMoveData,
+			updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => {
 				setTimelineObjectMoveData({
 					...timelineObjectMoveData,
 					...newData,
