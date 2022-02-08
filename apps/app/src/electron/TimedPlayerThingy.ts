@@ -15,6 +15,7 @@ import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
+import { ActiveTriggers } from '../models/rundown/Trigger'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -24,7 +25,7 @@ export class TimedPlayerThingy {
 
 	session: SessionHandler
 	storage: StorageHandler
-	triggers: TriggersHandler
+	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
 	constructor() {
@@ -36,7 +37,6 @@ export class TimedPlayerThingy {
 			width: 1200,
 			height: 600,
 		})
-		this.triggers = new TriggersHandler(this.storage)
 
 		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
 			this.ipcClient?.updateResource(id, resource)
@@ -47,8 +47,8 @@ export class TimedPlayerThingy {
 		this.session.on('peripheral', (peripheralId: string, peripheral: Peripheral | null) => {
 			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
 		})
-		this.session.on('peripheralTriggers', (peripheralTriggers: { [fullIdentifier: string]: true }) => {
-			this.triggers.updateTriggers(peripheralTriggers)
+		this.session.on('peripheralTriggers', (peripheralTriggers: ActiveTriggers) => {
+			this.triggers?.updateTriggers(peripheralTriggers)
 			this.ipcClient?.updatePeripheralTriggers(peripheralTriggers)
 		})
 		this.storage.on('appData', (appData: AppData) => {
@@ -106,6 +106,7 @@ export class TimedPlayerThingy {
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
+		this.triggers = new TriggersHandler(this.storage, this.ipcServer)
 		// this.tptCaspar = new TPTCasparCG(this.session)
 	}
 }

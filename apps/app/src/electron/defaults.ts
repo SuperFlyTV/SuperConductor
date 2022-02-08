@@ -108,7 +108,7 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 								},
 							},
 						],
-
+						triggers: [],
 						resolved: {
 							duration: 5000,
 						},

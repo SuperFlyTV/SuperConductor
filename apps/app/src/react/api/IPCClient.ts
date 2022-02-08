@@ -5,6 +5,7 @@ import { Peripheral } from '../../models/project/Peripheral'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
+import { ActiveTriggers } from '../../models/rundown/Trigger'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -17,7 +18,7 @@ export class IPCClient implements IPCClientMethods {
 			updateResource: (id: string, resource: ResourceAny | null) => void
 			updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
-			updatePeripheralTriggers: (peripheralTriggers: { [fullIdentifier: string]: true }) => void
+			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
 			openSettings: () => void
 		}
 	) {
@@ -52,7 +53,7 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheral(peripheralId: string, peripheral: Peripheral | null): void {
 		this.callbacks.updatePeripheral(peripheralId, peripheral)
 	}
-	updatePeripheralTriggers(peripheralTriggers: { [fullIdentifier: string]: true }): void {
+	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.callbacks.updatePeripheralTriggers(peripheralTriggers)
 	}
 	openSettings(): void {

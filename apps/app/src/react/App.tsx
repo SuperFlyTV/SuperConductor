@@ -24,13 +24,14 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { HotkeyContext } from './contexts/Hotkey'
+import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
+import { ActiveTriggers } from '../models/rundown/Trigger'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -48,6 +49,10 @@ export const App = () => {
 	const currentRundownIdRef = useRef<string>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
+
+	const triggers = useMemo(() => {
+		return new TriggersEmitter()
+	}, [])
 
 	useEffect(() => {
 		currentRundownIdRef.current = currentRundownId
@@ -102,17 +107,9 @@ export const App = () => {
 					return newPeripherals
 				})
 			},
-			updatePeripheralTriggers: (peripheralTriggers: { [fullIdentifier: string]: true }) => {
-				console.log('updatePeripheralTriggers', Object.keys(peripheralTriggers).join('+'))
-				// setPeripherals((peripherals) => {
-				// 	const newPeripherals = { ...peripherals }
-				// 	if (peripheral) {
-				// 		newPeripherals[peripheralId] = peripheral
-				// 	} else {
-				// 		delete newPeripherals[peripheralId]
-				// 	}
-				// 	return newPeripherals
-				// })
+			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
+				// Emit them, so that the GUI can listen to them and tie them to triggers:
+				triggers.emitTrigger(peripheralTriggers)
 			},
 			openSettings: () => {
 				setSettingsOpen(true)
@@ -248,13 +245,18 @@ export const App = () => {
 			}))
 	}, [appData])
 
+	const hotkeyContext: IHotkeyContext = {
+		sorensen,
+		triggers,
+	}
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
 
 	return (
 		<DndProvider backend={HTML5Backend}>
-			<HotkeyContext.Provider value={sorensen}>
+			<HotkeyContext.Provider value={hotkeyContext}>
 				<GUIContext.Provider value={guiContextValue}>
 					<IPCServerContext.Provider value={serverAPI}>
 						<ProjectContext.Provider value={project}>

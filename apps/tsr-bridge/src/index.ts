@@ -41,6 +41,14 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 
 	connection.on('connected', () => {
 		console.log('Connected!')
+
+		if (peripheralsHandler) {
+			peripheralsHandler.close()
+			peripheralsHandler = null
+		}
+		if (bridgeId) {
+			peripheralsHandler = initialize(bridgeId, sendAndCatch)
+		}
 	})
 	connection.on('disconnected', () => {
 		console.log('Disconnected!')
@@ -148,9 +156,9 @@ function initialize(bridgeId: string, send: (message: BridgeAPI.FromBridge.Any) 
 	peripheralsHandler.on('disconnected', (deviceId, deviceName) =>
 		send({ type: 'PeripheralStatus', deviceId, deviceName, status: 'disconnected' })
 	)
-	peripheralsHandler.on('keyDown', (deviceId, identifier) =>
+	peripheralsHandler.on('keyDown', (deviceId, identifier) => {
 		send({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
-	)
+	})
 	peripheralsHandler.on('keyUp', (deviceId, identifier) =>
 		send({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
 	)

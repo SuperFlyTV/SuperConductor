@@ -29,6 +29,7 @@ import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
+import { Trigger } from '../models/rundown/Trigger'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -194,6 +195,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
 	}
+	async setPartTrigger(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		trigger: Trigger
+	}): Promise<UndoableResult<string>> {
+		const { rundown, part } = this.getPart(arg)
+		const originalTriggers = part.triggers
+		// Note: Initially, just set the one trigger for now...
+		part.triggers = [arg.trigger]
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+				part.triggers = originalTriggers
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.SetPartTrigger,
+			// result: newPart.id,
+		}
+	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -216,6 +239,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			resolved: {
 				duration: 0,
 			},
+			triggers: [],
 		}
 
 		const { rundown } = this.getRundown(arg)

@@ -1,4 +1,4 @@
-import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react'
+import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
@@ -24,6 +24,9 @@ import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { TriggerBtn } from '../../inputs/TriggerBtn'
+import { ActiveTriggers, Trigger } from '../../../../models/rundown/Trigger'
+import { group } from 'console'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -49,7 +52,7 @@ export const PartView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { gui } = useContext(GUIContext)
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
-	const keyTracker = useContext(HotkeyContext)
+	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<TimelineObj[]>([])
@@ -236,25 +239,61 @@ export const PartView: React.FC<{
 	])
 
 	useEffect(() => {
+		const sorensen = hotkeyContext.sorensen
 		const onKey = () => {
-			const pressed = keyTracker.getPressedKeys()
+			const pressed = sorensen.getPressedKeys()
 			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
 		onKey()
 
-		keyTracker.bind('Shift', onKey, {
+		sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		keyTracker.bind('Shift', onKey, {
+		sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
 		return () => {
-			keyTracker.unbind('Shift', onKey)
+			sorensen.unbind('Shift', onKey)
 		}
-	}, [keyTracker])
+	}, [hotkeyContext])
+
+	const [triggerActive, setTriggerActive] = useState<boolean>(false)
+	const prevTriggerLength = useRef(0)
+	const handleTrigger = useCallback((triggers: ActiveTriggers) => {
+		// was something pressed?
+		const triggerLength = Object.keys(triggers).length
+		if (triggerLength > prevTriggerLength.current) {
+			const trigger: Trigger = {
+				fullIdentifiers: Object.keys(triggers),
+				action: 'play',
+			}
+			console.log('Assign Trigger ', trigger)
+
+			ipcServer
+				.setPartTrigger({
+					rundownId,
+					groupId: parentGroup.id,
+					partId: part.id,
+					trigger,
+				})
+				.catch(handleError)
+		}
+		prevTriggerLength.current = triggerLength
+	}, [])
+	useEffect(() => {
+		if (triggerActive) {
+			hotkeyContext.triggers.on('trigger', handleTrigger)
+		} else {
+			hotkeyContext.triggers.off('trigger', handleTrigger)
+			prevTriggerLength.current = 0
+		}
+		return () => {
+			hotkeyContext.triggers.off('trigger', handleTrigger)
+		}
+	}, [hotkeyContext, triggerActive, handleTrigger])
 
 	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
@@ -282,6 +321,11 @@ export const PartView: React.FC<{
 	// Delete button:
 	const handleDelete = () => {
 		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
+	}
+
+	// TriggerButton
+	const handleTriggerBtn = (active: boolean) => {
+		setTriggerActive(active)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -429,6 +473,7 @@ export const PartView: React.FC<{
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
+					<TriggerBtn onTrigger={handleTriggerBtn} />
 				</div>
 			</div>
 			<div className="part__layer-names">

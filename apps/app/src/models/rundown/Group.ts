@@ -5,12 +5,6 @@ export type Group = {
 	id: string
 	name: string
 
-	triggers: {
-		[fullIdentifier: string]: {
-			action: 'play' | 'stop'
-		}
-	}
-
 	/** A transparent group is one that only has a single part, ie "hidden from the user" */
 	transparent: boolean
 

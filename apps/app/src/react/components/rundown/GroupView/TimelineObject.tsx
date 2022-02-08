@@ -23,7 +23,7 @@ export const TimelineObject: React.FC<{
 	const { move, updateMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX] = useMovable(ref.current)
-	const keyTracker = useContext(HotkeyContext)
+	const hotkeyContext = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const updateMoveRef = useRef(updateMove)
 	updateMoveRef.current = updateMove
@@ -53,6 +53,7 @@ export const TimelineObject: React.FC<{
 
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	useEffect(() => {
+		const keyTracker = hotkeyContext.sorensen
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
@@ -71,7 +72,7 @@ export const TimelineObject: React.FC<{
 		return () => {
 			keyTracker.unbind('Shift', onKey)
 		}
-	}, [keyTracker])
+	}, [hotkeyContext])
 	useEffect(() => {
 		if (isMoved) {
 			updateMoveRef.current({

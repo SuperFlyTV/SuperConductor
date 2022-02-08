@@ -3,6 +3,7 @@ import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 import { Project } from '../../models/project/Project'
 import { Part } from '../../models/rundown/Part'
+import { Trigger } from '../../models/rundown/Trigger'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -24,6 +25,9 @@ export class IPCServer implements IPCServerMethods {
 	}
 	stopPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('stopPart', data)
+	}
+	setPartTrigger(data: { rundownId: string; groupId: string; partId: string; trigger: Trigger }): Promise<void> {
+		return this.invokeServerMethod('setPartTrigger', data)
 	}
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)

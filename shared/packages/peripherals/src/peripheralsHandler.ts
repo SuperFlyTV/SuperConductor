@@ -35,11 +35,11 @@ export class PeripheralsHandler extends EventEmitter {
 
 		await Promise.all(Array.from(this.devices.values()).map((device) => device.close()))
 		this.devices.clear()
+
+		this.removeAllListeners()
 	}
 
 	private handleNewPeripheral(device: Peripheral) {
-		console.log(`New Paeripheral: ${device.name}: ${device.id}`)
-
 		device.on('connected', () => this.emit('connected', device.id, device.name))
 		device.on('disconnected', () => this.emit('disconnected', device.id, device.name))
 		device.on('keyDown', (identifier) => this.emit('keyDown', device.id, identifier))

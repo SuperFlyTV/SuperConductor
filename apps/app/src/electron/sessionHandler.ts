@@ -3,6 +3,7 @@ import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import _ from 'lodash'
+import { ActiveTriggers } from '../models/rundown/Trigger'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -15,7 +16,7 @@ export class SessionHandler extends EventEmitter {
 	private peripherals: { [peripheralId: string]: Peripheral } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
-	private peripheralTriggers: { [fullIdentifier: string]: true } = {}
+	private peripheralTriggers: ActiveTriggers = {}
 	private peripheralTriggersHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
