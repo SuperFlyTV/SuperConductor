@@ -31,7 +31,8 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTriggers } from '../models/rundown/Trigger'
+import { ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import _ from 'lodash'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -75,14 +76,21 @@ export const App = () => {
 				}
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
-				setResources((resources) => {
-					const newResources = { ...resources }
+				setResources((existingResources) => {
 					if (resource) {
-						newResources[resourceId] = resource
+						if (!_.isEqual(existingResources[resourceId], resource)) {
+							const newResources = { ...existingResources }
+							newResources[resourceId] = resource
+							return newResources
+						}
 					} else {
-						delete newResources[resourceId]
+						if (existingResources[resourceId]) {
+							const newResources = { ...existingResources }
+							delete newResources[resourceId]
+							return newResources
+						}
 					}
-					return newResources
+					return existingResources
 				})
 			},
 			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) => {
@@ -108,6 +116,7 @@ export const App = () => {
 				})
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
+				console.log(activeTriggersToString(peripheralTriggers))
 				// Emit them, so that the GUI can listen to them and tie them to triggers:
 				triggers.emitTrigger(peripheralTriggers)
 			},

@@ -25,8 +25,7 @@ import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimeline
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { TriggerBtn } from '../../inputs/TriggerBtn'
-import { ActiveTriggers, Trigger } from '../../../../models/rundown/Trigger'
-import { group } from 'console'
+import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../models/rundown/Trigger'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -267,7 +266,8 @@ export const PartView: React.FC<{
 		const triggerLength = Object.keys(triggers).length
 		if (triggerLength > prevTriggerLength.current) {
 			const trigger: Trigger = {
-				fullIdentifiers: Object.keys(triggers),
+				label: activeTriggersToString(triggers),
+				fullIdentifiers: triggers.map((t) => t.fullIdentifier),
 				action: 'play',
 			}
 			console.log('Assign Trigger ', trigger)
@@ -325,6 +325,16 @@ export const PartView: React.FC<{
 
 	// TriggerButton
 	const handleTriggerBtn = (active: boolean) => {
+		if (active) {
+			ipcServer
+				.setPartTrigger({
+					rundownId,
+					groupId: parentGroup.id,
+					partId: part.id,
+					trigger: null,
+				})
+				.catch(handleError)
+		}
 		setTriggerActive(active)
 	}
 
@@ -474,6 +484,13 @@ export const PartView: React.FC<{
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
 					<TriggerBtn onTrigger={handleTriggerBtn} />
+				</div>
+				<div className="part__triggers">
+					{part.triggers.map((t, index) => (
+						<div key={index} className="trigger">
+							{t.label}
+						</div>
+					))}
 				</div>
 			</div>
 			<div className="part__layer-names">

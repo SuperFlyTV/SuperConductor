@@ -1,10 +1,10 @@
 import { KeyDisplay } from '@shared/api'
-import { openStreamDeck, listStreamDecks, StreamDeck as OrgStreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
+import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
 
-export class StreamDeck extends Peripheral {
-	static Watch(onDevice: (peripheral: StreamDeck) => void) {
-		const seenDevices = new Map<string, StreamDeck>()
+export class PeripheralStreamDeck extends Peripheral {
+	static Watch(onDevice: (peripheral: PeripheralStreamDeck) => void) {
+		const seenDevices = new Map<string, PeripheralStreamDeck>()
 
 		const interval = setInterval(() => {
 			const streamDecks = listStreamDecks()
@@ -16,7 +16,7 @@ export class StreamDeck extends Peripheral {
 
 				const existingDevice = seenDevices.get(id)
 				if (!existingDevice) {
-					const newDevice = new StreamDeck(id, streamDeck.path)
+					const newDevice = new PeripheralStreamDeck(id, streamDeck.path)
 
 					seenDevices.set(id, newDevice)
 
@@ -44,7 +44,7 @@ export class StreamDeck extends Peripheral {
 
 	public initializing = false
 	public connected = false
-	private streamDeck?: OrgStreamDeck
+	private streamDeck?: StreamDeck
 	constructor(id: string, private path: string) {
 		super(id)
 	}
@@ -63,11 +63,11 @@ export class StreamDeck extends Peripheral {
 			this.connected = true
 
 			this.streamDeck.on('down', (keyIndex) => {
-				this.emit('keyDown', `key_${keyIndex}`)
+				this.emit('keyDown', `${keyIndex}`)
 			})
 
 			this.streamDeck.on('up', (keyIndex) => {
-				this.emit('keyUp', `key_${keyIndex}`)
+				this.emit('keyUp', `${keyIndex}`)
 			})
 
 			this.streamDeck.on('error', (error) => {

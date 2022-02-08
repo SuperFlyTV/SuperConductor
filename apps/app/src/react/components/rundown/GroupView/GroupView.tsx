@@ -61,8 +61,14 @@ export const GroupView: React.FC<{
 	const requestRef = useRef<number>(0)
 	const updatePlayhead = () => {
 		const newPlayhead = getGroupPlayData(playheadData.current)
-		// console.log('playhead', newPlayhead)
-		setPlayhead(newPlayhead)
+
+		setPlayhead((oldPlayhead) => {
+			if (!_.isEqual(oldPlayhead, newPlayhead)) {
+				return newPlayhead
+			} else {
+				return oldPlayhead
+			}
+		})
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 	}
 	useEffect(() => {

@@ -3,7 +3,7 @@ import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import _ from 'lodash'
-import { ActiveTriggers } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -16,7 +16,7 @@ export class SessionHandler extends EventEmitter {
 	private peripherals: { [peripheralId: string]: Peripheral } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
-	private peripheralTriggers: ActiveTriggers = {}
+	private peripheralTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private peripheralTriggersHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
@@ -98,10 +98,17 @@ export class SessionHandler extends EventEmitter {
 	}
 	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean) {
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
+		const peripheralId = `${bridgeId}-${deviceId}`
 
 		if (down) {
 			if (!this.peripheralTriggers[fullIdentifier]) {
-				this.peripheralTriggers[fullIdentifier] = true
+				const device = this.peripherals[peripheralId]
+				this.peripheralTriggers[fullIdentifier] = {
+					fullIdentifier: fullIdentifier,
+					deviceId: deviceId,
+					deviceName: device?.name ?? '',
+					identifier: identifier,
+				}
 				this.peripheralTriggersHasChanged = true
 			}
 		} else {
@@ -134,6 +141,8 @@ export class SessionHandler extends EventEmitter {
 				this.peripheralsHasChanged[peripheralId] = true
 			}
 			this.peripheralTriggersHasChanged = true
+
+			this.emitEverything = false
 		}
 
 		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
@@ -149,7 +158,8 @@ export class SessionHandler extends EventEmitter {
 			delete this.peripheralsHasChanged[peripheralId]
 		}
 		if (this.peripheralTriggersHasChanged) {
-			this.emit('peripheralTriggers', this.peripheralTriggers)
+			const activeTriggers: ActiveTriggers = Object.values(this.peripheralTriggers)
+			this.emit('peripheralTriggers', activeTriggers)
 			this.peripheralTriggersHasChanged = false
 		}
 	}

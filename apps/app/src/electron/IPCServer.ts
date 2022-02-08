@@ -199,12 +199,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger
+		trigger: Trigger | null
 	}): Promise<UndoableResult<string>> {
 		const { rundown, part } = this.getPart(arg)
 		const originalTriggers = part.triggers
 		// Note: Initially, just set the one trigger for now...
-		part.triggers = [arg.trigger]
+		part.triggers = arg.trigger ? [arg.trigger] : []
 
 		this.storage.updateRundown(arg.rundownId, rundown)
 		return {

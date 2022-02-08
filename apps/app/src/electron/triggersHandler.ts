@@ -1,22 +1,18 @@
-import { deepClone } from '@shared/lib'
 import { Rundown } from '../models/rundown/Rundown'
-import { ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 
 export class TriggersHandler {
-	private currentTriggers: ActiveTriggers = {}
+	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	constructor(private storage: StorageHandler, private ipcServer: IPCServer) {}
 
-	updateTriggers(newTriggers: ActiveTriggers) {
-		// const newCount = Object.keys(newTriggers).length
-		// const currentCount = Object.keys(this.currentTriggers).length
-		// let somethingWasPressed = false
-
+	updateTriggers(activeTriggers: ActiveTriggers) {
 		const rundowns: Rundown[] = this.storage.getAllRundowns()
 
-		const triggers: {
+		// Collect all triggers from the rundowns:
+		const actions: {
 			trigger: Trigger
 			rundownId: string
 			groupId: string
@@ -27,7 +23,7 @@ export class TriggersHandler {
 			for (const group of rundown.groups) {
 				for (const part of group.parts) {
 					for (const trigger of part.triggers) {
-						triggers.push({
+						actions.push({
 							trigger,
 							rundownId: rundown.id,
 							groupId: group.id,
@@ -38,47 +34,67 @@ export class TriggersHandler {
 			}
 		}
 
-		for (const ident of Object.keys(newTriggers)) {
-			if (!this.currentTriggers[ident]) {
-				// This key was newly pressed
-				// Look for a corresponding action:
+		const activeTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
-				for (const trigger of triggers) {
-					let match = false
-					for (const fullIdentifier of trigger.trigger.fullIdentifiers) {
-						if (newTriggers[fullIdentifier]) {
-							match = true
-						} else {
-							// The trigger is not pressed, so we can stop looking
-							match = false
-							break
-						}
-					}
+		const newlyActiveTriggers: { [fullItentifier: string]: true } = {}
 
-					if (match) {
-						// We've found a match!
-						if (trigger.trigger.action === 'play') {
-							this.ipcServer
-								.playPart({
-									rundownId: trigger.rundownId,
-									groupId: trigger.groupId,
-									partId: trigger.partId,
-								})
-								.catch(console.error)
-						} else if (trigger.trigger.action === 'stop') {
-							this.ipcServer
-								.stopPart({
-									rundownId: trigger.rundownId,
-									groupId: trigger.groupId,
-									partId: trigger.partId,
-								})
-								.catch(console.error)
-						}
-					}
+		// Go through the currently active (key-pressed) keys, in order to figure out which keys are newly active:
+		for (const activeTrigger of activeTriggers) {
+			activeTriggersMap[activeTrigger.fullIdentifier] = activeTrigger
+
+			// Check if the key (trigger) was newly pressed (active):
+			if (!this.prevTriggersMap[activeTrigger.fullIdentifier]) {
+				// This key was newly pressed.
+
+				newlyActiveTriggers[activeTrigger.fullIdentifier] = true
+			}
+		}
+
+		// Go through the actions
+		for (const action of actions) {
+			// This a little bit unintuitive, but our first step here is to filter out actions
+			// that correspone only to _newly active_ triggers.
+
+			let allMatching = false
+			let matchingNewlyPressed = false
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				if (newlyActiveTriggers[fullIdentifier]) {
+					matchingNewlyPressed = true
+				}
+
+				// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
+				if (activeTriggersMap[fullIdentifier]) {
+					allMatching = true
+				} else {
+					// The trigger is not pressed, so we can stop looking
+					allMatching = false
+					break
+				}
+			}
+
+			if (matchingNewlyPressed && allMatching) {
+				// We've found a match!
+				if (action.trigger.action === 'play') {
+					this.ipcServer
+						.playPart({
+							rundownId: action.rundownId,
+							groupId: action.groupId,
+							partId: action.partId,
+						})
+						.catch(console.error)
+				} else if (action.trigger.action === 'stop') {
+					this.ipcServer
+						.stopPart({
+							rundownId: action.rundownId,
+							groupId: action.groupId,
+							partId: action.partId,
+						})
+						.catch(console.error)
 				}
 			}
 		}
+
 		// Store the new state for next time:
-		this.currentTriggers = deepClone(newTriggers)
+		this.prevTriggersMap = activeTriggersMap
 	}
 }

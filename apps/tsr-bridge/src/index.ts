@@ -36,22 +36,17 @@ octokit.rest.repos
 
 const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
+	console.log('New connection!')
 
 	tsr.newConnection = true
 
-	connection.on('connected', () => {
-		console.log('Connected!')
-
-		if (peripheralsHandler) {
-			peripheralsHandler.close()
-			peripheralsHandler = null
-		}
-		if (bridgeId) {
-			peripheralsHandler = initialize(bridgeId, sendAndCatch)
-		}
-	})
 	connection.on('disconnected', () => {
 		console.log('Disconnected!')
+
+		if (peripheralsHandler) {
+			peripheralsHandler.close().catch(console.error)
+			peripheralsHandler = null
+		}
 	})
 	connection.on('message', (msg: BridgeAPI.FromTPT.Any) => {
 		if (msg.type === 'setId') {
@@ -59,7 +54,7 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 			// Reply to TPT with our id
 			send({ type: 'init', id: bridgeId, version: CURRENT_VERSION })
 
-			peripheralsHandler = initialize(bridgeId, sendAndCatch)
+			peripheralsHandler = setupPeripheralsHandler(bridgeId, sendAndCatch)
 		} else if (msg.type === 'addTimeline') {
 			playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
@@ -147,7 +142,10 @@ function stopTimeline(id: string, currentTime: number) {
 	updateTSR(currentTime)
 }
 
-function initialize(bridgeId: string, send: (message: BridgeAPI.FromBridge.Any) => void): PeripheralsHandler {
+function setupPeripheralsHandler(
+	bridgeId: string,
+	send: (message: BridgeAPI.FromBridge.Any) => void
+): PeripheralsHandler {
 	const peripheralsHandler = new PeripheralsHandler(bridgeId)
 
 	peripheralsHandler.on('connected', (deviceId, deviceName) => {

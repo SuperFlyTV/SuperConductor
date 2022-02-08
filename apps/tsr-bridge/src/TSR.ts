@@ -169,7 +169,8 @@ export class TSR {
 									const thumbnail = await ccg.thumbnailRetrieve(media.name)
 									resource.thumbnail = thumbnail.response.data
 								} catch (error) {
-									console.error(`Could not set thumbnail for media "${media.name}".`, error)
+									// console.error(`Could not set thumbnail for media "${media.name}".`, error)
+									console.error(`Could not set thumbnail for media "${media.name}".`)
 								}
 							}
 

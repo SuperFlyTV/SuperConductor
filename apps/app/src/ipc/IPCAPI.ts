@@ -56,7 +56,12 @@ export interface IPCServerMethods {
 
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
-	setPartTrigger: (data: { rundownId: string; groupId: string; partId: string; trigger: Trigger }) => Promise<unknown>
+	setPartTrigger: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		trigger: Trigger | null
+	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string

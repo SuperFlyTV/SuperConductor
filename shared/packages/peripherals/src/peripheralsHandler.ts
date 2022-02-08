@@ -1,7 +1,8 @@
 import EventEmitter from 'events'
 import { KeyDisplay } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
-import { StreamDeck } from './peripherals/streamdeck'
+import { PeripheralStreamDeck } from './peripherals/streamdeck'
+import { PeripheralXkeys } from './peripherals/xkeys'
 
 export interface PeripheralsHandlerEvents {
 	connected: (deviceId: string, deviceName: string) => void
@@ -22,7 +23,8 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 	init() {
 		// Set up watchers:
-		this.watchers.push(StreamDeck.Watch((device) => this.handleNewPeripheral(device)))
+		this.watchers.push(PeripheralStreamDeck.Watch((device) => this.handleNewPeripheral(device)))
+		this.watchers.push(PeripheralXkeys.Watch((device) => this.handleNewPeripheral(device)))
 	}
 	setKeyDisplay(deviceId: string, keyInfo: KeyDisplay): void {
 		const device = this.devices.get(deviceId)
