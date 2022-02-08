@@ -152,6 +152,7 @@ export const App = () => {
 		wasMoved: null,
 		partId: null,
 		hoveredLayerId: null,
+		moveId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
