@@ -1,5 +1,6 @@
 import { deepClone } from '@shared/lib'
 import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache } from 'superfly-timeline'
+import short from 'short-uuid'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/contexts/TimelineObjectMove'
 
@@ -26,10 +27,13 @@ export function applyMovementToTimeline(
 	leaderTimelineObjId: string,
 	selectedTimelineObjIds: string[],
 	cache: ResolverCache | undefined,
-	leaderTimelineObjNewLayer: string | null
+	leaderTimelineObjNewLayer: string | null,
+	duplicate: boolean
 ): {
+	modifiedTimeline: TimelineObj[]
 	resolvedTimeline: ResolvedTimeline
 	changedObjects: { [objectId: string]: TimelineObj } | null
+	duplicatedObjects: { [objectId: string]: TimelineObj } | null
 } {
 	if (selectedTimelineObjIds.length > 1) {
 		// Don't allow layer changes when moving more than one timelineObj
@@ -39,13 +43,32 @@ export function applyMovementToTimeline(
 	if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 		// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 		return {
+			modifiedTimeline: orgTimeline,
 			resolvedTimeline: orgResolvedTimeline,
 			changedObjects: null,
+			duplicatedObjects: null,
 		}
 	}
 
 	let changedObjects: { [objectId: string]: TimelineObj } = {}
+	const duplicatedObjects: { [objectId: string]: TimelineObj } = {}
 	const modifiedTimeline = deepClone(orgTimeline)
+
+	if (duplicate) {
+		const dupes = []
+		for (const timelineObj of modifiedTimeline) {
+			if (selectedTimelineObjIds.includes(timelineObj.obj.id)) {
+				const clone = deepClone(timelineObj)
+				clone.obj.id = short.generate()
+				dupes.push(clone)
+			}
+		}
+
+		for (const dupe of dupes) {
+			modifiedTimeline.push(dupe)
+			duplicatedObjects[dupe.obj.id] = dupe
+		}
+	}
 
 	const orgLeaderObj = orgResolvedTimeline.objects[leaderTimelineObjId]
 	if (!orgLeaderObj) throw new Error(`Leader obj "${leaderTimelineObjId}" not found`)
@@ -150,8 +173,10 @@ export function applyMovementToTimeline(
 	if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 		// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 		return {
+			modifiedTimeline: orgTimeline,
 			resolvedTimeline: orgResolvedTimeline,
 			changedObjects: null,
+			duplicatedObjects: null,
 		}
 	}
 
@@ -194,8 +219,10 @@ export function applyMovementToTimeline(
 		if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {
 			// Fast-track: If dragDelta is zero, we can return the original, since no change is needed
 			return {
+				modifiedTimeline: orgTimeline,
 				resolvedTimeline: orgResolvedTimeline,
 				changedObjects: null,
+				duplicatedObjects: null,
 			}
 		}
 
@@ -222,8 +249,10 @@ export function applyMovementToTimeline(
 		}
 	}
 	return {
+		modifiedTimeline,
 		resolvedTimeline,
 		changedObjects,
+		duplicatedObjects,
 	}
 }
 

@@ -33,6 +33,16 @@ import { filterMapping } from '../../../../lib/TSRMappings'
  */
 const SNAP_DISTANCE_IN_PIXELS = 10
 
+/**
+ * A an array of unique identifiers indicating which timelineObj move actions have been handled.
+ */
+const HANDLED_MOVE_IDS: string[] = []
+
+/**
+ * The maximum length of the HANDLED_MOVE_IDS array.
+ */
+const MAX_HANDLED_MOVE_IDS = 100
+
 export type MovePartFn = (data: {
 	dragGroup: Group
 	dragPart: Part
@@ -57,6 +67,9 @@ export const PartView: React.FC<{
 	const project = useContext(ProjectContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
+		[objectId: string]: TimelineObj
+	} | null>(null)
+	const duplicatedObjects = useRef<{
 		[objectId: string]: TimelineObj
 	} | null>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
@@ -128,9 +141,11 @@ export const PartView: React.FC<{
 				// timelineObjs with a drag delta applied.
 				//
 				// This is where a move operation has truly completed, including the backend response.
+
 				setWaitingForBackendUpdate(false)
 				updateMoveRef.current({
 					partId: null,
+					moveId: undefined,
 				})
 			}
 		}
@@ -153,16 +168,25 @@ export const PartView: React.FC<{
 		}
 	}, [move.moveType, move.partId, part.id])
 
-	const { resolvedTimeline, newChangedObjects } = useMemo(() => {
+	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects } = useMemo(() => {
+		let modifiedTimeline: TimelineObj[]
 		let resolvedTimeline: ResolvedTimeline
 		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
+		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
 
 		const dragDelta = move.dragDelta || 0
 		const leaderObj = part.timeline.find((obj) => obj.obj.id === move.leaderTimelineObjId)
 		const leaderObjOriginalLayerId = leaderObj?.obj.layer
 		const leaderObjLayerChanged = leaderObjOriginalLayerId !== move.hoveredLayerId
 
-		if ((dragDelta || leaderObjLayerChanged) && move.partId === part.id && leaderObj && move.leaderTimelineObjId) {
+		if (
+			(dragDelta || leaderObjLayerChanged) &&
+			move.partId === part.id &&
+			leaderObj &&
+			move.leaderTimelineObjId &&
+			move.moveId !== null &&
+			!HANDLED_MOVE_IDS.includes(move.moveId)
+		) {
 			// Handle movement, snapping
 
 			// Check the the layer movement is legal:
@@ -188,10 +212,13 @@ export const PartView: React.FC<{
 					move.leaderTimelineObjId,
 					gui.selectedTimelineObjIds,
 					cache.current,
-					moveToLayerId
+					moveToLayerId,
+					Boolean(move.duplicate)
 				)
+				modifiedTimeline = o.modifiedTimeline
 				resolvedTimeline = o.resolvedTimeline
 				newChangedObjects = o.changedObjects
+				newDuplicatedObjects = o.duplicatedObjects
 
 				if (
 					typeof leaderObjOriginalLayerId === 'string' &&
@@ -211,16 +238,19 @@ export const PartView: React.FC<{
 
 				handleError('There was an error when trying to move')
 
+				modifiedTimeline = part.timeline
 				resolvedTimeline = orgResolvedTimeline
 				newChangedObjects = null
+				newDuplicatedObjects = null
 			}
 		} else {
+			modifiedTimeline = part.timeline
 			resolvedTimeline = orgResolvedTimeline
 		}
 
 		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		return { maxDuration, resolvedTimeline, newChangedObjects }
+		return { maxDuration, modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects }
 	}, [
 		move,
 		part.timeline,
@@ -241,36 +271,93 @@ export const PartView: React.FC<{
 	}, [newChangedObjects])
 
 	useEffect(() => {
+		if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+			duplicatedObjects.current = newDuplicatedObjects
+		}
+	}, [newDuplicatedObjects])
+
+	useEffect(() => {
 		// Handle when we stop moving:
-		if (move.partId === part.id && move.moveType === null && move.wasMoved !== null && !waitingForBackendUpdate) {
+		if (
+			move.partId === part.id &&
+			move.moveType === null &&
+			move.wasMoved !== null &&
+			move.moveId !== null &&
+			!waitingForBackendUpdate &&
+			!HANDLED_MOVE_IDS.includes(move.moveId)
+		) {
 			setWaitingForBackendUpdate(true)
+			HANDLED_MOVE_IDS.unshift(move.moveId)
+
+			// Prevent the list of handled move IDs from growing infinitely:
+			if (HANDLED_MOVE_IDS.length > MAX_HANDLED_MOVE_IDS) {
+				HANDLED_MOVE_IDS.length = MAX_HANDLED_MOVE_IDS
+			}
+
+			const promises: Promise<unknown>[] = []
+
 			if (changedObjects.current) {
 				for (const obj of Object.values(changedObjects.current)) {
-					ipcServer
-						.updateTimelineObj({
-							rundownId: rundownId,
-							partId: part.id,
-							groupId: parentGroup.id,
-							timelineObjId: obj.obj.id,
-							timelineObj: obj,
-						})
-						.catch((error) => {
-							setWaitingForBackendUpdate(false)
-							handleError(error)
-						})
+					const promise = ipcServer.updateTimelineObj({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: obj.obj.id,
+						timelineObj: obj,
+					})
+					promises.push(promise)
 				}
+				changedObjects.current = null
 			}
+			if (duplicatedObjects.current) {
+				for (const obj of Object.values(duplicatedObjects.current)) {
+					const promise = ipcServer.addTimelineObj({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: obj.obj.id,
+						timelineObj: obj,
+					})
+					promises.push(promise)
+				}
+				duplicatedObjects.current = null
+			}
+
+			Promise.allSettled(promises)
+				.then((results) => {
+					let foundNonError = false
+					for (const result of results) {
+						if (result.status === 'rejected') {
+							handleError(result.reason)
+						} else if (result.status === 'fulfilled') {
+							foundNonError = true
+						}
+					}
+
+					// If every single promise errored, then we need to manually set
+					// waitingForBackendUpdate to false here because we won't get any
+					// updates from the backend.
+					if (!foundNonError) {
+						setWaitingForBackendUpdate(false)
+					}
+				})
+				.catch((error) => {
+					handleError(error)
+					setWaitingForBackendUpdate(false)
+				})
 		}
 	}, [
-		move,
 		part.id,
 		snapDistanceInMilliseconds,
 		ipcServer,
 		rundownId,
 		parentGroup.id,
-		changedObjects,
 		waitingForBackendUpdate,
 		handleError,
+		move.partId,
+		move.moveType,
+		move.wasMoved,
+		move.moveId,
 	])
 
 	useEffect(() => {
@@ -507,7 +594,7 @@ export const PartView: React.FC<{
 							}[] = compact(
 								objectIds.map((objectId) => {
 									const resolvedObj = resolvedTimeline.objects[objectId]
-									const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
+									const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
 
 									if (resolvedObj && timelineObj) {
 										return {

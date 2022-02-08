@@ -8,6 +8,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import short from 'short-uuid'
 
 export const TimelineObject: React.FC<{
 	groupId: string
@@ -31,6 +32,8 @@ export const TimelineObject: React.FC<{
 	})
 	const keyTracker = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
+	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
+	const [allowDuplicate, setAllowDuplicate] = useState(false)
 	const updateMoveRef = useRef(updateMove)
 	updateMoveRef.current = updateMove
 
@@ -41,27 +44,13 @@ export const TimelineObject: React.FC<{
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
 
-	useEffect(() => {
-		if (isMoved && !handledMoveStart) {
-			// A move has begun.
-			setHandledMoveStart(true)
-		} else if (!isMoved && handledMoveStart) {
-			// A move has completed.
-			setHandledMoveStart(false)
-			updateMove({
-				moveType: null,
-				wasMoved: move.moveType,
-			})
-		}
-	}, [handledMoveStart, isMoved, move.moveType, partId, updateMove])
-
 	const description = describeTimelineObject(obj)
 
-	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	useEffect(() => {
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 		}
 		onKey()
 
@@ -74,10 +63,22 @@ export const TimelineObject: React.FC<{
 			global: true,
 		})
 
+		keyTracker.bind('Alt', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Alt', onKey, {
+			up: true,
+			global: true,
+		})
+
 		return () => {
 			keyTracker.unbind('Shift', onKey)
+			keyTracker.unbind('Alt', onKey)
 		}
 	}, [keyTracker])
+
+	// This useEffect hook and the one immediately following it are order-sensitive.
 	useEffect(() => {
 		if (!isMoved) {
 			return
@@ -93,6 +94,7 @@ export const TimelineObject: React.FC<{
 			pointerY,
 			originX,
 			originY,
+			duplicate: allowDuplicate,
 		}
 
 		const hoveredEl = document.elementFromPoint(pointerX, pointerY)
@@ -109,7 +111,25 @@ export const TimelineObject: React.FC<{
 		}
 
 		updateMoveRef.current(update)
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY])
+	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY, allowDuplicate])
+	useEffect(() => {
+		if (isMoved && !handledMoveStart) {
+			// A move has begun.
+
+			setHandledMoveStart(true)
+			updateMove({
+				moveId: short.generate(),
+			})
+		} else if (!isMoved && handledMoveStart) {
+			// A move has completed.
+
+			setHandledMoveStart(false)
+			updateMove({
+				moveType: null,
+				wasMoved: move.moveType,
+			})
+		}
+	}, [handledMoveStart, isMoved, move.moveType, updateMove])
 
 	return (
 		<div

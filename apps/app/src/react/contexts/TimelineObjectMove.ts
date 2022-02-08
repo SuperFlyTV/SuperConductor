@@ -4,7 +4,7 @@ export const TimelineObjectMoveContext = React.createContext<{
 	move: TimelineObjectMove
 	updateMove: (newGui: Partial<TimelineObjectMove>) => void
 }>({
-	move: { moveType: null, wasMoved: null, partId: null, hoveredLayerId: null },
+	move: { moveType: null, wasMoved: null, partId: null, hoveredLayerId: null, moveId: null },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	updateMove: () => {},
 })
@@ -37,4 +37,8 @@ export interface TimelineObjectMove {
 	originX?: number
 	/** The origin client Y position of the pointer when the move began [pixels] */
 	originY?: number
+	/** Whether to make a duplicate of the moved timelineObj or not */
+	duplicate?: boolean
+	/** A unique identifier for each move transaction */
+	moveId: null | string
 }
