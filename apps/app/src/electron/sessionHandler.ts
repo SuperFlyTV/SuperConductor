@@ -1,6 +1,8 @@
 import EventEmitter from 'events'
 import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
+import { Peripheral } from '../models/project/Peripheral'
+import _ from 'lodash'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -9,6 +11,12 @@ export class SessionHandler extends EventEmitter {
 
 	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
+
+	private peripherals: { [peripheralId: string]: Peripheral } = {}
+	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
+
+	private peripheralTriggers: { [fullIdentifier: string]: true } = {}
+	private peripheralTriggersHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
@@ -52,9 +60,54 @@ export class SessionHandler extends EventEmitter {
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null) {
 		if (bridgeStatus) {
 			this.bridgeStatuses[id] = bridgeStatus
-		} else {
-			delete this.bridgeStatuses[id]
 			this.bridgeStatusesHasChanged[id] = true
+		} else {
+			if (this.bridgeStatuses[id]) {
+				delete this.bridgeStatuses[id]
+				this.bridgeStatusesHasChanged[id] = true
+			}
+		}
+
+		this.triggerUpdate()
+	}
+	getPeripheralStatus(bridgeId: string, deviceId: string): Peripheral | undefined {
+		const peripheralId = `${bridgeId}-${deviceId}`
+
+		return this.peripherals[peripheralId]
+	}
+	updatePeripheralStatus(bridgeId: string, deviceId: string, deviceName: string, connected: boolean) {
+		const peripheralId = `${bridgeId}-${deviceId}`
+
+		const existing: Peripheral | undefined = this.peripherals[peripheralId]
+
+		const newDevice: Peripheral = {
+			id: deviceId,
+			name: deviceName,
+			status: {
+				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
+				connected: connected,
+			},
+		}
+		if (!_.isEqual(newDevice, this.peripherals[peripheralId])) {
+			this.peripherals[peripheralId] = newDevice
+			this.peripheralsHasChanged[peripheralId] = true
+		}
+
+		this.triggerUpdate()
+	}
+	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean) {
+		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
+
+		if (down) {
+			if (!this.peripheralTriggers[fullIdentifier]) {
+				this.peripheralTriggers[fullIdentifier] = true
+				this.peripheralTriggersHasChanged = true
+			}
+		} else {
+			if (this.peripheralTriggers[fullIdentifier]) {
+				delete this.peripheralTriggers[fullIdentifier]
+				this.peripheralTriggersHasChanged = true
+			}
 		}
 
 		this.triggerUpdate()
@@ -76,6 +129,10 @@ export class SessionHandler extends EventEmitter {
 			for (const bridgeId of Object.keys(this.bridgeStatuses)) {
 				this.bridgeStatusesHasChanged[bridgeId] = true
 			}
+			for (const peripheralId of Object.keys(this.peripherals)) {
+				this.peripheralsHasChanged[peripheralId] = true
+			}
+			this.peripheralTriggersHasChanged = true
 		}
 
 		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
@@ -85,6 +142,14 @@ export class SessionHandler extends EventEmitter {
 		for (const bridgeId of Object.keys(this.bridgeStatusesHasChanged)) {
 			this.emit('bridgeStatus', bridgeId, this.bridgeStatuses[bridgeId] ?? null)
 			delete this.bridgeStatusesHasChanged[bridgeId]
+		}
+		for (const peripheralId of Object.keys(this.peripheralsHasChanged)) {
+			this.emit('peripheral', peripheralId, this.peripherals[peripheralId] ?? null)
+			delete this.peripheralsHasChanged[peripheralId]
+		}
+		if (this.peripheralTriggersHasChanged) {
+			this.emit('peripheralTriggers', this.peripheralTriggers)
+			this.peripheralTriggersHasChanged = false
 		}
 	}
 }

@@ -6,6 +6,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
+import { Peripheral } from '../models/project/Peripheral'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -140,5 +141,7 @@ export interface IPCClientMethods {
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
+	updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
+	updatePeripheralTriggers: (peripheralTriggers: { [fullIdentifier: string]: true }) => void
 	openSettings: () => void
 }

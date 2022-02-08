@@ -225,6 +225,10 @@ export class BridgeConnection {
 				this.callbacks.updatedResources(msg.deviceId, msg.resources)
 			} else if (msg.type === 'timelineIds') {
 				this._syncTimelineIds(msg.timelineIds)
+			} else if (msg.type === 'PeripheralStatus') {
+				this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
+			} else if (msg.type === 'PeripheralTrigger') {
+				this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 			} else {
 				assertNever(msg)
 			}
@@ -342,5 +346,13 @@ export class BridgeConnection {
 		if (updated) {
 			this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 		}
+	}
+	private _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralStatus(this.bridgeId, deviceId, deviceName, status === 'connected')
+	}
+	private _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
 }

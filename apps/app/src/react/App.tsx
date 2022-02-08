@@ -21,6 +21,7 @@ import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
 import { BridgeStatus } from '../models/project/Bridge'
+import { Peripheral } from '../models/project/Peripheral'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
@@ -39,6 +40,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
+	const [peripherals, setPeripherals] = useState<{ [peripheralId: string]: Peripheral }>({})
 	const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
@@ -88,6 +90,29 @@ export const App = () => {
 					}
 					return newStatuses
 				})
+			},
+			updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => {
+				setPeripherals((peripherals) => {
+					const newPeripherals = { ...peripherals }
+					if (peripheral) {
+						newPeripherals[peripheralId] = peripheral
+					} else {
+						delete newPeripherals[peripheralId]
+					}
+					return newPeripherals
+				})
+			},
+			updatePeripheralTriggers: (peripheralTriggers: { [fullIdentifier: string]: true }) => {
+				console.log('updatePeripheralTriggers', Object.keys(peripheralTriggers).join('+'))
+				// setPeripherals((peripherals) => {
+				// 	const newPeripherals = { ...peripherals }
+				// 	if (peripheral) {
+				// 		newPeripherals[peripheralId] = peripheral
+				// 	} else {
+				// 		delete newPeripherals[peripheralId]
+				// 	}
+				// 	return newPeripherals
+				// })
 			},
 			openSettings: () => {
 				setSettingsOpen(true)
@@ -271,6 +296,7 @@ export const App = () => {
 														setSettingsOpen(true)
 													}}
 													bridgeStatuses={bridgeStatuses}
+													peripherals={peripherals}
 												/>
 											</div>
 

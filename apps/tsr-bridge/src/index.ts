@@ -4,6 +4,7 @@ import semver from 'semver'
 import { ResourceAny } from '@shared/models'
 import { WebsocketConnection, WebsocketServer, BridgeAPI } from '@shared/api'
 import { assertNever } from '@shared/lib'
+import { PeripheralsHandler } from '@shared/peripherals'
 import { TSR } from './TSR'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -49,6 +50,8 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 			bridgeId = msg.id
 			// Reply to TPT with our id
 			send({ type: 'init', id: bridgeId, version: CURRENT_VERSION })
+
+			peripheralsHandler = initialize(bridgeId, sendAndCatch)
 		} else if (msg.type === 'addTimeline') {
 			playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
@@ -67,6 +70,10 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 					resources,
 				})
 			})
+		} else if (msg.type === 'peripheralSetKeyDisplay') {
+			if (!peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
+
+			peripheralsHandler.setKeyDisplay(msg.deviceId, msg.keyDisplay)
 		} else {
 			assertNever(msg)
 		}
@@ -75,8 +82,16 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 	function send(message: BridgeAPI.FromBridge.Any) {
 		connection.send(message)
 	}
+	function sendAndCatch(message: BridgeAPI.FromBridge.Any) {
+		try {
+			connection.send(message)
+		} catch (e) {
+			console.error(e)
+		}
+	}
 
 	let bridgeId: string | null = null
+	let peripheralsHandler: PeripheralsHandler | null = null
 
 	// Send a request to TPT to get our id:
 	send({
@@ -122,4 +137,27 @@ function updateMappings(newMapping: Mappings, currentTime: number) {
 function stopTimeline(id: string, currentTime: number) {
 	delete storedTimelines[id]
 	updateTSR(currentTime)
+}
+
+function initialize(bridgeId: string, send: (message: BridgeAPI.FromBridge.Any) => void): PeripheralsHandler {
+	const peripheralsHandler = new PeripheralsHandler(bridgeId)
+
+	peripheralsHandler.on('connected', (deviceId, deviceName) => {
+		send({ type: 'PeripheralStatus', deviceId, deviceName, status: 'connected' })
+	})
+	peripheralsHandler.on('disconnected', (deviceId, deviceName) =>
+		send({ type: 'PeripheralStatus', deviceId, deviceName, status: 'disconnected' })
+	)
+	peripheralsHandler.on('keyDown', (deviceId, identifier) =>
+		send({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
+	)
+	peripheralsHandler.on('keyUp', (deviceId, identifier) =>
+		send({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
+	)
+
+	peripheralsHandler.init()
+
+	// Initial status
+
+	return peripheralsHandler
 }

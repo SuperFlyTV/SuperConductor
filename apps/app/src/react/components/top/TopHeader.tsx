@@ -1,4 +1,5 @@
 import { BridgeStatus } from '../../../models/project/Bridge'
+import { Peripheral } from '../../../models/project/Peripheral'
 import classNames from 'classnames'
 import React, { useContext, useState } from 'react'
 import {
@@ -30,6 +31,7 @@ export const TopHeader: React.FC<{
 	openRundowns: { rundownId: string; name: string }[]
 	closedRundowns: { rundownId: string; name: string }[]
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
+	peripherals: { [peripheralId: string]: Peripheral }
 	onSelect: (rundownId: string) => void
 	onClose: (rundownId: string) => void
 	onOpen: (rundownId: string) => void
@@ -41,6 +43,7 @@ export const TopHeader: React.FC<{
 	openRundowns,
 	closedRundowns,
 	bridgeStatuses,
+	peripherals,
 	onSelect,
 	onClose,
 	onOpen,
@@ -131,6 +134,18 @@ export const TopHeader: React.FC<{
 					)
 				})
 			})}
+			{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
+				return (
+					<div
+						key={`${peripheralId}`}
+						className={classNames('peripheral-status', { ok: peripheral.status.connected })}
+						title={peripheral.status.connected ? 'Disconnected' : ''}
+					>
+						{peripheral.name}
+						<div className="device-status__dot"></div>
+					</div>
+				)
+			})}
 
 			<IconButton title="Open Preferences" aria-label="open preferences" onClick={onSettingsClick}>
 				<MdSettings />
@@ -219,6 +234,7 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
+								<Button onClick={handleNewRundownClose}>Cancel</Button>
 								<Button
 									onClick={() => {
 										formik.submitForm().catch(handleError)
@@ -226,7 +242,6 @@ export const TopHeader: React.FC<{
 								>
 									Create
 								</Button>
-								<Button onClick={handleNewRundownClose}>Cancel</Button>
 							</DialogActions>
 						</Dialog>
 					)
@@ -266,6 +281,7 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
+								<Button onClick={handleRenameRundownClose}>Cancel</Button>
 								<Button
 									onClick={() => {
 										formik.submitForm().catch(handleError)
@@ -273,7 +289,6 @@ export const TopHeader: React.FC<{
 								>
 									Rename
 								</Button>
-								<Button onClick={handleRenameRundownClose}>Cancel</Button>
 							</DialogActions>
 						</Dialog>
 					)

@@ -20,7 +20,8 @@
 		}
 	}
 
-	.device-status {
+	.device-status,
+	.peripheral-status {
 		display: flex;
 		align-items: center;
 		margin-left: auto;
