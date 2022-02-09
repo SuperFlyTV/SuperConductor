@@ -76,7 +76,7 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 		} else if (msg.type === 'peripheralSetKeyDisplay') {
 			if (!peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
-			peripheralsHandler.setKeyDisplay(msg.deviceId, msg.keyDisplay)
+			peripheralsHandler.setKeyDisplay(msg.deviceId, msg.identifier, msg.keyDisplay)
 		} else {
 			assertNever(msg)
 		}

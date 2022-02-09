@@ -1,4 +1,10 @@
+import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { getGroupPlayData } from '../lib/playhead'
+import { findGroup } from '../lib/util'
+import { Group } from '../models/rundown/Group'
+import { Part } from '../models/rundown/Part'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 
@@ -8,7 +14,7 @@ export class TriggersHandler {
 	private activeKeys: ActiveTriggers = []
 	private activeTriggers: ActiveTriggers = []
 
-	constructor(private storage: StorageHandler, private ipcServer: IPCServer) {}
+	constructor(private storage: StorageHandler, private ipcServer: IPCServer, private bridgeHandler: BridgeHandler) {}
 
 	setKeyboardKeys(activeKeys: ActiveTriggers) {
 		this.activeKeys = activeKeys
@@ -31,8 +37,8 @@ export class TriggersHandler {
 						actions.push({
 							trigger,
 							rundownId: rundown.id,
-							groupId: group.id,
-							partId: part.id,
+							group,
+							part,
 						})
 					}
 				}
@@ -59,6 +65,7 @@ export class TriggersHandler {
 
 			let allMatching = false
 			let matchingNewlyPressed = false
+			const matchingTriggers: ActiveTriggers = []
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
 				if (newlyActiveTriggers[fullIdentifier]) {
 					matchingNewlyPressed = true
@@ -67,6 +74,7 @@ export class TriggersHandler {
 				// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
 				if (activeTriggersMap[fullIdentifier]) {
 					allMatching = true
+					matchingTriggers.push(activeTriggersMap[fullIdentifier])
 				} else {
 					// The trigger is not pressed, so we can stop looking
 					allMatching = false
@@ -82,16 +90,29 @@ export class TriggersHandler {
 					this.ipcServer
 						.playPart({
 							rundownId: action.rundownId,
-							groupId: action.groupId,
-							partId: action.partId,
+							groupId: action.group.id,
+							partId: action.part.id,
 						})
-						.catch(console.error)
+						.then(() => {
+							setKeyDisplay(
+								this.bridgeHandler,
+								matchingTriggers,
+								generatePlayKeyDisplay(this.storage, action)
+							)
+						})
+						.catch((e) => {
+							setKeyDisplay(
+								this.bridgeHandler,
+								matchingTriggers,
+								generateErrorKeyDisplay(this.storage, action, e)
+							)
+						})
 				} else if (action.trigger.action === 'stop') {
 					this.ipcServer
 						.stopPart({
 							rundownId: action.rundownId,
-							groupId: action.groupId,
-							partId: action.partId,
+							groupId: action.group.id,
+							partId: action.part.id,
 						})
 						.catch(console.error)
 				}
@@ -102,9 +123,96 @@ export class TriggersHandler {
 		this.prevTriggersMap = activeTriggersMap
 	}
 }
-export interface Action {
+interface Action {
 	trigger: Trigger
 	rundownId: string
-	groupId: string
-	partId: string
+	group: Group
+	part: Part
+}
+function setKeyDisplay(bridgeHandler: BridgeHandler, triggers: ActiveTriggers, keyDisplay: KeyDisplayTimeline) {
+	for (const trigger of triggers) {
+		const bridgeConnection = bridgeHandler.getBridgeConnection(trigger.bridgeId)
+		if (bridgeConnection) {
+			bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
+		}
+	}
+}
+
+function generatePlayKeyDisplay(storage: StorageHandler, action: Action): KeyDisplayTimeline {
+	const rundown = storage.getRundown(action.rundownId)
+
+	const keyTimeline: KeyDisplayTimeline = [
+		{
+			id: 'idle',
+			priority: -1,
+			enable: { while: 1 },
+			content: {
+				attentionLevel: AttentionLevel.NEUTRAL,
+
+				header: {
+					long: `Play ${action.part.name}`,
+					short: `▶ ${action.part.name.slice(-7)}`,
+				},
+				info: {
+					long: `#duration(${action.part.resolved.duration})`,
+				},
+			},
+		},
+	]
+
+	if (rundown) {
+		const group = findGroup(rundown, action.group.id)
+
+		const playData = getGroupPlayData(group?.preparedPlayData ?? null)
+
+		const myPlayhead = playData.playheads[action.group.id]
+
+		if (myPlayhead) {
+			keyTimeline.push({
+				id: 'active',
+				enable: {
+					start: myPlayhead.partStartTime,
+					end: myPlayhead.partEndTime,
+				},
+				content: {
+					attentionLevel: AttentionLevel.NEUTRAL,
+
+					header: {
+						long: `Play ${action.part.name}`,
+						short: `▶ ${action.part.name.slice(-7)}`,
+					},
+					info: {
+						long: `#countdown(${myPlayhead.partEndTime})`,
+					},
+				},
+			})
+		}
+	}
+
+	return keyTimeline
+}
+function generateErrorKeyDisplay(storage: StorageHandler, action: Action, e: any): KeyDisplayTimeline {
+	const keyTimeline: KeyDisplayTimeline = [
+		...generatePlayKeyDisplay(storage, action),
+		{
+			id: 'error',
+			priority: 999,
+			enable: {
+				start: Date.now(),
+				duration: 5 * 1000, // 5 seconds
+			},
+			content: {
+				attentionLevel: AttentionLevel.INFO,
+
+				header: {
+					long: `Error`,
+					short: `Error`,
+				},
+				info: {
+					long: `${e}`,
+				},
+			},
+		},
+	]
+	return keyTimeline
 }

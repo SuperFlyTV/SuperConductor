@@ -41,10 +41,19 @@
 			"yarn lint:raw --fix"
 		]
 	},
+	"devDependencies": {
+		"@types/stream-buffers": "^3.0.4",
+		"@types/sharp": "^0.29.5"
+	},
 	"dependencies": {
 		"@elgato-stream-deck/node": "^5.2.0",
 		"@julusian/jpeg-turbo": "^1.1.1",
 		"@shared/api": "^0.1.1",
-		"xkeys": "^2.3.2"
+		"pureimage": "^0.3.8",
+		"stream-buffers": "^3.0.2",
+		"sharp": "^0.30.0",
+		"lodash": "^4.17.21",
+		"xkeys": "^2.3.2",
+		"superfly-timeline": "^8.2.5"
 	}
 }

@@ -1,6 +1,6 @@
 import { ResourceAny } from '@shared/models'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { KeyDisplay } from './peripherals'
+import { KeyDisplay, KeyDisplayTimeline } from './peripherals'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
@@ -111,7 +111,8 @@ export namespace BridgeAPI {
 		export interface PeripheralSetKeyDisplay extends MessageBase {
 			type: 'peripheralSetKeyDisplay'
 			deviceId: string
-			keyDisplay: KeyDisplay
+			identifier: string
+			keyDisplay: KeyDisplay | KeyDisplayTimeline
 		}
 	}
 

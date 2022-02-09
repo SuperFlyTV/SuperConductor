@@ -105,6 +105,7 @@ export class SessionHandler extends EventEmitter {
 				const device = this.peripherals[peripheralId]
 				this.peripheralTriggers[fullIdentifier] = {
 					fullIdentifier: fullIdentifier,
+					bridgeId: bridgeId,
 					deviceId: deviceId,
 					deviceName: device?.name ?? '',
 					identifier: identifier,

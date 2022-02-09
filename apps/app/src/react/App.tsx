@@ -180,7 +180,7 @@ export const App = () => {
 
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
-		const handleKey = (e: KeyboardEvent, keyDown: boolean) => {
+		const handleKey = (e: KeyboardEvent) => {
 			const isFunctionKey = e.code.match(/F\d\d?/)
 			if (!isFunctionKey) {
 				// Ignore keypresses when the user is typing in an input field:
@@ -190,6 +190,7 @@ export const App = () => {
 			const activeKeys = sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
 				return {
 					fullIdentifier: `keyboard-${code}`,
+					bridgeId: '',
 					deviceId: `keyboard`,
 					deviceName: '',
 					identifier: sorensen.getKeyForCode(code),
@@ -205,8 +206,8 @@ export const App = () => {
 				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
 			}
 		}
-		document.addEventListener('keydown', (e) => handleKey(e, true))
-		document.addEventListener('keyup', (e) => handleKey(e, false))
+		document.addEventListener('keydown', (e) => handleKey(e))
+		document.addEventListener('keyup', (e) => handleKey(e))
 	}, [])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({

@@ -1,3 +1,5 @@
+import type { TimelineKeyframe, TimelineObject } from 'superfly-timeline'
+
 /** This is a generic data structure which is used to display  */
 export interface KeyDisplay {
 	/** How much the keye should strive for the user's attention */
@@ -8,14 +10,14 @@ export interface KeyDisplay {
 		/** The full version */
 		long: string
 		/** The shortened version (max 10 characters is recommended)*/
-		short: string
+		short?: string
 	}
 	/** Informational text */
 	info?: {
 		/** The full version */
 		long: string
 		/** The shortened version (max 10 characters is recommended)*/
-		short: string
+		short?: string
 	}
 	/** base64-encoded thumbnail */
 	thumbnail?: string
@@ -32,3 +34,12 @@ export enum AttentionLevel {
 	/** User should notice me immediately */
 	ALERT = 3,
 }
+
+export interface KeyDisplayTimelineObj extends Omit<TimelineObject, 'content' | 'layer'> {
+	content: KeyDisplay
+	keyframes?: Array<KeyDisplayTimelineKeyframe>
+}
+export interface KeyDisplayTimelineKeyframe extends TimelineKeyframe {
+	content: Partial<KeyDisplay>
+}
+export type KeyDisplayTimeline = KeyDisplayTimelineObj[]

@@ -1,5 +1,5 @@
 import EventEmitter from 'events'
-import { KeyDisplay } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
@@ -26,10 +26,11 @@ export class PeripheralsHandler extends EventEmitter {
 		this.watchers.push(PeripheralStreamDeck.Watch((device) => this.handleNewPeripheral(device)))
 		this.watchers.push(PeripheralXkeys.Watch((device) => this.handleNewPeripheral(device)))
 	}
-	setKeyDisplay(deviceId: string, keyInfo: KeyDisplay): void {
+	setKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
 		const device = this.devices.get(deviceId)
 		if (!device) throw new Error(`Device "${deviceId}" not found`)
-		device.setKeyDisplay(keyInfo)
+
+		device.setKeyDisplay(identifier, keyDisplay)
 	}
 	async close(): Promise<void> {
 		this.watchers.forEach((watcher) => watcher.stop())
@@ -42,6 +43,8 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 
 	private handleNewPeripheral(device: Peripheral) {
+		this.devices.set(device.id, device)
+
 		device.on('connected', () => this.emit('connected', device.id, device.name))
 		device.on('disconnected', () => this.emit('disconnected', device.id, device.name))
 		device.on('keyDown', (identifier) => this.emit('keyDown', device.id, identifier))

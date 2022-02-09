@@ -65,11 +65,12 @@ export class PeripheralXkeys extends Peripheral {
 			throw e
 		}
 	}
-	setKeyDisplay(keyInfo: KeyDisplay): void {
+	_setKeyDisplay(_identifier: string, keyInfo: KeyDisplay): void {
 		// TODO: implement this
 		console.log('setKeyDisplay', keyInfo)
 	}
 	async close() {
+		await super._close()
 		if (this.xkeysPanel) {
 			await this.xkeysPanel.close()
 		}

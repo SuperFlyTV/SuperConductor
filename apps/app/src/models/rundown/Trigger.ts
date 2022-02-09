@@ -8,6 +8,7 @@ export interface Trigger {
 // export type ActiveTriggers = { [fullIdentifier: string]: true }
 export interface ActiveTrigger {
 	fullIdentifier: string
+	bridgeId: string
 	deviceId: string
 	deviceName: string
 	identifier: string

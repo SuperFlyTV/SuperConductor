@@ -1,4 +1,4 @@
-import { WebsocketConnection, WebsocketServer } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge } from '../models/project/Bridge'
@@ -66,6 +66,9 @@ export class BridgeHandler {
 		this.storage.on('project', (project: Project) => {
 			this.onUpdatedProject(project)
 		})
+	}
+	getBridgeConnection(bridgeId: string): BridgeConnection | undefined {
+		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
 
 	onUpdatedProject(project: Project) {
@@ -256,6 +259,14 @@ export class BridgeConnection {
 	}
 	refreshResources() {
 		this.send({ type: 'refreshResources' })
+	}
+	peripheralSetKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
+		this.send({
+			type: 'peripheralSetKeyDisplay',
+			deviceId,
+			identifier,
+			keyDisplay,
+		})
 	}
 
 	getTimelineIds() {
