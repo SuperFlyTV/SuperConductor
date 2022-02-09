@@ -15,7 +15,7 @@ import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
-import { ActiveTriggers } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -103,6 +103,9 @@ export class TimedPlayerThingy {
 			},
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
+			},
+			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
+				this.triggers?.setKeyboardKeys(activeKeys)
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)

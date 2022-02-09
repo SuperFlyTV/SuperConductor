@@ -29,7 +29,7 @@ import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
-import { Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -68,6 +68,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
 			refreshResources: () => void
+			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 		}
 	) {
 		super()
@@ -163,6 +164,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
+	}
+	async setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
+		this.callbacks.setKeyboardKeys(activeKeys)
 	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {

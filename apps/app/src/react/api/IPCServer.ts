@@ -3,7 +3,7 @@ import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 import { Project } from '../../models/project/Project'
 import { Part } from '../../models/rundown/Part'
-import { Trigger } from '../../models/rundown/Trigger'
+import { ActiveTrigger, Trigger } from '../../models/rundown/Trigger'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -18,6 +18,10 @@ export class IPCServer implements IPCServerMethods {
 	}
 	triggerSendRundown(data: { rundownId: string }): Promise<void> {
 		return this.invokeServerMethod('triggerSendRundown', data)
+	}
+
+	setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
+		return this.invokeServerMethod('setKeyboardKeys', activeKeys)
 	}
 
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {

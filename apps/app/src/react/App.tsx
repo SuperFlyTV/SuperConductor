@@ -31,7 +31,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
 import _ from 'lodash'
 
 /**
@@ -59,6 +59,7 @@ export const App = () => {
 		currentRundownIdRef.current = currentRundownId
 	}, [currentRundownId])
 
+	// Handle IPC-messages from server
 	useEffect(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
 			updateAppData: (appData: AppData) => {
@@ -117,8 +118,7 @@ export const App = () => {
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				console.log(activeTriggersToString(peripheralTriggers))
-				// Emit them, so that the GUI can listen to them and tie them to triggers:
-				triggers.emitTrigger(peripheralTriggers)
+				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			openSettings: () => {
 				setSettingsOpen(true)
@@ -177,6 +177,37 @@ export const App = () => {
 			},
 		}
 	}, [guiData])
+
+	// Handle hotkeys from keyboard:
+	useEffect(() => {
+		const handleKey = (e: KeyboardEvent, keyDown: boolean) => {
+			const isFunctionKey = e.code.match(/F\d\d?/)
+			if (!isFunctionKey) {
+				// Ignore keypresses when the user is typing in an input field:
+				if (document.activeElement?.tagName === 'INPUT') return
+			}
+
+			const activeKeys = sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
+				return {
+					fullIdentifier: `keyboard-${code}`,
+					deviceId: `keyboard`,
+					deviceName: '',
+					identifier: sorensen.getKeyForCode(code),
+				}
+			})
+			hotkeyContext.triggers.setActiveKeys(activeKeys)
+
+			// Check if anyone is listening for keys.
+			// In that case, the user is currently setting up new triggers, so we don't want to
+			// send the keys to the backend and unexpectedly trigger the action.
+			if (!hotkeyContext.triggers.isAnyoneListening()) {
+				// Send the currently pressed keys to backend, so that the server can execute triggers:
+				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
+			}
+		}
+		document.addEventListener('keydown', (e) => handleKey(e, true))
+		document.addEventListener('keyup', (e) => handleKey(e, false))
+	}, [])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
 		moveType: null,

@@ -1,4 +1,3 @@
-import { Rundown } from '../models/rundown/Rundown'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
@@ -6,19 +5,25 @@ import { StorageHandler } from './storageHandler'
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
+	private activeKeys: ActiveTriggers = []
+	private activeTriggers: ActiveTriggers = []
+
 	constructor(private storage: StorageHandler, private ipcServer: IPCServer) {}
 
+	setKeyboardKeys(activeKeys: ActiveTriggers) {
+		this.activeKeys = activeKeys
+		this.handleUpdate()
+	}
 	updateTriggers(activeTriggers: ActiveTriggers) {
-		const rundowns: Rundown[] = this.storage.getAllRundowns()
+		this.activeTriggers = activeTriggers
+		this.handleUpdate()
+	}
+	private handleUpdate() {
+		const allTriggers: ActiveTriggers = [...this.activeKeys, ...this.activeTriggers]
+		const rundowns = this.storage.getAllRundowns()
 
-		// Collect all triggers from the rundowns:
-		const actions: {
-			trigger: Trigger
-			rundownId: string
-			groupId: string
-			partId: string
-		}[] = []
-
+		// Collect all actions from the rundowns:
+		const actions: Action[] = []
 		for (const rundown of rundowns) {
 			for (const group of rundown.groups) {
 				for (const part of group.parts) {
@@ -34,14 +39,11 @@ export class TriggersHandler {
 			}
 		}
 
-		const activeTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
-
-		const newlyActiveTriggers: { [fullItentifier: string]: true } = {}
-
 		// Go through the currently active (key-pressed) keys, in order to figure out which keys are newly active:
-		for (const activeTrigger of activeTriggers) {
+		const activeTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
+		const newlyActiveTriggers: { [fullItentifier: string]: true } = {}
+		for (const activeTrigger of allTriggers) {
 			activeTriggersMap[activeTrigger.fullIdentifier] = activeTrigger
-
 			// Check if the key (trigger) was newly pressed (active):
 			if (!this.prevTriggersMap[activeTrigger.fullIdentifier]) {
 				// This key was newly pressed.
@@ -74,6 +76,8 @@ export class TriggersHandler {
 
 			if (matchingNewlyPressed && allMatching) {
 				// We've found a match!
+
+				// Execute the action:
 				if (action.trigger.action === 'play') {
 					this.ipcServer
 						.playPart({
@@ -97,4 +101,10 @@ export class TriggersHandler {
 		// Store the new state for next time:
 		this.prevTriggersMap = activeTriggersMap
 	}
+}
+export interface Action {
+	trigger: Trigger
+	rundownId: string
+	groupId: string
+	partId: string
 }
