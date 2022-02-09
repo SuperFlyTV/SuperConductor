@@ -13,7 +13,7 @@ import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
-import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
@@ -27,6 +27,8 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import _ from 'lodash'
 import { filterMapping } from '../../../../lib/TSRMappings'
+import { PartMoveContext } from '../../../contexts/PartMove'
+import short from 'short-uuid'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -43,13 +45,6 @@ const HANDLED_MOVE_IDS: string[] = []
  */
 const MAX_HANDLED_MOVE_IDS = 100
 
-export type MovePartFn = (data: {
-	dragGroup: Group
-	dragPart: Part
-	hoverGroup: Group | null
-	hoverIndex: number
-}) => Promise<Group | undefined>
-
 export const PartView: React.FC<{
 	rundownId: string
 	parentGroup: Group
@@ -57,14 +52,14 @@ export const PartView: React.FC<{
 	part: Part
 	playhead: GroupPlayData
 	mappings: Mappings
-	movePart: MovePartFn
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
+}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { gui } = useContext(GUIContext)
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const keyTracker = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
+	const { partMove, updatePartMove } = useContext(PartMoveContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
 		[objectId: string]: TimelineObj
@@ -75,8 +70,12 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
-	const updateMoveRef = useRef(updateTimelineObjMove)
-	updateMoveRef.current = updateTimelineObjMove
+	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
+	updateTimelineObjMoveRef.current = updateTimelineObjMove
+	const updatePartMoveRef = useRef(updatePartMove)
+	updatePartMoveRef.current = updatePartMove
+	const partMoveRef = useRef(partMove)
+	partMoveRef.current = partMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -143,7 +142,7 @@ export const PartView: React.FC<{
 				// This is where a move operation has truly completed, including the backend response.
 
 				setWaitingForBackendUpdate(false)
-				updateMoveRef.current({
+				updateTimelineObjMoveRef.current({
 					partId: null,
 					moveId: undefined,
 				})
@@ -422,27 +421,33 @@ export const PartView: React.FC<{
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			canDrop: (movedItem: PartDragItem) => {
-				return !!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)
+			canDrop: (movedItem) => {
+				if (!isPartDragItem(movedItem)) {
+					return false
+				}
+
+				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)
 			},
-			async hover(movedItem: PartDragItem, monitor: DropTargetMonitor) {
+			hover(movedItem, monitor: DropTargetMonitor) {
+				if (!isPartDragItem(movedItem)) {
+					return
+				}
+
 				if (!previewRef.current) {
 					return
 				}
-				const dragGroup = movedItem.group
-				const dragGroupIndex = movedItem.groupIndex
-				const dragPart = movedItem.part
-				const dragIndex = movedItem.index
+
 				let hoverIndex = partIndex
 				let hoverGroup: Group | null = parentGroup
+				const hoverPartId = part.id
 				const hoverGroupIndex = parentGroupIndex
 
-				if (!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)) {
+				// Don't replace items with themselves
+				if (movedItem.partId === hoverPartId) {
 					return
 				}
 
-				// Don't replace items with themselves
-				if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
+				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)) {
 					return
 				}
 
@@ -462,10 +467,10 @@ export const PartView: React.FC<{
 				// When dragging downwards, only move when the cursor is below 50%
 				// When dragging upwards, only move when the cursor is above 50%
 
-				const isDraggingToNewGroup = dragGroup.id !== hoverGroup.id
-				const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && dragIndex > hoverIndex
-				const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && dragIndex < hoverIndex
-				const isDraggingUpFromAnotherGroup = dragGroupIndex > hoverGroupIndex
+				const isDraggingToNewGroup = movedItem.toGroupId !== hoverGroup.id
+				const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && movedItem.position > hoverIndex
+				const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && movedItem.position < hoverIndex
+				const isDraggingUpFromAnotherGroup = movedItem.toGroupIndex > hoverGroupIndex
 
 				// Dragging downwards
 				if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
@@ -474,14 +479,19 @@ export const PartView: React.FC<{
 
 				// Dragging upwards
 				const isHoveringOverLastPartInGroup = hoverIndex === hoverGroup.parts.length - 1
-				if (isDraggingUpFromAnotherGroup && isHoveringOverLastPartInGroup && hoverClientY > hoverMiddleY) {
+				if (
+					isDraggingUpFromAnotherGroup &&
+					isHoveringOverLastPartInGroup &&
+					!hoverGroup.transparent &&
+					hoverClientY > hoverMiddleY
+				) {
 					hoverIndex += 1
 				}
 				if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
 					return
 				}
 
-				// Handle so-called "transparent group moves".
+				// Handle transparent group moves.
 				if (hoverGroup.transparent) {
 					hoverGroup = null
 					hoverIndex = hoverGroupIndex
@@ -491,46 +501,73 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				const newGroup = await movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
-				if (!newGroup) {
-					// The backend rejected the move, so do nothing.
-					return
-				}
+				updatePartMoveRef.current({
+					partId: movedItem.partId,
+					fromGroupId: movedItem.fromGroup.id,
+					toGroupId: hoverGroup?.id ?? null,
+					position: hoverIndex,
+				})
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				movedItem.index = hoverIndex
-				movedItem.group = newGroup
+				movedItem.toGroupId = hoverGroup?.id ?? null
+				movedItem.toGroupIndex = hoverGroup ? hoverGroupIndex : hoverIndex
+				movedItem.toGroupTransparent = !hoverGroup
+				movedItem.position = hoverIndex
 			},
 		},
-		[parentGroup, parentGroupIndex, partIndex]
+		[parentGroup, parentGroupIndex, partIndex, part.id]
 	)
-	const [{ isDragging }, drag, preview] = useDrag({
-		type: DragItemTypes.PART_ITEM,
-		item: (): PartDragItem => {
-			return {
-				type: DragItemTypes.PART_ITEM,
-				group: parentGroup,
-				groupIndex: parentGroupIndex,
-				part: part,
-				index: partIndex,
-			}
+	const [{ isDragging }, drag, preview] = useDrag(
+		{
+			type: DragItemTypes.PART_ITEM,
+			item: (): PartDragItem => {
+				updatePartMoveRef.current({
+					moveId: short.generate(),
+					done: false,
+				})
+				return {
+					type: DragItemTypes.PART_ITEM,
+					partId: part.id,
+					fromGroup: parentGroup,
+					toGroupId: parentGroup.id,
+					toGroupIndex: parentGroupIndex,
+					toGroupTransparent: parentGroup.transparent,
+					position: partIndex,
+				}
+			},
+			collect: (monitor) => ({
+				isDragging: monitor.isDragging(),
+			}),
+			isDragging: (monitor) => {
+				return part.id === monitor.getItem().partId
+			},
+			end: (draggedItem) => {
+				updatePartMoveRef.current({
+					partId: draggedItem.partId,
+					fromGroupId: draggedItem.fromGroup.id,
+					toGroupId: draggedItem.toGroupId,
+					position: draggedItem.position,
+					done: true,
+				})
+			},
 		},
-		collect: (monitor) => ({
-			isDragging: monitor.isDragging(),
-		}),
-		isDragging: (monitor) => {
-			return part.id === monitor.getItem().part.id
-		},
-	})
-	drag(dragRef)
-	drop(preview(previewRef))
+		[part.id, parentGroup, parentGroupIndex, partIndex]
+	)
+
+	useEffect(() => {
+		drag(dragRef)
+	}, [drag])
+
+	useEffect(() => {
+		drop(preview(previewRef))
+	}, [drop, preview])
 
 	return (
 		<div
-			data-handler-id={handlerId}
+			data-drop-handler-id={handlerId}
 			data-part-id={part.id}
 			ref={previewRef}
 			className={classNames('part', {

@@ -419,6 +419,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 					id: short.generate(),
 					name: part.name,
+					transparent: true,
 
 					parts: [part],
 				}
