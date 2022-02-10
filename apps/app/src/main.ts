@@ -1,7 +1,8 @@
 import { literal } from '@shared/lib'
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, dialog, Menu } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
+import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
 
@@ -50,6 +51,15 @@ const createWindow = (): void => {
 		},
 		onRedoClick: () => {
 			return tpt.ipcServer?.redo().catch(console.error)
+		},
+		onAboutClick: () => {
+			return dialog
+				.showMessageBox(win, {
+					type: 'info',
+					title: 'About SuperConductor',
+					message: `Current Version: v${CURRENT_VERSION}`,
+				})
+				.catch(console.error)
 		},
 	})
 	const menu = generateMenu(menuOpts)
