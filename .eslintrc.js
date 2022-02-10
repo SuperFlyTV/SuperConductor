@@ -22,7 +22,7 @@ module.exports = {
 		'node/no-unpublished-require': [
 			'error',
 			{
-				allowModules: ['html-webpack-plugin'],
+				allowModules: ['html-webpack-plugin', 'electron-notarize'],
 			},
 		],
 		'node/no-extraneous-import': [
