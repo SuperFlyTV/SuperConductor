@@ -532,7 +532,7 @@ export class StorageHandler extends EventEmitter {
 	private get _baseFolder() {
 		const homeDirPath = os.homedir()
 		if (os.type() === 'Linux') {
-			return path.join(homeDirPath, '.super-conductor')
+			return path.join(homeDirPath, '.superconductor')
 		}
 		return path.join(homeDirPath, 'Documents', 'SuperConductor')
 	}

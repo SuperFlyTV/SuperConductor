@@ -1,5 +1,5 @@
 {
-	"name": "super-conductor",
+	"name": "superconductor",
 	"private": true,
 	"version": "0.2.1",
 	"description": "",
@@ -101,7 +101,7 @@
 	},
 	"build": {
 		"productName": "SuperConductor",
-		"appId": "super-conductor.superfly.tv",
+		"appId": "superconductor.superfly.tv",
 		"mac": {
 			"category": "public.app-category.utilities",
 			"hardenedRuntime": true,
