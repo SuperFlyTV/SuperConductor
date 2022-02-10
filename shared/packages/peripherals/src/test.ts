@@ -1,77 +1,47 @@
 import { openStreamDeck } from '@elgato-stream-deck/node'
-// import { AttentionLevel } from '@shared/api'
-import sharp from 'sharp'
-// import { PeripheralStreamDeck } from './peripherals/streamdeck'
+import { AttentionLevel, KeyDisplay } from '@shared/api'
+import fs from 'fs'
+import { drawKeyDisplay } from './peripherals/streamdeck'
 
-// PeripheralStreamDeck.Watch((device) => {
-// 	device.setKeyDisplay('1', {
-// 		attentionLevel: AttentionLevel.NEUTRAL,
-// 		header: {
-// 			long: 'Hello',
-// 		},
-// 	})
-// })
 async function doIt() {
 	const streamDeck = openStreamDeck()
 
-	const keyIndex = 1
+	const keyDisplay: KeyDisplay = {
+		attentionLevel: AttentionLevel.ALERT,
+		// header: {
+		// 	long: 'Hello, My name is Johan',
+		// 	// short: "Hi, I'm Johan",
+		// },
+		// info: {
+		// 	// long: 'abcdefghifklmnopqrstuvxyzåäö',
+		// 	long: '00:00:00',
+		// 	short: '00:00:00',
+		// 	// long: 'I am a software engineer',
+		// 	// short: 'I work here',
+		// },
+		// thumbnail: fs.readFileSync('./src/img.txt', 'utf-8'),
+	}
+	// const keyDisplay: KeyDisplay = {
+	// 	attentionLevel: AttentionLevel.NEUTRAL,
+	// }
 
-	const fontsize = 20
-	const x = 5
-	const y = fontsize
-	const align = 'left'
-	const text = 'TEST'
+	await drawKeyDisplay(streamDeck, 0, { ...keyDisplay })
+	// await drawKeyDisplay(streamDeck, 0, { ...keyDisplay, attentionLevel: AttentionLevel.IGNORE })
+	// await drawKeyDisplay(streamDeck, 1, { ...keyDisplay, attentionLevel: AttentionLevel.NEUTRAL })
+	// await drawKeyDisplay(streamDeck, 2, { ...keyDisplay, attentionLevel: AttentionLevel.INFO })
+	// await drawKeyDisplay(streamDeck, 3, { ...keyDisplay, attentionLevel: AttentionLevel.NOTIFY })
+	// await drawKeyDisplay(streamDeck, 4, { ...keyDisplay, attentionLevel: AttentionLevel.ALERT })
 
-	const IS = streamDeck.ICON_SIZE
+	// await drawKeyDisplay(streamDeck, 5, { ...keyDisplay, thumbnail: '', attentionLevel: AttentionLevel.IGNORE })
+	// await drawKeyDisplay(streamDeck, 6, { ...keyDisplay, thumbnail: '', attentionLevel: AttentionLevel.NEUTRAL })
+	// await drawKeyDisplay(streamDeck, 7, { ...keyDisplay, thumbnail: '', attentionLevel: AttentionLevel.INFO })
+	// await drawKeyDisplay(streamDeck, 8, { ...keyDisplay, thumbnail: '', attentionLevel: AttentionLevel.NOTIFY })
+	// await drawKeyDisplay(streamDeck, 9, { ...keyDisplay, thumbnail: '', attentionLevel: AttentionLevel.ALERT })
 
-	const bgColor = 'black'
-	const borderSize = 3
-	const borderColor = 'white'
-
-	const img = sharp({
-		create: {
-			width: IS,
-			height: IS,
-			channels: 3,
-			background: {
-				r: 100,
-				g: 0,
-				b: 0,
-				alpha: 1 / 255,
-			},
-		},
-	}).composite([
-		{
-			input: Buffer.from(
-				`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${IS} ${IS}" version="1.1">
-
-                <rect x="0" y="0" width="${IS}" height="${IS}"  style="fill: ${borderColor};"  />
-
-                <rect x="${borderSize}" y="${borderSize}" width="${IS - borderSize * 2}" height="${
-					IS - borderSize * 2
-				}"  rx="10" style="fill: ${bgColor};"  />
-                <text
-                                    font-family="'sans-serif'"
-                                    font-size="${fontsize}px"
-                                    x="${x}"
-                                    y="${y}"
-                                    fill="#fff"
-                                    text-anchor="${align}"
-                                    >${text}</text>
-
-
-                            </svg>`
-			),
-			top: 0,
-			left: 0,
-		},
-	])
-	// await img.toFile('test.png')
-
-	const tmpImg = await img.raw().toBuffer()
-
-	await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
-
-	console.log('WRITING!!!! DONE!!!!!!!!!')
+	// await drawKeyDisplay(streamDeck, 10, { ...keyDisplay, attentionLevel: AttentionLevel.IGNORE }, true)
+	// await drawKeyDisplay(streamDeck, 11, { ...keyDisplay, attentionLevel: AttentionLevel.NEUTRAL }, true)
+	// await drawKeyDisplay(streamDeck, 12, { ...keyDisplay, attentionLevel: AttentionLevel.INFO }, true)
+	// await drawKeyDisplay(streamDeck, 13, { ...keyDisplay, attentionLevel: AttentionLevel.NOTIFY }, true)
+	// await drawKeyDisplay(streamDeck, 14, { ...keyDisplay, attentionLevel: AttentionLevel.ALERT }, true)
 }
 doIt().catch(console.error)

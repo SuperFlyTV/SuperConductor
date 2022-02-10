@@ -67,6 +67,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		private callbacks: {
 			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
+			updatePeripherals: (group: Group) => void
 			refreshResources: () => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 		}
@@ -205,12 +206,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		trigger: Trigger | null
 	}): Promise<UndoableResult<string>> {
-		const { rundown, part } = this.getPart(arg)
+		const { rundown, group, part } = this.getPart(arg)
 		const originalTriggers = part.triggers
 		// Note: Initially, just set the one trigger for now...
 		part.triggers = arg.trigger ? [arg.trigger] : []
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+		this.callbacks.updatePeripherals(group)
 		return {
 			undo: () => {
 				const { rundown, part } = this.getPart(arg)
@@ -1101,5 +1103,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	private _updateTimeline(group: Group) {
 		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+		this.callbacks.updatePeripherals(group)
 	}
 }

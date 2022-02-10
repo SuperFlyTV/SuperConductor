@@ -2107,10 +2107,10 @@
   resolved "https://registry.yarnpkg.com/@webpack-cli/serve/-/serve-1.6.1.tgz#0de2875ac31b46b6c5bb1ae0a7d7f0ba5678dffe"
   integrity sha512-gNGTiTrjEVQ0OcVnzsRSqTxaBSr+dmTfm+qJsCDluky8uhdLWep7Gcr62QsAKHTMxjCS/8nEITsmFAhfIx+QSw==
 
-"@xkeys-lib/core@^2.3.2":
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/@xkeys-lib/core/-/core-2.3.2.tgz#3c10b04b527afefb859e9e9722afafecb26d59d4"
-  integrity sha512-IG9vATDIO3oBxj3VULRCegBzUPD6uPK+9g5HmCe/+ek7K7SiIoE6jTl8KDgfx4QBUA0HghzKKyISUYgg5Z0Phw==
+"@xkeys-lib/core@^2.3.3":
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/@xkeys-lib/core/-/core-2.3.3.tgz#37410211622330c6e2227bc180f6bfa571165cde"
+  integrity sha512-j3khmJasLo3UpwJro0QoRqK1pbVuRSNzJ0kppCDczYA1KSDeioKljSvU18BoTGOem57CEyu5BUGXmwIO0zXZrA==
   dependencies:
     tslib "^2.1.0"
   optionalDependencies:
@@ -11233,13 +11233,13 @@ xdg-basedir@^4.0.0:
   resolved "https://registry.yarnpkg.com/xdg-basedir/-/xdg-basedir-4.0.0.tgz#4bc8d9984403696225ef83a1573cbbcb4e79db13"
   integrity sha512-PSNhEJDejZYV7h50BohL09Er9VaIefr2LMAf3OEmpCkjOi34eYyQYAXUTjEQtZJTKcF0E2UKTh+osDLsgNim9Q==
 
-xkeys@^2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/xkeys/-/xkeys-2.3.2.tgz#6084af6cf5b2553221c2ea6ef07c5bcb08d60586"
-  integrity sha512-PLo8G4/hZetbjR2i6iGgEhTM8FfmyQMv2OwwLaSTPvKcjuxchUyb6B3bCkmsEpn/lhBhPFKmZ0NUYkqOI09a6Q==
+xkeys@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/xkeys/-/xkeys-2.3.3.tgz#2d4300831497e6d893bbcddc9588e3980af99c98"
+  integrity sha512-f3gmsbOrfTgC+7t9+IJNTipRClYxGE50X6dS/KCK/mLk/TkLTaF0FLtLbLsLa4WzLfL4MRl95y2Lx8zqJHIA2Q==
   dependencies:
     "@types/node-hid" "^1.3.0"
-    "@xkeys-lib/core" "^2.3.2"
+    "@xkeys-lib/core" "^2.3.3"
     node-hid "^2.1.1"
     tslib "^2.1.0"
   optionalDependencies:

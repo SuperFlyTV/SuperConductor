@@ -1,7 +1,7 @@
 // import path from 'path'
 import _ from 'lodash'
 import sharp from 'sharp'
-import { KeyDisplay } from '@shared/api'
+import { AttentionLevel, KeyDisplay } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
 // import PImage from 'pureimage'
@@ -88,7 +88,10 @@ export class PeripheralStreamDeck extends Peripheral {
 					console.error(error)
 				}
 			})
-			this.emitAllKeys()
+			await this.streamDeck.clearPanel()
+			setTimeout(() => {
+				this.emitAllKeys()
+			}, 1)
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
@@ -96,33 +99,13 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 	_setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): void {
-		// TODO: implement this
-		console.log('setKeyDisplay', keyDisplay)
-
 		const keyIndex = parseInt(identifier)
 
 		if (!this.streamDeck) return
 		if (!_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
-			// const ICON_SIZE = this.streamDeck.ICON_SIZE
-			// const textString = `FOO`
-			// const img = PImage.make(ICON_SIZE, ICON_SIZE, {})
-			// const ctx = img.getContext('2d')
-			// ctx.clearRect(0, 0, ICON_SIZE, ICON_SIZE) // As of v0.1, pureimage fills the canvas with black by default.
-			// ctx.font = {
-			// 	family: 'Source Sans Pro',
-			// 	size: 16,
-			// }
-
-			// // ctx.USE_FONT_GLYPH_CACHING = false
-			// ctx.strokeStyle = 'black'
-			// ctx.lineWidth = 3
-			// ctx.strokeText(textString, 8, 60)
-			// ctx.fillStyle = '#ffffff'
-			// ctx.fillText(textString, 8, 60)
-
-			this.writeImage(keyIndex).catch(console.error)
+			drawKeyDisplay(this.streamDeck, keyIndex, keyDisplay).catch(console.error)
 		}
 	}
 	async close() {
@@ -135,78 +118,206 @@ export class PeripheralStreamDeck extends Peripheral {
 		if (!this.streamDeck) return
 		// Assume all keys are up:
 		for (let keyIndex = 0; keyIndex < this.streamDeck.NUM_KEYS; keyIndex++) {
-			this.emit('keyUp', `key_${keyIndex}`)
+			this.emit('keyUp', `${keyIndex}`)
 		}
 	}
-	private async writeImage(keyIndex: number) {
-		if (!this.streamDeck) return
+}
 
-		// const writableStreamBuffer = new streamBuffers.WritableStreamBuffer({
-		// 	initialSize: 20736, // Start at what should be the exact size we need
-		// 	incrementAmount: 1024, // Grow by 1 kilobyte each time buffer overflows.
-		// })
+export async function drawKeyDisplay(streamDeck: StreamDeck, keyIndex: number, keyDisplay: KeyDisplay, darkBG = false) {
+	const fontsize = 20
+	const padding = 5
+	const SIZE = streamDeck.ICON_SIZE
 
-		try {
-			// await PImage.encodePNGToStream(img, writableStreamBuffer)
+	const dampen = keyDisplay.attentionLevel === AttentionLevel.IGNORE
+	const dampenBackground = dampen || keyDisplay.attentionLevel === AttentionLevel.ALERT
 
-			// // const buf = await sharp()
-			// const contentsBuffer = writableStreamBuffer.getContents()
-			// if (!contentsBuffer) throw new Error('No contents')
+	let bgColor = '#000'
+	let backgroundIsDark = true
 
-			// const finalBuffer = await sharp()
-			// 	.resize(this.streamDeck.ICON_SIZE, this.streamDeck.ICON_SIZE)
-			// 	.composite([{ input: contentsBuffer }])
-			// 	.flatten()
-			// 	.raw()
-			// 	.toBuffer()
-			// await this.streamDeck.fillKeyBuffer(keyIndex, finalBuffer, { format: 'rgba' })
+	let x = 0
+	let y = 0
 
-			console.log('WRITING!!!!')
+	x = padding
+	y = padding + fontsize
+	let svg = ''
+	const inputs: sharp.OverlayOptions[] = []
 
-			const fontsize = 10
-			const x = 0
-			const y = 0
-			const align = 'left'
-			const text = 'TEST'
+	// Background:
+	let img: sharp.Sharp | null = null
+	let hasBackground = false
+	if (keyDisplay.thumbnail) {
+		const uri = keyDisplay.thumbnail.split(';base64,').pop()
 
-			const img = sharp({
-				create: {
-					width: this.streamDeck.ICON_SIZE,
-					height: this.streamDeck.ICON_SIZE,
-					channels: 3,
-					background: {
-						r: 0,
-						g: 0,
-						b: 0,
-						alpha: 1 / 255,
-					},
-				},
-			}).composite([
-				{
-					input: Buffer.from(
-						`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.streamDeck.ICON_SIZE} ${this.streamDeck.ICON_SIZE}" version="1.1">
-							<text
-								font-family="'sans-serif'"
-								font-size="${fontsize}px"
-								x="${x}"
-								y="${y}"
-								fill="#fff"
-								text-anchor="${align}"
-								>${text}</text>
-						</svg>`
-					),
-					top: this.streamDeck.ICON_SIZE - 20,
-					left: 10,
-				},
-			])
+		if (uri) {
+			try {
+				const imgBuffer = Buffer.from(uri, 'base64')
+				img = sharp(imgBuffer).trim().flatten().resize(SIZE, SIZE)
+				// .modulate({
+				// 	brightness: 0.5,
+				// })
+				// .blur()
 
-			const tmpImg = await img.raw().toBuffer()
+				if (dampenBackground || darkBG) img.modulate({ brightness: 0.5 })
 
-			await this.streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
-
-			console.log('WRITING!!!! DONE!!!!!!!!!')
-		} catch (error) {
-			console.error(error)
+				img.blur()
+				hasBackground = true
+			} catch (e) {
+				console.error('Error when processing thumbnail')
+				console.error(e)
+				img = null
+			}
 		}
+	}
+	// Calculate background brightness
+	if (img) {
+		const averagePixel = await img.clone().resize(1, 1).raw().toBuffer()
+
+		const backgroundColor = {
+			r: Number(averagePixel[0]),
+			g: Number(averagePixel[1]),
+			b: Number(averagePixel[1]),
+		}
+		/** 0 - 255 */
+		const brightness = (backgroundColor.r * 299 + backgroundColor.g * 587 + backgroundColor.b * 114) / 1000
+
+		backgroundIsDark = brightness < 127
+	}
+
+	// Border:
+	{
+		let borderWidth = 0
+		let borderColor = '#000'
+
+		if (keyDisplay.attentionLevel === AttentionLevel.IGNORE) {
+			borderWidth = 0
+			borderColor = '#000'
+		} else if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
+			borderWidth = 3
+			borderColor = '#333'
+		} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
+			borderWidth = 3
+			borderColor = '#bbb'
+		} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
+			borderColor = '#ff0'
+			borderWidth = 4
+		} else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) {
+			borderWidth = 10
+			borderColor = '#f00'
+			if (!hasBackground) {
+				bgColor = '#ff3'
+				backgroundIsDark = false
+			}
+		}
+
+		if (borderWidth) {
+			borderWidth += 3
+			if (hasBackground) borderWidth += 3
+
+			svg += `<rect
+			    x="0"
+			    y="0"
+			    width="${SIZE}"
+			    height="${SIZE}"
+			    rx="10"
+			    stroke="${borderColor}"
+			    stroke-width="${borderWidth}"
+                fill="none"
+			/>`
+		}
+	}
+
+	let textColor: string
+
+	if (backgroundIsDark) {
+		textColor = dampen ? '#999' : '#fff'
+	} else {
+		textColor = dampen ? '#333' : '#000'
+	}
+
+	if (keyDisplay.header) {
+		const text = keyDisplay.header.short || keyDisplay.header.long.slice(0, 8)
+
+		const textFontSize = Math.floor(fontsize * (text.length > 7 ? 0.8 : 1))
+		svg += `<text
+                    font-family="Arial, Helvetica, sans-serif"
+                    font-size="${textFontSize}px"
+                    x="${x}"
+                    y="${y}"
+                    fill="${textColor}"
+                    text-anchor="start"
+                    >${text}</text>`
+		y += Math.max(textFontSize, fontsize)
+	}
+	if (keyDisplay.info) {
+		const textFontSize = Math.floor(fontsize * 0.8)
+		if (keyDisplay.info.short) {
+			svg += `<text
+                font-family="Arial, Helvetica, sans-serif"
+                font-size="${textFontSize}px"
+                x="${x}"
+                y="${y}"
+                fill="${textColor}"
+                text-anchor="start"
+                >${keyDisplay.info.short}</text>`
+			y += textFontSize
+		} else if (keyDisplay.info.long) {
+			let text = keyDisplay.info.long
+
+			let line = ''
+			const lineLength = 9
+			for (let i = 0; i < 3; i++) {
+				line = text.slice(0, lineLength)
+				text = text.slice(lineLength)
+				if (line) {
+					svg += `<text
+                        font-family="Arial, Helvetica, sans-serif"
+                        font-size="${textFontSize}px"
+                        x="${x}"
+                        y="${y}"
+                        fill="${textColor}"
+                        text-anchor="start"
+                        >${line}</text>`
+					y += textFontSize
+				} else {
+					break
+				}
+			}
+		}
+	}
+
+	if (svg) {
+		inputs.push({
+			input: Buffer.from(
+				`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" version="1.1">${svg}</svg>`
+			),
+			top: 0,
+			left: 0,
+		})
+	}
+
+	if (!img) {
+		img = sharp({
+			create: {
+				width: SIZE,
+				height: SIZE,
+				channels: 3,
+				background: bgColor,
+			},
+		}).ensureAlpha()
+	}
+
+	// const avgColor = mini[0]
+	if (inputs.length) {
+		img = img.composite(inputs)
+	}
+	// await img.toFile('test.png')
+
+	const tmpImg = await img.raw().toBuffer()
+
+	try {
+		await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
+	} catch (e) {
+		console.log(keyDisplay)
+		throw e
 	}
 }

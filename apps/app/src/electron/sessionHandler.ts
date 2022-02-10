@@ -16,8 +16,10 @@ export class SessionHandler extends EventEmitter {
 	private peripherals: { [peripheralId: string]: Peripheral } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
-	private peripheralTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
-	private peripheralTriggersHasChanged = false
+	private allTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
+	private allTriggersHasChanged: { [fullIdentifier: string]: true } = {}
+	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
+	private activeTriggersHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
@@ -100,22 +102,29 @@ export class SessionHandler extends EventEmitter {
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
 		const peripheralId = `${bridgeId}-${deviceId}`
 
+		const device = this.peripherals[peripheralId]
+		const trigger: ActiveTrigger = {
+			fullIdentifier: fullIdentifier,
+			bridgeId: bridgeId,
+			deviceId: deviceId,
+			deviceName: device?.name ?? '',
+			identifier: identifier,
+		}
+
+		if (!this.allTriggers[fullIdentifier]) {
+			this.allTriggers[fullIdentifier] = trigger
+			this.allTriggersHasChanged[fullIdentifier] = true
+		}
+
 		if (down) {
-			if (!this.peripheralTriggers[fullIdentifier]) {
-				const device = this.peripherals[peripheralId]
-				this.peripheralTriggers[fullIdentifier] = {
-					fullIdentifier: fullIdentifier,
-					bridgeId: bridgeId,
-					deviceId: deviceId,
-					deviceName: device?.name ?? '',
-					identifier: identifier,
-				}
-				this.peripheralTriggersHasChanged = true
+			if (!this.activeTriggers[fullIdentifier]) {
+				this.activeTriggers[fullIdentifier] = trigger
+				this.activeTriggersHasChanged = true
 			}
 		} else {
-			if (this.peripheralTriggers[fullIdentifier]) {
-				delete this.peripheralTriggers[fullIdentifier]
-				this.peripheralTriggersHasChanged = true
+			if (this.activeTriggers[fullIdentifier]) {
+				delete this.activeTriggers[fullIdentifier]
+				this.activeTriggersHasChanged = true
 			}
 		}
 
@@ -141,7 +150,7 @@ export class SessionHandler extends EventEmitter {
 			for (const peripheralId of Object.keys(this.peripherals)) {
 				this.peripheralsHasChanged[peripheralId] = true
 			}
-			this.peripheralTriggersHasChanged = true
+			this.activeTriggersHasChanged = true
 
 			this.emitEverything = false
 		}
@@ -158,10 +167,14 @@ export class SessionHandler extends EventEmitter {
 			this.emit('peripheral', peripheralId, this.peripherals[peripheralId] ?? null)
 			delete this.peripheralsHasChanged[peripheralId]
 		}
-		if (this.peripheralTriggersHasChanged) {
-			const activeTriggers: ActiveTriggers = Object.values(this.peripheralTriggers)
-			this.emit('peripheralTriggers', activeTriggers)
-			this.peripheralTriggersHasChanged = false
+		for (const fullIdentifier of Object.keys(this.allTriggersHasChanged)) {
+			this.emit('allTrigger', fullIdentifier, this.allTriggers[fullIdentifier] ?? null)
+			delete this.allTriggersHasChanged[fullIdentifier]
+		}
+		if (this.activeTriggersHasChanged) {
+			const activeTriggers: ActiveTriggers = Object.values(this.activeTriggers)
+			this.emit('activeTriggers', activeTriggers)
+			this.activeTriggersHasChanged = false
 		}
 	}
 }

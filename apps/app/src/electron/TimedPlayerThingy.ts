@@ -47,9 +47,12 @@ export class TimedPlayerThingy {
 		this.session.on('peripheral', (peripheralId: string, peripheral: Peripheral | null) => {
 			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
 		})
-		this.session.on('peripheralTriggers', (peripheralTriggers: ActiveTriggers) => {
-			this.triggers?.updateTriggers(peripheralTriggers)
-			this.ipcClient?.updatePeripheralTriggers(peripheralTriggers)
+		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
+			this.triggers?.updateActiveTriggers(activeTriggers)
+			this.ipcClient?.updatePeripheralTriggers(activeTriggers)
+		})
+		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
+			this.triggers?.registerTrigger(fullIdentifier, trigger)
 		})
 		this.storage.on('appData', (appData: AppData) => {
 			this.ipcClient?.updateAppData(appData)
@@ -103,6 +106,9 @@ export class TimedPlayerThingy {
 			},
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
+			},
+			updatePeripherals: (_group: Group): void => {
+				this.triggers?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
 				this.triggers?.setKeyboardKeys(activeKeys)

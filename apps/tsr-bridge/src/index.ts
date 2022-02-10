@@ -167,3 +167,6 @@ function setupPeripheralsHandler(
 
 	return peripheralsHandler
 }
+process.on('uncaughtException', function (err) {
+	console.error(err)
+})

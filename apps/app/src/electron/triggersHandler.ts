@@ -1,18 +1,24 @@
-import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
-import { getGroupPlayData } from '../lib/playhead'
-import { findGroup } from '../lib/util'
-import { Group } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
-import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import _ from 'lodash'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
+import { Action } from './triggers/action'
+import { idleKeyDisplay, playKeyDisplay } from './triggers/keyDisplay'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	private activeKeys: ActiveTriggers = []
+	private allTriggers: {
+		[fullIdentifier: string]: ActiveTrigger
+	} = {}
 	private activeTriggers: ActiveTriggers = []
+
+	private updatePeripheralsTimeout: NodeJS.Timeout | null = null
+
+	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 
 	constructor(private storage: StorageHandler, private ipcServer: IPCServer, private bridgeHandler: BridgeHandler) {}
 
@@ -20,12 +26,72 @@ export class TriggersHandler {
 		this.activeKeys = activeKeys
 		this.handleUpdate()
 	}
-	updateTriggers(activeTriggers: ActiveTriggers) {
+	updateActiveTriggers(activeTriggers: ActiveTriggers) {
 		this.activeTriggers = activeTriggers
 		this.handleUpdate()
 	}
-	private handleUpdate() {
-		const allTriggers: ActiveTriggers = [...this.activeKeys, ...this.activeTriggers]
+	registerTrigger(fullIdentifier: string, trigger: ActiveTrigger | null): void {
+		if (trigger) {
+			this.allTriggers[fullIdentifier] = trigger
+		} else {
+			delete this.allTriggers[fullIdentifier]
+		}
+
+		delete this.sentkeyDisplays[fullIdentifier] // So that an update will be sent
+
+		this.triggerUpdatePeripherals()
+	}
+
+	triggerUpdatePeripherals(): void {
+		if (this.updatePeripheralsTimeout) {
+			clearTimeout(this.updatePeripheralsTimeout)
+		}
+
+		this.updatePeripheralsTimeout = setTimeout(() => {
+			this.updatePeripheralsTimeout = null
+			this.updatePeripherals()
+		}, 20)
+	}
+	private updatePeripherals(): void {
+		const actions = this.getActions()
+
+		const usedTriggers: {
+			[fullIdentifier: string]: {
+				actions: Action[]
+			}
+		} = {}
+
+		for (const action of actions) {
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				if (this.allTriggers[fullIdentifier]) {
+					if (!usedTriggers[fullIdentifier]) {
+						usedTriggers[fullIdentifier] = {
+							actions: [action],
+						}
+					} else {
+						usedTriggers[fullIdentifier].actions.push(action)
+					}
+				}
+			}
+		}
+
+		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
+			let keyDisplay: KeyDisplay | KeyDisplayTimeline
+			const used = usedTriggers[fullIdentifier]
+			if (used) {
+				keyDisplay = playKeyDisplay(this.storage, used.actions)
+			} else {
+				// is not used anywhere
+				keyDisplay = idleKeyDisplay(this.storage)
+			}
+
+			if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+				this.sentkeyDisplays[fullIdentifier] = keyDisplay
+				setKeyDisplay(this.bridgeHandler, trigger, keyDisplay)
+			}
+		}
+	}
+	private getActions(): Action[] {
 		const rundowns = this.storage.getAllRundowns()
 
 		// Collect all actions from the rundowns:
@@ -44,11 +110,17 @@ export class TriggersHandler {
 				}
 			}
 		}
+		return actions
+	}
+
+	private handleUpdate() {
+		const actions = this.getActions()
 
 		// Go through the currently active (key-pressed) keys, in order to figure out which keys are newly active:
 		const activeTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 		const newlyActiveTriggers: { [fullItentifier: string]: true } = {}
-		for (const activeTrigger of allTriggers) {
+		const allActiveTriggers: ActiveTriggers = [...this.activeKeys, ...this.activeTriggers]
+		for (const activeTrigger of allActiveTriggers) {
 			activeTriggersMap[activeTrigger.fullIdentifier] = activeTrigger
 			// Check if the key (trigger) was newly pressed (active):
 			if (!this.prevTriggersMap[activeTrigger.fullIdentifier]) {
@@ -93,20 +165,7 @@ export class TriggersHandler {
 							groupId: action.group.id,
 							partId: action.part.id,
 						})
-						.then(() => {
-							setKeyDisplay(
-								this.bridgeHandler,
-								matchingTriggers,
-								generatePlayKeyDisplay(this.storage, action)
-							)
-						})
-						.catch((e) => {
-							setKeyDisplay(
-								this.bridgeHandler,
-								matchingTriggers,
-								generateErrorKeyDisplay(this.storage, action, e)
-							)
-						})
+						.catch(console.error)
 				} else if (action.trigger.action === 'stop') {
 					this.ipcServer
 						.stopPart({
@@ -123,96 +182,10 @@ export class TriggersHandler {
 		this.prevTriggersMap = activeTriggersMap
 	}
 }
-interface Action {
-	trigger: Trigger
-	rundownId: string
-	group: Group
-	part: Part
-}
-function setKeyDisplay(bridgeHandler: BridgeHandler, triggers: ActiveTriggers, keyDisplay: KeyDisplayTimeline) {
-	for (const trigger of triggers) {
-		const bridgeConnection = bridgeHandler.getBridgeConnection(trigger.bridgeId)
-		if (bridgeConnection) {
-			bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
-		}
+
+function setKeyDisplay(bridgeHandler: BridgeHandler, trigger: ActiveTrigger, keyDisplay: KeyDisplayTimeline) {
+	const bridgeConnection = bridgeHandler.getBridgeConnection(trigger.bridgeId)
+	if (bridgeConnection) {
+		bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
 	}
-}
-
-function generatePlayKeyDisplay(storage: StorageHandler, action: Action): KeyDisplayTimeline {
-	const rundown = storage.getRundown(action.rundownId)
-
-	const keyTimeline: KeyDisplayTimeline = [
-		{
-			id: 'idle',
-			priority: -1,
-			enable: { while: 1 },
-			content: {
-				attentionLevel: AttentionLevel.NEUTRAL,
-
-				header: {
-					long: `Play ${action.part.name}`,
-					short: `▶ ${action.part.name.slice(-7)}`,
-				},
-				info: {
-					long: `#duration(${action.part.resolved.duration})`,
-				},
-			},
-		},
-	]
-
-	if (rundown) {
-		const group = findGroup(rundown, action.group.id)
-
-		const playData = getGroupPlayData(group?.preparedPlayData ?? null)
-
-		const myPlayhead = playData.playheads[action.group.id]
-
-		if (myPlayhead) {
-			keyTimeline.push({
-				id: 'active',
-				enable: {
-					start: myPlayhead.partStartTime,
-					end: myPlayhead.partEndTime,
-				},
-				content: {
-					attentionLevel: AttentionLevel.NEUTRAL,
-
-					header: {
-						long: `Play ${action.part.name}`,
-						short: `▶ ${action.part.name.slice(-7)}`,
-					},
-					info: {
-						long: `#countdown(${myPlayhead.partEndTime})`,
-					},
-				},
-			})
-		}
-	}
-
-	return keyTimeline
-}
-function generateErrorKeyDisplay(storage: StorageHandler, action: Action, e: any): KeyDisplayTimeline {
-	const keyTimeline: KeyDisplayTimeline = [
-		...generatePlayKeyDisplay(storage, action),
-		{
-			id: 'error',
-			priority: 999,
-			enable: {
-				start: Date.now(),
-				duration: 5 * 1000, // 5 seconds
-			},
-			content: {
-				attentionLevel: AttentionLevel.INFO,
-
-				header: {
-					long: `Error`,
-					short: `Error`,
-				},
-				info: {
-					long: `${e}`,
-				},
-			},
-		},
-	]
-	return keyTimeline
 }
