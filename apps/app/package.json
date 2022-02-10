@@ -1,7 +1,7 @@
 {
 	"name": "superconductor",
 	"private": true,
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "",
 	"main": "dist/main.js",
 	"engines": {
@@ -63,9 +63,9 @@
 		"@fontsource/roboto": "^4.5.2",
 		"@mui/icons-material": "^5.3.1",
 		"@mui/material": "^5.3.1",
-		"@shared/api": "^0.2.1",
-		"@shared/lib": "^0.2.1",
-		"@shared/models": "^0.2.1",
+		"@shared/api": "^0.2.2",
+		"@shared/lib": "^0.2.2",
+		"@shared/models": "^0.2.2",
 		"@sofie-automation/sorensen": "^1.2.0",
 		"axios": "^0.23.0",
 		"bufferutil": "^4.0.1",
