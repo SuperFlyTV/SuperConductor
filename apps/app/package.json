@@ -34,6 +34,7 @@
 	},
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"devDependencies": {
+		"@types/lodash": "^4.14.178",
 		"@types/moment": "^2.13.0",
 		"@types/react": "^17.0.26",
 		"@types/react-dom": "^17.0.9",
@@ -42,20 +43,26 @@
 		"concurrently": "^6.3.0",
 		"css-loader": "^6.3.0",
 		"electron": "^15.1.0",
-		"electron-builder": "^22.14.5",
+		"electron-builder": "^22.14.13",
+		"electron-notarize": "^1.1.1",
 		"html-webpack-plugin": "^5.3.2",
 		"nodemon": "^2.0.13",
 		"sass": "^1.42.1",
 		"sass-loader": "^12.1.0",
 		"style-loader": "^3.3.0",
 		"ts-loader": "^9.2.6",
+		"typed-emitter": "^2.1.0",
 		"webpack": "^5.56.0",
 		"webpack-cli": "^4.8.0",
 		"webpack-dev-server": "^4.3.0"
 	},
 	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
 	"dependencies": {
-		"@atlaskit/toggle": "^12.3.0",
+		"@emotion/react": "^11.7.1",
+		"@emotion/styled": "^11.6.0",
+		"@fontsource/roboto": "^4.5.2",
+		"@mui/icons-material": "^5.3.1",
+		"@mui/material": "^5.3.1",
 		"@shared/api": "^0.1.1",
 		"@shared/lib": "^0.1.1",
 		"@shared/models": "^0.1.1",
@@ -65,9 +72,12 @@
 		"casparcg-connection": "^5.1.0",
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
+		"electron-updater": "^4.6.1",
 		"formik": "^2.2.9",
+		"formik-mui": "^4.0.0-alpha.3",
 		"lodash": "^4.17.21",
 		"moment": "^2.29.1",
+		"notistack": "^2.0.3",
 		"react": "^17.0.2",
 		"react-contexify": "^5.0.0",
 		"react-dnd": "^14.0.4",
@@ -75,13 +85,11 @@
 		"react-dom": "^17.0.2",
 		"react-icons": "^4.3.1",
 		"react-table": "^7.7.0",
-		"react-tabs": "^3.2.3",
-		"react-toastify": "^8.1.0",
 		"short-uuid": "^4.2.0",
 		"superfly-timeline": "^8.2.1",
 		"timeline-state-resolver-types": "^6.2.0-release37.4",
 		"utf-8-validate": "^5.0.2",
-		"yup": "^0.32.11"
+		"yup": "1.0.0-beta.2"
 	},
 	"lint-staged": {
 		"*.{css,json,md,scss}": [
@@ -96,14 +104,12 @@
 		"appId": "super-conductor.superfly.tv",
 		"mac": {
 			"category": "public.app-category.utilities",
-			"target": "dmg"
+			"hardenedRuntime": true,
+			"gatekeeperAssess": false,
+			"entitlements": "entitlements.mac.plist",
+			"entitlementsInherit": "entitlements.mac.plist"
 		},
-		"linux": {
-			"target": [
-				"AppImage",
-				"deb"
-			]
-		},
+		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",
 		"files": [
 			"dist/**/*"

@@ -1,151 +1,56 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
-import { findGroup, findPart, findTimelineObj } from '../../../../lib/util'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { GUIContext } from '../../../contexts/GUI'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { RundownContext } from '../../../contexts/Rundown'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import short from 'short-uuid'
 
 export const TimelineObject: React.FC<{
 	groupId: string
 	partId: string
+	/** Duration of the parent Part [ms] */
 	partDuration: number
+	/** "zoom" [ms/pixel] */
+	msPerPixel: number
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
-}> = ({ groupId, partId, timelineObj, partDuration }) => {
+}> = ({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
 	const { gui, updateGUI } = useContext(GUIContext)
-	const { move, updateMove } = useContext(TimelineObjectMoveContext)
-	const [dragStartValue, setDragStartValue] = useState<number>()
-	const dragDelta = useRef(0)
-	const rundown = useContext(RundownContext)
-	const ipcServer = useContext(IPCServerContext)
+	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
-	const [trackWidth, setTrackWidth] = useState(0)
-	const [isMoved, deltaX] = useMovable(ref.current)
+	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
+		dragging: timelineObjMove.leaderTimelineObjId === timelineObj.obj.id && Boolean(timelineObjMove.moveType),
+		pointerX: timelineObjMove.pointerX ?? 0,
+		pointerY: timelineObjMove.pointerY ?? 0,
+		originX: timelineObjMove.originX ?? 0,
+		originY: timelineObjMove.originY ?? 0,
+	})
 	const keyTracker = useContext(HotkeyContext)
-	const updateMoveRef = useRef(updateMove)
-
-	updateMoveRef.current = updateMove
-
-	// Initialize trackWidth.
-	useLayoutEffect(() => {
-		if (ref.current && ref.current.parentElement) {
-			const size = ref.current.parentElement.getBoundingClientRect()
-			setTrackWidth(size.width)
-		}
-	}, [])
-
-	// Update trackWidth during a move.
-	useLayoutEffect(() => {
-		if (isMoved && ref.current && ref.current.parentElement) {
-			const size = ref.current.parentElement.getBoundingClientRect()
-			setTrackWidth(size.width)
-		}
-	}, [isMoved, ref.current])
+	const [handledMoveStart, setHandledMoveStart] = useState(false)
+	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
+	const [allowDuplicate, setAllowDuplicate] = useState(false)
+	const updateMoveRef = useRef(updateTimelineObjMove)
+	updateMoveRef.current = updateTimelineObjMove
 
 	const obj: TSRTimelineObj = timelineObj.obj
-
-	const start = (obj.enable as any).start
-	const duration = (obj.enable as any).duration
-
-	if (isMoved) {
-		dragDelta.current = deltaX / trackWidth
-	}
-
-	const widthPercentage = (duration / partDuration) * 100 + '%'
-	let startValue = Math.max(0, start / partDuration + (isMoved ? dragDelta.current : 0))
-	const isPartOfGroupMove = typeof move.dragDelta === 'number' && gui.selectedTimelineObjIds.includes(obj.id)
-	if (!isMoved && isPartOfGroupMove) {
-		// This timeline object is part of a selection that is currently being moved,
-		// but it is not the timeline object actually being dragged.
-		// Therefore, it needs to follow the timeline object actually being dragged
-		// such that it moves in unison with it.
-		startValue = Math.max(0, start / partDuration + (move as any).dragDelta)
-	}
+	const instance = resolved.instances[0]
+	const duration = instance.end ? instance.end - instance.start : null
+	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
+	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
-
-	useEffect(() => {
-		if (isMoved) {
-			// A move has begun.
-			updateMoveRef.current({ wasMoved: true })
-			setDragStartValue(startValue)
-
-			return () => {
-				// A move has completed.
-
-				// Update this timeline object.
-				let startDiff: number | undefined
-				if (!Array.isArray(obj.enable)) {
-					const oldStart = obj.enable.start as any
-					const newStart = Math.max(0, start + dragDelta.current * partDuration)
-					startDiff = newStart - oldStart
-					obj.enable.start = newStart
-					ipcServer
-						.updateTimelineObj({
-							rundownId: rundown.id,
-							partId: partId,
-							groupId: groupId,
-							timelineObjId: obj.id,
-							timelineObj: timelineObj,
-						})
-						.catch(console.error)
-				}
-
-				// Update the other selected timeline objects which were also part of this move.
-				if (startDiff) {
-					gui.selectedTimelineObjIds
-						.filter((id) => id !== obj.id)
-						.forEach((id) => {
-							const group = findGroup(rundown, groupId)
-							if (!group) {
-								return
-							}
-
-							const part = findPart(group, partId)
-							if (!part) {
-								return
-							}
-
-							const otherTimelineObj = findTimelineObj(part, id)
-							if (otherTimelineObj && !Array.isArray(otherTimelineObj.obj.enable)) {
-								const oldStart = (otherTimelineObj.obj.enable as any).start
-								const newStart = oldStart + startDiff
-								otherTimelineObj.obj.enable.start = Math.max(0, newStart)
-								ipcServer
-									.updateTimelineObj({
-										rundownId: rundown.id,
-										partId: partId,
-										groupId: groupId,
-										timelineObjId: id,
-										timelineObj: otherTimelineObj,
-									})
-									.catch(console.error)
-							}
-						})
-				}
-
-				// Clear relevant context state.
-				updateMoveRef.current({
-					isMoving: false,
-					dragDelta: undefined,
-				})
-			}
-		}
-	}, [isMoved, partDuration, obj.id, rundown.id, partId, groupId, obj.layer, start, duration])
 
 	const description = describeTimelineObject(obj)
 
-	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	useEffect(() => {
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 		}
 		onKey()
 
@@ -158,48 +63,95 @@ export const TimelineObject: React.FC<{
 			global: true,
 		})
 
+		keyTracker.bind('Alt', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Alt', onKey, {
+			up: true,
+			global: true,
+		})
+
 		return () => {
 			keyTracker.unbind('Shift', onKey)
+			keyTracker.unbind('Alt', onKey)
 		}
-	}, [])
+	}, [keyTracker])
+
+	// This useEffect hook and the one immediately following it are order-sensitive.
 	useEffect(() => {
-		if (isMoved && typeof dragStartValue === 'number') {
-			let newDragDelta = dragDelta.current
+		if (!isMoved) {
+			return
+		}
 
-			// Clamp the drag delta such that the other TimelineObjects which are part of
-			// this move won't continue moving left if this TimelineObject is already at timecode zero.
-			// In other words: this helps ensure that all selected TimelineObjects always move as a group,
-			// and don't slide around on top of each other.
-			if (dragStartValue + dragDelta.current < 0) {
-				newDragDelta = -dragStartValue
+		const update: Partial<TimelineObjectMove> = {
+			wasMoved: null,
+			partId,
+			leaderTimelineObjId: timelineObj.obj.id,
+			moveType: 'whole',
+			dragDelta: deltaX * msPerPixel,
+			pointerX,
+			pointerY,
+			originX,
+			originY,
+			duplicate: allowDuplicate,
+		}
+
+		const hoveredEl = document.elementFromPoint(pointerX, pointerY)
+		const hoveredPartEl = hoveredEl?.closest('.part')
+		if (hoveredPartEl) {
+			const hoveredPartId = hoveredPartEl.getAttribute('data-part-id')
+			if (hoveredPartId === partId) {
+				const hoveredLayerEl = hoveredEl?.closest('.layer')
+				if (hoveredLayerEl) {
+					const hoveredLayerId = hoveredLayerEl.getAttribute('data-layer-id')
+					update.hoveredLayerId = hoveredLayerId
+				}
 			}
+		}
 
-			// Store the modified drag delta so that the other TimelineObjects can use it.
-			updateMoveRef.current({
-				isMoving: true,
-				dragDelta: newDragDelta,
+		updateMoveRef.current(update)
+	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY, allowDuplicate])
+	useEffect(() => {
+		if (isMoved && !handledMoveStart) {
+			// A move has begun.
+
+			setHandledMoveStart(true)
+			updateTimelineObjMove({
+				moveId: short.generate(),
+			})
+		} else if (!isMoved && handledMoveStart) {
+			// A move has completed.
+
+			setHandledMoveStart(false)
+			updateTimelineObjMove({
+				moveType: null,
+				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [isMoved, dragStartValue, dragDelta.current])
+	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
-				moved: isMoved || isPartOfGroupMove,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={() => {
-				const isMultiSelected = gui.selectedTimelineObjIds.length > 1
-				if (isMultiSelected) {
-					if (
-						gui.selectedGroupId === groupId &&
-						gui.selectedPartId === partId &&
-						gui.selectedTimelineObjIds.includes(obj.id)
-					) {
-						return
+				if (
+					gui.selectedGroupId === groupId &&
+					gui.selectedPartId === partId &&
+					gui.selectedTimelineObjIds.includes(obj.id)
+				) {
+					if (allowMultiSelection) {
+						// Deselect this timelineObj.
+						updateGUI({
+							selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
+						})
 					}
+
+					return
 				}
 
 				if (allowMultiSelection) {

@@ -1,3 +1,5 @@
+import copy from 'fast-copy'
+
 export function last<T>(arr: T[]): T | undefined {
 	return arr[arr.length - 1]
 }
@@ -21,7 +23,7 @@ export function omit<T, K extends keyof T>(obj: T, arg: K): Omit<T, K> {
 	return copy
 }
 export function deepClone<T>(data: T): T {
-	return JSON.parse(JSON.stringify(data))
+	return copy(data)
 }
 export function literal<T>(o: T) {
 	return o

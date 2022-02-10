@@ -17,7 +17,7 @@
 		}
 	}
 
-	&.isOver {
+	&.isOver .layer__outline {
 		box-shadow: inset 0px 0px 0px 3px #ffffff85;
 		opacity: 0.8;
 	}
@@ -29,6 +29,16 @@
 		align-items: center;
 		justify-content: right;
 		padding: 0em 0.3em;
+	}
+
+	&__outline {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		pointer-events: none;
 	}
 
 	&__content {
@@ -53,6 +63,7 @@
 
 			&.selected {
 				box-shadow: inset 0px 0px 0px 3px #ffffff85;
+				z-index: 1;
 			}
 
 			&.moved {
@@ -64,6 +75,16 @@
 			}
 
 			@include useObjectTypeStyles();
+		}
+	}
+}
+// Don't transition when moving:
+.layers.moving {
+	.layer {
+		.layer__content {
+			.object {
+				transition: none;
+			}
 		}
 	}
 }

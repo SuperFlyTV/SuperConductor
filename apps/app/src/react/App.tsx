@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 import './styles/app.scss'
-import 'react-tabs/style/react-tabs.css'
-import 'react-toastify/dist/ReactToastify.css'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
@@ -15,7 +17,6 @@ import { GUI, GUIContext } from './contexts/GUI'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
-import { IPCServerMethods } from '../ipc/IPCAPI'
 import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
@@ -24,53 +25,47 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { HotkeyContext } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
-import { Popup } from './components/popup/Popup'
 import { Settings } from './components/settings/Settings'
-import { ToastContainer } from 'react-toastify'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { useSnackbar } from 'notistack'
+import { AppData } from '../models/App/AppData'
+import { ErrorHandlerContext } from './contexts/ErrorHandler'
+
+/**
+ * Used to remove unnecessary cruft from error messages.
+ */
+const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
 export const App = () => {
-	// 	this.ipcClient?.updateProject(project)
-	// })
-	// this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-	// 	this.ipcClient?.updateRundown(fileName, rundown)
-
-	// 	groups: [],
-	// 	media: [],
-	// 	templates: [],
-	// 	mappings: undefined,
-	// })
-
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
+	const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
-
-	const [openRundowns, setOpenRundowns] = useState<{ [rundownId: string]: { name: string } }>({})
+	const currentRundownIdRef = useRef<string>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
+	const { enqueueSnackbar } = useSnackbar()
 
 	useEffect(() => {
-		new IPCClient(ipcRenderer, {
+		currentRundownIdRef.current = currentRundownId
+	}, [currentRundownId])
+
+	useEffect(() => {
+		const ipcClient = new IPCClient(ipcRenderer, {
+			updateAppData: (appData: AppData) => {
+				setAppData(appData)
+			},
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				if (!currentRundownId) {
+				if (!currentRundownIdRef.current) {
 					setCurrentRundownId(rundownId)
 					setCurrentRundown(rundown)
-				} else if (currentRundownId === rundownId) {
+				} else if (currentRundownIdRef.current === rundownId) {
 					setCurrentRundown(rundown)
 				}
-
-				setOpenRundowns((openRundowns) => {
-					const newOpenRundowns = { ...openRundowns }
-					if (rundown) {
-						newOpenRundowns[rundownId] = { name: rundown.name }
-					} else {
-						delete newOpenRundowns[rundownId]
-					}
-					return newOpenRundowns
-				})
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
 				setResources((resources) => {
@@ -98,15 +93,46 @@ export const App = () => {
 				setSettingsOpen(true)
 			},
 		})
+
+		return () => {
+			ipcClient.destroy()
+		}
 	}, [])
 
-	const serverAPI = useMemo<IPCServerMethods>(() => {
+	const handleError = useMemo(() => {
+		return (error: unknown): void => {
+			console.error(error)
+			if (typeof error === 'object' && error !== null && 'message' in error) {
+				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
+			} else if (typeof error === 'string') {
+				enqueueSnackbar(error.replace(ErrorCruftRegex, ''), { variant: 'error' })
+			} else {
+				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
+			}
+		}
+	}, [enqueueSnackbar])
+
+	const errorHandlerContextValue = useMemo(() => {
+		return {
+			handleError,
+		}
+	}, [handleError])
+
+	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		serverAPI.triggerSendAll().catch(console.error)
-	}, [])
+		serverAPI.triggerSendAll().catch(handleError)
+	}, [handleError, serverAPI])
+	useEffect(() => {
+		// Ask the backend for the rundown whenever currentRundownId changes.
+		if (currentRundownId) {
+			serverAPI.triggerSendRundown({ rundownId: currentRundownId }).catch(handleError)
+		} else {
+			setCurrentRundown(undefined)
+		}
+	}, [currentRundownId, handleError, serverAPI])
 
 	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
 	const guiContextValue = useMemo(() => {
@@ -122,13 +148,16 @@ export const App = () => {
 	}, [guiData])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		isMoving: false,
-		wasMoved: false,
+		moveType: null,
+		wasMoved: null,
+		partId: null,
+		hoveredLayerId: null,
+		moveId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
-			move: timelineObjectMoveData,
-			updateMove: (newData: Partial<TimelineObjectMove>) => {
+			timelineObjMove: timelineObjectMoveData,
+			updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => {
 				setTimelineObjectMoveData({
 					...timelineObjectMoveData,
 					...newData,
@@ -141,7 +170,7 @@ export const App = () => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.side-bar')
-		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.wasMoved) {
+		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {
@@ -156,21 +185,49 @@ export const App = () => {
 				}
 			})
 		}
-		timelineObjectMoveContextValue.updateMove({ wasMoved: false })
 	}
 
 	useEffect(() => {
 		sorensen.init().catch(console.error)
 	}, [])
 
+	const handleSettingsClose = () => {
+		setSettingsOpen(false)
+	}
+
+	const openRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === true
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
+	const closedRundowns = useMemo(() => {
+		if (!appData) {
+			return []
+		}
+
+		return Object.entries(appData.rundowns)
+			.filter(([_rundownId, rundown]) => {
+				return rundown.open === false
+			})
+			.map(([rundownId, closedRundown]) => ({
+				rundownId,
+				name: closedRundown.name,
+			}))
+	}, [appData])
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
-
-	const rundowns0 = Object.entries(openRundowns).map(([rundownId, openRundown]) => ({
-		rundownId,
-		name: openRundown.name,
-	}))
 
 	return (
 		<DndProvider backend={HTML5Backend}>
@@ -180,42 +237,69 @@ export const App = () => {
 						<ProjectContext.Provider value={project}>
 							<ResourcesContext.Provider value={resources}>
 								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-									<div className="app" onPointerDown={handlePointerDownAnywhere}>
-										<div className="top-header">
-											<TopHeader
-												rundowns={rundowns0}
-												onSelect={(rundownId) => {
-													setCurrentRundownId(rundownId)
-												}}
-												bridgeStatuses={bridgeStatuses}
-											/>
+									<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+										<div className="app" onPointerDown={handlePointerDownAnywhere}>
+											<div className="top-header">
+												<TopHeader
+													selectedRundownId={currentRundownId}
+													openRundowns={openRundowns}
+													closedRundowns={closedRundowns}
+													onSelect={(rundownId) => {
+														setCurrentRundownId(rundownId)
+													}}
+													onClose={(rundownId) => {
+														serverAPI.closeRundown({ rundownId }).catch(handleError)
+														const nextRundown = openRundowns.find(
+															(rd) => rd.rundownId !== rundownId
+														)
+														if (nextRundown) {
+															setCurrentRundownId(nextRundown.rundownId)
+														} else {
+															setCurrentRundownId(undefined)
+														}
+													}}
+													onOpen={(rundownId) => {
+														serverAPI.openRundown({ rundownId }).catch(handleError)
+													}}
+													onCreate={(rundownName) => {
+														serverAPI.newRundown({ name: rundownName }).catch(handleError)
+													}}
+													onRename={(rundownId, newName) => {
+														serverAPI
+															.renameRundown({ rundownId, newName })
+															.catch(handleError)
+													}}
+													onSettingsClick={() => {
+														setSettingsOpen(true)
+													}}
+													bridgeStatuses={bridgeStatuses}
+												/>
+											</div>
+
+											{currentRundown ? (
+												<RundownContext.Provider value={currentRundown}>
+													<div className="main-area">
+														<RundownView mappings={project.mappings} />
+													</div>
+													<div className="side-bar">
+														<Sidebar mappings={project.mappings} />
+													</div>
+												</RundownContext.Provider>
+											) : (
+												<div>Loading...</div>
+											)}
+
+											<Dialog open={settingsOpen} onClose={handleSettingsClose}>
+												<DialogTitle>Preferences</DialogTitle>
+												<DialogContent className="settings-dialog">
+													<Settings project={project} />
+												</DialogContent>
+												<DialogActions>
+													<Button onClick={handleSettingsClose}>Close</Button>
+												</DialogActions>
+											</Dialog>
 										</div>
-
-										{currentRundown ? (
-											<RundownContext.Provider value={currentRundown}>
-												<div className="main-area">
-													<RundownView mappings={project.mappings} />
-												</div>
-												<div className="side-bar">
-													<Sidebar mappings={project.mappings} />
-												</div>
-											</RundownContext.Provider>
-										) : (
-											<div>Loading...</div>
-										)}
-
-										{settingsOpen && (
-											<Popup
-												className="popup-settings"
-												title="Settings"
-												onClose={() => setSettingsOpen(false)}
-											>
-												<Settings project={project}></Settings>
-											</Popup>
-										)}
-
-										<ToastContainer theme="colored" />
-									</div>
+									</ErrorHandlerContext.Provider>
 								</TimelineObjectMoveContext.Provider>
 							</ResourcesContext.Provider>
 						</ProjectContext.Provider>

@@ -2,6 +2,7 @@ import { IPCServerMethods } from '../../ipc/IPCAPI'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { Group } from '../../models/rundown/Group'
 import { Project } from '../../models/project/Project'
+import { Part } from '../../models/rundown/Part'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -18,16 +19,13 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('triggerSendRundown', data)
 	}
 
-	playPart(data: { groupId: string; partId: string }): Promise<void> {
+	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}
-	queuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('queuePartGroup', data)
+	stopPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		return this.invokeServerMethod('stopPart', data)
 	}
-	unqueuePartGroup(data: { groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('unqueuePartGroup', data)
-	}
-	stopGroup(data: { groupId: string }): Promise<void> {
+	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}
 	updateTimelineObj(data: {
@@ -48,13 +46,19 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<string> {
 		return this.invokeServerMethod('newPart', data)
 	}
-	newGroup(data: { name: string }): Promise<string> {
+	updatePart(data: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<void> {
+		return this.invokeServerMethod('updatePart', data)
+	}
+	newGroup(data: { rundownId: string; name: string }): Promise<string> {
 		return this.invokeServerMethod('newGroup', data)
 	}
-	deletePart(data: { groupId: string; partId: string }): Promise<void> {
+	updateGroup(data: { rundownId: string; groupId: string; group: Group }): Promise<void> {
+		return this.invokeServerMethod('updateGroup', data)
+	}
+	deletePart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('deletePart', data)
 	}
-	deleteGroup(data: { groupId: string }): Promise<void> {
+	deleteGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('deleteGroup', data)
 	}
 	movePart(data: {
@@ -63,10 +67,18 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<Group | undefined> {
 		return this.invokeServerMethod('movePart', data)
 	}
-	newTemplateData(data: { timelineObjId: string }): Promise<void> {
+	newTemplateData(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<void> {
 		return this.invokeServerMethod('newTemplateData', data)
 	}
 	updateTemplateData(data: {
+		rundownId: string
+		groupId: string
+		partId: string
 		timelineObjId: string
 		key: string
 		changedItemId: string
@@ -74,25 +86,50 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('updateTemplateData', data)
 	}
-	deleteTemplateData(data: { timelineObjId: string; key: string }): Promise<void> {
-		return this.invokeServerMethod('deleteTemplateData', data)
-	}
-	deleteTimelineObj(data: { timelineObjId: string }): Promise<void> {
-		return this.invokeServerMethod('deleteTimelineObj', data)
-	}
-	addResourceToTimeline(data: {
+	deleteTemplateData(data: {
+		rundownId: string
 		groupId: string
 		partId: string
-		layerId: string
+		timelineObjId: string
+		key: string
+	}): Promise<void> {
+		return this.invokeServerMethod('deleteTemplateData', data)
+	}
+	deleteTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<void> {
+		return this.invokeServerMethod('deleteTimelineObj', data)
+	}
+	addTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+		timelineObj: TimelineObj
+	}): Promise<void> {
+		return this.invokeServerMethod('addTimelineObj', data)
+	}
+	addResourceToTimeline(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		/** What layer to insert resource into. null = insert into a new layer */
+		layerId: string | null
 		resourceId: string
 	}): Promise<void> {
 		return this.invokeServerMethod('addResourceToTimeline', data)
 	}
-	toggleGroupLoop(data: { groupId: string; value: boolean }): Promise<void> {
+	toggleGroupLoop(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupLoop', data)
 	}
-	toggleGroupAutoplay(data: { groupId: string; value: boolean }): Promise<void> {
+	toggleGroupAutoplay(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupAutoplay', data)
+	}
+	toggleGroupOneAtATime(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('toggleGroupOneAtATime', data)
 	}
 	refreshResources(): Promise<void> {
 		return this.invokeServerMethod('refreshResources')
@@ -102,5 +139,25 @@ export class IPCServer implements IPCServerMethods {
 	}
 	updateProject(data: { id: string; project: Project }): Promise<void> {
 		return this.invokeServerMethod('updateProject', data)
+	}
+	newRundown(data: { name: string }): Promise<void> {
+		return this.invokeServerMethod('newRundown', data)
+	}
+	deleteRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('deleteRundown', data)
+	}
+	openRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('openRundown', data)
+	}
+	closeRundown(data: { rundownId: string }): Promise<void> {
+		return this.invokeServerMethod('closeRundown', data)
+	}
+	listRundowns(data: {
+		projectId: string
+	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
+		return this.invokeServerMethod('listRundowns', data)
+	}
+	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
+		return this.invokeServerMethod('renameRundown', data)
 	}
 }

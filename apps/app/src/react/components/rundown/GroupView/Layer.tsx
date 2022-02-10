@@ -4,6 +4,7 @@ import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { TimelineObject } from './TimelineObject'
 
@@ -17,8 +18,10 @@ export const Layer: React.FC<{
 	}[]
 	layerId: string
 	partDuration: number
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration }) => {
+	msPerPixel: number
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
@@ -31,7 +34,7 @@ export const Layer: React.FC<{
 						layerId,
 						resourceId: item.resource.id,
 					})
-					.catch(console.error)
+					.catch(handleError)
 			},
 			collect: (monitor) => ({
 				isOver: !!monitor.isOver(),
@@ -41,7 +44,7 @@ export const Layer: React.FC<{
 	)
 
 	return (
-		<div ref={drop} className={classNames('layer', { isOver })}>
+		<div ref={drop} className={classNames('layer', { isOver })} data-layer-id={layerId}>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
 					return (
@@ -52,10 +55,12 @@ export const Layer: React.FC<{
 							timelineObj={objectOnLayer.timelineObj}
 							resolved={objectOnLayer.resolved}
 							partDuration={partDuration}
+							msPerPixel={msPerPixel}
 						></TimelineObject>
 					)
 				})}
 			</div>
+			<div className="layer__outline">{/* empty */}</div>
 		</div>
 	)
 }

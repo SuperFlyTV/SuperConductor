@@ -2,21 +2,38 @@ import { useCallback, useEffect, useState } from 'react'
 
 type HTMLElementEventHandler<T> = (this: HTMLElement, ev: T) => any
 
+type StartingValues = {
+	dragging: boolean
+	pointerX: number
+	pointerY: number
+	originX: number
+	originY: number
+}
+
 /**
  * The minimum distance, in pixels, that a drag must be performed before isDragging is set to true.
  */
 const MIN_DRAG_DISTANCE = 1
 
-export function useMovable(el: HTMLElement | null): [boolean, number, number] {
-	const [isDragging, setIsDragging] = useState(false)
-	const [isPointerDown, setIsPointerDown] = useState(false)
+export function useMovable(
+	el: HTMLElement | null,
+	startingValues: StartingValues = {
+		dragging: false,
+		pointerX: 0,
+		pointerY: 0,
+		originX: 0,
+		originY: 0,
+	}
+): [boolean, number, number, number, number, number, number] {
+	const [isDragging, setIsDragging] = useState(startingValues.dragging)
+	const [isPointerDown, setIsPointerDown] = useState(startingValues.dragging)
 	const [pointerPosition, setPointerPosition] = useState({
-		clientX: 0,
-		clientY: 0,
+		clientX: startingValues.pointerX,
+		clientY: startingValues.pointerY,
 	})
 	const [originPointerPosition, setOriginPointerPosition] = useState({
-		clientX: 0,
-		clientY: 0,
+		clientX: startingValues.originX,
+		clientY: startingValues.originY,
 	})
 	const onPointerMove = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
 		setPointerPosition({
@@ -28,30 +45,24 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 		setIsPointerDown(false)
 		ev.preventDefault()
 	}, [])
-	const onPointerDown = useCallback<HTMLElementEventHandler<PointerEvent>>(
-		(ev) => {
-			if (ev.pointerType === 'mouse' && ev.buttons !== 0b0001) {
-				return
-			}
+	const onPointerDown = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
+		if (ev.pointerType === 'mouse' && ev.buttons !== 0b0001) {
+			return
+		}
 
-			document.body.addEventListener('pointerup', onPointerUp)
-			document.body.addEventListener('pointermove', onPointerMove)
+		// These are order-sensitive.
+		setOriginPointerPosition({
+			clientX: ev.clientX,
+			clientY: ev.clientY,
+		})
+		setPointerPosition({
+			clientX: ev.clientX,
+			clientY: ev.clientY,
+		})
+		setIsPointerDown(true)
 
-			// These are order-sensitive.
-			setOriginPointerPosition({
-				clientX: ev.clientX,
-				clientY: ev.clientY,
-			})
-			setPointerPosition({
-				clientX: ev.clientX,
-				clientY: ev.clientY,
-			})
-			setIsPointerDown(true)
-
-			ev.preventDefault()
-		},
-		[onPointerUp]
-	)
+		ev.preventDefault()
+	}, [])
 
 	useEffect(() => {
 		const horizontalMoveMeetsThreshold =
@@ -75,11 +86,25 @@ export function useMovable(el: HTMLElement | null): [boolean, number, number] {
 
 			el.removeEventListener('pointerdown', onPointerDown)
 		}
-	}, [el])
+	}, [el, onPointerDown])
+
+	useEffect(() => {
+		document.body.addEventListener('pointerup', onPointerUp)
+		document.body.addEventListener('pointermove', onPointerMove)
+
+		return () => {
+			document.body.removeEventListener('pointerup', onPointerUp)
+			document.body.removeEventListener('pointermove', onPointerMove)
+		}
+	}, [onPointerMove, onPointerUp])
 
 	return [
 		isDragging,
 		pointerPosition.clientX - originPointerPosition.clientX,
 		pointerPosition.clientY - originPointerPosition.clientY,
+		pointerPosition.clientX,
+		pointerPosition.clientY,
+		originPointerPosition.clientX,
+		originPointerPosition.clientY,
 	]
 }

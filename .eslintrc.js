@@ -16,13 +16,13 @@ module.exports = {
 		'node/no-unpublished-import': [
 			'error',
 			{
-				allowModules: ['electron'],
+				allowModules: ['electron', 'typed-emitter'],
 			},
 		],
 		'node/no-unpublished-require': [
 			'error',
 			{
-				allowModules: ['html-webpack-plugin'],
+				allowModules: ['html-webpack-plugin', 'electron-notarize'],
 			},
 		],
 		'node/no-extraneous-import': [
@@ -45,7 +45,7 @@ module.exports = {
 		// Note: these replace the values defined above, so make sure to extend them if they are needed
 		{
 			files: ['*.tsx'],
-			extends: [...tsExtends, 'plugin:react/recommended'],
+			extends: [...tsExtends, 'plugin:react/recommended', 'plugin:react-hooks/recommended'],
 			parserOptions: {
 				...tsParser.parserOptions,
 				ecmaFeatures: {

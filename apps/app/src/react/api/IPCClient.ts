@@ -3,12 +3,14 @@ import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
+import { AppData } from '../../models/App/AppData'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
 	constructor(
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
+			updateAppData: (appData: AppData) => void
 			updateProject: (project: Project) => void
 			updateRundown: (fileName: string, rundown: Rundown) => void
 			updateResource: (id: string, resource: ResourceAny | null) => void
@@ -16,16 +18,22 @@ export class IPCClient implements IPCClientMethods {
 			openSettings: () => void
 		}
 	) {
-		this.ipcRenderer.on('callMethod', (event, methodname: string, ...args: any[]) => {
-			const fcn = (this as any)[methodname]
-			if (!fcn) {
-				console.error(`IPCClient: method ${methodname} not found`)
-			} else {
-				fcn.apply(this, args)
-			}
-		})
+		this.handleCallMethod = this.handleCallMethod.bind(this)
+		this.ipcRenderer.on('callMethod', this.handleCallMethod)
 	}
 
+	private handleCallMethod(_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void {
+		const fcn = (this as any)[methodname]
+		if (!fcn) {
+			console.error(`IPCClient: method ${methodname} not found`)
+		} else {
+			fcn.apply(this, args)
+		}
+	}
+
+	updateAppData(appData: AppData): void {
+		this.callbacks.updateAppData(appData)
+	}
 	updateProject(project: Project): void {
 		this.callbacks.updateProject(project)
 	}
@@ -40,5 +48,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	openSettings(): void {
 		this.callbacks.openSettings()
+	}
+	destroy(): void {
+		this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 }

@@ -1,11 +1,37 @@
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { Octokit } from '@octokit/rest'
+import semver from 'semver'
 import { ResourceAny } from '@shared/models'
 import { WebsocketConnection, WebsocketServer, BridgeAPI } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { TSR } from './TSR'
 
-const CURRENT_VERSION = 0
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
 const SERVER_PORT = 5401
+
+console.log('TSR-Bridge current version:', CURRENT_VERSION)
+
+const octokit = new Octokit()
+octokit.rest.repos
+	.listReleases({
+		owner: 'SuperFlyTV',
+		repo: 'SuperConductor',
+		per_page: 1,
+		page: 1,
+	})
+	.then((response) => {
+		const latestVersion = response.data[0].tag_name
+		if (semver.lt(CURRENT_VERSION, response.data[0].tag_name)) {
+			console.warn(
+				'TSR-Bridge is out of date! Current version: v%s, latest version: %s',
+				CURRENT_VERSION,
+				latestVersion
+			)
+			console.warn('Visit https://github.com/SuperFlyTV/SuperConductor/releases to download the latest version.')
+		}
+	})
+	.catch(console.error)
 
 const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
@@ -24,13 +50,13 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 			// Reply to TPT with our id
 			send({ type: 'init', id: bridgeId, version: CURRENT_VERSION })
 		} else if (msg.type === 'addTimeline') {
-			playTimeline(msg.timelineId, msg.timeline)
+			playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
-			stopTimeline(msg.timelineId)
+			stopTimeline(msg.timelineId, msg.currentTime)
 		} else if (msg.type === 'getTimelineIds') {
 			send({ type: 'timelineIds', timelineIds: Object.keys(storedTimelines) })
 		} else if (msg.type === 'setMappings') {
-			updateMappings(msg.mappings)
+			updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
 			tsr.updateDevices(msg.devices, send).catch(console.error)
 		} else if (msg.type === 'refreshResources') {
@@ -66,7 +92,9 @@ const storedTimelines: {
 	[id: string]: TSRTimeline
 } = {}
 
-function updateTSR() {
+function updateTSR(currentTime: number) {
+	tsr.setCurrentTime(currentTime)
+
 	const fullTimeline: TSRTimeline = []
 
 	for (const timeline of Object.values(storedTimelines)) {
@@ -80,18 +108,18 @@ function updateTSR() {
 	tsr.conductor.setTimelineAndMappings(fullTimeline, mapping)
 }
 
-function playTimeline(id: string, newTimeline: TSRTimeline) {
+function playTimeline(id: string, newTimeline: TSRTimeline, currentTime: number) {
 	storedTimelines[id] = newTimeline
 
-	updateTSR()
+	updateTSR(currentTime)
 	return Date.now()
 }
-function updateMappings(newMapping: Mappings) {
+function updateMappings(newMapping: Mappings, currentTime: number) {
 	mapping = newMapping
-	updateTSR()
+	updateTSR(currentTime)
 }
 
-function stopTimeline(id: string) {
+function stopTimeline(id: string, currentTime: number) {
 	delete storedTimelines[id]
-	updateTSR()
+	updateTSR(currentTime)
 }

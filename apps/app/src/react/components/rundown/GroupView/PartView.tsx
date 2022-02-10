@@ -1,23 +1,47 @@
-import React, { useContext, useMemo, useRef, useState } from 'react'
+import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react'
 import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { ResolvedTimelineObject, Resolver } from 'superfly-timeline'
-import { getCurrentlyPlayingInfo, getResolvedTimelineTotalDuration } from '../../../../lib/util'
+import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
+import { allowMovingItemIntoGroup, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
-import { GroupPlayhead } from '../../../../lib/playhead'
+import { GroupPlayData } from '../../../../lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
+import { EmptyLayer } from './EmptyLayer'
+import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { GUIContext } from '../../../contexts/GUI'
+import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
+import { HotkeyContext } from '../../../contexts/Hotkey'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { ProjectContext } from '../../../contexts/Project'
+import _ from 'lodash'
+import { filterMapping } from '../../../../lib/TSRMappings'
+
+/**
+ * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
+ */
+const SNAP_DISTANCE_IN_PIXELS = 10
+
+/**
+ * A an array of unique identifiers indicating which timelineObj move actions have been handled.
+ */
+const HANDLED_MOVE_IDS: string[] = []
+
+/**
+ * The maximum length of the HANDLED_MOVE_IDS array.
+ */
+const MAX_HANDLED_MOVE_IDS = 100
 
 export type MovePartFn = (data: {
 	dragGroup: Group
@@ -31,50 +55,358 @@ export const PartView: React.FC<{
 	parentGroup: Group
 	parentGroupIndex: number
 	part: Part
-	playhead: GroupPlayhead | null
+	playhead: GroupPlayData
 	mappings: Mappings
 	movePart: MovePartFn
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { gui } = useContext(GUIContext)
+	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
+	const keyTracker = useContext(HotkeyContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+	const project = useContext(ProjectContext)
+	const layersDivRef = useRef<HTMLDivElement>(null)
+	const changedObjects = useRef<{
+		[objectId: string]: TimelineObj
+	} | null>(null)
+	const duplicatedObjects = useRef<{
+		[objectId: string]: TimelineObj
+	} | null>(null)
+	const [trackWidth, setTrackWidth] = useState(0)
+	const [bypassSnapping, setBypassSnapping] = useState(false)
+	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
+	const updateMoveRef = useRef(updateTimelineObjMove)
+	updateMoveRef.current = updateTimelineObjMove
+
+	const cache = useRef<ResolverCache>({})
 
 	const [partPropsOpen, setPartPropsOpen] = useState(false)
 
-	const { maxDuration, resolvedTimeline } = useMemo(() => {
-		const resolvedTimeline = Resolver.resolveTimeline(
+	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
+		const orgResolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),
-			{ time: 0 }
+			{ time: 0, cache: cache.current }
 		)
+		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline)
+		const msPerPixel = orgMaxDuration / trackWidth
+		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
+
+		return { orgResolvedTimeline, orgMaxDuration, msPerPixel, snapDistanceInMilliseconds }
+	}, [part.timeline, trackWidth])
+
+	const snapPoints = useMemo(() => {
+		const snapPoints: Array<SnapPoint> = []
+
+		for (const timelineObj of Object.values(orgResolvedTimeline.objects)) {
+			if (Array.isArray(timelineObj.enable)) {
+				return
+			}
+			const instance = timelineObj.resolved.instances[0]
+
+			const referring: string = [...instance.references, ...timelineObj.resolved.directReferences].join(',')
+
+			snapPoints.push({
+				timelineObjId: timelineObj.id,
+				time: instance.start,
+				expression: `#${timelineObj.id}.start`,
+				referring,
+			})
+			if (instance.end) {
+				snapPoints.push({
+					timelineObjId: timelineObj.id,
+					time: instance.end,
+					expression: `#${timelineObj.id}.end`,
+					referring,
+				})
+			}
+		}
+		snapPoints.sort(sortSnapPoints)
+		return snapPoints
+	}, [orgResolvedTimeline])
+
+	/**
+	 * This useEffect hook is part of a solution to the problem of
+	 * timelineObjs briefly flashing back to their original start position
+	 * after the user releases their mouse button after performing a drag move.
+	 *
+	 * In other words: this solves a purely aesthetic problem.
+	 */
+	useEffect(() => {
+		if (waitingForBackendUpdate) {
+			// A move has completed and we're waiting for the backend to give us the updated timelineObjs.
+
+			return () => {
+				// The backend has updated us (we know because `part` now points to a new object)
+				// and we can clear the partId of the `move` context so that we stop displaying
+				// timelineObjs with a drag delta applied.
+				//
+				// This is where a move operation has truly completed, including the backend response.
+
+				setWaitingForBackendUpdate(false)
+				updateMoveRef.current({
+					partId: null,
+					moveId: undefined,
+				})
+			}
+		}
+	}, [waitingForBackendUpdate, part])
+
+	// Initialize trackWidth.
+	useLayoutEffect(() => {
+		if (layersDivRef.current) {
+			const size = layersDivRef.current.getBoundingClientRect()
+			setTrackWidth(size.width)
+		}
+	}, [])
+
+	// Update trackWidth at the end of a move.
+	// @TODO: Update trackWidth _during_ a move?
+	useLayoutEffect(() => {
+		if (timelineObjMove.moveType && timelineObjMove.partId === part.id && layersDivRef.current) {
+			const size = layersDivRef.current.getBoundingClientRect()
+			setTrackWidth(size.width)
+		}
+	}, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
+
+	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects } = useMemo(() => {
+		let modifiedTimeline: TimelineObj[]
+		let resolvedTimeline: ResolvedTimeline
+		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
+		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
+
+		const dragDelta = timelineObjMove.dragDelta || 0
+		const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
+		const leaderObjOriginalLayerId = leaderObj?.obj.layer
+		const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
+
+		if (
+			(dragDelta || leaderObjLayerChanged) &&
+			timelineObjMove.partId === part.id &&
+			leaderObj &&
+			timelineObjMove.leaderTimelineObjId &&
+			timelineObjMove.moveId !== null &&
+			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
+		) {
+			// Handle movement, snapping
+
+			// Check the the layer movement is legal:
+			let moveToLayerId = timelineObjMove.hoveredLayerId
+			if (moveToLayerId) {
+				const newLayerMapping = project.mappings[moveToLayerId]
+				if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+					moveToLayerId = null
+					handleError('Unable to move to that layer (incompatible layer type)')
+				}
+			}
+
+			try {
+				const o = applyMovementToTimeline(
+					part.timeline,
+					orgResolvedTimeline,
+					bypassSnapping ? [] : snapPoints || [],
+					snapDistanceInMilliseconds,
+					dragDelta,
+					// The use of wasMoved here helps prevent a brief flash at the
+					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+					timelineObjMove.moveType ?? timelineObjMove.wasMoved,
+					timelineObjMove.leaderTimelineObjId,
+					gui.selectedTimelineObjIds,
+					cache.current,
+					moveToLayerId,
+					Boolean(timelineObjMove.duplicate)
+				)
+				modifiedTimeline = o.modifiedTimeline
+				resolvedTimeline = o.resolvedTimeline
+				newChangedObjects = o.changedObjects
+				newDuplicatedObjects = o.duplicatedObjects
+
+				if (
+					typeof leaderObjOriginalLayerId === 'string' &&
+					!resolvedTimeline.layers[leaderObjOriginalLayerId]
+				) {
+					// If the leaderObj's original layer is now empty, it won't be rendered,
+					// making it impossible for the user to move the leaderObj back to whence it came.
+					// So, we add an empty layer object here to force it to remain visible.
+					resolvedTimeline.layers[leaderObjOriginalLayerId] = []
+				}
+			} catch (e) {
+				// If there was an error applying the movement (for example a circular dependency),
+				// reset the movement to the original state:
+
+				console.error('Error when resolving the moved timeline, reverting to original state.')
+				console.error(e)
+
+				handleError('There was an error when trying to move')
+
+				modifiedTimeline = part.timeline
+				resolvedTimeline = orgResolvedTimeline
+				newChangedObjects = null
+				newDuplicatedObjects = null
+			}
+		} else {
+			modifiedTimeline = part.timeline
+			resolvedTimeline = orgResolvedTimeline
+		}
+
 		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		return { maxDuration, resolvedTimeline }
-	}, [part.timeline])
+		return { maxDuration, modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects }
+	}, [
+		timelineObjMove,
+		part.timeline,
+		part.id,
+		project.mappings,
+		handleError,
+		orgResolvedTimeline,
+		bypassSnapping,
+		snapPoints,
+		snapDistanceInMilliseconds,
+		gui.selectedTimelineObjIds,
+	])
 
-	const isGroupPlaying = !!playhead
-	const isPartPlaying = isGroupPlaying && playhead.partId === part.id
+	useEffect(() => {
+		if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
+			changedObjects.current = newChangedObjects
+		}
+	}, [newChangedObjects])
 
-	const timesUntilStart = (isGroupPlaying && playhead.timeUntilParts[part.id]) || null
-	const playheadTime = isPartPlaying ? playhead.playheadTime : 0
-	const countDownTime = isPartPlaying ? playhead.partEndTime - playhead.playheadTime : 0
+	useEffect(() => {
+		if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+			duplicatedObjects.current = newDuplicatedObjects
+		}
+	}, [newDuplicatedObjects])
 
-	const isActive: 'active' | 'queued' | null = isPartPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
+	useEffect(() => {
+		// Handle when we stop moving:
+		if (
+			timelineObjMove.partId === part.id &&
+			timelineObjMove.moveType === null &&
+			timelineObjMove.wasMoved !== null &&
+			timelineObjMove.moveId !== null &&
+			!waitingForBackendUpdate &&
+			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
+		) {
+			setWaitingForBackendUpdate(true)
+			HANDLED_MOVE_IDS.unshift(timelineObjMove.moveId)
+
+			// Prevent the list of handled move IDs from growing infinitely:
+			if (HANDLED_MOVE_IDS.length > MAX_HANDLED_MOVE_IDS) {
+				HANDLED_MOVE_IDS.length = MAX_HANDLED_MOVE_IDS
+			}
+
+			const promises: Promise<unknown>[] = []
+
+			if (changedObjects.current) {
+				for (const obj of Object.values(changedObjects.current)) {
+					const promise = ipcServer.updateTimelineObj({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: obj.obj.id,
+						timelineObj: obj,
+					})
+					promises.push(promise)
+				}
+				changedObjects.current = null
+			}
+			if (duplicatedObjects.current) {
+				for (const obj of Object.values(duplicatedObjects.current)) {
+					const promise = ipcServer.addTimelineObj({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: obj.obj.id,
+						timelineObj: obj,
+					})
+					promises.push(promise)
+				}
+				duplicatedObjects.current = null
+			}
+
+			Promise.allSettled(promises)
+				.then((results) => {
+					let foundNonError = false
+					for (const result of results) {
+						if (result.status === 'rejected') {
+							handleError(result.reason)
+						} else if (result.status === 'fulfilled') {
+							foundNonError = true
+						}
+					}
+
+					// If every single promise errored, then we need to manually set
+					// waitingForBackendUpdate to false here because we won't get any
+					// updates from the backend.
+					if (!foundNonError) {
+						setWaitingForBackendUpdate(false)
+					}
+				})
+				.catch((error) => {
+					handleError(error)
+					setWaitingForBackendUpdate(false)
+				})
+		}
+	}, [
+		part.id,
+		snapDistanceInMilliseconds,
+		ipcServer,
+		rundownId,
+		parentGroup.id,
+		waitingForBackendUpdate,
+		handleError,
+		timelineObjMove.partId,
+		timelineObjMove.moveType,
+		timelineObjMove.wasMoved,
+		timelineObjMove.moveId,
+	])
+
+	useEffect(() => {
+		const onKey = () => {
+			const pressed = keyTracker.getPressedKeys()
+			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+		}
+		onKey()
+
+		keyTracker.bind('Shift', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Shift', onKey, {
+			up: true,
+			global: true,
+		})
+
+		return () => {
+			keyTracker.unbind('Shift', onKey)
+		}
+	}, [keyTracker])
+
+	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
+	const partIsPlaying = partPlayhead !== undefined
+
+	const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
+
+	const playheadTime = partPlayhead ? partPlayhead.playheadTime : 0
+	const countDownTime = partPlayhead
+		? partPlayhead.partEndTime - partPlayhead.partStartTime - partPlayhead.playheadTime
+		: 0
+
+	const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
-	const groupNotPlayingAndQueued: boolean =
-		parentGroup.playout.startTime === null && parentGroup.playout.partIds.length > 0
-	const cannotPlay: boolean = groupNotPlayingAndQueued && parentGroup.playout.partIds[0] !== part.id
 	const handleStart = () => {
-		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
+		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Stop button:
-	const cannotStop = !isGroupPlaying
+	const canStop = parentGroup.oneAtATime ? playhead.groupIsPlaying : partIsPlaying
 	const handleStop = () => {
-		ipcServer.stopGroup({ rundownId, groupId: parentGroup.id }).catch(console.error)
+		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Delete button:
 	const handleDelete = () => {
-		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(console.error)
+		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -90,43 +422,22 @@ export const PartView: React.FC<{
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			canDrop: (item: PartDragItem) => {
-				// Don't allow dropping into a transparent group.
-				if (parentGroup.transparent) {
-					return false
-				}
-
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
-				)
-				const isMovingToNewGroup = item.group.id !== parentGroup.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
-					return false
-				}
-
-				return true
+			canDrop: (movedItem: PartDragItem) => {
+				return !!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)
 			},
-			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
+			async hover(movedItem: PartDragItem, monitor: DropTargetMonitor) {
 				if (!previewRef.current) {
 					return
 				}
-				const dragGroup = item.group
-				const dragGroupIndex = item.groupIndex
-				const dragPart = item.part
-				const dragIndex = item.index
+				const dragGroup = movedItem.group
+				const dragGroupIndex = movedItem.groupIndex
+				const dragPart = movedItem.part
+				const dragIndex = movedItem.index
 				let hoverIndex = partIndex
 				let hoverGroup: Group | null = parentGroup
 				const hoverGroupIndex = parentGroupIndex
 
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(dragGroup)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === dragPart.id
-				)
-				const isMovingToNewGroup = dragGroup.id !== hoverGroup.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				if (!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, parentGroup)) {
 					return
 				}
 
@@ -190,8 +501,8 @@ export const PartView: React.FC<{
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				item.index = hoverIndex
-				item.group = newGroup
+				movedItem.index = hoverIndex
+				movedItem.group = newGroup
 			},
 		},
 		[parentGroup, parentGroupIndex, partIndex]
@@ -220,6 +531,7 @@ export const PartView: React.FC<{
 	return (
 		<div
 			data-handler-id={handlerId}
+			data-part-id={part.id}
 			ref={previewRef}
 			className={classNames('part', {
 				active: isActive === 'active',
@@ -231,12 +543,17 @@ export const PartView: React.FC<{
 				<MdOutlineDragIndicator />
 			</div>
 			<div className="part__meta">
-				<div className="title" onDoubleClick={() => setPartPropsOpen(true)}>
+				<div
+					className="title"
+					onDoubleClick={() => {
+						setPartPropsOpen(true)
+					}}
+				>
 					{part.name}
 				</div>
 				<div className="controls">
-					<PlayControlBtn mode={'play'} onClick={handleStart} disabled={cannotPlay} />
-					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={cannotStop} />
+					<PlayControlBtn mode={'play'} onClick={handleStart} />
+					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
 				</div>
 			</div>
@@ -244,7 +561,7 @@ export const PartView: React.FC<{
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					return (
 						<div className="part__layer-names__name" key={layerId}>
-							{mappings[layerId].layerName ?? layerId}
+							{mappings[layerId]?.layerName ?? layerId}
 						</div>
 					)
 				})}
@@ -264,7 +581,12 @@ export const PartView: React.FC<{
 					{playheadTime ? (
 						<PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} />
 					) : null}
-					<div className="layers">
+					<div
+						className={classNames('layers', {
+							moving: timelineObjMove.moveType !== null,
+						})}
+						ref={layersDivRef}
+					>
 						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
@@ -272,7 +594,7 @@ export const PartView: React.FC<{
 							}[] = compact(
 								objectIds.map((objectId) => {
 									const resolvedObj = resolvedTimeline.objects[objectId]
-									const timelineObj = part.timeline.find((obj) => obj.obj.id === objectId)
+									const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
 
 									if (resolvedObj && timelineObj) {
 										return {
@@ -289,30 +611,42 @@ export const PartView: React.FC<{
 									rundownId={rundownId}
 									groupId={parentGroup.id}
 									partId={part.id}
-									partDuration={maxDuration}
+									partDuration={orgMaxDuration}
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
+									msPerPixel={msPerPixel}
 								/>
 							)
 						})}
+
+						<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
 					</div>
 				</div>
 			</div>
-			{partPropsOpen && (
-				<PartPropertiesDialog
-					initial={part}
-					onAccepted={() => {
-						// ipcServer.newPart({
-						// 	rundownId,
-						// 	name: part.name,
-						// })
-						setPartPropsOpen(false)
-					}}
-					onDiscarded={() => {
-						setPartPropsOpen(false)
-					}}
-				/>
-			)}
+
+			<PartPropertiesDialog
+				initial={part}
+				open={partPropsOpen}
+				title="Edit Part"
+				acceptLabel="Save"
+				onAccepted={(updatedPart) => {
+					ipcServer
+						.updatePart({
+							rundownId,
+							groupId: parentGroup.id,
+							partId: part.id,
+							part: {
+								...part,
+								name: updatedPart.name,
+							},
+						})
+						.catch(handleError)
+					setPartPropsOpen(false)
+				}}
+				onDiscarded={() => {
+					setPartPropsOpen(false)
+				}}
+			/>
 		</div>
 	)
 }
@@ -340,4 +674,16 @@ const sortLayers = (entries: TEntries, mappings: Mappings) => {
 
 		return 0
 	})
+}
+
+const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
+	if (a.time < b.time) {
+		return -1
+	}
+
+	if (a.time > b.time) {
+		return 1
+	}
+
+	return 0
 }

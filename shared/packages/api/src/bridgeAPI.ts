@@ -14,7 +14,7 @@ export namespace BridgeAPI {
 		export interface Init extends MessageBase {
 			type: 'init'
 			id: string
-			version: number
+			version: string
 		}
 		export interface Status extends MessageBase {
 			type: 'status'
@@ -65,11 +65,13 @@ export namespace BridgeAPI {
 
 			timelineId: string
 			timeline: TSRTimeline
+			currentTime: number
 		}
 		export interface RemoveTimeline extends MessageBase {
 			type: 'removeTimeline'
 
 			timelineId: string
+			currentTime: number
 		}
 		export interface GetTimelineIds extends MessageBase {
 			type: 'getTimelineIds'
@@ -79,6 +81,7 @@ export namespace BridgeAPI {
 			type: 'setMappings'
 
 			mappings: Mappings
+			currentTime: number
 		}
 		export interface RefreshResources extends MessageBase {
 			type: 'refreshResources'

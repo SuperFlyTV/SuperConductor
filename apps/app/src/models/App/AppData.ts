@@ -1,11 +1,14 @@
 export interface AppData {
 	windowPosition: WindowPosition
 	project: {
-		fileName: string
+		id: string
 	}
 	rundowns: {
-		fileName: string
-	}[]
+		[fileName: string]: {
+			name: string
+			open: boolean
+		}
+	}
 }
 export type WindowPosition =
 	| {

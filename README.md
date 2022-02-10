@@ -12,34 +12,28 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 
 ### macOS
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.dmg` and `tsr-bridge-macos`.
-2. Run `SuperConductor-X.Y.Z.dmg` to install the main SuperConductor application, then launch SuperConductor from the Applications menu in Finder.
-3. Open a terminal and execute the following:
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `tsr-bridge-macos` and `SuperConductor-X.Y.Z.dmg` or `SuperConductor-X.Y.Z-mac.zip`.
+2. If you downloaded the `.dmg`, run `SuperConductor-X.Y.Z.dmg` to install the main SuperConductor application, then launch SuperConductor from the Applications menu in Finder.
+3. If you downloaded the `.zip`, double-click it to extract it, then double click on the SuperConductor application to run it.
+4. Open a terminal and execute the following:
 
    ```bash
    chmod +x Downloads/tsr-bridge-macos
    ```
 
-4. Back in Finder, Ctrl+Click on `tsr-bridge-macos` and click "Open". You'll receive a warning about the identity of the developer being unable to be confirmed. Click the "Open" button in this popup.
+5. Back in Finder, Ctrl+Click on `tsr-bridge-macos` and click "Open". You'll receive a warning about the identity of the developer being unable to be confirmed. Click the "Open" button in this popup.
 
 ### Linux (Ubuntu)
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `super-conductor_X.Y.Z_amd64.deb` (or `SuperConductor-X.Y.Z.AppImage`) and `tsr-bridge-vX.Y.Z-linux`.
-2. If you downloaded the `.deb` package, you can install it by double clicking on it or by running the following:
-
-   ```bash
-   # Replace X.Y.Z with the actual version number.
-   sudo dpkg -i super-conductor_X.Y.Z._amd64.deb
-   ```
-
-3. If you downloaded the `.AppImage` package, execute the following before double-clicking on it to run it:
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.AppImage` and `tsr-bridge-vX.Y.Z-linux`.
+2. Execute the following before double-clicking on the AppImage it to run it:
 
    ```bash
    # Replace X.Y.Z with the actual version number.
    chmod +x Downloads/SuperConductor-X.Y.Z.AppImage
    ```
 
-4. Run `tsr-bridge`:
+3. Run `tsr-bridge`:
 
    ```bash
    # Replace X.Y.Z with the actual version number.
@@ -57,6 +51,14 @@ If you've installed the SuperConductor UI and `tsr-bridge` on two different comp
 4. Edit the `URL` field to point to the computer where `tsr-bridge` is running by replacing `localhost` with the IP address of that computer.
 
 ## For Developers
+
+### Quick start
+
+- [Install Yarn](https://yarnpkg.com/getting-started/install)
+- `cd >>path-to-this-folder<<`
+- `yarn`
+- `yarn setup`
+- `yarn start:all` (Starts both the Superconductor and TSR-bridge)
 
 ### Architecture Overview
 
@@ -95,6 +97,6 @@ yarn build:binary
 
 ### Making a new release
 
-1. Run `lerna version` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
+1. Run `lerna version --force-publish` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
 2. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish.
 3. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release.

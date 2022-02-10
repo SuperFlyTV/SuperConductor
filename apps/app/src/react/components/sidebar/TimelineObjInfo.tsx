@@ -7,10 +7,16 @@ import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow, FormRow } from './InfoGroup'
 import { InfoGroup } from './InfoGroup'
 import { deepClone } from '@shared/lib'
+import { Button } from '@mui/material'
+import { TimelineEnable } from 'superfly-timeline'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { GUIContext } from '../../contexts/GUI'
 
 type MyFormValues = {
-	enableStart: number
-	enableDuration: number
+	enableStartNum: number
+	enableStartExpression: string
+	enableDurationNum: number
+	enableDurationExpression: string
 	layer: string | number
 }
 
@@ -22,10 +28,23 @@ export const TimelineObjInfo: React.FC<{
 	mappings: Mappings | undefined
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { gui, updateGUI } = useContext(GUIContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
+		? props.timelineObj.obj.enable[0]
+		: props.timelineObj.obj.enable
+
+	const startIsExpression = typeof enable.start === 'string'
+	const durationIsExpression = typeof enable.duration === 'string'
 
 	const initialValues: MyFormValues = {
-		enableStart: (props.timelineObj.obj.enable as any)?.start,
-		enableDuration: (props.timelineObj.obj.enable as any)?.duration,
+		enableStartNum: typeof enable.start === 'number' ? enable.start : 0,
+		enableStartExpression: typeof enable.start === 'string' ? enable.start : '',
+
+		enableDurationNum: typeof enable.duration === 'number' ? enable.duration : 0,
+		enableDurationExpression: typeof enable.duration === 'string' ? enable.duration : '',
+
 		layer: props.timelineObj.obj.layer,
 	}
 
@@ -39,8 +58,9 @@ export const TimelineObjInfo: React.FC<{
 				onSubmit={(values, actions) => {
 					const editedTimelineObj = deepClone(props.timelineObj)
 					if (!Array.isArray(editedTimelineObj.obj.enable)) {
-						editedTimelineObj.obj.enable.start = values.enableStart
-						editedTimelineObj.obj.enable.duration = values.enableDuration
+						editedTimelineObj.obj.enable.start = values.enableStartExpression || values.enableStartNum || 0
+						editedTimelineObj.obj.enable.duration =
+							values.enableDurationExpression || values.enableDurationNum || 0
 					}
 					editedTimelineObj.obj.layer = values.layer
 					ipcServer
@@ -51,7 +71,7 @@ export const TimelineObjInfo: React.FC<{
 							timelineObjId: props.timelineObj.obj.id,
 							timelineObj: editedTimelineObj,
 						})
-						.catch(console.error)
+						.catch(handleError)
 					actions.setSubmitting(false)
 				}}
 			>
@@ -68,16 +88,42 @@ export const TimelineObjInfo: React.FC<{
 									))}
 							</Field>
 						</FormRow>
-						<FormRow>
-							<label htmlFor="enableStart">Start (ms)</label>
-							<Field id="enableStart" name="enableStart" type="number" placeholder="0" />
-							<ErrorMessage name="enableStart" component="div" />
-						</FormRow>
-						<FormRow>
-							<label htmlFor="enableDuration">Duration (ms)</label>
-							<Field id="enableDuration" name="enableDuration" type="number" placeholder="0" />
-							<ErrorMessage name="enableDuration" component="div" />
-						</FormRow>
+						{startIsExpression ? (
+							<FormRow>
+								<label htmlFor="enableStartExpression">Start</label>
+								<Field
+									id="enableStartExpression"
+									name="enableStartExpression"
+									type="text"
+									placeholder=""
+								/>
+								<ErrorMessage name="enableStartExpression" component="div" />
+							</FormRow>
+						) : (
+							<FormRow>
+								<label htmlFor="enableStartNum">Start (ms)</label>
+								<Field id="enableStartNum" name="enableStartNum" type="number" placeholder="0" />
+								<ErrorMessage name="enableStartNum" component="div" />
+							</FormRow>
+						)}
+						{durationIsExpression ? (
+							<FormRow>
+								<label htmlFor="enableDurationExpression">Duration</label>
+								<Field
+									id="enableDurationExpression"
+									name="enableDurationExpression"
+									type="text"
+									placeholder=""
+								/>
+								<ErrorMessage name="enableDurationExpression" component="div" />
+							</FormRow>
+						) : (
+							<FormRow>
+								<label htmlFor="enableDurationNum">Duration (ms)</label>
+								<Field id="enableDurationNum" name="enableDurationNum" type="number" placeholder="0" />
+								<ErrorMessage name="enableDurationNum" component="div" />
+							</FormRow>
+						)}
 						<div className="btn-row-equal">
 							<TrashBtn
 								onClick={() => {
@@ -88,12 +134,19 @@ export const TimelineObjInfo: React.FC<{
 											partId: props.partId,
 											timelineObjId: props.timelineObj.obj.id,
 										})
-										.catch(console.error)
+										.then(() => {
+											updateGUI({
+												selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
+													(id) => id !== props.timelineObj.obj.id
+												),
+											})
+										})
+										.catch(handleError)
 								}}
 							/>
-							<button type="submit" className="btn form">
+							<Button type="submit" className="btn" variant="contained">
 								Save
-							</button>
+							</Button>
 						</div>
 					</Form>
 				)}

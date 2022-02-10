@@ -1,17 +1,18 @@
 import React, { useCallback, useContext, useRef, useState } from 'react'
-import { Popup } from '../popup/Popup'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
-import { FormRow } from '../sidebar/InfoGroup'
 import { DropTargetMonitor, useDrop } from 'react-dnd'
 import { DragItemTypes, PartDragItem } from '../../api/DragItemTypes'
 import { MovePartFn } from './GroupView/PartView'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { Mappings } from 'timeline-state-resolver-types'
+import { Button } from '@mui/material'
+import { PartPropertiesDialog } from './PartPropertiesDialog'
+import { GroupPropertiesDialog } from './GroupPropertiesDialog'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -103,84 +104,55 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
+	const { handleError } = useContext(ErrorHandlerContext)
 
 	return (
 		<>
 			<div className="group-list__control-row">
-				<button className="btn form" onClick={() => setNewPartOpen(true)}>
+				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</button>
-				<button className="btn form" onClick={() => setNewGroupOpen(true)}>
+				</Button>
+				<Button className="btn" variant="contained" onClick={() => setNewGroupOpen(true)}>
 					New group
-				</button>
+				</Button>
 			</div>
-			{newPartOpen && (
-				<Popup onClose={() => setNewPartOpen(false)}>
-					<Formik
-						initialValues={{ name: '' }}
-						enableReinitialize={true}
-						onSubmit={(values) => {
-							ipcServer
-								.newPart({
-									rundownId: rundown.id,
-									name: values.name,
-									groupId: null,
-								})
-								.catch(console.error)
-							setNewPartOpen(false)
-						}}
-					>
-						{() => (
-							<Form>
-								<FormRow>
-									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Part name" autoFocus={true} />
-									<ErrorMessage name="name" component="div" />
-								</FormRow>
-								<div className="btn-row-right">
-									<button type="submit" className="btn form">
-										Create
-									</button>
-								</div>
-							</Form>
-						)}
-					</Formik>
-				</Popup>
-			)}
 
-			{newGroupOpen && (
-				<Popup onClose={() => setNewGroupOpen(false)}>
-					<Formik
-						initialValues={{ name: '' }}
-						enableReinitialize={true}
-						onSubmit={(values, _actions) => {
-							ipcServer
-								.newGroup({
-									rundownId: rundown.id,
-									name: values.name,
-								})
-								.catch(console.error)
+			<PartPropertiesDialog
+				open={newPartOpen}
+				title="New Part"
+				acceptLabel="Create"
+				onAccepted={(newPart) => {
+					ipcServer
+						.newPart({
+							rundownId: rundown.id,
+							name: newPart.name,
+							groupId: null,
+						})
+						.catch(handleError)
+					setNewPartOpen(false)
+				}}
+				onDiscarded={() => {
+					setNewPartOpen(false)
+				}}
+			/>
 
-							setNewGroupOpen(false)
-						}}
-					>
-						{() => (
-							<Form>
-								<FormRow>
-									<label htmlFor="name">Name</label>
-									<Field id="name" name="name" placeholder="Group name" autoFocus={true} />
-									<ErrorMessage name="name" component="div" />
-								</FormRow>
-								<div className="btn-row-right">
-									<button type="submit" className="btn form">
-										Create
-									</button>
-								</div>
-							</Form>
-						)}
-					</Formik>
-				</Popup>
-			)}
+			<GroupPropertiesDialog
+				open={newGroupOpen}
+				title="New Group"
+				acceptLabel="Create"
+				onAccepted={(newGroup) => {
+					ipcServer
+						.newGroup({
+							rundownId: rundown.id,
+							name: newGroup.name,
+						})
+						.catch(handleError)
+					setNewGroupOpen(false)
+				}}
+				onDiscarded={() => {
+					setNewGroupOpen(false)
+				}}
+			/>
 		</>
 	)
 }

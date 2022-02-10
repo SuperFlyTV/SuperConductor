@@ -1,16 +1,20 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
-import Toggle from '@atlaskit/toggle'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { MovePartFn, PartView } from './PartView'
-import { getGroupPlayhead, GroupPlayhead } from '../../../../lib/playhead'
-import { GroupPreparedPlayheadData } from '../../../../models/GUI/PreparedPlayhead'
+import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
+import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
-import { getCurrentlyPlayingInfo } from '../../../../lib/util'
 import { Mappings } from 'timeline-state-resolver-types'
+import { Button, FormControlLabel, Switch } from '@mui/material'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
+import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import _ from 'lodash'
+import { assertNever } from '@shared/lib'
+import { allowMovingItemIntoGroup } from '../../../../lib/util'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -20,31 +24,45 @@ export const GroupView: React.FC<{
 	movePart: MovePartFn
 }> = ({ group, groupIndex, rundownId, mappings, movePart }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
 
-	const playheadData = useRef<GroupPreparedPlayheadData | null>(null)
+	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
 	useEffect(() => {
-		playheadData.current = group.playheadData
+		playheadData.current = group.preparedPlayData
+
+		// console.log('playheadData', playheadData.current)
 
 		const activeParts0: { [partId: string]: true } = {}
 
-		if (group.playheadData) {
-			for (const part of group.playheadData.parts) {
-				activeParts0[part.part.id] = true
-			}
-			if (group.playheadData.repeating) {
-				for (const part of group.playheadData.repeating.parts) {
+		if (group.preparedPlayData) {
+			if (group.preparedPlayData.type === 'single') {
+				for (const part of group.preparedPlayData.parts) {
 					activeParts0[part.part.id] = true
 				}
+				if (group.preparedPlayData.repeating) {
+					for (const part of group.preparedPlayData.repeating.parts) {
+						activeParts0[part.part.id] = true
+					}
+				}
+			} else if (group.preparedPlayData.type === 'multi') {
+				for (const part of Object.values(group.preparedPlayData.parts)) {
+					activeParts0[part.part.id] = true
+				}
+			} else {
+				assertNever(group.preparedPlayData)
 			}
 		}
 		setActiveParts(activeParts0)
 	}, [group])
 
-	const [playhead, setPlayhead] = useState<GroupPlayhead | null>(null)
+	const [playhead, setPlayhead] = useState<GroupPlayData>(getGroupPlayData(playheadData.current))
 	const requestRef = useRef<number>(0)
 	const updatePlayhead = () => {
-		setPlayhead(getGroupPlayhead(playheadData.current))
+		const newPlayhead = getGroupPlayData(playheadData.current)
+		// console.log('playhead', newPlayhead)
+		setPlayhead(newPlayhead)
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 	}
 	useEffect(() => {
@@ -58,14 +76,15 @@ export const GroupView: React.FC<{
 	const wasPlayingRef = useRef(false)
 	const stopPlayingRef = useRef(true)
 	useEffect(() => {
-		if (group.playheadData && !playhead && wasPlayingRef.current) {
-			// We believe that we are are playing, but we don't have a playhead.
+		if (group.preparedPlayData && wasPlayingRef.current && !group.oneAtATime && !playhead.groupIsPlaying) {
+			// We believe that we are are playing, but the playhead says otherwise.
 			// That probably means that we have reached the end.
 
 			if (stopPlayingRef.current) {
+				// Stop the group, so that the "stop"-buttons reflect the correct state:
 				console.log('Auto-stopping group', group.id)
 
-				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(console.error)
+				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 				stopPlayingRef.current = false
 			}
 		} else {
@@ -73,15 +92,15 @@ export const GroupView: React.FC<{
 		}
 
 		// We are definitely playing
-		if (group.playheadData && playhead) {
+		if (group.preparedPlayData && playhead.groupIsPlaying) {
 			wasPlayingRef.current = true
 		} else {
 			wasPlayingRef.current = false
 		}
-	}, [playhead])
+	}, [playhead, group, ipcServer, rundownId])
 
-	const isGroupPlaying = !!playhead
 	const wrapperRef = useRef<HTMLDivElement>(null)
+
 	const [{ handlerId }, drop] = useDrop(
 		{
 			accept: DragItemTypes.PART_ITEM,
@@ -90,43 +109,22 @@ export const GroupView: React.FC<{
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			canDrop: (item: PartDragItem) => {
-				// Don't allow dropping into a transparent group.
-				if (group.transparent) {
-					return false
-				}
-
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
-				)
-				const isMovingToNewGroup = item.group.id !== group.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
-					return false
-				}
-
-				return true
+			canDrop: (movedItem: PartDragItem) => {
+				return !!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, group)
 			},
-			async hover(item: PartDragItem) {
+			async hover(movedItem: PartDragItem) {
 				// Don't use the GroupView as a drop target when there are Parts present.
 				if (group.parts.length > 0) {
 					return
 				}
 
-				// Don't allow dropping a currently-playing Part onto a Group which is currently playing
-				const { partPlayheadData: fromGroupPartPlayheadData } = getCurrentlyPlayingInfo(item.group)
-				const movedPartIsPlaying = Boolean(
-					fromGroupPartPlayheadData && fromGroupPartPlayheadData.part.id === item.part.id
-				)
-				const isMovingToNewGroup = item.group.id !== group.id
-				if (movedPartIsPlaying && isMovingToNewGroup && isGroupPlaying) {
+				if (!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, group)) {
 					return
 				}
 
-				const dragGroup = item.group
-				const dragPart = item.part
-				const dragIndex = item.index
+				const dragGroup = movedItem.group
+				const dragPart = movedItem.part
+				const dragIndex = movedItem.index
 				const hoverIndex = 0
 				const hoverGroup = group
 
@@ -151,8 +149,8 @@ export const GroupView: React.FC<{
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				item.index = hoverIndex
-				item.group = newGroup
+				movedItem.index = hoverIndex
+				movedItem.group = newGroup
 			},
 		},
 		[group]
@@ -175,47 +173,88 @@ export const GroupView: React.FC<{
 			</div>
 		) : null
 	} else {
+		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying)
+		// (group.oneAtATime && playhead.anyPartIsPlaying) || !group.oneAtATime
+		// || !group.oneAtATime // && !playhead.groupIsPlaying
+
+		const canModifyLoop = group.oneAtATime
+		const canModifyAutoPlay = group.oneAtATime
+
 		return (
 			<div ref={wrapperRef} className="group" data-handler-id={handlerId}>
 				<div className="group__header">
-					<div className="title">{group.name}</div>
+					<div
+						className="title"
+						onDoubleClick={() => {
+							setGroupPropsOpen(true)
+						}}
+					>
+						{group.name}
+					</div>
 					<div className="controls">
 						<div className="toggle">
-							<Toggle
-								id="auto-play"
-								isChecked={group.autoPlay}
-								onChange={() => {
-									ipcServer
-										.toggleGroupAutoplay({
-											rundownId,
-											groupId: group.id,
-											value: !group.autoPlay,
-										})
-										.catch(console.error)
-								}}
+							<FormControlLabel
+								control={
+									<Switch
+										checked={group.oneAtATime && group.autoPlay}
+										onChange={() => {
+											ipcServer
+												.toggleGroupAutoplay({
+													rundownId,
+													groupId: group.id,
+													value: !group.autoPlay,
+												})
+												.catch(handleError)
+										}}
+									/>
+								}
+								label="Auto-step"
+								labelPlacement="start"
+								disabled={!canModifyAutoPlay}
 							/>
-							<label htmlFor="auto-play" className="toggle-label">
-								Auto-play
-							</label>
 						</div>
 
 						<div className="toggle">
-							<Toggle
-								id="loop"
-								isChecked={group.loop}
-								onChange={() => {
-									ipcServer
-										.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
-										.catch(console.error)
-								}}
+							<FormControlLabel
+								control={
+									<Switch
+										checked={group.oneAtATime && group.loop}
+										onChange={() => {
+											ipcServer
+												.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
+												.catch(handleError)
+										}}
+									/>
+								}
+								label="Loop"
+								labelPlacement="start"
+								disabled={!canModifyLoop}
 							/>
-							<label htmlFor="loop" className="toggle-label">
-								Loop
-							</label>
+						</div>
+						<div className="toggle">
+							<FormControlLabel
+								control={
+									<Switch
+										checked={group.oneAtATime}
+										onChange={() => {
+											ipcServer
+												.toggleGroupOneAtATime({
+													rundownId,
+													groupId: group.id,
+													value: !group.oneAtATime,
+												})
+												.catch(console.error)
+										}}
+									/>
+								}
+								label="One-at-a-time"
+								labelPlacement="start"
+								disabled={!canModifyOneAtATime}
+							/>
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(console.error)
+								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 							}}
 						/>
 					</div>
@@ -236,6 +275,29 @@ export const GroupView: React.FC<{
 
 					<GroupOptions rundownId={rundownId} group={group} />
 				</div>
+
+				<GroupPropertiesDialog
+					initial={group}
+					open={groupPropsOpen}
+					title="Edit Group"
+					acceptLabel="Save"
+					onAccepted={(updatedGroup) => {
+						ipcServer
+							.updateGroup({
+								rundownId,
+								groupId: group.id,
+								group: {
+									...group,
+									name: updatedGroup.name,
+								},
+							})
+							.catch(handleError)
+						setGroupPropsOpen(false)
+					}}
+					onDiscarded={() => {
+						setGroupPropsOpen(false)
+					}}
+				/>
 			</div>
 		)
 	}
@@ -243,31 +305,35 @@ export const GroupView: React.FC<{
 
 const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
 	return (
 		<>
 			<div className="group-list__control-row">
-				<button className="btn form" onClick={() => setNewPartOpen(true)}>
+				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</button>
+				</Button>
 			</div>
-			{newPartOpen && (
-				<PartPropertiesDialog
-					acceptLabel="Create"
-					onAccepted={(part) => {
-						ipcServer
-							.newPart({
-								rundownId,
-								name: part.name,
-								groupId: group.id,
-							})
-							.catch(console.error)
-						setNewPartOpen(false)
-					}}
-					onDiscarded={() => setNewPartOpen(false)}
-				/>
-			)}
+
+			<PartPropertiesDialog
+				open={newPartOpen}
+				title="New Part"
+				acceptLabel="Create"
+				onAccepted={(newPart) => {
+					ipcServer
+						.newPart({
+							rundownId,
+							name: newPart.name,
+							groupId: group.id,
+						})
+						.catch(handleError)
+					setNewPartOpen(false)
+				}}
+				onDiscarded={() => {
+					setNewPartOpen(false)
+				}}
+			/>
 		</>
 	)
 }
