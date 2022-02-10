@@ -1,5 +1,5 @@
 {
-	"name": "super-conductor-monorepo",
+	"name": "superconductor-monorepo",
 	"version": "0.1.0",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -27,7 +27,7 @@
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
 		"start:all": "lerna run build:shared && lerna run dev --stream",
-		"dev:electron": "lerna run dev --stream --scope=super-conductor",
+		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge"
 	},
 	"devDependencies": {
