@@ -12,7 +12,6 @@ import { Button, FormControlLabel, Switch } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import _ from 'lodash'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
 
