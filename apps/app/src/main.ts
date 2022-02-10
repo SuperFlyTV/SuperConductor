@@ -61,6 +61,26 @@ const createWindow = (): void => {
 				})
 				.catch(console.error)
 		},
+		onUpdateClick: async () => {
+			try {
+				const result = await autoUpdater.checkForUpdatesAndNotify()
+				if (!result) {
+					await dialog.showMessageBox(win, {
+						type: 'error',
+						title: 'Error',
+						message: `There was an error when checking for the latest version of SuperConductor. Please try again later.`,
+					})
+				} else if (result.updateInfo && result.updateInfo.version === CURRENT_VERSION) {
+					await dialog.showMessageBox(win, {
+						type: 'info',
+						title: 'Up-to-date',
+						message: `You have the latest version of SuperConductor (v${CURRENT_VERSION}).`,
+					})
+				}
+			} catch (error) {
+				console.error(error)
+			}
+		},
 	})
 	const menu = generateMenu(menuOpts)
 	Menu.setApplicationMenu(menu)
