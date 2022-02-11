@@ -46,6 +46,7 @@ export class SessionHandler extends EventEmitter {
 	updateResource(id: string, resource: ResourceAny | null) {
 		if (resource) {
 			this.resources[id] = resource
+			this.resourcesHasChanged[id] = true
 		} else {
 			delete this.resources[id]
 			this.resourcesHasChanged[id] = true
