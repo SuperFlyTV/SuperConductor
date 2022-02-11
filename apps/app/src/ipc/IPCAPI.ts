@@ -22,6 +22,7 @@ export const enum ActionDescription {
 	MovePart = 'move part',
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
+	AddTimelineObj = 'add timeline obj',
 	NewTemplateData = 'add new template data',
 	UpdateTemplateData = 'update template data',
 	DeleteTemplateData = 'delete template data',
@@ -93,6 +94,13 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
+	}) => Promise<unknown>
+	addTimelineObj: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+		timelineObj: TimelineObj
 	}) => Promise<unknown>
 	addResourceToTimeline: (data: {
 		rundownId: string

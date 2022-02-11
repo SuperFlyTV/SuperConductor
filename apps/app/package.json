@@ -1,7 +1,7 @@
 {
-	"name": "super-conductor",
+	"name": "superconductor",
 	"private": true,
-	"version": "0.1.2",
+	"version": "0.2.2",
 	"description": "",
 	"main": "dist/main.js",
 	"engines": {
@@ -43,7 +43,8 @@
 		"concurrently": "^6.3.0",
 		"css-loader": "^6.3.0",
 		"electron": "^15.1.0",
-		"electron-builder": "^22.14.5",
+		"electron-builder": "^22.14.13",
+		"electron-notarize": "^1.1.1",
 		"html-webpack-plugin": "^5.3.2",
 		"nodemon": "^2.0.13",
 		"sass": "^1.42.1",
@@ -62,9 +63,9 @@
 		"@fontsource/roboto": "^4.5.2",
 		"@mui/icons-material": "^5.3.1",
 		"@mui/material": "^5.3.1",
-		"@shared/api": "^0.1.1",
-		"@shared/lib": "^0.1.1",
-		"@shared/models": "^0.1.1",
+		"@shared/api": "^0.2.2",
+		"@shared/lib": "^0.2.2",
+		"@shared/models": "^0.2.2",
 		"@sofie-automation/sorensen": "^1.2.0",
 		"axios": "^0.23.0",
 		"bufferutil": "^4.0.1",
@@ -100,10 +101,15 @@
 	},
 	"build": {
 		"productName": "SuperConductor",
-		"appId": "super-conductor.superfly.tv",
+		"appId": "superconductor.superfly.tv",
 		"mac": {
-			"category": "public.app-category.utilities"
+			"category": "public.app-category.utilities",
+			"hardenedRuntime": true,
+			"gatekeeperAssess": false,
+			"entitlements": "entitlements.mac.plist",
+			"entitlementsInherit": "entitlements.mac.plist"
 		},
+		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",
 		"files": [
 			"dist/**/*"

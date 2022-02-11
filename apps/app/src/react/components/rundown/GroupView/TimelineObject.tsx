@@ -7,7 +7,8 @@ import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
+import short from 'short-uuid'
 
 export const TimelineObject: React.FC<{
 	groupId: string
@@ -20,13 +21,21 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 }> = ({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
 	const { gui, updateGUI } = useContext(GUIContext)
-	const { move, updateMove } = useContext(TimelineObjectMoveContext)
+	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
-	const [isMoved, deltaX] = useMovable(ref.current)
+	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
+		dragging: timelineObjMove.leaderTimelineObjId === timelineObj.obj.id && Boolean(timelineObjMove.moveType),
+		pointerX: timelineObjMove.pointerX ?? 0,
+		pointerY: timelineObjMove.pointerY ?? 0,
+		originX: timelineObjMove.originX ?? 0,
+		originY: timelineObjMove.originY ?? 0,
+	})
 	const hotkeyContext = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
-	const updateMoveRef = useRef(updateMove)
-	updateMoveRef.current = updateMove
+	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
+	const [allowDuplicate, setAllowDuplicate] = useState(false)
+	const updateMoveRef = useRef(updateTimelineObjMove)
+	updateMoveRef.current = updateTimelineObjMove
 
 	const obj: TSRTimelineObj = timelineObj.obj
 	const instance = resolved.instances[0]
@@ -35,28 +44,14 @@ export const TimelineObject: React.FC<{
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
 
-	useEffect(() => {
-		if (isMoved && !handledMoveStart) {
-			// A move has begun.
-			setHandledMoveStart(true)
-		} else if (!isMoved && handledMoveStart) {
-			// A move has completed.
-			setHandledMoveStart(false)
-			updateMove({
-				moveType: null,
-				wasMoved: move.moveType,
-			})
-		}
-	}, [handledMoveStart, isMoved, move.moveType, partId, updateMove])
-
 	const description = describeTimelineObject(obj)
 
-	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	useEffect(() => {
 		const keyTracker = hotkeyContext.sorensen
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
+			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 		}
 		onKey()
 
@@ -69,21 +64,73 @@ export const TimelineObject: React.FC<{
 			global: true,
 		})
 
+		keyTracker.bind('Alt', onKey, {
+			up: false,
+			global: true,
+		})
+		keyTracker.bind('Alt', onKey, {
+			up: true,
+			global: true,
+		})
+
 		return () => {
 			keyTracker.unbind('Shift', onKey)
+			keyTracker.unbind('Alt', onKey)
 		}
 	}, [hotkeyContext])
+
+	// This useEffect hook and the one immediately following it are order-sensitive.
 	useEffect(() => {
-		if (isMoved) {
-			updateMoveRef.current({
-				wasMoved: null,
-				partId,
-				leaderTimelineObjId: timelineObj.obj.id,
-				moveType: 'whole',
-				dragDelta: deltaX * msPerPixel,
+		if (!isMoved) {
+			return
+		}
+
+		const update: Partial<TimelineObjectMove> = {
+			wasMoved: null,
+			partId,
+			leaderTimelineObjId: timelineObj.obj.id,
+			moveType: 'whole',
+			dragDelta: deltaX * msPerPixel,
+			pointerX,
+			pointerY,
+			originX,
+			originY,
+			duplicate: allowDuplicate,
+		}
+
+		const hoveredEl = document.elementFromPoint(pointerX, pointerY)
+		const hoveredPartEl = hoveredEl?.closest('.part')
+		if (hoveredPartEl) {
+			const hoveredPartId = hoveredPartEl.getAttribute('data-part-id')
+			if (hoveredPartId === partId) {
+				const hoveredLayerEl = hoveredEl?.closest('.layer')
+				if (hoveredLayerEl) {
+					const hoveredLayerId = hoveredLayerEl.getAttribute('data-layer-id')
+					update.hoveredLayerId = hoveredLayerId
+				}
+			}
+		}
+
+		updateMoveRef.current(update)
+	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY, allowDuplicate])
+	useEffect(() => {
+		if (isMoved && !handledMoveStart) {
+			// A move has begun.
+
+			setHandledMoveStart(true)
+			updateTimelineObjMove({
+				moveId: short.generate(),
+			})
+		} else if (!isMoved && handledMoveStart) {
+			// A move has completed.
+
+			setHandledMoveStart(false)
+			updateTimelineObjMove({
+				moveType: null,
+				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId])
+	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
 	return (
 		<div

@@ -10,6 +10,7 @@ import { deepClone } from '@shared/lib'
 import { Button } from '@mui/material'
 import { TimelineEnable } from 'superfly-timeline'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { GUIContext } from '../../contexts/GUI'
 
 type MyFormValues = {
 	enableStartNum: number
@@ -27,6 +28,7 @@ export const TimelineObjInfo: React.FC<{
 	mappings: Mappings | undefined
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
+	const { gui, updateGUI } = useContext(GUIContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
@@ -131,6 +133,13 @@ export const TimelineObjInfo: React.FC<{
 											groupId: props.groupId,
 											partId: props.partId,
 											timelineObjId: props.timelineObj.obj.id,
+										})
+										.then(() => {
+											updateGUI({
+												selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
+													(id) => id !== props.timelineObj.obj.id
+												),
+											})
 										})
 										.catch(handleError)
 								}}

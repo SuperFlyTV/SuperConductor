@@ -214,11 +214,13 @@ export const App = () => {
 		moveType: null,
 		wasMoved: null,
 		partId: null,
+		hoveredLayerId: null,
+		moveId: null,
 	})
 	const timelineObjectMoveContextValue = useMemo(() => {
 		return {
-			move: timelineObjectMoveData,
-			updateMove: (newData: Partial<TimelineObjectMove>) => {
+			timelineObjMove: timelineObjectMoveData,
+			updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => {
 				setTimelineObjectMoveData({
 					...timelineObjectMoveData,
 					...newData,

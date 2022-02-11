@@ -630,6 +630,36 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.DeleteTimelineObj,
 		}
 	}
+	async addTimelineObj(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+		timelineObj: TimelineObj
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
+		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
+		part.timeline.push(arg.timelineObj)
+
+		this._updatePart(part)
+		this._updateTimeline(group)
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
+
+				this._updatePart(part)
+				this._updateTimeline(group)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.AddTimelineObj,
+		}
+	}
 
 	async newTemplateData(arg: {
 		rundownId: string

@@ -12,15 +12,16 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 
 ### macOS
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.dmg` and `tsr-bridge-macos`.
-2. Run `SuperConductor-X.Y.Z.dmg` to install the main SuperConductor application, then launch SuperConductor from the Applications menu in Finder.
-3. Open a terminal and execute the following:
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `tsr-bridge-macos` and `SuperConductor-X.Y.Z.dmg` or `SuperConductor-X.Y.Z-mac.zip`.
+2. If you downloaded the `.dmg`, run `SuperConductor-X.Y.Z.dmg` to install the main SuperConductor application, then launch SuperConductor from the Applications menu in Finder.
+3. If you downloaded the `.zip`, double-click it to extract it, then double click on the SuperConductor application to run it.
+4. Open a terminal and execute the following:
 
    ```bash
    chmod +x Downloads/tsr-bridge-macos
    ```
 
-4. Back in Finder, Ctrl+Click on `tsr-bridge-macos` and click "Open". You'll receive a warning about the identity of the developer being unable to be confirmed. Click the "Open" button in this popup.
+5. Back in Finder, Ctrl+Click on `tsr-bridge-macos` and click "Open". You'll receive a warning about the identity of the developer being unable to be confirmed. Click the "Open" button in this popup.
 
 ### Linux (Ubuntu)
 

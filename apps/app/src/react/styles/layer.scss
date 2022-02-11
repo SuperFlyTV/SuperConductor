@@ -63,6 +63,7 @@
 
 			&.selected {
 				box-shadow: inset 0px 0px 0px 3px #ffffff85;
+				z-index: 1;
 			}
 
 			&.moved {

@@ -117,6 +117,15 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('deleteTimelineObj', data)
 	}
+	addTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+		timelineObj: TimelineObj
+	}): Promise<void> {
+		return this.invokeServerMethod('addTimelineObj', data)
+	}
 	addResourceToTimeline(data: {
 		rundownId: string
 		groupId: string

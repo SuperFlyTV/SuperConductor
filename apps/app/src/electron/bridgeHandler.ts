@@ -10,8 +10,8 @@ import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
-const SERVER_PORT = 5400
+export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
+export const SERVER_PORT = 5400
 
 /** This handles connected bridges */
 export class BridgeHandler {

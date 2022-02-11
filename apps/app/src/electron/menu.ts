@@ -10,6 +10,8 @@ export interface GenerateMenuArgs {
 	onPreferencesClick: () => void
 	onUndoClick: () => void
 	onRedoClick: () => void
+	onAboutClick: () => void
+	onUpdateClick: () => void
 }
 
 export function generateMenu({
@@ -20,6 +22,8 @@ export function generateMenu({
 	onPreferencesClick,
 	onUndoClick,
 	onRedoClick,
+	onAboutClick,
+	onUpdateClick,
 }: GenerateMenuArgs) {
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
@@ -143,6 +147,14 @@ export function generateMenu({
 				click: async () => {
 					await shell.openExternal('https://github.com/SuperFlyTV/SuperConductor/issues')
 				},
+			},
+			{
+				label: 'Check For Updates',
+				click: onUpdateClick,
+			},
+			{
+				label: 'About',
+				click: onAboutClick,
 			},
 		],
 	})

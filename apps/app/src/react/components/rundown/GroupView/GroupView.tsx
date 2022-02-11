@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
+import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { MovePartFn, PartView } from './PartView'
@@ -12,7 +13,6 @@ import { Button, FormControlLabel, Switch } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import _ from 'lodash'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
 
