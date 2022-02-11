@@ -119,39 +119,43 @@ export const TopHeader: React.FC<{
 				<MdAdd />
 			</IconButton>
 
-			{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
-				return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
+			<div className="device-statuses">
+				{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
+					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
+						return (
+							<div
+								key={`${bridgeId}_${deviceId}`}
+								className={classNames('device-status', {
+									ok: bridgeStatus.connected && deviceStatus.ok,
+								})}
+								title={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
+							>
+								{deviceId}
+
+								<div className="device-status__dot"></div>
+							</div>
+						)
+					})
+				})}
+				{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
+					const bridge = bridgeStatuses[peripheral.bridgeId]
+
+					const bridgeIsConnected = bridge && bridge.connected
+
 					return (
 						<div
-							key={`${bridgeId}_${deviceId}`}
-							className={classNames('device-status', { ok: bridgeStatus.connected && deviceStatus.ok })}
-							title={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
+							key={`${peripheralId}`}
+							className={classNames('peripheral-status', {
+								ok: bridgeIsConnected && peripheral.status.connected,
+							})}
+							title={peripheral.status.connected ? 'Disconnected' : ''}
 						>
-							{deviceId}
-
+							{peripheral.name}
 							<div className="device-status__dot"></div>
 						</div>
 					)
-				})
-			})}
-			{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
-				const bridge = bridgeStatuses[peripheral.bridgeId]
-
-				const bridgeIsConnected = bridge && bridge.connected
-
-				return (
-					<div
-						key={`${peripheralId}`}
-						className={classNames('peripheral-status', {
-							ok: bridgeIsConnected && peripheral.status.connected,
-						})}
-						title={peripheral.status.connected ? 'Disconnected' : ''}
-					>
-						{peripheral.name}
-						<div className="device-status__dot"></div>
-					</div>
-				)
-			})}
+				})}
+			</div>
 
 			<IconButton title="Open Preferences" aria-label="open preferences" onClick={onSettingsClick}>
 				<MdSettings />
