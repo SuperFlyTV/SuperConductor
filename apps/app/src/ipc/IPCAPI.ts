@@ -61,6 +61,7 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		trigger: Trigger | null
+		triggerIndex: number | null
 	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {

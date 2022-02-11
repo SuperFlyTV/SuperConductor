@@ -205,11 +205,27 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		trigger: Trigger | null
+		triggerIndex: number | null
 	}): Promise<UndoableResult<string>> {
 		const { rundown, group, part } = this.getPart(arg)
-		const originalTriggers = part.triggers
-		// Note: Initially, just set the one trigger for now...
-		part.triggers = arg.trigger ? [arg.trigger] : []
+		const originalTriggers = deepClone(part.triggers)
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			part.triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				part.triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = part.triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					part.triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					part.triggers.push(arg.trigger)
+				}
+			}
+		}
 
 		this.storage.updateRundown(arg.rundownId, rundown)
 		this.callbacks.updatePeripherals(group)

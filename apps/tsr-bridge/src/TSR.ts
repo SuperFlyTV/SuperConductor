@@ -53,7 +53,6 @@ export class TSR {
 		newDevices: { [deviceId: string]: DeviceOptionsAny },
 		send: (message: BridgeAPI.FromBridge.Any) => void
 	) {
-		console.log('updateDevices', newDevices)
 		// Added/updated:
 		for (const deviceId in newDevices) {
 			const newDevice = newDevices[deviceId]
@@ -66,9 +65,9 @@ export class TSR {
 					await this.conductor.removeDevice(deviceId)
 				}
 
+				this.devices[deviceId] = newDevice
 				const device = await this.conductor.addDevice(deviceId, newDevice)
 				await device.device.on('connectionChanged', (status: any) => {
-					console.log('connectionChanged')
 					const ok = status.statusCode === StatusCode.GOOD
 					const message = status.messages.join(', ')
 
@@ -82,7 +81,6 @@ export class TSR {
 				updated = true
 
 				this.sideLoadDevice(deviceId, newDevice)
-				this.devices[deviceId] = newDevice
 			}
 			if (updated || this.newConnection) {
 				// Send initial status:

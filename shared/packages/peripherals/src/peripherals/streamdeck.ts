@@ -4,12 +4,12 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
+import PQueue from 'p-queue'
 // import PImage from 'pureimage'
 // import streamBuffers from 'stream-buffers'
 // import { Bitmap } from 'pureimage/types/bitmap'
 
 export class PeripheralStreamDeck extends Peripheral {
-	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	static Watch(onDevice: (peripheral: PeripheralStreamDeck) => void) {
 		const seenDevices = new Map<string, PeripheralStreamDeck>()
 
@@ -52,6 +52,9 @@ export class PeripheralStreamDeck extends Peripheral {
 	public initializing = false
 	public connected = false
 	private streamDeck?: StreamDeck
+	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
+	private connectedToParent = false
+	private queue = new PQueue({ concurrency: 1 })
 	constructor(id: string, private path: string) {
 		super(id)
 	}
@@ -70,11 +73,11 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.connected = true
 
 			this.streamDeck.on('down', (keyIndex) => {
-				this.emit('keyDown', `${keyIndex}`)
+				this.emit('keyDown', keyIndexToIdentifier(keyIndex))
 			})
 
 			this.streamDeck.on('up', (keyIndex) => {
-				this.emit('keyUp', `${keyIndex}`)
+				this.emit('keyUp', keyIndexToIdentifier(keyIndex))
 			})
 
 			this.streamDeck.on('error', (error) => {
@@ -88,7 +91,10 @@ export class PeripheralStreamDeck extends Peripheral {
 					console.error(error)
 				}
 			})
-			await this.streamDeck.clearPanel()
+			await this.queue.add(async () => {
+				await this.streamDeck?.clearPanel()
+			})
+
 			setTimeout(() => {
 				this.emitAllKeys()
 			}, 1)
@@ -98,15 +104,52 @@ export class PeripheralStreamDeck extends Peripheral {
 			throw e
 		}
 	}
-	_setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): void {
-		const keyIndex = parseInt(identifier)
-
+	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		if (!this.streamDeck) return
-		if (!_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
+
+		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
+
+		if (force || !_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
-			drawKeyDisplay(this.streamDeck, keyIndex, keyDisplay).catch(console.error)
+			if (!this.connectedToParent) {
+				// Intercept:
+
+				if (identifier === '0') {
+					keyDisplay = {
+						attentionLevel: AttentionLevel.INFO,
+						header: {
+							long: 'Disconnected',
+						},
+					}
+				} else {
+					keyDisplay = {
+						attentionLevel: AttentionLevel.IGNORE,
+					}
+				}
+			}
+
+			await drawKeyDisplay(this.streamDeck, this.queue, identifierToKeyIndex(identifier), keyDisplay)
 		}
+	}
+	async _updateAllKeys(): Promise<void> {
+		if (!this.streamDeck) return
+
+		if (!this.connectedToParent) {
+			// We might as well clear everything a little early:
+			await this.queue.add(async () => {
+				await this.streamDeck?.clearPanel()
+			})
+		}
+
+		for (let keyIndex = 0; keyIndex < this.streamDeck.NUM_KEYS; keyIndex++) {
+			const identifier = keyIndexToIdentifier(keyIndex)
+			await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+		}
+	}
+	async setConnected(connected: boolean): Promise<void> {
+		this.connectedToParent = connected
+		await this._updateAllKeys()
 	}
 	async close() {
 		await super._close()
@@ -114,16 +157,29 @@ export class PeripheralStreamDeck extends Peripheral {
 			await this.streamDeck.close()
 		}
 	}
+
 	private emitAllKeys() {
 		if (!this.streamDeck) return
 		// Assume all keys are up:
 		for (let keyIndex = 0; keyIndex < this.streamDeck.NUM_KEYS; keyIndex++) {
-			this.emit('keyUp', `${keyIndex}`)
+			this.emit('keyUp', keyIndexToIdentifier(keyIndex))
 		}
 	}
 }
+function keyIndexToIdentifier(keyIndex: number): string {
+	return `${keyIndex}`
+}
+function identifierToKeyIndex(identifier: string): number {
+	return parseInt(identifier)
+}
 
-export async function drawKeyDisplay(streamDeck: StreamDeck, keyIndex: number, keyDisplay: KeyDisplay, darkBG = false) {
+export async function drawKeyDisplay(
+	streamDeck: StreamDeck,
+	queue: PQueue,
+	keyIndex: number,
+	keyDisplay: KeyDisplay,
+	darkBG = false
+) {
 	const fontsize = 20
 	const padding = 5
 	const SIZE = streamDeck.ICON_SIZE
@@ -295,6 +351,8 @@ export async function drawKeyDisplay(streamDeck: StreamDeck, keyIndex: number, k
 		})
 	}
 
+	let keyGotAnyContent = false
+
 	if (!img) {
 		img = sharp({
 			create: {
@@ -304,18 +362,24 @@ export async function drawKeyDisplay(streamDeck: StreamDeck, keyIndex: number, k
 				background: bgColor,
 			},
 		}).ensureAlpha()
+	} else {
+		keyGotAnyContent = true
 	}
 
-	// const avgColor = mini[0]
 	if (inputs.length) {
+		keyGotAnyContent = true
 		img = img.composite(inputs)
 	}
-	// await img.toFile('test.png')
-
-	const tmpImg = await img.raw().toBuffer()
 
 	try {
-		await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
+		const tmpImg = await img.raw().toBuffer()
+		await queue.add(async () => {
+			if (keyGotAnyContent) {
+				await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
+			} else {
+				await streamDeck.clearKey(keyIndex)
+			}
+		})
 	} catch (e) {
 		console.log(keyDisplay)
 		throw e

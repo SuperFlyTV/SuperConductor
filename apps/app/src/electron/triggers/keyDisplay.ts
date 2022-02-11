@@ -1,12 +1,15 @@
-import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { Action } from './action'
-import { getGroupPlayData, GroupPlayData } from '../../lib/playhead'
 import { StorageHandler } from '../storageHandler'
+import { Part } from '../../models/rundown/Part'
+import { getTimelineForGroup } from '../timeline'
+import { Group } from '../../models/rundown/Group'
 
 export function idleKeyDisplay(_storage: StorageHandler): KeyDisplayTimeline {
 	return [
 		{
 			id: 'idle_not_assigned',
+			layer: 'KEY',
 			enable: { while: 1 },
 			content: {
 				attentionLevel: AttentionLevel.IGNORE,
@@ -15,100 +18,200 @@ export function idleKeyDisplay(_storage: StorageHandler): KeyDisplayTimeline {
 	]
 }
 
-export function playKeyDisplay(storage: StorageHandler, actions: Action[]): KeyDisplayTimeline {
+export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
-	const multi = actions.length > 1
 
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+	return _getKeyDisplay(actions, {
+		idle: {
+			attentionLevel: AttentionLevel.NEUTRAL,
 
-	const keyTimeline: KeyDisplayTimeline = [
-		{
-			id: 'idle_play',
-			priority: -1,
-			enable: { while: 1 },
-			content: {
-				attentionLevel: AttentionLevel.NEUTRAL,
-
-				header: {
-					long: `Play ${multi ? `#${actions.length}` : action0.part.name}`,
-					short: `▶${multi ? `#${actions.length}` : action0.part.name.slice(-7)}`,
-				},
-				info: {
-					long: `#duration(${longestDuration})`,
-				},
+			header: {
+				long: `Play ${action0.part.name}`,
+				short: `▶${action0.part.name.slice(-7)}`,
+			},
+			info: {
+				long: `#duration(${longestDuration})`,
 			},
 		},
-	]
+		playing: (data) => {
+			// Only show the playing state while OUR part is playing
+			if (data.action.part.id !== data.part.id) return null
 
-	// const playheads: { [groupId: string]: GroupPlayData } = {}
+			const label = action0.part.name
+			return {
+				attentionLevel: AttentionLevel.INFO,
 
+				header: {
+					long: `Play ${label}`,
+					short: `▶${label.slice(-7)}`,
+				},
+				info: {
+					long: `#timeToEnd`,
+				},
+			}
+		},
+	})
+}
+
+export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+	if (actions.length === 0) throw new Error('Actions array is empty')
+	const action0 = actions[0]
+
+	return _getKeyDisplay(actions, {
+		idle: {
+			attentionLevel: AttentionLevel.NEUTRAL,
+
+			header: {
+				long: `Stop ${getLabel(actions, action0.part)}`,
+				short: `⏹${getLabel(actions, action0.part).slice(-7)}`,
+			},
+			info: {
+				long: `#duration(${longestDuration})`,
+			},
+		},
+		playing: (data) => {
+			const label = getLabel(actions, data.part)
+			return {
+				attentionLevel: AttentionLevel.INFO,
+
+				header: {
+					long: `Stop ${label}`,
+					short: `⏹${label.slice(-7)}`,
+				},
+				info: {
+					long: `#timeToEnd`,
+				},
+			}
+		},
+	})
+}
+export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+	if (actions.length === 0) throw new Error('Actions array is empty')
+	const action0 = actions[0]
+
+	return _getKeyDisplay(actions, {
+		idle: {
+			attentionLevel: AttentionLevel.NEUTRAL,
+
+			header: {
+				long: `Play ${action0.part.name}`,
+				short: `▶${action0.part.name.slice(-7)}`,
+			},
+			info: {
+				long: `#duration(${longestDuration})`,
+			},
+		},
+		playing: (data) => {
+			const label = getLabel(actions, data.part)
+			return {
+				attentionLevel: AttentionLevel.INFO,
+
+				header: {
+					long: `Stop ${label}`,
+					short: `⏹${label.slice(-7)}`,
+				},
+				info: {
+					long: `#timeToEnd`,
+				},
+			}
+		},
+	})
+}
+
+function getLabel(actions: Action[], part: Part) {
+	if (actions.length === 0) throw new Error('Actions array is empty')
+	const action0 = actions[0]
+
+	let actionsAreInSameGroup = true
+	let groupId = ''
 	for (const action of actions) {
-		const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
-		const myPlayhead = playData.playheads[action.part.id]
-
-		if (myPlayhead) {
-			const id = `active_${action.part.id}`
-			keyTimeline.push({
-				id: id,
-				// priority: now - myPlayhead.partEndTime, // will show the one which ends first, first
-				enable: {
-					start: myPlayhead.partStartTime,
-					end: myPlayhead.partEndTime,
-				},
-				content: {
-					attentionLevel: AttentionLevel.INFO,
-
-					header: {
-						long: `Play ${action.part.name}`,
-						short: `▶${action.part.name.slice(-7)}`,
-					},
-					info: {
-						long: `#countdown(${myPlayhead.partEndTime})`,
-					},
-				},
-				keyframes: [
-					{
-						id: `${id}_kf_end`,
-						enable: {
-							// while: 1,
-							start: `#${id}.end - 2000`,
-							end: `#${id}.end`,
-						},
-						content: {
-							attentionLevel: AttentionLevel.NOTIFY,
-						},
-					},
-				],
-			})
+		if (!groupId) {
+			groupId = action.group.id
+		} else if (groupId !== action.group.id) {
+			actionsAreInSameGroup = false
+			break
 		}
 	}
+	if (actionsAreInSameGroup && action0.group.oneAtATime) {
+		return action0.group.name
+	} else if (actions.length > 1) {
+		return `#${actions.length}`
+	} else {
+		return part.name
+	}
+}
+
+export function _getKeyDisplay(
+	actions: Action[],
+	labels: {
+		idle: KeyDisplay
+		playing: (data: { group: Group; part: Part; action: Action }) => KeyDisplay | null
+	}
+): KeyDisplayTimeline {
+	if (actions.length === 0) throw new Error('Actions array is empty')
+
+	const keyTimeline: KeyDisplayTimeline = []
+
+	for (const action of actions) {
+		// The idea here is to use the same logic for timeline generation as playout, but instead of
+		// playout-content, we fill it with key-display contents, that are to be sent to the keys.
+		// That way the peripherals will stay in sync with the playout and GUI.
+
+		const tl = getTimelineForGroup(action.group, action.group.preparedPlayData, (part: Part, parentId: string) => {
+			// return content for the part
+
+			// if (action.part.id !== part.id) return []
+
+			const content = labels.playing({
+				group: action.group,
+				part: part,
+				action: action,
+			})
+
+			if (!content) return []
+
+			const id = `playing_${parentId}`
+			return [
+				{
+					id: id,
+					layer: 'KEY',
+					priority: 0, // so it will show the one which ends first, first
+					enable: {
+						start: `#${parentId}.start`,
+						end: `#${parentId}.end`,
+					},
+					content: content,
+					keyframes: [
+						{
+							id: `${id}_kf_end`,
+							enable: {
+								// Notify when it is 5 seconds left
+								start: `#${parentId}.end - 5000`,
+								end: `#${parentId}.end`,
+							},
+							content: {
+								attentionLevel: AttentionLevel.NOTIFY,
+							},
+						},
+					],
+				},
+			]
+		}) as unknown as KeyDisplayTimeline
+
+		if (tl) keyTimeline.push(...tl)
+	}
+
+	keyTimeline.push({
+		id: 'idle',
+		layer: 'KEY',
+		priority: -1,
+		enable: { while: 1 },
+		content: labels.idle,
+	})
 
 	return keyTimeline
 }
-
-// export function playErrorKeyDisplay(storage: StorageHandler, action: Action, e: any): KeyDisplayTimeline {
-// 	const keyTimeline: KeyDisplayTimeline = [
-// 		...generatePlayKeyDisplay(storage, action),
-// 		{
-// 			id: 'error',
-// 			priority: 999,
-// 			enable: {
-// 				start: Date.now(),
-// 				duration: 5 * 1000, // 5 seconds
-// 			},
-// 			content: {
-// 				attentionLevel: AttentionLevel.INFO,
-
-// 				header: {
-// 					long: `Error`,
-// 					short: `Error`,
-// 				},
-// 				info: {
-// 					long: `${e}`,
-// 				},
-// 			},
-// 		},
-// 	]
-// 	return keyTimeline
-// }

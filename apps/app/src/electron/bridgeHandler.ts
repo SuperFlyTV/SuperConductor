@@ -320,6 +320,7 @@ export class BridgeConnection {
 		}
 		// Sync timelineIds:
 		this.getTimelineIds()
+		this.session.resetPeripheralTriggerStatuses(this.bridgeId)
 	}
 	private onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')

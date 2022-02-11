@@ -53,6 +53,7 @@
 		"stream-buffers": "^3.0.2",
 		"sharp": "^0.30.0",
 		"lodash": "^4.17.21",
+		"p-queue": "^6.6.2",
 		"xkeys": "^2.3.3",
 		"superfly-timeline": "^8.2.5"
 	}

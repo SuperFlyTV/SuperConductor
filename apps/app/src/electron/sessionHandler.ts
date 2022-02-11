@@ -85,6 +85,7 @@ export class SessionHandler extends EventEmitter {
 
 		const newDevice: Peripheral = {
 			id: deviceId,
+			bridgeId: bridgeId,
 			name: deviceName,
 			status: {
 				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
@@ -98,7 +99,25 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
+	resetPeripheralTriggerStatuses(bridgeId: string) {
+		// Reset all peripheralStatuses for a bridge (like when a bridge is reconnected)
+
+		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
+			if (trigger.bridgeId === bridgeId) {
+				delete this.allTriggers[fullIdentifier]
+				delete this.allTriggersHasChanged[fullIdentifier]
+			}
+		}
+		for (const [fullIdentifier, trigger] of Object.entries(this.activeTriggers)) {
+			if (trigger.bridgeId === bridgeId) {
+				delete this.activeTriggers[fullIdentifier]
+				this.activeTriggersHasChanged = true
+			}
+		}
+	}
 	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean) {
+		// This is called from a peripheral, when a key is pressed or released
+
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
 		const peripheralId = `${bridgeId}-${deviceId}`
 

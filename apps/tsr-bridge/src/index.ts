@@ -43,18 +43,46 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 	connection.on('disconnected', () => {
 		console.log('Disconnected!')
 
-		if (peripheralsHandler) {
-			peripheralsHandler.close().catch(console.error)
-			peripheralsHandler = null
-		}
+		Promise.resolve()
+			.then(async () => {
+				if (peripheralsHandler) {
+					await peripheralsHandler.setConnected(false)
+				}
+			})
+			.catch(console.error)
 	})
 	connection.on('message', (msg: BridgeAPI.FromTPT.Any) => {
 		if (msg.type === 'setId') {
-			bridgeId = msg.id
-			// Reply to TPT with our id
-			send({ type: 'init', id: bridgeId, version: CURRENT_VERSION })
+			Promise.resolve()
+				.then(async () => {
+					if (myBridgeId !== msg.id) {
+						myBridgeId = msg.id
 
-			peripheralsHandler = setupPeripheralsHandler(bridgeId, sendAndCatch)
+						if (peripheralsHandler) {
+							try {
+								await peripheralsHandler.close()
+							} catch (e) {
+								console.error(e)
+							}
+							peripheralsHandler = null
+						}
+					}
+					try {
+						if (!peripheralsHandler) {
+							peripheralsHandler = setupPeripheralsHandler(myBridgeId)
+							peripheralsHandlerSend = sendAndCatch
+							await peripheralsHandler.setConnected(true)
+						} else {
+							peripheralsHandlerSend = sendAndCatch
+							await peripheralsHandler.setConnected(true)
+						}
+					} catch (e) {
+						console.error(e)
+					}
+					// Reply to SuperConductor with our id:
+					send({ type: 'init', id: myBridgeId, version: CURRENT_VERSION })
+				})
+				.catch(console.error)
 		} else if (msg.type === 'addTimeline') {
 			playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
@@ -93,9 +121,6 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 		}
 	}
 
-	let bridgeId: string | null = null
-	let peripheralsHandler: PeripheralsHandler | null = null
-
 	// Send a request to TPT to get our id:
 	send({
 		type: 'initRequestId',
@@ -103,6 +128,9 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 })
 
 const tsr = new TSR()
+let myBridgeId: string | null = null
+let peripheralsHandler: PeripheralsHandler | null
+let peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null
 
 let mapping: Mappings | undefined = undefined
 
@@ -142,23 +170,20 @@ function stopTimeline(id: string, currentTime: number) {
 	updateTSR(currentTime)
 }
 
-function setupPeripheralsHandler(
-	bridgeId: string,
-	send: (message: BridgeAPI.FromBridge.Any) => void
-): PeripheralsHandler {
+function setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
 	const peripheralsHandler = new PeripheralsHandler(bridgeId)
 
 	peripheralsHandler.on('connected', (deviceId, deviceName) => {
-		send({ type: 'PeripheralStatus', deviceId, deviceName, status: 'connected' })
+		peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, deviceName, status: 'connected' })
 	})
 	peripheralsHandler.on('disconnected', (deviceId, deviceName) =>
-		send({ type: 'PeripheralStatus', deviceId, deviceName, status: 'disconnected' })
+		peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, deviceName, status: 'disconnected' })
 	)
 	peripheralsHandler.on('keyDown', (deviceId, identifier) => {
-		send({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
+		peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
 	})
 	peripheralsHandler.on('keyUp', (deviceId, identifier) =>
-		send({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
+		peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
 	)
 
 	peripheralsHandler.init()

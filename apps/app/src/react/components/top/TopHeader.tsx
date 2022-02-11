@@ -135,10 +135,16 @@ export const TopHeader: React.FC<{
 				})
 			})}
 			{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
+				const bridge = bridgeStatuses[peripheral.bridgeId]
+
+				const bridgeIsConnected = bridge && bridge.connected
+
 				return (
 					<div
 						key={`${peripheralId}`}
-						className={classNames('peripheral-status', { ok: peripheral.status.connected })}
+						className={classNames('peripheral-status', {
+							ok: bridgeIsConnected && peripheral.status.connected,
+						})}
 						title={peripheral.status.connected ? 'Disconnected' : ''}
 					>
 						{peripheral.name}

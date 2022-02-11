@@ -26,6 +26,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { TriggerBtn } from '../../inputs/TriggerBtn'
 import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../models/rundown/Trigger'
+import { EditTrigger } from '../../inputs/EditTrigger'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -265,6 +266,8 @@ export const PartView: React.FC<{
 		// was something pressed?
 		const triggerLength = Object.keys(triggers).length
 		if (triggerLength > prevTriggerLength.current) {
+			// The length is longer; ie a button was pressed.
+
 			const trigger: Trigger = {
 				label: activeTriggersToString(triggers),
 				fullIdentifiers: triggers.map((t) => t.fullIdentifier),
@@ -278,8 +281,13 @@ export const PartView: React.FC<{
 					groupId: parentGroup.id,
 					partId: part.id,
 					trigger,
+					triggerIndex: 9999, // Add a trigger
 				})
 				.catch(handleError)
+		} else if (triggerLength < prevTriggerLength.current) {
+			// The length is shorter; ie a button was released.
+			// Stop listening for triggers:
+			setTriggerActive(false)
 		}
 		prevTriggerLength.current = triggerLength
 	}, [])
@@ -294,6 +302,17 @@ export const PartView: React.FC<{
 			hotkeyContext.triggers.off('trigger', handleTrigger)
 		}
 	}, [hotkeyContext, triggerActive, handleTrigger])
+	const onEditTrigger = (index: number, trigger: Trigger | null) => {
+		ipcServer
+			.setPartTrigger({
+				rundownId,
+				groupId: parentGroup.id,
+				partId: part.id,
+				trigger,
+				triggerIndex: index,
+			})
+			.catch(handleError)
+	}
 
 	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
@@ -324,18 +343,8 @@ export const PartView: React.FC<{
 	}
 
 	// TriggerButton
-	const handleTriggerBtn = (active: boolean) => {
-		if (active) {
-			ipcServer
-				.setPartTrigger({
-					rundownId,
-					groupId: parentGroup.id,
-					partId: part.id,
-					trigger: null,
-				})
-				.catch(handleError)
-		}
-		setTriggerActive(active)
+	const handleTriggerBtn = () => {
+		setTriggerActive((oldActive) => !oldActive)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -483,13 +492,11 @@ export const PartView: React.FC<{
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
-					<TriggerBtn onTrigger={handleTriggerBtn} />
+					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} />
 				</div>
 				<div className="part__triggers">
-					{part.triggers.map((t, index) => (
-						<div key={index} className="trigger">
-							{t.label}
-						</div>
+					{part.triggers.map((trigger, index) => (
+						<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
 					))}
 				</div>
 			</div>

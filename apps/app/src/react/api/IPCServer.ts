@@ -35,6 +35,7 @@ export class IPCServer implements IPCServerMethods {
 		groupId: string
 		partId: string
 		trigger: Trigger | null
+		triggerIndex: number | null
 	}): Promise<void> {
 		return this.invokeServerMethod('setPartTrigger', data)
 	}

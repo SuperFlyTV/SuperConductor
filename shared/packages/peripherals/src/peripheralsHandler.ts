@@ -18,6 +18,8 @@ export interface PeripheralsHandler {
 export class PeripheralsHandler extends EventEmitter {
 	private devices = new Map<string, Peripheral>()
 	private watchers: { stop: () => void }[] = []
+	/** Whether we're connected to SuperConductor or not*/
+	private connected = false
 	constructor(public readonly id: string) {
 		super()
 	}
@@ -32,6 +34,11 @@ export class PeripheralsHandler extends EventEmitter {
 
 		device.setKeyDisplay(identifier, keyDisplay)
 	}
+	async setConnected(connected: boolean): Promise<void> {
+		this.connected = connected
+
+		await Promise.all(Array.from(this.devices.values()).map((device) => device.setConnected(connected)))
+	}
 	async close(): Promise<void> {
 		this.watchers.forEach((watcher) => watcher.stop())
 		this.watchers = []
@@ -45,12 +52,25 @@ export class PeripheralsHandler extends EventEmitter {
 	private handleNewPeripheral(device: Peripheral) {
 		this.devices.set(device.id, device)
 
-		device.on('connected', () => this.emit('connected', device.id, device.name))
-		device.on('disconnected', () => this.emit('disconnected', device.id, device.name))
-		device.on('keyDown', (identifier) => this.emit('keyDown', device.id, identifier))
-		device.on('keyUp', (identifier) => this.emit('keyUp', device.id, identifier))
+		device.on('connected', () => {
+			// This is emitted when the device is reconnected
+			device.setConnected(this.connected).catch(console.error)
+
+			if (this.connected) this.emit('connected', device.id, device.name)
+		})
+		device.on('disconnected', () => {
+			if (this.connected) this.emit('disconnected', device.id, device.name)
+		})
+		device.on('keyDown', (identifier) => {
+			if (this.connected) this.emit('keyDown', device.id, identifier)
+		})
+		device.on('keyUp', (identifier) => {
+			if (this.connected) this.emit('keyUp', device.id, identifier)
+		})
+
+		device.setConnected(this.connected).catch(console.error)
 
 		// Initial emit:
-		this.emit('connected', device.id, device.name)
+		if (this.connected) this.emit('connected', device.id, device.name)
 	}
 }

@@ -1,5 +1,6 @@
 export interface Peripheral {
 	id: string
+	bridgeId: string
 	name: string
 
 	status: {

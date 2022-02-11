@@ -42,23 +42,26 @@ export abstract class Peripheral extends EventEmitter {
 			delete this.trackers[identifier]
 		}
 
+		// console.log('setKeyDisplay', JSON.stringify(keyDisplay))
+
 		if (Array.isArray(keyDisplay)) {
 			// It is a timeline, which means that we should resolve it and track it.
 
 			this.trackers[identifier] = new TimelineTracker(keyDisplay, (keyDisplay) => {
-				this._setKeyDisplay(identifier, keyDisplay)
+				this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
 			})
 		} else {
-			this._setKeyDisplay(identifier, keyDisplay)
+			this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
 		}
 	}
-	protected abstract _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): void
+	protected abstract _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): Promise<void>
 	protected async _close(): Promise<void> {
 		for (const tracker of Object.values(this.trackers)) {
 			tracker.stop()
 		}
 		this.trackers = {}
 	}
+	abstract setConnected(connected: boolean): Promise<void>
 	abstract close(): Promise<void>
 }
 
@@ -69,7 +72,7 @@ class TimelineTracker {
 	private updateCount = 0
 	private currentState: any = null
 	private timeout: NodeJS.Timeout | null = null
-	private LAYER = '1'
+	private LAYER = 'KEY'
 	private callbackErrorCount = 0
 
 	/** How far ahead to resolve */
@@ -79,7 +82,7 @@ class TimelineTracker {
 	constructor(keyDisplayTimeline: KeyDisplayTimeline, private callback: (keyDisplay: KeyDisplay) => void) {
 		this.timeline = keyDisplayTimeline.map((obj) => {
 			return {
-				layer: this.LAYER,
+				// layer: this.LAYER,
 				...obj,
 			}
 		})
@@ -110,9 +113,20 @@ class TimelineTracker {
 		}
 		const genericState = Resolver.getState(this.resolvedStates, now)
 
-		const { currentState, changedAnything } = extendKeyDisplay(
-			genericState.layers[this.LAYER]?.content as KeyDisplay
-		)
+		const layer: ResolvedTimelineObjectInstance | undefined = genericState.layers[this.LAYER]
+
+		const { currentState, changedAnything } = layer
+			? extendKeyDisplay(layer.content as KeyDisplay, layer.instance)
+			: {
+					currentState: {
+						attentionLevel: AttentionLevel.IGNORE,
+					},
+					changedAnything: { changedAnything: false },
+			  }
+
+		// console.log('state', genericState.layers[this.LAYER].instance)
+
+		// console.log('currentState', currentState)
 
 		if (!_.isEqual(currentState, this.currentState)) {
 			this.currentState = currentState
@@ -142,6 +156,7 @@ class TimelineTracker {
 		}
 
 		const timeUntilNextTime = nextResolveTime - Date.now()
+		// console.log('timeUntilNextTime', timeUntilNextTime)
 
 		this.timeout = setTimeout(() => {
 			this.update(nextResolveTime + 1)
@@ -154,7 +169,10 @@ class TimelineTracker {
 	}
 }
 
-function extendKeyDisplay(currentState0: Partial<KeyDisplay>): {
+function extendKeyDisplay(
+	currentState0: Partial<KeyDisplay>,
+	instance: TimelineObjectInstance
+): {
 	currentState: KeyDisplay
 	changedAnything: boolean
 } {
@@ -166,10 +184,13 @@ function extendKeyDisplay(currentState0: Partial<KeyDisplay>): {
 
 	const changedAnything = { change: false }
 
-	if (currentState.header?.long) currentState.header.long = fixString(currentState.header.long, changedAnything)
-	if (currentState.header?.short) currentState.header.short = fixString(currentState.header.short, changedAnything)
-	if (currentState.info?.long) currentState.info.long = fixString(currentState.info.long, changedAnything)
-	if (currentState.info?.short) currentState.info.short = fixString(currentState.info.short, changedAnything)
+	if (currentState.header?.long)
+		currentState.header.long = fixString(currentState.header.long, instance, changedAnything)
+	if (currentState.header?.short)
+		currentState.header.short = fixString(currentState.header.short, instance, changedAnything)
+	if (currentState.info?.long) currentState.info.long = fixString(currentState.info.long, instance, changedAnything)
+	if (currentState.info?.short)
+		currentState.info.short = fixString(currentState.info.short, instance, changedAnything)
 
 	return {
 		currentState,
@@ -177,7 +198,7 @@ function extendKeyDisplay(currentState0: Partial<KeyDisplay>): {
 	}
 }
 
-function fixString(text: string, changedAnything: { change: boolean }): string {
+function fixString(text: string, instance: TimelineObjectInstance, changedAnything: { change: boolean }): string {
 	{
 		const regex = /#duration\((\d+)\)/i
 		const m = text.match(regex)
@@ -193,6 +214,17 @@ function fixString(text: string, changedAnything: { change: boolean }): string {
 		const m = text.match(regex)
 		if (m) {
 			const time = Number(m[1])
+			if (time) {
+				text = text.replace(regex, formatTime(Math.max(0, Math.ceil((time - Date.now()) / 1000))))
+				changedAnything.change = true
+			}
+		}
+	}
+	{
+		const regex = /#timeToEnd/i
+		const m = text.match(regex)
+		if (m) {
+			const time = instance.originalEnd || instance.end
 			if (time) {
 				text = text.replace(regex, formatTime(Math.max(0, Math.ceil((time - Date.now()) / 1000))))
 				changedAnything.change = true

@@ -38,6 +38,7 @@ export enum AttentionLevel {
 export interface KeyDisplayTimelineObj extends Omit<TimelineObject, 'content' | 'layer'> {
 	content: KeyDisplay
 	keyframes?: Array<KeyDisplayTimelineKeyframe>
+	layer: string
 }
 export interface KeyDisplayTimelineKeyframe extends TimelineKeyframe {
 	content: Partial<KeyDisplay>

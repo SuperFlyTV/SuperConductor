@@ -1,11 +1,13 @@
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import { assertNever } from '@shared/lib'
 import _ from 'lodash'
+import { getGroupPlayData } from '../lib/playhead'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import { Action } from './triggers/action'
-import { idleKeyDisplay, playKeyDisplay } from './triggers/keyDisplay'
+import { idleKeyDisplay, playKeyDisplay, playStopKeyDisplay, stopKeyDisplay } from './triggers/keyDisplay'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -79,7 +81,18 @@ export class TriggersHandler {
 			let keyDisplay: KeyDisplay | KeyDisplayTimeline
 			const used = usedTriggers[fullIdentifier]
 			if (used) {
-				keyDisplay = playKeyDisplay(this.storage, used.actions)
+				const firstAction = used.actions[0]
+
+				if (firstAction.trigger.action === 'play') {
+					keyDisplay = playKeyDisplay(used.actions)
+				} else if (firstAction.trigger.action === 'stop') {
+					keyDisplay = stopKeyDisplay(used.actions)
+				} else if (firstAction.trigger.action === 'playStop') {
+					keyDisplay = playStopKeyDisplay(used.actions)
+				} else {
+					keyDisplay = []
+					assertNever(firstAction.trigger.action)
+				}
 			} else {
 				// is not used anywhere
 				keyDisplay = idleKeyDisplay(this.storage)
@@ -174,6 +187,31 @@ export class TriggersHandler {
 							partId: action.part.id,
 						})
 						.catch(console.error)
+				} else if (action.trigger.action === 'playStop') {
+					const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
+					const myPlayhead = playData.playheads[action.part.id]
+
+					const isPlaying = action.group.oneAtATime ? playData.groupIsPlaying : myPlayhead
+
+					if (isPlaying) {
+						this.ipcServer
+							.stopPart({
+								rundownId: action.rundownId,
+								groupId: action.group.id,
+								partId: action.part.id,
+							})
+							.catch(console.error)
+					} else {
+						this.ipcServer
+							.playPart({
+								rundownId: action.rundownId,
+								groupId: action.group.id,
+								partId: action.part.id,
+							})
+							.catch(console.error)
+					}
+				} else {
+					assertNever(action.trigger.action)
 				}
 			}
 		}
