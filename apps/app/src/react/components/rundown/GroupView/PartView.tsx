@@ -618,7 +618,7 @@ export const PartView: React.FC<{
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
 					<TrashBtn onClick={handleDelete} />
-					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} />
+					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} title="Assign Trigger" />
 				</div>
 				<div className="part__triggers">
 					{part.triggers.map((trigger, index) => (

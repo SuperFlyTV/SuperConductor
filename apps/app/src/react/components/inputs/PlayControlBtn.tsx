@@ -20,6 +20,7 @@ export const PlayControlBtn: React.FC<{
 			className={classNames('btn', 'btn--small', { [props.mode]: true })}
 			onClick={handleOnClick}
 			disabled={props.disabled}
+			title={props.mode === 'play' ? 'Play' : 'Stop'}
 		>
 			{props.mode === 'play' ? <BsPlay color="white" size={24} /> : <BsStop color="white" size={20} />}
 		</Button>

@@ -40,7 +40,7 @@ export const EditTrigger: React.FC<{
 			<div className="trigger trigger-open">
 				{label}
 
-				<div>
+				<div className="trigger__buttons">
 					<Button
 						className="btn btn--small"
 						variant="contained"
@@ -48,11 +48,12 @@ export const EditTrigger: React.FC<{
 							onEdit(index, null)
 						}}
 						color="error"
+						title="Delete Trigger"
 					>
 						<BsTrash size={14} />
 					</Button>
 
-					<ButtonGroup>
+					<ButtonGroup className="trigger__buttons__triggerType">
 						<Button
 							className="btn btn--small"
 							variant="contained"
@@ -60,6 +61,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'play' })
 							}}
 							color={trigger.action === 'play' ? 'primary' : 'inherit'}
+							title="Trigger Play"
 						>
 							<BsFillPlayFill size={14} />
 						</Button>
@@ -70,6 +72,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'stop' })
 							}}
 							color={trigger.action === 'stop' ? 'primary' : 'inherit'}
+							title="Trigger Stop"
 						>
 							<BsStopFill size={14} />
 						</Button>
@@ -80,6 +83,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'playStop' })
 							}}
 							color={trigger.action === 'playStop' ? 'primary' : 'inherit'}
+							title="Trigger Toggle Play/Stop"
 						>
 							<BsFillPlayFill size={14} />
 							<BsStopFill size={14} />

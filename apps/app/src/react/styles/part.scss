@@ -128,4 +128,28 @@
 			z-index: 10;
 		}
 	}
+
+	&__triggers {
+		margin-top: 0.75em;
+	}
+}
+
+.trigger {
+	> .label {
+		&:hover {
+			text-decoration: underline;
+			cursor: pointer;
+		}
+	}
+}
+
+.trigger__buttons {
+	display: flex;
+	align-items: center;
+	justify-content: end;
+	margin: 0.25em 0;
+
+	&__triggerType {
+		margin-left: 0.5em;
+	}
 }
