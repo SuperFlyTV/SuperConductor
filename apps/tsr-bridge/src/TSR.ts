@@ -7,6 +7,7 @@ import { BridgeAPI } from '@shared/api'
 export class TSR {
 	public newConnection = false
 	public conductor: Conductor
+	public send: (message: BridgeAPI.FromBridge.Any) => void
 	private devices: { [deviceId: string]: DeviceOptionsAny } = {}
 
 	private sideLoadedDevices: {
@@ -15,6 +16,7 @@ export class TSR {
 		}
 	} = {}
 	private currentTimeDiff = 0
+	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
 	constructor() {
 		const c: ConductorOptions = {
@@ -37,6 +39,10 @@ export class TSR {
 
 		this.conductor.setTimelineAndMappings([], undefined)
 		this.conductor.init().catch(console.error)
+
+		this.send = () => {
+			throw new Error('TSR.send() not set!')
+		}
 	}
 	/**
 	 * Syncs the currentTime, this is useful when TSR-bridge runs on another computer than SuperConductor,
@@ -49,16 +55,11 @@ export class TSR {
 		return Date.now() + this.currentTimeDiff
 	}
 
-	public async updateDevices(
-		newDevices: { [deviceId: string]: DeviceOptionsAny },
-		send: (message: BridgeAPI.FromBridge.Any) => void
-	) {
+	public async updateDevices(newDevices: { [deviceId: string]: DeviceOptionsAny }) {
 		// Added/updated:
 		for (const deviceId in newDevices) {
 			const newDevice = newDevices[deviceId]
 			const existingDevice = this.devices[deviceId]
-
-			let updated = false
 
 			if (!existingDevice || !_.isEqual(existingDevice, newDevice)) {
 				if (existingDevice) {
@@ -67,29 +68,13 @@ export class TSR {
 
 				this.devices[deviceId] = newDevice
 				const device = await this.conductor.addDevice(deviceId, newDevice)
-				await device.device.on('connectionChanged', (status: any) => {
-					const ok = status.statusCode === StatusCode.GOOD
-					const message = status.messages.join(', ')
-
-					send({
-						type: 'deviceStatus',
-						deviceId,
-						ok,
-						message,
-					})
+				await device.device.on('connectionChanged', (status: DeviceStatus) => {
+					this.onDeviceStatus(deviceId, status)
 				})
-				updated = true
+
+				this.onDeviceStatus(deviceId, await device.device.getStatus())
 
 				this.sideLoadDevice(deviceId, newDevice)
-			}
-			if (updated || this.newConnection) {
-				// Send initial status:
-				send({
-					type: 'deviceStatus',
-					deviceId,
-					ok: true,
-					message: '',
-				})
 			}
 		}
 		// Removed:
@@ -97,6 +82,7 @@ export class TSR {
 			if (!newDevices[deviceId]) {
 				await this.conductor.removeDevice(deviceId)
 				delete this.devices[deviceId]
+				delete this.deviceStatus[deviceId]
 			}
 		}
 
@@ -110,6 +96,11 @@ export class TSR {
 					cb(deviceId, resources)
 				})
 				.catch(console.error)
+		}
+	}
+	public reportAllStatuses() {
+		for (const deviceId of Object.keys(this.deviceStatus)) {
+			this.reportDeviceStatus(deviceId)
 		}
 	}
 	private sideLoadDevice(deviceId: string, deviceOptions: DeviceOptionsAny) {
@@ -209,6 +200,25 @@ export class TSR {
 			}
 		}
 	}
+	private onDeviceStatus(deviceId: string, status: DeviceStatus) {
+		this.deviceStatus[deviceId] = status
+
+		this.reportDeviceStatus(deviceId)
+	}
+	private reportDeviceStatus(deviceId: string) {
+		const status = this.deviceStatus[deviceId]
+
+		if (status && this.devices[deviceId]) {
+			const ok = status.statusCode === StatusCode.GOOD
+			const message = status.messages?.join(', ') ?? ''
+			this.send({
+				type: 'deviceStatus',
+				deviceId,
+				ok,
+				message,
+			})
+		}
+	}
 }
 
 enum StatusCode {
@@ -224,4 +234,9 @@ enum StatusCode {
 	BAD = 4,
 	/** Not good. Operation is affected. Will NOT be able to to recover from this, manual intervention will be required. */
 	FATAL = 5,
+}
+interface DeviceStatus {
+	statusCode: StatusCode
+	messages?: Array<string>
+	active: boolean
 }

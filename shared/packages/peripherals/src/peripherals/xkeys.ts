@@ -72,9 +72,6 @@ export class PeripheralXkeys extends Peripheral {
 			this.xkeysPanel.setAllBacklights(null)
 			this.xkeysPanel.setIndicatorLED(1, false) // green
 			this.xkeysPanel.setIndicatorLED(2, false) // red
-			setTimeout(() => {
-				this.emitAllKeys()
-			}, 100)
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
@@ -146,9 +143,14 @@ export class PeripheralXkeys extends Peripheral {
 			}
 		}
 	}
-	async setConnected(connected: boolean): Promise<void> {
+	async setConnectedToParent(connected: boolean): Promise<void> {
 		this.connectedToParent = connected
 		await this._updateAllKeys()
+		if (connected) {
+			setTimeout(() => {
+				this.emitAllKeys()
+			}, 1)
+		}
 	}
 	async close() {
 		await super._close()

@@ -61,7 +61,7 @@ export abstract class Peripheral extends EventEmitter {
 		}
 		this.trackers = {}
 	}
-	abstract setConnected(connected: boolean): Promise<void>
+	abstract setConnectedToParent(connected: boolean): Promise<void>
 	abstract close(): Promise<void>
 }
 

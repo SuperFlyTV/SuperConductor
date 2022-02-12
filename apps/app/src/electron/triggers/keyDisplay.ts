@@ -73,6 +73,8 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 			},
 		},
 		playing: (data) => {
+			// Only show the playing state while OUR part is playing:
+			if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null
 			const label = getLabel(actions, data.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
@@ -82,7 +84,7 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `#timeToEnd`,
+					long: `${data.part.name}\n#timeToEnd`,
 				},
 			}
 		},
@@ -106,6 +108,8 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 			},
 		},
 		playing: (data) => {
+			// Only show the playing state while OUR part is playing:
+			if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null
 			const label = getLabel(actions, data.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
@@ -115,7 +119,7 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `#timeToEnd`,
+					long: `${data.part.name}\n#timeToEnd`,
 				},
 			}
 		},

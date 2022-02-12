@@ -1,13 +1,9 @@
-// import path from 'path'
 import _ from 'lodash'
 import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
 import PQueue from 'p-queue'
-// import PImage from 'pureimage'
-// import streamBuffers from 'stream-buffers'
-// import { Bitmap } from 'pureimage/types/bitmap'
 
 export class PeripheralStreamDeck extends Peripheral {
 	static Watch(onDevice: (peripheral: PeripheralStreamDeck) => void) {
@@ -55,6 +51,7 @@ export class PeripheralStreamDeck extends Peripheral {
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
+	private keys: { [identifier: string]: boolean } = {}
 	constructor(id: string, private path: string) {
 		super(id)
 	}
@@ -73,11 +70,15 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.connected = true
 
 			this.streamDeck.on('down', (keyIndex) => {
-				this.emit('keyDown', keyIndexToIdentifier(keyIndex))
+				const identifier = keyIndexToIdentifier(keyIndex)
+				this.keys[identifier] = true
+				this.emit('keyDown', identifier)
 			})
 
 			this.streamDeck.on('up', (keyIndex) => {
-				this.emit('keyUp', keyIndexToIdentifier(keyIndex))
+				const identifier = keyIndexToIdentifier(keyIndex)
+				this.keys[identifier] = false
+				this.emit('keyUp', identifier)
 			})
 
 			this.streamDeck.on('error', (error) => {
@@ -94,10 +95,6 @@ export class PeripheralStreamDeck extends Peripheral {
 			await this.queue.add(async () => {
 				await this.streamDeck?.clearPanel()
 			})
-
-			setTimeout(() => {
-				this.emitAllKeys()
-			}, 1)
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
@@ -147,9 +144,15 @@ export class PeripheralStreamDeck extends Peripheral {
 			await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
 		}
 	}
-	async setConnected(connected: boolean): Promise<void> {
+	async setConnectedToParent(connected: boolean): Promise<void> {
 		this.connectedToParent = connected
 		await this._updateAllKeys()
+
+		if (connected) {
+			setTimeout(() => {
+				this.emitAllKeys()
+			}, 1)
+		}
 	}
 	async close() {
 		await super._close()
@@ -160,9 +163,10 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private emitAllKeys() {
 		if (!this.streamDeck) return
-		// Assume all keys are up:
 		for (let keyIndex = 0; keyIndex < this.streamDeck.NUM_KEYS; keyIndex++) {
-			this.emit('keyUp', keyIndexToIdentifier(keyIndex))
+			const identifier = keyIndexToIdentifier(keyIndex)
+			if (this.keys[identifier]) this.emit('keyDown', keyIndexToIdentifier(keyIndex))
+			else this.emit('keyUp', keyIndexToIdentifier(keyIndex))
 		}
 	}
 }
@@ -319,23 +323,42 @@ export async function drawKeyDisplay(
 		} else if (keyDisplay.info.long) {
 			let text = keyDisplay.info.long
 
-			let line = ''
-			const lineLength = 9
-			for (let i = 0; i < 3; i++) {
-				line = text.slice(0, lineLength)
-				text = text.slice(lineLength)
-				if (line) {
-					svg += `<text
-                        font-family="Arial, Helvetica, sans-serif"
-                        font-size="${textFontSize}px"
-                        x="${x}"
-                        y="${y}"
-                        fill="${textColor}"
-                        text-anchor="start"
-                        >${line}</text>`
-					y += textFontSize
-				} else {
-					break
+			if (text.includes('\n')) {
+				const lines = text.split('\n')
+				for (const line of lines) {
+					if (line) {
+						svg += `<text
+							font-family="Arial, Helvetica, sans-serif"
+							font-size="${textFontSize}px"
+							x="${x}"
+							y="${y}"
+							fill="${textColor}"
+							text-anchor="start"
+							>${line}</text>`
+						y += textFontSize
+					} else {
+						break
+					}
+				}
+			} else {
+				let line = ''
+				const lineLength = 9
+				for (let i = 0; i < 3; i++) {
+					line = text.slice(0, lineLength)
+					text = text.slice(lineLength)
+					if (line) {
+						svg += `<text
+							font-family="Arial, Helvetica, sans-serif"
+							font-size="${textFontSize}px"
+							x="${x}"
+							y="${y}"
+							fill="${textColor}"
+							text-anchor="start"
+							>${line}</text>`
+						y += textFontSize
+					} else {
+						break
+					}
 				}
 			}
 		}

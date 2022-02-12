@@ -55,8 +55,8 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		},
 		bridges: {
 			bridget: {
-				id: 'bridget',
-				name: 'Bridget',
+				id: 'local',
+				name: 'Local TSR-Bridge',
 				outgoing: true,
 				url: 'ws://localhost:5401',
 				settings: {

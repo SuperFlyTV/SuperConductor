@@ -36,23 +36,24 @@ octokit.rest.repos
 
 const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 	// On connection
-	console.log('New connection!')
-
-	tsr.newConnection = true
+	console.log('TSR-bridge: New connection!')
 
 	connection.on('disconnected', () => {
-		console.log('Disconnected!')
+		console.log('TSR-bridge: disconnected!')
 
 		Promise.resolve()
 			.then(async () => {
 				if (peripheralsHandler) {
-					await peripheralsHandler.setConnected(false)
+					await peripheralsHandler.setConnectedToParent(false)
 				}
 			})
 			.catch(console.error)
 	})
 	connection.on('message', (msg: BridgeAPI.FromTPT.Any) => {
 		if (msg.type === 'setId') {
+			// Reply to SuperConductor with our id:
+			send({ type: 'init', id: msg.id, version: CURRENT_VERSION })
+
 			Promise.resolve()
 				.then(async () => {
 					if (myBridgeId !== msg.id) {
@@ -70,17 +71,16 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 					try {
 						if (!peripheralsHandler) {
 							peripheralsHandler = setupPeripheralsHandler(myBridgeId)
-							peripheralsHandlerSend = sendAndCatch
-							await peripheralsHandler.setConnected(true)
-						} else {
-							peripheralsHandlerSend = sendAndCatch
-							await peripheralsHandler.setConnected(true)
 						}
+
+						peripheralsHandlerSend = sendAndCatch
+						await peripheralsHandler.setConnectedToParent(true)
+
+						tsr.send = sendAndCatch
+						tsr.reportAllStatuses()
 					} catch (e) {
 						console.error(e)
 					}
-					// Reply to SuperConductor with our id:
-					send({ type: 'init', id: myBridgeId, version: CURRENT_VERSION })
 				})
 				.catch(console.error)
 		} else if (msg.type === 'addTimeline') {
@@ -92,7 +92,7 @@ const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnectio
 		} else if (msg.type === 'setMappings') {
 			updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
-			tsr.updateDevices(msg.devices, send).catch(console.error)
+			tsr.updateDevices(msg.devices).catch(console.error)
 		} else if (msg.type === 'refreshResources') {
 			tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
 				send({
@@ -182,9 +182,9 @@ function setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
 	peripheralsHandler.on('keyDown', (deviceId, identifier) => {
 		peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
 	})
-	peripheralsHandler.on('keyUp', (deviceId, identifier) =>
+	peripheralsHandler.on('keyUp', (deviceId, identifier) => {
 		peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
-	)
+	})
 
 	peripheralsHandler.init()
 
