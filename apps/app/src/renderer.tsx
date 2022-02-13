@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import { SnackbarProvider } from 'notistack'
-import { App } from './react/App'
 import { createTheme, ThemeProvider } from '@mui/material'
+import { App } from './react/App'
 
 export const ContextWrapper: React.FC = () => {
 	const theme = useMemo(() => {
@@ -24,11 +26,13 @@ export const ContextWrapper: React.FC = () => {
 	}, [])
 
 	return (
-		<ThemeProvider theme={theme}>
-			<SnackbarProvider maxSnack={1}>
-				<App />
-			</SnackbarProvider>
-		</ThemeProvider>
+		<DndProvider backend={HTML5Backend}>
+			<ThemeProvider theme={theme}>
+				<SnackbarProvider maxSnack={1}>
+					<App />
+				</SnackbarProvider>
+			</ThemeProvider>
+		</DndProvider>
 	)
 }
 
