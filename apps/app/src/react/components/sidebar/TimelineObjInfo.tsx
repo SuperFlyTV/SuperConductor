@@ -75,7 +75,7 @@ export const TimelineObjInfo: React.FC<{
 					actions.setSubmitting(false)
 				}}
 			>
-				{() => (
+				{(formik) => (
 					<Form>
 						<FormRow>
 							<label htmlFor="layer">Layer</label>
@@ -144,7 +144,7 @@ export const TimelineObjInfo: React.FC<{
 										.catch(handleError)
 								}}
 							/>
-							<Button type="submit" className="btn" variant="contained">
+							<Button type="submit" className="btn" variant="contained" disabled={!formik.dirty}>
 								Save
 							</Button>
 						</div>
