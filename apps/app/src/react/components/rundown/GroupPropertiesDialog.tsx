@@ -36,7 +36,7 @@ export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAcc
 			}}
 		>
 			{(formik) => (
-				<Dialog open={open}>
+				<Dialog open={open} onClose={onDiscarded}>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogContent>
 						<Form>

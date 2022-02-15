@@ -36,7 +36,7 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 			}}
 		>
 			{(formik) => (
-				<Dialog open={open}>
+				<Dialog open={open} onClose={onDiscarded}>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogContent>
 						<Form>
