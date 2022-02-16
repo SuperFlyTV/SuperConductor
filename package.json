@@ -11,11 +11,16 @@
 	"engines": {
 		"node": "^12.20 || ^14.15.3 || 16"
 	},
-	"workspaces": [
-		"shared/**",
-		"apps/**",
-		"tests/**"
-	],
+	"workspaces": {
+		"packages": [
+			"shared/**",
+			"apps/**",
+			"tests/**"
+		],
+		"nohoist": [
+			"**/sharp"
+		]
+	},
 	"scripts": {
 		"setup": "lerna bootstrap",
 		"prepare": "husky install",

@@ -31,6 +31,12 @@ module.exports = {
 				allowModules: ['casparcg-connection', 'timeline-state-resolver-types'],
 			},
 		],
+		'node/no-extraneous-require': [
+			'error',
+			{
+				allowModules: ['nexe'],
+			},
+		],
 		'@typescript-eslint/no-namespace': 'off',
 	},
 	settings: {

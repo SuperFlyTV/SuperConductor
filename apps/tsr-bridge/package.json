@@ -11,7 +11,7 @@
 		"dev": "nodemon",
 		"start": "yarn build && node dist/index.js",
 		"build": "rimraf ./dist && tsc",
-		"build:binary": "nexe --resource \"../../node_modules/timeline-state-resolver/dist/*.js\" --input dist/index.js --output dist/tsr-bridge",
+		"build:binary": "node tools/build-binary.js",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"precommit": "lint-staged",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
@@ -23,12 +23,14 @@
 	},
 	"license": "MIT",
 	"devDependencies": {
+		"@types/fs-extra": "^9.0.13",
 		"@types/koa": "^2.13.4",
 		"@types/koa-bodyparser": "^4.3.3",
 		"@types/koa-router": "^7.4.4",
 		"@types/node": "^16.10.3",
-		"@types/underscore": "^1.11.4",
+		"fs-extra": "^10.0.0",
 		"nodemon": "^2.0.13",
+		"replace-in-file": "^6.3.2",
 		"rimraf": "^3.0.2",
 		"ts-node": "^10.3.0"
 	},
@@ -41,9 +43,9 @@
 		"koa": "^2.13.3",
 		"koa-bodyparser": "^4.3.0",
 		"koa-router": "^10.1.1",
+		"lodash": "^4.17.21",
 		"semver": "^7.3.5",
-		"timeline-state-resolver": "^6.2.0-release37.4",
-		"underscore": "^1.9.1"
+		"timeline-state-resolver": "^6.2.0-release37.4"
 	},
 	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
 	"lint-staged": {
