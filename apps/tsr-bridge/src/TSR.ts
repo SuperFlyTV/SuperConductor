@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import * as _ from 'underscore'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
 import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
