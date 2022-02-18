@@ -20,12 +20,33 @@ export function updateTimeline(
 	group: Group
 ): GroupPreparedPlayData | null {
 	const prepared = prepareGroupPlayData(group)
+	const timeline = getTimelineForGroup(group, prepared, undefined) as TSRTimeline
 
+	bridgeHandler.updateTimeline(group.id, timeline)
+
+	const project = storage.getProject()
+	bridgeHandler.updateMappings(project.mappings)
+
+	return prepared || null
+}
+
+export function getTimelineForGroup(
+	group: Group,
+	prepared: GroupPreparedPlayData | null,
+	customPartContent: CustomPartConent | undefined
+): TimelineObject[] | null {
 	const idCount = new Map<string, number>()
+	const makeUniqueId = (id: string): string => {
+		const count = idCount.get(id) || 0
+		idCount.set(id, count + 1)
+		return `${id}_${count}`
+	}
 	const getUniqueId = (id: string): string => {
 		const count = idCount.get(id) || 0
 		idCount.set(id, count + 1)
-		return `${id}:${count}`
+
+		if (count === 0) return id
+		else return `${id}_${count}`
 	}
 
 	if (prepared) {
@@ -53,8 +74,10 @@ export function updateTimeline(
 			for (const playingPart of prepared.parts) {
 				// Add the part to the timeline:
 				const obj: TimelineObjEmpty | null = partToTimelineObj(
+					makeUniqueId(playingPart.part.id),
 					playingPart.part,
-					playingPart.startTime - groupStartTime
+					playingPart.startTime - groupStartTime,
+					customPartContent
 				)
 
 				changeTimelineId(obj, (id) => getUniqueId(id))
@@ -87,8 +110,10 @@ export function updateTimeline(
 				for (const part of prepared.repeating.parts) {
 					// Add the part to the timeline:
 					const obj: TimelineObjEmpty | null = partToTimelineObj(
+						makeUniqueId(part.part.id),
 						part.part,
-						part.startTime - repeatingStartTimeUnix
+						part.startTime - repeatingStartTimeUnix,
+						customPartContent
 					)
 					// We have to modify the ids so that they won't collide with the previous ones:
 					changeTimelineId(obj, (id) => getUniqueId(id))
@@ -119,7 +144,12 @@ export function updateTimeline(
 			// Add the parts that doesn't loop:
 			for (const playingPart of Object.values(prepared.parts)) {
 				// Add the part to the timeline:
-				const obj: TimelineObjEmpty | null = partToTimelineObj(playingPart.part, playingPart.startTime)
+				const obj: TimelineObjEmpty | null = partToTimelineObj(
+					makeUniqueId(playingPart.part.id),
+					playingPart.part,
+					playingPart.startTime,
+					customPartContent
+				)
 
 				changeTimelineId(obj, (id) => getUniqueId(id))
 				timelineGroup.children?.push(obj)
@@ -128,22 +158,19 @@ export function updateTimeline(
 			timeline.push(timelineGroup)
 		}
 
-		// Send updates to devices
-
-		bridgeHandler.updateTimeline(group.id, timeline)
+		return timeline
 	} else {
-		// The timeline objects doesn't exist anymore, send updates to TSR:
-		bridgeHandler.updateTimeline(group.id, null)
+		return null
 	}
-
-	const project = storage.getProject()
-	bridgeHandler.updateMappings(project.mappings)
-
-	return prepared || null
 }
-function partToTimelineObj(part: Part, startTime: number): TimelineObjEmpty {
+function partToTimelineObj(
+	objId: string,
+	part: Part,
+	startTime: number,
+	customPartContent: CustomPartConent | undefined
+): TimelineObjEmpty {
 	const timelineObj: TimelineObjEmpty = {
-		id: part.id,
+		id: objId,
 		enable: {
 			start: startTime,
 			duration: part.resolved.duration,
@@ -156,7 +183,7 @@ function partToTimelineObj(part: Part, startTime: number): TimelineObjEmpty {
 		classes: [],
 		isGroup: true,
 
-		children: part.timeline.map((o) => deepClone(o.obj)),
+		children: customPartContent ? customPartContent(part, objId) : part.timeline.map((o) => deepClone(o.obj)),
 	}
 
 	return timelineObj
@@ -185,3 +212,5 @@ function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObj
 	// 	}
 	// }
 }
+
+type CustomPartConent = (part: Part, parentId: string) => TimelineObject[]

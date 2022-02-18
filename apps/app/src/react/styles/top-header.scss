@@ -20,10 +20,15 @@
 		}
 	}
 
-	.device-status {
+	.device-statuses {
+		margin-left: auto;
+		display: flex;
+	}
+
+	.device-status,
+	.peripheral-status {
 		display: flex;
 		align-items: center;
-		margin-left: auto;
 		padding: 0 0.5rem;
 		color: $deviceOfflineColor;
 

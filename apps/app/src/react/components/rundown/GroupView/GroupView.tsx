@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
+import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
@@ -63,8 +64,14 @@ export const GroupView: React.FC<{
 	const requestRef = useRef<number>(0)
 	const updatePlayhead = () => {
 		const newPlayhead = getGroupPlayData(playheadData.current)
-		// console.log('playhead', newPlayhead)
-		setPlayhead(newPlayhead)
+
+		setPlayhead((oldPlayhead) => {
+			if (!_.isEqual(oldPlayhead, newPlayhead)) {
+				return newPlayhead
+			} else {
+				return oldPlayhead
+			}
+		})
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 	}
 	useEffect(() => {

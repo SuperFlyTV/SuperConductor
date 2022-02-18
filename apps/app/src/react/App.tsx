@@ -21,13 +21,16 @@ import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
 import { BridgeStatus } from '../models/project/Bridge'
-import { HotkeyContext } from './contexts/Hotkey'
+import { Peripheral } from '../models/project/Peripheral'
+import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
+import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import _ from 'lodash'
 import { deepClone } from '@shared/lib'
 import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
@@ -43,6 +46,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = () => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
+	const [peripherals, setPeripherals] = useState<{ [peripheralId: string]: Peripheral }>({})
 	const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
 	const [currentRundownId, setCurrentRundownId] = useState<string>()
@@ -52,10 +56,15 @@ export const App = () => {
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
+	const triggers = useMemo(() => {
+		return new TriggersEmitter()
+	}, [])
+
 	useEffect(() => {
 		currentRundownIdRef.current = currentRundownId
 	}, [currentRundownId])
 
+	// Handle IPC-messages from server
 	useEffect(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
 			updateAppData: (appData: AppData) => {
@@ -73,14 +82,21 @@ export const App = () => {
 				}
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
-				setResources((resources) => {
-					const newResources = { ...resources }
+				setResources((existingResources) => {
 					if (resource) {
-						newResources[resourceId] = resource
+						if (!_.isEqual(existingResources[resourceId], resource)) {
+							const newResources = { ...existingResources }
+							newResources[resourceId] = resource
+							return newResources
+						}
 					} else {
-						delete newResources[resourceId]
+						if (existingResources[resourceId]) {
+							const newResources = { ...existingResources }
+							delete newResources[resourceId]
+							return newResources
+						}
 					}
-					return newResources
+					return existingResources
 				})
 			},
 			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) => {
@@ -93,6 +109,21 @@ export const App = () => {
 					}
 					return newStatuses
 				})
+			},
+			updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => {
+				setPeripherals((peripherals) => {
+					const newPeripherals = { ...peripherals }
+					if (peripheral) {
+						newPeripherals[peripheralId] = peripheral
+					} else {
+						delete newPeripherals[peripheralId]
+					}
+					return newPeripherals
+				})
+			},
+			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
+				console.log(activeTriggersToString(peripheralTriggers))
+				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			openSettings: () => {
 				setSettingsOpen(true)
@@ -151,6 +182,38 @@ export const App = () => {
 			},
 		}
 	}, [guiData])
+
+	// Handle hotkeys from keyboard:
+	useEffect(() => {
+		const handleKey = (e: KeyboardEvent) => {
+			const isFunctionKey = e.code.match(/F\d\d?/)
+			if (!isFunctionKey) {
+				// Ignore keypresses when the user is typing in an input field:
+				if (document.activeElement?.tagName === 'INPUT') return
+			}
+
+			const activeKeys = sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
+				return {
+					fullIdentifier: `keyboard-${code}`,
+					bridgeId: '',
+					deviceId: `keyboard`,
+					deviceName: '',
+					identifier: sorensen.getKeyForCode(code),
+				}
+			})
+			hotkeyContext.triggers.setActiveKeys(activeKeys)
+
+			// Check if anyone is listening for keys.
+			// In that case, the user is currently setting up new triggers, so we don't want to
+			// send the keys to the backend and unexpectedly trigger the action.
+			if (!hotkeyContext.triggers.isAnyoneListening()) {
+				// Send the currently pressed keys to backend, so that the server can execute triggers:
+				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
+			}
+		}
+		document.addEventListener('keydown', (e) => handleKey(e))
+		document.addEventListener('keyup', (e) => handleKey(e))
+	}, [])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
 		moveType: null,
@@ -384,12 +447,17 @@ export const App = () => {
 		}
 	}, [waitingForMovePartUpdate, currentRundown])
 
+	const hotkeyContext: IHotkeyContext = {
+		sorensen,
+		triggers,
+	}
+
 	if (!project) {
 		return <div>Loading...</div>
 	}
 
 	return (
-		<HotkeyContext.Provider value={sorensen}>
+		<HotkeyContext.Provider value={hotkeyContext}>
 			<GUIContext.Provider value={guiContextValue}>
 				<IPCServerContext.Provider value={serverAPI}>
 					<ProjectContext.Provider value={project}>
@@ -432,6 +500,7 @@ export const App = () => {
 														setSettingsOpen(true)
 													}}
 													bridgeStatuses={bridgeStatuses}
+													peripherals={peripherals}
 												/>
 											</div>
 

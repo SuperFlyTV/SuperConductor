@@ -1,4 +1,4 @@
-import { WebsocketConnection, WebsocketServer } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge } from '../models/project/Bridge'
@@ -66,6 +66,9 @@ export class BridgeHandler {
 		this.storage.on('project', (project: Project) => {
 			this.onUpdatedProject(project)
 		})
+	}
+	getBridgeConnection(bridgeId: string): BridgeConnection | undefined {
+		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
 
 	onUpdatedProject(project: Project) {
@@ -225,6 +228,10 @@ export class BridgeConnection {
 				this.callbacks.updatedResources(msg.deviceId, msg.resources)
 			} else if (msg.type === 'timelineIds') {
 				this._syncTimelineIds(msg.timelineIds)
+			} else if (msg.type === 'PeripheralStatus') {
+				this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
+			} else if (msg.type === 'PeripheralTrigger') {
+				this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 			} else {
 				assertNever(msg)
 			}
@@ -252,6 +259,14 @@ export class BridgeConnection {
 	}
 	refreshResources() {
 		this.send({ type: 'refreshResources' })
+	}
+	peripheralSetKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
+		this.send({
+			type: 'peripheralSetKeyDisplay',
+			deviceId,
+			identifier,
+			keyDisplay,
+		})
 	}
 
 	getTimelineIds() {
@@ -305,6 +320,7 @@ export class BridgeConnection {
 		}
 		// Sync timelineIds:
 		this.getTimelineIds()
+		this.session.resetPeripheralTriggerStatuses(this.bridgeId)
 	}
 	private onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')
@@ -342,5 +358,13 @@ export class BridgeConnection {
 		if (updated) {
 			this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 		}
+	}
+	private _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralStatus(this.bridgeId, deviceId, deviceName, status === 'connected')
+	}
+	private _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
 }

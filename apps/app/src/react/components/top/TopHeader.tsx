@@ -1,4 +1,5 @@
 import { BridgeStatus } from '../../../models/project/Bridge'
+import { Peripheral } from '../../../models/project/Peripheral'
 import classNames from 'classnames'
 import React, { useContext, useState } from 'react'
 import {
@@ -30,6 +31,7 @@ export const TopHeader: React.FC<{
 	openRundowns: { rundownId: string; name: string }[]
 	closedRundowns: { rundownId: string; name: string }[]
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
+	peripherals: { [peripheralId: string]: Peripheral }
 	onSelect: (rundownId: string) => void
 	onClose: (rundownId: string) => void
 	onOpen: (rundownId: string) => void
@@ -41,6 +43,7 @@ export const TopHeader: React.FC<{
 	openRundowns,
 	closedRundowns,
 	bridgeStatuses,
+	peripherals,
 	onSelect,
 	onClose,
 	onOpen,
@@ -116,21 +119,43 @@ export const TopHeader: React.FC<{
 				<MdAdd />
 			</IconButton>
 
-			{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
-				return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
+			<div className="device-statuses">
+				{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
+					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
+						return (
+							<div
+								key={`${bridgeId}_${deviceId}`}
+								className={classNames('device-status', {
+									ok: bridgeStatus.connected && deviceStatus.ok,
+								})}
+								title={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
+							>
+								{deviceId}
+
+								<div className="device-status__dot"></div>
+							</div>
+						)
+					})
+				})}
+				{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
+					const bridge = bridgeStatuses[peripheral.bridgeId]
+
+					const bridgeIsConnected = bridge && bridge.connected
+
 					return (
 						<div
-							key={`${bridgeId}_${deviceId}`}
-							className={classNames('device-status', { ok: bridgeStatus.connected && deviceStatus.ok })}
-							title={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
+							key={`${peripheralId}`}
+							className={classNames('peripheral-status', {
+								ok: bridgeIsConnected && peripheral.status.connected,
+							})}
+							title={peripheral.status.connected ? 'Disconnected' : ''}
 						>
-							{deviceId}
-
+							{peripheral.name}
 							<div className="device-status__dot"></div>
 						</div>
 					)
-				})
-			})}
+				})}
+			</div>
 
 			<IconButton title="Open Preferences" aria-label="open preferences" onClick={onSettingsClick}>
 				<MdSettings />
@@ -219,6 +244,7 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
+								<Button onClick={handleNewRundownClose}>Cancel</Button>
 								<Button
 									onClick={() => {
 										formik.submitForm().catch(handleError)
@@ -226,7 +252,6 @@ export const TopHeader: React.FC<{
 								>
 									Create
 								</Button>
-								<Button onClick={handleNewRundownClose}>Cancel</Button>
 							</DialogActions>
 						</Dialog>
 					)
@@ -266,6 +291,7 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
+								<Button onClick={handleRenameRundownClose}>Cancel</Button>
 								<Button
 									onClick={() => {
 										formik.submitForm().catch(handleError)
@@ -273,7 +299,6 @@ export const TopHeader: React.FC<{
 								>
 									Rename
 								</Button>
-								<Button onClick={handleRenameRundownClose}>Cancel</Button>
 							</DialogActions>
 						</Dialog>
 					)

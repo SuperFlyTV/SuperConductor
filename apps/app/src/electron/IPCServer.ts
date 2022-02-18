@@ -29,6 +29,7 @@ import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
+import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -66,7 +67,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		private callbacks: {
 			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
+			updatePeripherals: (group: Group) => void
 			refreshResources: () => void
+			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 		}
 	) {
 		super()
@@ -163,6 +166,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
+	async setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
+		this.callbacks.setKeyboardKeys(activeKeys)
+	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getPart(arg)
@@ -194,6 +200,45 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
 	}
+	async setPartTrigger(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		trigger: Trigger | null
+		triggerIndex: number | null
+	}): Promise<UndoableResult<string>> {
+		const { rundown, group, part } = this.getPart(arg)
+		const originalTriggers = deepClone(part.triggers)
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			part.triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				part.triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = part.triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					part.triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					part.triggers.push(arg.trigger)
+				}
+			}
+		}
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+		this.callbacks.updatePeripherals(group)
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+				part.triggers = originalTriggers
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.SetPartTrigger,
+			// result: newPart.id,
+		}
+	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -216,6 +261,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			resolved: {
 				duration: 0,
 			},
+			triggers: [],
 		}
 
 		const { rundown } = this.getRundown(arg)
@@ -1104,5 +1150,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	private _updateTimeline(group: Group) {
 		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+		this.callbacks.updatePeripherals(group)
 	}
 }

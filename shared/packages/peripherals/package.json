@@ -1,5 +1,5 @@
 {
-	"name": "@shared/api",
+	"name": "@shared/peripherals",
 	"version": "0.2.2",
 	"description": "",
 	"author": {
@@ -41,12 +41,17 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"dependencies": {
-		"@shared/models": "^0.2.2",
-		"ws": "^8.4.2"
-	},
 	"devDependencies": {
-		"superfly-timeline": "^8.2.5",
-		"@types/ws": "^8.2.2"
+		"@types/sharp": "^0.29.5"
+	},
+	"dependencies": {
+		"@elgato-stream-deck/node": "^5.2.0",
+		"@julusian/jpeg-turbo": "^1.1.1",
+		"@shared/api": "^0.2.2",
+		"sharp": "^0.30.0",
+		"lodash": "^4.17.21",
+		"p-queue": "^6.6.2",
+		"xkeys": "^2.3.3",
+		"superfly-timeline": "^8.2.5"
 	}
 }

@@ -6,12 +6,15 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
+import { Peripheral } from '../models/project/Peripheral'
+import { ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
 	UpdatePart = 'update part',
+	SetPartTrigger = 'Assign trigger',
 	NewGroup = 'create new group',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
@@ -54,6 +57,13 @@ export interface IPCServerMethods {
 
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	setPartTrigger: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		trigger: Trigger | null
+		triggerIndex: number | null
+	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
@@ -148,5 +158,7 @@ export interface IPCClientMethods {
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResource: (id: string, resource: ResourceAny | null) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
+	updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
+	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
 	openSettings: () => void
 }
