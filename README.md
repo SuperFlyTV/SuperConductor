@@ -12,7 +12,7 @@ For end users, SuperConductor consists of two applications: the SuperConductor U
 
 ### macOS
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both either the `.dmg` or `-mac.zip` builds of SuperConductor and TSR-Bridge.
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download either the `.dmg` or `-mac.zip` builds of SuperConductor and TSR-Bridge.
 2. If you downloaded the `.dmg` builds, double click them to install the applications. Then, launch the applications from Finder.
 3. If you downloaded the `.zip` builds, double-click them to extract them, then double click on the extracted applications to run them.
 
