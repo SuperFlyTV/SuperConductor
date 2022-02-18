@@ -1,42 +1,25 @@
-import React, { useCallback, useContext, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
-import { DropTargetMonitor, useDrop } from 'react-dnd'
-import { DragItemTypes, PartDragItem } from '../../api/DragItemTypes'
-import { MovePartFn } from './GroupView/PartView'
-import { Group } from '../../../models/rundown/Group'
-import { Part } from '../../../models/rundown/Part'
+import { useDrop } from 'react-dnd'
+import { DragItemTypes, isPartDragItem } from '../../api/DragItemTypes'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { PartMoveContext } from '../../contexts/PartMove'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
-	const ipcServer = useContext(IPCServerContext)
+	const { updatePartMove } = useContext(PartMoveContext)
+	const updatePartMoveRef = useRef(updatePartMove)
+	updatePartMoveRef.current = updatePartMove
 
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
-	const movePart: MovePartFn = useCallback(
-		(data: { dragGroup: Group; dragPart: Part; hoverGroup: Group | null; hoverIndex: number }) => {
-			return ipcServer.movePart({
-				from: {
-					rundownId: rundown.id,
-					groupId: data.dragGroup.id,
-					partId: data.dragPart.id,
-				},
-				to: {
-					rundownId: rundown.id,
-					groupId: data.hoverGroup?.id ?? null,
-					position: data.hoverIndex,
-				},
-			})
-		},
-		[rundown.id]
-	)
 	const [{ handlerId }, drop] = useDrop(
 		{
 			accept: DragItemTypes.PART_ITEM,
@@ -45,14 +28,15 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			async hover(item: PartDragItem, monitor: DropTargetMonitor) {
-				const dragGroup = item.group
-				const dragPart = item.part
+			hover(movedItem, monitor) {
+				if (!isPartDragItem(movedItem)) {
+					return
+				}
+
 				const hoverIndex = rundown.groups.length
-				const hoverGroup = null
 
 				// Don't replace items with themselves
-				if (dragGroup.transparent) {
+				if (movedItem.fromGroup.transparent) {
 					return
 				}
 
@@ -62,26 +46,32 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 				}
 
 				// Time to actually perform the action
-				const newGroup = await movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
-				if (!newGroup) {
-					// The backend rejected the move, so do nothing.
-					return
-				}
+				updatePartMoveRef.current({
+					partId: movedItem.partId,
+					fromGroupId: movedItem.fromGroup.id,
+					toGroupId: null,
+					position: hoverIndex,
+				})
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				item.index = hoverIndex
-				item.group = newGroup
+				movedItem.toGroupId = null
+				movedItem.toGroupIndex = hoverIndex
+				movedItem.toGroupTransparent = true
+				movedItem.position = hoverIndex
 			},
 		},
 		[rundown.groups]
 	)
-	drop(wrapperRef)
+
+	useEffect(() => {
+		drop(wrapperRef)
+	}, [drop])
 
 	return (
-		<div className="group-list" ref={wrapperRef} data-handler-id={handlerId}>
+		<div className="group-list" ref={wrapperRef} data-drop-handler-id={handlerId}>
 			{rundown.groups.map((group, index) => {
 				return (
 					<GroupView
@@ -90,7 +80,6 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 						groupIndex={index}
 						rundownId={rundown.id}
 						mappings={mappings}
-						movePart={movePart}
 					/>
 				)
 			})}

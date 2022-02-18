@@ -250,6 +250,10 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 		}
 	}
 
+	if (playData.groupIsPlaying && Object.keys(playData.playheads).length > 1) {
+		throw new Error('When groupIsPlaying is set, the length of playheads must be 1!')
+	}
+
 	return playData
 }
 /** Add a coundown until a Part */

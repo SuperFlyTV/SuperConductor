@@ -8,7 +8,7 @@ type PropsType = {
 
 export const TrashBtn = (props: PropsType) => {
 	return (
-		<Button className="btn btn--small" variant="contained" onClick={props.onClick} color="error">
+		<Button className="btn btn--small" variant="contained" onClick={props.onClick} color="error" title="Delete">
 			<BsTrash size={14} />
 		</Button>
 	)

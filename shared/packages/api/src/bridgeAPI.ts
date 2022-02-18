@@ -1,9 +1,18 @@
 import { ResourceAny } from '@shared/models'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { KeyDisplay, KeyDisplayTimeline } from './peripherals'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
-		export type Any = InitRequestId | Init | Status | DeviceStatus | UpdatedResources | TimelineIds
+		export type Any =
+			| InitRequestId
+			| Init
+			| Status
+			| DeviceStatus
+			| UpdatedResources
+			| TimelineIds
+			| PeripheralStatus
+			| PeripheralTrigger
 
 		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -37,6 +46,18 @@ export namespace BridgeAPI {
 			timelineIds: string[]
 			// A reply to GetTimelineIds
 		}
+		export interface PeripheralStatus extends MessageBase {
+			type: 'PeripheralStatus'
+			deviceId: string
+			deviceName: string
+			status: 'connected' | 'disconnected'
+		}
+		export interface PeripheralTrigger extends MessageBase {
+			type: 'PeripheralTrigger'
+			deviceId: string
+			trigger: 'keyDown' | 'keyUp'
+			identifier: string
+		}
 	}
 
 	export namespace FromTPT {
@@ -48,6 +69,7 @@ export namespace BridgeAPI {
 			| GetTimelineIds
 			| SetMappings
 			| RefreshResources
+			| PeripheralSetKeyDisplay
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
@@ -85,6 +107,12 @@ export namespace BridgeAPI {
 		}
 		export interface RefreshResources extends MessageBase {
 			type: 'refreshResources'
+		}
+		export interface PeripheralSetKeyDisplay extends MessageBase {
+			type: 'peripheralSetKeyDisplay'
+			deviceId: string
+			identifier: string
+			keyDisplay: KeyDisplay | KeyDisplayTimeline
 		}
 	}
 

@@ -30,7 +30,7 @@ export const TimelineObject: React.FC<{
 		originX: timelineObjMove.originX ?? 0,
 		originY: timelineObjMove.originY ?? 0,
 	})
-	const keyTracker = useContext(HotkeyContext)
+	const hotkeyContext = useContext(HotkeyContext)
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
@@ -47,6 +47,7 @@ export const TimelineObject: React.FC<{
 	const description = describeTimelineObject(obj)
 
 	useEffect(() => {
+		const keyTracker = hotkeyContext.sorensen
 		const onKey = () => {
 			const pressed = keyTracker.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
@@ -76,7 +77,7 @@ export const TimelineObject: React.FC<{
 			keyTracker.unbind('Shift', onKey)
 			keyTracker.unbind('Alt', onKey)
 		}
-	}, [keyTracker])
+	}, [hotkeyContext])
 
 	// This useEffect hook and the one immediately following it are order-sensitive.
 	useEffect(() => {

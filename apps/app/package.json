@@ -101,7 +101,7 @@
 	},
 	"build": {
 		"productName": "SuperConductor",
-		"appId": "superconductor.superfly.tv",
+		"appId": "tv.superfly.superconductor",
 		"mac": {
 			"category": "public.app-category.utilities",
 			"hardenedRuntime": true,

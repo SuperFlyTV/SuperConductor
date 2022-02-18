@@ -54,9 +54,9 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 			}),
 		},
 		bridges: {
-			bridget: {
-				id: 'bridget',
-				name: 'Bridget',
+			local: {
+				id: 'local',
+				name: 'Local TSR-Bridge',
 				outgoing: true,
 				url: 'ws://localhost:5401',
 				settings: {
@@ -108,7 +108,7 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 								},
 							},
 						],
-
+						triggers: [],
 						resolved: {
 							duration: 5000,
 						},

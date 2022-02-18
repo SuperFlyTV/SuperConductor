@@ -127,7 +127,11 @@ export class WebsocketConnection extends EventEmitter {
 	private _onMessage(messageStr: string) {
 		const msg = JSON.parse(messageStr)
 		if (DEBUG) console.log('received', msg.type)
-		this.emit('message', msg)
+		try {
+			this.emit('message', msg)
+		} catch (e) {
+			console.error(e)
+		}
 	}
 
 	private get isServer(): boolean {

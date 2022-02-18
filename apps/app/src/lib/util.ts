@@ -93,11 +93,6 @@ export function allowMovingItemIntoGroup(
 	fromPlayhead: GroupPlayData
 	toPlayhead: GroupPlayData
 } | null {
-	if (toGroup.transparent) {
-		// Don't allow dropping into a transparent group.
-		return null
-	}
-
 	const isMovingToNewGroup = fromGroup.id !== toGroup.id
 
 	const now = Date.now()

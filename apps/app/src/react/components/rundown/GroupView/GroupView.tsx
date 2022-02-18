@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
+import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
-import { MovePartFn, PartView } from './PartView'
+import { PartView } from './PartView'
 import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DragItemTypes, PartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, FormControlLabel, Switch } from '@mui/material'
@@ -14,17 +15,20 @@ import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
+import { PartMoveContext } from '../../../contexts/PartMove'
 
 export const GroupView: React.FC<{
 	rundownId: string
 	group: Group
 	groupIndex: number
 	mappings: Mappings
-	movePart: MovePartFn
-}> = ({ group, groupIndex, rundownId, mappings, movePart }) => {
+}> = ({ group, groupIndex, rundownId, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const { updatePartMove } = useContext(PartMoveContext)
 	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
+	const updatePartMoveRef = useRef(updatePartMove)
+	updatePartMoveRef.current = updatePartMove
 
 	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -60,8 +64,14 @@ export const GroupView: React.FC<{
 	const requestRef = useRef<number>(0)
 	const updatePlayhead = () => {
 		const newPlayhead = getGroupPlayData(playheadData.current)
-		// console.log('playhead', newPlayhead)
-		setPlayhead(newPlayhead)
+
+		setPlayhead((oldPlayhead) => {
+			if (!_.isEqual(oldPlayhead, newPlayhead)) {
+				return newPlayhead
+			} else {
+				return oldPlayhead
+			}
+		})
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 	}
 	useEffect(() => {
@@ -108,24 +118,30 @@ export const GroupView: React.FC<{
 					handlerId: monitor.getHandlerId(),
 				}
 			},
-			canDrop: (movedItem: PartDragItem) => {
-				return !!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, group)
+			canDrop: (movedItem) => {
+				if (!isPartDragItem(movedItem)) {
+					return false
+				}
+
+				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)
 			},
-			async hover(movedItem: PartDragItem) {
+			hover(movedItem) {
+				if (!isPartDragItem(movedItem)) {
+					return
+				}
+
 				// Don't use the GroupView as a drop target when there are Parts present.
 				if (group.parts.length > 0) {
 					return
 				}
 
-				if (!allowMovingItemIntoGroup(movedItem.part.id, movedItem.group, group)) {
+				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
 					return
 				}
 
-				const dragGroup = movedItem.group
-				const dragPart = movedItem.part
-				const dragIndex = movedItem.index
 				const hoverIndex = 0
 				const hoverGroup = group
+				const hoverGroupIndex = groupIndex
 
 				// Don't allow dragging into transparent groups, which can only have one part.
 				if (hoverGroup.transparent) {
@@ -133,33 +149,39 @@ export const GroupView: React.FC<{
 				}
 
 				// Don't replace items with themselves
-				if (dragGroup.id === hoverGroup.id && dragIndex === hoverIndex) {
+				if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
 					return
 				}
 
 				// Time to actually perform the action
-				const newGroup = await movePart({ dragGroup, dragPart, hoverGroup, hoverIndex })
-				if (!newGroup) {
-					// The backend rejected the move, so do nothing.
-					return
-				}
+				updatePartMoveRef.current({
+					partId: movedItem.partId,
+					fromGroupId: movedItem.fromGroup.id,
+					toGroupId: hoverGroup.id,
+					position: hoverIndex,
+				})
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
-				movedItem.index = hoverIndex
-				movedItem.group = newGroup
+				movedItem.toGroupId = hoverGroup.id
+				movedItem.toGroupIndex = hoverGroupIndex
+				movedItem.toGroupTransparent = false
+				movedItem.position = hoverIndex
 			},
 		},
 		[group]
 	)
-	drop(wrapperRef)
+
+	useEffect(() => {
+		drop(wrapperRef)
+	}, [drop])
 
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<div ref={wrapperRef} data-handler-id={handlerId}>
+			<div ref={wrapperRef} data-drop-handler-id={handlerId}>
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
@@ -167,7 +189,6 @@ export const GroupView: React.FC<{
 					parentGroupIndex={groupIndex}
 					playhead={playhead}
 					mappings={mappings}
-					movePart={movePart}
 				/>
 			</div>
 		) : null
@@ -180,7 +201,7 @@ export const GroupView: React.FC<{
 		const canModifyAutoPlay = group.oneAtATime
 
 		return (
-			<div ref={wrapperRef} className="group" data-handler-id={handlerId}>
+			<div ref={wrapperRef} className="group" data-drop-handler-id={handlerId}>
 				<div className="group__header">
 					<div
 						className="title"
@@ -268,7 +289,6 @@ export const GroupView: React.FC<{
 							parentGroupIndex={groupIndex}
 							playhead={playhead}
 							mappings={mappings}
-							movePart={movePart}
 						/>
 					))}
 

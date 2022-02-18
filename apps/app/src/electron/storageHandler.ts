@@ -508,6 +508,11 @@ export class StorageHandler extends EventEmitter {
 					playingParts: {},
 				}
 			}
+			for (const part of group.parts) {
+				if (!part.triggers) {
+					part.triggers = []
+				}
+			}
 		}
 	}
 

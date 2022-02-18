@@ -1,0 +1,57 @@
+{
+	"name": "@shared/peripherals",
+	"version": "0.2.2",
+	"description": "",
+	"author": {
+		"name": "SuperFlyTV AB",
+		"email": "info@superfly.tv",
+		"url": "https://superfly.tv"
+	},
+	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
+	"license": "MIT",
+	"private": true,
+	"engines": {
+		"node": "^12.20 || ^14.15.3 || 16"
+	},
+	"main": "dist/index",
+	"types": "dist/index",
+	"files": [
+		"dist"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/SuperFlyTV/SuperConductor.git"
+	},
+	"scripts": {
+		"build": "rimraf dist && yarn build:main",
+		"build:main": "tsc -p tsconfig.json",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"precommit": "lint-staged",
+		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+	},
+	"bugs": {
+		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
+	},
+	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
+	},
+	"devDependencies": {
+		"@types/sharp": "^0.29.5"
+	},
+	"dependencies": {
+		"@elgato-stream-deck/node": "^5.2.0",
+		"@julusian/jpeg-turbo": "^1.1.1",
+		"@shared/api": "^0.2.2",
+		"sharp": "^0.30.0",
+		"lodash": "^4.17.21",
+		"p-queue": "^6.6.2",
+		"xkeys": "^2.3.3",
+		"superfly-timeline": "^8.2.5"
+	}
+}
