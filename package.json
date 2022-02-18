@@ -28,11 +28,16 @@
 		"build:shared": "lerna run build --stream --scope=@shared/*",
 		"start:all": "lerna run build:shared && lerna run dev --stream",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
-		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge"
+		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge",
+		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge"
+	},
+	"resolutions": {
+		"prebuild-install": "^7.0.0"
 	},
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^1.0.0",
 		"@types/node": "^17.0.10",
+		"electron-rebuild": "^3.2.7",
 		"eslint-plugin-react": "^7.28.0",
 		"eslint-plugin-react-hooks": "^4.3.0",
 		"lerna": "^4.0.0",

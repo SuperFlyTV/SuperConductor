@@ -2,43 +2,29 @@
 
 ## Installation
 
-For end users, SuperConductor consists of two applications: the SuperConductor UI and a command-line program called `tsr-bridge`. These two applications can be run on different computers (each running a different operating system, if needed) and talk to each other over the network. It is recommended that `tsr-bridge` be run on the same computer as CasparCG.
+For end users, SuperConductor consists of two applications: the SuperConductor UI and TSR-Bridge. These two applications can be run on different computers (each running a different operating system, if needed) and talk to each other over the network. It is recommended that TSR-Bridge be run on the same computer as CasparCG.
 
 ### Windows
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-Setup-X.Y.Z.exe` and `tsr-bridge-vX.Y.Z-windows.exe`.
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-Setup-X.Y.Z.exe` and `TSR-Bridge-Setup-X.Y.Z.exe`.
 2. Run `SuperConductor-Setup-X.Y.Z.exe` to install the main SuperConductor application, then launch SuperConductor from either the Desktop shortcut or the Start Menu.
-3. Run `tsr-bridge-vX.Y.Z-windows.exe` to start up `tsr-bridge`. This is a standalone application with no installer.
+3. Run `TSR-Bridge-Setup-X.Y.Z.exe` to install the TSR-Bridge application, then launch TSR-Bridge from either the Desktop shortcut or the Start Menu.
 
 ### macOS
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `tsr-bridge-macos` and `SuperConductor-X.Y.Z.dmg` or `SuperConductor-X.Y.Z-mac.zip`.
-2. If you downloaded the `.dmg`, run `SuperConductor-X.Y.Z.dmg` to install the main SuperConductor application, then launch SuperConductor from the Applications menu in Finder.
-3. If you downloaded the `.zip`, double-click it to extract it, then double click on the SuperConductor application to run it.
-4. Open a terminal and execute the following:
-
-   ```bash
-   chmod +x Downloads/tsr-bridge-macos
-   ```
-
-5. Back in Finder, Ctrl+Click on `tsr-bridge-macos` and click "Open". You'll receive a warning about the identity of the developer being unable to be confirmed. Click the "Open" button in this popup.
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both either the `.dmg` or `-mac.zip` builds of SuperConductor and TSR-Bridge.
+2. If you downloaded the `.dmg` builds, double click them to install the applications. Then, launch the applications from Finder.
+3. If you downloaded the `.zip` builds, double-click them to extract them, then double click on the extracted applications to run them.
 
 ### Linux (Ubuntu)
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.AppImage` and `tsr-bridge-vX.Y.Z-linux`.
-2. Execute the following before double-clicking on the AppImage it to run it:
+1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download both `SuperConductor-X.Y.Z.AppImage` and `TSR-Bridge-X.Y.Z.AppImage`.
+2. Execute the following before double-clicking on the AppImages to run them:
 
    ```bash
    # Replace X.Y.Z with the actual version number.
    chmod +x Downloads/SuperConductor-X.Y.Z.AppImage
-   ```
-
-3. Run `tsr-bridge`:
-
-   ```bash
-   # Replace X.Y.Z with the actual version number.
-   chmod +x Downloads/tsr-bridge-vX.Y.Z-linux
-   ./Downloads/tsr-bridge-vX.Y.Z-linux
+   chmod +x Downloads/TSR-Bridge-X.Y.Z.AppImage
    ```
 
 ## Usage
@@ -58,7 +44,7 @@ If you've installed the SuperConductor UI and `tsr-bridge` on two different comp
 - `cd >>path-to-this-folder<<`
 - `yarn`
 - `yarn setup`
-- `yarn start:all` (Starts both the Superconductor and TSR-bridge)
+- `yarn start:all` (Starts both the SuperConductor and TSR-Bridge)
 
 ### Architecture Overview
 

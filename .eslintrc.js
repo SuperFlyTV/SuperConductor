@@ -28,7 +28,7 @@ module.exports = {
 		'node/no-extraneous-import': [
 			'error',
 			{
-				allowModules: ['casparcg-connection', 'timeline-state-resolver-types'],
+				allowModules: ['casparcg-connection', 'timeline-state-resolver-types', 'triple-beam'],
 			},
 		],
 		'@typescript-eslint/no-namespace': 'off',

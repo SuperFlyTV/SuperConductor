@@ -1,0 +1,20 @@
+.log {
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.logEntry {
+	overflow-wrap: break-word;
+	white-space: pre-line;
+
+	&__level {
+		&.error {
+			color: #f14c4c;
+		}
+
+		&.warn {
+			color: #e9e940;
+		}
+	}
+}

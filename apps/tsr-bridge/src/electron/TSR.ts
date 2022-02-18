@@ -1,4 +1,5 @@
-import * as _ from 'underscore'
+import _ from 'lodash'
+import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
 import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
@@ -18,7 +19,7 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor() {
+	constructor(private log: winston.Logger) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,
@@ -28,13 +29,13 @@ export class TSR {
 		this.conductor = new Conductor(c)
 
 		this.conductor.on('error', (e, ...args) => {
-			console.error('TSR', e, ...args)
+			log.error('TSR', e, ...args)
 		})
 		this.conductor.on('info', (msg, ...args) => {
-			console.log('TSR', msg, ...args)
+			log.info('TSR', msg, ...args)
 		})
 		this.conductor.on('warning', (msg, ...args) => {
-			console.log('Warning: TSR', msg, ...args)
+			log.warn('Warning: TSR', msg, ...args)
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
@@ -45,7 +46,7 @@ export class TSR {
 		}
 	}
 	/**
-	 * Syncs the currentTime, this is useful when TSR-bridge runs on another computer than SuperConductor,
+	 * Syncs the currentTime, this is useful when TSR-Bridge runs on another computer than SuperConductor,
 	 * where the local time might differ from the SuperConductor.
 	 */
 	public setCurrentTime(currentTime: number) {
