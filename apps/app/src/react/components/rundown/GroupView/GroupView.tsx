@@ -16,6 +16,8 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { HotkeyContext } from '../../../contexts/Hotkey'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -26,7 +28,9 @@ export const GroupView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { updatePartMove } = useContext(PartMoveContext)
+	const hotkeyContext = useContext(HotkeyContext)
 	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
+	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updatePartMoveRef = useRef(updatePartMove)
 	updatePartMoveRef.current = updatePartMove
 
@@ -178,6 +182,11 @@ export const GroupView: React.FC<{
 		drop(wrapperRef)
 	}, [drop])
 
+	// Delete button:
+	const handleDelete = () => {
+		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -274,7 +283,13 @@ export const GroupView: React.FC<{
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
+								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+									// Delete immediately with no confirmation dialog.
+									handleDelete()
+								} else {
+									setDeleteConfirmationOpen(true)
+								}
 							}}
 						/>
 					</div>
@@ -315,6 +330,20 @@ export const GroupView: React.FC<{
 					}}
 					onDiscarded={() => {
 						setGroupPropsOpen(false)
+					}}
+				/>
+
+				<ConfirmationDialog
+					open={deleteConfirmationOpen}
+					title="Delete Group"
+					body={`Are you sure you want to delete the group "${group.name}"?`}
+					acceptLabel="Delete"
+					onAccepted={() => {
+						handleDelete()
+						setDeleteConfirmationOpen(false)
+					}}
+					onDiscarded={() => {
+						setDeleteConfirmationOpen(false)
 					}}
 				/>
 			</div>

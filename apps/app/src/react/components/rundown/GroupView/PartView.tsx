@@ -32,6 +32,7 @@ import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -73,6 +74,7 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
+	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
 	updateTimelineObjMoveRef.current = updateTimelineObjMove
 	const updatePartMoveRef = useRef(updatePartMove)
@@ -654,7 +656,17 @@ export const PartView: React.FC<{
 				<div className="controls">
 					<PlayControlBtn mode={'play'} onClick={handleStart} />
 					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
-					<TrashBtn onClick={handleDelete} />
+					<TrashBtn
+						onClick={() => {
+							const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+							if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+								// Delete immediately with no confirmation dialog.
+								handleDelete()
+							} else {
+								setDeleteConfirmationOpen(true)
+							}
+						}}
+					/>
 					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} title="Assign Trigger" />
 				</div>
 				<div className="part__triggers">
@@ -751,6 +763,20 @@ export const PartView: React.FC<{
 				}}
 				onDiscarded={() => {
 					setPartPropsOpen(false)
+				}}
+			/>
+
+			<ConfirmationDialog
+				open={deleteConfirmationOpen}
+				title="Delete Part"
+				body={`Are you sure you want to delete the part "${part.name}"?`}
+				acceptLabel="Delete"
+				onAccepted={() => {
+					handleDelete()
+					setDeleteConfirmationOpen(false)
+				}}
+				onDiscarded={() => {
+					setDeleteConfirmationOpen(false)
 				}}
 			/>
 		</div>

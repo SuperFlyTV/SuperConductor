@@ -1,0 +1,24 @@
+import React from 'react'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
+
+interface IProps {
+	open: boolean
+	onAccepted: () => void
+	onDiscarded: () => void
+	acceptLabel: string
+	title: string
+	body: string
+}
+
+export function ConfirmationDialog({ open, title, body, acceptLabel, onAccepted, onDiscarded }: IProps) {
+	return (
+		<Dialog open={open} onClose={onDiscarded}>
+			<DialogTitle>{title}</DialogTitle>
+			<DialogContent>{body}</DialogContent>
+			<DialogActions>
+				<Button onClick={onDiscarded}>Cancel</Button>
+				<Button onClick={onAccepted}>{acceptLabel}</Button>
+			</DialogActions>
+		</Dialog>
+	)
+}
