@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"rootDir": "src",
 		"outDir": "dist",
-		"lib": ["es6"]
+		"jsx": "react",
+		"baseUrl": "./"
 	}
 }
