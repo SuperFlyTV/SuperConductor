@@ -190,7 +190,7 @@ export const GroupView: React.FC<{
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<div ref={wrapperRef} data-drop-handler-id={handlerId}>
+			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
@@ -295,17 +295,19 @@ export const GroupView: React.FC<{
 					</div>
 				</div>
 				<div className="group__content">
-					{group.parts.map((part) => (
-						<PartView
-							key={part.id}
-							rundownId={rundownId}
-							part={part}
-							parentGroup={group}
-							parentGroupIndex={groupIndex}
-							playhead={playhead}
-							mappings={mappings}
-						/>
-					))}
+					<div className="group__content__parts">
+						{group.parts.map((part) => (
+							<PartView
+								key={part.id}
+								rundownId={rundownId}
+								part={part}
+								parentGroup={group}
+								parentGroupIndex={groupIndex}
+								playhead={playhead}
+								mappings={mappings}
+							/>
+						))}
+					</div>
 
 					<GroupOptions rundownId={rundownId} group={group} />
 				</div>

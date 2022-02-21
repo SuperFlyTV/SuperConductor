@@ -181,7 +181,7 @@ export const ResourceLibrary: React.FC = () => {
 											</Grid>
 										</div>
 										<div className="btn-row-right">
-											<Button className="btn" variant="contained" type="submit">
+											<Button variant="contained" type="submit">
 												Add
 											</Button>
 										</div>

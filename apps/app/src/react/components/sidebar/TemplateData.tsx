@@ -177,7 +177,7 @@ export const TemplateData: React.FC<{
 				</table>
 
 				<div className="btn-row-right">
-					<Button className="btn" variant="contained" onClick={handleAddNew}>
+					<Button variant="contained" onClick={handleAddNew}>
 						Add
 					</Button>
 				</div>

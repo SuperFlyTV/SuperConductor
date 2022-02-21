@@ -8,27 +8,18 @@
 	display: flex;
 
 	&:not(:last-child) {
-		margin-bottom: 0.3rem;
+		margin-bottom: 1px;
 	}
 
 	&:nth-child(odd) {
 		.layer__content {
-			background: rgba(255, 255, 255, 0.1);
+			background: #222630;
 		}
 	}
 
 	&.isOver .layer__outline {
 		box-shadow: inset 0px 0px 0px 3px #ffffff85;
 		opacity: 0.8;
-	}
-
-	&__name {
-		flex-shrink: 0;
-		background-color: #191919;
-		display: flex;
-		align-items: center;
-		justify-content: right;
-		padding: 0em 0.3em;
 	}
 
 	&__outline {
@@ -44,7 +35,6 @@
 	&__content {
 		position: relative;
 		flex: 1;
-		background-color: #282828;
 
 		.object {
 			height: $layerHeight;
@@ -56,6 +46,7 @@
 			box-sizing: border-box;
 			cursor: pointer;
 			transition: $default-transition;
+			border-radius: $borderRadius;
 
 			&:hover {
 				opacity: 0.8;
@@ -71,7 +62,32 @@
 			}
 
 			.title {
-				font-size: 1.2rem;
+				font-size: 1.4rem;
+				font-weight: 600;
+				text-shadow: 0 0 4px #00000080;
+			}
+
+			.handle {
+				position: absolute;
+				top: 0;
+				height: 100%;
+				width: 4px;
+				box-sizing: border-box;
+				border-radius: $borderRadius;
+				border-style: solid;
+				border-width: 1px;
+				border-color: white;
+				opacity: 0.33;
+
+				&--left {
+					left: 0;
+					border-right-width: 0;
+				}
+
+				&--right {
+					right: 0;
+					border-left-width: 0;
+				}
 			}
 
 			@include useObjectTypeStyles();

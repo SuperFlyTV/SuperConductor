@@ -1,6 +1,5 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import _ from 'lodash'
-import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
@@ -15,7 +14,7 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import { MdOutlineDragIndicator } from 'react-icons/md'
+import { MdOutlineDragIndicator, MdPlayArrow, MdStop } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -33,6 +32,7 @@ import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { ToggleButton } from '@mui/material'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -645,41 +645,67 @@ export const PartView: React.FC<{
 				<MdOutlineDragIndicator />
 			</div>
 			<div className="part__meta">
-				<div
-					className="title"
-					onDoubleClick={() => {
-						setPartPropsOpen(true)
-					}}
-				>
-					{part.name}
-				</div>
-				<div className="controls">
-					<PlayControlBtn mode={'play'} onClick={handleStart} />
-					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
-					<TrashBtn
-						onClick={() => {
-							const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-							if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
-								// Delete immediately with no confirmation dialog.
-								handleDelete()
+				<div className="part__meta__top">
+					<div
+						className="title"
+						onDoubleClick={() => {
+							setPartPropsOpen(true)
+						}}
+					>
+						{part.name}
+					</div>
+
+					<ToggleButton
+						value="canStop"
+						className="part__playStop"
+						selected={canStop}
+						size="small"
+						onChange={() => {
+							if (canStop) {
+								handleStop()
 							} else {
-								setDeleteConfirmationOpen(true)
+								handleStart()
 							}
 						}}
-					/>
-					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} title="Assign Trigger" />
+					>
+						{canStop ? <MdStop /> : <MdPlayArrow />}
+					</ToggleButton>
 				</div>
-				<div className="part__triggers">
-					{part.triggers.map((trigger, index) => (
-						<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
-					))}
+
+				<div className="part__meta__bottom">
+					<div className="part__triggers">
+						{part.triggers.map((trigger, index) => (
+							<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
+						))}
+					</div>
+					<div className="controls">
+						<TrashBtn
+							className={classNames('control', 'control--hoverOnly')}
+							onClick={() => {
+								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+									// Delete immediately with no confirmation dialog.
+									handleDelete()
+								} else {
+									setDeleteConfirmationOpen(true)
+								}
+							}}
+						/>
+						<TriggerBtn
+							className={classNames('control')}
+							onTrigger={handleTriggerBtn}
+							active={triggerActive}
+							title="Assign Trigger"
+						/>
+					</div>
 				</div>
 			</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
+					const name = mappings[layerId]?.layerName ?? layerId
 					return (
-						<div className="part__layer-names__name" key={layerId}>
-							{mappings[layerId]?.layerName ?? layerId}
+						<div className="part__layer-names__name" key={layerId} title={name}>
+							<span>{name}</span>
 						</div>
 					)
 				})}

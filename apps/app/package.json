@@ -60,7 +60,9 @@
 	"dependencies": {
 		"@emotion/react": "^11.7.1",
 		"@emotion/styled": "^11.6.0",
-		"@fontsource/roboto": "^4.5.2",
+		"@fontsource/barlow": "^4.5.1",
+		"@fontsource/barlow-condensed": "^4.5.2",
+		"@fontsource/barlow-semi-condensed": "^4.5.3",
 		"@mui/icons-material": "^5.3.1",
 		"@mui/material": "^5.3.1",
 		"@shared/api": "^0.3.0",

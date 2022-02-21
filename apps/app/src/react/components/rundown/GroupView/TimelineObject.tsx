@@ -178,7 +178,9 @@ export const TimelineObject: React.FC<{
 				}
 			}}
 		>
+			<div className="handle handle--left" />
 			<div className="title">{description.label}</div>
+			<div className="handle handle--right" />
 		</div>
 	)
 }

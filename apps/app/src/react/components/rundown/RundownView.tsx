@@ -98,10 +98,10 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	return (
 		<>
 			<div className="group-list__control-row">
-				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
+				<Button variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Button>
-				<Button className="btn" variant="contained" onClick={() => setNewGroupOpen(true)}>
+				<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
 					New group
 				</Button>
 			</div>

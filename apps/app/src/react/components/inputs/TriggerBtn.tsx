@@ -1,9 +1,9 @@
 import { Button } from '@mui/material'
-import classNames from 'classnames'
 import React from 'react'
 import { BsKeyboardFill, BsKeyboard } from 'react-icons/bs'
 
 export const TriggerBtn: React.FC<{
+	className?: string
 	onTrigger: () => void
 	active: boolean
 	title: string
@@ -15,9 +15,10 @@ export const TriggerBtn: React.FC<{
 		<Button
 			variant="contained"
 			color="primary"
-			className={classNames('btn', 'btn--small')}
+			className={props.className}
 			onClick={handleOnClick}
 			title={props.title}
+			size="small"
 		>
 			{props.active ? <BsKeyboardFill color="white" size={24} /> : <BsKeyboard color="white" size={24} />}
 		</Button>
