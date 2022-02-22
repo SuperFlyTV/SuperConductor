@@ -700,6 +700,7 @@ export const PartView: React.FC<{
 					</div>
 				</div>
 			</div>
+			<div className="part__dropdown">{/** TODO **/}</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					const name = mappings[layerId]?.layerName ?? layerId
@@ -710,11 +711,15 @@ export const PartView: React.FC<{
 					)
 				})}
 			</div>
+			<div className="part__time">
+				{playheadTime ? <div className="part__time__current-time">{msToTime(playheadTime)}</div> : ''}
+				{countDownTime ? <div className="part__time__remaining-time">{msToTime(countDownTime)}</div> : ''}
+				<div className="part__time__duration">
+					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
+				</div>
+				<div className="part__time__endcap" />
+			</div>
 			<div className="part__timeline">
-				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
-				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
-				<div className="part__timeline__duration">{msToTime(part.resolved.duration)}</div>
-
 				<div className="countdown-wrapper">
 					{timesUntilStart &&
 						timesUntilStart.map((timeUntilStart, index) => (
@@ -767,6 +772,7 @@ export const PartView: React.FC<{
 					</div>
 				</div>
 			</div>
+			<div className="part__endcap"></div>
 
 			<PartPropertiesDialog
 				initial={part}

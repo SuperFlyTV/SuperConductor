@@ -1,18 +1,23 @@
 .part {
-	display: flex;
 	position: relative;
 	margin-top: 2px;
+	overflow: hidden;
+	display: grid;
+	grid-template-columns: $partDragHandleWidth 17rem minmax(auto, 100px) 1fr 0.9rem;
+	grid-template-rows: 1.3rem 1fr;
+	gap: 0px 0px;
+	grid-template-areas:
+		'handle meta dropdown time     endcap'
+		'handle meta names    timeline endcap';
 
 	&:first-child {
-		.part__drag-handle {
-			border-top-left-radius: calc($partDragHandleWidth / 2);
-		}
+		border-top-left-radius: calc($partDragHandleWidth / 2);
+		border-top-right-radius: calc($partDragHandleWidth / 2);
 	}
 
 	&:last-child {
-		.part__drag-handle {
-			border-bottom-left-radius: calc($partDragHandleWidth / 2);
-		}
+		border-bottom-left-radius: calc($partDragHandleWidth / 2);
+		border-bottom-right-radius: calc($partDragHandleWidth / 2);
 	}
 
 	&.active {
@@ -30,20 +35,21 @@
 	&__drag-handle {
 		display: flex;
 		justify-content: center;
-		// align-items: center;
 		background-color: $partDragHandleColor;
 		cursor: grab;
 		width: $partDragHandleWidth;
 		box-sizing: border-box;
 		padding-top: 0.6rem;
 		color: $partDragHandleIconColor;
+		grid-area: handle;
 	}
 
 	&__meta {
 		background-color: $partMetaColor;
 		padding: 1rem 1.5rem 1rem 0.4rem;
 		width: 17rem;
-		flex-shrink: 0;
+		box-sizing: border-box;
+		grid-area: meta;
 
 		&__top {
 			display: flex;
@@ -83,17 +89,21 @@
 		}
 	}
 
+	&__dropdown {
+		background-color: $partMetaColor;
+		grid-area: dropdown;
+	}
+
 	&__layer-names {
 		background: $emptyLayerColor;
 		display: flex;
 		flex-direction: column;
-		flex-shrink: 0;
-		padding: 0.3rem 0;
 		font-family: 'Barlow Condensed';
 		max-width: 100px;
 		border-right: 1px;
 		border-color: black;
 		border-right-style: solid;
+		grid-area: names;
 
 		&__name {
 			display: flex;
@@ -104,7 +114,6 @@
 			font-size: 1.2rem;
 			color: #9c9c9c;
 			white-space: nowrap;
-			box-sizing: border-box;
 			min-width: 0;
 			flex-shrink: 1;
 
@@ -126,11 +135,49 @@
 		}
 	}
 
+	&__time {
+		position: relative;
+		grid-area: time;
+		display: flex;
+		font-size: 11px;
+		font-family: 'Barlow Semi Condensed';
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
+
+		&__current-time {
+			margin-left: 2px;
+		}
+
+		&__remaining-time {
+			margin-left: auto;
+			margin-right: 74px;
+		}
+
+		&__duration {
+			position: absolute;
+			bottom: 0;
+			right: 4px;
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+			text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
+				0px 0px 3px rgba(0, 0, 0, 0.75);
+			z-index: 1;
+		}
+
+		&__endcap {
+			background: black;
+			width: 37px;
+			height: 100%;
+			position: absolute;
+			bottom: 0;
+			right: 0;
+		}
+	}
+
 	&__timeline {
-		flex-grow: 1;
-		padding: 0.3rem 0;
 		position: relative;
 		background-color: #222630;
+		grid-area: timeline;
 
 		& > .layers-wrapper {
 			position: relative;
@@ -144,31 +191,6 @@
 			bottom: 0.3rem;
 			right: 0.3rem;
 			pointer-events: none;
-		}
-
-		&__current-time {
-			position: absolute;
-			transform: translateY(-100%);
-			left: 0;
-			font-size: 1.3rem;
-			margin-top: -1.2rem;
-			color: white;
-			background-color: $accentBg;
-			padding: 0.2rem 0.5rem;
-
-			z-index: 11;
-		}
-		&__remaining-time {
-			position: absolute;
-			transform: translateY(-100%);
-			right: 0;
-			font-size: 1.3rem;
-			margin-top: -1.2rem;
-			color: white;
-			background-color: $accentBg;
-			padding: 0.2rem 0.5rem;
-
-			z-index: 12;
 		}
 
 		&__duration {
@@ -188,6 +210,11 @@
 		align-items: flex-start;
 		margin-top: 0.75em;
 		margin-left: -0.4rem;
+	}
+
+	&__endcap {
+		grid-area: endcap;
+		background: black;
 	}
 
 	.control--hoverOnly {
