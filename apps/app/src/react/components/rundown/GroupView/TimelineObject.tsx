@@ -34,6 +34,7 @@ export const TimelineObject: React.FC<{
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
+	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 	const updateMoveRef = useRef(updateTimelineObjMove)
 	updateMoveRef.current = updateTimelineObjMove
 
@@ -89,7 +90,7 @@ export const TimelineObject: React.FC<{
 			wasMoved: null,
 			partId,
 			leaderTimelineObjId: timelineObj.obj.id,
-			moveType: 'whole',
+			moveType,
 			dragDelta: deltaX * msPerPixel,
 			pointerX,
 			pointerY,
@@ -112,7 +113,19 @@ export const TimelineObject: React.FC<{
 		}
 
 		updateMoveRef.current(update)
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY, allowDuplicate])
+	}, [
+		isMoved,
+		deltaX,
+		msPerPixel,
+		timelineObj.obj.id,
+		partId,
+		pointerX,
+		pointerY,
+		originX,
+		originY,
+		allowDuplicate,
+		moveType,
+	])
 	useEffect(() => {
 		if (isMoved && !handledMoveStart) {
 			// A move has begun.
@@ -132,7 +145,7 @@ export const TimelineObject: React.FC<{
 		}
 	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
-	const handlePointerDown = () => {
+	const updateSelection = () => {
 		if (
 			gui.selectedGroupId === groupId &&
 			gui.selectedPartId === partId &&
@@ -190,32 +203,45 @@ export const TimelineObject: React.FC<{
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onPointerDown={handlePointerDown}
+			onPointerDown={updateSelection}
 			title={description.label + ' ' + durationTitle}
 		>
-			<div className="handle handle--left" />
-			<div className="title">{description.label}</div>
-			<div className="duration">
-				{minutes ? (
-					<>
-						<span>{minutes}</span>
-						<span style={{ fontWeight: 300 }}>m</span>
-					</>
-				) : null}
-				{seconds ? (
-					<>
-						<span>{seconds}</span>
-						<span style={{ fontWeight: 300 }}>s</span>
-					</>
-				) : null}
-				{milliseconds ? (
-					<>
-						<span>{milliseconds}</span>
-						<span style={{ fontWeight: 300 }}>ms</span>
-					</>
-				) : null}
+			<div
+				className="handle handle--left"
+				onPointerDown={() => {
+					setMoveType('start')
+				}}
+			/>
+			<div
+				className="body"
+				onPointerDown={() => {
+					setMoveType('whole')
+				}}
+			>
+				<div className="title">{description.label}</div>
+				<div className="duration">
+					{minutes ? (
+						<>
+							<span>{minutes}</span>
+							<span style={{ fontWeight: 300 }}>m</span>
+						</>
+					) : null}
+					{seconds ? (
+						<>
+							<span>{seconds}</span>
+							<span style={{ fontWeight: 300 }}>.</span>
+							<span>{milliseconds}</span>
+							<span style={{ fontWeight: 300 }}>s</span>
+						</>
+					) : null}
+				</div>
 			</div>
-			<div className="handle handle--right" />
+			<div
+				className="handle handle--right"
+				onPointerDown={() => {
+					setMoveType('duration')
+				}}
+			/>
 		</div>
 	)
 }

@@ -257,6 +257,7 @@ export function applyMovementToTimeline(
 }
 
 function applyDragDelta(
+	/** [ms] */
 	dragDelta: number,
 	timeline: TimelineObj[],
 	selectedTimelineObjIds: string[],
@@ -270,7 +271,7 @@ function applyDragDelta(
 		const obj = deepClone(orgObj)
 		appliedTimeline.push(obj)
 		let changed = false
-		// Check if the object is selected (ie to be moved)
+		// Check if the object isselected (ie to be moved)
 		if (selectedTimelineObjIds.includes(obj.obj.id)) {
 			const enable = obj.obj.enable as TimelineEnable
 			const orgResolvedObj = orgResolvedTimeline.objects[obj.obj.id]
@@ -302,6 +303,71 @@ function applyDragDelta(
 					if (orgInstance.end) {
 						// Set the duration to a specific value (ie overwrite any previous duration expression)
 						enable.duration = Math.round(orgInstance.end - orgInstance.start)
+					} else {
+						// Is infinite
+						if (enable.end) {
+							enable.start = 0
+						} else {
+							enable.end = null
+						}
+					}
+				}
+			} else if (moveType === 'start') {
+				if (
+					// If the user specifically has selected ONLY the timelineObj, the object should be moved, no matter what:
+					selectedTimelineObjIds.length === 1 ||
+					// Otherwise, only move objects with numeric starts (ie not strings (expressions))
+					typeof enable.start === 'number'
+				) {
+					delete enable.start
+					delete enable.end
+					delete enable.duration
+					delete enable.while
+
+					changed = true
+					if (dragSnap?.timelineObjId === obj.obj.id) {
+						if (dragSnap.type === 'start') {
+							enable.start = dragSnap.expression
+						} else if (dragSnap.type === 'end') {
+							// Shouldn't be possible to end up here?
+						}
+					} else {
+						enable.start = Math.round(orgInstance.start + dragDelta)
+					}
+
+					if (orgInstance.end) {
+						enable.duration = Math.round(orgInstance.end - orgInstance.start - dragDelta)
+					} else {
+						// Is infinite
+						if (enable.end) {
+							enable.start = 0
+						} else {
+							enable.end = null
+						}
+					}
+				}
+			} else if (moveType === 'duration') {
+				if (
+					// If the user specifically has selected ONLY the timelineObj, the object should be moved, no matter what:
+					selectedTimelineObjIds.length === 1 ||
+					// Otherwise, only move objects with numeric starts (ie not strings (expressions))
+					typeof enable.start === 'number'
+				) {
+					delete enable.end
+					delete enable.duration
+					delete enable.while
+
+					changed = true
+					if (dragSnap?.timelineObjId === obj.obj.id) {
+						if (dragSnap.type === 'start') {
+							// Shouldn't be possible to end up here?
+						} else if (dragSnap.type === 'end') {
+							enable.end = dragSnap.expression
+						}
+					}
+
+					if (orgInstance.end) {
+						enable.duration = Math.round(orgInstance.end - orgInstance.start + dragDelta)
 					} else {
 						// Is infinite
 						if (enable.end) {

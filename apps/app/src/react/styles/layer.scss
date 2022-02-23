@@ -63,6 +63,12 @@
 				transition: none;
 			}
 
+			.body {
+				flex-grow: 1;
+				display: flex;
+				justify-content: space-between;
+			}
+
 			.title,
 			.duration {
 				font-size: 1.4rem;
@@ -92,9 +98,8 @@
 				position: absolute;
 				top: 0;
 				height: 100%;
-				width: 4px;
+				width: 8px;
 				box-sizing: border-box;
-				border-radius: $borderRadius;
 				border-style: solid;
 				border-width: 1px;
 				border-color: white;
@@ -103,11 +108,17 @@
 				&--left {
 					left: 0;
 					border-right-width: 0;
+					border-top-left-radius: $borderRadius;
+					border-bottom-left-radius: $borderRadius;
+					cursor: w-resize;
 				}
 
 				&--right {
 					right: 0;
 					border-left-width: 0;
+					border-top-right-radius: $borderRadius;
+					border-bottom-right-radius: $borderRadius;
+					cursor: e-resize;
 				}
 			}
 
