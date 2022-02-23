@@ -47,6 +47,8 @@
 			cursor: pointer;
 			transition: $default-transition;
 			border-radius: $borderRadius;
+			justify-content: space-between;
+			overflow: hidden;
 
 			&:hover {
 				opacity: 0.8;
@@ -61,10 +63,29 @@
 				transition: none;
 			}
 
-			.title {
+			.title,
+			.duration {
 				font-size: 1.4rem;
-				font-weight: 600;
 				text-shadow: 0 0 4px #00000080;
+			}
+
+			.title {
+				font-weight: 600;
+				flex-shrink: 1;
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.duration {
+				font-family: 'Barlow Condensed';
+				font-variant-numeric: tabular-nums;
+				font-weight: 500;
+				color: rgba(255, 255, 255, 0.7);
+				flex-shrink: 0;
+				margin-left: 1rem;
+				overflow: hidden;
+				text-overflow: ellipsis;
 			}
 
 			.handle {

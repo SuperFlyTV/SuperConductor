@@ -1,4 +1,5 @@
 import { DeviceType, TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { parseMs } from '@shared/lib'
 
 export function describeTimelineObject(obj: TSRTimelineObj) {
 	let label: string = obj.id
@@ -20,8 +21,14 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 	const type: string = obj.content.type
 	const contentTypeClassNames: string[] = [`device-${DeviceType[obj.content.deviceType]}`, type]
 
+	let parsedDuration: ReturnType<typeof parseMs> | null = null
+	if (!Array.isArray(obj.enable) && typeof obj.enable.duration === 'number') {
+		parsedDuration = parseMs(obj.enable.duration)
+	}
+
 	return {
 		label,
 		contentTypeClassNames,
+		parsedDuration,
 	}
 }

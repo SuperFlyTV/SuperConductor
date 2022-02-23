@@ -132,6 +132,57 @@ export const TimelineObject: React.FC<{
 		}
 	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
+	const handlePointerDown = () => {
+		if (
+			gui.selectedGroupId === groupId &&
+			gui.selectedPartId === partId &&
+			gui.selectedTimelineObjIds.includes(obj.id)
+		) {
+			if (allowMultiSelection) {
+				// Deselect this timelineObj.
+				updateGUI({
+					selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
+				})
+			}
+
+			return
+		}
+
+		if (allowMultiSelection) {
+			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
+				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
+					updateGUI({
+						selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
+					})
+				}
+			} else {
+				updateGUI({
+					selectedGroupId: groupId,
+					selectedPartId: partId,
+					selectedTimelineObjIds: [obj.id],
+				})
+			}
+		} else {
+			updateGUI({
+				selectedGroupId: groupId,
+				selectedPartId: partId,
+				selectedTimelineObjIds: [obj.id],
+			})
+		}
+	}
+
+	const { minutes, seconds, milliseconds } = description.parsedDuration || {}
+	let durationTitle = ''
+	if (minutes) {
+		durationTitle += minutes + 'm'
+	}
+	if (seconds) {
+		durationTitle += seconds + 's'
+	}
+	if (milliseconds) {
+		durationTitle += milliseconds + 'ms'
+	}
+
 	return (
 		<div
 			ref={ref}
@@ -139,47 +190,31 @@ export const TimelineObject: React.FC<{
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onPointerDown={() => {
-				if (
-					gui.selectedGroupId === groupId &&
-					gui.selectedPartId === partId &&
-					gui.selectedTimelineObjIds.includes(obj.id)
-				) {
-					if (allowMultiSelection) {
-						// Deselect this timelineObj.
-						updateGUI({
-							selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-						})
-					}
-
-					return
-				}
-
-				if (allowMultiSelection) {
-					if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
-						if (!gui.selectedTimelineObjIds.includes(obj.id)) {
-							updateGUI({
-								selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-							})
-						}
-					} else {
-						updateGUI({
-							selectedGroupId: groupId,
-							selectedPartId: partId,
-							selectedTimelineObjIds: [obj.id],
-						})
-					}
-				} else {
-					updateGUI({
-						selectedGroupId: groupId,
-						selectedPartId: partId,
-						selectedTimelineObjIds: [obj.id],
-					})
-				}
-			}}
+			onPointerDown={handlePointerDown}
+			title={description.label + ' ' + durationTitle}
 		>
 			<div className="handle handle--left" />
 			<div className="title">{description.label}</div>
+			<div className="duration">
+				{minutes ? (
+					<>
+						<span>{minutes}</span>
+						<span style={{ fontWeight: 300 }}>m</span>
+					</>
+				) : null}
+				{seconds ? (
+					<>
+						<span>{seconds}</span>
+						<span style={{ fontWeight: 300 }}>s</span>
+					</>
+				) : null}
+				{milliseconds ? (
+					<>
+						<span>{milliseconds}</span>
+						<span style={{ fontWeight: 300 }}>ms</span>
+					</>
+				) : null}
+			</div>
 			<div className="handle handle--right" />
 		</div>
 	)
