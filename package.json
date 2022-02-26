@@ -26,7 +26,7 @@
 		"build": "lerna run build",
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
-		"start:all": "lerna run build:shared && lerna run dev --stream",
+		"start:all": "yarn build:shared && lerna run dev --stream",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge",
 		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge"
