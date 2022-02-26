@@ -12,7 +12,13 @@ interface IProps {
 
 export function ConfirmationDialog({ open, title, body, acceptLabel, onAccepted, onDiscarded }: IProps) {
 	return (
-		<Dialog open={open} onClose={onDiscarded}>
+		<Dialog
+			open={open}
+			onClose={onDiscarded}
+			onKeyUp={(e) => {
+				if (e.key === 'Enter') onAccepted()
+			}}
+		>
 			<DialogTitle>{title}</DialogTitle>
 			<DialogContent>{body}</DialogContent>
 			<DialogActions>
