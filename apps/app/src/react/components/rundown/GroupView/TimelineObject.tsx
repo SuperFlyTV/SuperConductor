@@ -184,16 +184,13 @@ export const TimelineObject: React.FC<{
 		}
 	}
 
-	const { minutes, seconds, milliseconds } = description.parsedDuration || {}
+	const { minutes, seconds, secondTenths } = description.parsedDuration || {}
 	let durationTitle = ''
 	if (minutes) {
 		durationTitle += minutes + 'm'
 	}
 	if (seconds) {
-		durationTitle += seconds + 's'
-	}
-	if (milliseconds) {
-		durationTitle += milliseconds + 'ms'
+		durationTitle += seconds + '.' + secondTenths + 's'
 	}
 
 	return (
@@ -230,7 +227,7 @@ export const TimelineObject: React.FC<{
 						<>
 							<span>{seconds}</span>
 							<span style={{ fontWeight: 300 }}>.</span>
-							<span>{milliseconds}</span>
+							<span>{secondTenths}</span>
 							<span style={{ fontWeight: 300 }}>s</span>
 						</>
 					) : null}
