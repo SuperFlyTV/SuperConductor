@@ -45,7 +45,7 @@ export const TimelineObject: React.FC<{
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
 
-	const description = describeTimelineObject(obj)
+	const description = describeTimelineObject(obj, typeof duration === 'number' ? duration : undefined)
 
 	useEffect(() => {
 		const keyTracker = hotkeyContext.sorensen
