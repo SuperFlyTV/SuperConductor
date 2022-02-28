@@ -177,3 +177,5 @@ function hashCode(str: string): number {
 	}
 	return hash
 }
+
+export const EMPTY_LAYER_ID_PREFIX = '__empty'

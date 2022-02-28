@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
-import { allowMovingItemIntoGroup, getResolvedTimelineTotalDuration } from '../../../../lib/util'
+import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
@@ -71,6 +71,7 @@ export const PartView: React.FC<{
 	const duplicatedObjects = useRef<{
 		[objectId: string]: TimelineObj
 	} | null>(null)
+	const objectsToMoveToNewLayer = useRef<string[] | null>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
@@ -172,113 +173,145 @@ export const PartView: React.FC<{
 		}
 	}, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
 
-	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects } = useMemo(() => {
-		let modifiedTimeline: TimelineObj[]
-		let resolvedTimeline: ResolvedTimeline
-		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
-		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
+	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects, newObjectsToMoveToNewLayer } =
+		useMemo(() => {
+			let modifiedTimeline: TimelineObj[]
+			let resolvedTimeline: ResolvedTimeline
+			let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
+			let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
+			let newObjectsToMoveToNewLayer: string[] | null = null
 
-		const dragDelta = timelineObjMove.dragDelta || 0
-		const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
-		const leaderObjOriginalLayerId = leaderObj?.obj.layer
-		const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
+			const dragDelta = timelineObjMove.dragDelta || 0
+			const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
+			const leaderObjOriginalLayerId = leaderObj?.obj.layer
+			const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
 
-		if (
-			(dragDelta || leaderObjLayerChanged) &&
-			timelineObjMove.partId === part.id &&
-			leaderObj &&
-			timelineObjMove.leaderTimelineObjId &&
-			timelineObjMove.moveId !== null &&
-			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
-		) {
-			// Handle movement, snapping
-
-			// Check the the layer movement is legal:
-			let moveToLayerId = timelineObjMove.hoveredLayerId
-			if (moveToLayerId) {
-				const newLayerMapping = project.mappings[moveToLayerId]
-				if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
-					moveToLayerId = null
-					handleError('Unable to move to that layer (incompatible layer type)')
-				}
-			}
-
-			try {
-				const o = applyMovementToTimeline(
-					part.timeline,
-					orgResolvedTimeline,
-					bypassSnapping ? [] : snapPoints || [],
-					snapDistanceInMilliseconds,
-					dragDelta,
-					// The use of wasMoved here helps prevent a brief flash at the
-					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-					timelineObjMove.moveType ?? timelineObjMove.wasMoved,
-					timelineObjMove.leaderTimelineObjId,
-					gui.selectedTimelineObjIds,
-					cache.current,
-					moveToLayerId,
-					Boolean(timelineObjMove.duplicate)
-				)
-				modifiedTimeline = o.modifiedTimeline
-				resolvedTimeline = o.resolvedTimeline
-				newChangedObjects = o.changedObjects
-				newDuplicatedObjects = o.duplicatedObjects
-
-				if (
-					typeof leaderObjOriginalLayerId === 'string' &&
-					!resolvedTimeline.layers[leaderObjOriginalLayerId]
-				) {
-					// If the leaderObj's original layer is now empty, it won't be rendered,
-					// making it impossible for the user to move the leaderObj back to whence it came.
-					// So, we add an empty layer object here to force it to remain visible.
-					resolvedTimeline.layers[leaderObjOriginalLayerId] = []
-				}
-			} catch (e) {
-				// If there was an error applying the movement (for example a circular dependency),
-				// reset the movement to the original state:
-
-				console.error('Error when resolving the moved timeline, reverting to original state.')
-				console.error(e)
-
-				handleError('There was an error when trying to move')
+			if (
+				gui.selectedTimelineObjIds.length === 1 &&
+				leaderObj &&
+				timelineObjMove.hoveredLayerId &&
+				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)
+			) {
+				// Handle moving a timelineObj to the "new layer" area
+				// This type of move is only allowed when a single timelineObj is selected.
 
 				modifiedTimeline = part.timeline
 				resolvedTimeline = orgResolvedTimeline
-				newChangedObjects = null
-				newDuplicatedObjects = null
+				newObjectsToMoveToNewLayer = [leaderObj.obj.id]
+			} else if (
+				(dragDelta || leaderObjLayerChanged) &&
+				timelineObjMove.partId === part.id &&
+				leaderObj &&
+				timelineObjMove.leaderTimelineObjId &&
+				timelineObjMove.moveId !== null &&
+				!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
+			) {
+				// Handle movement, snapping
+
+				// Check the the layer movement is legal:
+				let moveToLayerId = timelineObjMove.hoveredLayerId
+				if (moveToLayerId) {
+					const newLayerMapping = project.mappings[moveToLayerId]
+					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+						moveToLayerId = null
+						handleError('Unable to move to that layer (incompatible layer type)')
+					}
+				}
+
+				try {
+					const o = applyMovementToTimeline(
+						part.timeline,
+						orgResolvedTimeline,
+						bypassSnapping ? [] : snapPoints || [],
+						snapDistanceInMilliseconds,
+						dragDelta,
+						// The use of wasMoved here helps prevent a brief flash at the
+						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
+						timelineObjMove.leaderTimelineObjId,
+						gui.selectedTimelineObjIds,
+						cache.current,
+						moveToLayerId,
+						Boolean(timelineObjMove.duplicate)
+					)
+					modifiedTimeline = o.modifiedTimeline
+					resolvedTimeline = o.resolvedTimeline
+					newChangedObjects = o.changedObjects
+					newDuplicatedObjects = o.duplicatedObjects
+
+					if (
+						typeof leaderObjOriginalLayerId === 'string' &&
+						!resolvedTimeline.layers[leaderObjOriginalLayerId]
+					) {
+						// If the leaderObj's original layer is now empty, it won't be rendered,
+						// making it impossible for the user to move the leaderObj back to whence it came.
+						// So, we add an empty layer object here to force it to remain visible.
+						resolvedTimeline.layers[leaderObjOriginalLayerId] = []
+					}
+				} catch (e) {
+					// If there was an error applying the movement (for example a circular dependency),
+					// reset the movement to the original state:
+
+					console.error('Error when resolving the moved timeline, reverting to original state.')
+					console.error(e)
+
+					handleError('There was an error when trying to move')
+
+					modifiedTimeline = part.timeline
+					resolvedTimeline = orgResolvedTimeline
+					newChangedObjects = null
+					newDuplicatedObjects = null
+					newObjectsToMoveToNewLayer = null
+				}
+			} else {
+				modifiedTimeline = part.timeline
+				resolvedTimeline = orgResolvedTimeline
 			}
-		} else {
-			modifiedTimeline = part.timeline
-			resolvedTimeline = orgResolvedTimeline
-		}
 
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		return { maxDuration, modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects }
-	}, [
-		timelineObjMove,
-		part.timeline,
-		part.id,
-		project.mappings,
-		handleError,
-		orgResolvedTimeline,
-		bypassSnapping,
-		snapPoints,
-		snapDistanceInMilliseconds,
-		gui.selectedTimelineObjIds,
-	])
+			return {
+				maxDuration,
+				modifiedTimeline,
+				resolvedTimeline,
+				newChangedObjects,
+				newDuplicatedObjects,
+				newObjectsToMoveToNewLayer,
+			}
+		}, [
+			timelineObjMove,
+			part.timeline,
+			part.id,
+			project.mappings,
+			handleError,
+			orgResolvedTimeline,
+			bypassSnapping,
+			snapPoints,
+			snapDistanceInMilliseconds,
+			gui.selectedTimelineObjIds,
+		])
 
 	useEffect(() => {
-		if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
+		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+			changedObjects.current = null
+		} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
 		}
-	}, [newChangedObjects])
+	}, [newChangedObjects, newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
-		if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+			changedObjects.current = null
+		} else if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
 			duplicatedObjects.current = newDuplicatedObjects
 		}
-	}, [newDuplicatedObjects])
+	}, [newDuplicatedObjects, newObjectsToMoveToNewLayer])
+
+	useEffect(() => {
+		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+			objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
+		}
+	}, [newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
 		// Handle when we stop moving:
@@ -325,6 +358,18 @@ export const PartView: React.FC<{
 					promises.push(promise)
 				}
 				duplicatedObjects.current = null
+			}
+			if (objectsToMoveToNewLayer.current) {
+				for (const objId of objectsToMoveToNewLayer.current) {
+					const promise = ipcServer.moveTimelineObjToNewLayer({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: objId,
+					})
+					promises.push(promise)
+				}
+				objectsToMoveToNewLayer.current = null
 			}
 
 			Promise.allSettled(promises)
