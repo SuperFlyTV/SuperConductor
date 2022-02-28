@@ -39,7 +39,7 @@ export class TSR {
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
-		this.conductor.init().catch(console.error)
+		this.conductor.init().catch(log.error)
 
 		this.send = () => {
 			throw new Error('TSR.send() not set!')
@@ -96,7 +96,7 @@ export class TSR {
 				.then((resources) => {
 					cb(deviceId, resources)
 				})
-				.catch(console.error)
+				.catch(this.log.error)
 		}
 	}
 	public reportAllStatuses() {
@@ -117,7 +117,7 @@ export class TSR {
 					port: deviceOptions.options?.port,
 					autoConnect: true,
 					onConnected: async () => {
-						console.log('CasparCG: Connection initialized')
+						this.log.info('CasparCG: Connection initialized')
 						// this.fetchAndSetMedia()
 						// this.fetchAndSetTemplates()
 					},
@@ -160,7 +160,7 @@ export class TSR {
 									resource.thumbnail = thumbnail.response.data
 								} catch (error) {
 									// console.error(`Could not set thumbnail for media "${media.name}".`, error)
-									console.error(`Could not set thumbnail for media "${media.name}".`)
+									this.log.error(`Could not set thumbnail for media "${media.name}".`)
 								}
 							}
 
