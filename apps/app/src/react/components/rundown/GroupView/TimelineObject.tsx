@@ -10,6 +10,8 @@ import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import short from 'short-uuid'
 
+const HANDLE_WIDTH = 8
+
 export const TimelineObject: React.FC<{
 	groupId: string
 	partId: string
@@ -206,6 +208,13 @@ export const TimelineObject: React.FC<{
 			<div
 				className="handle handle--left"
 				onPointerDown={() => {
+					if (ref.current) {
+						const box = ref.current.getBoundingClientRect()
+						if (box.width <= HANDLE_WIDTH * 2) {
+							return setMoveType('whole')
+						}
+					}
+
 					setMoveType('start')
 				}}
 			/>
@@ -236,6 +245,13 @@ export const TimelineObject: React.FC<{
 			<div
 				className="handle handle--right"
 				onPointerDown={() => {
+					if (ref.current) {
+						const box = ref.current.getBoundingClientRect()
+						if (box.width <= HANDLE_WIDTH * 2) {
+							return setMoveType('whole')
+						}
+					}
+
 					setMoveType('duration')
 				}}
 			/>
