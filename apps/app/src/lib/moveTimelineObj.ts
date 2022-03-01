@@ -37,8 +37,8 @@ export function applyMovementToTimeline(
 	changedObjects: { [objectId: string]: TimelineObj } | null
 	duplicatedObjects: { [objectId: string]: TimelineObj } | null
 } {
-	if (selectedTimelineObjIds.length > 1) {
-		// Don't allow layer changes when moving more than one timelineObj
+	if (selectedTimelineObjIds.length > 1 || moveType !== 'whole') {
+		// Don't allow layer changes when moving more than one timelineObj OR if not doing a "whole" type move
 		leaderTimelineObjNewLayer = null
 	}
 
