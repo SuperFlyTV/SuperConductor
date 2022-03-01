@@ -1485,10 +1485,10 @@
     read-pkg-up "^9.0.0"
     shelljs "^0.8.5"
 
-"@sofie-automation/sorensen@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@sofie-automation/sorensen/-/sorensen-1.2.0.tgz#475eec2f8c7c660c456debb45dd732b01a3b8b3a"
-  integrity sha512-Igfc+1SQihGb4jsU6wRTfXwDyLGFKJeuLd6ZGHbeRWjzsFAWUePU6yLvhse0b+b1r87F8ai+fjrZOnTOs0t3cQ==
+"@sofie-automation/sorensen@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@sofie-automation/sorensen/-/sorensen-1.3.0.tgz#495858e80dd31299676c8278aa8eaabe6be961e2"
+  integrity sha512-ZFWKmqE9iTA2UorA21bhXnbBnEwz08blUrnQwV3jBqeCuzLJvzZ7sOwVXWbr9Yfc2v4jFthFqo3AbRMGc8mkug==
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"

@@ -76,6 +76,8 @@ export const TimelineObject: React.FC<{
 			global: true,
 		})
 
+		keyTracker.addEventListener('keycancel', onKey)
+
 		return () => {
 			keyTracker.unbind('Shift', onKey)
 			keyTracker.unbind('Alt', onKey)
