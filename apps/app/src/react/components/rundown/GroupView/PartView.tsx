@@ -641,6 +641,7 @@ export const PartView: React.FC<{
 				dragging: isDragging,
 			})}
 		>
+			<div className="part__dragArrow" />
 			<div ref={dragRef} className="part__drag-handle">
 				<MdOutlineDragIndicator />
 			</div>

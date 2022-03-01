@@ -29,7 +29,18 @@
 		background-color: $partQueuedBg;
 	}
 	&.dragging {
-		opacity: 0.35;
+		border: 1px solid white;
+		border-top: 0;
+		display: block;
+		overflow: visible;
+
+		> * {
+			display: none;
+		}
+
+		> .part__dragArrow {
+			display: block;
+		}
 	}
 
 	&__drag-handle {
@@ -215,6 +226,19 @@
 	&__endcap {
 		grid-area: endcap;
 		background: black;
+	}
+
+	&__dragArrow {
+		display: none;
+		position: absolute;
+		top: 50%;
+		left: 0;
+		transform: translate(-100%, -50%);
+		width: 0;
+		height: 0;
+		border-top: $partDragIndicatorSize solid transparent;
+		border-bottom: $partDragIndicatorSize solid transparent;
+		border-left: $partDragIndicatorSize solid white;
 	}
 
 	.control--hoverOnly {
