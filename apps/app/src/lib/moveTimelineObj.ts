@@ -4,6 +4,8 @@ import short from 'short-uuid'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/contexts/TimelineObjectMove'
 
+const MIN_DURATION = 1
+
 export type SnapPoint = {
 	timelineObjId: string
 	time: number
@@ -336,7 +338,10 @@ function applyDragDelta(
 					}
 
 					if (orgInstance.end) {
-						enable.duration = Math.round(orgInstance.end - orgInstance.start - dragDelta)
+						enable.duration = Math.max(
+							MIN_DURATION,
+							Math.round(orgInstance.end - orgInstance.start - dragDelta)
+						)
 					} else {
 						// Is infinite
 						if (enable.end) {
@@ -367,7 +372,10 @@ function applyDragDelta(
 					}
 
 					if (orgInstance.end) {
-						enable.duration = Math.round(orgInstance.end - orgInstance.start + dragDelta)
+						enable.duration = Math.max(
+							MIN_DURATION,
+							Math.round(orgInstance.end - orgInstance.start + dragDelta)
+						)
 					} else {
 						// Is infinite
 						if (enable.end) {
