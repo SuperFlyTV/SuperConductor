@@ -35,6 +35,7 @@ export const enum ActionDescription {
 	OpenRundown = 'open rundown',
 	CloseRundown = 'close rundown',
 	RenameRundown = 'rename rundown',
+	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -101,6 +102,12 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
+	}) => Promise<unknown>
+	moveTimelineObjToNewLayer: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
 	}) => Promise<unknown>
 	addResourceToTimeline: (data: {
 		rundownId: string

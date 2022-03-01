@@ -51,6 +51,14 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}
+	moveTimelineObjToNewLayer(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<void> {
+		return this.invokeServerMethod('moveTimelineObjToNewLayer', data)
+	}
 	newPart(data: {
 		rundownId: string
 
