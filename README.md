@@ -38,6 +38,16 @@ If you've installed the SuperConductor UI and `tsr-bridge` on two different comp
 
 ## For Developers
 
+### Prerequisites
+
+SuperConductor has some native dependencies which need to be (re)built from source. This requires a full Node.js native module compiler toolchain, including Python 3.
+
+On Windows, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required.
+
+On Linux, install the `build-essential` package and then install Python 3.
+
+On macOS, install XCode and its optional tools `xcode-select --install` and then install Python 3.
+
 ### Quick start
 
 - [Install Yarn](https://yarnpkg.com/getting-started/install)
