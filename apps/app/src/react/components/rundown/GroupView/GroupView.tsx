@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
@@ -66,7 +66,7 @@ export const GroupView: React.FC<{
 
 	const [playhead, setPlayhead] = useState<GroupPlayData>(getGroupPlayData(playheadData.current))
 	const requestRef = useRef<number>(0)
-	const updatePlayhead = () => {
+	const updatePlayhead = useCallback(() => {
 		const newPlayhead = getGroupPlayData(playheadData.current)
 
 		setPlayhead((oldPlayhead) => {
@@ -77,13 +77,13 @@ export const GroupView: React.FC<{
 			}
 		})
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
-	}
+	}, [])
 	useEffect(() => {
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 		return () => {
 			window.cancelAnimationFrame(requestRef.current)
 		}
-	}, [])
+	}, [updatePlayhead])
 
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
@@ -110,7 +110,7 @@ export const GroupView: React.FC<{
 		} else {
 			wasPlayingRef.current = false
 		}
-	}, [playhead, group, ipcServer, rundownId])
+	}, [playhead, group, ipcServer, rundownId, handleError])
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 

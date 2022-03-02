@@ -65,7 +65,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 		}
 
 		setResources([])
-	}, [editing])
+	}, [editing, resourcesContext])
 
 	if (editing) {
 		const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))

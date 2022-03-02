@@ -435,35 +435,38 @@ export const PartView: React.FC<{
 
 	const [triggerActive, setTriggerActive] = useState<boolean>(false)
 	const prevTriggerLength = useRef(0)
-	const handleTrigger = useCallback((triggers: ActiveTriggers) => {
-		// was something pressed?
-		const triggerLength = Object.keys(triggers).length
-		if (triggerLength > prevTriggerLength.current) {
-			// The length is longer; ie a button was pressed.
+	const handleTrigger = useCallback(
+		(triggers: ActiveTriggers) => {
+			// was something pressed?
+			const triggerLength = Object.keys(triggers).length
+			if (triggerLength > prevTriggerLength.current) {
+				// The length is longer; ie a button was pressed.
 
-			const trigger: Trigger = {
-				label: activeTriggersToString(triggers),
-				fullIdentifiers: triggers.map((t) => t.fullIdentifier),
-				action: 'play',
+				const trigger: Trigger = {
+					label: activeTriggersToString(triggers),
+					fullIdentifiers: triggers.map((t) => t.fullIdentifier),
+					action: 'play',
+				}
+				console.log('Assign Trigger ', trigger)
+
+				ipcServer
+					.setPartTrigger({
+						rundownId,
+						groupId: parentGroup.id,
+						partId: part.id,
+						trigger,
+						triggerIndex: 9999, // Add a trigger
+					})
+					.catch(handleError)
+			} else if (triggerLength < prevTriggerLength.current) {
+				// The length is shorter; ie a button was released.
+				// Stop listening for triggers:
+				setTriggerActive(false)
 			}
-			console.log('Assign Trigger ', trigger)
-
-			ipcServer
-				.setPartTrigger({
-					rundownId,
-					groupId: parentGroup.id,
-					partId: part.id,
-					trigger,
-					triggerIndex: 9999, // Add a trigger
-				})
-				.catch(handleError)
-		} else if (triggerLength < prevTriggerLength.current) {
-			// The length is shorter; ie a button was released.
-			// Stop listening for triggers:
-			setTriggerActive(false)
-		}
-		prevTriggerLength.current = triggerLength
-	}, [])
+			prevTriggerLength.current = triggerLength
+		},
+		[handleError, ipcServer, parentGroup.id, part.id, rundownId]
+	)
 	useEffect(() => {
 		if (triggerActive) {
 			hotkeyContext.triggers.on('trigger', handleTrigger)

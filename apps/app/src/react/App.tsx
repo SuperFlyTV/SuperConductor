@@ -137,7 +137,7 @@ export const App = () => {
 		return () => {
 			ipcClient.destroy()
 		}
-	}, [])
+	}, [triggers])
 
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
@@ -205,19 +205,19 @@ export const App = () => {
 					identifier: sorensen.getKeyForCode(code),
 				}
 			})
-			hotkeyContext.triggers.setActiveKeys(activeKeys)
+			triggers.setActiveKeys(activeKeys)
 
 			// Check if anyone is listening for keys.
 			// In that case, the user is currently setting up new triggers, so we don't want to
 			// send the keys to the backend and unexpectedly trigger the action.
-			if (!hotkeyContext.triggers.isAnyoneListening()) {
+			if (!triggers.isAnyoneListening()) {
 				// Send the currently pressed keys to backend, so that the server can execute triggers:
 				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
 			}
 		}
 		document.addEventListener('keydown', (e) => handleKey(e))
 		document.addEventListener('keyup', (e) => handleKey(e))
-	}, [])
+	}, [handleError, triggers, serverAPI])
 
 	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
 		moveType: null,

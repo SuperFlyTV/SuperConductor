@@ -11,7 +11,7 @@ export function ParsedValueInput<V>(
 	const [value, setValue] = React.useState<string>('')
 	React.useEffect(() => {
 		setValue(stringify(currentValue))
-	}, [currentValue])
+	}, [currentValue, stringify])
 
 	const onSave = (str: string) => {
 		if (!str) {
