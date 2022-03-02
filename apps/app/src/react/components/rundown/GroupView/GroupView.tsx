@@ -6,7 +6,7 @@ import { PartView } from './PartView'
 import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DragItemTypes, isPartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, FormControlLabel, Switch } from '@mui/material'
@@ -357,10 +357,53 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
+	const wrapperRef = useRef<HTMLDivElement>(null)
+
+	const [{ handlerId }, drop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const { partId } = await ipcServer.newPart({
+						rundownId,
+						groupId: group.id,
+						name: droppedItem.resource.id,
+					})
+
+					await ipcServer.addResourceToTimeline({
+						rundownId,
+						groupId: group.id,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundownId, group]
+	)
+
+	useEffect(() => {
+		drop(wrapperRef)
+	}, [drop])
 
 	return (
 		<>
-			<div className="group-list__control-row">
+			<div ref={wrapperRef} className="group-list__control-row" data-handler-id={handlerId}>
 				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Button>

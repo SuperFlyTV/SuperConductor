@@ -4,7 +4,7 @@ import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { useDrop } from 'react-dnd'
-import { DragItemTypes, isPartDragItem } from '../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
@@ -94,16 +94,116 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const newPartRef = useRef<HTMLButtonElement>(null)
+	const newGroupRef = useRef<HTMLDivElement>(null)
+
+	const [{ handlerId: partDropHandlerId }, newPartDrop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const { partId, groupId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId: null, // Creates a transparent group.
+						name: droppedItem.resource.id,
+					})
+
+					if (!groupId) {
+						return
+					}
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown]
+	)
+	useEffect(() => {
+		newPartDrop(newPartRef)
+	}, [newPartDrop])
+
+	const [{ handlerId: groupDropHandlerId }, newGroupDrop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const groupId = await ipcServer.newGroup({
+						rundownId: rundown.id,
+						name: droppedItem.resource.id,
+					})
+
+					const { partId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId,
+						name: droppedItem.resource.id,
+					})
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown]
+	)
+	useEffect(() => {
+		newGroupDrop(newGroupRef)
+	}, [newGroupDrop])
 
 	return (
 		<>
 			<div className="group-list__control-row">
-				<Button variant="contained" onClick={() => setNewPartOpen(true)}>
+				<Button
+					variant="contained"
+					onClick={() => setNewPartOpen(true)}
+					ref={newPartRef}
+					data-handler-id={partDropHandlerId}
+				>
 					New part
 				</Button>
-				<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
-					New group
-				</Button>
+				<div style={{ flexGrow: 1 }} ref={newGroupRef} data-handler-id={groupDropHandlerId}>
+					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
+						New group
+					</Button>
+				</div>
 			</div>
 
 			<PartPropertiesDialog
