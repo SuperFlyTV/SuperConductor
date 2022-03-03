@@ -7,8 +7,9 @@
 	.group-list__control-row {
 		display: flex;
 		margin-top: 2rem;
+		display: flex;
 
-		button {
+		> * {
 			margin-right: 1rem;
 		}
 	}

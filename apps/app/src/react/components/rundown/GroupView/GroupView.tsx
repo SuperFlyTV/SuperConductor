@@ -18,6 +18,7 @@ import { allowMovingItemIntoGroup } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
+import { DropZone } from '../../util/DropZone'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -359,12 +360,13 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
-	const [{ handlerId }, drop] = useDrop(
+	const [{ handlerId, isOver }, drop] = useDrop(
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
 				}
 			},
 			canDrop: (movedItem) => {
@@ -403,11 +405,16 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 
 	return (
 		<>
-			<div ref={wrapperRef} className="group-list__control-row" data-handler-id={handlerId}>
+			<DropZone
+				ref={wrapperRef}
+				className="group-list__control-row"
+				data-drop-handler-id={handlerId}
+				isOver={isOver}
+			>
 				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Button>
-			</div>
+			</DropZone>
 
 			<PartPropertiesDialog
 				open={newPartOpen}

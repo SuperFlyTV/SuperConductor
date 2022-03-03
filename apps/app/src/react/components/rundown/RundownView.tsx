@@ -11,6 +11,7 @@ import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { PartMoveContext } from '../../contexts/PartMove'
+import { DropZone } from '../util/DropZone'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -94,15 +95,16 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const newPartRef = useRef<HTMLButtonElement>(null)
+	const newPartRef = useRef<HTMLDivElement>(null)
 	const newGroupRef = useRef<HTMLDivElement>(null)
 
-	const [{ handlerId: partDropHandlerId }, newPartDrop] = useDrop(
+	const [{ handlerId: partDropHandlerId, isOver: partDropIsOver }, newPartDrop] = useDrop(
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
 				}
 			},
 			canDrop: (movedItem) => {
@@ -142,12 +144,13 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 		newPartDrop(newPartRef)
 	}, [newPartDrop])
 
-	const [{ handlerId: groupDropHandlerId }, newGroupDrop] = useDrop(
+	const [{ handlerId: groupDropHandlerId, isOver: groupDropIsOver }, newGroupDrop] = useDrop(
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
 				}
 			},
 			canDrop: (movedItem) => {
@@ -191,19 +194,26 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	return (
 		<>
 			<div className="group-list__control-row">
-				<Button
-					variant="contained"
-					onClick={() => setNewPartOpen(true)}
+				<DropZone
+					isOver={partDropIsOver}
 					ref={newPartRef}
-					data-handler-id={partDropHandlerId}
+					style={{ height: '96vh' }}
+					data-drop-handler-id={partDropHandlerId}
 				>
-					New part
-				</Button>
-				<div style={{ flexGrow: 1 }} ref={newGroupRef} data-handler-id={groupDropHandlerId}>
+					<Button variant="contained" onClick={() => setNewPartOpen(true)}>
+						New part
+					</Button>
+				</DropZone>
+				<DropZone
+					isOver={groupDropIsOver}
+					ref={newGroupRef}
+					style={{ flexGrow: 1, height: '96vh' }}
+					data-drop-handler-id={groupDropHandlerId}
+				>
 					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
 						New group
 					</Button>
-				</div>
+				</DropZone>
 			</div>
 
 			<PartPropertiesDialog
