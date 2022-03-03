@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useMemo, useState } from 'react'
 import { InfoGroup } from './InfoGroup'
 import { ResourcesContext } from '../../contexts/Resources'
 import { IPCServerContext } from '../../contexts/IPCServer'
@@ -14,8 +14,8 @@ import { findPartInRundown } from '../../../lib/util'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { Group } from '../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { Button, Grid, MenuItem } from '@mui/material'
-import { TextField } from 'formik-mui'
+import { Autocomplete, Button, Grid, MenuItem, TextField } from '@mui/material'
+import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const ResourceLibrary: React.FC = () => {
@@ -33,6 +33,29 @@ export const ResourceLibrary: React.FC = () => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
+	const [searchInputValue, setSearchInputValue] = React.useState('')
+
+	const resourceNames = useMemo(() => {
+		return Object.values(resources)
+			.filter((resource) => 'name' in resource)
+			.map((resource) => (resource as any).name)
+	}, [resources])
+
+	const filteredResources = useMemo(() => {
+		if (searchInputValue.trim().length === 0) {
+			return Object.values(resources)
+		}
+
+		return Object.values(resources).filter((resource) => {
+			if ('name' in resource) {
+				const name: string = (resource as any).name
+				return name.toLowerCase().includes(searchInputValue.toLowerCase())
+			}
+
+			return false
+		})
+	}, [resources, searchInputValue])
+
 	return (
 		<div className="sidebar media-library-sidebar">
 			<InfoGroup
@@ -49,7 +72,26 @@ export const ResourceLibrary: React.FC = () => {
 					setRefreshing(false)
 				}}
 			>
-				{Object.values(resources)
+				<Autocomplete
+					options={resourceNames}
+					inputValue={searchInputValue}
+					onInputChange={(event, newInputValue) => {
+						setSearchInputValue(newInputValue)
+					}}
+					renderInput={(params) => (
+						<TextField
+							{...params}
+							label="Search Assets"
+							InputProps={{
+								...params.InputProps,
+								type: 'search',
+							}}
+						/>
+					)}
+					sx={{ marginBottom: '0.5rem' }}
+				/>
+
+				{filteredResources
 					.map<[ResourceAny, JSX.Element]>((resource) => {
 						if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 							return [
@@ -143,7 +185,7 @@ export const ResourceLibrary: React.FC = () => {
 											<Grid container spacing={2}>
 												<Grid item xs={6}>
 													<Field
-														component={TextField}
+														component={FormikMuiTextField}
 														select
 														margin="normal"
 														fullWidth
@@ -164,7 +206,7 @@ export const ResourceLibrary: React.FC = () => {
 
 												<Grid item xs={6}>
 													<Field
-														component={TextField}
+														component={FormikMuiTextField}
 														select
 														margin="normal"
 														fullWidth
