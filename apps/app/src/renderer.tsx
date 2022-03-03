@@ -13,9 +13,9 @@ export const ContextWrapper: React.FC = () => {
 		return createTheme({
 			palette: {
 				mode: 'dark',
-				primary: {
-					main: '#545A78',
-				},
+				// primary: {
+				// 	main: '#545A78',
+				// },
 			},
 			typography: {
 				fontFamily: ['Barlow', 'sans-serif'].join(','),
@@ -33,6 +33,13 @@ export const ContextWrapper: React.FC = () => {
 							minWidth: 0,
 							width: SMALL_BTN_SIZE,
 							height: SMALL_BTN_SIZE,
+						},
+						containedPrimary: {
+							color: 'white',
+							backgroundColor: '#545A78',
+							'&:hover': {
+								backgroundColor: '#3a3e54',
+							},
 						},
 					},
 				},
