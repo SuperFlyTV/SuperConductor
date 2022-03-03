@@ -8,7 +8,8 @@
 		"node": "^12.20 || ^14.15.3 || 16"
 	},
 	"scripts": {
-		"build": "webpack",
+		"build": "rimraf ./dist && tsc && webpack",
+		"build:electron": "tsc -p tsconfig.electron.json",
 		"build:binary": "electron-builder",
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
