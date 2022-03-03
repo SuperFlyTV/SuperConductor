@@ -88,7 +88,7 @@ export const ResourceLibrary: React.FC = () => {
 							}}
 						/>
 					)}
-					sx={{ marginBottom: '0.5rem' }}
+					sx={{ margin: '0.5rem 0' }}
 				/>
 
 				{filteredResources
