@@ -7,7 +7,7 @@ import { Group } from '../../../models/rundown/Group'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface IProps {
-	initial?: Group
+	initial?: Partial<Group>
 	open: boolean
 	onAccepted: (newGroup: Partial<Group> & Pick<Group, 'name'>) => void
 	onDiscarded: () => void

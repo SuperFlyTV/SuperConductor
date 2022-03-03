@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback, useMemo } from 'react'
 import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
@@ -18,6 +18,8 @@ import { allowMovingItemIntoGroup } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
+import { Rundown } from '../../../../models/rundown/Rundown'
+import { RundownContext } from '../../../contexts/Rundown'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -29,6 +31,7 @@ export const GroupView: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { updatePartMove } = useContext(PartMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
+	const rundown = useContext(RundownContext)
 	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updatePartMoveRef = useRef(updatePartMove)
@@ -309,7 +312,7 @@ export const GroupView: React.FC<{
 						))}
 					</div>
 
-					<GroupOptions rundownId={rundownId} group={group} />
+					<GroupOptions rundown={rundown} group={group} />
 				</div>
 
 				<GroupPropertiesDialog
@@ -353,10 +356,15 @@ export const GroupView: React.FC<{
 	}
 }
 
-const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
+const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
+	const numParts = useMemo(() => {
+		return rundown.groups.reduce((prev, current) => {
+			return prev + current.parts.length
+		}, 0)
+	}, [rundown])
 
 	return (
 		<>
@@ -370,10 +378,11 @@ const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId
 				open={newPartOpen}
 				title="New Part"
 				acceptLabel="Create"
+				initial={{ name: `Part ${numParts + 1}` }}
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
-							rundownId,
+							rundownId: rundown.id,
 							name: newPart.name,
 							groupId: group.id,
 						})

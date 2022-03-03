@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { GroupView } from './GroupView/GroupView'
 import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
@@ -94,6 +94,11 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const numParts = useMemo(() => {
+		return rundown.groups.reduce((prev, current) => {
+			return prev + current.parts.length
+		}, 0)
+	}, [rundown])
 
 	return (
 		<>
@@ -110,6 +115,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				open={newPartOpen}
 				title="New Part"
 				acceptLabel="Create"
+				initial={{ name: `Part ${numParts + 1}` }}
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
@@ -129,6 +135,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				open={newGroupOpen}
 				title="New Group"
 				acceptLabel="Create"
+				initial={{ name: `Group ${rundown.groups.length + 1}` }}
 				onAccepted={(newGroup) => {
 					ipcServer
 						.newGroup({
