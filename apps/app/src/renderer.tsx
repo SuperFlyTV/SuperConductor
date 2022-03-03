@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { SnackbarProvider } from 'notistack'
-import { createTheme, ThemeProvider } from '@mui/material'
+import { createTheme, CssBaseline, ThemeProvider } from '@mui/material'
 import { App } from './react/App'
 
 const SMALL_BTN_SIZE = '18px'
@@ -26,6 +26,19 @@ export const ContextWrapper: React.FC = () => {
 				fontSize: 14 * 1.6,
 			},
 			components: {
+				MuiCssBaseline: {
+					styleOverrides: {
+						'*, *::before, *::after': {
+							transition: 'none !important',
+							animation: 'none !important',
+						},
+					},
+				},
+				MuiButtonBase: {
+					defaultProps: {
+						disableRipple: true,
+					},
+				},
 				MuiButton: {
 					styleOverrides: {
 						sizeSmall: {
@@ -75,6 +88,7 @@ export const ContextWrapper: React.FC = () => {
 		<DndProvider backend={HTML5Backend}>
 			<ThemeProvider theme={theme}>
 				<SnackbarProvider maxSnack={1}>
+					<CssBaseline />
 					<App />
 				</SnackbarProvider>
 			</ThemeProvider>
