@@ -193,6 +193,7 @@ export const TopHeader: React.FC<{
 							</DialogContent>
 							<DialogActions>
 								<Button
+									variant="contained"
 									onClick={() => {
 										setNewRundownOpen(true)
 									}}
@@ -200,13 +201,16 @@ export const TopHeader: React.FC<{
 									New Rundown
 								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}
 								>
 									Open
 								</Button>
-								<Button onClick={handleOpenRundownClose}>Close</Button>
+								<Button variant="contained" onClick={handleOpenRundownClose}>
+									Close
+								</Button>
 							</DialogActions>
 						</Dialog>
 					)
@@ -244,8 +248,11 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
-								<Button onClick={handleNewRundownClose}>Cancel</Button>
+								<Button variant="contained" onClick={handleNewRundownClose}>
+									Cancel
+								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}
@@ -291,8 +298,11 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
-								<Button onClick={handleRenameRundownClose}>Cancel</Button>
+								<Button variant="contained" onClick={handleRenameRundownClose}>
+									Cancel
+								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}

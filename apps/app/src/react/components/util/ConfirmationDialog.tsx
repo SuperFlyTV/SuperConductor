@@ -22,8 +22,12 @@ export function ConfirmationDialog({ open, title, body, acceptLabel, onAccepted,
 			<DialogTitle>{title}</DialogTitle>
 			<DialogContent>{body}</DialogContent>
 			<DialogActions>
-				<Button onClick={onDiscarded}>Cancel</Button>
-				<Button onClick={onAccepted}>{acceptLabel}</Button>
+				<Button variant="contained" onClick={onDiscarded}>
+					Cancel
+				</Button>
+				<Button variant="contained" onClick={onAccepted}>
+					{acceptLabel}
+				</Button>
 			</DialogActions>
 		</Dialog>
 	)

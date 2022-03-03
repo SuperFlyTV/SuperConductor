@@ -185,7 +185,9 @@ export const BridgesSettings: React.FC<{ project: Project }> = ({ project }) => 
 						<DevicesSettings project={project} bridgeId={bridgeIdForEditDevices} />
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={handleDevicesClose}>Close</Button>
+						<Button variant="contained" onClick={handleDevicesClose}>
+							Close
+						</Button>
 					</DialogActions>
 				</Dialog>
 			)}

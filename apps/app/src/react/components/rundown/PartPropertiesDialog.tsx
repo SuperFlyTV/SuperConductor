@@ -53,8 +53,11 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 						</Form>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={onDiscarded}>Cancel</Button>
+						<Button variant="contained" onClick={onDiscarded}>
+							Cancel
+						</Button>
 						<Button
+							variant="contained"
 							onClick={() => {
 								formik.submitForm().catch(handleError)
 							}}

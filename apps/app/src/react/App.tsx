@@ -527,7 +527,9 @@ export const App = () => {
 													<Settings project={project} />
 												</DialogContent>
 												<DialogActions>
-													<Button onClick={handleSettingsClose}>Close</Button>
+													<Button variant="contained" onClick={handleSettingsClose}>
+														Close
+													</Button>
 												</DialogActions>
 											</Dialog>
 										</div>

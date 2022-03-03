@@ -53,8 +53,11 @@ export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAcc
 						</Form>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={onDiscarded}>Cancel</Button>
+						<Button variant="contained" onClick={onDiscarded}>
+							Cancel
+						</Button>
 						<Button
+							variant="contained"
 							onClick={() => {
 								formik.submitForm().catch(handleError)
 							}}
