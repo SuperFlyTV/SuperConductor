@@ -84,6 +84,8 @@ export class TSR {
 				await this.conductor.removeDevice(deviceId)
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
+				this.reportRemovedDevice(deviceId)
+				this.log.info(`TSR Device ${deviceId} removed.`)
 			}
 		}
 
@@ -219,6 +221,12 @@ export class TSR {
 				message,
 			})
 		}
+	}
+	private reportRemovedDevice(deviceId: string) {
+		this.send({
+			type: 'deviceRemoved',
+			deviceId,
+		})
 	}
 }
 

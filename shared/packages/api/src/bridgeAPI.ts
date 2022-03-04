@@ -9,6 +9,7 @@ export namespace BridgeAPI {
 			| Init
 			| Status
 			| DeviceStatus
+			| DeviceRemoved
 			| UpdatedResources
 			| TimelineIds
 			| PeripheralStatus
@@ -35,6 +36,10 @@ export namespace BridgeAPI {
 
 			ok: boolean
 			message: string
+		}
+		export interface DeviceRemoved extends MessageBase {
+			type: 'deviceRemoved'
+			deviceId: string
 		}
 		export interface UpdatedResources extends MessageBase {
 			type: 'updatedResources'

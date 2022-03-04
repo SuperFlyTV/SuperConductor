@@ -224,6 +224,8 @@ export class BridgeConnection {
 				// todo
 			} else if (msg.type === 'deviceStatus') {
 				this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
+			} else if (msg.type === 'deviceRemoved') {
+				this.onDeviceRemoved(msg.deviceId)
 			} else if (msg.type === 'updatedResources') {
 				this.callbacks.updatedResources(msg.deviceId, msg.resources)
 			} else if (msg.type === 'timelineIds') {
@@ -358,6 +360,16 @@ export class BridgeConnection {
 		if (updated) {
 			this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 		}
+	}
+	private onDeviceRemoved(deviceId: string) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+
+		const bridgeStatus = this.session.getBridgeStatus(this.bridgeId)
+		if (!bridgeStatus) throw new Error('onDeviceStatus: bridgeStatus not set')
+
+		delete bridgeStatus.devices[deviceId]
+
+		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
 	private _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
