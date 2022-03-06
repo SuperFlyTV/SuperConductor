@@ -68,14 +68,23 @@ export class TSR {
 				}
 
 				this.devices[deviceId] = newDevice
-				const device = await this.conductor.addDevice(deviceId, newDevice)
-				await device.device.on('connectionChanged', (status: DeviceStatus) => {
-					this.onDeviceStatus(deviceId, status)
+				this.onDeviceStatus(deviceId, {
+					statusCode: StatusCode.UNKNOWN,
+					messages: ['Initializing'],
+					active: false,
 				})
 
-				this.onDeviceStatus(deviceId, await device.device.getStatus())
+				// Run async so as not to block other devices from being processed.
+				;(async () => {
+					const device = await this.conductor.addDevice(deviceId, newDevice)
+					await device.device.on('connectionChanged', (status: DeviceStatus) => {
+						this.onDeviceStatus(deviceId, status)
+					})
 
-				this.sideLoadDevice(deviceId, newDevice)
+					this.onDeviceStatus(deviceId, await device.device.getStatus())
+
+					this.sideLoadDevice(deviceId, newDevice)
+				})().catch((error) => this.log.error(error))
 			}
 		}
 		// Removed:
