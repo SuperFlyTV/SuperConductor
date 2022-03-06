@@ -3,6 +3,7 @@ import {
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
+	findDevice,
 	findGroup,
 	findPart,
 	findTimelineObj,
@@ -1034,6 +1035,15 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		const rundowns = this.storage.getAllRundowns()
+
+		for (const mappingId in data.project.mappings) {
+			// Go through all Mappings and remove any belonging to devices which have been removed.
+			const mapping = data.project.mappings[mappingId]
+			const device = findDevice(data.project.bridges, mapping.deviceId)
+			if (!device) {
+				delete data.project.mappings[mappingId]
+			}
+		}
 
 		for (const rundown of rundowns) {
 			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed.
