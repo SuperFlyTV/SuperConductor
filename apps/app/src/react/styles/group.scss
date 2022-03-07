@@ -22,6 +22,11 @@
 
 		.title {
 			margin-right: 1rem;
+			cursor: pointer;
+
+			&:hover {
+				background: rgba(255, 255, 255, 0.25);
+			}
 		}
 
 		.controls {

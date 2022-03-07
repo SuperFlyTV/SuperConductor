@@ -701,6 +701,7 @@ export const PartView: React.FC<{
 			<div className="part__meta">
 				<div className="part__meta__top">
 					<div
+						title="Double-click to edit"
 						className="title"
 						onDoubleClick={() => {
 							setPartPropsOpen(true)

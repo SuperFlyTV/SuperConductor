@@ -101,6 +101,10 @@
 			flex-grow: 1;
 			min-height: 1em;
 			cursor: pointer;
+
+			&:hover {
+				background: rgba(255, 255, 255, 0.25);
+			}
 		}
 
 		& .triggers {

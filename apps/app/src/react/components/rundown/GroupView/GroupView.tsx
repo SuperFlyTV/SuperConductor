@@ -218,6 +218,7 @@ export const GroupView: React.FC<{
 				<div className="group__header">
 					<div
 						className="title"
+						title="Double-click to edit"
 						onDoubleClick={() => {
 							setGroupPropsOpen(true)
 						}}
