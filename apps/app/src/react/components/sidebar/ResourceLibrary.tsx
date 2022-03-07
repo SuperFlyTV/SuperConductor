@@ -14,7 +14,7 @@ import { findPartInRundown } from '../../../lib/util'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { Group } from '../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { Autocomplete, Button, Grid, MenuItem, TextField } from '@mui/material'
+import { Button, Grid, MenuItem, TextField } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
@@ -33,28 +33,22 @@ export const ResourceLibrary: React.FC = () => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const [searchInputValue, setSearchInputValue] = React.useState('')
-
-	const resourceNames = useMemo(() => {
-		return Object.values(resources)
-			.filter((resource) => 'name' in resource)
-			.map((resource) => (resource as any).name)
-	}, [resources])
+	const [searchValue, setSearchValue] = React.useState('')
 
 	const filteredResources = useMemo(() => {
-		if (searchInputValue.trim().length === 0) {
+		if (searchValue.trim().length === 0) {
 			return Object.values(resources)
 		}
 
 		return Object.values(resources).filter((resource) => {
 			if ('name' in resource) {
 				const name: string = (resource as any).name
-				return name.toLowerCase().includes(searchInputValue.toLowerCase())
+				return name.toLowerCase().includes(searchValue.toLowerCase())
 			}
 
 			return false
 		})
-	}, [resources, searchInputValue])
+	}, [resources, searchValue])
 
 	return (
 		<div className="sidebar media-library-sidebar">
@@ -72,23 +66,18 @@ export const ResourceLibrary: React.FC = () => {
 					setRefreshing(false)
 				}}
 			>
-				<Autocomplete
-					options={resourceNames}
-					inputValue={searchInputValue}
-					onInputChange={(event, newInputValue) => {
-						setSearchInputValue(newInputValue)
+				<TextField
+					size="small"
+					margin="normal"
+					fullWidth
+					label="Search Assets"
+					value={searchValue}
+					InputProps={{
+						type: 'search',
 					}}
-					renderInput={(params) => (
-						<TextField
-							{...params}
-							label="Search Assets"
-							InputProps={{
-								...params.InputProps,
-								type: 'search',
-							}}
-						/>
-					)}
-					sx={{ margin: '0.5rem 0' }}
+					onChange={(event) => {
+						setSearchValue(event.target.value)
+					}}
 				/>
 
 				{filteredResources
