@@ -1,6 +1,6 @@
 import { Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { DeviceType, Mapping as MappingType } from 'timeline-state-resolver-types'
+import { DeviceType, Mapping, Mapping as MappingType } from 'timeline-state-resolver-types'
 import { findDeviceOfType, listAvailableDeviceIDs } from '../../../../lib/util'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -21,8 +21,8 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 	const [deviceId, setDeviceId] = useState(mapping.deviceId)
 
 	const handleNameChange = useCallback(
-		(newName: string) => {
-			if (newName.trim().length <= 0) {
+		(newName: Mapping['layerName']) => {
+			if (typeof newName === 'undefined' || newName.trim().length <= 0) {
 				return
 			}
 
@@ -33,7 +33,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 	)
 
 	const handleDeviceTypeChange = useCallback(
-		(newDeviceType: DeviceType) => {
+		(newDeviceType: Mapping['device']) => {
 			const newDeviceId = findDeviceOfType(project.bridges, newDeviceType)
 			if (!newDeviceId) {
 				return
@@ -48,7 +48,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 	)
 
 	const handleDeviceIdChange = useCallback(
-		(newDeviceId: string) => {
+		(newDeviceId: Mapping['deviceId']) => {
 			project.mappings[mappingId].deviceId = newDeviceId
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
@@ -78,8 +78,13 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					label="Name"
 					value={name}
 					onChange={(event) => {
-						handleNameChange(event.target.value)
 						setName(event.target.value)
+					}}
+					onBlur={() => {
+						handleNameChange(name)
+					}}
+					onKeyUp={(e) => {
+						if (e.key === 'Enter') handleNameChange(name)
 					}}
 				/>
 				<TextField
@@ -90,9 +95,13 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					value={device.toString()}
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
-						const parsedValue = parseInt(event.target.value, 10)
-						handleDeviceTypeChange(parsedValue)
-						setDevice(parsedValue)
+						setDevice(parseInt(event.target.value, 10))
+					}}
+					onBlur={() => {
+						handleDeviceTypeChange(device)
+					}}
+					onKeyUp={(e) => {
+						if (e.key === 'Enter') handleDeviceTypeChange(device)
 					}}
 				>
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>
@@ -107,8 +116,13 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					value={deviceId}
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
-						handleDeviceIdChange(event.target.value)
 						setDeviceId(event.target.value)
+					}}
+					onBlur={() => {
+						handleDeviceIdChange(deviceId)
+					}}
+					onKeyUp={(e) => {
+						if (e.key === 'Enter') handleDeviceIdChange(deviceId)
 					}}
 				>
 					{listAvailableDeviceIDs(project.bridges, mapping.device).map((deviceId) => (

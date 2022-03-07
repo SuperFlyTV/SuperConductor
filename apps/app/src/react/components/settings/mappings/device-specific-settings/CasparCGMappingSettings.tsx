@@ -49,9 +49,13 @@ export const CasparCGMappingSettings: React.FC<ICasparCGMappingSettingsProps> = 
 				InputProps={{ inputProps: { min: 1 } }}
 				sx={{ width: '7rem' }}
 				onChange={(event) => {
-					const parsedValue = parseInt(event.target.value, 10)
-					handleChannelChange(parsedValue)
-					setChannel(parsedValue)
+					setChannel(parseInt(event.target.value, 10))
+				}}
+				onBlur={() => {
+					handleChannelChange(channel)
+				}}
+				onKeyUp={(e) => {
+					if (e.key === 'Enter') handleChannelChange(channel)
 				}}
 			/>
 			<TextField
@@ -63,9 +67,13 @@ export const CasparCGMappingSettings: React.FC<ICasparCGMappingSettingsProps> = 
 				InputProps={{ inputProps: { min: 1 } }}
 				sx={{ width: '7rem' }}
 				onChange={(event) => {
-					const parsedValue = parseInt(event.target.value, 10)
-					handleLayerChange(parsedValue)
-					setLayer(parsedValue)
+					setLayer(parseInt(event.target.value, 10))
+				}}
+				onBlur={() => {
+					handleLayerChange(layer)
+				}}
+				onKeyUp={(e) => {
+					if (e.key === 'Enter') handleLayerChange(layer)
 				}}
 			/>
 		</>

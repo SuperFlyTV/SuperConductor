@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react'
+import React, { useCallback, useContext, useMemo } from 'react'
 import { Bridge as BridgeType, BridgeStatus } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
 import { Button, Divider, Typography } from '@mui/material'
@@ -28,6 +28,27 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 			return bridge.outgoing
 		})
 	}, [project.bridges])
+
+	const addBridge = useCallback(() => {
+		const numBridges = Object.keys(project.bridges).length
+		const newBridge = literal<BridgeType>({
+			id: `bridge${numBridges}`,
+			name: `Bridge${numBridges}`,
+			outgoing: true,
+			url: 'ws://localhost:5401',
+			settings: {
+				devices: {
+					casparcg0: literal<DeviceOptionsCasparCG>({
+						type: DeviceType.CASPARCG,
+						options: { host: '127.0.0.1', port: 5250 },
+					}),
+				},
+			},
+		})
+
+		project.bridges[newBridge.id] = newBridge
+		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+	}, [handleError, ipcServer, project])
 
 	return (
 		<>
@@ -60,38 +81,7 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 				</Typography>
 			)}
 
-			<Button
-				variant="contained"
-				onClick={() => {
-					const numBridges = Object.keys(project.bridges).length
-					const newBridge = literal<BridgeType>({
-						id: `bridge${numBridges}`,
-						name: `Bridge${numBridges}`,
-						outgoing: true,
-						url: 'ws://localhost:5401',
-						settings: {
-							devices: {
-								casparcg0: literal<DeviceOptionsCasparCG>({
-									type: DeviceType.CASPARCG,
-									options: { host: '127.0.0.1', port: 5250 },
-								}),
-							},
-						},
-					})
-
-					const editedBridges = {
-						...project.bridges,
-						[newBridge.id]: newBridge,
-					}
-
-					const editedProject: Project = {
-						...project,
-						bridges: editedBridges,
-					}
-
-					ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
-				}}
-			>
+			<Button variant="contained" onClick={addBridge}>
 				Add Bridge connection
 			</Button>
 		</>

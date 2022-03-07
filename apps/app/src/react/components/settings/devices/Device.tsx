@@ -1,5 +1,5 @@
 import { Box, Button, TextField, Typography } from '@mui/material'
-import React, { useCallback, useContext } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { AtemOptions, CasparCGOptions } from 'timeline-state-resolver-types'
 import { Bridge, BridgeDevice } from '../../../../models/project/Bridge'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -21,12 +21,13 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const [editedDeviceId, setEditedDeviceId] = useState(deviceId)
+	const [host, setHost] = useState('')
+	const [port, setPort] = useState(MIN_PORT)
 	const deviceSettings = bridge.settings.devices[deviceId]
 
-	const onDeviceIdChange = useCallback(
-		(event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-			const newId = event.target.value
-
+	const handleDeviceIdChange = useCallback(
+		(newId: string) => {
 			if (newId.trim().length <= 0) {
 				return
 			}
@@ -39,34 +40,30 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		[bridge, deviceId, handleError, ipcServer, project]
 	)
 
-	const onDeviceHostChange = useCallback(
-		(event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-			const newHost = event.target.value
-
-			if (newHost.trim().length <= 0) {
+	const handleHostChange = useCallback(
+		(newHost: string) => {
+			if (newHost.trim().length <= 0 || !deviceSettings) {
 				return
 			}
 
-			const options = bridge.settings.devices[deviceId].options as CasparCGOptions | AtemOptions
+			const options = deviceSettings.options as CasparCGOptions | AtemOptions
 			options.host = newHost
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[bridge, deviceId, handleError, ipcServer, project]
+		[deviceSettings, handleError, ipcServer, project]
 	)
 
-	const onDevicePortChange = useCallback(
-		(event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-			const newPort = parseInt(event.target.value, 10)
-
-			if (newPort < MIN_PORT || newPort > MAX_PORT) {
+	const handlePortChange = useCallback(
+		(newPort: number) => {
+			if (newPort < MIN_PORT || newPort > MAX_PORT || !deviceSettings) {
 				return
 			}
 
-			const options = bridge.settings.devices[deviceId].options as CasparCGOptions | AtemOptions
+			const options = deviceSettings.options as CasparCGOptions | AtemOptions
 			options.port = newPort
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[bridge, deviceId, handleError, ipcServer, project]
+		[deviceSettings, handleError, ipcServer, project]
 	)
 
 	const removeDevice = useCallback(() => {
@@ -74,11 +71,21 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [bridge.settings.devices, deviceId, handleError, ipcServer, project])
 
+	useEffect(() => {
+		setEditedDeviceId(deviceId)
+	}, [deviceId])
+
+	useEffect(() => {
+		const deviceOptions = deviceSettings?.options as CasparCGOptions | AtemOptions
+		setHost(deviceOptions?.host ?? '')
+		setPort(deviceOptions?.port ?? MIN_PORT)
+	}, [deviceSettings])
+
 	if (!deviceSettings) {
 		return null
 	}
 
-	const deviceOptions = bridge.settings.devices[deviceId].options as CasparCGOptions | AtemOptions
+	const deviceOptions = deviceSettings.options as CasparCGOptions | AtemOptions
 
 	if (!deviceOptions) {
 		return null
@@ -98,29 +105,53 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 				<Box gridColumn="span 1">
 					<TextField
 						label="ID"
-						defaultValue={deviceId}
+						value={editedDeviceId}
 						size="small"
 						margin="normal"
-						onChange={onDeviceIdChange}
+						onChange={(event) => {
+							setEditedDeviceId(event.target.value)
+						}}
+						onBlur={() => {
+							handleDeviceIdChange(editedDeviceId)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleDeviceIdChange(editedDeviceId)
+						}}
 					/>
 				</Box>
 
 				<Box display="flex" flexDirection="column" gridColumn="span 1">
 					<TextField
 						label="URL"
-						defaultValue={deviceOptions.host}
+						value={host}
 						size="small"
 						margin="normal"
-						onChange={onDeviceHostChange}
+						onChange={(event) => {
+							setHost(event.target.value)
+						}}
+						onBlur={() => {
+							handleHostChange(host)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleHostChange(host)
+						}}
 					/>
 					<TextField
 						label="Port"
-						defaultValue={deviceOptions.port}
+						value={port}
 						size="small"
 						margin="normal"
 						type="number"
 						InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
-						onChange={onDevicePortChange}
+						onChange={(event) => {
+							setPort(parseInt(event.target.value, 10))
+						}}
+						onBlur={() => {
+							handlePortChange(port)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handlePortChange(port)
+						}}
 					/>
 				</Box>
 

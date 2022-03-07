@@ -26,7 +26,7 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 	)
 
 	const handleIndexChange = useCallback(
-		(newIndex: number) => {
+		(newIndex: MappingAtem['index']) => {
 			mapping.index = newIndex
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
@@ -48,9 +48,13 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 				value={mappingType}
 				sx={{ width: '21rem' }}
 				onChange={(event) => {
-					const parsedValue = parseInt(event.target.value, 10)
-					handleMappingTypeChange(parsedValue)
-					setMappingType(parsedValue)
+					setMappingType(parseInt(event.target.value, 10))
+				}}
+				onBlur={() => {
+					handleMappingTypeChange(mappingType)
+				}}
+				onKeyUp={(e) => {
+					if (e.key === 'Enter') handleMappingTypeChange(mappingType)
 				}}
 			>
 				<MenuItem value={MappingAtemType.MixEffect}>MixEffect</MenuItem>
@@ -71,9 +75,13 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 				InputProps={{ inputProps: { min: 0 } }}
 				sx={{ width: '7rem' }}
 				onChange={(event) => {
-					const parsedValue = parseInt(event.target.value, 10)
-					handleIndexChange(parsedValue)
-					setIndex(parsedValue)
+					setIndex(parseInt(event.target.value, 10))
+				}}
+				onBlur={() => {
+					handleIndexChange(index)
+				}}
+				onKeyUp={(e) => {
+					if (e.key === 'Enter') handleIndexChange(index)
 				}}
 			/>
 		</>

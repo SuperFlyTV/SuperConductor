@@ -1,7 +1,6 @@
 import { Typography, Button, TextField, Stack } from '@mui/material'
-import React, { useContext } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { Bridge as BridgeType, BridgeStatus } from '../../../models/project/Bridge'
-import { Project } from '../../../models/project/Project'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
@@ -17,6 +16,42 @@ export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const [name, setName] = useState(bridge.name)
+	const [url, setUrl] = useState(bridge.url)
+
+	const handleNameChange = useCallback(
+		(newName: BridgeType['name']) => {
+			if (newName.trim().length <= 0) {
+				return
+			}
+
+			bridge.name = newName
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[bridge, handleError, ipcServer, project]
+	)
+
+	const handleUrlChange = useCallback(
+		(newUrl: BridgeType['url']) => {
+			if (newUrl.trim().length <= 0) {
+				return
+			}
+
+			bridge.url = newUrl
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[bridge, handleError, ipcServer, project]
+	)
+
+	const removeBridge = useCallback(() => {
+		delete project.bridges[bridge.id]
+		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+	}, [bridge.id, handleError, ipcServer, project])
+
+	useEffect(() => {
+		setName(bridge.name)
+		setUrl(bridge.url)
+	}, [bridge])
 
 	return (
 		<React.Fragment>
@@ -37,31 +72,17 @@ export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
 					size="small"
 					type="text"
 					label="Name"
-					defaultValue={bridge.name}
-					onChange={(event) => {
-						const newName = event.target.value
-
-						if (newName.trim().length <= 0) {
-							return
-						}
-
-						const editedBridges = {
-							...project.bridges,
-						}
-
-						editedBridges[bridge.id] = {
-							...bridge,
-							name: newName,
-						}
-
-						const editedProject: Project = {
-							...project,
-							bridges: editedBridges,
-						}
-
-						ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
-					}}
+					value={name}
 					sx={{ marginRight: '0.5rem' }}
+					onChange={(event) => {
+						setName(event.target.value)
+					}}
+					onBlur={() => {
+						handleNameChange(name)
+					}}
+					onKeyUp={(e) => {
+						if (e.key === 'Enter') handleNameChange(name)
+					}}
 				/>
 
 				<TextField
@@ -69,29 +90,15 @@ export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
 					size="small"
 					type="text"
 					label="URL"
-					defaultValue={bridge.url}
+					value={url}
 					onChange={(event) => {
-						const newURL = event.target.value
-
-						if (newURL.trim().length <= 0) {
-							return
-						}
-
-						const editedBridges = {
-							...project.bridges,
-						}
-
-						editedBridges[bridge.id] = {
-							...bridge,
-							url: newURL,
-						}
-
-						const editedProject: Project = {
-							...project,
-							bridges: editedBridges,
-						}
-
-						ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
+						setUrl(event.target.value)
+					}}
+					onBlur={() => {
+						handleUrlChange(url)
+					}}
+					onKeyUp={(e) => {
+						if (e.key === 'Enter') handleUrlChange(url)
 					}}
 				/>
 
@@ -99,18 +106,7 @@ export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
 					variant="contained"
 					color="error"
 					sx={{ marginTop: '8px', marginLeft: '7rem' }}
-					onClick={() => {
-						const filteredBridges = Object.fromEntries(
-							Object.entries(project.bridges).filter(([id]) => id !== bridge.id)
-						)
-
-						const editedProject: Project = {
-							...project,
-							bridges: filteredBridges,
-						}
-
-						ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
-					}}
+					onClick={removeBridge}
 				>
 					Remove
 				</Button>
