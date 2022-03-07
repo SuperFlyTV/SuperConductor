@@ -1,4 +1,3 @@
-import classNames from 'classnames'
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
@@ -6,6 +5,7 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
+import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
 
 export const Layer: React.FC<{
@@ -44,7 +44,7 @@ export const Layer: React.FC<{
 	)
 
 	return (
-		<div ref={drop} className={classNames('layer', { isOver })} data-layer-id={layerId}>
+		<DropZone ref={drop} className="layer" isOver={isOver} data-layer-id={layerId}>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
 					return (
@@ -60,7 +60,6 @@ export const Layer: React.FC<{
 					)
 				})}
 			</div>
-			<div className="layer__outline">{/* empty */}</div>
-		</div>
+		</DropZone>
 	)
 }

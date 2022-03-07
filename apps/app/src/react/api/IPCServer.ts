@@ -59,13 +59,16 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('moveTimelineObjToNewLayer', data)
 	}
+	/**
+	 * @returns An object containing the ID of the new part and, conditionally, the ID of the new group (if one was created).
+	 */
 	newPart(data: {
 		rundownId: string
 
 		name: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
-	}): Promise<string> {
+	}): Promise<{ partId: string; groupId?: string }> {
 		return this.invokeServerMethod('newPart', data)
 	}
 	updatePart(data: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<void> {

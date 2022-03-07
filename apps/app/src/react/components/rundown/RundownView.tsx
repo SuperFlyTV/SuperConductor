@@ -4,13 +4,14 @@ import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { useDrop } from 'react-dnd'
-import { DragItemTypes, isPartDragItem } from '../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { PartMoveContext } from '../../contexts/PartMove'
+import { DropZone } from '../util/DropZone'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 	const rundown = useContext(RundownContext)
@@ -99,16 +100,125 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 			return prev + current.parts.length
 		}, 0)
 	}, [rundown])
+	const newPartRef = useRef<HTMLDivElement>(null)
+	const newGroupRef = useRef<HTMLDivElement>(null)
+
+	const [{ handlerId: partDropHandlerId, isOver: partDropIsOver }, newPartDrop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const { partId, groupId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId: null, // Creates a transparent group.
+						name: droppedItem.resource.id,
+					})
+
+					if (!groupId) {
+						return
+					}
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown]
+	)
+	useEffect(() => {
+		newPartDrop(newPartRef)
+	}, [newPartDrop])
+
+	const [{ handlerId: groupDropHandlerId, isOver: groupDropIsOver }, newGroupDrop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const groupId = await ipcServer.newGroup({
+						rundownId: rundown.id,
+						name: droppedItem.resource.id,
+					})
+
+					const { partId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId,
+						name: droppedItem.resource.id,
+					})
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown]
+	)
+	useEffect(() => {
+		newGroupDrop(newGroupRef)
+	}, [newGroupDrop])
 
 	return (
 		<>
 			<div className="group-list__control-row">
-				<Button variant="contained" onClick={() => setNewPartOpen(true)}>
-					New part
-				</Button>
-				<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
-					New group
-				</Button>
+				<DropZone
+					isOver={partDropIsOver}
+					ref={newPartRef}
+					style={{ height: '96vh' }}
+					data-drop-handler-id={partDropHandlerId}
+				>
+					<Button variant="contained" onClick={() => setNewPartOpen(true)}>
+						New part
+					</Button>
+				</DropZone>
+				<DropZone
+					isOver={groupDropIsOver}
+					ref={newGroupRef}
+					style={{ flexGrow: 1, height: '96vh' }}
+					data-drop-handler-id={groupDropHandlerId}
+				>
+					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
+						New group
+					</Button>
+				</DropZone>
 			</div>
 
 			<PartPropertiesDialog
