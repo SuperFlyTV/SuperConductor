@@ -46,6 +46,7 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 				size="small"
 				label="Type"
 				value={mappingType}
+				sx={{ width: '21rem' }}
 				onChange={(event) => {
 					const parsedValue = parseInt(event.target.value, 10)
 					handleMappingTypeChange(parsedValue)
