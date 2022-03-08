@@ -33,22 +33,22 @@ export const ResourceLibrary: React.FC = () => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const [searchValue, setSearchValue] = React.useState('')
+	const [filterValue, setFilterValue] = React.useState('')
 
 	const filteredResources = useMemo(() => {
-		if (searchValue.trim().length === 0) {
+		if (filterValue.trim().length === 0) {
 			return Object.values(resources)
 		}
 
 		return Object.values(resources).filter((resource) => {
 			if ('name' in resource) {
 				const name: string = (resource as any).name
-				return name.toLowerCase().includes(searchValue.toLowerCase())
+				return name.toLowerCase().includes(filterValue.toLowerCase())
 			}
 
 			return false
 		})
-	}, [resources, searchValue])
+	}, [resources, filterValue])
 
 	return (
 		<div className="sidebar media-library-sidebar">
@@ -70,13 +70,13 @@ export const ResourceLibrary: React.FC = () => {
 					size="small"
 					margin="normal"
 					fullWidth
-					label="Search Assets"
-					value={searchValue}
+					label="Filter Assets"
+					value={filterValue}
 					InputProps={{
 						type: 'search',
 					}}
 					onChange={(event) => {
-						setSearchValue(event.target.value)
+						setFilterValue(event.target.value)
 					}}
 				/>
 
