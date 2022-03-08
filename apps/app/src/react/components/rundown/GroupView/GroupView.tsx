@@ -6,7 +6,7 @@ import { PartView } from './PartView'
 import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DragItemTypes, isPartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, FormControlLabel, Switch } from '@mui/material'
@@ -20,6 +20,7 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
+import { DropZone } from '../../util/DropZone'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -360,19 +361,70 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
+
 	const numParts = useMemo(() => {
 		return rundown.groups.reduce((prev, current) => {
 			return prev + current.parts.length
 		}, 0)
 	}, [rundown])
 
+	const wrapperRef = useRef<HTMLDivElement>(null)
+
+	const [{ handlerId, isOver }, drop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const { partId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId: group.id,
+						name: droppedItem.resource.id,
+					})
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId: group.id,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown, group]
+	)
+
+	useEffect(() => {
+		drop(wrapperRef)
+	}, [drop])
+
 	return (
 		<>
-			<div className="group-list__control-row">
+			<DropZone
+				ref={wrapperRef}
+				className="group-list__control-row"
+				data-drop-handler-id={handlerId}
+				isOver={isOver}
+			>
 				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Button>
-			</div>
+			</DropZone>
 
 			<PartPropertiesDialog
 				open={newPartOpen}

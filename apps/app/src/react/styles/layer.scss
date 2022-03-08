@@ -17,21 +17,6 @@
 		}
 	}
 
-	&.isOver .layer__outline {
-		box-shadow: inset 0px 0px 0px 3px #ffffff85;
-		opacity: 0.8;
-	}
-
-	&__outline {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		box-sizing: border-box;
-		pointer-events: none;
-	}
-
 	&__content {
 		position: relative;
 		flex: 1;

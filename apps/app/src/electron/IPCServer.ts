@@ -254,7 +254,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 		name: string
-	}): Promise<UndoableResult<string>> {
+	}): Promise<UndoableResult<{ partId: string; groupId?: string }>> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -287,6 +287,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 		this.storage.updateRundown(arg.rundownId, rundown)
 
+		const result: { partId: string; groupId?: string } = {
+			partId: newPart.id,
+		}
+
+		if (transparentGroupId) {
+			result.groupId = transparentGroupId
+		}
+
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
@@ -301,7 +309,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.NewPart,
-			result: newPart.id,
+			result,
 		}
 	}
 	async updatePart(arg: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<UndoableResult> {

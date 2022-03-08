@@ -57,7 +57,7 @@ module.exports = {
 				...tsRules,
 				// "node/no-extraneous-import": "off", // because there are a lot of them as dev-dependencies
 				'node/no-missing-import': 'off', // erroring on every single import
-				// "react/prop-types": "off", // we don't use this
+				'react/prop-types': 'off', // we don't use this
 				// "@typescript-eslint/no-empty-interface": "off", // many prop/state types are {}
 				'@typescript-eslint/promise-function-async': 'off', // event handlers can't be async
 			},
