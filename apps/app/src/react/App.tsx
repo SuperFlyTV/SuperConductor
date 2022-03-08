@@ -29,7 +29,7 @@ import { Peripheral } from '../models/project/Peripheral'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material'
+import { Dialog, AppBar, IconButton, Toolbar, Typography } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
@@ -41,6 +41,7 @@ import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
 import short from 'short-uuid'
+import CloseIcon from '@mui/icons-material/Close'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -521,16 +522,32 @@ export const App = () => {
 												<div>Loading...</div>
 											)}
 
-											<Dialog open={settingsOpen} onClose={handleSettingsClose}>
-												<DialogTitle>Preferences</DialogTitle>
-												<DialogContent className="settings-dialog">
-													<Settings project={project} />
-												</DialogContent>
-												<DialogActions>
-													<Button variant="contained" onClick={handleSettingsClose}>
-														Close
-													</Button>
-												</DialogActions>
+											<Dialog
+												open={settingsOpen}
+												onClose={handleSettingsClose}
+												fullScreen
+												className="settings-dialog"
+											>
+												<AppBar position="sticky">
+													<Toolbar>
+														<IconButton
+															edge="start"
+															color="inherit"
+															onClick={handleSettingsClose}
+															aria-label="close"
+														>
+															<CloseIcon />
+														</IconButton>
+														<Typography
+															sx={{ ml: 2, flex: 1 }}
+															variant="h5"
+															component="div"
+														>
+															Preferences
+														</Typography>
+													</Toolbar>
+												</AppBar>
+												<Settings project={project} bridgeStatuses={bridgeStatuses} />
 											</Dialog>
 										</div>
 									</ErrorHandlerContext.Provider>

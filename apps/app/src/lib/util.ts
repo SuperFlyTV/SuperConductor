@@ -4,6 +4,8 @@ import { ResolvedTimeline } from 'superfly-timeline'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { getGroupPlayData, GroupPlayData } from './playhead'
+import { Project } from '../models/project/Project'
+import { DeviceOptionsAny, DeviceType } from 'timeline-state-resolver-types'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -179,3 +181,43 @@ function hashCode(str: string): number {
 }
 
 export const EMPTY_LAYER_ID_PREFIX = '__empty'
+
+export function findDevice(bridges: Project['bridges'], deviceId: string): DeviceOptionsAny | undefined {
+	for (const bridgeId in bridges) {
+		const bridge = bridges[bridgeId]
+		if (deviceId in bridge.settings.devices) {
+			return bridge.settings.devices[deviceId]
+		}
+	}
+}
+
+export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): string[] {
+	const deviceIds = new Set<string>()
+	for (const bridgeId in bridges) {
+		const bridge = bridges[bridgeId]
+		for (const deviceId in bridge.settings.devices) {
+			const device = bridge.settings.devices[deviceId]
+			if (deviceType === undefined) {
+				deviceIds.add(deviceId)
+			} else if (device.type === deviceType) {
+				deviceIds.add(deviceId)
+			}
+		}
+	}
+	return Array.from(deviceIds)
+}
+
+/**
+ * @returns If found, the ID of the first device of the specified deviceType. Else, undefined.
+ */
+export function findDeviceOfType(bridges: Project['bridges'], deviceType: DeviceType): string | undefined {
+	for (const bridgeId in bridges) {
+		const bridge = bridges[bridgeId]
+		for (const deviceId in bridge.settings.devices) {
+			const device = bridge.settings.devices[deviceId]
+			if (device.type === deviceType) {
+				return deviceId
+			}
+		}
+	}
+}

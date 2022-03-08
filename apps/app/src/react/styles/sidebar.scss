@@ -63,4 +63,110 @@
 			display: none;
 		}
 	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+
+		img.thumbnail {
+			max-width: 5rem;
+			max-height: 3rem;
+		}
+
+		td,
+		th {
+			font-size: 1.2rem;
+			padding: 0.5rem 0.7rem;
+			width: 50%;
+			text-align: left;
+			overflow: hidden;
+			box-sizing: border-box;
+		}
+
+		td {
+			white-space: nowrap;
+			max-width: 8rem;
+		}
+
+		th {
+			background-color: $accentBg;
+			text-transform: uppercase;
+			color: $accentText;
+			font-size: 1.1rem;
+		}
+
+		tr {
+			background-color: #000000;
+		}
+
+		tr:nth-child(even) {
+			background-color: #1f1f1f;
+		}
+
+		&.selectable {
+			td {
+				cursor: pointer;
+			}
+
+			tr:hover {
+				background-color: #272727;
+			}
+
+			tr.selected {
+				background-color: $accentBg;
+			}
+		}
+
+		&.editable {
+			td {
+				padding: 0;
+			}
+
+			input {
+				background: transparent;
+				color: white;
+				border: 0;
+				font-size: 1.2rem;
+				box-sizing: border-box;
+				width: 100%;
+				outline: 0;
+				padding: 0.5rem 0.7rem;
+
+				&:focus {
+					box-shadow: inset 0px 0px 0px 2px rgba(155, 155, 155, 0.75);
+				}
+			}
+
+			.delete {
+				border: 0;
+				background: transparent;
+				padding: 0;
+				cursor: pointer;
+				opacity: 0.7;
+				margin: 0 0.5rem;
+
+				&:hover {
+					opacity: 1;
+				}
+			}
+
+			thead tr th:first-child,
+			tbody tr td:first-child {
+				width: 8rem;
+				min-width: 8rem;
+				max-width: 8rem;
+				word-break: break-all;
+			}
+		}
+
+		&.template-data {
+			thead tr th:not(:first-child),
+			tbody tr td:not(:first-child) {
+				width: 100%;
+				min-width: 100%;
+				max-width: 100%;
+				word-break: break-all;
+			}
+		}
+	}
 }

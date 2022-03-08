@@ -1,72 +1,51 @@
-import { Button } from '@mui/material'
-import { TextField } from 'formik-mui'
-import { Field, Form, Formik } from 'formik'
-import React, { useContext } from 'react'
+import { Divider, Typography, TextField } from '@mui/material'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
-import * as Yup from 'yup'
-import { useSnackbar } from 'notistack'
-
-type ProjectFormValues = {
-	id: Project['id']
-	name: Project['name']
-}
-
-const validationSchema = Yup.object({
-	id: Yup.string().label('ID').required(),
-	name: Yup.string().label('Name').required(),
-})
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const ProjectSettings: React.FC<{ project: Project }> = ({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const { enqueueSnackbar } = useSnackbar()
+	const { handleError } = useContext(ErrorHandlerContext)
+	const [name, setName] = useState(project.name)
 
-	const initialValues: ProjectFormValues = { id: project.id, name: project.name }
+	const handleNameChange = useCallback(
+		(newName: Project['name']) => {
+			if (newName.trim().length <= 0) {
+				return
+			}
+
+			project.name = newName
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[handleError, ipcServer, project]
+	)
+
+	useEffect(() => {
+		setName(project.name)
+	}, [project])
 
 	return (
-		<Formik
-			initialValues={initialValues}
-			enableReinitialize={true}
-			validationSchema={validationSchema}
-			onSubmit={async (values, actions) => {
-				enqueueSnackbar('Saving Project Settings...', { variant: 'info' })
-				const editedProject: Project = {
-					...project,
-					name: values.name,
-				}
-				try {
-					await ipcServer.updateProject({ id: editedProject.id, project: editedProject })
-					enqueueSnackbar('Project Settings saved!', { variant: 'success' })
-				} catch (error) {
-					console.error(error)
-					enqueueSnackbar(`Error when saving Project Settings: ${(error as any).message}`, {
-						variant: 'error',
-					})
-				}
-				actions.setSubmitting(false)
-			}}
-		>
-			{(formik) => (
-				<Form>
-					<div className="form-body">
-						<Field
-							component={TextField}
-							margin="normal"
-							fullWidth
-							name="id"
-							type="text"
-							label="ID"
-							disabled
-						/>
+		<>
+			<Typography variant="h6">Project Settings</Typography>
+			<Divider />
 
-						<Field component={TextField} margin="normal" fullWidth name="name" type="text" label="Name" />
-					</div>
-
-					<Button type="submit" color="primary" variant="contained" fullWidth disabled={formik.isSubmitting}>
-						Save
-					</Button>
-				</Form>
-			)}
-		</Formik>
+			<TextField
+				margin="normal"
+				size="small"
+				type="text"
+				label="Name"
+				value={name}
+				onChange={(event) => {
+					setName(event.target.value)
+				}}
+				onBlur={() => {
+					handleNameChange(name)
+				}}
+				onKeyUp={(e) => {
+					if (e.key === 'Enter') handleNameChange(name)
+				}}
+			/>
+		</>
 	)
 }

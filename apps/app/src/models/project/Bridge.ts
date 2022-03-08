@@ -19,10 +19,12 @@ export interface BridgeStatus {
 	connected: boolean
 
 	devices: {
-		[deviceId: string]: {
-			connectionId: number
-			ok: boolean
-			message: string
-		}
+		[deviceId: string]: BridgeDevice
 	} // todo: add device statuses?
+}
+
+export interface BridgeDevice {
+	connectionId: number
+	ok: boolean
+	message: string
 }
