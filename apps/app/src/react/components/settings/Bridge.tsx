@@ -10,9 +10,10 @@ import { DeviceList } from './devices/DeviceList'
 interface IBridgeProps {
 	bridge: BridgeType
 	bridgeStatus: BridgeStatus
+	internal?: boolean
 }
 
-export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
+export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus, internal }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -66,51 +67,53 @@ export const Bridge: React.FC<IBridgeProps> = ({ bridge, bridgeStatus }) => {
 				/>
 			</Stack>
 
-			<Stack direction="row" alignItems="center">
-				<TextField
-					margin="normal"
-					size="small"
-					type="text"
-					label="Name"
-					value={name}
-					sx={{ marginRight: '0.5rem' }}
-					onChange={(event) => {
-						setName(event.target.value)
-					}}
-					onBlur={() => {
-						handleNameChange(name)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleNameChange(name)
-					}}
-				/>
+			{!internal && (
+				<Stack direction="row" alignItems="center">
+					<TextField
+						margin="normal"
+						size="small"
+						type="text"
+						label="Name"
+						value={name}
+						sx={{ marginRight: '0.5rem' }}
+						onChange={(event) => {
+							setName(event.target.value)
+						}}
+						onBlur={() => {
+							handleNameChange(name)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleNameChange(name)
+						}}
+					/>
 
-				<TextField
-					margin="normal"
-					size="small"
-					type="text"
-					label="URL"
-					value={url}
-					onChange={(event) => {
-						setUrl(event.target.value)
-					}}
-					onBlur={() => {
-						handleUrlChange(url)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleUrlChange(url)
-					}}
-				/>
+					<TextField
+						margin="normal"
+						size="small"
+						type="text"
+						label="URL"
+						value={url}
+						onChange={(event) => {
+							setUrl(event.target.value)
+						}}
+						onBlur={() => {
+							handleUrlChange(url)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleUrlChange(url)
+						}}
+					/>
 
-				<Button
-					variant="contained"
-					color="error"
-					sx={{ marginTop: '8px', marginLeft: '7rem' }}
-					onClick={removeBridge}
-				>
-					Remove
-				</Button>
-			</Stack>
+					<Button
+						variant="contained"
+						color="error"
+						sx={{ marginTop: '8px', marginLeft: '7rem' }}
+						onClick={removeBridge}
+					>
+						Remove
+					</Button>
+				</Stack>
+			)}
 
 			<DeviceList bridge={bridge} devices={bridgeStatus ? bridgeStatus.devices : {}} />
 		</React.Fragment>

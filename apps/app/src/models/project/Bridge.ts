@@ -28,3 +28,5 @@ export interface BridgeDevice {
 	ok: boolean
 	message: string
 }
+
+export const INTERNAL_BRIDGE_ID = '__INTERNAL__'

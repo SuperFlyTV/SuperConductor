@@ -1,7 +1,7 @@
 import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
-import { Bridge } from '../models/project/Bridge'
+import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
 import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
@@ -13,7 +13,6 @@ import { BaseBridge } from '@shared/tsr-bridge'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
-const INTERNAL_BRIDGE_ID = '__INTERNAL__'
 
 type AnyBridgeConnection = WebsocketBridgeConnection | LocalBridgeConnection
 

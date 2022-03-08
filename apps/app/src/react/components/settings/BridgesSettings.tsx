@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useMemo } from 'react'
-import { Bridge as BridgeType, BridgeStatus } from '../../../models/project/Bridge'
+import { Bridge as BridgeType, BridgeStatus, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
-import { Button, Divider, Typography } from '@mui/material'
+import { Button, Divider, Typography, FormControlLabel, Switch } from '@mui/material'
 import { Bridge } from './Bridge'
 import { literal } from '@shared/lib'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
@@ -17,15 +17,19 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
+	const internalBridge = useMemo(() => {
+		return project.bridges[INTERNAL_BRIDGE_ID]
+	}, [project.bridges])
+
 	const incomingBridges = useMemo(() => {
 		return Object.values(project.bridges).filter((bridge) => {
-			return !bridge.outgoing
+			return !bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])
 
 	const outgoingBridges = useMemo(() => {
 		return Object.values(project.bridges).filter((bridge) => {
-			return bridge.outgoing
+			return bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])
 
@@ -50,12 +54,27 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [handleError, ipcServer, project])
 
+	const toggleInternalBridge = useCallback(() => {
+		project.settings.enableInternalBridge = !project.settings.enableInternalBridge
+		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+	}, [handleError, ipcServer, project])
+
 	return (
 		<>
 			<Typography variant="h6" marginTop="3rem">
 				Bridges
 			</Typography>
 			<Divider />
+
+			<FormControlLabel
+				control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
+				label="Enable internal bridge"
+				labelPlacement="start"
+			/>
+
+			{internalBridge && project.settings.enableInternalBridge && (
+				<Bridge bridge={internalBridge} bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]} internal />
+			)}
 
 			<Typography variant="subtitle1">Incoming bridges</Typography>
 			<Typography variant="subtitle2" sx={{ fontStyle: 'italic' }}>
