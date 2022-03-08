@@ -79,6 +79,7 @@ export class BridgeHandler {
 		} else {
 			if (this.internalBridge) {
 				console.log('Destroying internal bridge')
+				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
 				const bridgeIndex = this.connectedBridges.findIndex(
 					(connectedBridge) => connectedBridge === this.internalBridge
 				)
