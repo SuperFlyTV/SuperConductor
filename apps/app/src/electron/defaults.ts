@@ -53,27 +53,11 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 				layer: 30,
 			}),
 		},
-		bridges: {
-			local: {
-				id: 'local',
-				name: 'Local TSR-Bridge',
-				outgoing: true,
-				url: 'ws://localhost:5401',
-				settings: {
-					devices: {
-						casparcg0: {
-							type: DeviceType.CASPARCG,
-							options: {
-								host: '127.0.0.1',
-								port: 5250,
-							},
-						},
-					}, // todo: add some default devices
-				},
-			},
-		},
+		bridges: {},
 
-		settings: {},
+		settings: {
+			enableInternalBridge: true,
+		},
 	}
 }
 export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'id'> {

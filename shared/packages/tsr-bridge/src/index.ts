@@ -20,15 +20,16 @@ export class BaseBridge {
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
-	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: winston.Logger) {
+	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log?: winston.Logger | Console) {
 		this.tsr = new TSR(log)
 		this.sendAndCatch = (msg: BridgeAPI.FromBridge.Any) => {
 			try {
 				send(msg)
 			} catch (e) {
-				log.error(e)
+				log?.error(e)
 			}
 		}
+		this.tsr.send = this.sendAndCatch
 	}
 
 	private setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
@@ -101,7 +102,7 @@ export class BaseBridge {
 							try {
 								await this.peripheralsHandler.close()
 							} catch (e) {
-								this.log.error(e)
+								this.log?.error(e)
 							}
 							this.peripheralsHandler = null
 						}
@@ -114,13 +115,12 @@ export class BaseBridge {
 						this.peripheralsHandlerSend = this.sendAndCatch
 						await this.peripheralsHandler.setConnectedToParent(true)
 
-						this.tsr.send = this.sendAndCatch
 						this.tsr.reportAllStatuses()
 					} catch (e) {
-						this.log.error(e)
+						this.log?.error(e)
 					}
 				})
-				.catch(this.log.error)
+				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'addTimeline') {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
@@ -130,7 +130,7 @@ export class BaseBridge {
 		} else if (msg.type === 'setMappings') {
 			this.updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
-			this.tsr.updateDevices(msg.devices).catch(this.log.error)
+			this.tsr.updateDevices(msg.devices).catch((e) => this.log?.error(e))
 		} else if (msg.type === 'refreshResources') {
 			this.tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
 				this.send({
