@@ -19,7 +19,7 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor(private log: winston.Logger) {
+	constructor(private log?: winston.Logger | Console) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,
@@ -29,17 +29,17 @@ export class TSR {
 		this.conductor = new Conductor(c)
 
 		this.conductor.on('error', (e, ...args) => {
-			log.error('TSR', e, ...args)
+			log?.error('TSR', e, ...args)
 		})
 		this.conductor.on('info', (msg, ...args) => {
-			log.info('TSR', msg, ...args)
+			log?.info('TSR', msg, ...args)
 		})
 		this.conductor.on('warning', (msg, ...args) => {
-			log.warn('Warning: TSR', msg, ...args)
+			log?.warn('Warning: TSR', msg, ...args)
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
-		this.conductor.init().catch(log.error)
+		this.conductor.init().catch((e) => log?.error(e))
 
 		this.send = () => {
 			throw new Error('TSR.send() not set!')
@@ -84,7 +84,7 @@ export class TSR {
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
 
 					this.sideLoadDevice(deviceId, newDevice)
-				})().catch((error) => this.log.error(error))
+				})().catch((error) => this.log?.error(error))
 			}
 		}
 		// Removed:
@@ -94,7 +94,7 @@ export class TSR {
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
 				this.reportRemovedDevice(deviceId)
-				this.log.info(`TSR Device ${deviceId} removed.`)
+				this.log?.info(`TSR Device ${deviceId} removed.`)
 			}
 		}
 
@@ -107,7 +107,7 @@ export class TSR {
 				.then((resources) => {
 					cb(deviceId, resources)
 				})
-				.catch(this.log.error)
+				.catch((e) => this.log?.error(e))
 		}
 	}
 	public reportAllStatuses() {
@@ -128,7 +128,7 @@ export class TSR {
 					port: deviceOptions.options?.port,
 					autoConnect: true,
 					onConnected: async () => {
-						this.log.info('CasparCG: Connection initialized')
+						this.log?.info('CasparCG: Connection initialized')
 						// this.fetchAndSetMedia()
 						// this.fetchAndSetTemplates()
 					},
@@ -171,7 +171,7 @@ export class TSR {
 									resource.thumbnail = thumbnail.response.data
 								} catch (error) {
 									// console.error(`Could not set thumbnail for media "${media.name}".`, error)
-									this.log.error(`Could not set thumbnail for media "${media.name}".`)
+									this.log?.error(`Could not set thumbnail for media "${media.name}".`)
 								}
 							}
 

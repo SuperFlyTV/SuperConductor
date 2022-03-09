@@ -23,7 +23,6 @@ export const EmptyLayer: React.FC<{
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
 			drop: (item: ResourceDragItem) => {
-				console.log('drop', item)
 				ipcServer
 					.addResourceToTimeline({
 						rundownId,

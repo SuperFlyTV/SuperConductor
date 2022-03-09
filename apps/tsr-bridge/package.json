@@ -29,7 +29,6 @@
 	},
 	"license": "MIT",
 	"devDependencies": {
-		"@types/lodash": "^4.14.178",
 		"@types/node": "^16.10.3",
 		"@types/triple-beam": "^1.3.2",
 		"concurrently": "^6.3.0",
@@ -52,16 +51,13 @@
 	"dependencies": {
 		"@shared/api": "^0.3.0",
 		"@shared/lib": "^0.3.0",
-		"@shared/models": "^0.3.0",
-		"@shared/peripherals": "^0.3.0",
+		"@shared/tsr-bridge": "^0.3.0",
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^4.6.1",
-		"lodash": "^4.17.21",
 		"react": "^17.0.2",
 		"react-dom": "^17.0.2",
 		"react-scroll-to-bottom": "^4.2.0",
-		"timeline-state-resolver": "^6.2.0-release37.4",
 		"winston": "^3.6.0",
 		"winston-transport": "^4.5.0"
 	},

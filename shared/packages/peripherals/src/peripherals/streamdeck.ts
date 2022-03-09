@@ -92,9 +92,8 @@ export class PeripheralStreamDeck extends Peripheral {
 					console.error(error)
 				}
 			})
-			await this.queue.add(async () => {
-				await this.streamDeck?.clearPanel()
-			})
+			await this._updateAllKeys('Initializing')
+
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
@@ -129,10 +128,10 @@ export class PeripheralStreamDeck extends Peripheral {
 			await drawKeyDisplay(this.streamDeck, this.queue, identifierToKeyIndex(identifier), keyDisplay)
 		}
 	}
-	async _updateAllKeys(): Promise<void> {
+	async _updateAllKeys(specialMessage?: string): Promise<void> {
 		if (!this.streamDeck) return
 
-		if (!this.connectedToParent) {
+		if (!this.connectedToParent || specialMessage) {
 			// We might as well clear everything a little early:
 			await this.queue.add(async () => {
 				await this.streamDeck?.clearPanel()
@@ -141,7 +140,26 @@ export class PeripheralStreamDeck extends Peripheral {
 
 		for (let keyIndex = 0; keyIndex < this.streamDeck.NUM_KEYS; keyIndex++) {
 			const identifier = keyIndexToIdentifier(keyIndex)
-			await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+			let keyDisplay = this.sentKeyDisplay[identifier]
+
+			if (keyIndex === 0 && !this.connectedToParent) {
+				keyDisplay = {
+					attentionLevel: AttentionLevel.NEUTRAL,
+					header: {
+						long: 'Disconnected',
+					},
+				}
+			}
+			if (keyIndex === 0 && specialMessage) {
+				keyDisplay = {
+					attentionLevel: AttentionLevel.NEUTRAL,
+					header: {
+						long: specialMessage,
+					},
+				}
+			}
+
+			await this._setKeyDisplay(identifier, keyDisplay, true)
 		}
 	}
 	async setConnectedToParent(connected: boolean): Promise<void> {
@@ -155,6 +173,10 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 	async close() {
+		if (this.streamDeck) {
+			this.connectedToParent = false
+			await this._updateAllKeys('Closed')
+		}
 		await super._close()
 		if (this.streamDeck) {
 			await this.streamDeck.close()

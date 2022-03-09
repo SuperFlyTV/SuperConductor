@@ -2,6 +2,7 @@ import short from 'short-uuid'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { Group } from '../models/rundown/Group'
+import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 
@@ -53,27 +54,27 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 				layer: 30,
 			}),
 		},
+
 		bridges: {
-			local: {
-				id: 'local',
-				name: 'Local TSR-Bridge',
-				outgoing: true,
-				url: 'ws://localhost:5401',
+			[INTERNAL_BRIDGE_ID]: {
+				id: INTERNAL_BRIDGE_ID,
+				name: 'Internal bridge',
+				outgoing: false,
+				url: '',
 				settings: {
 					devices: {
 						casparcg0: {
 							type: DeviceType.CASPARCG,
-							options: {
-								host: '127.0.0.1',
-								port: 5250,
-							},
+							options: { host: '127.0.0.1', port: 5250 },
 						},
-					}, // todo: add some default devices
+					},
 				},
 			},
 		},
 
-		settings: {},
+		settings: {
+			enableInternalBridge: true,
+		},
 	}
 }
 export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'id'> {
