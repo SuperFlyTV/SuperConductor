@@ -462,7 +462,11 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 		await this.baseBridge.destroy()
 	}
 	protected send(msg: BridgeAPI.FromTPT.Any) {
-		this.baseBridge.handleMessage(msg)
+		try {
+			this.baseBridge.handleMessage(msg)
+		} catch (err) {
+			console.error(err)
+		}
 	}
 	protected getConnectionId(): number {
 		return this.connectionId
