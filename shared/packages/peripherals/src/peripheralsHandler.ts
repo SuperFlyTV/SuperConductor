@@ -43,10 +43,11 @@ export class PeripheralsHandler extends EventEmitter {
 		await Promise.all(Array.from(this.devices.values()).map((device) => device.setConnectedToParent(connected)))
 	}
 	async close(): Promise<void> {
+		await Promise.all(Array.from(this.devices.values()).map((device) => device.close()))
+
 		this.watchers.forEach((watcher) => watcher.stop())
 		this.watchers = []
 
-		await Promise.all(Array.from(this.devices.values()).map((device) => device.close()))
 		this.devices.clear()
 
 		this.removeAllListeners()
