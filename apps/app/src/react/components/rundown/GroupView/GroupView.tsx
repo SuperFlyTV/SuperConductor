@@ -9,9 +9,8 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, FormControlLabel, Switch } from '@mui/material'
+import { Button, FormControlLabel, Switch, TextField } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
-import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
@@ -33,10 +32,28 @@ export const GroupView: React.FC<{
 	const { updatePartMove } = useContext(PartMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const rundown = useContext(RundownContext)
-	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updatePartMoveRef = useRef(updatePartMove)
 	updatePartMoveRef.current = updatePartMove
+
+	const [editingGroupName, setEditingGroupName] = useState(false)
+	const [editedName, setEditedName] = useState(group.name)
+	useEffect(() => {
+		setEditedName(group.name)
+	}, [group.name])
+	const submitNameEdit = useCallback(() => {
+		ipcServer
+			.updateGroup({
+				rundownId,
+				groupId: group.id,
+				group: {
+					...group,
+					name: editedName,
+				},
+			})
+			.catch(handleError)
+		setEditingGroupName(false)
+	}, [editedName, group, handleError, ipcServer, rundownId])
 
 	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -216,15 +233,43 @@ export const GroupView: React.FC<{
 		return (
 			<div ref={wrapperRef} className="group" data-drop-handler-id={handlerId}>
 				<div className="group__header">
-					<div
-						className="title"
-						title="Double-click to edit"
-						onDoubleClick={() => {
-							setGroupPropsOpen(true)
-						}}
-					>
-						{group.name}
-					</div>
+					{!editingGroupName && (
+						<div
+							className="title"
+							title="Click to edit"
+							onClick={() => {
+								setEditingGroupName(true)
+							}}
+						>
+							{group.name}
+						</div>
+					)}
+
+					{editingGroupName && (
+						<TextField
+							size="small"
+							value={editedName}
+							autoFocus
+							variant="standard"
+							className="edit-title"
+							sx={{ marginTop: '0.3rem' }}
+							InputProps={{ style: { fontSize: '1.3rem' } }}
+							onFocus={(event) => {
+								event.target.select()
+							}}
+							onChange={(event) => {
+								setEditedName(event.target.value)
+							}}
+							onBlur={() => {
+								submitNameEdit()
+							}}
+							onKeyUp={(e) => {
+								if (e.key === 'Escape') setEditingGroupName(false)
+								else if (e.key === 'Enter') submitNameEdit()
+							}}
+						/>
+					)}
+
 					<div className="controls">
 						<div className="toggle">
 							<FormControlLabel
@@ -316,29 +361,6 @@ export const GroupView: React.FC<{
 
 					<GroupOptions rundown={rundown} group={group} />
 				</div>
-
-				<GroupPropertiesDialog
-					initial={group}
-					open={groupPropsOpen}
-					title="Edit Group"
-					acceptLabel="Save"
-					onAccepted={(updatedGroup) => {
-						ipcServer
-							.updateGroup({
-								rundownId,
-								groupId: group.id,
-								group: {
-									...group,
-									name: updatedGroup.name,
-								},
-							})
-							.catch(handleError)
-						setGroupPropsOpen(false)
-					}}
-					onDiscarded={() => {
-						setGroupPropsOpen(false)
-					}}
-				/>
 
 				<ConfirmationDialog
 					open={deleteConfirmationOpen}

@@ -11,7 +11,6 @@ import { GroupPlayData } from '../../../../lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator, MdPlayArrow, MdStop } from 'react-icons/md'
@@ -32,7 +31,7 @@ import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
-import { ToggleButton } from '@mui/material'
+import { TextField, ToggleButton } from '@mui/material'
 import { ImLoop } from 'react-icons/im'
 import { IoMdEye, IoMdEyeOff } from 'react-icons/io'
 
@@ -87,7 +86,25 @@ export const PartView: React.FC<{
 
 	const cache = useRef<ResolverCache>({})
 
-	const [partPropsOpen, setPartPropsOpen] = useState(false)
+	const [editingPartName, setEditingPartName] = useState(false)
+	const [editedName, setEditedName] = useState(part.name)
+	useEffect(() => {
+		setEditedName(part.name)
+	}, [part.name])
+	const submitNameEdit = useCallback(() => {
+		ipcServer
+			.updatePart({
+				rundownId,
+				groupId: parentGroup.id,
+				partId: part.id,
+				part: {
+					...part,
+					name: editedName,
+				},
+			})
+			.catch(handleError)
+		setEditingPartName(false)
+	}, [editedName, handleError, ipcServer, parentGroup.id, part, rundownId])
 
 	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
 		const orgResolvedTimeline = Resolver.resolveTimeline(
@@ -700,15 +717,42 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__meta">
 				<div className="part__meta__top">
-					<div
-						title="Double-click to edit"
-						className="title"
-						onDoubleClick={() => {
-							setPartPropsOpen(true)
-						}}
-					>
-						{part.name}
-					</div>
+					{!editingPartName && (
+						<div
+							title="Click to edit"
+							className="title"
+							onClick={() => {
+								setEditingPartName(true)
+							}}
+						>
+							{part.name}
+						</div>
+					)}
+
+					{editingPartName && (
+						<TextField
+							size="small"
+							value={editedName}
+							autoFocus
+							variant="standard"
+							className="edit-title"
+							sx={{ marginTop: '-0.1rem', marginBottom: '0.6rem' }}
+							InputProps={{ style: { fontSize: '1.4rem' } }}
+							onFocus={(event) => {
+								event.target.select()
+							}}
+							onChange={(event) => {
+								setEditedName(event.target.value)
+							}}
+							onBlur={() => {
+								submitNameEdit()
+							}}
+							onKeyUp={(e) => {
+								if (e.key === 'Escape') setEditingPartName(false)
+								else if (e.key === 'Enter') submitNameEdit()
+							}}
+						/>
+					)}
 
 					<ToggleButton
 						value="canStop"
@@ -863,30 +907,6 @@ export const PartView: React.FC<{
 				</div>
 			</div>
 			<div className="part__endcap"></div>
-
-			<PartPropertiesDialog
-				initial={part}
-				open={partPropsOpen}
-				title="Edit Part"
-				acceptLabel="Save"
-				onAccepted={(updatedPart) => {
-					ipcServer
-						.updatePart({
-							rundownId,
-							groupId: parentGroup.id,
-							partId: part.id,
-							part: {
-								...part,
-								name: updatedPart.name,
-							},
-						})
-						.catch(handleError)
-					setPartPropsOpen(false)
-				}}
-				onDiscarded={() => {
-					setPartPropsOpen(false)
-				}}
-			/>
 
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}

@@ -91,20 +91,21 @@
 			justify-content: space-between;
 		}
 
+        & .title,
+        & .edit-title {
+            margin-right: 1rem;
+        }
+
 		& .title {
-			margin-right: 1rem;
+			margin-bottom: 1rem;
 			font-weight: 400;
-			font-size: 1.4rem;
 			overflow-wrap: break-word;
 			min-width: 1px;
 			flex-shrink: 1;
 			flex-grow: 1;
 			min-height: 1em;
-			cursor: pointer;
-
-			&:hover {
-				background: rgba(255, 255, 255, 0.25);
-			}
+			font-size: 1.4rem;
+			cursor: text;
 		}
 
 		& .triggers {
