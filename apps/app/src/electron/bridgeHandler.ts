@@ -347,6 +347,39 @@ abstract class AbstractBridgeConnection {
 			assertNever(msg)
 		}
 	}
+	protected createBridgeInProjectIfNotExists() {
+		if (!this.bridgeId) {
+			return
+		}
+
+		const project = this.storage.getProject()
+
+		// If the bridge doesn't exist in settings, create it:
+		if (!project.bridges[this.bridgeId]) {
+			project.bridges[this.bridgeId] = {
+				id: this.bridgeId,
+				name: this.bridgeId,
+				outgoing: false,
+				url: '',
+				settings: {
+					devices: {},
+				},
+			}
+			this.storage.updateProject(project)
+		}
+
+		// Update the connection status:
+		let status = this.session.getBridgeStatus(this.bridgeId)
+		if (!status) {
+			status = {
+				connected: false,
+				devices: {},
+			}
+		}
+		status.connected = true
+
+		this.session.updateBridgeStatus(this.bridgeId, status)
+	}
 	protected abstract send(msg: BridgeAPI.FromTPT.Any): void
 	protected abstract getConnectionId(): number
 }
@@ -361,33 +394,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 		super(session, storage, callbacks)
 		const setConnected = () => {
 			if (this.bridgeId) {
-				const project = this.storage.getProject()
-
-				// If the bridge doesn't exist in settings, create it:
-				if (!project.bridges[this.bridgeId]) {
-					project.bridges[this.bridgeId] = {
-						id: this.bridgeId,
-						name: this.bridgeId,
-						outgoing: false,
-						url: '',
-						settings: {
-							devices: {},
-						},
-					}
-					this.storage.updateProject(project)
-				}
-
-				// Update the connection status:
-				let status = this.session.getBridgeStatus(this.bridgeId)
-				if (!status) {
-					status = {
-						connected: false,
-						devices: {},
-					}
-				}
-				status.connected = true
-
-				this.session.updateBridgeStatus(this.bridgeId, status)
+				this.createBridgeInProjectIfNotExists()
 			}
 		}
 		this.connection.on('connected', () => {
@@ -424,35 +431,7 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 		super(session, storage, callbacks)
 		this.bridgeId = INTERNAL_BRIDGE_ID
 		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), console)
-
-		const project = this.storage.getProject()
-
-		// If the bridge doesn't exist in settings, create it:
-		if (!project.bridges[this.bridgeId]) {
-			project.bridges[this.bridgeId] = {
-				id: this.bridgeId,
-				name: this.bridgeId,
-				outgoing: false,
-				url: '',
-				settings: {
-					devices: {},
-				},
-			}
-			this.storage.updateProject(project)
-		}
-
-		// Update the connection status:
-		let status = this.session.getBridgeStatus(this.bridgeId)
-		if (!status) {
-			status = {
-				connected: false,
-				devices: {},
-			}
-		}
-		status.connected = true
-
-		this.session.updateBridgeStatus(this.bridgeId, status)
-
+		this.createBridgeInProjectIfNotExists()
 		this.send({
 			type: 'setId',
 			id: INTERNAL_BRIDGE_ID,
