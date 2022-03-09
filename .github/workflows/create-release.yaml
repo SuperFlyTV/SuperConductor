@@ -50,6 +50,8 @@ jobs:
           yarn build:binary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
       - name: Remove TSR-Bridge latest.yml
         uses: flcdrg/remove-release-asset-action@v1
         env:
@@ -63,6 +65,8 @@ jobs:
           yarn build:binary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
   build-linux-binaries:
     name: Build Linux Binaries
     runs-on: ubuntu-latest
