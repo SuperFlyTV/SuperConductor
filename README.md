@@ -54,7 +54,7 @@ On macOS, install XCode and its optional tools `xcode-select --install` and then
 - `cd >>path-to-this-folder<<`
 - `yarn`
 - `yarn setup`
-- `yarn start:all` (Starts both the SuperConductor and TSR-Bridge)
+- `yarn start` (Builds the project and starts the SuperConductor)
 
 ### Architecture Overview
 
