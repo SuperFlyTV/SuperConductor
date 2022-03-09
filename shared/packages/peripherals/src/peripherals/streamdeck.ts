@@ -92,12 +92,10 @@ export class PeripheralStreamDeck extends Peripheral {
 					console.error(error)
 				}
 			})
-			console.log('stream deck init')
 			await this._updateAllKeys('Initializing')
 
 			this.initializing = false
 		} catch (e) {
-			console.log('stream deck init error', e)
 			this.initializing = false
 			throw e
 		}
