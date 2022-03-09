@@ -85,12 +85,9 @@ export class BridgeHandler {
 				if (bridgeIndex >= 0) {
 					this.connectedBridges.splice(bridgeIndex, 1)
 				}
-				this.internalBridge
-					.destroy()
-					.then(() => {
-						this.internalBridge = null
-					})
-					.catch(console.error)
+				const internalBridge = this.internalBridge
+				this.internalBridge = null
+				internalBridge.destroy().catch(console.error)
 			}
 		}
 
