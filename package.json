@@ -26,6 +26,7 @@
 		"build": "lerna run build",
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
+		"build:shared:changed": "lerna run build --stream --scope=@shared/* --since head --exclude-dependents --stream",
 		"start:all": "yarn build:shared && lerna run dev --stream",
 		"start": "yarn && yarn build:shared && yarn dev:electron",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
