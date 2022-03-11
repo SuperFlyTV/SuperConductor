@@ -20,8 +20,13 @@
 		font-size: 1.3rem;
 		padding: 0.2rem 0.5rem;
 
-		.title {
+		.title,
+		.edit-title {
 			margin-right: 1rem;
+		}
+
+		.title {
+			cursor: text;
 		}
 
 		.controls {

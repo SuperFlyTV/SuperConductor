@@ -79,6 +79,7 @@ export const TopHeader: React.FC<{
 					<div
 						key={rundown.rundownId}
 						className={classNames('tab', { 'tab--selected': rundown.rundownId === selectedRundownId })}
+						title="Double-click to edit"
 						onClick={() => {
 							onSelect(rundown.rundownId)
 						}}
