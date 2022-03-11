@@ -39,6 +39,12 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('setPartTrigger', data)
 	}
+	togglePartLoop(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('togglePartLoop', data)
+	}
+	togglePartDisable(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('togglePartDisable', data)
+	}
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}

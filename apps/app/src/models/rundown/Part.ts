@@ -5,6 +5,8 @@ export type Part = {
 	id: string
 	name: string
 	timeline: TimelineObj[]
+	disabled?: boolean
+	loop?: boolean
 
 	triggers: Trigger[]
 
