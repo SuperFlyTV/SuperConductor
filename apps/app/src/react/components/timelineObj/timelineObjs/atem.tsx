@@ -8,9 +8,9 @@ import {
 	TimelineObjAtemDSK,
 	TimelineObjAtemME,
 } from 'timeline-state-resolver-types'
-import { BooleanInput } from '../input/boolean'
-import { SelectEnum } from '../input/enum'
-import { IntInput } from '../input/int'
+import { BooleanInput } from '../../inputs/BooleanInput'
+import { SelectEnum } from '../../inputs/SelectEnum'
+import { IntInput } from '../../inputs/IntInput'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 
 export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave: OnSave }> = ({ obj, onSave }) => {

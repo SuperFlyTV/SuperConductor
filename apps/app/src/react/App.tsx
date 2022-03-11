@@ -264,7 +264,9 @@ export const App = () => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
 		const isOnSidebar = tarEl.closest('.side-bar')
-		if (!isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
+		const isOnMUI = tarEl.closest('.MuiModal-root')
+
+		if (!isOnMUI && !isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
 			setGuiData((guiData) => {
 				if (guiData.selectedTimelineObjIds.length > 0) {
 					return {

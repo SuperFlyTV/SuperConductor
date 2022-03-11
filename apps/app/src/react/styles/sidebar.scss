@@ -6,7 +6,7 @@
 	box-sizing: border-box;
 
 	&.timeline-obj-sidebar {
-		padding: 0 2.5rem;
+		// padding: 0 2.5rem;
 		// overflow-y: auto;
 	}
 
@@ -24,6 +24,7 @@
 		font-size: 1.8rem;
 		margin-bottom: 2rem;
 		font-weight: bold;
+		padding: 0 0.6em;
 	}
 
 	.content {

@@ -1,3 +1,4 @@
+import { TextField } from '@mui/material'
 import React from 'react'
 
 export function ParsedValueInput<V>(
@@ -6,6 +7,7 @@ export function ParsedValueInput<V>(
 	defaultValue: V,
 	parse: (str: string) => V | undefined,
 	stringify: (val: V) => string,
+	label?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text'
 ): JSX.Element {
 	const [value, setValue] = React.useState<string>('')
@@ -34,7 +36,7 @@ export function ParsedValueInput<V>(
 	}
 
 	return (
-		<input
+		<TextField
 			type={inputType}
 			onBlur={(e) => {
 				onSave(e.target.value)
@@ -51,6 +53,9 @@ export function ParsedValueInput<V>(
 					setValue(stringify(currentValue))
 				}
 			}}
+			margin="normal"
+			fullWidth
+			label={label}
 			value={value}
 		/>
 	)
