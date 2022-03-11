@@ -47,7 +47,7 @@ export const EmptyLayer: React.FC<{
 	const canMoveTimelineObjToThisEmptyLayer =
 		timelineObjMove.moveType === 'whole' &&
 		timelineObjMove.hoveredLayerId === layerId &&
-		store.gui.selectedTimelineObjIds.length === 1
+		store.guiStore.selectedTimelineObjIds.length === 1
 
 	return (
 		<DropZone

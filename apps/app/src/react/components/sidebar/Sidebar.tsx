@@ -22,7 +22,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 	const rundown = useContext(RundownContext)
 	// const { gui } = useContext(GUIContext)
 
-	const gui2 = store.gui
+	const gui2 = store.guiStore
 
 	const [editing, setEditing] = useState<{
 		group: Group

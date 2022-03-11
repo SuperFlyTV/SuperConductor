@@ -30,7 +30,7 @@ export const TimelineObjData: React.FC<{
 	// const { gui, updateGUI } = useContext(GUIContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
-	const gui = store.gui
+	const gui = store.guiStore
 
 	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
 		? props.timelineObj.obj.enable[0]

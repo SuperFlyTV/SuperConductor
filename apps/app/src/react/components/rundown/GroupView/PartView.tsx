@@ -58,7 +58,7 @@ export const PartView: React.FC<{
 	mappings: Mappings
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const gui = store.gui
+	const gui = store.guiStore
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)

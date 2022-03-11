@@ -247,7 +247,7 @@ export const App = () => {
 		}
 	}, [partMoveData])
 
-	const gui = store.gui
+	const gui = store.guiStore
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement

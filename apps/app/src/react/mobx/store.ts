@@ -1,5 +1,7 @@
+import { AppStore } from './AppStore'
 import { GuiStore } from './GuiStore'
 
 export const store = {
-	gui: new GuiStore(),
+	guiStore: new GuiStore(),
+	appStore: new AppStore(),
 }

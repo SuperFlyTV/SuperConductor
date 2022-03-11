@@ -26,7 +26,7 @@ export const TimelineObject: React.FC<{
 }> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
-	const gui = store.gui
+	const gui = store.guiStore
 
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
@@ -162,7 +162,7 @@ export const TimelineObject: React.FC<{
 		) {
 			if (allowMultiSelection) {
 				// Deselect this timelineObj.
-				store.gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
+				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
 				// updateGUI({
 				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
 				// })
@@ -174,15 +174,15 @@ export const TimelineObject: React.FC<{
 		if (allowMultiSelection) {
 			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
 				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
-					store.gui.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
+					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
 					// updateGUI({
 					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
 					// })
 				}
 			} else {
-				store.gui.selectedGroupId = groupId
-				store.gui.selectedPartId = partId
-				store.gui.selectedTimelineObjIds = [obj.id]
+				store.guiStore.selectedGroupId = groupId
+				store.guiStore.selectedPartId = partId
+				store.guiStore.selectedTimelineObjIds = [obj.id]
 				// updateGUI({
 				// 	selectedGroupId: groupId,
 				// 	selectedPartId: partId,
@@ -190,9 +190,9 @@ export const TimelineObject: React.FC<{
 				// })
 			}
 		} else {
-			store.gui.selectedGroupId = groupId
-			store.gui.selectedPartId = partId
-			store.gui.selectedTimelineObjIds = [obj.id]
+			store.guiStore.selectedGroupId = groupId
+			store.guiStore.selectedPartId = partId
+			store.guiStore.selectedTimelineObjIds = [obj.id]
 			// updateGUI({
 			// 	selectedGroupId: groupId,
 			// 	selectedPartId: partId,
