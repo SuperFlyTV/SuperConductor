@@ -49,6 +49,12 @@
 				transition: none;
 			}
 
+			&.isAtMinWidth {
+				.handle {
+					pointer-events: none;
+				}
+			}
+
 			.body {
 				flex-grow: 1;
 				display: flex;

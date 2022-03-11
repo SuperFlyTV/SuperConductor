@@ -197,11 +197,32 @@ export const TimelineObject: React.FC<{
 		durationTitle += seconds + '.' + secondTenths + 's'
 	}
 
+	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
+	useEffect(() => {
+		if (!ref.current) {
+			return
+		}
+
+		const elemToObserve = ref.current
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				setIsAtMinWidth(entry.contentRect.width <= HANDLE_WIDTH * 2)
+			}
+		})
+
+		resizeObserver.observe(elemToObserve)
+
+		return () => {
+			resizeObserver.unobserve(elemToObserve)
+		}
+	}, [])
+
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
+				isAtMinWidth,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={updateSelection}
