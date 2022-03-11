@@ -327,9 +327,7 @@ export const PartView: React.FC<{
 	}, [newDuplicatedObjects, newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
-		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
-			objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
-		}
+		objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
 	}, [newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
