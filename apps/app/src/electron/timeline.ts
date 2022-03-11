@@ -174,6 +174,7 @@ function partToTimelineObj(
 		enable: {
 			start: startTime,
 			duration: part.resolved.duration,
+			repeating: part.loop ? part.resolved.duration : undefined,
 		},
 		layer: '',
 		content: {

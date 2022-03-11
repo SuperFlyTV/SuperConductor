@@ -15,6 +15,8 @@ export const enum ActionDescription {
 	NewPart = 'create new part',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
+	TogglePartLoop = 'toggle part loop',
+	TogglePartDisable = 'toggle part disable',
 	NewGroup = 'create new group',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
@@ -64,6 +66,13 @@ export interface IPCServerMethods {
 		partId: string
 		trigger: Trigger | null
 		triggerIndex: number | null
+	}) => Promise<unknown>
+	togglePartLoop: (data: { rundownId: string; groupId: string; partId: string; value: boolean }) => Promise<unknown>
+	togglePartDisable: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
 	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {

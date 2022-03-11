@@ -33,6 +33,8 @@ import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { ToggleButton } from '@mui/material'
+import { ImLoop } from 'react-icons/im'
+import { IoMdEye, IoMdEyeOff } from 'react-icons/io'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -689,6 +691,7 @@ export const PartView: React.FC<{
 				active: isActive === 'active',
 				queued: isActive === 'queued',
 				dragging: isDragging,
+				disabled: part.disabled,
 			})}
 		>
 			<div className="part__dragArrow" />
@@ -711,6 +714,7 @@ export const PartView: React.FC<{
 						className="part__playStop"
 						selected={canStop}
 						size="small"
+						disabled={part.disabled}
 						onChange={() => {
 							if (canStop) {
 								handleStop()
@@ -724,7 +728,7 @@ export const PartView: React.FC<{
 				</div>
 
 				<div className="part__meta__bottom">
-					<div className="part__triggers">
+					<div className="triggers">
 						{part.triggers.map((trigger, index) => (
 							<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
 						))}
@@ -742,6 +746,40 @@ export const PartView: React.FC<{
 								}
 							}}
 						/>
+						<ToggleButton
+							value="loop"
+							selected={part.loop}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartLoop({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<ImLoop />
+						</ToggleButton>
+						<ToggleButton
+							value="disabled"
+							selected={!part.disabled}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartDisable({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.disabled,
+									})
+									.catch(handleError)
+							}}
+						>
+							{part.disabled ? <IoMdEyeOff /> : <IoMdEye />}
+						</ToggleButton>
 						<TriggerBtn
 							className={classNames('control')}
 							onTrigger={handleTriggerBtn}

@@ -240,6 +240,62 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			// result: newPart.id,
 		}
 	}
+	async togglePartLoop(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+		const originalValue = part.loop
+
+		updateGroupPlaying(group)
+		part.loop = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				updateGroupPlaying(group)
+				part.loop = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.TogglePartLoop,
+		}
+	}
+	async togglePartDisable(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+		const originalValue = part.disabled
+
+		updateGroupPlaying(group)
+		part.disabled = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				updateGroupPlaying(group)
+				part.disabled = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.TogglePartDisable,
+		}
+	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
 
