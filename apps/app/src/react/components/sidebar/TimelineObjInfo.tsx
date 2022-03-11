@@ -1,24 +1,21 @@
 import { IPCServerContext } from '../../contexts/IPCServer'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { Form, Formik } from 'formik'
 import React, { useContext } from 'react'
 import { Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { TrashBtn } from '../inputs/TrashBtn'
-import { DataRow, FormRow } from './InfoGroup'
+import { DataRow } from './InfoGroup'
 import { InfoGroup } from './InfoGroup'
 import { deepClone } from '@shared/lib'
-import { Button } from '@mui/material'
+import { Button, MenuItem } from '@mui/material'
 import { TimelineEnable } from 'superfly-timeline'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { GUIContext } from '../../contexts/GUI'
-
-type MyFormValues = {
-	enableStartNum: number
-	enableStartExpression: string
-	enableDurationNum: number
-	enableDurationExpression: string
-	layer: string | number
-}
+import { TextField } from '@mui/material'
+import { DurationInput } from '../inputs/DurationInput'
+import { TextInput } from '../inputs/TextInput'
+// import { ParsedValueInput } from '../timelineObj/input/parsedValue'
+// import { DurationInput } from '../timelineObj/input/duration'
 
 export const TimelineObjInfo: React.FC<{
 	rundownId: string
@@ -38,92 +35,105 @@ export const TimelineObjInfo: React.FC<{
 	const startIsExpression = typeof enable.start === 'string'
 	const durationIsExpression = typeof enable.duration === 'string'
 
-	const initialValues: MyFormValues = {
-		enableStartNum: typeof enable.start === 'number' ? enable.start : 0,
-		enableStartExpression: typeof enable.start === 'string' ? enable.start : '',
-
-		enableDurationNum: typeof enable.duration === 'number' ? enable.duration : 0,
-		enableDurationExpression: typeof enable.duration === 'string' ? enable.duration : '',
-
-		layer: props.timelineObj.obj.layer,
-	}
-
 	return (
 		<InfoGroup title="Timeline object">
 			<DataRow label="ID" value={props.timelineObj.obj.id} />
 
 			<Formik
-				initialValues={initialValues}
+				initialValues={{
+					enableStartNum: typeof enable.start === 'number' ? enable.start : 0,
+					enableStartExpression: typeof enable.start === 'string' ? enable.start : '',
+
+					enableDurationNum: typeof enable.duration === 'number' ? enable.duration : 0,
+					enableDurationExpression: typeof enable.duration === 'string' ? enable.duration : '',
+
+					layer: props.timelineObj.obj.layer,
+				}}
 				enableReinitialize={true}
-				onSubmit={(values, actions) => {
+				onSubmit={async (values, actions) => {
 					const editedTimelineObj = deepClone(props.timelineObj)
 					if (!Array.isArray(editedTimelineObj.obj.enable)) {
 						editedTimelineObj.obj.enable.start = values.enableStartExpression || values.enableStartNum || 0
 						editedTimelineObj.obj.enable.duration =
 							values.enableDurationExpression || values.enableDurationNum || 0
 					}
+
 					editedTimelineObj.obj.layer = values.layer
-					ipcServer
-						.updateTimelineObj({
+
+					try {
+						await ipcServer.updateTimelineObj({
 							rundownId: props.rundownId,
 							groupId: props.groupId,
 							partId: props.partId,
 							timelineObjId: props.timelineObj.obj.id,
 							timelineObj: editedTimelineObj,
 						})
-						.catch(handleError)
+					} catch (error) {
+						handleError(error)
+					}
+
 					actions.setSubmitting(false)
 				}}
 			>
 				{(formik) => (
 					<Form>
-						<FormRow>
-							<label htmlFor="layer">Layer</label>
-							<Field as="select" name="layer">
-								{props.mappings &&
-									Object.entries(props.mappings).map(([key, value]) => (
-										<option key={key} value={key}>
-											{value.layerName ?? key}
-										</option>
-									))}
-							</Field>
-						</FormRow>
+						<TextField
+							select
+							fullWidth
+							label="Layer"
+							id="layer"
+							name="layer"
+							value={formik.values.layer}
+							onChange={formik.handleChange}
+						>
+							{props.mappings &&
+								Object.entries(props.mappings).map(([key, value]) => (
+									<MenuItem key={key} value={key}>
+										{value.layerName ?? key}
+									</MenuItem>
+								))}
+						</TextField>
+
 						{startIsExpression ? (
-							<FormRow>
-								<label htmlFor="enableStartExpression">Start</label>
-								<Field
-									id="enableStartExpression"
-									name="enableStartExpression"
-									type="text"
-									placeholder=""
-								/>
-								<ErrorMessage name="enableStartExpression" component="div" />
-							</FormRow>
+							<TextInput
+								label="Start"
+								allowUndefined={false}
+								currentValue={formik.values.enableStartExpression}
+								onChange={(newVal) => {
+									formik.setFieldValue('enableStartExpression', newVal)
+								}}
+							/>
 						) : (
-							<FormRow>
-								<label htmlFor="enableStartNum">Start (ms)</label>
-								<Field id="enableStartNum" name="enableStartNum" type="number" placeholder="0" />
-								<ErrorMessage name="enableStartNum" component="div" />
-							</FormRow>
+							<DurationInput
+								label="Start"
+								allowUndefined={false}
+								currentValue={formik.values.enableStartNum}
+								onChange={(newVal) => {
+									formik.setFieldValue('enableStartNum', newVal)
+								}}
+							/>
 						)}
+
 						{durationIsExpression ? (
-							<FormRow>
-								<label htmlFor="enableDurationExpression">Duration</label>
-								<Field
-									id="enableDurationExpression"
-									name="enableDurationExpression"
-									type="text"
-									placeholder=""
-								/>
-								<ErrorMessage name="enableDurationExpression" component="div" />
-							</FormRow>
+							<TextInput
+								label="Duration"
+								allowUndefined={false}
+								currentValue={formik.values.enableDurationExpression}
+								onChange={(newVal) => {
+									formik.setFieldValue('enableDurationExpression', newVal)
+								}}
+							/>
 						) : (
-							<FormRow>
-								<label htmlFor="enableDurationNum">Duration (ms)</label>
-								<Field id="enableDurationNum" name="enableDurationNum" type="number" placeholder="0" />
-								<ErrorMessage name="enableDurationNum" component="div" />
-							</FormRow>
+							<DurationInput
+								label="Duration"
+								allowUndefined={false}
+								currentValue={formik.values.enableDurationNum}
+								onChange={(newVal) => {
+									formik.setFieldValue('enableDurationNum', newVal)
+								}}
+							/>
 						)}
+
 						<div className="btn-row-equal">
 							<TrashBtn
 								onClick={() => {

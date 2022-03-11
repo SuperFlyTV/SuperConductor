@@ -13,11 +13,11 @@ import {
 	TimelineObjCCGTemplate,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
-import { BooleanInput } from '../input/boolean'
-import { DurationInput } from '../input/duration'
-import { SelectEnum } from '../input/enum'
-import { IntInput } from '../input/int'
-import { TextInput } from '../input/text'
+import { BooleanInput } from '../../inputs/BooleanInput'
+import { DurationInput } from '../../inputs/DurationInput'
+import { SelectEnum } from '../../inputs/SelectEnum'
+import { IntInput } from '../../inputs/IntInput'
+import { TextInput } from '../../inputs/TextInput'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,

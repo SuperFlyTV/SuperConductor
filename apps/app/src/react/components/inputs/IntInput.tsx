@@ -1,5 +1,5 @@
 import React from 'react'
-import { ParsedValueInput } from './parsedValue'
+import { ParsedValueInput } from './parsedValueInput'
 export const IntInput: React.FC<
 	| { currentValue: number; onChange: (newValue: number) => void; allowUndefined: false }
 	| { currentValue: number | undefined; onChange: (newValue: number | undefined) => void; allowUndefined: true }
