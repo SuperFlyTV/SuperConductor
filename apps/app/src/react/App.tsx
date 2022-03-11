@@ -17,7 +17,6 @@ import { IPCClient } from './api/IPCClient'
 import { IPCServer } from './api/IPCServer'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
-import { GUI, GUIContext } from './contexts/GUI'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { TopHeader } from './components/top/TopHeader'
@@ -42,6 +41,7 @@ import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
 import short from 'short-uuid'
 import CloseIcon from '@mui/icons-material/Close'
+import { store } from './mobx/store'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -175,19 +175,6 @@ export const App = () => {
 		}
 	}, [currentRundownId, handleError, serverAPI])
 
-	const [guiData, setGuiData] = useState<GUI>({ selectedTimelineObjIds: [] })
-	const guiContextValue = useMemo(() => {
-		return {
-			gui: guiData,
-			updateGUI: (newGui: Partial<GUI>) => {
-				setGuiData({
-					...guiData,
-					...newGui,
-				})
-			},
-		}
-	}, [guiData])
-
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
 		const handleKey = (e: KeyboardEvent) => {
@@ -260,6 +247,8 @@ export const App = () => {
 		}
 	}, [partMoveData])
 
+	const gui = store.guiStore
+
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 		const isOnLayer = tarEl.closest('.object')
@@ -267,19 +256,11 @@ export const App = () => {
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
 		if (!isOnMUI && !isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
-			setGuiData((guiData) => {
-				if (guiData.selectedTimelineObjIds.length > 0) {
-					return {
-						...guiData,
-						selectedGroupId: undefined,
-						selectedPartId: undefined,
-						selectedTimelineObjIds: [],
-					}
-				} else {
-					// no change:
-					return guiData
-				}
-			})
+			if (gui.selectedTimelineObjIds.length > 0) {
+				gui.selectedTimelineObjIds = []
+				gui.selectedGroupId = undefined
+				gui.selectedPartId = undefined
+			}
 		}
 	}
 
@@ -465,100 +446,92 @@ export const App = () => {
 
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
-			<GUIContext.Provider value={guiContextValue}>
-				<IPCServerContext.Provider value={serverAPI}>
-					<ProjectContext.Provider value={project}>
-						<ResourcesContext.Provider value={resources}>
-							<PartMoveContext.Provider value={partMoveContextValue}>
-								<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-									<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-										<div className="app" onPointerDown={handlePointerDownAnywhere}>
-											<div className="top-header">
-												<TopHeader
-													selectedRundownId={currentRundownId}
-													openRundowns={openRundowns}
-													closedRundowns={closedRundowns}
-													onSelect={(rundownId) => {
-														setCurrentRundownId(rundownId)
-													}}
-													onClose={(rundownId) => {
-														serverAPI.closeRundown({ rundownId }).catch(handleError)
-														const nextRundown = openRundowns.find(
-															(rd) => rd.rundownId !== rundownId
-														)
-														if (nextRundown) {
-															setCurrentRundownId(nextRundown.rundownId)
-														} else {
-															setCurrentRundownId(undefined)
-														}
-													}}
-													onOpen={(rundownId) => {
-														serverAPI.openRundown({ rundownId }).catch(handleError)
-													}}
-													onCreate={(rundownName) => {
-														serverAPI.newRundown({ name: rundownName }).catch(handleError)
-													}}
-													onRename={(rundownId, newName) => {
-														serverAPI
-															.renameRundown({ rundownId, newName })
-															.catch(handleError)
-													}}
-													onSettingsClick={() => {
-														setSettingsOpen(true)
-													}}
-													bridgeStatuses={bridgeStatuses}
-													peripherals={peripherals}
-												/>
-											</div>
-
-											{modifiedCurrentRundown ? (
-												<RundownContext.Provider value={modifiedCurrentRundown}>
-													<div className="main-area">
-														<RundownView mappings={project.mappings} />
-													</div>
-													<div className="side-bar">
-														<Sidebar mappings={project.mappings} />
-													</div>
-												</RundownContext.Provider>
-											) : (
-												<div>Loading...</div>
-											)}
-
-											<Dialog
-												open={settingsOpen}
-												onClose={handleSettingsClose}
-												fullScreen
-												className="settings-dialog"
-											>
-												<AppBar position="sticky">
-													<Toolbar>
-														<IconButton
-															edge="start"
-															color="inherit"
-															onClick={handleSettingsClose}
-															aria-label="close"
-														>
-															<CloseIcon />
-														</IconButton>
-														<Typography
-															sx={{ ml: 2, flex: 1 }}
-															variant="h5"
-															component="div"
-														>
-															Preferences
-														</Typography>
-													</Toolbar>
-												</AppBar>
-												<Settings project={project} bridgeStatuses={bridgeStatuses} />
-											</Dialog>
+			<IPCServerContext.Provider value={serverAPI}>
+				<ProjectContext.Provider value={project}>
+					<ResourcesContext.Provider value={resources}>
+						<PartMoveContext.Provider value={partMoveContextValue}>
+							<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
+								<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+									<div className="app" onPointerDown={handlePointerDownAnywhere}>
+										<div className="top-header">
+											<TopHeader
+												selectedRundownId={currentRundownId}
+												openRundowns={openRundowns}
+												closedRundowns={closedRundowns}
+												onSelect={(rundownId) => {
+													setCurrentRundownId(rundownId)
+												}}
+												onClose={(rundownId) => {
+													serverAPI.closeRundown({ rundownId }).catch(handleError)
+													const nextRundown = openRundowns.find(
+														(rd) => rd.rundownId !== rundownId
+													)
+													if (nextRundown) {
+														setCurrentRundownId(nextRundown.rundownId)
+													} else {
+														setCurrentRundownId(undefined)
+													}
+												}}
+												onOpen={(rundownId) => {
+													serverAPI.openRundown({ rundownId }).catch(handleError)
+												}}
+												onCreate={(rundownName) => {
+													serverAPI.newRundown({ name: rundownName }).catch(handleError)
+												}}
+												onRename={(rundownId, newName) => {
+													serverAPI.renameRundown({ rundownId, newName }).catch(handleError)
+												}}
+												onSettingsClick={() => {
+													setSettingsOpen(true)
+												}}
+												bridgeStatuses={bridgeStatuses}
+												peripherals={peripherals}
+											/>
 										</div>
-									</ErrorHandlerContext.Provider>
-								</TimelineObjectMoveContext.Provider>
-							</PartMoveContext.Provider>
-						</ResourcesContext.Provider>
-					</ProjectContext.Provider>
-				</IPCServerContext.Provider>
-			</GUIContext.Provider>
+
+										{modifiedCurrentRundown ? (
+											<RundownContext.Provider value={modifiedCurrentRundown}>
+												<div className="main-area">
+													<RundownView mappings={project.mappings} />
+												</div>
+												<div className="side-bar">
+													<Sidebar mappings={project.mappings} />
+												</div>
+											</RundownContext.Provider>
+										) : (
+											<div>Loading...</div>
+										)}
+
+										<Dialog
+											open={settingsOpen}
+											onClose={handleSettingsClose}
+											fullScreen
+											className="settings-dialog"
+										>
+											<AppBar position="sticky">
+												<Toolbar>
+													<IconButton
+														edge="start"
+														color="inherit"
+														onClick={handleSettingsClose}
+														aria-label="close"
+													>
+														<CloseIcon />
+													</IconButton>
+													<Typography sx={{ ml: 2, flex: 1 }} variant="h5" component="div">
+														Preferences
+													</Typography>
+												</Toolbar>
+											</AppBar>
+											<Settings project={project} bridgeStatuses={bridgeStatuses} />
+										</Dialog>
+									</div>
+								</ErrorHandlerContext.Provider>
+							</TimelineObjectMoveContext.Provider>
+						</PartMoveContext.Provider>
+					</ResourcesContext.Provider>
+				</ProjectContext.Provider>
+			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>
 	)
 }

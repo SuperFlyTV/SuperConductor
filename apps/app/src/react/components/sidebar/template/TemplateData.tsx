@@ -1,10 +1,10 @@
 import { Column, useTable } from 'react-table'
 import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
-import { InfoGroup } from './InfoGroup'
-import { IPCServerContext } from '../../contexts/IPCServer'
+import { SidebarInfoGroup } from '../SidebarInfoGroup'
+import { IPCServerContext } from '../../../contexts/IPCServer'
 import { Button } from '@mui/material'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 type IUpdateData = (rowId: string, columnId: string, oldValue: string, newValue: string) => void
 type IDeleteRow = (rowId: string) => void
@@ -139,7 +139,7 @@ export const TemplateData: React.FC<{
 	})
 
 	return (
-		<InfoGroup title="Template data">
+		<SidebarInfoGroup title="Template data">
 			<div className="template-data">
 				<table {...getTableProps()} className="editable template-data">
 					<thead>
@@ -182,6 +182,6 @@ export const TemplateData: React.FC<{
 					</Button>
 				</div>
 			</div>
-		</InfoGroup>
+		</SidebarInfoGroup>
 	)
 }

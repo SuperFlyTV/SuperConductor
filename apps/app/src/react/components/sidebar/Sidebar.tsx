@@ -3,22 +3,26 @@ import { findGroup, findPart, findTimelineObj } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { RundownContext } from '../../contexts/Rundown'
-import { GUIContext } from '../../contexts/GUI'
+// import { GUIContext } from '../../contexts/GUI'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ResourcesContext } from '../../contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
-import { ResourceInfo } from './ResourceInfo'
-import { ResourceLibrary } from './ResourceLibrary'
-import { TemplateData } from './TemplateData'
-import { TimelineObjInfo } from './TimelineObjInfo'
+import { ResourceData } from './resource/ResourceData'
+import { ResourceLibrary } from './resource/ResourceLibrary'
+import { TemplateData } from './template/TemplateData'
+import { TimelineObjData } from './timelineObj/TimelineObjData'
 import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { Project } from '../../../models/project/Project'
+import { store } from '../../mobx/store'
+import { observer } from 'mobx-react-lite'
 
-export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
+export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((props) => {
 	const resourcesContext = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
-	const { gui } = useContext(GUIContext)
+	// const { gui } = useContext(GUIContext)
+
+	const gui2 = store.guiStore
 
 	const [editing, setEditing] = useState<{
 		group: Group
@@ -28,12 +32,12 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 	const [resources, setResources] = useState<Array<ResourceAny | undefined>>([])
 
 	useEffect(() => {
-		if (gui.selectedGroupId && gui.selectedPartId && gui.selectedTimelineObjIds.length > 0) {
-			const group = findGroup(rundown, gui.selectedGroupId)
+		if (gui2.selectedGroupId && gui2.selectedPartId && gui2.selectedTimelineObjIds.length > 0) {
+			const group = findGroup(rundown, gui2.selectedGroupId)
 			if (group) {
-				const part = findPart(group, gui.selectedPartId)
+				const part = findPart(group, gui2.selectedPartId)
 				if (part) {
-					const timelineObjs = gui.selectedTimelineObjIds
+					const timelineObjs = gui2.selectedTimelineObjIds
 						.map((objId) => findTimelineObj(part, objId))
 						.filter((obj): obj is TimelineObj => {
 							return Boolean(obj)
@@ -47,7 +51,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 		}
 		// else:
 		setEditing(null)
-	}, [rundown, resourcesContext, gui.selectedGroupId, gui.selectedPartId, gui.selectedTimelineObjIds])
+	}, [rundown, resourcesContext, gui2.selectedGroupId, gui2.selectedPartId, gui2.selectedTimelineObjIds])
 
 	useEffect(() => {
 		if (editing) {
@@ -77,9 +81,9 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 						<div key={obj.obj.id} className="edit-timeline-obj">
 							<div className="title">{descriptions[index].label}</div>
 
-							{resources[index] && <ResourceInfo resource={resources[index] as ResourceAny} />}
+							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
 
-							<TimelineObjInfo
+							<TimelineObjData
 								rundownId={rundown.id}
 								groupId={editing.group.id}
 								partId={editing.part.id}
@@ -105,4 +109,4 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 		// not editing
 		return <ResourceLibrary />
 	}
-}
+})

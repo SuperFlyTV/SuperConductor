@@ -1,32 +1,36 @@
-import { IPCServerContext } from '../../contexts/IPCServer'
+import { IPCServerContext } from '../../../contexts/IPCServer'
 import { Form, Formik } from 'formik'
 import React, { useContext } from 'react'
 import { Mappings } from 'timeline-state-resolver-types'
-import { TimelineObj } from '../../../models/rundown/TimelineObj'
-import { TrashBtn } from '../inputs/TrashBtn'
-import { DataRow } from './InfoGroup'
-import { InfoGroup } from './InfoGroup'
+import { TimelineObj } from '../../../../models/rundown/TimelineObj'
+import { TrashBtn } from '../../inputs/TrashBtn'
+import { DataRow } from '../SidebarInfoGroup'
+import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { deepClone } from '@shared/lib'
 import { Button, MenuItem } from '@mui/material'
 import { TimelineEnable } from 'superfly-timeline'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
-import { GUIContext } from '../../contexts/GUI'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+// import { GUIContext } from '../../../contexts/GUI'
 import { TextField } from '@mui/material'
-import { DurationInput } from '../inputs/DurationInput'
-import { TextInput } from '../inputs/TextInput'
+import { DurationInput } from '../../inputs/DurationInput'
+import { TextInput } from '../../inputs/TextInput'
 // import { ParsedValueInput } from '../timelineObj/input/parsedValue'
 // import { DurationInput } from '../timelineObj/input/duration'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
 
-export const TimelineObjInfo: React.FC<{
+export const TimelineObjData: React.FC<{
 	rundownId: string
 	groupId: string
 	partId: string
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
-}> = (props) => {
+}> = observer((props) => {
 	const ipcServer = useContext(IPCServerContext)
-	const { gui, updateGUI } = useContext(GUIContext)
+	// const { gui, updateGUI } = useContext(GUIContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+
+	const gui = store.guiStore
 
 	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
 		? props.timelineObj.obj.enable[0]
@@ -36,7 +40,7 @@ export const TimelineObjInfo: React.FC<{
 	const durationIsExpression = typeof enable.duration === 'string'
 
 	return (
-		<InfoGroup title="Timeline object">
+		<SidebarInfoGroup title="Timeline object">
 			<DataRow label="ID" value={props.timelineObj.obj.id} />
 
 			<Formik
@@ -145,11 +149,14 @@ export const TimelineObjInfo: React.FC<{
 											timelineObjId: props.timelineObj.obj.id,
 										})
 										.then(() => {
-											updateGUI({
-												selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
-													(id) => id !== props.timelineObj.obj.id
-												),
-											})
+											gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter(
+												(id) => id !== props.timelineObj.obj.id
+											)
+											// updateGUI({
+											// 	selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
+											// 		(id) => id !== props.timelineObj.obj.id
+											// 	),
+											// })
 										})
 										.catch(handleError)
 								}}
@@ -161,6 +168,6 @@ export const TimelineObjInfo: React.FC<{
 					</Form>
 				)}
 			</Formik>
-		</InfoGroup>
+		</SidebarInfoGroup>
 	)
-}
+})

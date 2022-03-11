@@ -1,5 +1,5 @@
 import React from 'react'
-import { formatDuration, parseDuration } from '../timelineObj/input/lib'
+import { formatDuration, parseDuration } from '../../../lib/timeLib'
 import { ParsedValueInput } from './parsedValueInput'
 
 export const DurationInput: React.FC<

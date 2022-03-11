@@ -1,13 +1,13 @@
 import React from 'react'
-import { InfoGroup, DataRow } from './InfoGroup'
+import { SidebarInfoGroup, DataRow } from '../SidebarInfoGroup'
 import moment from 'moment'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, bytesToSize } from '@shared/lib'
 
-export const ResourceInfo: React.FC<{ resource: ResourceAny }> = ({ resource }) => {
+export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) => {
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 		return (
-			<InfoGroup title="CasparCG Media">
+			<SidebarInfoGroup title="CasparCG Media">
 				<DataRow label="Name" value={resource.name} />
 				<DataRow label="Type" value={resource.type} />
 				<DataRow label="Filesize" value={bytesToSize(resource.size)} />
@@ -16,19 +16,19 @@ export const ResourceInfo: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Frame time" value={resource.frameTime ? resource.frameTime : ''} />
 				<DataRow label="Frame rate" value={resource.frameRate ? resource.frameRate : ''} />
 				<DataRow label="Duration" value={resource.duration ? resource.duration : ''} />
-			</InfoGroup>
+			</SidebarInfoGroup>
 		)
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 		return (
-			<InfoGroup title="CasparCG Template">
+			<SidebarInfoGroup title="CasparCG Template">
 				<DataRow label="Name" value={resource.name} />
-			</InfoGroup>
+			</SidebarInfoGroup>
 		)
 	} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 		return (
-			<InfoGroup title="CasparCG Server">
+			<SidebarInfoGroup title="CasparCG Server">
 				<DataRow label="Channels" value={resource.channels} />
-			</InfoGroup>
+			</SidebarInfoGroup>
 		)
 	} else {
 		assertNever(resource)
