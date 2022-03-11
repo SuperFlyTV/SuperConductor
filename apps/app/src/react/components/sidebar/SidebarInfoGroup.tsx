@@ -3,15 +3,13 @@ import React, { useContext } from 'react'
 import { HiRefresh } from 'react-icons/hi'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
-interface InfoGroupProps {
+export const SidebarInfoGroup: React.FC<{
 	title: string
 	children: React.ReactNode
 	enableRefresh?: boolean
 	refreshActive?: boolean
 	onRefreshClick?: () => Promise<void>
-}
-
-export const InfoGroup = (props: InfoGroupProps) => {
+}> = (props) => {
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	return (

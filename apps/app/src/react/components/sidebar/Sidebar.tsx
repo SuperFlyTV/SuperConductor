@@ -8,10 +8,10 @@ import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ResourcesContext } from '../../contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
-import { ResourceInfo } from './ResourceInfo'
-import { ResourceLibrary } from './ResourceLibrary'
-import { TemplateData } from './TemplateData'
-import { TimelineObjInfo } from './TimelineObjInfo'
+import { ResourceData } from './resource/ResourceData'
+import { ResourceLibrary } from './resource/ResourceLibrary'
+import { TemplateData } from './template/TemplateData'
+import { TimelineObjData } from './timelineObj/TimelineObjData'
 import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { Project } from '../../../models/project/Project'
 
@@ -77,9 +77,9 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = (props) => {
 						<div key={obj.obj.id} className="edit-timeline-obj">
 							<div className="title">{descriptions[index].label}</div>
 
-							{resources[index] && <ResourceInfo resource={resources[index] as ResourceAny} />}
+							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
 
-							<TimelineObjInfo
+							<TimelineObjData
 								rundownId={rundown.id}
 								groupId={editing.group.id}
 								partId={editing.part.id}

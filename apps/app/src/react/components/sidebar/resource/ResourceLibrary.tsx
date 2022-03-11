@@ -1,22 +1,22 @@
 import React, { useContext, useMemo, useState } from 'react'
-import { InfoGroup } from './InfoGroup'
-import { ResourcesContext } from '../../contexts/Resources'
-import { IPCServerContext } from '../../contexts/IPCServer'
-import { RundownContext } from '../../contexts/Rundown'
-import { ProjectContext } from '../../contexts/Project'
+import { SidebarInfoGroup } from '../SidebarInfoGroup'
+import { ResourcesContext } from '../../../contexts/Resources'
+import { IPCServerContext } from '../../../contexts/IPCServer'
+import { RundownContext } from '../../../contexts/Rundown'
+import { ProjectContext } from '../../../contexts/Project'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, bytesToSize } from '@shared/lib'
-import { ResourceInfo } from './ResourceInfo'
+import { ResourceData } from './ResourceData'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
-import { Part } from '../../../models/rundown/Part'
+import { Part } from '../../../../models/rundown/Part'
 import { Field, Form, Formik } from 'formik'
-import { findPartInRundown } from '../../../lib/util'
-import { Rundown } from '../../../models/rundown/Rundown'
-import { Group } from '../../../models/rundown/Group'
+import { findPartInRundown } from '../../../../lib/util'
+import { Rundown } from '../../../../models/rundown/Rundown'
+import { Group } from '../../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 import { Button, Grid, MenuItem, TextField } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 export const ResourceLibrary: React.FC = () => {
 	const ipcServer = useContext(IPCServerContext)
@@ -52,7 +52,7 @@ export const ResourceLibrary: React.FC = () => {
 
 	return (
 		<div className="sidebar media-library-sidebar">
-			<InfoGroup
+			<SidebarInfoGroup
 				title="Available Assets"
 				enableRefresh={true}
 				refreshActive={refreshing}
@@ -134,11 +134,11 @@ export const ResourceLibrary: React.FC = () => {
 							</React.Fragment>
 						)
 					})}
-			</InfoGroup>
+			</SidebarInfoGroup>
 
 			{selectedResource && (
 				<>
-					<ResourceInfo resource={selectedResource} />
+					<ResourceData resource={selectedResource} />
 					{defaultPart && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik

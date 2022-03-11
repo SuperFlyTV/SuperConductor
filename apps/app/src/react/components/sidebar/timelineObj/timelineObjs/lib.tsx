@@ -1,6 +1,6 @@
 import React from 'react'
 import { DeviceType, TSRTimelineObj } from 'timeline-state-resolver-types'
-import { SelectEnum } from '../../inputs/SelectEnum'
+import { SelectEnum } from '../../../inputs/SelectEnum'
 
 export type OnSave = (newObj: TSRTimelineObj) => void
 
