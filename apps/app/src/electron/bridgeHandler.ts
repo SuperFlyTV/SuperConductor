@@ -326,13 +326,13 @@ abstract class AbstractBridgeConnection {
 	}
 	protected handleMessage(msg: BridgeAPI.FromBridge.Any) {
 		if (msg.type === 'initRequestId') {
-			this.onInitRequestId()
+			if (this.onInitRequestId) this.onInitRequestId()
 		} else if (msg.type === 'init') {
 			this.onInit(msg.id, msg.version)
 		} else if (msg.type === 'status') {
 			// todo
 		} else if (msg.type === 'deviceStatus') {
-			this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
+			if (this.onDeviceStatus) this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
 		} else if (msg.type === 'deviceRemoved') {
 			this.onDeviceRemoved(msg.deviceId)
 		} else if (msg.type === 'updatedResources') {
