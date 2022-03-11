@@ -298,12 +298,11 @@ abstract class AbstractBridgeConnection {
 		if (existing.connectionId !== this.getConnectionId()) {
 			updated = true
 			existing.connectionId = this.getConnectionId()
-			// There is a new connection, we should trigger a refresh of resources:
-			this.refreshResources()
 		}
 
 		if (updated) {
 			this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
+			this.refreshResources()
 		}
 	}
 	protected onDeviceRemoved(deviceId: string) {
