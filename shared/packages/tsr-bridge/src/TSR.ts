@@ -142,6 +142,10 @@ export class TSR {
 				const refreshResources = async () => {
 					const resources: { [id: string]: ResourceAny } = {}
 
+					if (!ccg.connected) {
+						return Object.values(resources)
+					}
+
 					// Refresh media:
 					{
 						const res = await ccg.cls()
