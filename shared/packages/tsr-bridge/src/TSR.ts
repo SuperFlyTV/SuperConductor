@@ -76,14 +76,13 @@ export class TSR {
 
 				// Run async so as not to block other devices from being processed.
 				;(async () => {
+					this.sideLoadDevice(deviceId, newDevice)
 					const device = await this.conductor.addDevice(deviceId, newDevice)
 					await device.device.on('connectionChanged', (status: DeviceStatus) => {
 						this.onDeviceStatus(deviceId, status)
 					})
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
-
-					this.sideLoadDevice(deviceId, newDevice)
 				})().catch((error) => this.log?.error(error))
 			}
 		}
