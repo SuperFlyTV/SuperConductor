@@ -1,7 +1,7 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { GUIContext } from '../../../contexts/GUI'
+// import { GUIContext } from '../../../contexts/GUI'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
@@ -9,6 +9,8 @@ import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import short from 'short-uuid'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
 
 const HANDLE_WIDTH = 8
 
@@ -21,8 +23,11 @@ export const TimelineObject: React.FC<{
 	msPerPixel: number
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
-}> = ({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
-	const { gui, updateGUI } = useContext(GUIContext)
+}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
+	// const { gui, updateGUI } = useContext(GUIContext)
+
+	const gui = store.gui
+
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
@@ -157,9 +162,10 @@ export const TimelineObject: React.FC<{
 		) {
 			if (allowMultiSelection) {
 				// Deselect this timelineObj.
-				updateGUI({
-					selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-				})
+				store.gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
+				// updateGUI({
+				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
+				// })
 			}
 
 			return
@@ -168,23 +174,30 @@ export const TimelineObject: React.FC<{
 		if (allowMultiSelection) {
 			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
 				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
-					updateGUI({
-						selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-					})
+					store.gui.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
+					// updateGUI({
+					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
+					// })
 				}
 			} else {
-				updateGUI({
-					selectedGroupId: groupId,
-					selectedPartId: partId,
-					selectedTimelineObjIds: [obj.id],
-				})
+				store.gui.selectedGroupId = groupId
+				store.gui.selectedPartId = partId
+				store.gui.selectedTimelineObjIds = [obj.id]
+				// updateGUI({
+				// 	selectedGroupId: groupId,
+				// 	selectedPartId: partId,
+				// 	selectedTimelineObjIds: [obj.id],
+				// })
 			}
 		} else {
-			updateGUI({
-				selectedGroupId: groupId,
-				selectedPartId: partId,
-				selectedTimelineObjIds: [obj.id],
-			})
+			store.gui.selectedGroupId = groupId
+			store.gui.selectedPartId = partId
+			store.gui.selectedTimelineObjIds = [obj.id]
+			// updateGUI({
+			// 	selectedGroupId: groupId,
+			// 	selectedPartId: partId,
+			// 	selectedTimelineObjIds: [obj.id],
+			// })
 		}
 	}
 
@@ -259,4 +272,4 @@ export const TimelineObject: React.FC<{
 			/>
 		</div>
 	)
-}
+})

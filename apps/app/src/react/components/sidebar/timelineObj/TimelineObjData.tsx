@@ -10,12 +10,14 @@ import { deepClone } from '@shared/lib'
 import { Button, MenuItem } from '@mui/material'
 import { TimelineEnable } from 'superfly-timeline'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { GUIContext } from '../../../contexts/GUI'
+// import { GUIContext } from '../../../contexts/GUI'
 import { TextField } from '@mui/material'
 import { DurationInput } from '../../inputs/DurationInput'
 import { TextInput } from '../../inputs/TextInput'
 // import { ParsedValueInput } from '../timelineObj/input/parsedValue'
 // import { DurationInput } from '../timelineObj/input/duration'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
 
 export const TimelineObjData: React.FC<{
 	rundownId: string
@@ -23,10 +25,12 @@ export const TimelineObjData: React.FC<{
 	partId: string
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
-}> = (props) => {
+}> = observer((props) => {
 	const ipcServer = useContext(IPCServerContext)
-	const { gui, updateGUI } = useContext(GUIContext)
+	// const { gui, updateGUI } = useContext(GUIContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+
+	const gui = store.gui
 
 	const enable: TimelineEnable = Array.isArray(props.timelineObj.obj.enable)
 		? props.timelineObj.obj.enable[0]
@@ -145,11 +149,14 @@ export const TimelineObjData: React.FC<{
 											timelineObjId: props.timelineObj.obj.id,
 										})
 										.then(() => {
-											updateGUI({
-												selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
-													(id) => id !== props.timelineObj.obj.id
-												),
-											})
+											gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter(
+												(id) => id !== props.timelineObj.obj.id
+											)
+											// updateGUI({
+											// 	selectedTimelineObjIds: gui.selectedTimelineObjIds.filter(
+											// 		(id) => id !== props.timelineObj.obj.id
+											// 	),
+											// })
 										})
 										.catch(handleError)
 								}}
@@ -163,4 +170,4 @@ export const TimelineObjData: React.FC<{
 			</Formik>
 		</SidebarInfoGroup>
 	)
-}
+})

@@ -20,7 +20,6 @@ import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
 import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
-import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -33,6 +32,7 @@ import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { ToggleButton } from '@mui/material'
+import { store } from '../../../mobx/store'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -58,7 +58,7 @@ export const PartView: React.FC<{
 	mappings: Mappings
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const { gui } = useContext(GUIContext)
+	const gui = store.gui
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
