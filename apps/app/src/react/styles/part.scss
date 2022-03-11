@@ -91,10 +91,10 @@
 			justify-content: space-between;
 		}
 
-        & .title,
-        & .edit-title {
-            margin-right: 1rem;
-        }
+		& .title,
+		& .edit-title {
+			margin-right: 1rem;
+		}
 
 		& .title {
 			margin-bottom: 1rem;
@@ -273,13 +273,9 @@
 		border-left: $partDragIndicatorSize solid white;
 	}
 
-	.control--hoverOnly {
-		display: none;
-	}
-
-	&:hover {
+	&:not(:hover) {
 		.control--hoverOnly {
-			display: unset;
+			display: none;
 		}
 	}
 }

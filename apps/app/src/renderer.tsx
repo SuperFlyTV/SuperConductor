@@ -6,7 +6,7 @@ import { SnackbarProvider } from 'notistack'
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material'
 import { App } from './react/App'
 
-const SMALL_BTN_SIZE = '18px'
+const SMALL_BTN_SIZE = '22px'
 
 export const ContextWrapper: React.FC = () => {
 	const theme = useMemo(() => {
