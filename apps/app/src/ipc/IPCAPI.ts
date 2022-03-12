@@ -75,6 +75,7 @@ export interface IPCServerMethods {
 		value: boolean
 	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */

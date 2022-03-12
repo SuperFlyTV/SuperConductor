@@ -20,7 +20,8 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
-import { MdStop } from 'react-icons/md'
+import { MdPlayArrow, MdStop } from 'react-icons/md'
+import { IoPlaySkipBackSharp } from 'react-icons/io5'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -215,6 +216,11 @@ export const GroupView: React.FC<{
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
 
+	// Play button:
+	const handlePlay = () => {
+		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -281,6 +287,9 @@ export const GroupView: React.FC<{
 						<div className="playback">
 							<Button variant="contained" size="small" disabled={!canStop} onClick={handleStop}>
 								<MdStop size={22} />
+							</Button>
+							<Button variant="contained" size="small" onClick={handlePlay}>
+								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 							</Button>
 						</div>
 

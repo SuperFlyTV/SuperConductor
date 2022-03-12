@@ -172,7 +172,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		const { rundown, group } = this.getPart(arg)
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (part.disabled) {
+			return
+		}
 
 		if (group.oneAtATime) {
 			// Anything already playing should be stopped:
@@ -304,6 +308,22 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
+	}
+	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.oneAtATime) {
+			// Play the first non-disabled part
+			const part = group.parts.find((p) => !p.disabled)
+			if (part) {
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			}
+		} else {
+			// Play all parts (disabled parts won't get played)
+			for (const part of group.parts) {
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			}
+		}
 	}
 	async newPart(arg: {
 		rundownId: string

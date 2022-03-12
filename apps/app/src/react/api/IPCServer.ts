@@ -48,6 +48,9 @@ export class IPCServer implements IPCServerMethods {
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
 	}
+	playGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
+		return this.invokeServerMethod('playGroup', data)
+	}
 	updateTimelineObj(data: {
 		rundownId: string
 		groupId: string
