@@ -312,6 +312,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { group } = this.getGroup(arg)
 
+		if (group.disabled) {
+			return
+		}
+
 		if (group.oneAtATime) {
 			// Play the first non-disabled part
 			const part = group.parts.find((p) => !p.disabled)
@@ -1112,6 +1116,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.toggleGroupOneAtATime,
+		}
+	}
+	async toggleGroupDisable(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.disabled
+
+		updateGroupPlaying(group)
+		group.disabled = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				updateGroupPlaying(group)
+				group.disabled = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupDisable,
 		}
 	}
 	async refreshResources(): Promise<void> {

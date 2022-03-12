@@ -63,4 +63,12 @@
 	&__content {
 		padding: 0.5rem 1rem 0;
 	}
+
+	&.disabled {
+		.group__header {
+			.title {
+				opacity: 0.5;
+			}
+		}
+	}
 }

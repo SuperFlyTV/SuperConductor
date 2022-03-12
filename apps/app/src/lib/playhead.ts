@@ -12,6 +12,10 @@ import { assertNever } from '@shared/lib'
  * @see GroupPreparedPlayheadData
  */
 export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null {
+	if (group.disabled) {
+		return null
+	}
+
 	if (group.oneAtATime) {
 		const playingPartId = Object.keys(group.playout.playingParts)[0]
 		const groupStartTime = playingPartId ? group.playout.playingParts[playingPartId].startTime : null

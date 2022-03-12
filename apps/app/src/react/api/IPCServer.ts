@@ -165,6 +165,9 @@ export class IPCServer implements IPCServerMethods {
 	toggleGroupOneAtATime(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupOneAtATime', data)
 	}
+	toggleGroupDisable(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('toggleGroupDisable', data)
+	}
 	refreshResources(): Promise<void> {
 		return this.invokeServerMethod('refreshResources')
 	}

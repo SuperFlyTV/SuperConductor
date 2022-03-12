@@ -9,7 +9,7 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, FormControlLabel, Switch, TextField } from '@mui/material'
+import { Button, FormControlLabel, Switch, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
@@ -22,6 +22,9 @@ import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
 import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
+import { IoMdEye } from 'react-icons/io'
+import { RiEyeCloseLine } from 'react-icons/ri'
+import classNames from 'classnames'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -244,7 +247,11 @@ export const GroupView: React.FC<{
 		const canModifyAutoPlay = group.oneAtATime
 
 		return (
-			<div ref={wrapperRef} className="group" data-drop-handler-id={handlerId}>
+			<div
+				ref={wrapperRef}
+				className={classNames('group', { disabled: group.disabled })}
+				data-drop-handler-id={handlerId}
+			>
 				<div className="group__header">
 					{!editingGroupName && (
 						<div
@@ -285,12 +292,33 @@ export const GroupView: React.FC<{
 
 					<div className="controls">
 						<div className="playback">
-							<Button variant="contained" size="small" disabled={!canStop} onClick={handleStop}>
+							<Button
+								variant="contained"
+								size="small"
+								disabled={group.disabled || !canStop}
+								onClick={handleStop}
+							>
 								<MdStop size={22} />
 							</Button>
-							<Button variant="contained" size="small" onClick={handlePlay}>
+							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 							</Button>
+							<ToggleButton
+								value="disabled"
+								selected={group.disabled}
+								size="small"
+								onChange={() => {
+									ipcServer
+										.toggleGroupDisable({
+											rundownId,
+											groupId: group.id,
+											value: !group.disabled,
+										})
+										.catch(handleError)
+								}}
+							>
+								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleButton>
 						</div>
 
 						<div className="toggle">

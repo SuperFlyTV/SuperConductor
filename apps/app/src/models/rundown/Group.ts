@@ -11,6 +11,7 @@ export type Group = {
 	oneAtATime: boolean
 	autoPlay: boolean
 	loop: boolean
+	disabled?: boolean
 
 	parts: Part[]
 

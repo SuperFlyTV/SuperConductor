@@ -32,6 +32,7 @@ export const enum ActionDescription {
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
+	ToggleGroupDisable = 'toggle group disable',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -156,6 +157,7 @@ export interface IPCServerMethods {
 
 	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	toggleGroupDisable: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	refreshResources: () => Promise<unknown>
 
 	updateProject: (data: { id: string; project: Project }) => Promise<unknown>

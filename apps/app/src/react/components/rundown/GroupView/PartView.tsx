@@ -633,6 +633,8 @@ export const PartView: React.FC<{
 	}, [])
 	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
 
+	const groupOrPartDisabled = parentGroup.disabled || part.disabled
+
 	return (
 		<div
 			data-drop-handler-id={handlerId}
@@ -642,7 +644,7 @@ export const PartView: React.FC<{
 				active: isActive === 'active',
 				queued: isActive === 'queued',
 				dragging: isDragging,
-				disabled: part.disabled,
+				disabled: groupOrPartDisabled,
 			})}
 		>
 			<div className="part__dragArrow" />
@@ -743,7 +745,7 @@ export const PartView: React.FC<{
 						className="part__stop"
 						variant="contained"
 						size="small"
-						disabled={part.disabled || !canStop}
+						disabled={groupOrPartDisabled || !canStop}
 						onClick={handleStop}
 					>
 						<MdStop size={22} />
@@ -753,7 +755,7 @@ export const PartView: React.FC<{
 						className="part__play"
 						variant="contained"
 						size="small"
-						disabled={part.disabled}
+						disabled={groupOrPartDisabled}
 						onClick={handleStart}
 					>
 						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
