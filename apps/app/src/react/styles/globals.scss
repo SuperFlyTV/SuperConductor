@@ -3,14 +3,12 @@ $accentBg: #e96703;
 $accentLightBg: #fa7713;
 $accentText: white;
 
-$silverBg: #4b4b4b;
-
 $topheaderBg: #24203a;
-$sidebarBg: #4b4b4b;
-$mainBg: #1a1a1a;
+$sidebarBg: black;
+$mainBg: radial-gradient(50% 50% at 50% 50%, #2a2c3a 0%, #1a1b24 100%);
 
-$mediaLayerColor: #1769ff;
-$templateLayerColor: #5fa852;
+$mediaLayerColor: #2d4a80;
+$templateLayerColor: #b26000;
 $movieLayerColor: #6817ff;
 $stillLayerColor: #ffe817;
 $audioLayerColor: #308579;
@@ -18,25 +16,22 @@ $audioLayerColor: #308579;
 $greenColor: #5fa852;
 $lightGreenColor: #76c469;
 $darkGreenColor: #5ab44a;
-$redColor: #c24242;
+$redColor: red;
 $redBg: #c24242;
 $redLightBg: #d85353;
 $lightRedColor: #d44e4e;
 
 $lightGreenColor: #5afc3e;
 
-$mainFont: 'Roboto', 'Arial', sans-serif;
-$partOutlineColor: #4b4b4b;
-$partDragHandleColor: #5a5a5a;
-
-$partActiveColor: #bd4343;
-$partActiveBg: #130000;
-
-$partQueuedColor: #2f883b;
-$partQueuedBg: #001304;
+$mainFont: 'Barlow', sans-serif;
+$partOutlineColor: #b0b0b0;
+$partTabWidth: 2.2rem;
+$partDragHandleColor: #2d3340;
+$partDragIndicatorSize: 8px;
+$partMetaColor: #2d3340;
 
 $layerHeight: 2.5rem;
-$emptyLayerColor: #1f1f1f;
+$emptyLayerColor: #1b1e26;
 
 $borderRadius: 0.3rem;
 
@@ -46,6 +41,8 @@ $default-transition: all 150ms ease;
 
 $deviceOfflineColor: #ff0000;
 $deviceOnlineColor: #148c00;
+
+$timelineObjHandleWidth: 8px;
 
 html {
 	font-size: 62.5%;

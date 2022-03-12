@@ -620,3 +620,116 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 		assertNever(obj.content)
 	}
 }
+
+export function getDeviceName(deviceType: DeviceType): string {
+	switch (deviceType) {
+		case DeviceType.ABSTRACT:
+			return 'Abstract'
+		case DeviceType.CASPARCG:
+			return 'CasparCG'
+		case DeviceType.ATEM:
+			return 'ATEM'
+		case DeviceType.LAWO:
+			return 'Lawo'
+		case DeviceType.HTTPSEND:
+			return 'HTTP Send'
+		case DeviceType.PANASONIC_PTZ:
+			return 'Panasonic PTZ'
+		case DeviceType.TCPSEND:
+			return 'TCP Send'
+		case DeviceType.HYPERDECK:
+			return 'Hyperdeck'
+		case DeviceType.PHAROS:
+			return 'Pharos'
+		case DeviceType.OSC:
+			return 'OSC'
+		case DeviceType.HTTPWATCHER:
+			return 'HTTP Watcher'
+		case DeviceType.SISYFOS:
+			return 'Sisyfos'
+		case DeviceType.QUANTEL:
+			return 'Quantel'
+		case DeviceType.VIZMSE:
+			return 'Viz MSE'
+		case DeviceType.SINGULAR_LIVE:
+			return 'Singular Live'
+		case DeviceType.SHOTOKU:
+			return 'Shotoku'
+		case DeviceType.VMIX:
+			return 'VMix'
+		case DeviceType.OBS:
+			return 'OBS'
+		default:
+			assertNever(deviceType)
+	}
+
+	return 'Unknown'
+}
+
+export function describeMappingConfiguration(mapping: Mapping): string {
+	switch (mapping.device) {
+		case DeviceType.ABSTRACT:
+			return ''
+		case DeviceType.CASPARCG: {
+			const typedMapping = mapping as MappingCasparCG
+			return `Channel: ${typedMapping.channel}, Layer: ${typedMapping.layer}`
+		}
+		case DeviceType.ATEM: {
+			const typedMapping = mapping as MappingAtem
+			switch (typedMapping.mappingType) {
+				case MappingAtemType.MixEffect:
+					return `ME: ${typedMapping.index}`
+				case MappingAtemType.DownStreamKeyer:
+					return `DSK: ${typedMapping.index}`
+				case MappingAtemType.SuperSourceBox:
+					return `SSrc Box: ${typedMapping.index}`
+				case MappingAtemType.Auxilliary:
+					return `Aux: ${typedMapping.index}`
+				case MappingAtemType.MediaPlayer:
+					return `Media Player: ${typedMapping.index}`
+				case MappingAtemType.SuperSourceProperties:
+					return `SSrc Props: ${typedMapping.index}`
+				case MappingAtemType.AudioChannel:
+					return `Audio Channel: ${typedMapping.index}`
+				case MappingAtemType.MacroPlayer:
+					return `Macro Player: ${typedMapping.index}`
+				default:
+					assertNever(typedMapping.mappingType)
+					return ''
+			}
+		}
+		case DeviceType.LAWO:
+			return ''
+		case DeviceType.HTTPSEND:
+			return ''
+		case DeviceType.PANASONIC_PTZ:
+			return ''
+		case DeviceType.TCPSEND:
+			return ''
+		case DeviceType.HYPERDECK:
+			return ''
+		case DeviceType.PHAROS:
+			return ''
+		case DeviceType.OSC:
+			return ''
+		case DeviceType.HTTPWATCHER:
+			return ''
+		case DeviceType.SISYFOS:
+			return ''
+		case DeviceType.QUANTEL:
+			return ''
+		case DeviceType.VIZMSE:
+			return ''
+		case DeviceType.SINGULAR_LIVE:
+			return ''
+		case DeviceType.SHOTOKU:
+			return ''
+		case DeviceType.VMIX:
+			return ''
+		case DeviceType.OBS:
+			return ''
+		default:
+			assertNever(mapping.device)
+			return ''
+	}
+}

@@ -1,17 +1,20 @@
 import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
-import { Bridge } from '../models/project/Bridge'
+import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
 import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
+import { BaseBridge } from '@shared/tsr-bridge'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
+
+type AnyBridgeConnection = WebsocketBridgeConnection | LocalBridgeConnection
 
 /** This handles connected bridges */
 export class BridgeHandler {
@@ -23,7 +26,8 @@ export class BridgeHandler {
 			connection: WebsocketConnection
 		}
 	} = {}
-	private connectedBridges: BridgeConnection[] = []
+	private internalBridge: LocalBridgeConnection | null = null
+	private connectedBridges: Array<AnyBridgeConnection> = []
 	private mappings: Mappings = {}
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
@@ -39,14 +43,7 @@ export class BridgeHandler {
 		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
 
-			const bridge = new BridgeConnection(this, this.session, this.storage, connection, {
-				updatedResources: (deviceId: string, resources: ResourceAny[]) => {
-					this.callbacks.updatedResources(deviceId, resources)
-				},
-				onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => {
-					this.callbacks.onVersionMismatch(bridgeId, bridgeVersion, ourVersion)
-				},
-			})
+			const bridge = new WebsocketBridgeConnection(this.session, this.storage, connection, this.callbacks)
 
 			// Lookup and set the bridgeId, if it is an outgoing
 			for (const [bridgeId, outgoing] of Object.entries(this.outgoingBridges)) {
@@ -67,11 +64,33 @@ export class BridgeHandler {
 			this.onUpdatedProject(project)
 		})
 	}
-	getBridgeConnection(bridgeId: string): BridgeConnection | undefined {
+	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
 
 	onUpdatedProject(project: Project) {
+		if (project.settings.enableInternalBridge) {
+			if (!this.internalBridge) {
+				console.log('Setting up internal bridge')
+				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
+				this.connectedBridges.push(this.internalBridge)
+			}
+		} else {
+			if (this.internalBridge) {
+				console.log('Destroying internal bridge')
+				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
+				const bridgeIndex = this.connectedBridges.findIndex(
+					(connectedBridge) => connectedBridge === this.internalBridge
+				)
+				if (bridgeIndex >= 0) {
+					this.connectedBridges.splice(bridgeIndex, 1)
+				}
+				const internalBridge = this.internalBridge
+				this.internalBridge = null
+				internalBridge.destroy().catch(console.error)
+			}
+		}
+
 		// Added/updated:
 		for (const bridge of Object.values(project.bridges)) {
 			if (bridge.outgoing) {
@@ -155,7 +174,12 @@ export class BridgeHandler {
 	}
 }
 
-export class BridgeConnection {
+interface BridgeConnectionCallbacks {
+	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
+	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
+}
+
+abstract class AbstractBridgeConnection {
 	public bridgeId: string | null = null
 
 	private sentSettings: Bridge['settings'] | null = null
@@ -163,80 +187,11 @@ export class BridgeConnection {
 	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
-		private parent: BridgeHandler,
-		private session: SessionHandler,
-		private storage: StorageHandler,
-		private connection: WebsocketConnection,
-		private callbacks: {
-			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
-			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
-		}
-	) {
-		const setConnected = () => {
-			if (this.bridgeId) {
-				const project = this.storage.getProject()
+		protected session: SessionHandler,
+		protected storage: StorageHandler,
+		protected callbacks: BridgeConnectionCallbacks
+	) {}
 
-				// If the bridge doesn't exist in settings, create it:
-				if (!project.bridges[this.bridgeId]) {
-					project.bridges[this.bridgeId] = {
-						id: this.bridgeId,
-						name: this.bridgeId,
-						outgoing: false,
-						url: '',
-						settings: {
-							devices: {},
-						},
-					}
-					this.storage.updateProject(project)
-				}
-
-				// Update the connection status:
-				let status = this.session.getBridgeStatus(this.bridgeId)
-				if (!status) {
-					status = {
-						connected: false,
-						devices: {},
-					}
-				}
-				status.connected = true
-
-				this.session.updateBridgeStatus(this.bridgeId, status)
-			}
-		}
-		this.connection.on('connected', () => {
-			setConnected()
-		})
-		this.connection.on('disconnected', () => {
-			if (this.bridgeId) {
-				const status = this.session.getBridgeStatus(this.bridgeId)
-				if (status) {
-					status.connected = false
-					this.session.updateBridgeStatus(this.bridgeId, status)
-				}
-			}
-		})
-		this.connection.on('message', (msg: BridgeAPI.FromBridge.Any) => {
-			if (msg.type === 'initRequestId') {
-				this.onInitRequestId()
-			} else if (msg.type === 'init') {
-				this.onInit(msg.id, msg.version)
-			} else if (msg.type === 'status') {
-				// todo
-			} else if (msg.type === 'deviceStatus') {
-				this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
-			} else if (msg.type === 'updatedResources') {
-				this.callbacks.updatedResources(msg.deviceId, msg.resources)
-			} else if (msg.type === 'timelineIds') {
-				this._syncTimelineIds(msg.timelineIds)
-			} else if (msg.type === 'PeripheralStatus') {
-				this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
-			} else if (msg.type === 'PeripheralTrigger') {
-				this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
-			} else {
-				assertNever(msg)
-			}
-		})
-	}
 	setSettings(settings: Bridge['settings'], force = false) {
 		if (force || !_.isEqual(this.sentSettings, settings)) {
 			this.sentSettings = settings
@@ -274,10 +229,10 @@ export class BridgeConnection {
 		// The bridge will reply with its timelineIds, and we'll pipe them into this._syncTimelineIds()
 		this.send({ type: 'getTimelineIds' })
 	}
-	private getCurrentTime() {
+	protected getCurrentTime() {
 		return Date.now()
 	}
-	private _syncTimelineIds(bridgeTimelineIds: string[]) {
+	protected _syncTimelineIds(bridgeTimelineIds: string[]) {
 		// Sync the timelineIds reported from the bridge with our own:
 		for (const timelineId of bridgeTimelineIds) {
 			if (!this.sentTimelines) {
@@ -285,15 +240,7 @@ export class BridgeConnection {
 			}
 		}
 	}
-	private send(msg: BridgeAPI.FromTPT.Any) {
-		if (this.connection.connected) {
-			this.connection.send(msg)
-		} else {
-			console.log('not sending, because not connected', msg.type)
-		}
-	}
-
-	private onInit(id: string, version: string) {
+	protected onInit(id: string, version: string) {
 		if (!this.bridgeId) {
 			this.bridgeId = id
 		} else if (this.bridgeId !== id) {
@@ -322,11 +269,11 @@ export class BridgeConnection {
 		this.getTimelineIds()
 		this.session.resetPeripheralTriggerStatuses(this.bridgeId)
 	}
-	private onInitRequestId() {
+	protected onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')
 		this.send({ type: 'setId', id: this.bridgeId })
 	}
-	private onDeviceStatus(deviceId: string, ok: boolean, message: string) {
+	protected onDeviceStatus(deviceId: string, ok: boolean, message: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 
 		const bridgeStatus = this.session.getBridgeStatus(this.bridgeId)
@@ -348,23 +295,158 @@ export class BridgeConnection {
 			existing.message = message
 		}
 
-		if (existing.connectionId !== this.connection.connectionId) {
+		if (existing.connectionId !== this.getConnectionId()) {
 			updated = true
-			existing.connectionId = this.connection.connectionId
-			// There is a new connection, we should trigger a refresh of resources:
-			this.refreshResources()
+			existing.connectionId = this.getConnectionId()
 		}
 
 		if (updated) {
 			this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
+			this.refreshResources()
 		}
 	}
-	private _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
+	protected onDeviceRemoved(deviceId: string) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+
+		const bridgeStatus = this.session.getBridgeStatus(this.bridgeId)
+		if (!bridgeStatus) throw new Error('onDeviceStatus: bridgeStatus not set')
+
+		delete bridgeStatus.devices[deviceId]
+
+		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
+	}
+	protected _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralStatus(this.bridgeId, deviceId, deviceName, status === 'connected')
 	}
-	private _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
+	protected _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
+	}
+	protected handleMessage(msg: BridgeAPI.FromBridge.Any) {
+		if (msg.type === 'initRequestId') {
+			if (this.onInitRequestId) this.onInitRequestId()
+		} else if (msg.type === 'init') {
+			this.onInit(msg.id, msg.version)
+		} else if (msg.type === 'status') {
+			// todo
+		} else if (msg.type === 'deviceStatus') {
+			if (this.onDeviceStatus) this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
+		} else if (msg.type === 'deviceRemoved') {
+			this.onDeviceRemoved(msg.deviceId)
+		} else if (msg.type === 'updatedResources') {
+			this.callbacks.updatedResources(msg.deviceId, msg.resources)
+		} else if (msg.type === 'timelineIds') {
+			this._syncTimelineIds(msg.timelineIds)
+		} else if (msg.type === 'PeripheralStatus') {
+			this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
+		} else if (msg.type === 'PeripheralTrigger') {
+			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
+		} else {
+			assertNever(msg)
+		}
+	}
+	protected createBridgeInProjectIfNotExists() {
+		if (!this.bridgeId) {
+			return
+		}
+
+		const project = this.storage.getProject()
+
+		// If the bridge doesn't exist in settings, create it:
+		if (!project.bridges[this.bridgeId]) {
+			project.bridges[this.bridgeId] = {
+				id: this.bridgeId,
+				name: this.bridgeId,
+				outgoing: false,
+				url: '',
+				settings: {
+					devices: {},
+				},
+			}
+			this.storage.updateProject(project)
+		}
+
+		// Update the connection status:
+		let status = this.session.getBridgeStatus(this.bridgeId)
+		if (!status) {
+			status = {
+				connected: false,
+				devices: {},
+			}
+		}
+		status.connected = true
+
+		this.session.updateBridgeStatus(this.bridgeId, status)
+	}
+	protected abstract send(msg: BridgeAPI.FromTPT.Any): void
+	protected abstract getConnectionId(): number
+}
+
+export class WebsocketBridgeConnection extends AbstractBridgeConnection {
+	constructor(
+		session: SessionHandler,
+		storage: StorageHandler,
+		private connection: WebsocketConnection,
+		callbacks: BridgeConnectionCallbacks
+	) {
+		super(session, storage, callbacks)
+		const setConnected = () => {
+			if (this.bridgeId) {
+				this.createBridgeInProjectIfNotExists()
+			}
+		}
+		this.connection.on('connected', () => {
+			setConnected()
+		})
+		this.connection.on('disconnected', () => {
+			if (this.bridgeId) {
+				const status = this.session.getBridgeStatus(this.bridgeId)
+				if (status) {
+					status.connected = false
+					this.session.updateBridgeStatus(this.bridgeId, status)
+				}
+			}
+		})
+		this.connection.on('message', this.handleMessage)
+	}
+	protected send(msg: BridgeAPI.FromTPT.Any) {
+		if (this.connection.connected) {
+			this.connection.send(msg)
+		} else {
+			console.log('not sending, because not connected', msg.type)
+		}
+	}
+	protected getConnectionId(): number {
+		return this.connection.connectionId
+	}
+}
+
+export class LocalBridgeConnection extends AbstractBridgeConnection {
+	private baseBridge: BaseBridge
+	private connectionId: number = Date.now() + Math.random()
+
+	constructor(session: SessionHandler, storage: StorageHandler, callbacks: BridgeConnectionCallbacks) {
+		super(session, storage, callbacks)
+		this.bridgeId = INTERNAL_BRIDGE_ID
+		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), console)
+		this.createBridgeInProjectIfNotExists()
+		this.send({
+			type: 'setId',
+			id: INTERNAL_BRIDGE_ID,
+		})
+	}
+	async destroy(): Promise<void> {
+		await this.baseBridge.destroy()
+	}
+	protected send(msg: BridgeAPI.FromTPT.Any) {
+		try {
+			this.baseBridge.handleMessage(msg)
+		} catch (err) {
+			console.error(err)
+		}
+	}
+	protected getConnectionId(): number {
+		return this.connectionId
 	}
 }

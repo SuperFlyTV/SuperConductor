@@ -3,6 +3,7 @@ import {
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
+	findDevice,
 	findGroup,
 	findPart,
 	findTimelineObj,
@@ -21,7 +22,7 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceType } from '@shared/models'
+import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
@@ -171,7 +172,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		const { rundown, group } = this.getPart(arg)
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (part.disabled) {
+			return
+		}
 
 		if (group.oneAtATime) {
 			// Anything already playing should be stopped:
@@ -239,6 +244,62 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			// result: newPart.id,
 		}
 	}
+	async togglePartLoop(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+		const originalValue = part.loop
+
+		updateGroupPlaying(group)
+		part.loop = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				updateGroupPlaying(group)
+				part.loop = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.TogglePartLoop,
+		}
+	}
+	async togglePartDisable(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+		const originalValue = part.disabled
+
+		updateGroupPlaying(group)
+		part.disabled = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group, part } = this.getPart(arg)
+
+				updateGroupPlaying(group)
+				part.disabled = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.TogglePartDisable,
+		}
+	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -248,12 +309,32 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
 	}
+	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled) {
+			return
+		}
+
+		if (group.oneAtATime) {
+			// Play the first non-disabled part
+			const part = group.parts.find((p) => !p.disabled)
+			if (part) {
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			}
+		} else {
+			// Play all parts (disabled parts won't get played)
+			for (const part of group.parts) {
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			}
+		}
+	}
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 		name: string
-	}): Promise<UndoableResult<string>> {
+	}): Promise<UndoableResult<{ partId: string; groupId?: string }>> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -286,6 +367,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 		this.storage.updateRundown(arg.rundownId, rundown)
 
+		const result: { partId: string; groupId?: string } = {
+			partId: newPart.id,
+		}
+
+		if (transparentGroupId) {
+			result.groupId = transparentGroupId
+		}
+
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
@@ -300,7 +389,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.NewPart,
-			result: newPart.id,
+			result,
 		}
 	}
 	async updatePart(arg: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<UndoableResult> {
@@ -661,6 +750,55 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.AddTimelineObj,
 		}
 	}
+	async moveTimelineObjToNewLayer(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		const timelineObj = findTimelineObj(part, arg.timelineObjId)
+		if (!timelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" could not be found.`)
+
+		if (!timelineObj.resourceId) throw new Error(`TimelineObj "${arg.timelineObjId}" lacks a resourceId.`)
+		const resource = this.session.getResource(timelineObj.resourceId)
+		if (!resource) throw new Error(`Resource ${timelineObj.resourceId} not found.`)
+
+		const originalLayer = timelineObj.obj.layer
+		const result = this._findBestOrCreateLayer({
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
+			partId: arg.partId,
+			obj: timelineObj.obj,
+			resource: resource,
+		})
+		timelineObj.obj.layer = result.layerId
+
+		this._updatePart(part)
+		this._updateTimeline(group)
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				if (result.createdNewLayer) {
+					// If a new layer was added, remove it.
+					const project = this.getProject()
+					delete project.mappings[result.layerId]
+					this.storage.updateProject(project)
+				}
+
+				const { rundown, group, part } = this.getPart(arg)
+
+				timelineObj.obj.layer = originalLayer
+
+				this._updatePart(part)
+				this._updateTimeline(group)
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.MoveTimelineObjToNewLayer,
+		}
+	}
 
 	async newTemplateData(arg: {
 		rundownId: string
@@ -867,73 +1005,21 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			throw new Error(`Unknown resource type "${resource.resourceType}"`)
 		}
 
-		const project = this.getProject()
-		let addToLayerId: string | null = arg.layerId
-
-		if (!addToLayerId) {
-			// First, try to pick next free layer:
-			const possibleLayers: { [layerId: string]: number } = {}
-			for (const [checkLayerId, checkLayer] of Object.entries(project.mappings)) {
-				// Is the layer compatible?
-				if (filterMapping(checkLayer, obj)) {
-					// Is the layer free?
-					if (!part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === checkLayerId)) {
-						possibleLayers[checkLayerId] = 1
-					}
-				}
-			}
-			// Pick the best layer, ie check which layer contains the most similar objects in other parts:
-			const rundown = this.getRundown({ rundownId: arg.rundownId })
-			for (const group of rundown.rundown.groups) {
-				for (const part of group.parts) {
-					for (const timelineObj of part.timeline) {
-						if (possibleLayers[timelineObj.obj.layer]) {
-							for (const property of Object.keys(timelineObj.obj.content)) {
-								if ((timelineObj.obj.content as any)[property] === (obj.content as any)[property]) {
-									possibleLayers[timelineObj.obj.layer]++
-								}
-							}
-						}
-					}
-				}
-			}
-			const bestLayer = Object.entries(possibleLayers).reduce(
-				(prev, current) => {
-					if (current[1] > prev[1]) return current
-					return prev
-				},
-				['', 0]
-			)
-			if (bestLayer[0]) {
-				addToLayerId = bestLayer[0]
-			}
+		let addToLayerId: string
+		let createdNewLayer = false
+		if (arg.layerId) {
+			addToLayerId = arg.layerId
+		} else {
+			const result = this._findBestOrCreateLayer({
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+				partId: arg.partId,
+				obj,
+				resource,
+			})
+			addToLayerId = result.layerId
+			createdNewLayer = result.createdNewLayer
 		}
-
-		let newLayerId = ''
-		if (!addToLayerId) {
-			// If no layer was found, create a new layer:
-			const newMapping = getMappingFromTimelineObject(obj, resource.deviceId)
-
-			if (newMapping && newMapping.layerName) {
-				// Add the new layer to the project
-				newLayerId = this.storage.convertToFilename(newMapping.layerName)
-				project.mappings = {
-					...project.mappings,
-					[newLayerId]: newMapping,
-				}
-				this.storage.updateProject(project)
-				addToLayerId = newLayerId
-			}
-		}
-
-		if (!addToLayerId) throw new Error('No layer found')
-
-		// Check that the layer exists:
-		const layer = addToLayerId ? project.mappings[addToLayerId] : undefined
-		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
-
-		// Verify that the layer is OK:
-		if (!filterMapping(layer, obj)) throw new Error('Not a valid mapping for that timeline-object.')
 		obj.layer = addToLayerId
 
 		const timelineObj: TimelineObj = {
@@ -949,9 +1035,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		return {
 			undo: () => {
 				const project = this.getProject()
-				if (newLayerId) {
+				if (createdNewLayer) {
 					// If a new layer was added, remove it.
-					delete project.mappings[newLayerId]
+					delete project.mappings[addToLayerId]
 					this.storage.updateProject(project)
 				}
 
@@ -1032,11 +1118,43 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.toggleGroupOneAtATime,
 		}
 	}
+	async toggleGroupDisable(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.disabled
+
+		updateGroupPlaying(group)
+		group.disabled = arg.value
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				updateGroupPlaying(group)
+				group.disabled = originalValue
+				this._updateTimeline(group)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupDisable,
+		}
+	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		const rundowns = this.storage.getAllRundowns()
+
+		for (const mappingId in data.project.mappings) {
+			// Go through all Mappings and remove any belonging to devices which have been removed.
+			const mapping = data.project.mappings[mappingId]
+			const device = findDevice(data.project.bridges, mapping.deviceId)
+			if (!device) {
+				delete data.project.mappings[mappingId]
+			}
+		}
 
 		for (const rundown of rundowns) {
 			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed.
@@ -1151,5 +1269,81 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	private _updateTimeline(group: Group) {
 		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
 		this.callbacks.updatePeripherals(group)
+	}
+	private _findBestOrCreateLayer(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		obj: TSRTimelineObj
+		resource: ResourceAny
+	}) {
+		const project = this.getProject()
+		const { rundown, part } = this.getPart(arg)
+		let addToLayerId: string | null = null
+		let createdNewLayer = false
+
+		// First, try to pick next free layer:
+		const possibleLayers: { [layerId: string]: number } = {}
+		for (const [checkLayerId, checkLayer] of Object.entries(project.mappings)) {
+			// Is the layer compatible?
+			if (filterMapping(checkLayer, arg.obj)) {
+				// Is the layer free?
+				if (!part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === checkLayerId)) {
+					possibleLayers[checkLayerId] = 1
+				}
+			}
+		}
+		// Pick the best layer, ie check which layer contains the most similar objects in other parts:
+		for (const group of rundown.groups) {
+			for (const part of group.parts) {
+				for (const timelineObj of part.timeline) {
+					if (possibleLayers[timelineObj.obj.layer]) {
+						for (const property of Object.keys(timelineObj.obj.content)) {
+							if ((timelineObj.obj.content as any)[property] === (arg.obj.content as any)[property]) {
+								possibleLayers[timelineObj.obj.layer]++
+							}
+						}
+					}
+				}
+			}
+		}
+		const bestLayer = Object.entries(possibleLayers).reduce(
+			(prev, current) => {
+				if (current[1] > prev[1]) return current
+				return prev
+			},
+			['', 0]
+		)
+		if (bestLayer[0]) {
+			addToLayerId = bestLayer[0]
+		}
+
+		if (!addToLayerId) {
+			// If no layer was found, create a new layer:
+			const newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
+
+			if (newMapping && newMapping.layerName) {
+				// Add the new layer to the project
+				const newLayerId = this.storage.convertToFilename(newMapping.layerName)
+				project.mappings = {
+					...project.mappings,
+					[newLayerId]: newMapping,
+				}
+				this.storage.updateProject(project)
+				addToLayerId = newLayerId
+				createdNewLayer = true
+			}
+		}
+
+		if (!addToLayerId) throw new Error('No layer found')
+
+		// Check that the layer exists:
+		const layer = addToLayerId ? project.mappings[addToLayerId] : undefined
+		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
+
+		// Verify that the layer is OK:
+		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid mapping for that timeline-object.')
+
+		return { layerId: addToLayerId, createdNewLayer }
 	}
 }

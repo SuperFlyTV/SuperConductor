@@ -17,6 +17,7 @@ import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { ConnectionStatus } from '../util/ConnectionStatus'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -78,6 +79,7 @@ export const TopHeader: React.FC<{
 					<div
 						key={rundown.rundownId}
 						className={classNames('tab', { 'tab--selected': rundown.rundownId === selectedRundownId })}
+						title="Double-click to edit"
 						onClick={() => {
 							onSelect(rundown.rundownId)
 						}}
@@ -123,17 +125,12 @@ export const TopHeader: React.FC<{
 				{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
 					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
 						return (
-							<div
+							<ConnectionStatus
 								key={`${bridgeId}_${deviceId}`}
-								className={classNames('device-status', {
-									ok: bridgeStatus.connected && deviceStatus.ok,
-								})}
-								title={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
-							>
-								{deviceId}
-
-								<div className="device-status__dot"></div>
-							</div>
+								label={deviceId}
+								tooltip={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
+								ok={bridgeStatus.connected && deviceStatus.ok}
+							/>
 						)
 					})
 				})}
@@ -143,16 +140,12 @@ export const TopHeader: React.FC<{
 					const bridgeIsConnected = bridge && bridge.connected
 
 					return (
-						<div
+						<ConnectionStatus
 							key={`${peripheralId}`}
-							className={classNames('peripheral-status', {
-								ok: bridgeIsConnected && peripheral.status.connected,
-							})}
-							title={peripheral.status.connected ? 'Disconnected' : ''}
-						>
-							{peripheral.name}
-							<div className="device-status__dot"></div>
-						</div>
+							label={peripheral.name}
+							tooltip={peripheral.status.connected ? 'Disconnected' : ''}
+							ok={bridgeIsConnected && peripheral.status.connected}
+						/>
 					)
 				})}
 			</div>
@@ -193,6 +186,7 @@ export const TopHeader: React.FC<{
 							</DialogContent>
 							<DialogActions>
 								<Button
+									variant="contained"
 									onClick={() => {
 										setNewRundownOpen(true)
 									}}
@@ -200,13 +194,16 @@ export const TopHeader: React.FC<{
 									New Rundown
 								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}
 								>
 									Open
 								</Button>
-								<Button onClick={handleOpenRundownClose}>Close</Button>
+								<Button variant="contained" onClick={handleOpenRundownClose}>
+									Close
+								</Button>
 							</DialogActions>
 						</Dialog>
 					)
@@ -244,8 +241,11 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
-								<Button onClick={handleNewRundownClose}>Cancel</Button>
+								<Button variant="contained" onClick={handleNewRundownClose}>
+									Cancel
+								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}
@@ -291,8 +291,11 @@ export const TopHeader: React.FC<{
 								</Form>
 							</DialogContent>
 							<DialogActions>
-								<Button onClick={handleRenameRundownClose}>Cancel</Button>
+								<Button variant="contained" onClick={handleRenameRundownClose}>
+									Cancel
+								</Button>
 								<Button
+									variant="contained"
 									onClick={() => {
 										formik.submitForm().catch(handleError)
 									}}

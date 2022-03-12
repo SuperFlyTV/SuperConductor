@@ -153,6 +153,12 @@ export class PeripheralXkeys extends Peripheral {
 		}
 	}
 	async close() {
+		if (this.xkeysPanel) {
+			this.xkeysPanel.setAllBacklights(null) // set all backlights to black
+
+			this.xkeysPanel.setIndicatorLED(1, false) // green
+			this.xkeysPanel.setIndicatorLED(2, true) // red
+		}
 		await super._close()
 		if (this.xkeysPanel) {
 			await this.xkeysPanel.close()

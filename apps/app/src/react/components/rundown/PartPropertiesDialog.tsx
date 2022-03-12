@@ -7,7 +7,7 @@ import { TextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface IProps {
-	initial?: Part
+	initial?: Partial<Part>
 	open: boolean
 	onAccepted: (newPart: Partial<Part> & Pick<Part, 'name'>) => void
 	onDiscarded: () => void
@@ -53,8 +53,11 @@ export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAcce
 						</Form>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={onDiscarded}>Cancel</Button>
+						<Button variant="contained" onClick={onDiscarded}>
+							Cancel
+						</Button>
 						<Button
+							variant="contained"
 							onClick={() => {
 								formik.submitForm().catch(handleError)
 							}}

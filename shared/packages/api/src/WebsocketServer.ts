@@ -104,6 +104,8 @@ export class WebsocketConnection extends EventEmitter {
 	}
 
 	terminate() {
+		this.emit('disconnected')
+
 		this.ws?.close()
 		if (this.pingInterval) {
 			clearInterval(this.pingInterval)

@@ -1,7 +1,7 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { GUIContext } from '../../../contexts/GUI'
+// import { GUIContext } from '../../../contexts/GUI'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
@@ -9,6 +9,10 @@ import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import short from 'short-uuid'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
+
+const HANDLE_WIDTH = 8
 
 export const TimelineObject: React.FC<{
 	groupId: string
@@ -19,8 +23,11 @@ export const TimelineObject: React.FC<{
 	msPerPixel: number
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
-}> = ({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
-	const { gui, updateGUI } = useContext(GUIContext)
+}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
+	// const { gui, updateGUI } = useContext(GUIContext)
+
+	const gui = store.guiStore
+
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
@@ -34,6 +41,7 @@ export const TimelineObject: React.FC<{
 	const [handledMoveStart, setHandledMoveStart] = useState(false)
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
+	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 	const updateMoveRef = useRef(updateTimelineObjMove)
 	updateMoveRef.current = updateTimelineObjMove
 
@@ -44,7 +52,7 @@ export const TimelineObject: React.FC<{
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
 
-	const description = describeTimelineObject(obj)
+	const description = describeTimelineObject(obj, typeof duration === 'number' ? duration : undefined)
 
 	useEffect(() => {
 		const keyTracker = hotkeyContext.sorensen
@@ -73,6 +81,8 @@ export const TimelineObject: React.FC<{
 			global: true,
 		})
 
+		keyTracker.addEventListener('keycancel', onKey)
+
 		return () => {
 			keyTracker.unbind('Shift', onKey)
 			keyTracker.unbind('Alt', onKey)
@@ -89,7 +99,7 @@ export const TimelineObject: React.FC<{
 			wasMoved: null,
 			partId,
 			leaderTimelineObjId: timelineObj.obj.id,
-			moveType: 'whole',
+			moveType,
 			dragDelta: deltaX * msPerPixel,
 			pointerX,
 			pointerY,
@@ -112,7 +122,19 @@ export const TimelineObject: React.FC<{
 		}
 
 		updateMoveRef.current(update)
-	}, [isMoved, deltaX, msPerPixel, timelineObj.obj.id, partId, pointerX, pointerY, originX, originY, allowDuplicate])
+	}, [
+		isMoved,
+		deltaX,
+		msPerPixel,
+		timelineObj.obj.id,
+		partId,
+		pointerX,
+		pointerY,
+		originX,
+		originY,
+		allowDuplicate,
+		moveType,
+	])
 	useEffect(() => {
 		if (isMoved && !handledMoveStart) {
 			// A move has begun.
@@ -132,53 +154,143 @@ export const TimelineObject: React.FC<{
 		}
 	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
 
+	const updateSelection = () => {
+		if (
+			gui.selectedGroupId === groupId &&
+			gui.selectedPartId === partId &&
+			gui.selectedTimelineObjIds.includes(obj.id)
+		) {
+			if (allowMultiSelection) {
+				// Deselect this timelineObj.
+				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
+				// updateGUI({
+				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
+				// })
+			}
+
+			return
+		}
+
+		if (allowMultiSelection) {
+			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
+				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
+					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
+					// updateGUI({
+					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
+					// })
+				}
+			} else {
+				store.guiStore.selectedGroupId = groupId
+				store.guiStore.selectedPartId = partId
+				store.guiStore.selectedTimelineObjIds = [obj.id]
+				// updateGUI({
+				// 	selectedGroupId: groupId,
+				// 	selectedPartId: partId,
+				// 	selectedTimelineObjIds: [obj.id],
+				// })
+			}
+		} else {
+			store.guiStore.selectedGroupId = groupId
+			store.guiStore.selectedPartId = partId
+			store.guiStore.selectedTimelineObjIds = [obj.id]
+			// updateGUI({
+			// 	selectedGroupId: groupId,
+			// 	selectedPartId: partId,
+			// 	selectedTimelineObjIds: [obj.id],
+			// })
+		}
+	}
+
+	const { minutes, seconds, secondTenths } = description.parsedDuration || {}
+	let durationTitle = ''
+	if (minutes) {
+		durationTitle += minutes + 'm'
+	}
+	if (seconds) {
+		durationTitle += seconds + '.' + secondTenths + 's'
+	}
+
+	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
+	useEffect(() => {
+		if (!ref.current) {
+			return
+		}
+
+		const elemToObserve = ref.current
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				setIsAtMinWidth(entry.contentRect.width <= HANDLE_WIDTH * 2)
+			}
+		})
+
+		resizeObserver.observe(elemToObserve)
+
+		return () => {
+			resizeObserver.unobserve(elemToObserve)
+		}
+	}, [])
+
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
+				isAtMinWidth,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onPointerDown={() => {
-				if (
-					gui.selectedGroupId === groupId &&
-					gui.selectedPartId === partId &&
-					gui.selectedTimelineObjIds.includes(obj.id)
-				) {
-					if (allowMultiSelection) {
-						// Deselect this timelineObj.
-						updateGUI({
-							selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-						})
-					}
-
-					return
-				}
-
-				if (allowMultiSelection) {
-					if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
-						if (!gui.selectedTimelineObjIds.includes(obj.id)) {
-							updateGUI({
-								selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-							})
-						}
-					} else {
-						updateGUI({
-							selectedGroupId: groupId,
-							selectedPartId: partId,
-							selectedTimelineObjIds: [obj.id],
-						})
-					}
-				} else {
-					updateGUI({
-						selectedGroupId: groupId,
-						selectedPartId: partId,
-						selectedTimelineObjIds: [obj.id],
-					})
-				}
-			}}
+			onPointerDown={updateSelection}
+			title={description.label + ' ' + durationTitle}
 		>
-			<div className="title">{description.label}</div>
+			<div
+				className="handle handle--left"
+				onPointerDown={() => {
+					if (ref.current) {
+						const box = ref.current.getBoundingClientRect()
+						if (box.width <= HANDLE_WIDTH * 2) {
+							return setMoveType('whole')
+						}
+					}
+
+					setMoveType('start')
+				}}
+			/>
+			<div
+				className="body"
+				onPointerDown={() => {
+					setMoveType('whole')
+				}}
+			>
+				<div className="title">{description.label}</div>
+				<div className="duration">
+					{minutes ? (
+						<>
+							<span>{minutes}</span>
+							<span style={{ fontWeight: 300 }}>m</span>
+						</>
+					) : null}
+					{seconds ? (
+						<>
+							<span>{seconds}</span>
+							<span style={{ fontWeight: 300 }}>.</span>
+							<span>{secondTenths}</span>
+							<span style={{ fontWeight: 300 }}>s</span>
+						</>
+					) : null}
+				</div>
+			</div>
+			<div
+				className="handle handle--right"
+				onPointerDown={() => {
+					if (ref.current) {
+						const box = ref.current.getBoundingClientRect()
+						if (box.width <= HANDLE_WIDTH * 2) {
+							return setMoveType('whole')
+						}
+					}
+
+					setMoveType('duration')
+				}}
+			/>
 		</div>
 	)
-}
+})

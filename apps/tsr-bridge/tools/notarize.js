@@ -9,6 +9,7 @@ exports.default = async function notarizing(context) {
 	}
 
 	if (!process.env.APPLEID || !process.env.APPLEIDPASS) {
+		// eslint-disable-next-line no-console
 		console.log('Skipping notarizing, due to missing APPLEID or APPLEIDPASS environment variables')
 		return
 	}

@@ -1,36 +1,10 @@
-$maxMuiDialogWidth: 552px;
-
-.settings-dialog {
+.settings {
 	display: flex;
 	flex-direction: column;
-	height: $maxMuiDialogWidth;
-	width: $maxMuiDialogWidth;
+	align-items: flex-start;
+	padding: 2rem;
 
-	> div[role='tabpanel'] {
-		flex-shrink: 1;
-		min-height: 1px;
-		overflow-y: auto;
-	}
-}
-
-.devices-dialog {
-	height: calc($maxMuiDialogWidth - 80px);
-	width: calc($maxMuiDialogWidth - 80px);
-}
-
-.popup-settings {
-	form {
-		display: flex;
-		flex-direction: column;
-		flex-shrink: 1;
-		flex-grow: 1;
-		min-height: 1px;
-
-		.form-body {
-			flex-shrink: 1;
-			flex-grow: 1;
-			min-height: 1px;
-			overflow-y: auto;
-		}
+	> .MuiDivider-fullWidth {
+		width: 100%;
 	}
 }

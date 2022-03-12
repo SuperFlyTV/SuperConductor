@@ -6,7 +6,7 @@
 
 .logEntry {
 	overflow-wrap: break-word;
-	white-space: pre-line;
+	white-space: pre-wrap;
 
 	&__level {
 		&.error {

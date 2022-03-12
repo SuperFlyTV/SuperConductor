@@ -2,30 +2,45 @@
 	border: 0.1rem solid $partOutlineColor;
 	position: relative;
 	margin: 2rem 0 1.5rem;
+	padding-top: 0.4rem;
 	padding-bottom: 2rem;
+	background: #2c2c2c;
+	border-radius: calc($partTabWidth / 2);
 
 	&:not(:last-child) {
 		margin-bottom: 2.5rem;
 	}
 
 	&__header {
-		position: absolute;
-		top: 0;
-		transform: translateY(-50%);
-		left: 2rem;
-		background-color: $partOutlineColor;
 		display: flex;
 		align-items: center;
-		font-size: 1.3rem;
-		padding: 0.2rem 0.5rem;
+		font-size: 1.4rem;
+		padding: 0.2rem 0.5rem 0.2rem 1.8rem;
+
+		.title,
+		.edit-title {
+			margin-right: 1rem;
+			font-family: 'Barlow';
+			font-weight: 700;
+			width: 13rem;
+		}
 
 		.title {
-			margin-right: 1rem;
+			cursor: text;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		.controls {
 			display: flex;
 			align-items: center;
+
+			.playback {
+				& > *:not(:last-child) {
+					margin-right: 0.6rem;
+				}
+			}
 
 			.toggle {
 				flex-shrink: 0;
@@ -42,14 +57,18 @@
 					margin-left: 0.5rem;
 				}
 			}
-
-			button {
-				margin-left: 1rem;
-			}
 		}
 	}
 
 	&__content {
 		padding: 0.5rem 1rem 0;
+	}
+
+	&.disabled {
+		.group__header {
+			.title {
+				opacity: 0.5;
+			}
+		}
 	}
 }

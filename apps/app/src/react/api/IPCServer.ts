@@ -39,8 +39,17 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('setPartTrigger', data)
 	}
+	togglePartLoop(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('togglePartLoop', data)
+	}
+	togglePartDisable(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('togglePartDisable', data)
+	}
 	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
 		return this.invokeServerMethod('stopGroup', data)
+	}
+	playGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
+		return this.invokeServerMethod('playGroup', data)
 	}
 	updateTimelineObj(data: {
 		rundownId: string
@@ -51,13 +60,24 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<void> {
 		return this.invokeServerMethod('updateTimelineObj', data)
 	}
+	moveTimelineObjToNewLayer(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<void> {
+		return this.invokeServerMethod('moveTimelineObjToNewLayer', data)
+	}
+	/**
+	 * @returns An object containing the ID of the new part and, conditionally, the ID of the new group (if one was created).
+	 */
 	newPart(data: {
 		rundownId: string
 
 		name: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
-	}): Promise<string> {
+	}): Promise<{ partId: string; groupId?: string }> {
 		return this.invokeServerMethod('newPart', data)
 	}
 	updatePart(data: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<void> {
@@ -144,6 +164,9 @@ export class IPCServer implements IPCServerMethods {
 	}
 	toggleGroupOneAtATime(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupOneAtATime', data)
+	}
+	toggleGroupDisable(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('toggleGroupDisable', data)
 	}
 	refreshResources(): Promise<void> {
 		return this.invokeServerMethod('refreshResources')

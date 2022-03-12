@@ -9,6 +9,7 @@
 		font-weight: bold;
 		display: flex;
 		justify-content: space-between;
+		padding: 0 0.6em;
 
 		button.refresh {
 			border: 0;
@@ -47,10 +48,9 @@
 
 .row {
 	display: flex;
-	margin-bottom: 0.2rem;
+	margin-bottom: 1rem;
 
-	.label,
-	label {
+	.label {
 		flex-basis: 50%;
 		flex-grow: 0;
 		flex-shrink: 0;
@@ -59,9 +59,7 @@
 		display: flex;
 		align-items: center;
 	}
-	.value,
-	input,
-	select {
+	.value {
 		flex-basis: 50%;
 		flex-grow: 0;
 		flex-shrink: 0;
@@ -71,18 +69,41 @@
 		text-overflow: ellipsis;
 	}
 
-	input {
-		background-color: black;
-		border: 0;
-		color: silver;
-		padding: 0.3rem;
-		overflow: hidden;
-	}
+	/* We don't need these since we are using MUI */
+	// .label,
+	// label {
+	// 	flex-basis: 50%;
+	// 	flex-grow: 0;
+	// 	flex-shrink: 0;
+	// 	opacity: 0.7;
+	// 	font-size: 1.3rem;
+	// 	display: flex;
+	// 	align-items: center;
+	// }
+	// .value,
+	// input,
+	// select {
+	// 	flex-basis: 50%;
+	// 	flex-grow: 0;
+	// 	flex-shrink: 0;
+	// 	font-size: 1.3rem;
+	// 	box-sizing: border-box;
+	// 	overflow: hidden;
+	// 	text-overflow: ellipsis;
+	// }
 
-	select {
-		background-color: black;
-		color: silver;
-		border: 0;
-		padding: 0.5rem 0;
-	}
+	// input {
+	// 	background-color: black;
+	// 	border: 0;
+	// 	color: silver;
+	// 	padding: 0.3rem;
+	// 	overflow: hidden;
+	// }
+
+	// select {
+	// 	background-color: black;
+	// 	color: silver;
+	// 	border: 0;
+	// 	padding: 0.5rem 0;
+	// }
 }

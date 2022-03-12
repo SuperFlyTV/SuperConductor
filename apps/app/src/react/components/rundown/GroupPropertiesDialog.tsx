@@ -7,7 +7,7 @@ import { Group } from '../../../models/rundown/Group'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 interface IProps {
-	initial?: Group
+	initial?: Partial<Group>
 	open: boolean
 	onAccepted: (newGroup: Partial<Group> & Pick<Group, 'name'>) => void
 	onDiscarded: () => void
@@ -53,8 +53,11 @@ export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAcc
 						</Form>
 					</DialogContent>
 					<DialogActions>
-						<Button onClick={onDiscarded}>Cancel</Button>
+						<Button variant="contained" onClick={onDiscarded}>
+							Cancel
+						</Button>
 						<Button
+							variant="contained"
 							onClick={() => {
 								formik.submitForm().catch(handleError)
 							}}

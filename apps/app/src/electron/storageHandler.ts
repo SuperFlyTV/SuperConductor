@@ -86,13 +86,17 @@ export class StorageHandler extends EventEmitter {
 		// read the files to parse some data out of them for display purposes
 		return jsonFiles.map((fileName) => {
 			const fullFilePath = path.join(rundownsDir, fileName)
-			const unparsed = fs.readFileSync(fullFilePath, 'utf8')
-			const parsed = JSON.parse(unparsed) as FileRundown
-			return {
-				fileName,
-				name: parsed.rundown.name,
-				version: parsed.version,
-				open: this.rundowns ? fileName in this.rundowns : false,
+			try {
+				const unparsed = fs.readFileSync(fullFilePath, 'utf8')
+				const parsed = JSON.parse(unparsed) as FileRundown
+				return {
+					fileName,
+					name: parsed.rundown.name,
+					version: parsed.version,
+					open: this.rundowns ? fileName in this.rundowns : false,
+				}
+			} catch (error) {
+				throw new Error(`Unable to read file "${fullFilePath}": ${error}`)
 			}
 		})
 	}
@@ -336,8 +340,9 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 	private loadProject(newName?: string): FileProject {
+		const projectPath = this.projectPath(this._projectId)
 		try {
-			const read = fs.readFileSync(this.projectPath(this._projectId), 'utf8')
+			const read = fs.readFileSync(projectPath, 'utf8')
 			return JSON.parse(read) as FileProject
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
@@ -345,7 +350,7 @@ export class StorageHandler extends EventEmitter {
 				this.projectNeedsWrite = true
 				return this.getDefaultProject(newName)
 			} else {
-				throw error
+				throw new Error(`Unable to read Project file "${projectPath}": ${error}`)
 			}
 		}
 	}
@@ -399,8 +404,9 @@ export class StorageHandler extends EventEmitter {
 		return rundowns
 	}
 	private _loadRundown(projectName: string, fileName: string, newName?: string): FileRundown {
+		const rundownPath = this.rundownPath(projectName, fileName)
 		try {
-			const read = fs.readFileSync(this.rundownPath(projectName, fileName), 'utf8')
+			const read = fs.readFileSync(rundownPath, 'utf8')
 			return JSON.parse(read) as FileRundown
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
@@ -408,7 +414,7 @@ export class StorageHandler extends EventEmitter {
 				this.rundownsNeedsWrite[fileName] = true
 				return this.getDefaultRundown(newName)
 			} else {
-				throw error
+				throw new Error(`Unable to read Rundown file "${rundownPath}": ${error}`)
 			}
 		}
 	}

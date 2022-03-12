@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback, useMemo } from 'react'
 import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
@@ -6,16 +6,25 @@ import { PartView } from './PartView'
 import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DragItemTypes, isPartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, FormControlLabel, Switch } from '@mui/material'
+import { Button, FormControlLabel, Switch, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
-import { GroupPropertiesDialog } from '../GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { HotkeyContext } from '../../../contexts/Hotkey'
+import { Rundown } from '../../../../models/rundown/Rundown'
+import { RundownContext } from '../../../contexts/Rundown'
+import { DropZone } from '../../util/DropZone'
+import { MdPlayArrow, MdStop } from 'react-icons/md'
+import { IoPlaySkipBackSharp } from 'react-icons/io5'
+import { IoMdEye } from 'react-icons/io'
+import { RiEyeCloseLine } from 'react-icons/ri'
+import classNames from 'classnames'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -26,9 +35,30 @@ export const GroupView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { updatePartMove } = useContext(PartMoveContext)
-	const [groupPropsOpen, setGroupPropsOpen] = useState(false)
+	const hotkeyContext = useContext(HotkeyContext)
+	const rundown = useContext(RundownContext)
+	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updatePartMoveRef = useRef(updatePartMove)
 	updatePartMoveRef.current = updatePartMove
+
+	const [editingGroupName, setEditingGroupName] = useState(false)
+	const [editedName, setEditedName] = useState(group.name)
+	useEffect(() => {
+		setEditedName(group.name)
+	}, [group.name])
+	const submitNameEdit = useCallback(() => {
+		ipcServer
+			.updateGroup({
+				rundownId,
+				groupId: group.id,
+				group: {
+					...group,
+					name: editedName,
+				},
+			})
+			.catch(handleError)
+		setEditingGroupName(false)
+	}, [editedName, group, handleError, ipcServer, rundownId])
 
 	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -62,7 +92,7 @@ export const GroupView: React.FC<{
 
 	const [playhead, setPlayhead] = useState<GroupPlayData>(getGroupPlayData(playheadData.current))
 	const requestRef = useRef<number>(0)
-	const updatePlayhead = () => {
+	const updatePlayhead = useCallback(() => {
 		const newPlayhead = getGroupPlayData(playheadData.current)
 
 		setPlayhead((oldPlayhead) => {
@@ -73,13 +103,13 @@ export const GroupView: React.FC<{
 			}
 		})
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
-	}
+	}, [])
 	useEffect(() => {
 		requestRef.current = window.requestAnimationFrame(updatePlayhead)
 		return () => {
 			window.cancelAnimationFrame(requestRef.current)
 		}
-	}, [])
+	}, [updatePlayhead])
 
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
@@ -106,7 +136,7 @@ export const GroupView: React.FC<{
 		} else {
 			wasPlayingRef.current = false
 		}
-	}, [playhead, group, ipcServer, rundownId])
+	}, [playhead, group, ipcServer, rundownId, handleError])
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -178,10 +208,26 @@ export const GroupView: React.FC<{
 		drop(wrapperRef)
 	}, [drop])
 
+	// Delete button:
+	const handleDelete = () => {
+		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
+	// Stop button:
+	const canStop = playhead.anyPartIsPlaying
+	const handleStop = () => {
+		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
+	// Play button:
+	const handlePlay = () => {
+		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
-			<div ref={wrapperRef} data-drop-handler-id={handlerId}>
+			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
@@ -201,17 +247,80 @@ export const GroupView: React.FC<{
 		const canModifyAutoPlay = group.oneAtATime
 
 		return (
-			<div ref={wrapperRef} className="group" data-drop-handler-id={handlerId}>
+			<div
+				ref={wrapperRef}
+				className={classNames('group', { disabled: group.disabled })}
+				data-drop-handler-id={handlerId}
+			>
 				<div className="group__header">
-					<div
-						className="title"
-						onDoubleClick={() => {
-							setGroupPropsOpen(true)
-						}}
-					>
-						{group.name}
-					</div>
+					{!editingGroupName && (
+						<div
+							className="title"
+							title="Click to edit"
+							onClick={() => {
+								setEditingGroupName(true)
+							}}
+						>
+							{group.name}
+						</div>
+					)}
+
+					{editingGroupName && (
+						<TextField
+							size="small"
+							value={editedName}
+							autoFocus
+							variant="standard"
+							className="edit-title"
+							sx={{ marginTop: '0.3rem' }}
+							InputProps={{ style: { fontSize: '1.3rem' } }}
+							onFocus={(event) => {
+								event.target.select()
+							}}
+							onChange={(event) => {
+								setEditedName(event.target.value)
+							}}
+							onBlur={() => {
+								submitNameEdit()
+							}}
+							onKeyUp={(e) => {
+								if (e.key === 'Escape') setEditingGroupName(false)
+								else if (e.key === 'Enter') submitNameEdit()
+							}}
+						/>
+					)}
+
 					<div className="controls">
+						<div className="playback">
+							<Button
+								variant="contained"
+								size="small"
+								disabled={group.disabled || !canStop}
+								onClick={handleStop}
+							>
+								<MdStop size={22} />
+							</Button>
+							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
+								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+							</Button>
+							<ToggleButton
+								value="disabled"
+								selected={group.disabled}
+								size="small"
+								onChange={() => {
+									ipcServer
+										.toggleGroupDisable({
+											rundownId,
+											groupId: group.id,
+											value: !group.disabled,
+										})
+										.catch(handleError)
+								}}
+							>
+								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleButton>
+						</div>
+
 						<div className="toggle">
 							<FormControlLabel
 								control={
@@ -274,47 +383,46 @@ export const GroupView: React.FC<{
 						</div>
 						<TrashBtn
 							onClick={() => {
-								ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
+								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+									// Delete immediately with no confirmation dialog.
+									handleDelete()
+								} else {
+									setDeleteConfirmationOpen(true)
+								}
 							}}
 						/>
 					</div>
 				</div>
 				<div className="group__content">
-					{group.parts.map((part) => (
-						<PartView
-							key={part.id}
-							rundownId={rundownId}
-							part={part}
-							parentGroup={group}
-							parentGroupIndex={groupIndex}
-							playhead={playhead}
-							mappings={mappings}
-						/>
-					))}
+					<div className="group__content__parts">
+						{group.parts.map((part) => (
+							<PartView
+								key={part.id}
+								rundownId={rundownId}
+								part={part}
+								parentGroup={group}
+								parentGroupIndex={groupIndex}
+								playhead={playhead}
+								mappings={mappings}
+							/>
+						))}
+					</div>
 
-					<GroupOptions rundownId={rundownId} group={group} />
+					<GroupOptions rundown={rundown} group={group} />
 				</div>
 
-				<GroupPropertiesDialog
-					initial={group}
-					open={groupPropsOpen}
-					title="Edit Group"
-					acceptLabel="Save"
-					onAccepted={(updatedGroup) => {
-						ipcServer
-							.updateGroup({
-								rundownId,
-								groupId: group.id,
-								group: {
-									...group,
-									name: updatedGroup.name,
-								},
-							})
-							.catch(handleError)
-						setGroupPropsOpen(false)
+				<ConfirmationDialog
+					open={deleteConfirmationOpen}
+					title="Delete Group"
+					body={`Are you sure you want to delete the group "${group.name}"?`}
+					acceptLabel="Delete"
+					onAccepted={() => {
+						handleDelete()
+						setDeleteConfirmationOpen(false)
 					}}
 					onDiscarded={() => {
-						setGroupPropsOpen(false)
+						setDeleteConfirmationOpen(false)
 					}}
 				/>
 			</div>
@@ -322,27 +430,84 @@ export const GroupView: React.FC<{
 	}
 }
 
-const GroupOptions: React.FC<{ rundownId: string; group: Group }> = ({ rundownId, group }) => {
+const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
 
+	const numParts = useMemo(() => {
+		return rundown.groups.reduce((prev, current) => {
+			return prev + current.parts.length
+		}, 0)
+	}, [rundown])
+
+	const wrapperRef = useRef<HTMLDivElement>(null)
+
+	const [{ handlerId, isOver }, drop] = useDrop(
+		{
+			accept: DragItemTypes.RESOURCE_ITEM,
+			collect(monitor) {
+				return {
+					handlerId: monitor.getHandlerId(),
+					isOver: monitor.isOver(),
+				}
+			},
+			canDrop: (movedItem) => {
+				return isResourceDragItem(movedItem)
+			},
+			drop: async (droppedItem) => {
+				try {
+					if (!isResourceDragItem(droppedItem)) {
+						return
+					}
+
+					const { partId } = await ipcServer.newPart({
+						rundownId: rundown.id,
+						groupId: group.id,
+						name: droppedItem.resource.id,
+					})
+
+					await ipcServer.addResourceToTimeline({
+						rundownId: rundown.id,
+						groupId: group.id,
+						partId,
+						layerId: null,
+						resourceId: droppedItem.resource.id,
+					})
+				} catch (error) {
+					handleError(error)
+				}
+			},
+		},
+		[rundown, group]
+	)
+
+	useEffect(() => {
+		drop(wrapperRef)
+	}, [drop])
+
 	return (
 		<>
-			<div className="group-list__control-row">
+			<DropZone
+				ref={wrapperRef}
+				className="group-list__control-row"
+				data-drop-handler-id={handlerId}
+				isOver={isOver}
+			>
 				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Button>
-			</div>
+			</DropZone>
 
 			<PartPropertiesDialog
 				open={newPartOpen}
 				title="New Part"
 				acceptLabel="Create"
+				initial={{ name: `Part ${numParts + 1}` }}
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
-							rundownId,
+							rundownId: rundown.id,
 							name: newPart.name,
 							groupId: group.id,
 						})

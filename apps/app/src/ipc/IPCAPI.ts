@@ -15,6 +15,8 @@ export const enum ActionDescription {
 	NewPart = 'create new part',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
+	TogglePartLoop = 'toggle part loop',
+	TogglePartDisable = 'toggle part disable',
 	NewGroup = 'create new group',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
@@ -30,11 +32,13 @@ export const enum ActionDescription {
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
+	ToggleGroupDisable = 'toggle group disable',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
 	CloseRundown = 'close rundown',
 	RenameRundown = 'rename rundown',
+	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -64,7 +68,15 @@ export interface IPCServerMethods {
 		trigger: Trigger | null
 		triggerIndex: number | null
 	}) => Promise<unknown>
+	togglePartLoop: (data: { rundownId: string; groupId: string; partId: string; value: boolean }) => Promise<unknown>
+	togglePartDisable: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
@@ -101,6 +113,12 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
+	}) => Promise<unknown>
+	moveTimelineObjToNewLayer: (data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
 	}) => Promise<unknown>
 	addResourceToTimeline: (data: {
 		rundownId: string
@@ -139,6 +157,7 @@ export interface IPCServerMethods {
 
 	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	toggleGroupDisable: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	refreshResources: () => Promise<unknown>
 
 	updateProject: (data: { id: string; project: Project }) => Promise<unknown>

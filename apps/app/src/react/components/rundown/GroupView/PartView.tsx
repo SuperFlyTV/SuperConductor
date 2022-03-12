@@ -1,37 +1,37 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import _ from 'lodash'
-import { PlayControlBtn } from '../../inputs/PlayControlBtn'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
-import { allowMovingItemIntoGroup, getResolvedTimelineTotalDuration } from '../../../../lib/util'
-import { TrashBtn } from '../../inputs/TrashBtn'
+import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import { GroupPlayData } from '../../../../lib/playhead'
 import classNames from 'classnames'
 import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import { MdOutlineDragIndicator } from 'react-icons/md'
+import { MdOutlineDragIndicator, MdPlayArrow, MdStop, MdMoreHoriz } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
 import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
-import { GUIContext } from '../../../contexts/GUI'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { TriggerBtn } from '../../inputs/TriggerBtn'
-import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../models/rundown/Trigger'
-import { EditTrigger } from '../../inputs/EditTrigger'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
+import { Button, Popover, TextField, ToggleButton } from '@mui/material'
+import { ImLoop } from 'react-icons/im'
+import { IoMdEye } from 'react-icons/io'
+import { RiEyeCloseLine } from 'react-icons/ri'
+import { IoPlaySkipBackSharp } from 'react-icons/io5'
+import { store } from '../../../mobx/store'
+import { PartSubmenu } from './PartSubmenu'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -57,7 +57,7 @@ export const PartView: React.FC<{
 	mappings: Mappings
 }> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const { gui } = useContext(GUIContext)
+	const gui = store.guiStore
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -70,6 +70,7 @@ export const PartView: React.FC<{
 	const duplicatedObjects = useRef<{
 		[objectId: string]: TimelineObj
 	} | null>(null)
+	const objectsToMoveToNewLayer = useRef<string[] | null>(null)
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
@@ -82,7 +83,25 @@ export const PartView: React.FC<{
 
 	const cache = useRef<ResolverCache>({})
 
-	const [partPropsOpen, setPartPropsOpen] = useState(false)
+	const [editingPartName, setEditingPartName] = useState(false)
+	const [editedName, setEditedName] = useState(part.name)
+	useEffect(() => {
+		setEditedName(part.name)
+	}, [part.name])
+	const submitNameEdit = useCallback(() => {
+		ipcServer
+			.updatePart({
+				rundownId,
+				groupId: parentGroup.id,
+				partId: part.id,
+				part: {
+					...part,
+					name: editedName,
+				},
+			})
+			.catch(handleError)
+		setEditingPartName(false)
+	}, [editedName, handleError, ipcServer, parentGroup.id, part, rundownId])
 
 	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
 		const orgResolvedTimeline = Resolver.resolveTimeline(
@@ -170,113 +189,143 @@ export const PartView: React.FC<{
 		}
 	}, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
 
-	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects } = useMemo(() => {
-		let modifiedTimeline: TimelineObj[]
-		let resolvedTimeline: ResolvedTimeline
-		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
-		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
+	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects, newObjectsToMoveToNewLayer } =
+		useMemo(() => {
+			let modifiedTimeline: TimelineObj[]
+			let resolvedTimeline: ResolvedTimeline
+			let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
+			let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
+			let newObjectsToMoveToNewLayer: string[] | null = null
 
-		const dragDelta = timelineObjMove.dragDelta || 0
-		const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
-		const leaderObjOriginalLayerId = leaderObj?.obj.layer
-		const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
+			const dragDelta = timelineObjMove.dragDelta || 0
+			const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
+			const leaderObjOriginalLayerId = leaderObj?.obj.layer
+			const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
 
-		if (
-			(dragDelta || leaderObjLayerChanged) &&
-			timelineObjMove.partId === part.id &&
-			leaderObj &&
-			timelineObjMove.leaderTimelineObjId &&
-			timelineObjMove.moveId !== null &&
-			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
-		) {
-			// Handle movement, snapping
-
-			// Check the the layer movement is legal:
-			let moveToLayerId = timelineObjMove.hoveredLayerId
-			if (moveToLayerId) {
-				const newLayerMapping = project.mappings[moveToLayerId]
-				if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
-					moveToLayerId = null
-					handleError('Unable to move to that layer (incompatible layer type)')
-				}
-			}
-
-			try {
-				const o = applyMovementToTimeline(
-					part.timeline,
-					orgResolvedTimeline,
-					bypassSnapping ? [] : snapPoints || [],
-					snapDistanceInMilliseconds,
-					dragDelta,
-					// The use of wasMoved here helps prevent a brief flash at the
-					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-					timelineObjMove.moveType ?? timelineObjMove.wasMoved,
-					timelineObjMove.leaderTimelineObjId,
-					gui.selectedTimelineObjIds,
-					cache.current,
-					moveToLayerId,
-					Boolean(timelineObjMove.duplicate)
-				)
-				modifiedTimeline = o.modifiedTimeline
-				resolvedTimeline = o.resolvedTimeline
-				newChangedObjects = o.changedObjects
-				newDuplicatedObjects = o.duplicatedObjects
-
-				if (
-					typeof leaderObjOriginalLayerId === 'string' &&
-					!resolvedTimeline.layers[leaderObjOriginalLayerId]
-				) {
-					// If the leaderObj's original layer is now empty, it won't be rendered,
-					// making it impossible for the user to move the leaderObj back to whence it came.
-					// So, we add an empty layer object here to force it to remain visible.
-					resolvedTimeline.layers[leaderObjOriginalLayerId] = []
-				}
-			} catch (e) {
-				// If there was an error applying the movement (for example a circular dependency),
-				// reset the movement to the original state:
-
-				console.error('Error when resolving the moved timeline, reverting to original state.')
-				console.error(e)
-
-				handleError('There was an error when trying to move')
+			if (
+				gui.selectedTimelineObjIds.length === 1 &&
+				leaderObj &&
+				timelineObjMove.hoveredLayerId &&
+				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)
+			) {
+				// Handle moving a timelineObj to the "new layer" area
+				// This type of move is only allowed when a single timelineObj is selected.
 
 				modifiedTimeline = part.timeline
 				resolvedTimeline = orgResolvedTimeline
-				newChangedObjects = null
-				newDuplicatedObjects = null
+				newObjectsToMoveToNewLayer = [leaderObj.obj.id]
+			} else if (
+				(dragDelta || leaderObjLayerChanged) &&
+				timelineObjMove.partId === part.id &&
+				leaderObj &&
+				timelineObjMove.leaderTimelineObjId &&
+				timelineObjMove.moveId !== null &&
+				!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
+			) {
+				// Handle movement, snapping
+
+				// Check the the layer movement is legal:
+				let moveToLayerId = timelineObjMove.hoveredLayerId
+				if (moveToLayerId) {
+					const newLayerMapping = project.mappings[moveToLayerId]
+					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+						moveToLayerId = null
+						handleError('Unable to move to that layer (incompatible layer type)')
+					}
+				}
+
+				try {
+					const o = applyMovementToTimeline(
+						part.timeline,
+						orgResolvedTimeline,
+						bypassSnapping ? [] : snapPoints || [],
+						snapDistanceInMilliseconds,
+						dragDelta,
+						// The use of wasMoved here helps prevent a brief flash at the
+						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
+						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
+						timelineObjMove.leaderTimelineObjId,
+						gui.selectedTimelineObjIds,
+						cache.current,
+						moveToLayerId,
+						Boolean(timelineObjMove.duplicate)
+					)
+					modifiedTimeline = o.modifiedTimeline
+					resolvedTimeline = o.resolvedTimeline
+					newChangedObjects = o.changedObjects
+					newDuplicatedObjects = o.duplicatedObjects
+
+					if (
+						typeof leaderObjOriginalLayerId === 'string' &&
+						!resolvedTimeline.layers[leaderObjOriginalLayerId]
+					) {
+						// If the leaderObj's original layer is now empty, it won't be rendered,
+						// making it impossible for the user to move the leaderObj back to whence it came.
+						// So, we add an empty layer object here to force it to remain visible.
+						resolvedTimeline.layers[leaderObjOriginalLayerId] = []
+					}
+				} catch (e) {
+					// If there was an error applying the movement (for example a circular dependency),
+					// reset the movement to the original state:
+
+					console.error('Error when resolving the moved timeline, reverting to original state.')
+					console.error(e)
+
+					handleError('There was an error when trying to move')
+
+					modifiedTimeline = part.timeline
+					resolvedTimeline = orgResolvedTimeline
+					newChangedObjects = null
+					newDuplicatedObjects = null
+					newObjectsToMoveToNewLayer = null
+				}
+			} else {
+				modifiedTimeline = part.timeline
+				resolvedTimeline = orgResolvedTimeline
 			}
-		} else {
-			modifiedTimeline = part.timeline
-			resolvedTimeline = orgResolvedTimeline
-		}
 
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
 
-		return { maxDuration, modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects }
-	}, [
-		timelineObjMove,
-		part.timeline,
-		part.id,
-		project.mappings,
-		handleError,
-		orgResolvedTimeline,
-		bypassSnapping,
-		snapPoints,
-		snapDistanceInMilliseconds,
-		gui.selectedTimelineObjIds,
-	])
+			return {
+				maxDuration,
+				modifiedTimeline,
+				resolvedTimeline,
+				newChangedObjects,
+				newDuplicatedObjects,
+				newObjectsToMoveToNewLayer,
+			}
+		}, [
+			timelineObjMove,
+			part.timeline,
+			part.id,
+			project.mappings,
+			handleError,
+			orgResolvedTimeline,
+			bypassSnapping,
+			snapPoints,
+			snapDistanceInMilliseconds,
+			gui.selectedTimelineObjIds,
+		])
 
 	useEffect(() => {
-		if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
+		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+			changedObjects.current = null
+		} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
 		}
-	}, [newChangedObjects])
+	}, [newChangedObjects, newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
-		if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+			changedObjects.current = null
+		} else if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
 			duplicatedObjects.current = newDuplicatedObjects
 		}
-	}, [newDuplicatedObjects])
+	}, [newDuplicatedObjects, newObjectsToMoveToNewLayer])
+
+	useEffect(() => {
+		objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
+	}, [newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
 		// Handle when we stop moving:
@@ -323,6 +372,18 @@ export const PartView: React.FC<{
 					promises.push(promise)
 				}
 				duplicatedObjects.current = null
+			}
+			if (objectsToMoveToNewLayer.current) {
+				for (const objId of objectsToMoveToNewLayer.current) {
+					const promise = ipcServer.moveTimelineObjToNewLayer({
+						rundownId: rundownId,
+						partId: part.id,
+						groupId: parentGroup.id,
+						timelineObjId: objId,
+					})
+					promises.push(promise)
+				}
+				objectsToMoveToNewLayer.current = null
 			}
 
 			Promise.allSettled(promises)
@@ -379,64 +440,12 @@ export const PartView: React.FC<{
 			global: true,
 		})
 
+		sorensen.addEventListener('keycancel', onKey)
+
 		return () => {
 			sorensen.unbind('Shift', onKey)
 		}
 	}, [hotkeyContext])
-
-	const [triggerActive, setTriggerActive] = useState<boolean>(false)
-	const prevTriggerLength = useRef(0)
-	const handleTrigger = useCallback((triggers: ActiveTriggers) => {
-		// was something pressed?
-		const triggerLength = Object.keys(triggers).length
-		if (triggerLength > prevTriggerLength.current) {
-			// The length is longer; ie a button was pressed.
-
-			const trigger: Trigger = {
-				label: activeTriggersToString(triggers),
-				fullIdentifiers: triggers.map((t) => t.fullIdentifier),
-				action: 'play',
-			}
-			console.log('Assign Trigger ', trigger)
-
-			ipcServer
-				.setPartTrigger({
-					rundownId,
-					groupId: parentGroup.id,
-					partId: part.id,
-					trigger,
-					triggerIndex: 9999, // Add a trigger
-				})
-				.catch(handleError)
-		} else if (triggerLength < prevTriggerLength.current) {
-			// The length is shorter; ie a button was released.
-			// Stop listening for triggers:
-			setTriggerActive(false)
-		}
-		prevTriggerLength.current = triggerLength
-	}, [])
-	useEffect(() => {
-		if (triggerActive) {
-			hotkeyContext.triggers.on('trigger', handleTrigger)
-		} else {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-			prevTriggerLength.current = 0
-		}
-		return () => {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-		}
-	}, [hotkeyContext, triggerActive, handleTrigger])
-	const onEditTrigger = (index: number, trigger: Trigger | null) => {
-		ipcServer
-			.setPartTrigger({
-				rundownId,
-				groupId: parentGroup.id,
-				partId: part.id,
-				trigger,
-				triggerIndex: index,
-			})
-			.catch(handleError)
-	}
 
 	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
@@ -459,16 +468,6 @@ export const PartView: React.FC<{
 	const canStop = parentGroup.oneAtATime ? playhead.groupIsPlaying : partIsPlaying
 	const handleStop = () => {
 		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
-	}
-
-	// Delete button:
-	const handleDelete = () => {
-		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
-	}
-
-	// TriggerButton
-	const handleTriggerBtn = () => {
-		setTriggerActive((oldActive) => !oldActive)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -628,6 +627,14 @@ export const PartView: React.FC<{
 		drop(preview(previewRef))
 	}, [drop, preview])
 
+	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<SVGElement | null>(null)
+	const closePartSubmenu = useCallback(() => {
+		setPartSubmenuPopoverAnchorEl(null)
+	}, [])
+	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
+
+	const groupOrPartDisabled = parentGroup.disabled || part.disabled
+
 	return (
 		<div
 			data-drop-handler-id={handlerId}
@@ -637,46 +644,144 @@ export const PartView: React.FC<{
 				active: isActive === 'active',
 				queued: isActive === 'queued',
 				dragging: isDragging,
+				disabled: groupOrPartDisabled,
 			})}
 		>
-			<div ref={dragRef} className="part__drag-handle">
-				<MdOutlineDragIndicator />
+			<div className="part__dragArrow" />
+			<div className="part__tab">
+				<div ref={dragRef} className="part__drag-handle">
+					<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
+				</div>
+
+				<div className="part__submenu-button">
+					<MdMoreHoriz
+						color="rgba(255, 255, 255, 0.5)"
+						onClick={(event) => {
+							setPartSubmenuPopoverAnchorEl(event.currentTarget)
+						}}
+					/>
+				</div>
 			</div>
 			<div className="part__meta">
-				<div
-					className="title"
-					onDoubleClick={() => {
-						setPartPropsOpen(true)
-					}}
-				>
-					{part.name}
+				<div className="part__meta__left">
+					{!editingPartName && (
+						<div
+							title="Click to edit"
+							className="title"
+							onClick={() => {
+								setEditingPartName(true)
+							}}
+						>
+							{part.name}
+						</div>
+					)}
+
+					{editingPartName && (
+						<TextField
+							size="small"
+							value={editedName}
+							autoFocus
+							variant="standard"
+							className="edit-title"
+							sx={{ marginTop: '-0.1rem', marginBottom: '0.6rem' }}
+							InputProps={{ style: { fontSize: '1.4rem' } }}
+							onFocus={(event) => {
+								event.target.select()
+							}}
+							onChange={(event) => {
+								setEditedName(event.target.value)
+							}}
+							onBlur={() => {
+								submitNameEdit()
+							}}
+							onKeyUp={(e) => {
+								if (e.key === 'Escape') setEditingPartName(false)
+								else if (e.key === 'Enter') submitNameEdit()
+							}}
+						/>
+					)}
+
+					<div className="controls">
+						<ToggleButton
+							value="disabled"
+							selected={part.disabled}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartDisable({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.disabled,
+									})
+									.catch(handleError)
+							}}
+						>
+							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+						</ToggleButton>
+						<ToggleButton
+							sx={{ marginLeft: 'auto' }}
+							value="loop"
+							selected={part.loop}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartLoop({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<ImLoop size={18} />
+						</ToggleButton>
+					</div>
 				</div>
-				<div className="controls">
-					<PlayControlBtn mode={'play'} onClick={handleStart} />
-					<PlayControlBtn mode={'stop'} onClick={handleStop} disabled={!canStop} />
-					<TrashBtn onClick={handleDelete} />
-					<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} title="Assign Trigger" />
-				</div>
-				<div className="part__triggers">
-					{part.triggers.map((trigger, index) => (
-						<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
-					))}
+
+				<div className="part__meta__right">
+					<Button
+						className="part__stop"
+						variant="contained"
+						size="small"
+						disabled={groupOrPartDisabled || !canStop}
+						onClick={handleStop}
+					>
+						<MdStop size={22} />
+					</Button>
+
+					<Button
+						className="part__play"
+						variant="contained"
+						size="small"
+						disabled={groupOrPartDisabled}
+						onClick={handleStart}
+					>
+						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+					</Button>
 				</div>
 			</div>
+			<div className="part__dropdown">{/** TODO **/}</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
+					const name = mappings[layerId]?.layerName ?? layerId
 					return (
-						<div className="part__layer-names__name" key={layerId}>
-							{mappings[layerId]?.layerName ?? layerId}
+						<div className="part__layer-names__name" key={layerId} title={name}>
+							<span>{name}</span>
 						</div>
 					)
 				})}
 			</div>
+			<div className="part__time">
+				{playheadTime ? <div className="part__time__current-time">{msToTime(playheadTime)}</div> : ''}
+				{countDownTime ? <div className="part__time__remaining-time">{msToTime(countDownTime)}</div> : ''}
+				<div className="part__time__duration">
+					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
+				</div>
+				<div className="part__time__endcap" />
+			</div>
 			<div className="part__timeline">
-				{playheadTime ? <div className="part__timeline__current-time">{msToTime(playheadTime)}</div> : ''}
-				{countDownTime ? <div className="part__timeline__remaining-time">{msToTime(countDownTime)}</div> : ''}
-				<div className="part__timeline__duration">{msToTime(part.resolved.duration)}</div>
-
 				<div className="countdown-wrapper">
 					{timesUntilStart &&
 						timesUntilStart.map((timeUntilStart, index) => (
@@ -729,30 +834,19 @@ export const PartView: React.FC<{
 					</div>
 				</div>
 			</div>
+			<div className="part__endcap"></div>
 
-			<PartPropertiesDialog
-				initial={part}
-				open={partPropsOpen}
-				title="Edit Part"
-				acceptLabel="Save"
-				onAccepted={(updatedPart) => {
-					ipcServer
-						.updatePart({
-							rundownId,
-							groupId: parentGroup.id,
-							partId: part.id,
-							part: {
-								...part,
-								name: updatedPart.name,
-							},
-						})
-						.catch(handleError)
-					setPartPropsOpen(false)
+			<Popover
+				open={partSubmenuOpen}
+				anchorEl={partSubmenuPopoverAnchorEl}
+				onClose={closePartSubmenu}
+				anchorOrigin={{
+					vertical: 'bottom',
+					horizontal: 'left',
 				}}
-				onDiscarded={() => {
-					setPartPropsOpen(false)
-				}}
-			/>
+			>
+				<PartSubmenu rundownId={rundownId} groupId={parentGroup.id} part={part} />
+			</Popover>
 		</div>
 	)
 }
