@@ -20,6 +20,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
+import { MdStop } from 'react-icons/md'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -208,6 +209,12 @@ export const GroupView: React.FC<{
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
 
+	// Stop button:
+	const canStop = playhead.anyPartIsPlaying
+	const handleStop = () => {
+		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -271,6 +278,12 @@ export const GroupView: React.FC<{
 					)}
 
 					<div className="controls">
+						<div className="playback">
+							<Button variant="contained" size="small" disabled={!canStop} onClick={handleStop}>
+								<MdStop size={22} />
+							</Button>
+						</div>
+
 						<div className="toggle">
 							<FormControlLabel
 								control={

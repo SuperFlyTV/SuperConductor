@@ -22,10 +22,14 @@
 			margin-right: 1rem;
 			font-family: 'Barlow';
 			font-weight: 700;
+			width: 12rem;
 		}
 
 		.title {
 			cursor: text;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		.controls {
