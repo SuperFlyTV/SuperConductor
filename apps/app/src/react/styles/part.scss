@@ -22,14 +22,6 @@
 		border-bottom-right-radius: calc($partTabWidth / 2);
 	}
 
-	&.active {
-		border-color: $partActiveColor;
-		background-color: $partActiveBg;
-	}
-	&.queued {
-		border-color: $partQueuedColor;
-		background-color: $partQueuedBg;
-	}
 	&.dragging {
 		border: 1px solid white;
 		border-top: 0;

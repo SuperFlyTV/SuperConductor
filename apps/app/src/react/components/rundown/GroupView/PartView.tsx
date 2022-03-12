@@ -702,7 +702,7 @@ export const PartView: React.FC<{
 					<div className="controls">
 						<ToggleButton
 							value="disabled"
-							selected={!part.disabled}
+							selected={part.disabled}
 							size="small"
 							onChange={() => {
 								ipcServer

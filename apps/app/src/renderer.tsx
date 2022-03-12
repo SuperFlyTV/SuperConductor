@@ -63,6 +63,39 @@ export const ContextWrapper: React.FC = () => {
 						},
 					},
 				},
+				MuiFormControlLabel: {
+					styleOverrides: {
+						root: {
+							background: 'rgba(0, 0, 0, 0.33)',
+							borderRadius: '100px',
+							paddingLeft: '1.3rem',
+						},
+					},
+				},
+				MuiSwitch: {
+					defaultProps: {
+						disableRipple: true,
+					},
+					styleOverrides: {
+						switchBase: {
+							'&:hover': {
+								backgroundColor: 'transparent',
+							},
+							'&.Mui-checked': {
+								'&:hover': {
+									backgroundColor: 'transparent',
+								},
+							},
+						},
+						thumb: {
+							width: '14px',
+							height: '14px',
+							top: '3px',
+							left: '3px',
+							position: 'relative',
+						},
+					},
+				},
 				MuiToggleButton: {
 					styleOverrides: {
 						sizeSmall: {
