@@ -4,7 +4,6 @@ import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
 import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
-import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import { GroupPlayData } from '../../../../lib/playhead'
@@ -13,7 +12,7 @@ import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import { MdOutlineDragIndicator, MdPlayArrow, MdStop } from 'react-icons/md'
+import { MdOutlineDragIndicator, MdPlayArrow, MdStop, MdMoreHoriz } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -22,18 +21,16 @@ import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { TriggerBtn } from '../../inputs/TriggerBtn'
-import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../models/rundown/Trigger'
-import { EditTrigger } from '../../inputs/EditTrigger'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
-import { TextField, ToggleButton } from '@mui/material'
+import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { ImLoop } from 'react-icons/im'
 import { IoMdEye, IoMdEyeOff } from 'react-icons/io'
+import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
+import { PartSubmenu } from './PartSubmenu'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -76,7 +73,6 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
-	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
 	updateTimelineObjMoveRef.current = updateTimelineObjMove
 	const updatePartMoveRef = useRef(updatePartMove)
@@ -450,63 +446,6 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	const [triggerActive, setTriggerActive] = useState<boolean>(false)
-	const prevTriggerLength = useRef(0)
-	const handleTrigger = useCallback(
-		(triggers: ActiveTriggers) => {
-			// was something pressed?
-			const triggerLength = Object.keys(triggers).length
-			if (triggerLength > prevTriggerLength.current) {
-				// The length is longer; ie a button was pressed.
-
-				const trigger: Trigger = {
-					label: activeTriggersToString(triggers),
-					fullIdentifiers: triggers.map((t) => t.fullIdentifier),
-					action: 'play',
-				}
-				console.log('Assign Trigger ', trigger)
-
-				ipcServer
-					.setPartTrigger({
-						rundownId,
-						groupId: parentGroup.id,
-						partId: part.id,
-						trigger,
-						triggerIndex: 9999, // Add a trigger
-					})
-					.catch(handleError)
-			} else if (triggerLength < prevTriggerLength.current) {
-				// The length is shorter; ie a button was released.
-				// Stop listening for triggers:
-				setTriggerActive(false)
-			}
-			prevTriggerLength.current = triggerLength
-		},
-		[handleError, ipcServer, parentGroup.id, part.id, rundownId]
-	)
-	useEffect(() => {
-		if (triggerActive) {
-			hotkeyContext.triggers.on('trigger', handleTrigger)
-		} else {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-			prevTriggerLength.current = 0
-		}
-		return () => {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-		}
-	}, [hotkeyContext, triggerActive, handleTrigger])
-	const onEditTrigger = (index: number, trigger: Trigger | null) => {
-		ipcServer
-			.setPartTrigger({
-				rundownId,
-				groupId: parentGroup.id,
-				partId: part.id,
-				trigger,
-				triggerIndex: index,
-			})
-			.catch(handleError)
-	}
-
 	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
 
@@ -528,16 +467,6 @@ export const PartView: React.FC<{
 	const canStop = parentGroup.oneAtATime ? playhead.groupIsPlaying : partIsPlaying
 	const handleStop = () => {
 		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
-	}
-
-	// Delete button:
-	const handleDelete = () => {
-		ipcServer.deletePart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
-	}
-
-	// TriggerButton
-	const handleTriggerBtn = () => {
-		setTriggerActive((oldActive) => !oldActive)
 	}
 
 	// Drag n' Drop re-ordering:
@@ -697,6 +626,12 @@ export const PartView: React.FC<{
 		drop(preview(previewRef))
 	}, [drop, preview])
 
+	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<SVGElement | null>(null)
+	const closePartSubmenu = useCallback(() => {
+		setPartSubmenuPopoverAnchorEl(null)
+	}, [])
+	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
+
 	return (
 		<div
 			data-drop-handler-id={handlerId}
@@ -710,11 +645,22 @@ export const PartView: React.FC<{
 			})}
 		>
 			<div className="part__dragArrow" />
-			<div ref={dragRef} className="part__drag-handle">
-				<MdOutlineDragIndicator />
+			<div className="part__tab">
+				<div ref={dragRef} className="part__drag-handle">
+					<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
+				</div>
+
+				<div className="part__submenu-button">
+					<MdMoreHoriz
+						color="rgba(255, 255, 255, 0.5)"
+						onClick={(event) => {
+							setPartSubmenuPopoverAnchorEl(event.currentTarget)
+						}}
+					/>
+				</div>
 			</div>
 			<div className="part__meta">
-				<div className="part__meta__top">
+				<div className="part__meta__left">
 					{!editingPartName && (
 						<div
 							title="Click to edit"
@@ -752,43 +698,7 @@ export const PartView: React.FC<{
 						/>
 					)}
 
-					<ToggleButton
-						value="canStop"
-						className="part__playStop"
-						selected={canStop}
-						size="small"
-						disabled={part.disabled}
-						onChange={() => {
-							if (canStop) {
-								handleStop()
-							} else {
-								handleStart()
-							}
-						}}
-					>
-						{canStop ? <MdStop /> : <MdPlayArrow />}
-					</ToggleButton>
-				</div>
-
-				<div className="part__meta__bottom">
-					<div className="triggers">
-						{part.triggers.map((trigger, index) => (
-							<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
-						))}
-					</div>
 					<div className="controls">
-						<TrashBtn
-							className={classNames('control', 'control--hoverOnly')}
-							onClick={() => {
-								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
-									// Delete immediately with no confirmation dialog.
-									handleDelete()
-								} else {
-									setDeleteConfirmationOpen(true)
-								}
-							}}
-						/>
 						<ToggleButton
 							value="loop"
 							selected={part.loop}
@@ -823,13 +733,29 @@ export const PartView: React.FC<{
 						>
 							{part.disabled ? <IoMdEyeOff /> : <IoMdEye />}
 						</ToggleButton>
-						<TriggerBtn
-							className={classNames('control')}
-							onTrigger={handleTriggerBtn}
-							active={triggerActive}
-							title="Assign Trigger"
-						/>
 					</div>
+				</div>
+
+				<div className="part__meta__right">
+					<Button
+						className="part__stop"
+						variant="contained"
+						size="small"
+						disabled={part.disabled || !canStop}
+						onClick={handleStop}
+					>
+						<MdStop size={22} />
+					</Button>
+
+					<Button
+						className="part__play"
+						variant="contained"
+						size="small"
+						disabled={part.disabled}
+						onClick={handleStart}
+					>
+						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+					</Button>
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>
@@ -906,19 +832,17 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__endcap"></div>
 
-			<ConfirmationDialog
-				open={deleteConfirmationOpen}
-				title="Delete Part"
-				body={`Are you sure you want to delete the part "${part.name}"?`}
-				acceptLabel="Delete"
-				onAccepted={() => {
-					handleDelete()
-					setDeleteConfirmationOpen(false)
+			<Popover
+				open={partSubmenuOpen}
+				anchorEl={partSubmenuPopoverAnchorEl}
+				onClose={closePartSubmenu}
+				anchorOrigin={{
+					vertical: 'bottom',
+					horizontal: 'left',
 				}}
-				onDiscarded={() => {
-					setDeleteConfirmationOpen(false)
-				}}
-			/>
+			>
+				<PartSubmenu rundownId={rundownId} groupId={parentGroup.id} part={part} />
+			</Popover>
 		</div>
 	)
 }
