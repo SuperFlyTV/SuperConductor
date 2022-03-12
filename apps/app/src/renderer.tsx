@@ -65,18 +65,21 @@ export const ContextWrapper: React.FC = () => {
 				},
 				MuiToggleButton: {
 					styleOverrides: {
-						root: {
-							'&.Mui-selected': {
-								backgroundColor: '#2EFF43',
-								'&:hover': {
-									background: '#2EFF43',
-								},
-							},
-						},
 						sizeSmall: {
 							padding: 0,
 							width: SMALL_BTN_SIZE,
 							height: SMALL_BTN_SIZE,
+							border: 'none',
+							background: 'none',
+							opacity: 0.1,
+							'&.Mui-selected': {
+								background: 'none',
+								filter: 'drop-shadow(0px 0px 4px rgba(255, 255, 0, 0.25))',
+								opacity: 1,
+								'&:hover': {
+									background: 'none',
+								},
+							},
 						},
 					},
 				},

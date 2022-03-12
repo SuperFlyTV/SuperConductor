@@ -27,7 +27,8 @@ import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { ImLoop } from 'react-icons/im'
-import { IoMdEye, IoMdEyeOff } from 'react-icons/io'
+import { IoMdEye } from 'react-icons/io'
+import { RiEyeCloseLine } from 'react-icons/ri'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
@@ -700,23 +701,6 @@ export const PartView: React.FC<{
 
 					<div className="controls">
 						<ToggleButton
-							value="loop"
-							selected={part.loop}
-							size="small"
-							onChange={() => {
-								ipcServer
-									.togglePartLoop({
-										rundownId,
-										groupId: parentGroup.id,
-										partId: part.id,
-										value: !part.loop,
-									})
-									.catch(handleError)
-							}}
-						>
-							<ImLoop />
-						</ToggleButton>
-						<ToggleButton
 							value="disabled"
 							selected={!part.disabled}
 							size="small"
@@ -731,7 +715,25 @@ export const PartView: React.FC<{
 									.catch(handleError)
 							}}
 						>
-							{part.disabled ? <IoMdEyeOff /> : <IoMdEye />}
+							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+						</ToggleButton>
+						<ToggleButton
+							sx={{ marginLeft: 'auto' }}
+							value="loop"
+							selected={part.loop}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartLoop({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<ImLoop size={18} />
 						</ToggleButton>
 					</div>
 				</div>
