@@ -84,6 +84,7 @@ export const TimelineObjData: React.FC<{
 						<TextField
 							select
 							fullWidth
+							size="small"
 							label="Layer"
 							id="layer"
 							name="layer"

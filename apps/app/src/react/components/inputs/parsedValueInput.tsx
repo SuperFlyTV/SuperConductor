@@ -53,6 +53,7 @@ export function ParsedValueInput<V>(
 					setValue(stringify(currentValue))
 				}
 			}}
+			size="small"
 			margin="normal"
 			fullWidth
 			label={label}

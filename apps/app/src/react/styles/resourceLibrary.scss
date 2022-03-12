@@ -6,6 +6,11 @@
 	box-shadow: inset 0px 0px 0px 0px #ffffff85;
 	transition: $default-transition;
 	padding: 0.2em;
+	border-radius: 5px;
+
+	&:not(:last-child) {
+		margin-bottom: 0.5rem;
+	}
 
 	@include useObjectTypeStyles();
 

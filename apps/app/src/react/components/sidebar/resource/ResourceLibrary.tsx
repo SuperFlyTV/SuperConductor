@@ -130,7 +130,6 @@ export const ResourceLibrary: React.FC = () => {
 								>
 									{child}
 								</ResourceLibraryItem>
-								<hr />
 							</React.Fragment>
 						)
 					})}
@@ -176,6 +175,7 @@ export const ResourceLibrary: React.FC = () => {
 													<Field
 														component={FormikMuiTextField}
 														select
+														size="small"
 														margin="normal"
 														fullWidth
 														name="partId"
@@ -197,6 +197,7 @@ export const ResourceLibrary: React.FC = () => {
 													<Field
 														component={FormikMuiTextField}
 														select
+														size="small"
 														margin="normal"
 														fullWidth
 														name="layerId"
