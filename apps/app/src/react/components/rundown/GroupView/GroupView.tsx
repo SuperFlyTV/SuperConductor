@@ -20,7 +20,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
-import { MdPlayArrow, MdStop } from 'react-icons/md'
+import { MdLock, MdLockOpen, MdPlayArrow, MdStop } from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -239,12 +239,12 @@ export const GroupView: React.FC<{
 			</div>
 		) : null
 	} else {
-		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying)
+		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying) && !group.locked
 		// (group.oneAtATime && playhead.anyPartIsPlaying) || !group.oneAtATime
 		// || !group.oneAtATime // && !playhead.groupIsPlaying
 
-		const canModifyLoop = group.oneAtATime
-		const canModifyAutoPlay = group.oneAtATime
+		const canModifyLoop = group.oneAtATime && !group.locked
+		const canModifyAutoPlay = group.oneAtATime && !group.locked
 
 		return (
 			<div
@@ -256,8 +256,11 @@ export const GroupView: React.FC<{
 					{!editingGroupName && (
 						<div
 							className="title"
-							title="Click to edit"
+							title={group.locked ? group.name : 'Click to edit'}
 							onClick={() => {
+								if (group.locked) {
+									return
+								}
 								setEditingGroupName(true)
 							}}
 						>
@@ -303,23 +306,40 @@ export const GroupView: React.FC<{
 							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 							</Button>
-							<ToggleButton
-								value="disabled"
-								selected={group.disabled}
-								size="small"
-								onChange={() => {
-									ipcServer
-										.toggleGroupDisable({
-											rundownId,
-											groupId: group.id,
-											value: !group.disabled,
-										})
-										.catch(handleError)
-								}}
-							>
-								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-							</ToggleButton>
 						</div>
+
+						<ToggleButton
+							value="disabled"
+							selected={group.disabled}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.toggleGroupDisable({
+										rundownId,
+										groupId: group.id,
+										value: !group.disabled,
+									})
+									.catch(handleError)
+							}}
+						>
+							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+						</ToggleButton>
+						<ToggleButton
+							value="locked"
+							selected={group.locked}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.toggleGroupLock({
+										rundownId,
+										groupId: group.id,
+										value: !group.locked,
+									})
+									.catch(handleError)
+							}}
+						>
+							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+						</ToggleButton>
 
 						<div className="toggle">
 							<FormControlLabel
@@ -382,6 +402,7 @@ export const GroupView: React.FC<{
 							/>
 						</div>
 						<TrashBtn
+							disabled={group.locked}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
@@ -409,7 +430,7 @@ export const GroupView: React.FC<{
 						))}
 					</div>
 
-					<GroupOptions rundown={rundown} group={group} />
+					{!group.locked && <GroupOptions rundown={rundown} group={group} />}
 				</div>
 
 				<ConfirmationDialog

@@ -1,12 +1,19 @@
 import React from 'react'
 import { ParsedValueInput } from './parsedValueInput'
 export const TextInput: React.FC<
-	| { currentValue: string; onChange: (newValue: string) => void; allowUndefined: false; label?: string }
+	| {
+			currentValue: string
+			onChange: (newValue: string) => void
+			allowUndefined: false
+			label?: string
+			disabled?: boolean
+	  }
 	| {
 			currentValue: string | undefined
 			onChange: (newValue: string | undefined) => void
 			allowUndefined: true
 			label?: string
+			disabled?: boolean
 	  }
 > = (props) => {
 	if (props.allowUndefined) {
@@ -16,7 +23,9 @@ export const TextInput: React.FC<
 			undefined,
 			(v) => v,
 			(v) => v || '',
-			props.label
+			props.label,
+			'text',
+			props.disabled
 		)
 	} else {
 		return ParsedValueInput<string>(
@@ -25,7 +34,9 @@ export const TextInput: React.FC<
 			'',
 			(v) => v,
 			(v) => v || '',
-			props.label
+			props.label,
+			'text',
+			props.disabled
 		)
 	}
 }

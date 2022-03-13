@@ -37,7 +37,9 @@
 			align-items: center;
 
 			.playback {
-				& > *:not(:last-child) {
+				margin-right: 0.6rem;
+
+				& > * {
 					margin-right: 0.6rem;
 				}
 			}

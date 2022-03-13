@@ -301,6 +301,15 @@
 		margin-bottom: 0.1rem;
 	}
 
+	&:not(.trigger--locked) {
+		.label {
+			&:hover {
+				text-decoration: underline;
+				cursor: pointer;
+			}
+		}
+	}
+
 	.label {
 		display: flex;
 		align-items: center;
@@ -308,11 +317,6 @@
 		font-weight: 600;
 		font-size: 12px;
 		// line-height: 12px;
-
-		&:hover {
-			text-decoration: underline;
-			cursor: pointer;
-		}
 
 		&__key {
 			color: black;

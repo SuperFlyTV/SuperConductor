@@ -7,6 +7,7 @@ export const TriggerBtn: React.FC<{
 	onTrigger: () => void
 	active: boolean
 	title: string
+	disabled?: boolean
 }> = (props) => {
 	const handleOnClick = (_e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		props.onTrigger()
@@ -19,6 +20,7 @@ export const TriggerBtn: React.FC<{
 			onClick={handleOnClick}
 			title={props.title}
 			size="small"
+			disabled={props.disabled}
 		>
 			{props.active ? <BsKeyboardFill color="white" size={24} /> : <BsKeyboard color="white" size={24} />}
 		</Button>

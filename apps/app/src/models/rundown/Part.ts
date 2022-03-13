@@ -7,6 +7,7 @@ export type Part = {
 	timeline: TimelineObj[]
 	disabled?: boolean
 	loop?: boolean
+	locked?: boolean
 
 	triggers: Trigger[]
 

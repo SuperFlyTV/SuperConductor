@@ -25,6 +25,7 @@ export const TimelineObjData: React.FC<{
 	partId: string
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
+	disabled?: boolean
 }> = observer((props) => {
 	const ipcServer = useContext(IPCServerContext)
 	// const { gui, updateGUI } = useContext(GUIContext)
@@ -90,6 +91,7 @@ export const TimelineObjData: React.FC<{
 							name="layer"
 							value={formik.values.layer}
 							onChange={formik.handleChange}
+							disabled={props.disabled}
 						>
 							{props.mappings &&
 								Object.entries(props.mappings).map(([key, value]) => (
@@ -107,6 +109,7 @@ export const TimelineObjData: React.FC<{
 								onChange={(newVal) => {
 									formik.setFieldValue('enableStartExpression', newVal)
 								}}
+								disabled={props.disabled}
 							/>
 						) : (
 							<DurationInput
@@ -116,6 +119,7 @@ export const TimelineObjData: React.FC<{
 								onChange={(newVal) => {
 									formik.setFieldValue('enableStartNum', newVal)
 								}}
+								disabled={props.disabled}
 							/>
 						)}
 
@@ -127,6 +131,7 @@ export const TimelineObjData: React.FC<{
 								onChange={(newVal) => {
 									formik.setFieldValue('enableDurationExpression', newVal)
 								}}
+								disabled={props.disabled}
 							/>
 						) : (
 							<DurationInput
@@ -136,11 +141,13 @@ export const TimelineObjData: React.FC<{
 								onChange={(newVal) => {
 									formik.setFieldValue('enableDurationNum', newVal)
 								}}
+								disabled={props.disabled}
 							/>
 						)}
 
 						<div className="btn-row-equal">
 							<TrashBtn
+								disabled={props.disabled}
 								onClick={() => {
 									ipcServer
 										.deleteTimelineObj({
@@ -162,7 +169,12 @@ export const TimelineObjData: React.FC<{
 										.catch(handleError)
 								}}
 							/>
-							<Button type="submit" className="btn" variant="contained" disabled={!formik.dirty}>
+							<Button
+								type="submit"
+								className="btn"
+								variant="contained"
+								disabled={!formik.dirty || props.disabled}
+							>
 								Save
 							</Button>
 						</div>

@@ -73,6 +73,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 
 	if (editing) {
 		const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))
+		const groupOrPartLocked = editing.group.locked || editing.part.locked
 
 		return (
 			<div className="sidebar timeline-obj-sidebar">
@@ -89,6 +90,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 								partId={editing.part.id}
 								timelineObj={obj}
 								mappings={props.mappings}
+								disabled={groupOrPartLocked}
 							/>
 
 							{(obj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
@@ -98,6 +100,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 									partId={editing.part.id}
 									timelineObjId={obj.obj.id}
 									templateData={JSON.parse((obj.obj.content as any)?.data)}
+									disabled={groupOrPartLocked}
 								/>
 							)}
 						</div>

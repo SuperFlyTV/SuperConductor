@@ -102,6 +102,10 @@ export function allowMovingItemIntoGroup(
 	const toPlayhead = getGroupPlayData(toGroup.preparedPlayData, now)
 	const movedPartIsPlaying = fromPlayhead.playheads[movedPartId]
 
+	if (fromGroup.locked || toGroup.locked) {
+		return null
+	}
+
 	// Don't allow moving a currently-playing Part into a Group which is already playing.
 	if (isMovingToNewGroup && movedPartIsPlaying && toPlayhead.groupIsPlaying) {
 		return null

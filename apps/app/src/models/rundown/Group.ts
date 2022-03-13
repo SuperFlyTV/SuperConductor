@@ -12,6 +12,7 @@ export type Group = {
 	autoPlay: boolean
 	loop: boolean
 	disabled?: boolean
+	locked?: boolean
 
 	parts: Part[]
 

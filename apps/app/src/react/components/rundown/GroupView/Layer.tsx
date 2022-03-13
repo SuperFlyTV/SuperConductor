@@ -19,12 +19,13 @@ export const Layer: React.FC<{
 	layerId: string
 	partDuration: number
 	msPerPixel: number
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel }) => {
+	locked?: boolean
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel, locked }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
-			accept: DragItemTypes.RESOURCE_ITEM,
+			accept: locked ? [] : DragItemTypes.RESOURCE_ITEM,
 			drop: (item: ResourceDragItem) => {
 				ipcServer
 					.addResourceToTimeline({
@@ -56,6 +57,7 @@ export const Layer: React.FC<{
 							resolved={objectOnLayer.resolved}
 							partDuration={partDuration}
 							msPerPixel={msPerPixel}
+							locked={locked}
 						></TimelineObject>
 					)
 				})}
