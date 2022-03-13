@@ -635,6 +635,12 @@ export const PartView: React.FC<{
 
 	const groupOrPartDisabled = parentGroup.disabled || part.disabled
 	const groupOrPartLocked = parentGroup.locked || part.locked
+	const firstTimelineObj: TimelineObj | undefined = part.timeline[0]
+	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
+	const tabAdditionalClassNames: { [key: string]: boolean } = {}
+	if (typeof firstTimelineObjType === 'string') {
+		tabAdditionalClassNames[firstTimelineObjType] = true
+	}
 
 	return (
 		<div
@@ -650,7 +656,7 @@ export const PartView: React.FC<{
 			})}
 		>
 			<div className="part__dragArrow" />
-			<div className="part__tab">
+			<div className={classNames('part__tab', tabAdditionalClassNames)}>
 				<div ref={dragRef} className="part__drag-handle">
 					{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
 				</div>

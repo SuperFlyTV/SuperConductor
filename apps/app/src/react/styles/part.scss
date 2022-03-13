@@ -1,4 +1,5 @@
 @use 'sass:color';
+@import './objectTypeStyling.scss';
 
 .part {
 	position: relative;
@@ -73,6 +74,8 @@
 		box-sizing: border-box;
 		padding: 0.6rem 0;
 		grid-area: tab;
+
+		@include useObjectTypeStyles();
 	}
 
 	&__drag-handle {
