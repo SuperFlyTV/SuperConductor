@@ -61,10 +61,7 @@ function parseMilliseconds(ms: string): number {
 
 	return Math.floor(parseFloat(`0.${ms}`) * 1000)
 }
-
-export function formatDuration(ms: number | undefined): string {
-	if (ms === undefined) return ''
-
+function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: number } {
 	const h = Math.floor(ms / 3600000)
 	ms -= h * 3600000
 	const min = Math.floor(ms / 60000)
@@ -72,6 +69,14 @@ export function formatDuration(ms: number | undefined): string {
 
 	const sec = Math.floor(ms / 1000)
 	ms -= sec * 1000
+
+	return { h, m: min, s: sec, ms }
+}
+
+export function formatDuration(inputMs: number | undefined): string {
+	if (inputMs === undefined) return ''
+
+	const { h, m: min, s: sec, ms } = millisecondsToTime(inputMs)
 
 	let msStr = !ms ? '' : ms < 10 ? `.00${ms}` : ms < 100 ? `.0${ms}` : `.${ms}`
 
@@ -83,6 +88,30 @@ export function formatDuration(ms: number | undefined): string {
 }
 function pad(n: number): string {
 	return n < 10 ? `0${n}` : `${n}`
+}
+
+export function formatDurationLabeled(inputMs: number | undefined): string {
+	if (inputMs === undefined) return ''
+
+	let returnStr = ''
+	const { h, m, s, ms } = millisecondsToTime(inputMs)
+	const secondTenths = Math.floor(ms / 100)
+
+	if (h) {
+		returnStr += `${h}h`
+	}
+	if (m) {
+		returnStr += `${m}m`
+	}
+	if (s) {
+		if (secondTenths) {
+			returnStr += `${s}.${secondTenths}s`
+		} else {
+			returnStr += `${s}s`
+		}
+	}
+
+	return returnStr
 }
 
 // Unit tests:

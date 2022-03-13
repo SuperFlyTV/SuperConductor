@@ -1,12 +1,12 @@
 .resource {
-	display: grid;
-	grid-template-rows: [header] min-content [attributes] min-content;
-	grid-template-columns: [thumbnail] 4em [info] auto;
-	column-gap: 0.5em;
+	display: flex;
 	box-shadow: inset 0px 0px 0px 0px #ffffff85;
 	transition: $default-transition;
 	padding: 0.2em;
 	border-radius: 5px;
+	color: #cdcdcd;
+	font-size: 1.4rem;
+	line-height: 1.4;
 
 	&:not(:last-child) {
 		margin-bottom: 0.5rem;
@@ -22,20 +22,36 @@
 		opacity: 0.5;
 	}
 
+	&__details {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+		flex-shrink: 1;
+		min-width: 0;
+		padding-right: 0.2rem;
+	}
+
 	&__name {
-		overflow: hidden;
-		text-overflow: ellipsis;
+		color: white;
+		word-wrap: break-word;
+		flex-shrink: 1;
+		min-width: 0;
+	}
+
+	&__attributes {
+		display: grid;
+		grid-template-columns: 3em repeat(2, 1fr);
+		grid-gap: 0.5rem;
+		align-self: stretch;
 	}
 }
 
 .thumbnail {
-	max-width: 100%;
-	max-height: 100%;
-
-	&--video-fallback,
-	&--audio,
-	&--unknown {
-		width: 100%;
-		height: 100%;
-	}
+	color: white;
+	width: 71px;
+	height: 40px;
+	margin-left: 0.1rem;
+	margin-right: 0.4rem;
+	border-radius: 5px;
+	flex-shrink: 0;
 }

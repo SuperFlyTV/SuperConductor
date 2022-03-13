@@ -17,6 +17,7 @@ import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 import { Button, Grid, MenuItem, TextField } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { formatDurationLabeled } from '../../../../lib/timeLib'
 
 export const ResourceLibrary: React.FC = () => {
 	const ipcServer = useContext(IPCServerContext)
@@ -86,22 +87,26 @@ export const ResourceLibrary: React.FC = () => {
 							return [
 								resource,
 								<>
-									<div>
-										<ResourceLibraryItemThumbnail resource={resource} />
+									<ResourceLibraryItemThumbnail resource={resource} />
+									<div className="resource__details">
+										<div className="resource__name" title={resource.name}>
+											{resource.name}
+										</div>
+										<div className="resource__attributes">
+											<div>{resource.type}</div>
+											<div style={{ textAlign: 'right' }}>{bytesToSize(resource.size)}</div>
+											<div style={{ textAlign: 'right' }}>
+												{formatDurationLabeled(resource.duration * 1000)}
+											</div>
+										</div>
 									</div>
-									<div className="resource__name" title={resource.name}>
-										{resource.name}
-									</div>
-									<div>{resource.type}</div>
-									<div>{bytesToSize(resource.size)}</div>
-									<div>{resource.duration}</div>
 								</>,
 							]
 						} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 							return [
 								resource,
 								<>
-									<div>{resource.name}</div>
+									<div className="resource__name">{resource.name}</div>
 								</>,
 							]
 						} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
