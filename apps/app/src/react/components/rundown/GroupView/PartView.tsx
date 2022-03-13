@@ -646,12 +646,13 @@ export const PartView: React.FC<{
 				queued: isActive === 'queued',
 				dragging: isDragging,
 				disabled: groupOrPartDisabled,
+				locked: groupOrPartLocked,
 			})}
 		>
 			<div className="part__dragArrow" />
 			<div className="part__tab">
 				<div ref={dragRef} className="part__drag-handle">
-					<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
+					{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
 				</div>
 
 				<div className="part__submenu-button">

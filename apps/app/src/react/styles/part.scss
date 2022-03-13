@@ -57,6 +57,11 @@
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
 	}
+	&.locked {
+		.part__drag-handle {
+			pointer-events: none;
+		}
+	}
 
 	&__tab {
 		display: flex;
