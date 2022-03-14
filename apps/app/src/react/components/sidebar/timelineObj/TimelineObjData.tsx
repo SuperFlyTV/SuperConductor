@@ -94,11 +94,15 @@ export const TimelineObjData: React.FC<{
 							disabled={props.disabled}
 						>
 							{props.mappings &&
-								Object.entries(props.mappings).map(([key, value]) => (
-									<MenuItem key={key} value={key}>
-										{value.layerName ?? key}
-									</MenuItem>
-								))}
+								Object.entries(props.mappings)
+									.filter(([_key, value]) => {
+										return value.device === props.timelineObj.obj.content.deviceType
+									})
+									.map(([key, value]) => (
+										<MenuItem key={key} value={key}>
+											{value.layerName ?? key}
+										</MenuItem>
+									))}
 						</TextField>
 
 						{startIsExpression ? (
