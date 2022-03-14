@@ -77,10 +77,20 @@ export class TSR {
 				// Run async so as not to block other devices from being processed.
 				;(async () => {
 					this.sideLoadDevice(deviceId, newDevice)
-					const device = await this.conductor.addDevice(deviceId, newDevice)
+
+					// Create the device, but don't initialize it:
+					const device = await this.conductor.createDevice(deviceId, newDevice)
+
 					await device.device.on('connectionChanged', (status: DeviceStatus) => {
 						this.onDeviceStatus(deviceId, status)
 					})
+					// await device.device.on('commandError', onCommandError)
+					// await device.device.on('info', (e: any, ...args: any[]) => this.logger.info(fixError(e), ...args))
+					// await device.device.on('warning', (e: any, ...args: any[]) => this.logger.warn(fixError(e), ...args))
+					// await device.device.on('error', (e: any, ...args: any[]) => this.logger.error(fixError(e), ...args))
+
+					// now initialize it
+					await this.conductor.initDevice(deviceId, newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
 				})().catch((error) => this.log?.error(error))
