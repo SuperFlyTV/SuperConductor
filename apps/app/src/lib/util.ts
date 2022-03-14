@@ -225,3 +225,40 @@ export function findDeviceOfType(bridges: Project['bridges'], deviceType: Device
 		}
 	}
 }
+
+export function getCurrentlyPlayingPartIndex(group: Group): number {
+	let currentlyPlayingPartIndex = -1
+	const currentlyPlayingPartId = Object.keys(group.playout.playingParts)[0]
+	if (currentlyPlayingPartId) {
+		currentlyPlayingPartIndex = group.parts.findIndex((p) => p.id === currentlyPlayingPartId)
+	}
+	return currentlyPlayingPartIndex
+}
+
+/**
+ * @returns The index of the part which will be played next. Skips disabled parts. Returns -1 if there is no next part to play.
+ */
+export function getNextPartIndex(group: Group): number {
+	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
+	for (let i = currentPartIndex + 1; i < group.parts.length; i++) {
+		const part = group.parts[i]
+		if (!part.disabled) {
+			return i
+		}
+	}
+	return -1
+}
+
+/**
+ * @returns The index of the part which will was previously played. Skips disabled parts. Returns -1 if there is no previous part.
+ */
+export function getPrevPartIndex(group: Group): number {
+	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
+	for (let i = currentPartIndex - 1; i > -1; i--) {
+		const part = group.parts[i]
+		if (!part.disabled) {
+			return i
+		}
+	}
+	return -1
+}

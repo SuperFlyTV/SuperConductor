@@ -80,6 +80,8 @@ export interface IPCServerMethods {
 	togglePartLock: (data: { rundownId: string; groupId: string; partId: string; value: boolean }) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	playGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playNext: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playPrev: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */

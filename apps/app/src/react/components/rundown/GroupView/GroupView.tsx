@@ -13,7 +13,7 @@ import { Button, FormControlLabel, Switch, TextField, ToggleButton } from '@mui/
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
-import { allowMovingItemIntoGroup } from '../../../../lib/util'
+import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
@@ -24,6 +24,7 @@ import { MdLock, MdLockOpen, MdPlayArrow, MdStop } from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
+import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 
 export const GroupView: React.FC<{
@@ -224,6 +225,22 @@ export const GroupView: React.FC<{
 		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
 
+	// Step down button:
+	const nextPartIndex = getNextPartIndex(group)
+	const nextPart = group.parts[nextPartIndex]
+	const canStepDown = !group.disabled && playhead.anyPartIsPlaying && Boolean(nextPart)
+	const handleStepDown = () => {
+		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
+	// Step down up:
+	const prevPartIndex = getPrevPartIndex(group)
+	const prevPart = group.parts[prevPartIndex]
+	const canStepUp = !group.disabled && playhead.anyPartIsPlaying && Boolean(prevPart)
+	const handleStepUp = () => {
+		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -306,6 +323,30 @@ export const GroupView: React.FC<{
 							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 							</Button>
+							{group.oneAtATime && (
+								<>
+									<Button
+										variant="contained"
+										size="small"
+										disabled={!canStepDown}
+										onClick={handleStepDown}
+									>
+										<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+											<AiFillStepForward size={22} />
+										</div>
+									</Button>
+									<Button
+										variant="contained"
+										size="small"
+										disabled={!canStepUp}
+										onClick={handleStepUp}
+									>
+										<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+											<AiFillStepForward size={22} />
+										</div>
+									</Button>
+								</>
+							)}
 						</div>
 
 						<ToggleButton
@@ -402,6 +443,7 @@ export const GroupView: React.FC<{
 							/>
 						</div>
 						<TrashBtn
+							className="delete"
 							disabled={group.locked}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()

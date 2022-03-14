@@ -8,6 +8,8 @@ import {
 	findPart,
 	findTimelineObj,
 	findTimelineObjIndex,
+	getNextPartIndex,
+	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
 	updateGroupPlaying,
 } from '../lib/util'
@@ -366,6 +368,32 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			for (const part of group.parts) {
 				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
 			}
+		}
+	}
+	async playNext(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled || !group.oneAtATime) {
+			return
+		}
+
+		const nextPartIndex = getNextPartIndex(group)
+		const nextPart = group.parts[nextPartIndex]
+		if (nextPart) {
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(console.error)
+		}
+	}
+	async playPrev(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled || !group.oneAtATime) {
+			return
+		}
+
+		const prevPartIndex = getPrevPartIndex(group)
+		const prevPart = group.parts[prevPartIndex]
+		if (prevPart) {
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
 		}
 	}
 	async newPart(arg: {

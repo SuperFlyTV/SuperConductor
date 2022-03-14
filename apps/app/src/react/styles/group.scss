@@ -38,6 +38,7 @@
 
 			.playback {
 				margin-right: 0.6rem;
+				flex-shrink: 0;
 
 				& > * {
 					margin-right: 0.6rem;
@@ -58,6 +59,10 @@
 				.toggle-label {
 					margin-left: 0.5rem;
 				}
+			}
+
+			.delete {
+				flex-shrink: 0;
 			}
 		}
 	}
