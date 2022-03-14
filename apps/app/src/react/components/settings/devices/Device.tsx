@@ -168,7 +168,10 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 					alignItems="flex-start"
 					paddingTop={'23px'}
 				>
-					<ConnectionStatus label={device.ok ? 'Connected' : 'Not Connected'} ok={device.ok} />
+					<ConnectionStatus
+						label={device.ok ? 'Connected' : device.message ? device.message : 'Not Connected'}
+						ok={device.ok}
+					/>
 				</Box>
 			</Box>
 		)
@@ -193,7 +196,10 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 				</Typography>
 			</Box>
 			<Box gridColumn="span 1" display="flex" justifyContent="flex-end">
-				<ConnectionStatus label={device.ok ? 'Connected' : 'Not Connected'} ok={device.ok} />
+				<ConnectionStatus
+					label={device.ok ? 'Connected' : device.message ? device.message : 'Not Connected'}
+					ok={device.ok}
+				/>
 			</Box>
 		</Box>
 	)
