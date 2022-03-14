@@ -53,41 +53,35 @@ export const App = observer(() => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [peripherals, setPeripherals] = useState<{ [peripheralId: string]: Peripheral }>({})
-	// const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
-	// const [currentRundownId, setCurrentRundownId] = useState<string>()
-	const [currentRundown, setCurrentRundown] = useState<Rundown>()
-	// const currentRundownIdRef = useRef<string>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
+	const appStore = store.appStore
+
 	const triggers = useMemo(() => {
 		return new TriggersEmitter()
 	}, [])
-
-	// useEffect(() => {
-	// 	currentRundownIdRef.current = currentRundownId
-	// }, [currentRundownId])
 
 	// Handle IPC-messages from server
 	useEffect(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
 			updateAppData: (appData: AppData) => {
 				store.appStore.update(appData)
-				// setAppData(appData)
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				if (!store.appStore.currentRundownId) {
-					store.appStore.currentRundownId = rundownId
-					// setCurrentRundownId(rundownId)
-					setCurrentRundown(rundown)
-				} else if (store.appStore.currentRundownId === rundownId) {
-					setCurrentRundown(rundown)
-				}
+				// console.log('App.tsx updateRundown', rundownId)
+				// if (!store.appStore.currentRundownId) {
+				// 	store.appStore.currentRundownId = rundownId
+				// 	store.appStore.currentRundown = rundown
+				// } else if (store.appStore.currentRundownId === rundownId) {
+				// 	store.appStore.currentRundown = rundown
+				// }
 			},
 			updateResource: (resourceId: string, resource: ResourceAny | null) => {
 				setResources((existingResources) => {
@@ -167,20 +161,9 @@ export const App = observer(() => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
+		console.log('triggerSendAll')
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
-
-	console.log('every render:', store.appStore.currentRundownId)
-
-	useEffect(() => {
-		console.log('Gets fired?')
-		// Ask the backend for the rundown whenever currentRundownId changes.
-		if (store.appStore.currentRundownId) {
-			serverAPI.triggerSendRundown({ rundownId: store.appStore.currentRundownId }).catch(handleError)
-		} else {
-			setCurrentRundown(undefined)
-		}
-	}, [store.appStore.currentRundownId, handleError, serverAPI])
 
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
@@ -280,27 +263,27 @@ export const App = observer(() => {
 	}
 
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
-		if (!currentRundown) {
-			return currentRundown
+		if (!appStore.currentRundown) {
+			return appStore.currentRundown
 		}
 
-		const modifiedRundown = deepClone(currentRundown)
+		const modifiedRundown = deepClone(appStore.currentRundown)
 
 		if (partMoveData.partId) {
 			if (typeof partMoveData.position !== 'number') {
-				return currentRundown
+				return appStore.currentRundown
 			}
 
 			const fromGroup = modifiedRundown.groups.find((g) => g.id === partMoveData.fromGroupId)
 
 			if (!fromGroup) {
-				return currentRundown
+				return appStore.currentRundown
 			}
 
 			const part = fromGroup.parts.find((p) => p.id === partMoveData.partId)
 
 			if (!part) {
-				return currentRundown
+				return appStore.currentRundown
 			}
 
 			let toGroup: Group | undefined
@@ -327,13 +310,13 @@ export const App = observer(() => {
 			}
 
 			if (!toGroup) {
-				return currentRundown
+				return appStore.currentRundown
 			}
 
 			const allow = allowMovingItemIntoGroup(part.id, fromGroup, toGroup)
 
 			if (!allow) {
-				return currentRundown
+				return appStore.currentRundown
 			}
 
 			if (!isTransparentGroupMove) {
@@ -361,8 +344,15 @@ export const App = observer(() => {
 			return modifiedRundown
 		}
 
-		return currentRundown
-	}, [currentRundown, partMoveData.fromGroupId, partMoveData.partId, partMoveData.position, partMoveData.toGroupId])
+		return appStore.currentRundown
+	}, [
+		appStore.currentRundown,
+		partMoveData.fromGroupId,
+		partMoveData.partId,
+		partMoveData.position,
+		partMoveData.toGroupId,
+	])
+
 	useEffect(() => {
 		if (partMoveData.moveId && partMoveData.done === true) {
 			if (
@@ -410,7 +400,7 @@ export const App = observer(() => {
 				})
 			}
 		}
-	}, [waitingForMovePartUpdate, currentRundown])
+	}, [waitingForMovePartUpdate, appStore.currentRundown])
 
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,

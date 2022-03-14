@@ -45,16 +45,16 @@ export const TopHeader: React.FC<{
 	const appStore = store.appStore
 
 	const handleSelect = (rundownId: string) => {
-		store.appStore.currentRundownId = rundownId
+		store.appStore.setCurrentRundown(rundownId)
 	}
 
 	const handleClose = (rundownId: string) => {
 		serverAPI.closeRundown({ rundownId }).catch(handleError)
 		const nextRundown = appStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
 		if (nextRundown) {
-			store.appStore.currentRundownId = nextRundown.rundownId
+			store.appStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
-			store.appStore.currentRundownId = undefined
+			store.appStore.setCurrentRundown(undefined)
 		}
 	}
 
