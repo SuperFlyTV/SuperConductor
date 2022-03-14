@@ -16,8 +16,11 @@ import { MdAdd, MdClose, MdSettings } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
+import { IPCServerContext } from '../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { ConnectionStatus } from '../util/ConnectionStatus'
+import { store } from '../../mobx/store'
+import { observer } from 'mobx-react-lite'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -28,35 +31,42 @@ const renameRundownValidationSchema = Yup.object({
 })
 
 export const TopHeader: React.FC<{
-	selectedRundownId?: string
-	openRundowns: { rundownId: string; name: string }[]
-	closedRundowns: { rundownId: string; name: string }[]
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
 	peripherals: { [peripheralId: string]: Peripheral }
-	onSelect: (rundownId: string) => void
-	onClose: (rundownId: string) => void
-	onOpen: (rundownId: string) => void
-	onCreate: (rundownName: string) => void
-	onRename: (rundownId: string, newName: string) => void
 	onSettingsClick: () => void
-}> = ({
-	selectedRundownId,
-	openRundowns,
-	closedRundowns,
-	bridgeStatuses,
-	peripherals,
-	onSelect,
-	onClose,
-	onOpen,
-	onCreate,
-	onRename,
-	onSettingsClick,
-}) => {
+}> = observer(({ bridgeStatuses, peripherals, onSettingsClick }) => {
+	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
+
+	const appStore = store.appStore
+
+	const handleSelect = (rundownId: string) => {
+		store.appStore.currentRundownId = rundownId
+	}
+
+	const handleClose = (rundownId: string) => {
+		serverAPI.closeRundown({ rundownId }).catch(handleError)
+		const nextRundown = appStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
+		if (nextRundown) {
+			store.appStore.currentRundownId = nextRundown.rundownId
+		} else {
+			store.appStore.currentRundownId = undefined
+		}
+	}
+
+	const handleOpen = (rundownId: string) => {
+		serverAPI.openRundown({ rundownId }).catch(handleError)
+	}
+	const handleCreate = (rundownName: string) => {
+		serverAPI.newRundown({ name: rundownName }).catch(handleError)
+	}
+	const handleRename = (rundownId: string, newName: string) => {
+		serverAPI.renameRundown({ rundownId, newName }).catch(handleError)
+	}
 
 	const handleOpenRundownClose = () => {
 		setOpenRundownOpen(false)
@@ -74,14 +84,16 @@ export const TopHeader: React.FC<{
 
 	return (
 		<>
-			{openRundowns.map((rundown) => {
+			{appStore.openRundowns.map((rundown) => {
 				return (
 					<div
 						key={rundown.rundownId}
-						className={classNames('tab', { 'tab--selected': rundown.rundownId === selectedRundownId })}
+						className={classNames('tab', {
+							'tab--selected': rundown.rundownId === appStore.currentRundownId,
+						})}
 						title="Double-click to edit"
 						onClick={() => {
-							onSelect(rundown.rundownId)
+							handleSelect(rundown.rundownId)
 						}}
 						onDoubleClick={() => {
 							setRundownToRename(rundown)
@@ -95,7 +107,8 @@ export const TopHeader: React.FC<{
 							title="Close Rundown"
 							aria-label="close rundown"
 							onClick={(event) => {
-								onClose(rundown.rundownId)
+								handleClose(rundown.rundownId)
+								// onClose(rundown.rundownId)
 								event.stopPropagation()
 								event.preventDefault()
 							}}
@@ -111,7 +124,7 @@ export const TopHeader: React.FC<{
 				title="Create/Open Rundown"
 				aria-label="open or create new rundown"
 				onClick={() => {
-					if (closedRundowns && closedRundowns.length > 0) {
+					if (appStore.closedRundowns && appStore.closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
 					} else {
 						setNewRundownOpen(true)
@@ -156,9 +169,11 @@ export const TopHeader: React.FC<{
 
 			{/* Open Rundown dialog */}
 			<Formik
-				initialValues={{ rundownId: closedRundowns.length > 0 ? closedRundowns[0].rundownId : '' }}
+				initialValues={{
+					rundownId: appStore.closedRundowns.length > 0 ? appStore.closedRundowns[0].rundownId : '',
+				}}
 				onSubmit={(values, actions) => {
-					onOpen(values.rundownId)
+					handleOpen(values.rundownId)
 					handleOpenRundownClose()
 					actions.setSubmitting(false)
 					actions.resetForm()
@@ -171,8 +186,8 @@ export const TopHeader: React.FC<{
 							<DialogContent>
 								<Form>
 									<Field component={RadioGroup} name="rundownId">
-										{closedRundowns &&
-											closedRundowns.map((rundown) => (
+										{appStore.closedRundowns &&
+											appStore.closedRundowns.map((rundown) => (
 												<FormControlLabel
 													key={rundown.rundownId}
 													value={rundown.rundownId}
@@ -216,7 +231,7 @@ export const TopHeader: React.FC<{
 				validationSchema={newRundownValidationSchema}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					onCreate(values.name)
+					handleCreate(values.name)
 					handleNewRundownClose()
 					actions.setSubmitting(false)
 					actions.resetForm()
@@ -265,7 +280,7 @@ export const TopHeader: React.FC<{
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
 					if (rundownToRename) {
-						onRename(rundownToRename.rundownId, values.name)
+						handleRename(rundownToRename.rundownId, values.name)
 					}
 					handleRenameRundownClose()
 					actions.setSubmitting(false)
@@ -309,4 +324,4 @@ export const TopHeader: React.FC<{
 			</Formik>
 		</>
 	)
-}
+})

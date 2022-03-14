@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
@@ -42,21 +42,22 @@ import { allowMovingItemIntoGroup } from '../lib/util'
 import short from 'short-uuid'
 import CloseIcon from '@mui/icons-material/Close'
 import { store } from './mobx/store'
+import { observer } from 'mobx-react-lite'
 
 /**
  * Used to remove unnecessary cruft from error messages.
  */
 const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
-export const App = () => {
+export const App = observer(() => {
 	const [resources, setResources] = useState<Resources>({})
 	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
 	const [peripherals, setPeripherals] = useState<{ [peripheralId: string]: Peripheral }>({})
-	const [appData, setAppData] = useState<AppData>()
+	// const [appData, setAppData] = useState<AppData>()
 	const [project, setProject] = useState<Project>()
-	const [currentRundownId, setCurrentRundownId] = useState<string>()
+	// const [currentRundownId, setCurrentRundownId] = useState<string>()
 	const [currentRundown, setCurrentRundown] = useState<Rundown>()
-	const currentRundownIdRef = useRef<string>()
+	// const currentRundownIdRef = useRef<string>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
@@ -65,24 +66,26 @@ export const App = () => {
 		return new TriggersEmitter()
 	}, [])
 
-	useEffect(() => {
-		currentRundownIdRef.current = currentRundownId
-	}, [currentRundownId])
+	// useEffect(() => {
+	// 	currentRundownIdRef.current = currentRundownId
+	// }, [currentRundownId])
 
 	// Handle IPC-messages from server
 	useEffect(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
 			updateAppData: (appData: AppData) => {
-				setAppData(appData)
+				store.appStore.update(appData)
+				// setAppData(appData)
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
 			},
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				if (!currentRundownIdRef.current) {
-					setCurrentRundownId(rundownId)
+				if (!store.appStore.currentRundownId) {
+					store.appStore.currentRundownId = rundownId
+					// setCurrentRundownId(rundownId)
 					setCurrentRundown(rundown)
-				} else if (currentRundownIdRef.current === rundownId) {
+				} else if (store.appStore.currentRundownId === rundownId) {
 					setCurrentRundown(rundown)
 				}
 			},
@@ -166,14 +169,18 @@ export const App = () => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
+
+	console.log('every render:', store.appStore.currentRundownId)
+
 	useEffect(() => {
+		console.log('Gets fired?')
 		// Ask the backend for the rundown whenever currentRundownId changes.
-		if (currentRundownId) {
-			serverAPI.triggerSendRundown({ rundownId: currentRundownId }).catch(handleError)
+		if (store.appStore.currentRundownId) {
+			serverAPI.triggerSendRundown({ rundownId: store.appStore.currentRundownId }).catch(handleError)
 		} else {
 			setCurrentRundown(undefined)
 		}
-	}, [currentRundownId, handleError, serverAPI])
+	}, [store.appStore.currentRundownId, handleError, serverAPI])
 
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
@@ -272,36 +279,6 @@ export const App = () => {
 		setSettingsOpen(false)
 	}
 
-	const openRundowns = useMemo(() => {
-		if (!appData) {
-			return []
-		}
-
-		return Object.entries(appData.rundowns)
-			.filter(([_rundownId, rundown]) => {
-				return rundown.open === true
-			})
-			.map(([rundownId, closedRundown]) => ({
-				rundownId,
-				name: closedRundown.name,
-			}))
-	}, [appData])
-
-	const closedRundowns = useMemo(() => {
-		if (!appData) {
-			return []
-		}
-
-		return Object.entries(appData.rundowns)
-			.filter(([_rundownId, rundown]) => {
-				return rundown.open === false
-			})
-			.map(([rundownId, closedRundown]) => ({
-				rundownId,
-				name: closedRundown.name,
-			}))
-	}, [appData])
-
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
 		if (!currentRundown) {
 			return currentRundown
@@ -389,7 +366,7 @@ export const App = () => {
 	useEffect(() => {
 		if (partMoveData.moveId && partMoveData.done === true) {
 			if (
-				!currentRundownId ||
+				!store.appStore.currentRundownId ||
 				!partMoveData.fromGroupId ||
 				!partMoveData.partId ||
 				typeof partMoveData.position !== 'number'
@@ -401,12 +378,12 @@ export const App = () => {
 			serverAPI
 				.movePart({
 					from: {
-						rundownId: currentRundownId,
+						rundownId: store.appStore.currentRundownId,
 						groupId: partMoveData.fromGroupId,
 						partId: partMoveData.partId,
 					},
 					to: {
-						rundownId: currentRundownId,
+						rundownId: store.appStore.currentRundownId,
 						groupId: partMoveData.toGroupId,
 						position: partMoveData.position,
 					},
@@ -455,35 +432,7 @@ export const App = () => {
 									<div className="app" onPointerDown={handlePointerDownAnywhere}>
 										<div className="top-header">
 											<TopHeader
-												selectedRundownId={currentRundownId}
-												openRundowns={openRundowns}
-												closedRundowns={closedRundowns}
-												onSelect={(rundownId) => {
-													setCurrentRundownId(rundownId)
-												}}
-												onClose={(rundownId) => {
-													serverAPI.closeRundown({ rundownId }).catch(handleError)
-													const nextRundown = openRundowns.find(
-														(rd) => rd.rundownId !== rundownId
-													)
-													if (nextRundown) {
-														setCurrentRundownId(nextRundown.rundownId)
-													} else {
-														setCurrentRundownId(undefined)
-													}
-												}}
-												onOpen={(rundownId) => {
-													serverAPI.openRundown({ rundownId }).catch(handleError)
-												}}
-												onCreate={(rundownName) => {
-													serverAPI.newRundown({ name: rundownName }).catch(handleError)
-												}}
-												onRename={(rundownId, newName) => {
-													serverAPI.renameRundown({ rundownId, newName }).catch(handleError)
-												}}
-												onSettingsClick={() => {
-													setSettingsOpen(true)
-												}}
+												onSettingsClick={() => setSettingsOpen(true)}
 												bridgeStatuses={bridgeStatuses}
 												peripherals={peripherals}
 											/>
@@ -534,4 +483,4 @@ export const App = () => {
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>
 	)
-}
+})
