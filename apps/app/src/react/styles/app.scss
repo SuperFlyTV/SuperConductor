@@ -12,20 +12,9 @@
 	// height: 100vh;
 	// box-sizing: border-box;
 
-	$top-header-height: 3rem;
 	$sidebar-width: 30rem;
+	$top-header-height: 3rem;
 
-	> .top-header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: $top-header-height;
-
-		overflow: hidden;
-
-		background-color: $topheaderBg;
-	}
 	> .main-area {
 		position: absolute;
 		top: $top-header-height;

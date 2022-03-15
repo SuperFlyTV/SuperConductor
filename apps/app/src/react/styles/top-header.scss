@@ -1,22 +1,59 @@
 @use 'sass:color';
 
+$normalBg: #505050;
+$hoverBg: #616161;
+$selectedBg: #111111;
+
 .top-header {
 	display: flex;
 
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3rem;
+
+	overflow: hidden;
+
+	padding-top: 1rem;
+
+	background-color: $topheaderBg;
+
 	> .tab {
 		display: flex;
-		align-items: center;
-		padding: 0.5rem 0.5rem;
-		border-right: 1px solid grey;
-
+		align-items: stretch;
+		height: 2rem;
 		cursor: pointer;
+		margin-right: 0.3rem;
 
-		&--selected {
-			background-color: color.scale($topheaderBg, $lightness: 20%);
+		&.selected {
+			.label {
+				background-color: $selectedBg;
+			}
+			.tab-edge {
+				fill: $selectedBg;
+			}
 		}
 
-		&:hover {
-			background-color: color.scale($topheaderBg, $lightness: 30%);
+		&:hover:not(&.selected) {
+			.label {
+				background-color: $hoverBg;
+			}
+			.tab-edge {
+				fill: $hoverBg;
+			}
+		}
+
+		.label {
+			font-size: 1.2rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0 0.8rem;
+			background-color: $normalBg;
+		}
+		.tab-edge {
+			fill: $normalBg;
 		}
 	}
 

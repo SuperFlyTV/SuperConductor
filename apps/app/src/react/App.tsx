@@ -19,7 +19,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
-import { TopHeader } from './components/top/TopHeader'
+import { HeaderBar } from './components/headerBar/HeaderBar'
 import { Resources, ResourcesContext } from './contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
@@ -421,7 +421,7 @@ export const App = observer(() => {
 								<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 									<div className="app" onPointerDown={handlePointerDownAnywhere}>
 										<div className="top-header">
-											<TopHeader
+											<HeaderBar
 												onSettingsClick={() => setSettingsOpen(true)}
 												bridgeStatuses={bridgeStatuses}
 												peripherals={peripherals}
