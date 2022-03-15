@@ -313,6 +313,7 @@ abstract class AbstractBridgeConnection {
 
 		delete bridgeStatus.devices[deviceId]
 
+		this.callbacks.updatedResources(deviceId, [])
 		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
 	protected _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
