@@ -5,6 +5,7 @@ enum GeneralResourceType {
 	MEDIA = 'media',
 	TEMPLATE = 'template',
 	ME = 'me',
+	DSK = 'dsk',
 	UNKNOWN = 'unknown',
 }
 
@@ -18,6 +19,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.UNKNOWN
 		case ResourceType.ATEM_ME:
 			return GeneralResourceType.ME
+		case ResourceType.ATEM_DSK:
+			return GeneralResourceType.DSK
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

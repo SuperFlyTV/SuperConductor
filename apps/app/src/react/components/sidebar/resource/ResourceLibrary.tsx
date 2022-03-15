@@ -140,6 +140,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">{resource.name}</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.ATEM_DSK) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

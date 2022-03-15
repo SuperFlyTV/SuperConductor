@@ -16,4 +16,5 @@ export enum ResourceType {
 	CASPARCG_TEMPLATE = 'CASPARCG_TEMPLATE',
 
 	ATEM_ME = 'ATEM_ME',
+	ATEM_DSK = 'ATEM_DSK',
 }

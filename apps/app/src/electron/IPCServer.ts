@@ -23,6 +23,7 @@ import {
 	TimelineObjAtemME,
 	TimelineContentTypeAtem,
 	AtemTransitionStyle,
+	TimelineObjAtemDSK,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1145,6 +1146,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					me: {
 						input: 1,
 						transition: AtemTransitionStyle.CUT,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_DSK) {
+			obj = literal<TimelineObjAtemDSK>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.DSK,
+					dsk: {
+						onAir: true,
+						sources: {
+							fillSource: 1,
+							cutSource: 2,
+						},
 					},
 				},
 			})

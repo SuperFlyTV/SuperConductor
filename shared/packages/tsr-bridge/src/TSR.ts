@@ -3,7 +3,7 @@ import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
-import { ResourceAny, ResourceType, AtemMe, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import { ResourceAny, ResourceType, AtemMe, AtemDsk, CasparCGMedia, CasparCGTemplate } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 
 export class TSR {
@@ -267,6 +267,23 @@ export class TSR {
 						id: `me_${me.index}`,
 						index: me.index,
 						name: `ATEM ME ${me.index + 1}`,
+					}
+					const id = `${resource.deviceId}_${resource.id}`
+					resources[id] = resource
+				}
+
+				for (let i = 0; i < atem.state.video.downstreamKeyers.length; i++) {
+					const dsk = atem.state.video.downstreamKeyers[i]
+					if (!dsk) {
+						continue
+					}
+
+					const resource: AtemDsk = {
+						resourceType: ResourceType.ATEM_DSK,
+						deviceId,
+						id: `dsk_${i}`,
+						index: i,
+						name: `ATEM DSK ${i + 1}`,
 					}
 					const id = `${resource.deviceId}_${resource.id}`
 					resources[id] = resource

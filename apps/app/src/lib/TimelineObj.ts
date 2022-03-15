@@ -20,6 +20,8 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
 			label = `ATEM Input ${obj.content.me.input}`
+		} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
+			label = `ATEM Fill ${obj.content.dsk.sources?.fillSource} / Cut ${obj.content.dsk.sources?.cutSource}`
 		}
 	} else {
 		// todo: for later:
