@@ -299,7 +299,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
 
-		if (group.locked || part.locked) {
+		if (group.locked) {
 			return null
 		}
 

@@ -715,7 +715,7 @@ export const PartView: React.FC<{
 					<div className="controls">
 						<ToggleButton
 							value="disabled"
-							disabled={groupOrPartLocked}
+							disabled={parentGroup.locked}
 							selected={part.disabled}
 							size="small"
 							onChange={() => {
