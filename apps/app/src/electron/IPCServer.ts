@@ -163,12 +163,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 	}
 	async triggerSendAll(): Promise<void> {
-		console.log('triggerSendAll')
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
-		console.log('triggerSendRundown:', arg.rundownId)
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
 	async setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {

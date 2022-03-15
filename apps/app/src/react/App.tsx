@@ -20,11 +20,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { HeaderBar } from './components/headerBar/HeaderBar'
-import { Resources, ResourcesContext } from './contexts/Resources'
-import { ResourceAny } from '@shared/models'
 import { RundownContext } from './contexts/Rundown'
-import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { Settings } from './components/settings/Settings'
@@ -33,7 +29,6 @@ import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
 import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
-import _ from 'lodash'
 import { deepClone } from '@shared/lib'
 import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
@@ -50,15 +45,12 @@ import { observer } from 'mobx-react-lite'
 const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
 export const App = observer(() => {
-	const [resources, setResources] = useState<Resources>({})
-	const [bridgeStatuses, setBridgeStatuses] = useState<{ [bridgeId: string]: BridgeStatus }>({})
-	const [peripherals, setPeripherals] = useState<{ [peripheralId: string]: Peripheral }>({})
 	const [project, setProject] = useState<Project>()
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
-	const appStore = store.appStore
+	const rundownsStore = store.rundownsStore
 
 	const triggers = useMemo(() => {
 		return new TriggersEmitter()
@@ -69,59 +61,10 @@ export const App = observer(() => {
 		const ipcClient = new IPCClient(ipcRenderer, {
 			updateAppData: (appData: AppData) => {
 				store.appStore.update(appData)
+				store.rundownsStore.update(appData.rundowns)
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
-			},
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			updateRundown: (rundownId: string, rundown: Rundown) => {
-				// console.log('App.tsx updateRundown', rundownId)
-				// if (!store.appStore.currentRundownId) {
-				// 	store.appStore.currentRundownId = rundownId
-				// 	store.appStore.currentRundown = rundown
-				// } else if (store.appStore.currentRundownId === rundownId) {
-				// 	store.appStore.currentRundown = rundown
-				// }
-			},
-			updateResource: (resourceId: string, resource: ResourceAny | null) => {
-				setResources((existingResources) => {
-					if (resource) {
-						if (!_.isEqual(existingResources[resourceId], resource)) {
-							const newResources = { ...existingResources }
-							newResources[resourceId] = resource
-							return newResources
-						}
-					} else {
-						if (existingResources[resourceId]) {
-							const newResources = { ...existingResources }
-							delete newResources[resourceId]
-							return newResources
-						}
-					}
-					return existingResources
-				})
-			},
-			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) => {
-				setBridgeStatuses((resources) => {
-					const newStatuses = { ...resources }
-					if (status) {
-						newStatuses[bridgeId] = status
-					} else {
-						delete newStatuses[bridgeId]
-					}
-					return newStatuses
-				})
-			},
-			updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => {
-				setPeripherals((peripherals) => {
-					const newPeripherals = { ...peripherals }
-					if (peripheral) {
-						newPeripherals[peripheralId] = peripheral
-					} else {
-						delete newPeripherals[peripheralId]
-					}
-					return newPeripherals
-				})
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				console.log(activeTriggersToString(peripheralTriggers))
@@ -263,27 +206,27 @@ export const App = observer(() => {
 	}
 
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
-		if (!appStore.currentRundown) {
-			return appStore.currentRundown
+		if (!rundownsStore.currentRundown) {
+			return rundownsStore.currentRundown
 		}
 
-		const modifiedRundown = deepClone(appStore.currentRundown)
+		const modifiedRundown = deepClone(rundownsStore.currentRundown)
 
 		if (partMoveData.partId) {
 			if (typeof partMoveData.position !== 'number') {
-				return appStore.currentRundown
+				return rundownsStore.currentRundown
 			}
 
 			const fromGroup = modifiedRundown.groups.find((g) => g.id === partMoveData.fromGroupId)
 
 			if (!fromGroup) {
-				return appStore.currentRundown
+				return rundownsStore.currentRundown
 			}
 
 			const part = fromGroup.parts.find((p) => p.id === partMoveData.partId)
 
 			if (!part) {
-				return appStore.currentRundown
+				return rundownsStore.currentRundown
 			}
 
 			let toGroup: Group | undefined
@@ -310,13 +253,13 @@ export const App = observer(() => {
 			}
 
 			if (!toGroup) {
-				return appStore.currentRundown
+				return rundownsStore.currentRundown
 			}
 
 			const allow = allowMovingItemIntoGroup(part.id, fromGroup, toGroup)
 
 			if (!allow) {
-				return appStore.currentRundown
+				return rundownsStore.currentRundown
 			}
 
 			if (!isTransparentGroupMove) {
@@ -344,9 +287,9 @@ export const App = observer(() => {
 			return modifiedRundown
 		}
 
-		return appStore.currentRundown
+		return rundownsStore.currentRundown
 	}, [
-		appStore.currentRundown,
+		rundownsStore.currentRundown,
 		partMoveData.fromGroupId,
 		partMoveData.partId,
 		partMoveData.position,
@@ -356,7 +299,7 @@ export const App = observer(() => {
 	useEffect(() => {
 		if (partMoveData.moveId && partMoveData.done === true) {
 			if (
-				!store.appStore.currentRundownId ||
+				!store.rundownsStore.currentRundownId ||
 				!partMoveData.fromGroupId ||
 				!partMoveData.partId ||
 				typeof partMoveData.position !== 'number'
@@ -368,12 +311,12 @@ export const App = observer(() => {
 			serverAPI
 				.movePart({
 					from: {
-						rundownId: store.appStore.currentRundownId,
+						rundownId: store.rundownsStore.currentRundownId,
 						groupId: partMoveData.fromGroupId,
 						partId: partMoveData.partId,
 					},
 					to: {
-						rundownId: store.appStore.currentRundownId,
+						rundownId: store.rundownsStore.currentRundownId,
 						groupId: partMoveData.toGroupId,
 						position: partMoveData.position,
 					},
@@ -400,7 +343,7 @@ export const App = observer(() => {
 				})
 			}
 		}
-	}, [waitingForMovePartUpdate, appStore.currentRundown])
+	}, [waitingForMovePartUpdate, rundownsStore.currentRundown])
 
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
@@ -415,60 +358,54 @@ export const App = observer(() => {
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<IPCServerContext.Provider value={serverAPI}>
 				<ProjectContext.Provider value={project}>
-					<ResourcesContext.Provider value={resources}>
-						<PartMoveContext.Provider value={partMoveContextValue}>
-							<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-								<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-									<div className="app" onPointerDown={handlePointerDownAnywhere}>
-										<div className="top-header">
-											<HeaderBar
-												onSettingsClick={() => setSettingsOpen(true)}
-												bridgeStatuses={bridgeStatuses}
-												peripherals={peripherals}
-											/>
-										</div>
-
-										{modifiedCurrentRundown ? (
-											<RundownContext.Provider value={modifiedCurrentRundown}>
-												<div className="main-area">
-													<RundownView mappings={project.mappings} />
-												</div>
-												<div className="side-bar">
-													<Sidebar mappings={project.mappings} />
-												</div>
-											</RundownContext.Provider>
-										) : (
-											<div>Loading...</div>
-										)}
-
-										<Dialog
-											open={settingsOpen}
-											onClose={handleSettingsClose}
-											fullScreen
-											className="settings-dialog"
-										>
-											<AppBar position="sticky">
-												<Toolbar>
-													<IconButton
-														edge="start"
-														color="inherit"
-														onClick={handleSettingsClose}
-														aria-label="close"
-													>
-														<CloseIcon />
-													</IconButton>
-													<Typography sx={{ ml: 2, flex: 1 }} variant="h5" component="div">
-														Preferences
-													</Typography>
-												</Toolbar>
-											</AppBar>
-											<Settings project={project} bridgeStatuses={bridgeStatuses} />
-										</Dialog>
+					<PartMoveContext.Provider value={partMoveContextValue}>
+						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
+							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+								<div className="app" onPointerDown={handlePointerDownAnywhere}>
+									<div className="top-header">
+										<HeaderBar onSettingsClick={() => setSettingsOpen(true)} />
 									</div>
-								</ErrorHandlerContext.Provider>
-							</TimelineObjectMoveContext.Provider>
-						</PartMoveContext.Provider>
-					</ResourcesContext.Provider>
+
+									{modifiedCurrentRundown ? (
+										<RundownContext.Provider value={modifiedCurrentRundown}>
+											<div className="main-area">
+												<RundownView mappings={project.mappings} />
+											</div>
+											<div className="side-bar">
+												<Sidebar mappings={project.mappings} />
+											</div>
+										</RundownContext.Provider>
+									) : (
+										<div>Loading...</div>
+									)}
+
+									<Dialog
+										open={settingsOpen}
+										onClose={handleSettingsClose}
+										fullScreen
+										className="settings-dialog"
+									>
+										<AppBar position="sticky">
+											<Toolbar>
+												<IconButton
+													edge="start"
+													color="inherit"
+													onClick={handleSettingsClose}
+													aria-label="close"
+												>
+													<CloseIcon />
+												</IconButton>
+												<Typography sx={{ ml: 2, flex: 1 }} variant="h5" component="div">
+													Preferences
+												</Typography>
+											</Toolbar>
+										</AppBar>
+										<Settings project={project} />
+									</Dialog>
+								</div>
+							</ErrorHandlerContext.Provider>
+						</TimelineObjectMoveContext.Provider>
+					</PartMoveContext.Provider>
 				</ProjectContext.Provider>
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>

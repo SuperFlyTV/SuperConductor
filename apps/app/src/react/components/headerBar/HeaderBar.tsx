@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { BridgeStatus } from '../../../models/project/Bridge'
-import { Peripheral } from '../../../models/project/Peripheral'
-import classNames from 'classnames'
 import React, { useContext, useState } from 'react'
 import {
 	Button,
@@ -13,7 +9,7 @@ import {
 	IconButton,
 	Radio,
 } from '@mui/material'
-import { MdAdd, MdClose, MdSettings } from 'react-icons/md'
+import { MdSettings } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
@@ -22,7 +18,8 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { ConnectionStatus } from '../util/ConnectionStatus'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
-import { Tab } from './Tab'
+import { Tab } from './tabs/Tab'
+import { NewTabBtn } from './tabs/NewTabBtn'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -33,10 +30,8 @@ const renameRundownValidationSchema = Yup.object({
 })
 
 export const HeaderBar: React.FC<{
-	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
-	peripherals: { [peripheralId: string]: Peripheral }
 	onSettingsClick: () => void
-}> = observer(({ bridgeStatuses, peripherals, onSettingsClick }) => {
+}> = observer(({ onSettingsClick }) => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
@@ -45,18 +40,19 @@ export const HeaderBar: React.FC<{
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
 
 	const appStore = store.appStore
+	const rundownsStore = store.rundownsStore
 
 	const handleSelect = (rundownId: string) => {
-		store.appStore.setCurrentRundown(rundownId)
+		store.rundownsStore.setCurrentRundown(rundownId)
 	}
 
 	const handleClose = (rundownId: string) => {
 		serverAPI.closeRundown({ rundownId }).catch(handleError)
-		const nextRundown = appStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
+		const nextRundown = rundownsStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
 		if (nextRundown) {
-			store.appStore.setCurrentRundown(nextRundown.rundownId)
+			store.rundownsStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
-			store.appStore.setCurrentRundown(undefined)
+			store.rundownsStore.setCurrentRundown(undefined)
 		}
 	}
 
@@ -86,41 +82,35 @@ export const HeaderBar: React.FC<{
 
 	return (
 		<>
-			{appStore.openRundowns.map((rundown) => {
+			{rundownsStore.openRundowns.map((rundown) => {
 				return (
 					<Tab
 						key={rundown.rundownId}
 						id={rundown.rundownId}
 						name={rundown.name}
-						selected={rundown.rundownId === appStore.currentRundownId}
-						onClick={() => {
-							handleSelect(rundown.rundownId)
-						}}
+						selected={rundown.rundownId === rundownsStore.currentRundownId}
+						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => {
 							setRundownToRename(rundown)
 							setRenameRundownOpen(true)
 						}}
+						onClose={(id) => handleClose(id)}
 					/>
 				)
 			})}
 
-			<IconButton
-				color="primary"
-				title="Create/Open Rundown"
-				aria-label="open or create new rundown"
+			<NewTabBtn
 				onClick={() => {
-					if (appStore.closedRundowns && appStore.closedRundowns.length > 0) {
+					if (rundownsStore.closedRundowns && rundownsStore.closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
 					} else {
 						setNewRundownOpen(true)
 					}
 				}}
-			>
-				<MdAdd />
-			</IconButton>
+			/>
 
 			<div className="device-statuses">
-				{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
+				{Object.entries(appStore.bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
 					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
 						return (
 							<ConnectionStatus
@@ -132,8 +122,8 @@ export const HeaderBar: React.FC<{
 						)
 					})
 				})}
-				{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
-					const bridge = bridgeStatuses[peripheral.bridgeId]
+				{Object.entries(appStore.peripherals).map(([peripheralId, peripheral]) => {
+					const bridge = appStore.bridgeStatuses[peripheral.bridgeId]
 
 					const bridgeIsConnected = bridge && bridge.connected
 
@@ -155,7 +145,7 @@ export const HeaderBar: React.FC<{
 			{/* Open Rundown dialog */}
 			<Formik
 				initialValues={{
-					rundownId: appStore.closedRundowns.length > 0 ? appStore.closedRundowns[0].rundownId : '',
+					rundownId: rundownsStore.closedRundowns.length > 0 ? rundownsStore.closedRundowns[0].rundownId : '',
 				}}
 				onSubmit={(values, actions) => {
 					handleOpen(values.rundownId)
@@ -171,8 +161,8 @@ export const HeaderBar: React.FC<{
 							<DialogContent>
 								<Form>
 									<Field component={RadioGroup} name="rundownId">
-										{appStore.closedRundowns &&
-											appStore.closedRundowns.map((rundown) => (
+										{rundownsStore.closedRundowns &&
+											rundownsStore.closedRundowns.map((rundown) => (
 												<FormControlLabel
 													key={rundown.rundownId}
 													value={rundown.rundownId}

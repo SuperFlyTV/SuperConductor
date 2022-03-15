@@ -1,9 +1,8 @@
 import classNames from 'classnames'
 import React from 'react'
+import { MdClose } from 'react-icons/md'
 import { TabLeftEdge } from './TabLeftEdge'
 import { TabRightEdge } from './TabRightEdge'
-// import { MdClose } from 'react-icons/md'
-// import { IconButton } from '@mui/material'
 
 export const Tab: React.FC<{
 	id: string
@@ -11,6 +10,7 @@ export const Tab: React.FC<{
 	selected?: boolean
 	onClick: () => void
 	onDoubleClick: () => void
+	onClose: (id: string) => void
 }> = (props) => {
 	return (
 		<div
@@ -23,20 +23,20 @@ export const Tab: React.FC<{
 		>
 			<TabLeftEdge />
 			<div className="label">{props.name}</div>
+			<div className="close">
+				<button
+					title="Close Rundown"
+					aria-label="close rundown"
+					onClick={(event) => {
+						props.onClose(props.id)
+						event.stopPropagation()
+						event.preventDefault()
+					}}
+				>
+					<MdClose />
+				</button>
+			</div>
 			<TabRightEdge />
-			{/* <IconButton
-				color="error"
-				title="Close Rundown"
-				aria-label="close rundown"
-				onClick={(event) => {
-					// handleClose(rundown.rundownId)
-					// onClose(rundown.rundownId)
-					event.stopPropagation()
-					event.preventDefault()
-				}}
-			>
-				<MdClose />
-			</IconButton> */}
 		</div>
 	)
 }

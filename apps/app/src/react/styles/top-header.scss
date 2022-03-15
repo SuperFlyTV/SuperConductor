@@ -19,15 +19,39 @@ $selectedBg: #111111;
 
 	background-color: $topheaderBg;
 
+	.new-tab-button {
+		border-radius: 50%;
+		width: 1.7rem;
+		height: 1.7rem;
+		background: transparent;
+		position: relative;
+		border: 0;
+		cursor: pointer;
+
+		svg {
+			position: absolute;
+			fill: white;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+
+		&:hover {
+			background: rgba(255, 255, 255, 0.2);
+		}
+	}
+
 	> .tab {
 		display: flex;
 		align-items: stretch;
 		height: 2rem;
 		cursor: pointer;
 		margin-right: 0.3rem;
+		position: relative;
 
 		&.selected {
-			.label {
+			.label,
+			.close {
 				background-color: $selectedBg;
 			}
 			.tab-edge {
@@ -35,8 +59,13 @@ $selectedBg: #111111;
 			}
 		}
 
+		&:hover .close {
+			display: block;
+		}
+
 		&:hover:not(&.selected) {
-			.label {
+			.label,
+			.close {
 				background-color: $hoverBg;
 			}
 			.tab-edge {
@@ -49,11 +78,32 @@ $selectedBg: #111111;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			padding: 0 0.8rem;
+			padding: 0 1rem;
 			background-color: $normalBg;
 		}
 		.tab-edge {
 			fill: $normalBg;
+		}
+
+		.close {
+			position: absolute;
+			top: 0.4rem;
+			right: 0.8rem;
+			line-height: 0;
+			display: flex;
+			align-items: center;
+			display: none;
+
+			button {
+				padding: 0;
+				background: transparent;
+				border: 0;
+				cursor: pointer;
+			}
+
+			svg {
+				fill: white;
+			}
 		}
 	}
 

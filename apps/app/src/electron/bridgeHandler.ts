@@ -335,7 +335,6 @@ abstract class AbstractBridgeConnection {
 		} else if (msg.type === 'deviceRemoved') {
 			this.onDeviceRemoved(msg.deviceId)
 		} else if (msg.type === 'updatedResources') {
-			console.log('handleMessage updatedResources | callbacks:', this.callbacks)
 			this.callbacks.updatedResources(msg.deviceId, msg.resources)
 		} else if (msg.type === 'timelineIds') {
 			this._syncTimelineIds(msg.timelineIds)

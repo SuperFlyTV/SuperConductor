@@ -42,19 +42,19 @@ export const TopHeader: React.FC<{
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
 
-	const appStore = store.appStore
+	const rundownsStore = store.rundownsStore
 
 	const handleSelect = (rundownId: string) => {
-		store.appStore.setCurrentRundown(rundownId)
+		rundownsStore.setCurrentRundown(rundownId)
 	}
 
 	const handleClose = (rundownId: string) => {
 		serverAPI.closeRundown({ rundownId }).catch(handleError)
-		const nextRundown = appStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
+		const nextRundown = rundownsStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
 		if (nextRundown) {
-			store.appStore.setCurrentRundown(nextRundown.rundownId)
+			rundownsStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
-			store.appStore.setCurrentRundown(undefined)
+			rundownsStore.setCurrentRundown(undefined)
 		}
 	}
 
@@ -84,12 +84,12 @@ export const TopHeader: React.FC<{
 
 	return (
 		<>
-			{appStore.openRundowns.map((rundown) => {
+			{rundownsStore.openRundowns.map((rundown) => {
 				return (
 					<div
 						key={rundown.rundownId}
 						className={classNames('tab', {
-							'tab--selected': rundown.rundownId === appStore.currentRundownId,
+							'tab--selected': rundown.rundownId === rundownsStore.currentRundownId,
 						})}
 						title="Double-click to edit"
 						onClick={() => {
@@ -124,7 +124,7 @@ export const TopHeader: React.FC<{
 				title="Create/Open Rundown"
 				aria-label="open or create new rundown"
 				onClick={() => {
-					if (appStore.closedRundowns && appStore.closedRundowns.length > 0) {
+					if (rundownsStore.closedRundowns && rundownsStore.closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
 					} else {
 						setNewRundownOpen(true)
@@ -170,7 +170,7 @@ export const TopHeader: React.FC<{
 			{/* Open Rundown dialog */}
 			<Formik
 				initialValues={{
-					rundownId: appStore.closedRundowns.length > 0 ? appStore.closedRundowns[0].rundownId : '',
+					rundownId: rundownsStore.closedRundowns.length > 0 ? rundownsStore.closedRundowns[0].rundownId : '',
 				}}
 				onSubmit={(values, actions) => {
 					handleOpen(values.rundownId)
@@ -186,8 +186,8 @@ export const TopHeader: React.FC<{
 							<DialogContent>
 								<Form>
 									<Field component={RadioGroup} name="rundownId">
-										{appStore.closedRundowns &&
-											appStore.closedRundowns.map((rundown) => (
+										{rundownsStore.closedRundowns &&
+											rundownsStore.closedRundowns.map((rundown) => (
 												<FormControlLabel
 													key={rundown.rundownId}
 													value={rundown.rundownId}

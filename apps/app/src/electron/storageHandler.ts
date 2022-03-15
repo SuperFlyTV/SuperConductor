@@ -449,7 +449,6 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	private emitChanges() {
-		console.log('emitChanges | emitEverything:', this.emitEverything)
 		if (this.emitEverything) {
 			this.appDataHasChanged = true
 			this.projectHasChanged = true
