@@ -49,6 +49,13 @@
 				& > * {
 					margin-right: 0.6rem;
 				}
+
+				.playcount {
+					position: absolute;
+					bottom: -12px;
+					right: 0;
+					color: white;
+				}
 			}
 
 			.toggle {

@@ -322,6 +322,9 @@ export const GroupView: React.FC<{
 							</Button>
 							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+								<div className="playcount">
+									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
+								</div>
 							</Button>
 							{group.oneAtATime && (
 								<>
