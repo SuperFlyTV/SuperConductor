@@ -23,6 +23,12 @@
 		border-bottom-right-radius: calc($partTabWidth / 2);
 	}
 
+	&:hover {
+		.MuiToggleButton-sizeSmall:not(.Mui-selected) {
+			opacity: 0.2;
+		}
+	}
+
 	&.dragging {
 		border: 1px solid white;
 		border-top: 0;

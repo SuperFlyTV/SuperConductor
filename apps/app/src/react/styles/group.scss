@@ -17,6 +17,12 @@
 		font-size: 1.4rem;
 		padding: 0.2rem 0.5rem 0.2rem 1.8rem;
 
+		&:hover {
+			.MuiToggleButton-sizeSmall:not(.Mui-selected) {
+				opacity: 0.2;
+			}
+		}
+
 		.title,
 		.edit-title {
 			margin-right: 1rem;
