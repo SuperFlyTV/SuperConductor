@@ -15,6 +15,7 @@ export class TSR {
 	private sideLoadedDevices: {
 		[deviceId: string]: {
 			refreshResources: () => Promise<ResourceAny[]>
+			close: () => Promise<void>
 		}
 	} = {}
 	private currentTimeDiff = 0
@@ -100,6 +101,12 @@ export class TSR {
 		// Removed:
 		for (const deviceId in this.devices) {
 			if (!newDevices[deviceId]) {
+				// Delete the sideloaded device, if any
+				if (deviceId in this.sideLoadedDevices) {
+					await this.sideLoadedDevices[deviceId].close()
+					delete this.sideLoadedDevices[deviceId]
+				}
+
 				await this.conductor.removeDevice(deviceId)
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
@@ -130,136 +137,151 @@ export class TSR {
 		// to the devices out of TSR, but hit will do for now...
 
 		const existingDevice = this.sideLoadedDevices[deviceId]
+		if (existingDevice) {
+			return
+		}
 
-		if (!existingDevice) {
-			if (deviceOptions.type === DeviceType.CASPARCG) {
-				const ccg = new CasparCG({
-					host: deviceOptions.options?.host,
-					port: deviceOptions.options?.port,
-					autoConnect: true,
-					onConnected: async () => {
-						this.log?.info('CasparCG: Connection initialized')
-						// this.fetchAndSetMedia()
-						// this.fetchAndSetTemplates()
-					},
-					onConnectionChanged: () => {
-						// console.log('CasparCG: Connection changed')
-					},
-					onDisconnected: () => {
-						// console.log('CasparCG: Connection disconnected')
-					},
-				})
+		if (deviceOptions.type === DeviceType.CASPARCG) {
+			const ccg = new CasparCG({
+				host: deviceOptions.options?.host,
+				port: deviceOptions.options?.port,
+				autoConnect: true,
+				onConnected: async () => {
+					this.log?.info(`CasparCG ${deviceId}: Sideload connection initialized`)
+					// this.fetchAndSetMedia()
+					// this.fetchAndSetTemplates()
+				},
+				onConnectionChanged: () => {
+					// console.log('CasparCG: Connection changed')
+				},
+				onDisconnected: () => {
+					this.log?.info(`CasparCG ${deviceId}: Sideload connection disconnected`)
+				},
+			})
 
-				const refreshResources = async () => {
-					const resources: { [id: string]: ResourceAny } = {}
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
 
-					if (!ccg.connected) {
-						return Object.values(resources)
-					}
-
-					// Refresh media:
-					{
-						const res = await ccg.cls()
-						const mediaList = res.response.data as {
-							type: 'image' | 'video' | 'audio'
-							name: string
-							size: number
-							changed: number
-							frames: number
-							frameTime: string
-							frameRate: number
-							duration: number
-							thumbnail?: string
-						}[]
-						for (const media of mediaList) {
-							const resource: CasparCGMedia = {
-								resourceType: ResourceType.CASPARCG_MEDIA,
-								deviceId: deviceId,
-								id: media.name,
-								...media,
-							}
-
-							if (media.type === 'image' || media.type === 'video') {
-								try {
-									const thumbnail = await ccg.thumbnailRetrieve(media.name)
-									resource.thumbnail = thumbnail.response.data
-								} catch (error) {
-									// console.error(`Could not set thumbnail for media "${media.name}".`, error)
-									this.log?.error(`Could not set thumbnail for media "${media.name}".`)
-								}
-							}
-
-							const id = `${resource.deviceId}_${resource.id}`
-							resources[id] = resource
-						}
-					}
-
-					// Refresh templates:
-					{
-						const res = await ccg.tls()
-						const templatesList = res.response.data as {
-							type: 'template'
-							name: string
-						}[]
-						for (const template of templatesList) {
-							const resource: CasparCGTemplate = {
-								resourceType: ResourceType.CASPARCG_TEMPLATE,
-								deviceId: deviceId,
-								id: template.name,
-								...template,
-							}
-							const id = `${resource.deviceId}_${resource.id}`
-							resources[id] = resource
-						}
-					}
-
+				if (!ccg.connected) {
 					return Object.values(resources)
 				}
 
-				this.sideLoadedDevices[deviceId] = {
-					refreshResources: () => {
-						return refreshResources()
-					},
-				}
-
-				// new CasparCGDevice(deviceOptions)
-			} else if (deviceOptions.type === DeviceType.ATEM) {
-				const atem = new Atem()
-
-				if (deviceOptions.options?.host) {
-					atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
-				}
-
-				const refreshResources = async () => {
-					const resources: { [id: string]: ResourceAny } = {}
-
-					if (atem.status !== AtemConnectionStatus.CONNECTED || !atem.state) {
-						return Object.values(resources)
-					}
-
-					for (const me of atem.state.video.mixEffects) {
-						if (!me) {
-							continue
+				// Refresh media:
+				{
+					const res = await ccg.cls()
+					const mediaList = res.response.data as {
+						type: 'image' | 'video' | 'audio'
+						name: string
+						size: number
+						changed: number
+						frames: number
+						frameTime: string
+						frameRate: number
+						duration: number
+						thumbnail?: string
+					}[]
+					for (const media of mediaList) {
+						const resource: CasparCGMedia = {
+							resourceType: ResourceType.CASPARCG_MEDIA,
+							deviceId: deviceId,
+							id: media.name,
+							...media,
 						}
-						const resource: AtemMe = {
-							resourceType: ResourceType.ATEM_ME,
-							deviceId,
-							id: `me_${me.index}`,
-							index: me.index,
-							name: `ATEM ME ${me.index + 1}`,
+
+						if (media.type === 'image' || media.type === 'video') {
+							try {
+								const thumbnail = await ccg.thumbnailRetrieve(media.name)
+								resource.thumbnail = thumbnail.response.data
+							} catch (error) {
+								// console.error(`Could not set thumbnail for media "${media.name}".`, error)
+								this.log?.error(`Could not set thumbnail for media "${media.name}".`)
+							}
+						}
+
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+				}
+
+				// Refresh templates:
+				{
+					const res = await ccg.tls()
+					const templatesList = res.response.data as {
+						type: 'template'
+						name: string
+					}[]
+					for (const template of templatesList) {
+						const resource: CasparCGTemplate = {
+							resourceType: ResourceType.CASPARCG_TEMPLATE,
+							deviceId: deviceId,
+							id: template.name,
+							...template,
 						}
 						const id = `${resource.deviceId}_${resource.id}`
 						resources[id] = resource
 					}
+				}
 
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: async () => {
+					return ccg.disconnect()
+				},
+			}
+
+			// new CasparCGDevice(deviceOptions)
+		} else if (deviceOptions.type === DeviceType.ATEM) {
+			const atem = new Atem()
+
+			atem.on('connected', () => {
+				this.log?.info(`ATEM ${deviceId}: Sideload connection initialized`)
+			})
+
+			atem.on('disconnected', () => {
+				this.log?.info(`ATEM ${deviceId}: Sideload connection disconnected`)
+			})
+
+			if (deviceOptions.options?.host) {
+				atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
+			}
+
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
+
+				if (atem.status !== AtemConnectionStatus.CONNECTED || !atem.state) {
 					return Object.values(resources)
 				}
 
-				this.sideLoadedDevices[deviceId] = {
-					refreshResources: () => {
-						return refreshResources()
-					},
+				for (const me of atem.state.video.mixEffects) {
+					if (!me) {
+						continue
+					}
+					const resource: AtemMe = {
+						resourceType: ResourceType.ATEM_ME,
+						deviceId,
+						id: `me_${me.index}`,
+						index: me.index,
+						name: `ATEM ME ${me.index + 1}`,
+					}
+					const id = `${resource.deviceId}_${resource.id}`
+					resources[id] = resource
 				}
+
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: () => {
+					return atem.destroy()
+				},
 			}
 		}
 	}
