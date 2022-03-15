@@ -13,6 +13,8 @@ import { SelectEnum } from '../../../inputs/SelectEnum'
 import { IntInput } from '../../../inputs/IntInput'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 
+const DEFAULT_TRANSITION_RATE = 25
+
 export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave: OnSave }> = ({ obj, onSave }) => {
 	let settings: JSX.Element = <></>
 
@@ -46,10 +48,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				</div>
 				{obj.content.me.transition === AtemTransitionStyle.MIX ? (
 					<div className="setting">
-						<SelectEnum
+						<IntInput
 							label={'Transition: Mix Rate'}
-							currentValue={obj.content.me.transitionSettings?.mix?.rate}
-							options={AtemTransitionStyle}
+							currentValue={obj.content.me.transitionSettings?.mix?.rate ?? DEFAULT_TRANSITION_RATE}
 							onChange={(v) => {
 								if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
 								if (!obj.content.me.transitionSettings.mix)
@@ -58,16 +59,15 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								obj.content.me.transitionSettings.mix.rate = v
 								onSave(obj)
 							}}
-							allowUndefined={true}
+							allowUndefined={false}
 						/>
 					</div>
-				) : obj.content.me.transition !== undefined ? (
+				) : obj.content.me.transition !== AtemTransitionStyle.CUT && obj.content.me.transition !== undefined ? (
 					<>
 						<div className="setting">
-							<SelectEnum
+							<IntInput
 								label={'Transition: Rate'}
-								currentValue={obj.content.me.transitionSettings?.wipe?.rate}
-								options={AtemTransitionStyle}
+								currentValue={obj.content.me.transitionSettings?.wipe?.rate ?? DEFAULT_TRANSITION_RATE}
 								onChange={(v) => {
 									if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
 									if (!obj.content.me.transitionSettings.wipe)
@@ -76,7 +76,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									obj.content.me.transitionSettings.wipe.rate = v
 									onSave(obj)
 								}}
-								allowUndefined={true}
+								allowUndefined={false}
 							/>
 						</div>
 						{/* Note: There are more options that could be implemented here, feel free to submit a PR! */}
