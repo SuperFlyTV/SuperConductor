@@ -750,7 +750,6 @@ export const PartView: React.FC<{
 							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							sx={{ marginLeft: 'auto' }}
 							value="loop"
 							disabled={groupOrPartLocked}
 							selected={part.loop}
