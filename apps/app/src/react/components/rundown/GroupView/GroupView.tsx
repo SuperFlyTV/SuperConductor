@@ -20,7 +20,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
-import { MdLock, MdLockOpen, MdPlayArrow, MdStop } from 'react-icons/md'
+import { MdChevronRight, MdLock, MdLockOpen, MdPlayArrow, MdStop } from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -241,6 +241,11 @@ export const GroupView: React.FC<{
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
 	}
 
+	// Collapse button:
+	const handleCollapse = () => {
+		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -266,10 +271,17 @@ export const GroupView: React.FC<{
 		return (
 			<div
 				ref={wrapperRef}
-				className={classNames('group', { disabled: group.disabled })}
+				className={classNames('group', { disabled: group.disabled, collapsed: group.collapsed })}
 				data-drop-handler-id={handlerId}
 			>
 				<div className="group__header">
+					<div
+						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
+						title="Toggle Group collapse"
+					>
+						<MdChevronRight size={22} onClick={handleCollapse} />
+					</div>
+
 					{!editingGroupName && (
 						<div
 							className="title"
@@ -460,23 +472,25 @@ export const GroupView: React.FC<{
 						/>
 					</div>
 				</div>
-				<div className="group__content">
-					<div className="group__content__parts">
-						{group.parts.map((part) => (
-							<PartView
-								key={part.id}
-								rundownId={rundownId}
-								part={part}
-								parentGroup={group}
-								parentGroupIndex={groupIndex}
-								playhead={playhead}
-								mappings={mappings}
-							/>
-						))}
-					</div>
+				{!group.collapsed && (
+					<div className="group__content">
+						<div className="group__content__parts">
+							{group.parts.map((part) => (
+								<PartView
+									key={part.id}
+									rundownId={rundownId}
+									part={part}
+									parentGroup={group}
+									parentGroupIndex={groupIndex}
+									playhead={playhead}
+									mappings={mappings}
+								/>
+							))}
+						</div>
 
-					{!group.locked && <GroupOptions rundown={rundown} group={group} />}
-				</div>
+						{!group.locked && <GroupOptions rundown={rundown} group={group} />}
+					</div>
+				)}
 
 				<ConfirmationDialog
 					open={deleteConfirmationOpen}

@@ -14,6 +14,9 @@ export type Group = {
 	disabled?: boolean
 	locked?: boolean
 
+	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
+	collapsed?: boolean
+
 	parts: Part[]
 
 	/** Data related to the playout of the group */

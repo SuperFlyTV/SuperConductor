@@ -180,6 +180,9 @@ export class IPCServer implements IPCServerMethods {
 	toggleGroupLock(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
 		return this.invokeServerMethod('toggleGroupLock', data)
 	}
+	toggleGroupCollapse(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
+		return this.invokeServerMethod('toggleGroupCollapse', data)
+	}
 	refreshResources(): Promise<void> {
 		return this.invokeServerMethod('refreshResources')
 	}

@@ -1322,6 +1322,34 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.ToggleGroupDisable,
 		}
 	}
+	async toggleGroupCollapse(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult | null> {
+		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
+		const originalValue = group.collapsed
+
+		group.collapsed = arg.value
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.collapsed = originalValue
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
 	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 		const originalValue = group.locked
