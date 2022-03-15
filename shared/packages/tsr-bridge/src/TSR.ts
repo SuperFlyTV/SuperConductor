@@ -2,7 +2,8 @@ import _ from 'lodash'
 import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import { Atem, AtemConnectionStatus } from 'atem-connection'
+import { ResourceAny, ResourceType, AtemMe, CasparCGMedia, CasparCGTemplate } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 
 export class TSR {
@@ -222,6 +223,43 @@ export class TSR {
 				}
 
 				// new CasparCGDevice(deviceOptions)
+			} else if (deviceOptions.type === DeviceType.ATEM) {
+				const atem = new Atem()
+
+				if (deviceOptions.options?.host) {
+					atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
+				}
+
+				const refreshResources = async () => {
+					const resources: { [id: string]: ResourceAny } = {}
+
+					if (atem.status !== AtemConnectionStatus.CONNECTED || !atem.state) {
+						return Object.values(resources)
+					}
+
+					for (const me of atem.state.video.mixEffects) {
+						if (!me) {
+							continue
+						}
+						const resource: AtemMe = {
+							resourceType: ResourceType.ATEM_ME,
+							deviceId,
+							id: `me_${me.index}`,
+							index: me.index,
+							name: `ATEM ME ${me.index + 1}`,
+						}
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+
+					return Object.values(resources)
+				}
+
+				this.sideLoadedDevices[deviceId] = {
+					refreshResources: () => {
+						return refreshResources()
+					},
+				}
 			}
 		}
 	}

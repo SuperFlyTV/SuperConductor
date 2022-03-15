@@ -1,6 +1,7 @@
+import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
 
-export type ResourceAny = CasparCGAny
+export type ResourceAny = CasparCGAny | AtemAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -13,4 +14,6 @@ export enum ResourceType {
 
 	CASPARCG_MEDIA = 'CASPARCG_MEDIA',
 	CASPARCG_TEMPLATE = 'CASPARCG_TEMPLATE',
+
+	ATEM_ME = 'ATEM_ME',
 }

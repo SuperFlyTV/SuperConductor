@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { ParsedValueInput } from './parsedValueInput'
 export const TextInput: React.FC<
 	| {
@@ -16,13 +16,17 @@ export const TextInput: React.FC<
 			disabled?: boolean
 	  }
 > = (props) => {
+	const parse = useCallback((v: string) => v, [])
+
+	const stringify = useCallback((v: string | undefined) => v ?? '', [])
+
 	if (props.allowUndefined) {
 		return ParsedValueInput<string | undefined>(
 			props.currentValue,
 			props.onChange,
 			undefined,
-			(v) => v,
-			(v) => v || '',
+			parse,
+			stringify,
 			props.label,
 			'text',
 			props.disabled
@@ -32,8 +36,8 @@ export const TextInput: React.FC<
 			props.currentValue,
 			props.onChange,
 			'',
-			(v) => v,
-			(v) => v || '',
+			parse,
+			stringify,
 			props.label,
 			'text',
 			props.disabled

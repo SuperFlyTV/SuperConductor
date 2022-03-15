@@ -1,4 +1,9 @@
-import { DeviceType, TimelineContentTypeCasparCg, TSRTimelineObj } from 'timeline-state-resolver-types'
+import {
+	DeviceType,
+	TimelineContentTypeAtem,
+	TimelineContentTypeCasparCg,
+	TSRTimelineObj,
+} from 'timeline-state-resolver-types'
 import { parseMs } from '@shared/lib'
 
 export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
@@ -11,6 +16,10 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		} else {
 			// todo: for later:
 			// assertNever(obj.content)
+		}
+	} else if (obj.content.deviceType === DeviceType.ATEM) {
+		if (obj.content.type === TimelineContentTypeAtem.ME) {
+			label = `ATEM Input ${obj.content.me.input}`
 		}
 	} else {
 		// todo: for later:

@@ -18,6 +18,7 @@ import { DurationInput } from '../../../inputs/DurationInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { IntInput } from '../../../inputs/IntInput'
 import { TextInput } from '../../../inputs/TextInput'
+import { Link } from '@mui/material'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -31,8 +32,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 	const commonSettings: JSX.Element = (
 		<>
 			<div className="setting">
-				<label>Type</label>
 				<SelectEnum
+					label="Type"
 					currentValue={obj.content.type}
 					options={TimelineContentTypeCasparCg}
 					onChange={(newValue) => {
@@ -55,8 +56,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		<>
 			{showAll || obj.content.channelLayout !== undefined ? (
 				<div className="setting">
-					<label>channelLayout</label>
 					<TextInput
+						label="channelLayout"
 						currentValue={obj.content.channelLayout}
 						onChange={(v) => {
 							obj.content.channelLayout = v
@@ -75,8 +76,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		<>
 			{showAll || obj.content.videoFilter ? (
 				<div className="setting">
-					<label>VideoFilter</label>
 					<TextInput
+						label="VideoFilter"
 						currentValue={obj.content.videoFilter}
 						onChange={(v) => {
 							obj.content.videoFilter = v
@@ -88,8 +89,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 			) : null}
 			{showAll || obj.content.audioFilter ? (
 				<div className="setting">
-					<label>AudioFilter</label>
 					<TextInput
+						label="AudioFilter"
 						currentValue={obj.content.audioFilter}
 						onChange={(v) => {
 							obj.content.audioFilter = v
@@ -103,13 +104,13 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 	)
 
 	const showAllButton = showAll ? (
-		<a href="#" onClick={() => setShowAll(false)}>
+		<Link href="#" onClick={() => setShowAll(false)}>
 			Hide more settings
-		</a>
+		</Link>
 	) : (
-		<a href="#" onClick={() => setShowAll(true)}>
+		<Link href="#" onClick={() => setShowAll(true)}>
 			Show more settings
-		</a>
+		</Link>
 	)
 
 	const obj0 = obj
@@ -119,8 +120,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>Filename</label>
 					<TextInput
+						label="Filename"
 						currentValue={obj.content.file}
 						onChange={(v) => {
 							obj.content.file = v
@@ -130,8 +131,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Looping</label>
 					<BooleanInput
+						label="Looping"
 						currentValue={obj.content.loop}
 						onChange={(v) => {
 							obj.content.loop = v
@@ -146,8 +147,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				obj.content.length !== undefined ? (
 					<>
 						<div className="setting">
-							<label>Seek</label>
 							<DurationInput
+								label="Seek"
 								currentValue={obj.content.seek}
 								onChange={(v) => {
 									obj.content.seek = v
@@ -157,8 +158,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 							/>
 						</div>
 						<div className="setting">
-							<label>In Point (ie loop start point)</label>
 							<DurationInput
+								label="In Point (ie loop start point)"
 								currentValue={obj.content.inPoint}
 								onChange={(v) => {
 									obj.content.inPoint = v
@@ -168,8 +169,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 							/>
 						</div>
 						<div className="setting">
-							<label>Length (ie point of freeze/loop)</label>
 							<DurationInput
+								label="Length (ie point of freeze/loop)"
 								currentValue={obj.content.length}
 								onChange={(v) => {
 									obj.content.length = v
@@ -202,8 +203,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>URI</label>
 					<TextInput
+						label="URI"
 						currentValue={obj.content.uri}
 						onChange={(v) => {
 							obj.content.uri = v
@@ -223,8 +224,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>Input Type (eg &quot;decklink&quot;)</label>
 					<TextInput
+						label='Input Type (eg "decklink")'
 						currentValue={obj.content.inputType}
 						onChange={(v) => {
 							obj.content.inputType = v
@@ -234,8 +235,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Device Number</label>
 					<IntInput
+						label="Device Number"
 						currentValue={obj.content.device}
 						onChange={(v) => {
 							obj.content.device = v
@@ -245,8 +246,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Device Format</label>
 					<SelectEnum
+						label="Device Format"
 						currentValue={obj.content.deviceFormat}
 						options={ChannelFormat}
 						onChange={(v) => {
@@ -256,8 +257,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Filter</label>
 					<TextInput
+						label="Filter"
 						currentValue={obj.content.filter}
 						onChange={(v) => {
 							obj.content.filter = v
@@ -277,8 +278,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>Template Type</label>
 					<SelectEnum
+						label="Template Type"
 						currentValue={obj.content.templateType}
 						options={{ html: 'HTML', flash: 'Flash' }}
 						onChange={(v) => {
@@ -289,8 +290,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Name</label>
 					<TextInput
+						label="Name"
 						currentValue={obj.content.name}
 						onChange={(v) => {
 							obj.content.name = v
@@ -300,8 +301,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Data</label>
 					<TextInput
+						label="Data"
 						currentValue={obj.content.data}
 						onChange={(v) => {
 							obj.content.data = v
@@ -311,8 +312,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Send stop() on stop</label>
 					<BooleanInput
+						label="Send stop() on stop"
 						currentValue={obj.content.useStopCommand}
 						onChange={(v) => {
 							obj.content.useStopCommand = v
@@ -327,8 +328,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>URL</label>
 					<TextInput
+						label="URL"
 						currentValue={obj.content.url}
 						onChange={(v) => {
 							obj.content.url = v
@@ -345,8 +346,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>mappedLayer</label>
 					<TextInput
+						label="mappedLayer"
 						currentValue={obj.content.mappedLayer}
 						onChange={(v) => {
 							obj.content.mappedLayer = v
@@ -359,8 +360,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				{!obj.content.mappedLayer ? (
 					<>
 						<div className="setting">
-							<label>channel</label>
 							<IntInput
+								label="Channel"
 								currentValue={obj.content.channel}
 								onChange={(v) => {
 									obj.content.channel = v
@@ -370,8 +371,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 							/>
 						</div>
 						<div className="setting">
-							<label>layer</label>
 							<IntInput
+								label="Layer"
 								currentValue={obj.content.layer}
 								onChange={(v) => {
 									obj.content.layer = v
@@ -384,8 +385,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				) : null}
 
 				<div className="setting">
-					<label>mode</label>
 					<SelectEnum
+						label="Mode"
 						currentValue={obj.content.mode}
 						options={{
 							BACKGROUND: 'BACKGROUND',
@@ -399,8 +400,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Delay</label>
 					<DurationInput
+						label="Delay"
 						currentValue={obj.content.delay}
 						onChange={(v) => {
 							obj.content.delay = v
@@ -421,8 +422,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		settings = (
 			<>
 				<div className="setting">
-					<label>File name</label>
 					<TextInput
+						label="File name"
 						currentValue={obj.content.file}
 						onChange={(v) => {
 							obj.content.file = v
@@ -432,8 +433,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<label>Encoder Options</label>
 					<TextInput
+						label="Encoder Options"
 						currentValue={obj.content.encoderOptions}
 						onChange={(v) => {
 							obj.content.encoderOptions = v

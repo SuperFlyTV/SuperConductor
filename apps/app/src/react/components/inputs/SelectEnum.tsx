@@ -1,12 +1,14 @@
+import { MenuItem, TextField } from '@mui/material'
 import React from 'react'
 
 export const SelectEnum: React.FC<{
+	label: string
 	currentValue: any
 	options: { [key: string]: any }
 	onChange: (newValue: any) => void
 	allowUndefined?: boolean
 	defaultValue?: any
-}> = ({ currentValue, options, onChange, allowUndefined, defaultValue }) => {
+}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label }) => {
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -48,7 +50,12 @@ export const SelectEnum: React.FC<{
 	}
 
 	return (
-		<select
+		<TextField
+			select
+			margin="dense"
+			fullWidth
+			size="small"
+			label={label}
 			value={currentValue}
 			onChange={(e) => {
 				if (allowUndefined && e.target.value === '__undefined') {
@@ -62,11 +69,11 @@ export const SelectEnum: React.FC<{
 		>
 			{Object.entries(allOptions).map(([key, value]) => {
 				return (
-					<option key={key} value={key}>
+					<MenuItem key={key} value={key}>
 						{value.label}
-					</option>
+					</MenuItem>
 				)
 			})}
-		</select>
+		</TextField>
 	)
 }

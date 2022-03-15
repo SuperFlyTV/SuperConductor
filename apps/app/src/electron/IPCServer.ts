@@ -16,7 +16,14 @@ import {
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
-import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import {
+	TSRTimelineObj,
+	DeviceType,
+	TimelineContentTypeCasparCg,
+	TimelineObjAtemME,
+	TimelineContentTypeAtem,
+	AtemTransitionStyle,
+} from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
@@ -25,7 +32,7 @@ import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, deepClone } from '@shared/lib'
+import { assertNever, deepClone, literal } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
@@ -1124,6 +1131,23 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 			throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
+		} else if (resource.resourceType === ResourceType.ATEM_ME) {
+			obj = literal<TimelineObjAtemME>({
+				id: short.generate(),
+				layer: '', // set later,
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.ME,
+					me: {
+						input: 1,
+						transition: AtemTransitionStyle.CUT,
+					},
+				},
+			})
 		} else {
 			assertNever(resource)
 			// @ts-expect-error never

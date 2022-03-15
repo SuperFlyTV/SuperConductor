@@ -79,7 +79,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 			<div className="sidebar timeline-obj-sidebar">
 				{editing.timelineObjs.map((obj, index) => {
 					return (
-						<div key={obj.obj.id} className="edit-timeline-obj">
+						<div key={obj.obj.id}>
 							<div className="title">{descriptions[index].label}</div>
 
 							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}

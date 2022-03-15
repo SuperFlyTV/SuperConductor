@@ -55,7 +55,7 @@ export function ParsedValueInput<V>(
 				}
 			}}
 			size="small"
-			margin="normal"
+			margin="dense"
 			fullWidth
 			label={label}
 			value={value}

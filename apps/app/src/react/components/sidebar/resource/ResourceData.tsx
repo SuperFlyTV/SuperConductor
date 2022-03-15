@@ -30,6 +30,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Channels" value={resource.channels} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_ME) {
+		return (
+			<SidebarInfoGroup title="ATEM ME">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

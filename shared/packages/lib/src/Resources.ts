@@ -4,6 +4,7 @@ import { assertNever } from './lib'
 enum GeneralResourceType {
 	MEDIA = 'media',
 	TEMPLATE = 'template',
+	ME = 'me',
 	UNKNOWN = 'unknown',
 }
 
@@ -15,6 +16,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.TEMPLATE
 		case ResourceType.CASPARCG_SERVER:
 			return GeneralResourceType.UNKNOWN
+		case ResourceType.ATEM_ME:
+			return GeneralResourceType.ME
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

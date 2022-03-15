@@ -14,7 +14,7 @@ import { findPartInRundown } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { Button, Grid, MenuItem, TextField } from '@mui/material'
+import { Button, Divider, Grid, MenuItem, TextField, Typography } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
@@ -51,6 +51,19 @@ export const ResourceLibrary: React.FC = () => {
 		})
 	}, [resources, filterValue])
 
+	const resourcesByDeviceId = useMemo(() => {
+		const ret: { [key: string]: ResourceAny[] } = {}
+
+		for (const resource of filteredResources) {
+			if (!(resource.deviceId in ret)) {
+				ret[resource.deviceId] = []
+			}
+			ret[resource.deviceId].push(resource)
+		}
+
+		return ret
+	}, [filteredResources])
+
 	return (
 		<div className="sidebar media-library-sidebar">
 			<SidebarInfoGroup
@@ -81,63 +94,80 @@ export const ResourceLibrary: React.FC = () => {
 					}}
 				/>
 
-				{filteredResources
-					.map<[ResourceAny, JSX.Element]>((resource) => {
-						if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
-							return [
-								resource,
-								<>
-									<ResourceLibraryItemThumbnail resource={resource} />
-									<div className="resource__details">
-										<div className="resource__name" title={resource.name}>
-											{resource.name}
-										</div>
-										<div className="resource__attributes">
-											<div>{resource.type}</div>
-											<div style={{ textAlign: 'right' }}>{bytesToSize(resource.size)}</div>
-											<div style={{ textAlign: 'right' }}>
-												{formatDurationLabeled(resource.duration * 1000)}
-											</div>
-										</div>
-									</div>
-								</>,
-							]
-						} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-							return [
-								resource,
-								<>
-									<div className="resource__name">{resource.name}</div>
-								</>,
-							]
-						} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
-							return [resource, <></>]
-						} else {
-							assertNever(resource)
-							return [resource, <></>]
-						}
-					})
-					.map((d: [ResourceAny, JSX.Element]) => {
-						const resource: ResourceAny = d[0]
-						const child: JSX.Element = d[1]
+				{Object.entries(resourcesByDeviceId).map(([deviceId, resources]) => {
+					return (
+						<React.Fragment key={deviceId}>
+							<Typography variant="body2">{deviceId}</Typography>
+							<Divider />
+							{resources
+								.map<[ResourceAny, JSX.Element]>((resource) => {
+									if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
+										return [
+											resource,
+											<>
+												<ResourceLibraryItemThumbnail resource={resource} />
+												<div className="resource__details">
+													<div className="resource__name" title={resource.name}>
+														{resource.name}
+													</div>
+													<div className="resource__attributes">
+														<div>{resource.type}</div>
+														<div style={{ textAlign: 'right' }}>
+															{bytesToSize(resource.size)}
+														</div>
+														<div style={{ textAlign: 'right' }}>
+															{formatDurationLabeled(resource.duration * 1000)}
+														</div>
+													</div>
+												</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
+										return [resource, <></>]
+									} else if (resource.resourceType === ResourceType.ATEM_ME) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else {
+										assertNever(resource)
+										return [resource, <></>]
+									}
+								})
+								.map((d: [ResourceAny, JSX.Element]) => {
+									const resource: ResourceAny = d[0]
+									const child: JSX.Element = d[1]
 
-						return (
-							<React.Fragment key={resource.id}>
-								<ResourceLibraryItem
-									resource={resource}
-									selected={resource.id === selectedResourceId}
-									onClick={() => {
-										if (selectedResourceId === resource.id) {
-											setSelectedResourceId(undefined)
-										} else {
-											setSelectedResourceId(resource.id)
-										}
-									}}
-								>
-									{child}
-								</ResourceLibraryItem>
-							</React.Fragment>
-						)
-					})}
+									return (
+										<React.Fragment key={resource.id}>
+											<ResourceLibraryItem
+												resource={resource}
+												selected={resource.id === selectedResourceId}
+												onClick={() => {
+													if (selectedResourceId === resource.id) {
+														setSelectedResourceId(undefined)
+													} else {
+														setSelectedResourceId(resource.id)
+													}
+												}}
+											>
+												{child}
+											</ResourceLibraryItem>
+										</React.Fragment>
+									)
+								})}
+						</React.Fragment>
+					)
+				})}
 			</SidebarInfoGroup>
 
 			{selectedResource && (

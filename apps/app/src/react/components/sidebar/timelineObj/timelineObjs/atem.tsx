@@ -22,8 +22,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 		settings = (
 			<>
 				<div className="setting">
-					<label>Input</label>
 					<IntInput
+						label="Input"
 						currentValue={obj.content.me.input}
 						onChange={(v) => {
 							obj.content.me.input = v
@@ -33,8 +33,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					/>
 				</div>
 				<div className="setting">
-					<label>Transition</label>
 					<SelectEnum
+						label={'Transition'}
 						currentValue={obj.content.me.transition}
 						options={AtemTransitionStyle}
 						onChange={(v) => {
@@ -46,8 +46,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				</div>
 				{obj.content.me.transition === AtemTransitionStyle.MIX ? (
 					<div className="setting">
-						<label>Transition: Mix Rate</label>
 						<SelectEnum
+							label={'Transition: Mix Rate'}
 							currentValue={obj.content.me.transitionSettings?.mix?.rate}
 							options={AtemTransitionStyle}
 							onChange={(v) => {
@@ -64,8 +64,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				) : obj.content.me.transition !== undefined ? (
 					<>
 						<div className="setting">
-							<label>Transition: Rate</label>
 							<SelectEnum
+								label={'Transition: Rate'}
 								currentValue={obj.content.me.transitionSettings?.wipe?.rate}
 								options={AtemTransitionStyle}
 								onChange={(v) => {
@@ -92,8 +92,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 		settings = (
 			<>
 				<div className="setting">
-					<label>DSK onAir</label>
 					<BooleanInput
+						label="DSK onAir"
 						currentValue={obj.content.dsk.onAir}
 						onChange={(v) => {
 							obj.content.dsk.onAir = v
@@ -102,8 +102,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					/>
 				</div>
 				<div className="setting">
-					<label>DSK: Source Fill</label>
 					<IntInput
+						label="DSK: Source Fill"
 						currentValue={obj.content.dsk.sources?.fillSource || 0}
 						onChange={(v) => {
 							if (!obj.content.dsk.sources)
@@ -119,8 +119,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				</div>
 
 				<div className="setting">
-					<label>DSK: Source Cut (key)</label>
 					<IntInput
+						label="DSK: Source Cut (key)"
 						currentValue={obj.content.dsk.sources?.cutSource || 0}
 						onChange={(v) => {
 							if (!obj.content.dsk.sources)
@@ -143,8 +143,8 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 		settings = (
 			<>
 				<div className="setting">
-					<label>Input</label>
 					<IntInput
+						label="Input"
 						currentValue={obj.content.aux.input}
 						onChange={(v) => {
 							obj.content.aux.input = v
