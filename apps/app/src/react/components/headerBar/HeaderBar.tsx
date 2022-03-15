@@ -15,11 +15,10 @@ import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
-import { ConnectionStatus } from '../util/ConnectionStatus'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
-import { Tab } from './tabs/Tab'
-import { NewTabBtn } from './tabs/NewTabBtn'
+import { DeviceStatuses } from './deviceStatuses/DeviceStatuses'
+import { Tabs } from './tabs/Tabs'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -39,22 +38,7 @@ export const HeaderBar: React.FC<{
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
 
-	const appStore = store.appStore
 	const rundownsStore = store.rundownsStore
-
-	const handleSelect = (rundownId: string) => {
-		store.rundownsStore.setCurrentRundown(rundownId)
-	}
-
-	const handleClose = (rundownId: string) => {
-		serverAPI.closeRundown({ rundownId }).catch(handleError)
-		const nextRundown = rundownsStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
-		if (nextRundown) {
-			store.rundownsStore.setCurrentRundown(nextRundown.rundownId)
-		} else {
-			store.rundownsStore.setCurrentRundown(undefined)
-		}
-	}
 
 	const handleOpen = (rundownId: string) => {
 		serverAPI.openRundown({ rundownId }).catch(handleError)
@@ -81,62 +65,22 @@ export const HeaderBar: React.FC<{
 	}
 
 	return (
-		<>
-			{rundownsStore.openRundowns.map((rundown) => {
-				return (
-					<Tab
-						key={rundown.rundownId}
-						id={rundown.rundownId}
-						name={rundown.name}
-						selected={rundown.rundownId === rundownsStore.currentRundownId}
-						onClick={() => handleSelect(rundown.rundownId)}
-						onDoubleClick={() => {
-							setRundownToRename(rundown)
-							setRenameRundownOpen(true)
-						}}
-						onClose={(id) => handleClose(id)}
-					/>
-				)
-			})}
-
-			<NewTabBtn
-				onClick={() => {
+		<div className="header-bar">
+			<Tabs
+				onNewRundownClick={() => {
 					if (rundownsStore.closedRundowns && rundownsStore.closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
 					} else {
 						setNewRundownOpen(true)
 					}
 				}}
+				onTabDoubleClick={(rundown) => {
+					setRundownToRename(rundown)
+					setRenameRundownOpen(true)
+				}}
 			/>
 
-			<div className="device-statuses">
-				{Object.entries(appStore.bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
-					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
-						return (
-							<ConnectionStatus
-								key={`${bridgeId}_${deviceId}`}
-								label={deviceId}
-								tooltip={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
-								ok={bridgeStatus.connected && deviceStatus.ok}
-							/>
-						)
-					})
-				})}
-				{Object.entries(appStore.peripherals).map(([peripheralId, peripheral]) => {
-					const bridge = appStore.bridgeStatuses[peripheral.bridgeId]
-
-					const bridgeIsConnected = bridge && bridge.connected
-
-					return (
-						<ConnectionStatus
-							key={`${peripheralId}`}
-							label={peripheral.name}
-							tooltip={peripheral.status.connected ? 'Disconnected' : ''}
-							ok={bridgeIsConnected && peripheral.status.connected}
-						/>
-					)
-				})}
-			</div>
+			<DeviceStatuses />
 
 			<IconButton title="Open Preferences" aria-label="open preferences" onClick={onSettingsClick}>
 				<MdSettings />
@@ -297,6 +241,6 @@ export const HeaderBar: React.FC<{
 					)
 				}}
 			</Formik>
-		</>
+		</div>
 	)
 })

@@ -5,7 +5,7 @@ import { Bridge, BridgeDevice } from '../../../../models/project/Bridge'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
-import { ConnectionStatus } from '../../util/ConnectionStatus'
+import { ConnectionStatus } from '../../headerBar/deviceStatuses/ConnectionStatus'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535

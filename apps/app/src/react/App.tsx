@@ -19,7 +19,6 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
-import { HeaderBar } from './components/headerBar/HeaderBar'
 import { RundownContext } from './contexts/Rundown'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
@@ -36,8 +35,9 @@ import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
 import short from 'short-uuid'
 import CloseIcon from '@mui/icons-material/Close'
-import { store } from './mobx/store'
 import { observer } from 'mobx-react-lite'
+import { HeaderBar } from './components/headerBar/HeaderBar'
+import { store } from './mobx/store'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -362,9 +362,7 @@ export const App = observer(() => {
 						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
 							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
-									<div className="top-header">
-										<HeaderBar onSettingsClick={() => setSettingsOpen(true)} />
-									</div>
+									<HeaderBar onSettingsClick={() => setSettingsOpen(true)} />
 
 									{modifiedCurrentRundown ? (
 										<RundownContext.Provider value={modifiedCurrentRundown}>
