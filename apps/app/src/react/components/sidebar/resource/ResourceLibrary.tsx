@@ -1,6 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react'
 import { SidebarInfoGroup } from '../SidebarInfoGroup'
-import { ResourcesContext } from '../../../contexts/Resources'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { RundownContext } from '../../../contexts/Rundown'
 import { ProjectContext } from '../../../contexts/Project'
@@ -18,19 +17,22 @@ import { Button, Divider, Grid, MenuItem, TextField, Typography } from '@mui/mat
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
+import { store } from '../../../mobx/store'
+import { observer } from 'mobx-react-lite'
 
-export const ResourceLibrary: React.FC = () => {
+export const ResourceLibrary: React.FC = observer(() => {
 	const ipcServer = useContext(IPCServerContext)
-	const resources = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+
+	const resourcesStore = store.resourcesStore
 
 	const defaultPart = rundown.groups[0]?.parts[0] as Part | undefined
 	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
 
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
-	const selectedResource = selectedResourceId ? resources[selectedResourceId] : undefined
+	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
 
 	const [refreshing, setRefreshing] = useState(false)
 
@@ -38,10 +40,10 @@ export const ResourceLibrary: React.FC = () => {
 
 	const filteredResources = useMemo(() => {
 		if (filterValue.trim().length === 0) {
-			return Object.values(resources)
+			return Object.values(resourcesStore.resources)
 		}
 
-		return Object.values(resources).filter((resource) => {
+		return Object.values(resourcesStore.resources).filter((resource) => {
 			if ('name' in resource) {
 				const name: string = (resource as any).name
 				return name.toLowerCase().includes(filterValue.toLowerCase())
@@ -49,7 +51,7 @@ export const ResourceLibrary: React.FC = () => {
 
 			return false
 		})
-	}, [resources, filterValue])
+	}, [resourcesStore.resources, filterValue])
 
 	const resourcesByDeviceId = useMemo(() => {
 		const ret: { [key: string]: ResourceAny[] } = {}
@@ -261,7 +263,7 @@ export const ResourceLibrary: React.FC = () => {
 			)}
 		</div>
 	)
-}
+})
 
 function getAllPartsInRundown(rundown: Rundown): { part: Part; group: Group }[] {
 	const parts: { part: Part; group: Group }[] = []

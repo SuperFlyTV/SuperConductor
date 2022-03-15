@@ -295,6 +295,7 @@ export class StorageHandler extends EventEmitter {
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
 	}): void {
+		console.log('triggerUpdate')
 		if (updates.appData) {
 			this.appDataHasChanged = true
 			this.appDataNeedsWrite = true
@@ -305,6 +306,7 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.rundowns) {
 			for (const rundownId of Object.keys(updates.rundowns)) {
+				console.log('processing update of rundown:', rundownId)
 				this.rundownsHasChanged[rundownId] = true
 				this.rundownsNeedsWrite[rundownId] = true
 			}
@@ -453,6 +455,7 @@ export class StorageHandler extends EventEmitter {
 			for (const fileName of Object.keys(this.rundowns)) {
 				this.rundownsHasChanged[fileName] = true
 			}
+			this.emitEverything = false
 		}
 
 		if (this.appDataHasChanged) {
@@ -465,6 +468,7 @@ export class StorageHandler extends EventEmitter {
 			this.projectHasChanged = false
 		}
 		for (const fileName of Object.keys(this.rundownsHasChanged)) {
+			console.log('emitChanges for rundown:', fileName)
 			this.emit('rundown', fileName, this.getRundown(fileName))
 			delete this.rundownsHasChanged[fileName]
 		}

@@ -1,6 +1,3 @@
-import { BridgeStatus } from '../../../models/project/Bridge'
-import { Peripheral } from '../../../models/project/Peripheral'
-import classNames from 'classnames'
 import React, { useContext, useState } from 'react'
 import {
 	Button,
@@ -12,7 +9,7 @@ import {
 	IconButton,
 	Radio,
 } from '@mui/material'
-import { MdAdd, MdClose, MdSettings } from 'react-icons/md'
+import { MdSettings } from 'react-icons/md'
 import { Field, Form, Formik } from 'formik'
 import { TextField, RadioGroup } from 'formik-mui'
 import * as Yup from 'yup'
@@ -21,6 +18,8 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { ConnectionStatus } from '../util/ConnectionStatus'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { Tab } from './tabs/Tab'
+import { NewTabBtn } from './tabs/NewTabBtn'
 
 const newRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
@@ -30,11 +29,9 @@ const renameRundownValidationSchema = Yup.object({
 	name: Yup.string().label('Rundown Name').required(),
 })
 
-export const TopHeader: React.FC<{
-	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
-	peripherals: { [peripheralId: string]: Peripheral }
+export const HeaderBar: React.FC<{
 	onSettingsClick: () => void
-}> = observer(({ bridgeStatuses, peripherals, onSettingsClick }) => {
+}> = observer(({ onSettingsClick }) => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [openRundownOpen, setOpenRundownOpen] = useState(false)
@@ -42,19 +39,20 @@ export const TopHeader: React.FC<{
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
 
+	const appStore = store.appStore
 	const rundownsStore = store.rundownsStore
 
 	const handleSelect = (rundownId: string) => {
-		rundownsStore.setCurrentRundown(rundownId)
+		store.rundownsStore.setCurrentRundown(rundownId)
 	}
 
 	const handleClose = (rundownId: string) => {
 		serverAPI.closeRundown({ rundownId }).catch(handleError)
 		const nextRundown = rundownsStore.openRundowns.find((rd) => rd.rundownId !== rundownId)
 		if (nextRundown) {
-			rundownsStore.setCurrentRundown(nextRundown.rundownId)
+			store.rundownsStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
-			rundownsStore.setCurrentRundown(undefined)
+			store.rundownsStore.setCurrentRundown(undefined)
 		}
 	}
 
@@ -86,43 +84,22 @@ export const TopHeader: React.FC<{
 		<>
 			{rundownsStore.openRundowns.map((rundown) => {
 				return (
-					<div
+					<Tab
 						key={rundown.rundownId}
-						className={classNames('tab', {
-							'tab--selected': rundown.rundownId === rundownsStore.currentRundownId,
-						})}
-						title="Double-click to edit"
-						onClick={() => {
-							handleSelect(rundown.rundownId)
-						}}
+						id={rundown.rundownId}
+						name={rundown.name}
+						selected={rundown.rundownId === rundownsStore.currentRundownId}
+						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => {
 							setRundownToRename(rundown)
 							setRenameRundownOpen(true)
 						}}
-					>
-						{rundown.name}
-
-						<IconButton
-							color="error"
-							title="Close Rundown"
-							aria-label="close rundown"
-							onClick={(event) => {
-								handleClose(rundown.rundownId)
-								// onClose(rundown.rundownId)
-								event.stopPropagation()
-								event.preventDefault()
-							}}
-						>
-							<MdClose />
-						</IconButton>
-					</div>
+						onClose={(id) => handleClose(id)}
+					/>
 				)
 			})}
 
-			<IconButton
-				color="primary"
-				title="Create/Open Rundown"
-				aria-label="open or create new rundown"
+			<NewTabBtn
 				onClick={() => {
 					if (rundownsStore.closedRundowns && rundownsStore.closedRundowns.length > 0) {
 						setOpenRundownOpen(true)
@@ -130,12 +107,10 @@ export const TopHeader: React.FC<{
 						setNewRundownOpen(true)
 					}
 				}}
-			>
-				<MdAdd />
-			</IconButton>
+			/>
 
 			<div className="device-statuses">
-				{Object.entries(bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
+				{Object.entries(appStore.bridgeStatuses).map(([bridgeId, bridgeStatus]) => {
 					return Object.entries(bridgeStatus.devices).map(([deviceId, deviceStatus]) => {
 						return (
 							<ConnectionStatus
@@ -147,8 +122,8 @@ export const TopHeader: React.FC<{
 						)
 					})
 				})}
-				{Object.entries(peripherals).map(([peripheralId, peripheral]) => {
-					const bridge = bridgeStatuses[peripheral.bridgeId]
+				{Object.entries(appStore.peripherals).map(([peripheralId, peripheral]) => {
+					const bridge = appStore.bridgeStatuses[peripheral.bridgeId]
 
 					const bridgeIsConnected = bridge && bridge.connected
 
