@@ -66,11 +66,19 @@ const createWindow = (): void => {
 			try {
 				const result = await autoUpdater.checkForUpdatesAndNotify()
 				if (!result) {
-					await dialog.showMessageBox(win, {
-						type: 'error',
-						title: 'Error',
-						message: `There was an error when checking for the latest version of SuperConductor. Please try again later.`,
-					})
+					if (!app.isPackaged) {
+						await dialog.showMessageBox(win, {
+							type: 'error',
+							title: 'Error',
+							message: `Can't check updates when running in development mode.`,
+						})
+					} else {
+						await dialog.showMessageBox(win, {
+							type: 'error',
+							title: 'Error',
+							message: `There was an error when checking for the latest version of SuperConductor. Please try again later.`,
+						})
+					}
 				} else if (result.updateInfo && result.updateInfo.version === CURRENT_VERSION) {
 					await dialog.showMessageBox(win, {
 						type: 'info',
