@@ -56,9 +56,13 @@
 		.controls {
 			display: flex;
 			align-items: center;
+			flex-grow: 1;
+
+			& > * {
+				margin-right: 0.6rem;
+			}
 
 			.playback {
-				margin-right: 0.6rem;
 				flex-shrink: 0;
 
 				& > * {
@@ -73,24 +77,9 @@
 				}
 			}
 
-			.toggle {
-				flex-shrink: 0;
-				margin: 0 1rem;
-				display: flex;
-				align-items: center;
-
-				label {
-					margin: -0.5rem;
-					font-size: 1rem;
-				}
-
-				.toggle-label {
-					margin-left: 0.5rem;
-				}
-			}
-
 			.delete {
 				flex-shrink: 0;
+				margin-left: auto;
 			}
 		}
 	}
