@@ -24,6 +24,13 @@ import {
 	TimelineContentTypeAtem,
 	AtemTransitionStyle,
 	TimelineObjAtemDSK,
+	TimelineObjAtemAUX,
+	TimelineObjAtemSsrc,
+	TimelineObjAtemSsrcProps,
+	TimelineObjAtemMacroPlayer,
+	TimelineObjAtemAudioChannel,
+	TimelineObjAtemMediaPlayer,
+	MediaSourceType,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1166,6 +1173,160 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 							fillSource: 1,
 							cutSource: 2,
 						},
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_AUX) {
+			obj = literal<TimelineObjAtemAUX>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.AUX,
+					aux: {
+						input: 1,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
+			obj = literal<TimelineObjAtemSsrc>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.SSRC,
+					ssrc: {
+						boxes: [
+							{
+								enabled: true,
+								source: 0,
+								x: -758,
+								y: 425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: 758,
+								y: 425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: -758,
+								y: -425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: 758,
+								y: -425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+						],
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
+			obj = literal<TimelineObjAtemSsrcProps>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.SSRCPROPS,
+					ssrcProps: {
+						artPreMultiplied: true,
+						artFillSource: 0,
+						artCutSource: 0,
+						artOption: 0,
+						borderEnabled: false,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
+			obj = literal<TimelineObjAtemMacroPlayer>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.MACROPLAYER,
+					macroPlayer: {
+						macroIndex: 0,
+						isRunning: true,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
+			obj = literal<TimelineObjAtemAudioChannel>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.AUDIOCHANNEL,
+					audioChannel: {},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
+			obj = literal<TimelineObjAtemMediaPlayer>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.MEDIAPLAYER,
+					mediaPlayer: {
+						sourceType: MediaSourceType.Clip,
+						clipIndex: 0,
+						stillIndex: 0,
+						playing: true,
+						loop: false,
+						atBeginning: true,
+						clipFrame: 0,
 					},
 				},
 			})

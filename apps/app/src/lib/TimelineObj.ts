@@ -1,10 +1,11 @@
 import {
 	DeviceType,
+	MediaSourceType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { parseMs } from '@shared/lib'
+import { assertNever, parseMs } from '@shared/lib'
 
 export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	let label: string = obj.id
@@ -19,9 +20,29 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		}
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
-			label = `ATEM Input ${obj.content.me.input}`
+			label = `Input ${obj.content.me.input}`
 		} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
-			label = `ATEM Fill ${obj.content.dsk.sources?.fillSource} / Cut ${obj.content.dsk.sources?.cutSource}`
+			label = `Fill ${obj.content.dsk.sources?.fillSource} / Cut ${obj.content.dsk.sources?.cutSource}`
+		} else if (obj.content.type === TimelineContentTypeAtem.AUX) {
+			label = `Input ${obj.content.aux.input}`
+		} else if (obj.content.type === TimelineContentTypeAtem.SSRC) {
+			label = `SSrc Box`
+		} else if (obj.content.type === TimelineContentTypeAtem.SSRCPROPS) {
+			label = `SSrc Props`
+		} else if (obj.content.type === TimelineContentTypeAtem.MACROPLAYER) {
+			label = `Macro ${obj.content.macroPlayer.macroIndex}`
+		} else if (obj.content.type === TimelineContentTypeAtem.AUDIOCHANNEL) {
+			label = `Audio Channel Props`
+		} else if (obj.content.type === TimelineContentTypeAtem.MEDIAPLAYER) {
+			if (obj.content.mediaPlayer.sourceType === MediaSourceType.Clip) {
+				label = `Clip ${obj.content.mediaPlayer.clipIndex}`
+			} else if (obj.content.mediaPlayer.sourceType === MediaSourceType.Still) {
+				label = `Still ${obj.content.mediaPlayer.stillIndex}`
+			} else {
+				assertNever(obj.content.mediaPlayer.sourceType)
+			}
+		} else {
+			assertNever(obj.content)
 		}
 	} else {
 		// todo: for later:

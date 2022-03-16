@@ -147,6 +147,48 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">{resource.name}</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.ATEM_AUX) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.name}</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

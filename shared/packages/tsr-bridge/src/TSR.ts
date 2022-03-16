@@ -3,7 +3,20 @@ import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
-import { ResourceAny, ResourceType, AtemMe, AtemDsk, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	AtemMe,
+	AtemDsk,
+	CasparCGMedia,
+	CasparCGTemplate,
+	AtemAudioChannel,
+	AtemAux,
+	AtemMacroPlayer,
+	AtemMediaPlayer,
+	AtemSsrc,
+	AtemSsrcProps,
+} from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 
 export class TSR {
@@ -284,6 +297,118 @@ export class TSR {
 						id: `dsk_${i}`,
 						index: i,
 						name: `ATEM DSK ${i + 1}`,
+					}
+					const id = `${resource.deviceId}_${resource.id}`
+					resources[id] = resource
+				}
+
+				for (let i = 0; i < atem.state.video.auxilliaries.length; i++) {
+					const aux = atem.state.video.auxilliaries[i]
+					if (typeof aux === 'undefined') {
+						continue
+					}
+
+					const resource: AtemAux = {
+						resourceType: ResourceType.ATEM_AUX,
+						deviceId,
+						id: `aux_${i}`,
+						index: i,
+						name: `ATEM AUX ${i + 1}`,
+					}
+					const id = `${resource.deviceId}_${resource.id}`
+					resources[id] = resource
+				}
+
+				for (let i = 0; i < atem.state.video.superSources.length; i++) {
+					const ssrc = atem.state.video.superSources[i]
+					if (!ssrc) {
+						continue
+					}
+
+					{
+						const resource: AtemSsrc = {
+							resourceType: ResourceType.ATEM_SSRC,
+							deviceId,
+							id: `ssrc_${i}`,
+							index: i,
+							name: `ATEM SuperSource ${i + 1}`,
+						}
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+
+					{
+						const resource: AtemSsrcProps = {
+							resourceType: ResourceType.ATEM_SSRC_PROPS,
+							deviceId,
+							id: `ssrc_props_${i}`,
+							index: i,
+							name: `ATEM SuperSource ${i + 1} Props`,
+						}
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+				}
+
+				if (atem.state.macro.macroPlayer) {
+					const resource: AtemMacroPlayer = {
+						resourceType: ResourceType.ATEM_MACRO_PLAYER,
+						deviceId,
+						id: `macro_player`,
+						name: 'ATEM Macro Player',
+					}
+					const id = `${resource.deviceId}_${resource.id}`
+					resources[id] = resource
+				}
+
+				if (atem.state.fairlight) {
+					for (const inputNumber in atem.state.fairlight.inputs) {
+						const input = atem.state.fairlight.inputs[inputNumber]
+						if (!input) {
+							continue
+						}
+
+						const resource: AtemAudioChannel = {
+							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
+							deviceId,
+							id: `audio_channel_${inputNumber}`,
+							index: parseInt(inputNumber, 10),
+							name: `ATEM Audio Channel ${inputNumber}`,
+						}
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+				} else if (atem.state.audio) {
+					for (const channelNumber in atem.state.audio.channels) {
+						const channel = atem.state.audio.channels[channelNumber]
+						if (!channel) {
+							continue
+						}
+
+						const resource: AtemAudioChannel = {
+							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
+							deviceId,
+							id: `audio_channel_${channelNumber}`,
+							index: parseInt(channelNumber, 10),
+							name: `ATEM Audio Channel ${channelNumber}`,
+						}
+						const id = `${resource.deviceId}_${resource.id}`
+						resources[id] = resource
+					}
+				}
+
+				for (let i = 0; i < atem.state.media.players.length; i++) {
+					const mp = atem.state.media.players[i]
+					if (!mp) {
+						continue
+					}
+
+					const resource: AtemMediaPlayer = {
+						resourceType: ResourceType.ATEM_MEDIA_PLAYER,
+						deviceId,
+						id: `media_player_${i}`,
+						index: i,
+						name: `ATEM Media Player ${i + 1}`,
 					}
 					const id = `${resource.deviceId}_${resource.id}`
 					resources[id] = resource

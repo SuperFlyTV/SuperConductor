@@ -6,6 +6,12 @@ enum GeneralResourceType {
 	TEMPLATE = 'template',
 	ME = 'me',
 	DSK = 'dsk',
+	AUX = 'aux',
+	SSRC = 'ssrc',
+	SSRC_PROPS = 'ssrcProps',
+	MACRO_PLAYER = 'macroPlayer',
+	AUDIO_CHANNEL = 'audioChan',
+	MEDIA_PLAYER = 'mp',
 	UNKNOWN = 'unknown',
 }
 
@@ -21,6 +27,18 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.ME
 		case ResourceType.ATEM_DSK:
 			return GeneralResourceType.DSK
+		case ResourceType.ATEM_AUX:
+			return GeneralResourceType.AUX
+		case ResourceType.ATEM_SSRC:
+			return GeneralResourceType.SSRC
+		case ResourceType.ATEM_SSRC_PROPS:
+			return GeneralResourceType.SSRC_PROPS
+		case ResourceType.ATEM_MACRO_PLAYER:
+			return GeneralResourceType.MACRO_PLAYER
+		case ResourceType.ATEM_AUDIO_CHANNEL:
+			return GeneralResourceType.AUDIO_CHANNEL
+		case ResourceType.ATEM_MEDIA_PLAYER:
+			return GeneralResourceType.MEDIA_PLAYER
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

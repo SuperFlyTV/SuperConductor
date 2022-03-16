@@ -16,4 +16,28 @@
 	&.dsk {
 		background: $downstreamKeyerLayerColor;
 	}
+
+	&.aux {
+		background: $auxiliaryLayerColor;
+	}
+
+	&.ssrc {
+		background: $superSourceLayerColor;
+	}
+
+	&.ssrcProps {
+		background: $superSourcePropsLayerColor;
+	}
+
+	&.macroPlayer {
+		background: $macroPlayerLayerColor;
+	}
+
+	&.audioChan {
+		background: $audioLayerColor;
+	}
+
+	&.mp {
+		background: $mediaPlayerLayerColor;
+	}
 }

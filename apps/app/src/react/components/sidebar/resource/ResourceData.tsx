@@ -42,6 +42,42 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Index" value={resource.index} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUX) {
+		return (
+			<SidebarInfoGroup title="ATEM AUX">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
+		return (
+			<SidebarInfoGroup title="ATEM SuperSource">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
+		return (
+			<SidebarInfoGroup title="ATEM SuperSource Props">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
+		return (
+			<SidebarInfoGroup title="ATEM Macro Player">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
+		return (
+			<SidebarInfoGroup title="ATEM Audio Channel">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
+		return (
+			<SidebarInfoGroup title="ATEM Media Player">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null
