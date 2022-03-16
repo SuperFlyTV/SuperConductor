@@ -4,6 +4,8 @@ import { MdClose } from 'react-icons/md'
 import { TabLeftEdge } from './TabLeftEdge'
 import { TabRightEdge } from './TabRightEdge'
 
+import './tab.scss'
+
 export const Tab: React.FC<{
 	id: string
 	name: string

@@ -9,9 +9,7 @@ import { observer } from 'mobx-react-lite'
 import { DeviceStatuses } from './deviceStatuses/DeviceStatuses'
 import { Tabs } from './tabs/Tabs'
 
-const renameRundownValidationSchema = Yup.object({
-	name: Yup.string().label('Rundown Name').required(),
-})
+import './headerBar.scss'
 
 export const HeaderBar: React.FC = observer(() => {
 	const serverAPI = useContext(IPCServerContext)
@@ -41,7 +39,9 @@ export const HeaderBar: React.FC = observer(() => {
 			{/* Rename Rundown dialog */}
 			<Formik
 				initialValues={{ name: rundownToRename?.name ?? '' }}
-				validationSchema={renameRundownValidationSchema}
+				validationSchema={Yup.object({
+					name: Yup.string().label('Rundown Name').required(),
+				})}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
 					if (rundownToRename) {

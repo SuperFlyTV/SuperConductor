@@ -8,17 +8,20 @@ import { NewRundownOption } from './NewRundownOption'
 import * as Yup from 'yup'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { TextField } from 'formik-mui'
+import { store } from '../../../mobx/store'
 
 import './newRundownPage.scss'
 
 export const NewRundownPage = () => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const guiStore = store.guiStore
 
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
 	const handleCreateNewRundown = (rundownName: string) => {
 		serverAPI.newRundown({ name: rundownName }).catch(handleError)
+		guiStore.currentlyActiveTabSection = 'rundown'
 	}
 
 	const handleCloseCreateNewRundown = () => setNewRundownOpen(false)
@@ -48,7 +51,6 @@ export const NewRundownPage = () => {
 				})}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					console.log('Form', values)
 					handleCreateNewRundown(values.name)
 					handleCloseCreateNewRundown()
 					actions.setSubmitting(false)
@@ -74,7 +76,13 @@ export const NewRundownPage = () => {
 								</Form>
 							</DialogContent>
 							<DialogActions>
-								<Button variant="contained" onClick={handleCloseCreateNewRundown}>
+								<Button
+									variant="contained"
+									onClick={() => {
+										formik.resetForm()
+										handleCloseCreateNewRundown()
+									}}
+								>
 									Cancel
 								</Button>
 								<Button

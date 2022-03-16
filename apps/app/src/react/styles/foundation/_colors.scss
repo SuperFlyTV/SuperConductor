@@ -1,3 +1,9 @@
+/**
+ *
+ * All colors used for the SuperConductor UI
+ *
+ */
+
 $accentDarkBg: #d45f05;
 $accentBg: #e96703;
 $accentLightBg: #fa7713;
@@ -24,42 +30,15 @@ $lightRedColor: #d44e4e;
 
 $lightGreenColor: #5afc3e;
 
-$mainFont: 'Barlow', sans-serif;
 $partOutlineColor: #b0b0b0;
-$partTabWidth: 2.2rem;
 $partDragHandleColor: #2d3340;
-$partDragIndicatorSize: 8px;
 $partMetaColor: #2d3340;
 
-$layerHeight: 2.5rem;
 $emptyLayerColor: #1b1e26;
-
-$borderRadius: 0.3rem;
-
-$sidebar-padding: 1rem;
-
-$default-transition: all 150ms ease;
 
 $deviceOfflineColor: #ff0000;
 $deviceOnlineColor: #148c00;
 
-$timelineObjHandleWidth: 8px;
-
-html {
-	font-size: 62.5%;
-}
-
-body {
-	margin: 0;
-	padding: 0;
-	font-size: 1.6rem;
-	color: white;
-	background-color: black;
-	font-family: $mainFont;
-}
-
-input,
-button,
-textarea {
-	font-family: $mainFont;
-}
+$headerTabNormalBg: #505050;
+$headerTabHoverBg: #616161;
+$headerTabActiveBg: #111111;

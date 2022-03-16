@@ -1,4 +1,4 @@
-@import './globals.scss';
+@import './global.scss';
 
 .app {
 	position: fixed;
@@ -58,7 +58,6 @@ input[type='search']::-webkit-search-cancel-button {
 @import './layer.scss';
 @import './countDownHead.scss';
 @import './playHead.scss';
-@import './top-header.scss';
 @import './resourceLibrary.scss';
 @import './timeline-obj.scss';
 @import './infoGroup.scss';

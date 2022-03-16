@@ -355,6 +355,7 @@ export const App = observer(() => {
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
 									<HeaderBar />
 
+									{/* TODO - refactor */}
 									{store.guiStore.currentlyActiveTabSection === 'new-rundown' ? (
 										<NewRundownPage />
 									) : modifiedCurrentRundown ? (

@@ -3,8 +3,10 @@ import React, { useContext } from 'react'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { store } from '../../../mobx/store'
-import { NewTabBtn } from './NewTabBtn'
-import { Tab } from './Tab'
+import { NewTabBtn } from './newTabBtn/NewTabBtn'
+import { Tab } from './tab/Tab'
+
+import './tabs.scss'
 
 export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer((props) => {
 	const rundownsStore = store.rundownsStore
