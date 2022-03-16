@@ -9,7 +9,7 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, FormControlLabel, Switch, TextField, ToggleButton } from '@mui/material'
+import { Button, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
@@ -20,7 +20,16 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
-import { MdChevronRight, MdLock, MdLockOpen, MdPlayArrow, MdStop } from 'react-icons/md'
+import {
+	MdChevronRight,
+	MdLock,
+	MdLockOpen,
+	MdLooksOne,
+	MdPlayArrow,
+	MdPlaylistPlay,
+	MdStop,
+	MdRepeat,
+} from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -365,6 +374,7 @@ export const GroupView: React.FC<{
 						</div>
 
 						<ToggleButton
+							title={group.disabled ? 'Enable Group' : 'Disable Group'}
 							value="disabled"
 							selected={group.disabled}
 							size="small"
@@ -381,6 +391,7 @@ export const GroupView: React.FC<{
 							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
 						<ToggleButton
+							title={group.locked ? 'Unlock Group' : 'Lock Group'}
 							value="locked"
 							selected={group.locked}
 							size="small"
@@ -397,66 +408,63 @@ export const GroupView: React.FC<{
 							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
 
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime && group.autoPlay}
-										onChange={() => {
-											ipcServer
-												.toggleGroupAutoplay({
-													rundownId,
-													groupId: group.id,
-													value: !group.autoPlay,
-												})
-												.catch(handleError)
-										}}
-									/>
-								}
-								label="Auto-step"
-								labelPlacement="start"
-								disabled={!canModifyAutoPlay}
-							/>
-						</div>
+						<ToggleButton
+							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
+							value="loop"
+							selected={group.oneAtATime && group.loop}
+							size="small"
+							disabled={!canModifyLoop}
+							onChange={() => {
+								ipcServer
+									.toggleGroupLoop({
+										rundownId,
+										groupId: group.id,
+										value: !group.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdRepeat size={18} />
+						</ToggleButton>
 
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime && group.loop}
-										onChange={() => {
-											ipcServer
-												.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
-												.catch(handleError)
-										}}
-									/>
-								}
-								label="Loop"
-								labelPlacement="start"
-								disabled={!canModifyLoop}
-							/>
-						</div>
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime}
-										onChange={() => {
-											ipcServer
-												.toggleGroupOneAtATime({
-													rundownId,
-													groupId: group.id,
-													value: !group.oneAtATime,
-												})
-												.catch(console.error)
-										}}
-									/>
-								}
-								label="One-at-a-time"
-								labelPlacement="start"
-								disabled={!canModifyOneAtATime}
-							/>
-						</div>
+						<ToggleButton
+							title={group.oneAtATime ? 'Disable One-at-a-time' : 'Enable One-at-a-time'}
+							value="one-at-a-time"
+							selected={group.oneAtATime}
+							size="small"
+							disabled={!canModifyOneAtATime}
+							onChange={() => {
+								ipcServer
+									.toggleGroupOneAtATime({
+										rundownId,
+										groupId: group.id,
+										value: !group.oneAtATime,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdLooksOne size={22} />
+						</ToggleButton>
+
+						<ToggleButton
+							title={group.autoPlay ? 'Disable Auto-step' : 'Enable Auto-step'}
+							value="auto-step"
+							selected={group.oneAtATime && group.autoPlay}
+							size="small"
+							disabled={!canModifyAutoPlay}
+							onChange={() => {
+								ipcServer
+									.toggleGroupAutoplay({
+										rundownId,
+										groupId: group.id,
+										value: !group.autoPlay,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdPlaylistPlay size={22} />
+						</ToggleButton>
+
 						<TrashBtn
 							className="delete"
 							disabled={group.locked}
