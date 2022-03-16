@@ -4,7 +4,7 @@ import { Bridge as BridgeType, BridgeStatus } from '../../../models/project/Brid
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
-import { ConnectionStatus } from '../util/ConnectionStatus'
+import { ConnectionStatus } from '../headerBar/deviceStatuses/ConnectionStatus'
 import { DeviceList } from './devices/DeviceList'
 
 interface IBridgeProps {

@@ -1,6 +1,8 @@
 import React from 'react'
 import { MdAdd } from 'react-icons/md'
 
+import './newTabBtn.scss'
+
 export const NewTabBtn: React.FC<{ onClick: () => void }> = (props) => {
 	return (
 		<button

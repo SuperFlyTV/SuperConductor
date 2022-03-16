@@ -1,0 +1,19 @@
+@import 'base/reset';
+@import 'foundation/all';
+
+html {
+	font-size: 62.5%;
+}
+
+body {
+	font-size: 1.6rem;
+	color: white;
+	background-color: black;
+	font-family: $mainFont;
+}
+
+input,
+button,
+textarea {
+	font-family: $mainFont;
+}
