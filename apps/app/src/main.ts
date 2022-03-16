@@ -21,6 +21,7 @@ const createWindow = (): void => {
 			nodeIntegration: true,
 			contextIsolation: false,
 		},
+		title: 'SuperConductor',
 	})
 
 	if (appData.windowPosition.x !== undefined) {
