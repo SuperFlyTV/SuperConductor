@@ -26,14 +26,16 @@
 		grid-area: top;
 		background-color: $topheaderBg;
 	}
-	ž > .main-area {
+	> .main-area {
 		grid-area: main;
 		background: $mainBg;
+		overflow: auto;
 	}
 	> .side-bar {
 		grid-area: sidebar;
 		background-color: $sidebarBg;
 		width: 30rem;
+		overflow: auto;
 	}
 
 	*:not(input) {
