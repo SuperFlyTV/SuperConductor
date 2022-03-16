@@ -71,16 +71,22 @@ export class TimedPlayerThingy {
 		const bridgeHandler = new BridgeHandler(this.session, this.storage, {
 			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
 				// Added/Updated:
-				const newResouceIds = new Set<string>()
+				const newResourceIds = new Set<string>()
 				for (const resource of resources) {
-					newResouceIds.add(resource.id)
-					if (!_.isEqual(this.session.getResource(resource.id), resource)) {
-						this.session.updateResource(resource.id, resource)
+					/**
+					 * Pairs the resourceId with the deviceId to help ensure uniqueness,
+					 * because resourceIds are not globally unique -- they're only
+					 * unique to their corresponding device.
+					 */
+					const compoundId = `${deviceId}_${resource.id}`
+					newResourceIds.add(compoundId)
+					if (!_.isEqual(this.session.getResource(compoundId), resource)) {
+						this.session.updateResource(compoundId, resource)
 					}
 				}
 				// Removed:
 				for (const id of this.session.getResourceIds(deviceId)) {
-					if (!newResouceIds.has(id)) this.session.updateResource(id, null)
+					if (!newResourceIds.has(id)) this.session.updateResource(id, null)
 				}
 			},
 			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {
