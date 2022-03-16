@@ -195,6 +195,7 @@
 			white-space: nowrap;
 			min-width: 0;
 			flex-shrink: 1;
+			box-sizing: content-box;
 
 			> span {
 				min-width: 0;
