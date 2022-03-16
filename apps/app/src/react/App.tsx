@@ -22,8 +22,6 @@ import { ProjectContext } from './contexts/Project'
 import { RundownContext } from './contexts/Rundown'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
 import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
-import { Settings } from './components/settings/Settings'
-import { Dialog, AppBar, IconButton, Toolbar, Typography } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
@@ -34,10 +32,11 @@ import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
 import short from 'short-uuid'
-import CloseIcon from '@mui/icons-material/Close'
 import { observer } from 'mobx-react-lite'
 import { HeaderBar } from './components/headerBar/HeaderBar'
 import { store } from './mobx/store'
+import { ProjectPage } from './components/pages/projectPage/ProjectPage'
+import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -46,7 +45,6 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
-	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
@@ -69,9 +67,6 @@ export const App = observer(() => {
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				console.log(activeTriggersToString(peripheralTriggers))
 				triggers.setPeripheralTriggers(peripheralTriggers)
-			},
-			openSettings: () => {
-				setSettingsOpen(true)
 			},
 		})
 
@@ -200,10 +195,6 @@ export const App = observer(() => {
 	useEffect(() => {
 		sorensen.init().catch(console.error)
 	}, [])
-
-	const handleSettingsClose = () => {
-		setSettingsOpen(false)
-	}
 
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
 		if (!rundownsStore.currentRundown) {
@@ -362,9 +353,11 @@ export const App = observer(() => {
 						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
 							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
-									<HeaderBar onSettingsClick={() => setSettingsOpen(true)} />
+									<HeaderBar />
 
-									{modifiedCurrentRundown ? (
+									{store.guiStore.currentlyActiveTabSection === 'new-rundown' ? (
+										<NewRundownPage />
+									) : modifiedCurrentRundown ? (
 										<RundownContext.Provider value={modifiedCurrentRundown}>
 											<div className="main-area">
 												<RundownView mappings={project.mappings} />
@@ -374,32 +367,8 @@ export const App = observer(() => {
 											</div>
 										</RundownContext.Provider>
 									) : (
-										<div>Loading...</div>
+										<ProjectPage project={project} />
 									)}
-
-									<Dialog
-										open={settingsOpen}
-										onClose={handleSettingsClose}
-										fullScreen
-										className="settings-dialog"
-									>
-										<AppBar position="sticky">
-											<Toolbar>
-												<IconButton
-													edge="start"
-													color="inherit"
-													onClick={handleSettingsClose}
-													aria-label="close"
-												>
-													<CloseIcon />
-												</IconButton>
-												<Typography sx={{ ml: 2, flex: 1 }} variant="h5" component="div">
-													Preferences
-												</Typography>
-											</Toolbar>
-										</AppBar>
-										<Settings project={project} />
-									</Dialog>
 								</div>
 							</ErrorHandlerContext.Provider>
 						</TimelineObjectMoveContext.Provider>

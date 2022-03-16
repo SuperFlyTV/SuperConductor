@@ -2,7 +2,7 @@
 
 $normalBg: #505050;
 $hoverBg: #616161;
-$selectedBg: #111111;
+$activeBg: #111111;
 
 .header-bar {
 	display: flex;
@@ -11,6 +11,7 @@ $selectedBg: #111111;
 	.tabs {
 		display: flex;
 		align-items: flex-end;
+		padding-top: 2rem;
 
 		.tab {
 			display: flex;
@@ -19,13 +20,13 @@ $selectedBg: #111111;
 			margin-right: 0.3rem;
 			position: relative;
 
-			&.selected {
+			&.active {
 				.label,
 				.close {
-					background-color: $selectedBg;
+					background-color: $activeBg;
 				}
 				.tab-edge {
-					fill: $selectedBg;
+					fill: $activeBg;
 				}
 			}
 
@@ -33,7 +34,7 @@ $selectedBg: #111111;
 				display: block;
 			}
 
-			&:hover:not(&.selected) {
+			&:hover:not(&.active) {
 				.label,
 				.close {
 					background-color: $hoverBg;
@@ -46,10 +47,9 @@ $selectedBg: #111111;
 			.label {
 				font-size: 1.2rem;
 				display: flex;
-				align-items: center;
-				justify-content: center;
-				padding: 0 1rem;
+				padding: 0 0.7rem;
 				background-color: $normalBg;
+				min-width: 7rem;
 			}
 			.tab-edge {
 				fill: $normalBg;

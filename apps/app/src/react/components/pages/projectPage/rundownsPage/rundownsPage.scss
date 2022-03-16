@@ -1,0 +1,14 @@
+.rundowns-page {
+	.rundown {
+		display: flex;
+		align-items: center;
+		width: 100%;
+
+		.label {
+			flex-grow: 1;
+		}
+
+		.controls {
+		}
+	}
+}

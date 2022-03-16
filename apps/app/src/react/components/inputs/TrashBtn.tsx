@@ -19,7 +19,7 @@ export const TrashBtn = (props: PropsType) => {
 			title="Delete"
 			disabled={props.disabled}
 		>
-			<BsTrash size={14} />
+			<BsTrash size={12} />
 		</Button>
 	)
 }

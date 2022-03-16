@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useMemo } from 'react'
 import { Bridge as BridgeType, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
-import { Button, Divider, Typography, FormControlLabel, Switch } from '@mui/material'
+import { Button, Typography, FormControlLabel, Switch } from '@mui/material'
 import { Bridge } from './Bridge'
 import { literal } from '@shared/lib'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
@@ -64,11 +64,6 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 
 	return (
 		<>
-			<Typography variant="h6" marginTop="3rem">
-				Bridges
-			</Typography>
-			<Divider />
-
 			<FormControlLabel
 				control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
 				label="Enable internal bridge"

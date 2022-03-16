@@ -7,7 +7,7 @@ import { TabRightEdge } from './TabRightEdge'
 export const Tab: React.FC<{
 	id: string
 	name: string
-	selected?: boolean
+	active?: boolean
 	onClick: () => void
 	onDoubleClick?: () => void
 	onClose?: (id: string) => void
@@ -16,7 +16,7 @@ export const Tab: React.FC<{
 	return (
 		<div
 			className={classNames('tab', {
-				selected: props.selected,
+				active: props.active,
 			})}
 			title="Double-click to edit"
 			onClick={props.onClick}
