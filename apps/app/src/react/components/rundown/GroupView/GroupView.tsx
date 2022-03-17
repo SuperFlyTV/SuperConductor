@@ -552,7 +552,10 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					const { partId } = await ipcServer.newPart({
 						rundownId: rundown.id,
 						groupId: group.id,
-						name: droppedItem.resource.id,
+						name:
+							'name' in droppedItem.resource
+								? (droppedItem.resource as any).name
+								: droppedItem.resource.id,
 					})
 
 					await ipcServer.addResourceToTimeline({
