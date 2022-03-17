@@ -44,4 +44,8 @@
 	&.CURRENT_SCENE {
 		background: $currentSceneLayerColor;
 	}
+
+	&.CURRENT_TRANSITION {
+		background: $currentTransitionLayerColor;
+	}
 }

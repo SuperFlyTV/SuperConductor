@@ -193,7 +193,14 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">Scene: {resource.name}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Transition: {resource.name}</div>
 											</>,
 										]
 									} else {

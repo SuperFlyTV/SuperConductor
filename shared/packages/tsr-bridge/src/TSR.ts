@@ -18,6 +18,7 @@ import {
 	AtemSsrc,
 	AtemSsrcProps,
 	OBSScene,
+	OBSTransition,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 
@@ -451,6 +452,17 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_scene_${scene.name}`,
 						name: scene.name,
+					}
+					resources[resource.id] = resource
+				}
+
+				const { transitions } = await obs.send('GetTransitionList')
+				for (const transition of transitions) {
+					const resource: OBSTransition = {
+						resourceType: ResourceType.OBS_TRANSITION,
+						deviceId,
+						id: `${deviceId}_transition_${transition.name}`,
+						name: transition.name,
 					}
 					resources[resource.id] = resource
 				}

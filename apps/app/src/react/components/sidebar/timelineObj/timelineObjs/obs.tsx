@@ -1,5 +1,10 @@
 import React from 'react'
-import { TimelineContentTypeOBS, TimelineObjOBSAny, TimelineObjOBSCurrentScene } from 'timeline-state-resolver-types'
+import {
+	TimelineContentTypeOBS,
+	TimelineObjOBSAny,
+	TimelineObjOBSCurrentScene,
+	TimelineObjOBSCurrentTransition,
+} from 'timeline-state-resolver-types'
 import { TextInput } from '../../../inputs/TextInput'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 
@@ -17,6 +22,23 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 						currentValue={obj.content.sceneName}
 						onChange={(v) => {
 							obj.content.sceneName = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+					/>
+				</div>
+			</>
+		)
+	} else if (obj.content.type === TimelineContentTypeOBS.CURRENT_TRANSITION) {
+		const obj = obj0 as TimelineObjOBSCurrentTransition
+		settings = (
+			<>
+				<div className="setting">
+					<TextInput
+						label="Transition Name"
+						currentValue={obj.content.transitionName}
+						onChange={(v) => {
+							obj.content.transitionName = v
 							onSave(obj)
 						}}
 						allowUndefined={false}

@@ -84,6 +84,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Name" value={resource.name} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
+		return (
+			<SidebarInfoGroup title="OBS Transition">
+				<DataRow label="Name" value={resource.name} />
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

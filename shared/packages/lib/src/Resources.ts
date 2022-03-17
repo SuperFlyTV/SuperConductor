@@ -13,6 +13,7 @@ enum GeneralResourceType {
 	AUDIO_CHANNEL = 'audioChan',
 	MEDIA_PLAYER = 'mp',
 	CURRENT_SCENE = 'CURRENT_SCENE',
+	CURRENT_TRANSITION = 'CURRENT_TRANSITION',
 	UNKNOWN = 'unknown',
 }
 
@@ -42,6 +43,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.MEDIA_PLAYER
 		case ResourceType.OBS_SCENE:
 			return GeneralResourceType.CURRENT_SCENE
+		case ResourceType.OBS_TRANSITION:
+			return GeneralResourceType.CURRENT_TRANSITION
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

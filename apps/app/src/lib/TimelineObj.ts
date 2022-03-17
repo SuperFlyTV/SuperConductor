@@ -48,6 +48,8 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	} else if (obj.content.deviceType === DeviceType.OBS) {
 		if (obj.content.type === TimelineContentTypeOBS.CURRENT_SCENE) {
 			label = obj.content.sceneName
+		} else if (obj.content.type === TimelineContentTypeOBS.CURRENT_TRANSITION) {
+			label = obj.content.transitionName
 		} else {
 			// todo: for later:
 			// assertNever(obj.content)
