@@ -1,7 +1,8 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
+import { OBSAny } from './OBS'
 
-export type ResourceAny = CasparCGAny | AtemAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -23,4 +24,6 @@ export enum ResourceType {
 	ATEM_MACRO_PLAYER = 'ATEM_MACRO_PLAYER',
 	ATEM_AUDIO_CHANNEL = 'ATEM_AUDIO_CHANNEL',
 	ATEM_MEDIA_PLAYER = 'ATEM_MEDIA_PLAYER',
+
+	OBS_SCENE = 'OBS_SCENE',
 }

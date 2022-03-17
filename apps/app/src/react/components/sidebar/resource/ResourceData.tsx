@@ -78,6 +78,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Index" value={resource.index} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
+		return (
+			<SidebarInfoGroup title="OBS Scene">
+				<DataRow label="Name" value={resource.name} />
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

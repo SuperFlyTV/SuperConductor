@@ -31,6 +31,8 @@ import {
 	TimelineObjAtemAudioChannel,
 	TimelineObjAtemMediaPlayer,
 	MediaSourceType,
+	TimelineObjOBSCurrentScene,
+	TimelineContentTypeOBS,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1328,6 +1330,20 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 						atBeginning: true,
 						clipFrame: 0,
 					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OBS_SCENE) {
+			obj = literal<TimelineObjOBSCurrentScene>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OBS,
+					type: TimelineContentTypeOBS.CURRENT_SCENE,
+					sceneName: resource.name,
 				},
 			})
 		} else {

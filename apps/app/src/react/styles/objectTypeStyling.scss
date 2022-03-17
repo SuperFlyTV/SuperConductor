@@ -40,4 +40,8 @@
 	&.mp {
 		background: $mediaPlayerLayerColor;
 	}
+
+	&.CURRENT_SCENE {
+		background: $currentSceneLayerColor;
+	}
 }

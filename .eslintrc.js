@@ -31,6 +31,7 @@ module.exports = {
 				allowModules: [
 					'atem-connection',
 					'casparcg-connection',
+					'obs-websocket-js',
 					'timeline-state-resolver-types',
 					'triple-beam',
 				],

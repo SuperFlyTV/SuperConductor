@@ -1,7 +1,13 @@
 import { Typography, Button, Box } from '@mui/material'
 import { literal } from '@shared/lib'
 import React, { useCallback, useContext, useState } from 'react'
-import { DeviceOptionsAny, DeviceOptionsAtem, DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
+import {
+	DeviceOptionsAny,
+	DeviceOptionsAtem,
+	DeviceOptionsCasparCG,
+	DeviceOptionsOBS,
+	DeviceType,
+} from 'timeline-state-resolver-types'
 import { Bridge, BridgeStatus } from '../../../../models/project/Bridge'
 import { Project } from '../../../../models/project/Project'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -58,6 +64,23 @@ export const DeviceList: React.FC<IDeviceListProps> = ({ bridge, devices }) => {
 						(device) => device.type === DeviceType.ATEM
 					).length
 					newDeviceId = `atem${numATEMDevices}`
+
+					break
+				}
+
+				case DeviceType.OBS: {
+					newDevice = literal<DeviceOptionsOBS>({
+						type: DeviceType.OBS,
+						options: {
+							host: '127.0.0.1',
+							port: 4444,
+						},
+					})
+
+					const numOBSDevices = Object.values(bridge.settings.devices).filter(
+						(device) => device.type === DeviceType.OBS
+					).length
+					newDeviceId = `obs${numOBSDevices}`
 
 					break
 				}

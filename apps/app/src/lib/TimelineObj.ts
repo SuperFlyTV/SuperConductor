@@ -3,6 +3,7 @@ import {
 	MediaSourceType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
+	TimelineContentTypeOBS,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { assertNever, parseMs } from '@shared/lib'
@@ -43,6 +44,13 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 			}
 		} else {
 			assertNever(obj.content)
+		}
+	} else if (obj.content.deviceType === DeviceType.OBS) {
+		if (obj.content.type === TimelineContentTypeOBS.CURRENT_SCENE) {
+			label = obj.content.sceneName
+		} else {
+			// todo: for later:
+			// assertNever(obj.content)
 		}
 	} else {
 		// todo: for later:

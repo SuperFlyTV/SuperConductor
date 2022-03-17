@@ -3,6 +3,7 @@ import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { CasparCG } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
+import OBSWebsocket from 'obs-websocket-js'
 import {
 	ResourceAny,
 	ResourceType,
@@ -16,6 +17,7 @@ import {
 	AtemMediaPlayer,
 	AtemSsrc,
 	AtemSsrcProps,
+	OBSScene,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 
@@ -412,6 +414,56 @@ export class TSR {
 				},
 				close: () => {
 					return atem.destroy()
+				},
+			}
+		} else if (deviceOptions.type === DeviceType.OBS) {
+			const obs = new OBSWebsocket()
+			let obsConnected = false
+
+			obs.on('ConnectionOpened', () => {
+				obsConnected = true
+				this.log?.info(`OBS ${deviceId}: Sideload connection initialized`)
+			})
+
+			obs.on('ConnectionClosed', () => {
+				obsConnected = false
+				this.log?.info(`OBS ${deviceId}: Sideload connection disconnected`)
+			})
+
+			if (deviceOptions.options?.host && deviceOptions.options?.port) {
+				obs.connect({
+					address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
+					password: deviceOptions.options.password,
+				}).catch((error) => this.log?.error(error))
+			}
+
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
+
+				if (!obsConnected) {
+					return Object.values(resources)
+				}
+
+				const { scenes } = await obs.send('GetSceneList')
+				for (const scene of scenes) {
+					const resource: OBSScene = {
+						resourceType: ResourceType.OBS_SCENE,
+						deviceId,
+						id: `${deviceId}_scene_${scene.name}`,
+						name: scene.name,
+					}
+					resources[resource.id] = resource
+				}
+
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: async () => {
+					return obs.disconnect()
 				},
 			}
 		}

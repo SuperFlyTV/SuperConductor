@@ -12,6 +12,7 @@ enum GeneralResourceType {
 	MACRO_PLAYER = 'macroPlayer',
 	AUDIO_CHANNEL = 'audioChan',
 	MEDIA_PLAYER = 'mp',
+	CURRENT_SCENE = 'CURRENT_SCENE',
 	UNKNOWN = 'unknown',
 }
 
@@ -39,6 +40,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.AUDIO_CHANNEL
 		case ResourceType.ATEM_MEDIA_PLAYER:
 			return GeneralResourceType.MEDIA_PLAYER
+		case ResourceType.OBS_SCENE:
+			return GeneralResourceType.CURRENT_SCENE
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
