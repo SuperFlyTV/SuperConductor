@@ -1,4 +1,5 @@
 import {
+	allowAddingResourceToLayer,
 	allowMovingItemIntoGroup,
 	deleteGroup,
 	deletePart,
@@ -1383,6 +1384,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			createdNewLayer = result.createdNewLayer
 		}
 		obj.layer = addToLayerId
+
+		const project = this.getProject()
+		const mapping = project.mappings[obj.layer]
+		const allow = allowAddingResourceToLayer(project, resource, mapping)
+		if (!allow) {
+			return null
+		}
 
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,

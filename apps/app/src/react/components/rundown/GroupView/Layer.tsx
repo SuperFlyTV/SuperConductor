@@ -1,10 +1,13 @@
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
+import { Mapping } from 'timeline-state-resolver-types'
+import { allowAddingResourceToLayer } from '../../../../lib/util'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
+import { ProjectContext } from '../../../contexts/Project'
 import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
 
@@ -20,12 +23,17 @@ export const Layer: React.FC<{
 	partDuration: number
 	msPerPixel: number
 	locked?: boolean
-}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel, locked }) => {
+	mapping: Mapping
+}> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel, locked, mapping }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const project = useContext(ProjectContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
 			accept: locked ? [] : DragItemTypes.RESOURCE_ITEM,
+			canDrop: (item) => {
+				return allowAddingResourceToLayer(project, item.resource, mapping)
+			},
 			drop: (item: ResourceDragItem) => {
 				ipcServer
 					.addResourceToTimeline({
@@ -38,7 +46,7 @@ export const Layer: React.FC<{
 					.catch(handleError)
 			},
 			collect: (monitor) => ({
-				isOver: !!monitor.isOver(),
+				isOver: monitor.isOver() && monitor.canDrop(),
 			}),
 		}),
 		[]

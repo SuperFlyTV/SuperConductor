@@ -867,6 +867,7 @@ export const PartView: React.FC<{
 									layerId={layerId}
 									msPerPixel={msPerPixel}
 									locked={groupOrPartLocked}
+									mapping={mappings[layerId]}
 								/>
 							)
 						})}

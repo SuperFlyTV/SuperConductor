@@ -5,7 +5,17 @@ import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { getGroupPlayData, GroupPlayData } from './playhead'
 import { Project } from '../models/project/Project'
-import { DeviceOptionsAny, DeviceType } from 'timeline-state-resolver-types'
+import {
+	DeviceOptionsAny,
+	DeviceType,
+	Mapping,
+	MappingAtem,
+	MappingAtemType,
+	MappingOBS,
+	MappingOBSType,
+} from 'timeline-state-resolver-types'
+import { ResourceAny, ResourceType } from '@shared/models'
+import { assertNever } from '@shared/lib'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -261,4 +271,114 @@ export function getPrevPartIndex(group: Group): number {
 		}
 	}
 	return -1
+}
+
+/**
+ * @returns True if the resource can be added to the layer/mapping, false if not.
+ */
+export function allowAddingResourceToLayer(project: Project, resource: ResourceAny, mapping: Mapping): boolean {
+	const resourceDevice = findDevice(project.bridges, resource.deviceId)
+	if (!resourceDevice) {
+		return false
+	}
+
+	if (mapping.device === DeviceType.ABSTRACT) {
+		return false
+	} else if (mapping.device === DeviceType.ATEM) {
+		const mapping0 = mapping as MappingAtem
+		if (mapping0.mappingType === MappingAtemType.AudioChannel) {
+			return resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL
+		} else if (mapping0.mappingType === MappingAtemType.Auxilliary) {
+			return resource.resourceType === ResourceType.ATEM_AUX
+		} else if (mapping0.mappingType === MappingAtemType.DownStreamKeyer) {
+			return resource.resourceType === ResourceType.ATEM_DSK
+		} else if (mapping0.mappingType === MappingAtemType.MacroPlayer) {
+			return resource.resourceType === ResourceType.ATEM_MACRO_PLAYER
+		} else if (mapping0.mappingType === MappingAtemType.MediaPlayer) {
+			return resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER
+		} else if (mapping0.mappingType === MappingAtemType.MixEffect) {
+			return resource.resourceType === ResourceType.ATEM_ME
+		} else if (mapping0.mappingType === MappingAtemType.SuperSourceBox) {
+			return resource.resourceType === ResourceType.ATEM_SSRC
+		} else if (mapping0.mappingType === MappingAtemType.SuperSourceProperties) {
+			return resource.resourceType === ResourceType.ATEM_SSRC_PROPS
+		} else {
+			assertNever(mapping0.mappingType)
+		}
+	} else if (mapping.device === DeviceType.CASPARCG) {
+		return (
+			resource.resourceType === ResourceType.CASPARCG_MEDIA ||
+			resource.resourceType === ResourceType.CASPARCG_TEMPLATE
+		)
+	} else if (mapping.device === DeviceType.HTTPSEND) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.HTTPWATCHER) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.HYPERDECK) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.LAWO) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.OBS) {
+		const mapping0 = mapping as MappingOBS
+		if (mapping0.mappingType === MappingOBSType.CurrentScene) {
+			return resource.resourceType === ResourceType.OBS_SCENE
+		} else if (mapping0.mappingType === MappingOBSType.CurrentTransition) {
+			return resource.resourceType === ResourceType.OBS_TRANSITION
+		} else if (mapping0.mappingType === MappingOBSType.Mute) {
+			// @TODO
+			return false
+		} else if (mapping0.mappingType === MappingOBSType.Recording) {
+			// @TODO
+			return false
+		} else if (mapping0.mappingType === MappingOBSType.SceneItemRender) {
+			// @TODO
+			return false
+		} else if (mapping0.mappingType === MappingOBSType.SourceSettings) {
+			// @TODO
+			return false
+		} else if (mapping0.mappingType === MappingOBSType.Streaming) {
+			// @TODO
+			return false
+		} else {
+			assertNever(mapping0.mappingType)
+		}
+	} else if (mapping.device === DeviceType.OSC) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.PANASONIC_PTZ) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.PHAROS) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.QUANTEL) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.SHOTOKU) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.SINGULAR_LIVE) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.SISYFOS) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.TCPSEND) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.VIZMSE) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.VMIX) {
+		// @TODO
+		return false
+	} else {
+		assertNever(mapping.device)
+	}
+
+	return mapping.device === resourceDevice.type
 }
