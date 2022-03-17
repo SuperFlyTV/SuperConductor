@@ -197,7 +197,7 @@ export class TSR {
 						const resource: CasparCGMedia = {
 							resourceType: ResourceType.CASPARCG_MEDIA,
 							deviceId: deviceId,
-							id: media.name,
+							id: `${deviceId}_media_${media.name}`,
 							...media,
 						}
 
@@ -211,8 +211,7 @@ export class TSR {
 							}
 						}
 
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 				}
 
@@ -227,11 +226,10 @@ export class TSR {
 						const resource: CasparCGTemplate = {
 							resourceType: ResourceType.CASPARCG_TEMPLATE,
 							deviceId: deviceId,
-							id: template.name,
+							id: `${deviceId}_template_${template.name}`,
 							...template,
 						}
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 				}
 
@@ -277,12 +275,11 @@ export class TSR {
 					const resource: AtemMe = {
 						resourceType: ResourceType.ATEM_ME,
 						deviceId,
-						id: `me_${me.index}`,
+						id: `${deviceId}_me_${me.index}`,
 						index: me.index,
 						name: `ATEM ME ${me.index + 1}`,
 					}
-					const id = `${resource.deviceId}_${resource.id}`
-					resources[id] = resource
+					resources[resource.id] = resource
 				}
 
 				for (let i = 0; i < atem.state.video.downstreamKeyers.length; i++) {
@@ -294,12 +291,11 @@ export class TSR {
 					const resource: AtemDsk = {
 						resourceType: ResourceType.ATEM_DSK,
 						deviceId,
-						id: `dsk_${i}`,
+						id: `${deviceId}_dsk_${i}`,
 						index: i,
 						name: `ATEM DSK ${i + 1}`,
 					}
-					const id = `${resource.deviceId}_${resource.id}`
-					resources[id] = resource
+					resources[resource.id] = resource
 				}
 
 				for (let i = 0; i < atem.state.video.auxilliaries.length; i++) {
@@ -311,12 +307,11 @@ export class TSR {
 					const resource: AtemAux = {
 						resourceType: ResourceType.ATEM_AUX,
 						deviceId,
-						id: `aux_${i}`,
+						id: `${deviceId}_aux_${i}`,
 						index: i,
 						name: `ATEM AUX ${i + 1}`,
 					}
-					const id = `${resource.deviceId}_${resource.id}`
-					resources[id] = resource
+					resources[resource.id] = resource
 				}
 
 				for (let i = 0; i < atem.state.video.superSources.length; i++) {
@@ -329,24 +324,22 @@ export class TSR {
 						const resource: AtemSsrc = {
 							resourceType: ResourceType.ATEM_SSRC,
 							deviceId,
-							id: `ssrc_${i}`,
+							id: `${deviceId}_ssrc_${i}`,
 							index: i,
 							name: `ATEM SuperSource ${i + 1}`,
 						}
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 
 					{
 						const resource: AtemSsrcProps = {
 							resourceType: ResourceType.ATEM_SSRC_PROPS,
 							deviceId,
-							id: `ssrc_props_${i}`,
+							id: `${deviceId}_ssrc_props_${i}`,
 							index: i,
 							name: `ATEM SuperSource ${i + 1} Props`,
 						}
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 				}
 
@@ -354,11 +347,10 @@ export class TSR {
 					const resource: AtemMacroPlayer = {
 						resourceType: ResourceType.ATEM_MACRO_PLAYER,
 						deviceId,
-						id: `macro_player`,
+						id: `${deviceId}_macro_player`,
 						name: 'ATEM Macro Player',
 					}
-					const id = `${resource.deviceId}_${resource.id}`
-					resources[id] = resource
+					resources[resource.id] = resource
 				}
 
 				if (atem.state.fairlight) {
@@ -371,12 +363,11 @@ export class TSR {
 						const resource: AtemAudioChannel = {
 							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 							deviceId,
-							id: `audio_channel_${inputNumber}`,
+							id: `${deviceId}_audio_channel_${inputNumber}`,
 							index: parseInt(inputNumber, 10),
 							name: `ATEM Audio Channel ${inputNumber}`,
 						}
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 				} else if (atem.state.audio) {
 					for (const channelNumber in atem.state.audio.channels) {
@@ -388,12 +379,11 @@ export class TSR {
 						const resource: AtemAudioChannel = {
 							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 							deviceId,
-							id: `audio_channel_${channelNumber}`,
+							id: `${deviceId}_audio_channel_${channelNumber}`,
 							index: parseInt(channelNumber, 10),
 							name: `ATEM Audio Channel ${channelNumber}`,
 						}
-						const id = `${resource.deviceId}_${resource.id}`
-						resources[id] = resource
+						resources[resource.id] = resource
 					}
 				}
 
@@ -406,12 +396,11 @@ export class TSR {
 					const resource: AtemMediaPlayer = {
 						resourceType: ResourceType.ATEM_MEDIA_PLAYER,
 						deviceId,
-						id: `media_player_${i}`,
+						id: `${deviceId}_media_player_${i}`,
 						index: i,
 						name: `ATEM Media Player ${i + 1}`,
 					}
-					const id = `${resource.deviceId}_${resource.id}`
-					resources[id] = resource
+					resources[resource.id] = resource
 				}
 
 				return Object.values(resources)

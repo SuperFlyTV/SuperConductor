@@ -7,7 +7,7 @@ export interface ResourceBase {
 	resourceType: ResourceType
 
 	deviceId: string
-	id: string // unique within that deviceId
+	id: string // Must be globally unique
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',
