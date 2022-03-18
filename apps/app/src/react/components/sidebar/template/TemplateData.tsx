@@ -15,6 +15,7 @@ interface IEditableCell {
 	column: { id: string }
 	onUpdateData: IUpdateData
 	onDelete: IDeleteRow
+	disabled: boolean
 }
 
 const EditableCell = ({
@@ -23,6 +24,7 @@ const EditableCell = ({
 	row,
 	onUpdateData,
 	onDelete,
+	disabled,
 }: IEditableCell) => {
 	// We need to keep and update the state of the cell normally
 	const [value, setValue] = React.useState(initialValue)
@@ -43,13 +45,13 @@ const EditableCell = ({
 
 	if (columnId === 'delete') {
 		return (
-			<button className="delete" onClick={() => onDelete(row.values.key)}>
+			<button className="delete" onClick={() => onDelete(row.values.key)} disabled={disabled}>
 				<BsFillTrashFill color="white" size={12} />
 			</button>
 		)
 	}
 
-	return <input value={value} onChange={onChange} onBlur={onBlur} />
+	return <input value={value} onChange={onChange} onBlur={onBlur} disabled={disabled} />
 }
 
 // Set our editable cell renderer as the default Cell renderer
@@ -63,6 +65,7 @@ export const TemplateData: React.FC<{
 	partId: string
 	timelineObjId: string
 	templateData: { [id: string]: string }
+	disabled?: boolean
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -166,6 +169,7 @@ export const TemplateData: React.FC<{
 												{cell.render('Cell', {
 													onUpdateData: handleUpdateData,
 													onDelete: handleDelete,
+													disabled: props.disabled,
 												})}
 											</td>
 										)
@@ -177,7 +181,7 @@ export const TemplateData: React.FC<{
 				</table>
 
 				<div className="btn-row-right">
-					<Button variant="contained" onClick={handleAddNew}>
+					<Button variant="contained" onClick={handleAddNew} disabled={props.disabled}>
 						Add
 					</Button>
 				</div>

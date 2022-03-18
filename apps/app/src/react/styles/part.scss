@@ -1,4 +1,5 @@
 @use 'sass:color';
+@import './objectTypeStyling.scss';
 
 .part {
 	position: relative;
@@ -20,6 +21,12 @@
 	&:last-child {
 		border-bottom-left-radius: calc($partTabWidth / 2);
 		border-bottom-right-radius: calc($partTabWidth / 2);
+	}
+
+	&:hover {
+		.MuiToggleButton-sizeSmall:not(.Mui-selected) {
+			opacity: 0.2;
+		}
 	}
 
 	&.dragging {
@@ -57,6 +64,11 @@
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
 	}
+	&.locked {
+		.part__drag-handle {
+			pointer-events: none;
+		}
+	}
 
 	&__tab {
 		display: flex;
@@ -68,6 +80,8 @@
 		box-sizing: border-box;
 		padding: 0.6rem 0;
 		grid-area: tab;
+
+		@include useObjectTypeStyles();
 	}
 
 	&__drag-handle {
@@ -112,6 +126,8 @@
 			display: flex;
 			flex-direction: column;
 			flex-grow: 1;
+			flex-shrink: 1;
+			min-width: 0;
 		}
 
 		&__right {
@@ -174,11 +190,12 @@
 			align-items: center;
 			height: $layerHeight;
 			padding: 0 0.3rem;
-			font-size: 1.2rem;
+			font-size: 1.4rem;
 			color: #9c9c9c;
 			white-space: nowrap;
 			min-width: 0;
 			flex-shrink: 1;
+			box-sizing: content-box;
 
 			> span {
 				min-width: 0;
@@ -301,6 +318,15 @@
 		margin-bottom: 0.1rem;
 	}
 
+	&:not(.trigger--locked) {
+		.label {
+			&:hover {
+				text-decoration: underline;
+				cursor: pointer;
+			}
+		}
+	}
+
 	.label {
 		display: flex;
 		align-items: center;
@@ -308,11 +334,6 @@
 		font-weight: 600;
 		font-size: 12px;
 		// line-height: 12px;
-
-		&:hover {
-			text-decoration: underline;
-			cursor: pointer;
-		}
 
 		&__key {
 			color: black;

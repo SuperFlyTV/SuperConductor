@@ -1,11 +1,11 @@
 import { Box, Button, TextField, Typography } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { AtemOptions, CasparCGOptions } from 'timeline-state-resolver-types'
+import { AtemOptions, CasparCGOptions, DeviceType, OBSOptions } from 'timeline-state-resolver-types'
 import { Bridge, BridgeDevice } from '../../../../models/project/Bridge'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
-import { ConnectionStatus } from '../../util/ConnectionStatus'
+import { ConnectionStatus } from '../../headerBar/deviceStatuses/ConnectionStatus'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -24,6 +24,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 	const [editedDeviceId, setEditedDeviceId] = useState(deviceId)
 	const [host, setHost] = useState('')
 	const [port, setPort] = useState(MIN_PORT)
+	const [password, setPassword] = useState('')
 	const deviceSettings = bridge.settings.devices[deviceId]
 
 	const handleDeviceIdChange = useCallback(
@@ -66,6 +67,19 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		[deviceSettings, handleError, ipcServer, project]
 	)
 
+	const handlePasswordChange = useCallback(
+		(newPassword: string) => {
+			if (!deviceSettings) {
+				return
+			}
+
+			const options = deviceSettings.options as OBSOptions
+			options.password = newPassword
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[deviceSettings, handleError, ipcServer, project]
+	)
+
 	const removeDevice = useCallback(() => {
 		delete bridge.settings.devices[deviceId]
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
@@ -98,7 +112,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 			<Box
 				className="device-list-item"
 				display="grid"
-				gridTemplateColumns="repeat(2, 13rem) 9rem 13rem"
+				gridTemplateColumns="repeat(3, 13rem) 9rem 13rem"
 				gridAutoRows="max-content"
 				gap={'1rem'}
 			>
@@ -155,6 +169,29 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 					/>
 				</Box>
 
+				{deviceSettings.type === DeviceType.OBS ? (
+					<Box gridColumn="span 1">
+						<TextField
+							label="Password"
+							type="password"
+							value={password}
+							size="small"
+							margin="normal"
+							onChange={(event) => {
+								setPassword(event.target.value)
+							}}
+							onBlur={() => {
+								handlePasswordChange(password)
+							}}
+							onKeyUp={(e) => {
+								if (e.key === 'Enter') handlePasswordChange(password)
+							}}
+						/>
+					</Box>
+				) : (
+					<div />
+				)}
+
 				<Box gridColumn="span 1">
 					<Button variant="contained" color="error" sx={{ marginTop: '18px' }} onClick={removeDevice}>
 						Remove
@@ -168,7 +205,10 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 					alignItems="flex-start"
 					paddingTop={'23px'}
 				>
-					<ConnectionStatus label={device.ok ? 'Connected' : 'Not Connected'} ok={device.ok} />
+					<ConnectionStatus
+						label={device.ok ? 'Connected' : device.message ? device.message : 'Not Connected'}
+						ok={device.ok}
+					/>
 				</Box>
 			</Box>
 		)
@@ -193,7 +233,10 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 				</Typography>
 			</Box>
 			<Box gridColumn="span 1" display="flex" justifyContent="flex-end">
-				<ConnectionStatus label={device.ok ? 'Connected' : 'Not Connected'} ok={device.ok} />
+				<ConnectionStatus
+					label={device.ok ? 'Connected' : device.message ? device.message : 'Not Connected'}
+					ok={device.ok}
+				/>
 			</Box>
 		</Box>
 	)

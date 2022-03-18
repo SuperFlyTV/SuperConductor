@@ -12,7 +12,15 @@ import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import { MdOutlineDragIndicator, MdPlayArrow, MdStop, MdMoreHoriz } from 'react-icons/md'
+import {
+	MdOutlineDragIndicator,
+	MdPlayArrow,
+	MdStop,
+	MdMoreHoriz,
+	MdLockOpen,
+	MdLock,
+	MdRepeatOne,
+} from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -26,7 +34,6 @@ import { filterMapping } from '../../../../lib/TSRMappings'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
-import { ImLoop } from 'react-icons/im'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
@@ -634,6 +641,13 @@ export const PartView: React.FC<{
 	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
 
 	const groupOrPartDisabled = parentGroup.disabled || part.disabled
+	const groupOrPartLocked = parentGroup.locked || part.locked
+	const firstTimelineObj: TimelineObj | undefined = part.timeline[0]
+	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
+	const tabAdditionalClassNames: { [key: string]: boolean } = {}
+	if (typeof firstTimelineObjType === 'string') {
+		tabAdditionalClassNames[firstTimelineObjType] = true
+	}
 
 	return (
 		<div
@@ -645,12 +659,13 @@ export const PartView: React.FC<{
 				queued: isActive === 'queued',
 				dragging: isDragging,
 				disabled: groupOrPartDisabled,
+				locked: groupOrPartLocked,
 			})}
 		>
 			<div className="part__dragArrow" />
-			<div className="part__tab">
+			<div className={classNames('part__tab', tabAdditionalClassNames)}>
 				<div ref={dragRef} className="part__drag-handle">
-					<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
+					{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
 				</div>
 
 				<div className="part__submenu-button">
@@ -666,9 +681,12 @@ export const PartView: React.FC<{
 				<div className="part__meta__left">
 					{!editingPartName && (
 						<div
-							title="Click to edit"
+							title={groupOrPartLocked ? part.name : 'Click to edit'}
 							className="title"
 							onClick={() => {
+								if (groupOrPartLocked) {
+									return
+								}
 								setEditingPartName(true)
 							}}
 						>
@@ -703,7 +721,9 @@ export const PartView: React.FC<{
 
 					<div className="controls">
 						<ToggleButton
+							title={part.disabled ? 'Enable Part' : 'Disable Part'}
 							value="disabled"
+							disabled={parentGroup.locked}
 							selected={part.disabled}
 							size="small"
 							onChange={() => {
@@ -720,8 +740,28 @@ export const PartView: React.FC<{
 							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							sx={{ marginLeft: 'auto' }}
+							title={part.locked ? 'Unlock Part' : 'Lock Part'}
+							value="locked"
+							disabled={parentGroup.locked}
+							selected={part.locked}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.togglePartLock({
+										rundownId,
+										groupId: parentGroup.id,
+										partId: part.id,
+										value: !part.locked,
+									})
+									.catch(handleError)
+							}}
+						>
+							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+						</ToggleButton>
+						<ToggleButton
+							title={part.loop ? 'Disable Loop' : 'Enable Loop'}
 							value="loop"
+							disabled={groupOrPartLocked}
 							selected={part.loop}
 							size="small"
 							onChange={() => {
@@ -735,7 +775,7 @@ export const PartView: React.FC<{
 									.catch(handleError)
 							}}
 						>
-							<ImLoop size={18} />
+							<MdRepeatOne size={18} />
 						</ToggleButton>
 					</div>
 				</div>
@@ -826,11 +866,15 @@ export const PartView: React.FC<{
 									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
 									msPerPixel={msPerPixel}
+									locked={groupOrPartLocked}
+									mapping={mappings[layerId]}
 								/>
 							)
 						})}
 
-						<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
+						{!groupOrPartLocked && (
+							<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
+						)}
 					</div>
 				</div>
 			</div>
@@ -845,7 +889,7 @@ export const PartView: React.FC<{
 					horizontal: 'left',
 				}}
 			>
-				<PartSubmenu rundownId={rundownId} groupId={parentGroup.id} part={part} />
+				<PartSubmenu rundownId={rundownId} groupId={parentGroup.id} part={part} locked={groupOrPartLocked} />
 			</Popover>
 		</div>
 	)

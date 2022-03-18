@@ -55,8 +55,16 @@
 				}
 			}
 
+			&.locked {
+				.handle {
+					pointer-events: none;
+				}
+			}
+
 			.body {
 				flex-grow: 1;
+				flex-shrink: 1;
+				min-width: 0;
 				display: flex;
 				justify-content: space-between;
 			}
@@ -65,6 +73,7 @@
 			.duration {
 				font-size: 1.4rem;
 				text-shadow: 0 0 4px #00000080;
+				white-space: nowrap;
 			}
 
 			.title {

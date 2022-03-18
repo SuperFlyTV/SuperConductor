@@ -1,4 +1,4 @@
-import { Divider, Typography, TextField } from '@mui/material'
+import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { Project } from '../../../models/project/Project'
 import { IPCServerContext } from '../../contexts/IPCServer'
@@ -27,9 +27,6 @@ export const ProjectSettings: React.FC<{ project: Project }> = ({ project }) => 
 
 	return (
 		<>
-			<Typography variant="h6">Project Settings</Typography>
-			<Divider />
-
 			<TextField
 				margin="normal"
 				size="small"

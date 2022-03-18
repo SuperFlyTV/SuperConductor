@@ -1,3 +1,9 @@
+/**
+ *
+ * All colors used for the SuperConductor UI
+ *
+ */
+
 $accentDarkBg: #d45f05;
 $accentBg: #e96703;
 $accentLightBg: #fa7713;
@@ -12,6 +18,20 @@ $templateLayerColor: #b26000;
 $movieLayerColor: #6817ff;
 $stillLayerColor: #ffe817;
 $audioLayerColor: #308579;
+$mixEffectLayerColor: #177400;
+$downstreamKeyerLayerColor: #177400;
+$auxiliaryLayerColor: #177400;
+$superSourceLayerColor: #177400;
+$superSourcePropsLayerColor: #177400;
+$macroPlayerLayerColor: #177400;
+$mediaPlayerLayerColor: #6817ff;
+$currentSceneLayerColor: #74002c;
+$currentTransitionLayerColor: #74002c;
+$muteLayerColor: #74002c;
+$recordingLayerColor: #74002c;
+$sceneItemRenderLayerColor: #74002c;
+$streamingLayerColor: #74002c;
+$sourceSettingsLayerColor: #74002c;
 
 $greenColor: #5fa852;
 $lightGreenColor: #76c469;
@@ -23,42 +43,15 @@ $lightRedColor: #d44e4e;
 
 $lightGreenColor: #5afc3e;
 
-$mainFont: 'Barlow', sans-serif;
 $partOutlineColor: #b0b0b0;
-$partTabWidth: 2.2rem;
 $partDragHandleColor: #2d3340;
-$partDragIndicatorSize: 8px;
 $partMetaColor: #2d3340;
 
-$layerHeight: 2.5rem;
 $emptyLayerColor: #1b1e26;
-
-$borderRadius: 0.3rem;
-
-$sidebar-padding: 1rem;
-
-$default-transition: all 150ms ease;
 
 $deviceOfflineColor: #ff0000;
 $deviceOnlineColor: #148c00;
 
-$timelineObjHandleWidth: 8px;
-
-html {
-	font-size: 62.5%;
-}
-
-body {
-	margin: 0;
-	padding: 0;
-	font-size: 1.6rem;
-	color: white;
-	background-color: black;
-	font-family: $mainFont;
-}
-
-input,
-button,
-textarea {
-	font-family: $mainFont;
-}
+$headerTabNormalBg: #505050;
+$headerTabHoverBg: #616161;
+$headerTabActiveBg: #111111;

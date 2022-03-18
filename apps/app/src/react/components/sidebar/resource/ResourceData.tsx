@@ -30,6 +30,96 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Channels" value={resource.channels} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_ME) {
+		return (
+			<SidebarInfoGroup title="ATEM ME">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_DSK) {
+		return (
+			<SidebarInfoGroup title="ATEM DSK">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUX) {
+		return (
+			<SidebarInfoGroup title="ATEM AUX">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
+		return (
+			<SidebarInfoGroup title="ATEM SuperSource">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
+		return (
+			<SidebarInfoGroup title="ATEM SuperSource Props">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
+		return (
+			<SidebarInfoGroup title="ATEM Macro Player">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
+		return (
+			<SidebarInfoGroup title="ATEM Audio Channel">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
+		return (
+			<SidebarInfoGroup title="ATEM Media Player">
+				<DataRow label="Index" value={resource.index} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
+		return (
+			<SidebarInfoGroup title="OBS Scene">
+				<DataRow label="Name" value={resource.name} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
+		return (
+			<SidebarInfoGroup title="OBS Transition">
+				<DataRow label="Name" value={resource.name} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
+		return (
+			<SidebarInfoGroup title="OBS Recording">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
+		return (
+			<SidebarInfoGroup title="OBS Streaming">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="OBS Source Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
+		return (
+			<SidebarInfoGroup title="OBS Mute">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
+		return (
+			<SidebarInfoGroup title="OBS Render">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

@@ -8,12 +8,14 @@ export const DurationInput: React.FC<
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			label?: string
+			disabled?: boolean
 	  }
 	| {
 			currentValue: number
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			label?: string
+			disabled?: boolean
 	  }
 > = (props) => {
 	if (props.allowUndefined) {
@@ -23,7 +25,9 @@ export const DurationInput: React.FC<
 			undefined,
 			parseDuration,
 			formatDuration,
-			props.label
+			props.label,
+			'text',
+			props.disabled
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -32,7 +36,9 @@ export const DurationInput: React.FC<
 			0,
 			parseDuration,
 			formatDuration,
-			props.label
+			props.label,
+			'text',
+			props.disabled
 		)
 	}
 }

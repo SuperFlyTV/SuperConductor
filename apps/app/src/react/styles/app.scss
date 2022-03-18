@@ -1,4 +1,4 @@
-@import './globals.scss';
+@import './global.scss';
 
 .app {
 	position: fixed;
@@ -12,43 +12,30 @@
 	// height: 100vh;
 	// box-sizing: border-box;
 
-	$top-header-height: 3rem;
 	$sidebar-width: 30rem;
+	$top-header-height: 3rem;
 
-	> .top-header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: $top-header-height;
+	display: grid;
+	grid-template-columns: 1fr 0fr;
+	grid-template-rows: 0fr 1fr;
+	grid-template-areas:
+		'top top'
+		'main sidebar';
 
-		overflow: hidden;
-
+	> .header-bar {
+		grid-area: top;
 		background-color: $topheaderBg;
 	}
 	> .main-area {
-		position: absolute;
-		top: $top-header-height;
-		bottom: 0;
-		left: 0;
-		right: $sidebar-width;
-
-		overflow-x: auto;
-		overflow-y: auto;
-
+		grid-area: main;
 		background: $mainBg;
+		overflow: auto;
 	}
 	> .side-bar {
-		position: absolute;
-		top: $top-header-height;
-		bottom: 0;
-		right: 0;
-		width: $sidebar-width;
-
-		overflow-x: auto;
-		overflow-y: auto;
-
+		grid-area: sidebar;
 		background-color: $sidebarBg;
+		width: 30rem;
+		overflow: auto;
 	}
 
 	*:not(input) {
@@ -73,7 +60,6 @@ input[type='search']::-webkit-search-cancel-button {
 @import './layer.scss';
 @import './countDownHead.scss';
 @import './playHead.scss';
-@import './top-header.scss';
 @import './resourceLibrary.scss';
 @import './timeline-obj.scss';
 @import './infoGroup.scss';

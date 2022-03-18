@@ -12,6 +12,10 @@ export type Group = {
 	autoPlay: boolean
 	loop: boolean
 	disabled?: boolean
+	locked?: boolean
+
+	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
+	collapsed?: boolean
 
 	parts: Part[]
 

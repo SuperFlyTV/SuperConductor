@@ -5,7 +5,6 @@ import { Part } from '../../../models/rundown/Part'
 import { RundownContext } from '../../contexts/Rundown'
 // import { GUIContext } from '../../contexts/GUI'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
-import { ResourcesContext } from '../../contexts/Resources'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ResourceData } from './resource/ResourceData'
@@ -18,10 +17,9 @@ import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((props) => {
-	const resourcesContext = useContext(ResourcesContext)
 	const rundown = useContext(RundownContext)
-	// const { gui } = useContext(GUIContext)
 
+	const resourcesStore = store.resourcesStore
 	const gui2 = store.guiStore
 
 	const [editing, setEditing] = useState<{
@@ -51,14 +49,14 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 		}
 		// else:
 		setEditing(null)
-	}, [rundown, resourcesContext, gui2.selectedGroupId, gui2.selectedPartId, gui2.selectedTimelineObjIds])
+	}, [rundown, gui2.selectedGroupId, gui2.selectedPartId, gui2.selectedTimelineObjIds])
 
 	useEffect(() => {
 		if (editing) {
 			if (editing.timelineObjs.length > 0) {
 				const newResources = editing.timelineObjs.map((obj) => {
 					if (obj.resourceId) {
-						return resourcesContext[obj.resourceId]
+						return resourcesStore.resources[obj.resourceId]
 					}
 				})
 				if (newResources.length > 0) {
@@ -69,16 +67,17 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 		}
 
 		setResources([])
-	}, [editing, resourcesContext])
+	}, [editing])
 
 	if (editing) {
 		const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))
+		const groupOrPartLocked = editing.group.locked || editing.part.locked
 
 		return (
 			<div className="sidebar timeline-obj-sidebar">
 				{editing.timelineObjs.map((obj, index) => {
 					return (
-						<div key={obj.obj.id} className="edit-timeline-obj">
+						<div key={obj.obj.id}>
 							<div className="title">{descriptions[index].label}</div>
 
 							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
@@ -89,6 +88,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 								partId={editing.part.id}
 								timelineObj={obj}
 								mappings={props.mappings}
+								disabled={groupOrPartLocked}
 							/>
 
 							{(obj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
@@ -98,6 +98,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((pr
 									partId={editing.part.id}
 									timelineObjId={obj.obj.id}
 									templateData={JSON.parse((obj.obj.content as any)?.data)}
+									disabled={groupOrPartLocked}
 								/>
 							)}
 						</div>

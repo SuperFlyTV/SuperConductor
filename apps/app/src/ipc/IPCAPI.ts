@@ -17,6 +17,7 @@ export const enum ActionDescription {
 	SetPartTrigger = 'Assign trigger',
 	TogglePartLoop = 'toggle part loop',
 	TogglePartDisable = 'toggle part disable',
+	TogglePartLock = 'toggle part lock',
 	NewGroup = 'create new group',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
@@ -33,6 +34,8 @@ export const enum ActionDescription {
 	ToggleGroupAutoplay = 'toggle group autoplay',
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
 	ToggleGroupDisable = 'toggle group disable',
+	ToggleGroupLock = 'toggle group lock',
+	ToggleGroupCollapse = 'toggle group collapse',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -75,8 +78,11 @@ export interface IPCServerMethods {
 		partId: string
 		value: boolean
 	}) => Promise<unknown>
+	togglePartLock: (data: { rundownId: string; groupId: string; partId: string; value: boolean }) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	playGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playNext: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	playPrev: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
@@ -158,6 +164,8 @@ export interface IPCServerMethods {
 	toggleGroupLoop: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	toggleGroupAutoplay: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	toggleGroupDisable: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	toggleGroupLock: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
+	toggleGroupCollapse: (data: { rundownId: string; groupId: string; value: boolean }) => Promise<unknown>
 	refreshResources: () => Promise<unknown>
 
 	updateProject: (data: { id: string; project: Project }) => Promise<unknown>

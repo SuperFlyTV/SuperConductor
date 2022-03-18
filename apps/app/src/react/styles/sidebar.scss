@@ -1,12 +1,10 @@
 .sidebar {
 	width: 100%;
-	position: absolute;
-	top: 0;
 	box-sizing: border-box;
 
 	&.timeline-obj-sidebar {
-		// padding: 0 2.5rem;
-		// overflow-y: auto;
+		border-bottom: 1px solid silver;
+		margin: 1.5rem 0;
 	}
 
 	&.media-library-sidebar {
@@ -141,12 +139,15 @@
 				border: 0;
 				background: transparent;
 				padding: 0;
-				cursor: pointer;
 				opacity: 0.7;
 				margin: 0 0.5rem;
 
-				&:hover {
-					opacity: 1;
+				&:not([disabled]) {
+					cursor: pointer;
+
+					&:hover {
+						opacity: 1;
+					}
 				}
 			}
 

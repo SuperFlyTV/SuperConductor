@@ -21,6 +21,7 @@ const createWindow = (): void => {
 			nodeIntegration: true,
 			contextIsolation: false,
 		},
+		title: 'SuperConductor',
 	})
 
 	if (appData.windowPosition.x !== undefined) {
@@ -65,11 +66,19 @@ const createWindow = (): void => {
 			try {
 				const result = await autoUpdater.checkForUpdatesAndNotify()
 				if (!result) {
-					await dialog.showMessageBox(win, {
-						type: 'error',
-						title: 'Error',
-						message: `There was an error when checking for the latest version of SuperConductor. Please try again later.`,
-					})
+					if (!app.isPackaged) {
+						await dialog.showMessageBox(win, {
+							type: 'error',
+							title: 'Error',
+							message: `Can't check updates when running in development mode.`,
+						})
+					} else {
+						await dialog.showMessageBox(win, {
+							type: 'error',
+							title: 'Error',
+							message: `There was an error when checking for the latest version of SuperConductor. Please try again later.`,
+						})
+					}
 				} else if (result.updateInfo && result.updateInfo.version === CURRENT_VERSION) {
 					await dialog.showMessageBox(win, {
 						type: 'info',
@@ -96,9 +105,25 @@ const createWindow = (): void => {
 		Menu.setApplicationMenu(menu)
 	})
 
-	app.on('window-all-closed', async () => {
-		await tpt.storage.writeChangesNow()
-		app.quit()
+	app.on('window-all-closed', () => {
+		Promise.resolve()
+			.then(async () => {
+				await Promise.race([
+					Promise.all([
+						// Write any changes to disk:
+						tpt.storage.writeChangesNow(),
+						// Gracefully shut down the internal TSR-Bridge:
+						tpt.bridgeHandler?.onClose(),
+					]),
+					// Add a timeout, in case the above doesn't finish:
+					new Promise((resolve) => setTimeout(resolve, 1000)),
+				])
+				app.quit()
+			})
+			.catch((err) => {
+				console.error(err)
+				app.quit()
+			})
 	})
 
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:

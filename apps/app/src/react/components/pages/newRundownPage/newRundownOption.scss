@@ -1,0 +1,21 @@
+.new-rundown-option {
+	background: #1c1c1c;
+	border-radius: 1rem;
+	border: 0;
+	color: white;
+	width: 100%;
+	padding: 3rem 2rem;
+	display: flex;
+	align-items: center;
+	margin-bottom: 2rem;
+
+	&:hover {
+		background: #2b2b2b;
+	}
+
+	.icon {
+	}
+	.label {
+		margin-left: 2rem;
+	}
+}

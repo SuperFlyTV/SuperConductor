@@ -13,9 +13,10 @@ interface IPartSubmenuProps {
 	rundownId: string
 	groupId: string
 	part: Part
+	locked?: boolean
 }
 
-export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, part }) => {
+export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, part, locked }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -92,15 +93,27 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 			{part.triggers.length > 0 && (
 				<div className="triggers">
 					{part.triggers.map((trigger, index) => (
-						<EditTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
+						<EditTrigger
+							key={index}
+							trigger={trigger}
+							index={index}
+							onEdit={onEditTrigger}
+							locked={locked}
+						/>
 					))}
 				</div>
 			)}
 
 			<div className="controls">
-				<TriggerBtn onTrigger={handleTriggerBtn} active={triggerActive} title="Assign Trigger" />
+				<TriggerBtn
+					disabled={locked}
+					onTrigger={handleTriggerBtn}
+					active={triggerActive}
+					title="Assign Trigger"
+				/>
 
 				<TrashBtn
+					disabled={locked}
 					onClick={() => {
 						const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {

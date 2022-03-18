@@ -12,14 +12,14 @@ export class IPCClient implements IPCClientMethods {
 	constructor(
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
-			updateAppData: (appData: AppData) => void
-			updateProject: (project: Project) => void
-			updateRundown: (fileName: string, rundown: Rundown) => void
-			updateResource: (id: string, resource: ResourceAny | null) => void
-			updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
-			updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
-			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
-			openSettings: () => void
+			updateAppData?: (appData: AppData) => void
+			updateProject?: (project: Project) => void
+			updateRundown?: (fileName: string, rundown: Rundown) => void
+			updateResource?: (id: string, resource: ResourceAny | null) => void
+			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
+			updatePeripheral?: (peripheralId: string, peripheral: Peripheral | null) => void
+			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
+			openSettings?: () => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -36,28 +36,28 @@ export class IPCClient implements IPCClientMethods {
 	}
 
 	updateAppData(appData: AppData): void {
-		this.callbacks.updateAppData(appData)
+		if (this.callbacks.updateAppData) this.callbacks.updateAppData(appData)
 	}
 	updateProject(project: Project): void {
-		this.callbacks.updateProject(project)
+		if (this.callbacks.updateProject) this.callbacks.updateProject(project)
 	}
 	updateRundown(fileName: string, rundown: Rundown): void {
-		this.callbacks.updateRundown(fileName, rundown)
+		if (this.callbacks.updateRundown) this.callbacks.updateRundown(fileName, rundown)
 	}
 	updateResource(id: string, resource: ResourceAny | null): void {
-		this.callbacks.updateResource(id, resource)
+		if (this.callbacks.updateResource) this.callbacks.updateResource(id, resource)
 	}
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
-		this.callbacks.updateBridgeStatus(id, bridgeStatus)
+		if (this.callbacks.updateBridgeStatus) this.callbacks.updateBridgeStatus(id, bridgeStatus)
 	}
 	updatePeripheral(peripheralId: string, peripheral: Peripheral | null): void {
-		this.callbacks.updatePeripheral(peripheralId, peripheral)
+		if (this.callbacks.updatePeripheral) this.callbacks.updatePeripheral(peripheralId, peripheral)
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
-		this.callbacks.updatePeripheralTriggers(peripheralTriggers)
+		if (this.callbacks.updatePeripheralTriggers) this.callbacks.updatePeripheralTriggers(peripheralTriggers)
 	}
 	openSettings(): void {
-		this.callbacks.openSettings()
+		if (this.callbacks.openSettings) this.callbacks.openSettings()
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

@@ -9,21 +9,31 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
 import { useDrop } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, FormControlLabel, Switch, TextField, ToggleButton } from '@mui/material'
+import { Button, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
-import { allowMovingItemIntoGroup } from '../../../../lib/util'
+import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
 import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
-import { MdPlayArrow, MdStop } from 'react-icons/md'
+import {
+	MdChevronRight,
+	MdLock,
+	MdLockOpen,
+	MdLooksOne,
+	MdPlayArrow,
+	MdPlaylistPlay,
+	MdStop,
+	MdRepeat,
+} from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
+import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 
 export const GroupView: React.FC<{
@@ -224,6 +234,27 @@ export const GroupView: React.FC<{
 		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
 
+	// Step down button:
+	const nextPartIndex = getNextPartIndex(group)
+	const nextPart = group.parts[nextPartIndex]
+	const canStepDown = !group.disabled && playhead.anyPartIsPlaying && Boolean(nextPart)
+	const handleStepDown = () => {
+		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
+	// Step down up:
+	const prevPartIndex = getPrevPartIndex(group)
+	const prevPart = group.parts[prevPartIndex]
+	const canStepUp = !group.disabled && playhead.anyPartIsPlaying && Boolean(prevPart)
+	const handleStepUp = () => {
+		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
+	}
+
+	// Collapse button:
+	const handleCollapse = () => {
+		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -239,25 +270,35 @@ export const GroupView: React.FC<{
 			</div>
 		) : null
 	} else {
-		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying)
+		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying) && !group.locked
 		// (group.oneAtATime && playhead.anyPartIsPlaying) || !group.oneAtATime
 		// || !group.oneAtATime // && !playhead.groupIsPlaying
 
-		const canModifyLoop = group.oneAtATime
-		const canModifyAutoPlay = group.oneAtATime
+		const canModifyLoop = group.oneAtATime && !group.locked
+		const canModifyAutoPlay = group.oneAtATime && !group.locked
 
 		return (
 			<div
 				ref={wrapperRef}
-				className={classNames('group', { disabled: group.disabled })}
+				className={classNames('group', { disabled: group.disabled, collapsed: group.collapsed })}
 				data-drop-handler-id={handlerId}
 			>
 				<div className="group__header">
+					<div
+						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
+						title="Toggle Group collapse"
+					>
+						<MdChevronRight size={22} onClick={handleCollapse} />
+					</div>
+
 					{!editingGroupName && (
 						<div
 							className="title"
-							title="Click to edit"
+							title={group.locked ? group.name : 'Click to edit'}
 							onClick={() => {
+								if (group.locked) {
+									return
+								}
 								setEditingGroupName(true)
 							}}
 						>
@@ -302,86 +343,131 @@ export const GroupView: React.FC<{
 							</Button>
 							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+								<div className="playcount">
+									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
+								</div>
 							</Button>
-							<ToggleButton
-								value="disabled"
-								selected={group.disabled}
-								size="small"
-								onChange={() => {
-									ipcServer
-										.toggleGroupDisable({
-											rundownId,
-											groupId: group.id,
-											value: !group.disabled,
-										})
-										.catch(handleError)
-								}}
-							>
-								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-							</ToggleButton>
+							{group.oneAtATime && (
+								<>
+									<Button
+										variant="contained"
+										size="small"
+										disabled={!canStepDown}
+										onClick={handleStepDown}
+									>
+										<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+											<AiFillStepForward size={22} />
+										</div>
+									</Button>
+									<Button
+										variant="contained"
+										size="small"
+										disabled={!canStepUp}
+										onClick={handleStepUp}
+									>
+										<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+											<AiFillStepForward size={22} />
+										</div>
+									</Button>
+								</>
+							)}
 						</div>
 
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime && group.autoPlay}
-										onChange={() => {
-											ipcServer
-												.toggleGroupAutoplay({
-													rundownId,
-													groupId: group.id,
-													value: !group.autoPlay,
-												})
-												.catch(handleError)
-										}}
-									/>
-								}
-								label="Auto-step"
-								labelPlacement="start"
-								disabled={!canModifyAutoPlay}
-							/>
-						</div>
+						<ToggleButton
+							title={group.disabled ? 'Enable Group' : 'Disable Group'}
+							value="disabled"
+							selected={group.disabled}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.toggleGroupDisable({
+										rundownId,
+										groupId: group.id,
+										value: !group.disabled,
+									})
+									.catch(handleError)
+							}}
+						>
+							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+						</ToggleButton>
+						<ToggleButton
+							title={group.locked ? 'Unlock Group' : 'Lock Group'}
+							value="locked"
+							selected={group.locked}
+							size="small"
+							onChange={() => {
+								ipcServer
+									.toggleGroupLock({
+										rundownId,
+										groupId: group.id,
+										value: !group.locked,
+									})
+									.catch(handleError)
+							}}
+						>
+							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+						</ToggleButton>
 
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime && group.loop}
-										onChange={() => {
-											ipcServer
-												.toggleGroupLoop({ rundownId, groupId: group.id, value: !group.loop })
-												.catch(handleError)
-										}}
-									/>
-								}
-								label="Loop"
-								labelPlacement="start"
-								disabled={!canModifyLoop}
-							/>
-						</div>
-						<div className="toggle">
-							<FormControlLabel
-								control={
-									<Switch
-										checked={group.oneAtATime}
-										onChange={() => {
-											ipcServer
-												.toggleGroupOneAtATime({
-													rundownId,
-													groupId: group.id,
-													value: !group.oneAtATime,
-												})
-												.catch(console.error)
-										}}
-									/>
-								}
-								label="One-at-a-time"
-								labelPlacement="start"
-								disabled={!canModifyOneAtATime}
-							/>
-						</div>
+						<ToggleButton
+							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
+							value="loop"
+							selected={group.oneAtATime && group.loop}
+							size="small"
+							disabled={!canModifyLoop}
+							onChange={() => {
+								ipcServer
+									.toggleGroupLoop({
+										rundownId,
+										groupId: group.id,
+										value: !group.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdRepeat size={18} />
+						</ToggleButton>
+
+						<ToggleButton
+							title={group.oneAtATime ? 'Disable One-at-a-time' : 'Enable One-at-a-time'}
+							value="one-at-a-time"
+							selected={group.oneAtATime}
+							size="small"
+							disabled={!canModifyOneAtATime}
+							onChange={() => {
+								ipcServer
+									.toggleGroupOneAtATime({
+										rundownId,
+										groupId: group.id,
+										value: !group.oneAtATime,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdLooksOne size={22} />
+						</ToggleButton>
+
+						<ToggleButton
+							title={group.autoPlay ? 'Disable Auto-step' : 'Enable Auto-step'}
+							value="auto-step"
+							selected={group.oneAtATime && group.autoPlay}
+							size="small"
+							disabled={!canModifyAutoPlay}
+							onChange={() => {
+								ipcServer
+									.toggleGroupAutoplay({
+										rundownId,
+										groupId: group.id,
+										value: !group.autoPlay,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdPlaylistPlay size={22} />
+						</ToggleButton>
+
 						<TrashBtn
+							className="delete"
+							disabled={group.locked}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
@@ -394,23 +480,25 @@ export const GroupView: React.FC<{
 						/>
 					</div>
 				</div>
-				<div className="group__content">
-					<div className="group__content__parts">
-						{group.parts.map((part) => (
-							<PartView
-								key={part.id}
-								rundownId={rundownId}
-								part={part}
-								parentGroup={group}
-								parentGroupIndex={groupIndex}
-								playhead={playhead}
-								mappings={mappings}
-							/>
-						))}
-					</div>
+				{!group.collapsed && (
+					<div className="group__content">
+						<div className="group__content__parts">
+							{group.parts.map((part) => (
+								<PartView
+									key={part.id}
+									rundownId={rundownId}
+									part={part}
+									parentGroup={group}
+									parentGroupIndex={groupIndex}
+									playhead={playhead}
+									mappings={mappings}
+								/>
+							))}
+						</div>
 
-					<GroupOptions rundown={rundown} group={group} />
-				</div>
+						{!group.locked && <GroupOptions rundown={rundown} group={group} />}
+					</div>
+				)}
 
 				<ConfirmationDialog
 					open={deleteConfirmationOpen}
@@ -464,7 +552,10 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					const { partId } = await ipcServer.newPart({
 						rundownId: rundown.id,
 						groupId: group.id,
-						name: droppedItem.resource.id,
+						name:
+							'name' in droppedItem.resource
+								? (droppedItem.resource as any).name
+								: droppedItem.resource.id,
 					})
 
 					await ipcServer.addResourceToTimeline({

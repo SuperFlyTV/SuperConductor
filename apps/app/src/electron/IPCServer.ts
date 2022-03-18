@@ -1,4 +1,5 @@
 import {
+	allowAddingResourceToLayer,
 	allowMovingItemIntoGroup,
 	deleteGroup,
 	deletePart,
@@ -8,13 +9,38 @@ import {
 	findPart,
 	findTimelineObj,
 	findTimelineObjIndex,
+	getNextPartIndex,
+	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
 	updateGroupPlaying,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
-import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import {
+	TSRTimelineObj,
+	DeviceType,
+	TimelineContentTypeCasparCg,
+	TimelineObjAtemME,
+	TimelineContentTypeAtem,
+	AtemTransitionStyle,
+	TimelineObjAtemDSK,
+	TimelineObjAtemAUX,
+	TimelineObjAtemSsrc,
+	TimelineObjAtemSsrcProps,
+	TimelineObjAtemMacroPlayer,
+	TimelineObjAtemAudioChannel,
+	TimelineObjAtemMediaPlayer,
+	MediaSourceType,
+	TimelineObjOBSCurrentScene,
+	TimelineContentTypeOBS,
+	TimelineObjOBSCurrentTransition,
+	TimelineObjOBSRecording,
+	TimelineObjOBSStreaming,
+	TimelineObjOBSSceneItemRender,
+	TimelineObjOBSMute,
+	TimelineObjOBSSourceSettings,
+} from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
@@ -23,7 +49,7 @@ import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, deepClone } from '@shared/lib'
+import { assertNever, deepClone, literal } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
@@ -211,8 +237,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		trigger: Trigger | null
 		triggerIndex: number | null
-	}): Promise<UndoableResult<string>> {
+	}): Promise<UndoableResult<string> | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
+
 		const originalTriggers = deepClone(part.triggers)
 
 		if (arg.triggerIndex === null) {
@@ -249,8 +280,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
+
 		const originalValue = part.loop
 
 		updateGroupPlaying(group)
@@ -277,8 +313,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked) {
+			return null
+		}
+
 		const originalValue = part.disabled
 
 		updateGroupPlaying(group)
@@ -298,6 +339,30 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.TogglePartDisable,
+		}
+	}
+	async togglePartLock(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		value: boolean
+	}): Promise<UndoableResult> {
+		const { rundown, part } = this.getPart(arg)
+		const originalValue = part.locked
+
+		part.locked = arg.value
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, part } = this.getPart(arg)
+
+				part.locked = originalValue
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.TogglePartLock,
 		}
 	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -329,12 +394,38 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		}
 	}
+	async playNext(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled || !group.oneAtATime) {
+			return
+		}
+
+		const nextPartIndex = getNextPartIndex(group)
+		const nextPart = group.parts[nextPartIndex]
+		if (nextPart) {
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(console.error)
+		}
+	}
+	async playPrev(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled || !group.oneAtATime) {
+			return
+		}
+
+		const prevPartIndex = getPrevPartIndex(group)
+		const prevPart = group.parts[prevPartIndex]
+		if (prevPart) {
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
+		}
+	}
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
 		name: string
-	}): Promise<UndoableResult<{ partId: string; groupId?: string }>> {
+	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | null> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -351,6 +442,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (arg.groupId) {
 			// Put part into existing group:
 			const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
+
+			if (group.locked) {
+				return null
+			}
 
 			group.parts.push(newPart)
 		} else {
@@ -392,8 +487,17 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result,
 		}
 	}
-	async updatePart(arg: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	async updatePart(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+		part: Part
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
@@ -434,8 +538,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: newGroup.id,
 		}
 	}
-	async updateGroup(arg: { rundownId: string; groupId: string; group: Group }): Promise<UndoableResult> {
+	async updateGroup(arg: { rundownId: string; groupId: string; group: Group }): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
 
 		const groupPreChange = deepClone(group)
 		Object.assign(group, arg.group)
@@ -454,8 +562,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.UpdateGroup,
 		}
 	}
-	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult> {
-		const { rundown, group } = this.getGroup(arg)
+	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const deletedPartIndex = group.parts.findIndex((p) => p.id === arg.partId)
 		const deletedPart = deletePart(group, arg.partId)
@@ -490,8 +602,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.DeletePart,
 		}
 	}
-	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult> {
+	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
 
 		// Stop the group (so that the updates are sent to TSR):
 		group.playout = {
@@ -519,7 +635,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async movePart(arg: {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<UndoableResult<Group> | undefined> {
+	}): Promise<UndoableResult<Group> | null> {
 		let fromRundown: Rundown
 		let fromGroup: Group
 		let part: Part
@@ -532,8 +648,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		} catch (error) {
 			// Ignore
 			console.log('movePart caught error:', (error as any).message)
-			return
+			return null
 		}
+
 		let toRundown: Rundown
 		let toGroup: Group
 		let madeNewTransparentGroup = false
@@ -565,7 +682,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
 		if (!allow) {
-			return
+			return null
 		}
 
 		const fromPlayhead = allow.fromPlayhead
@@ -664,8 +781,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -696,8 +817,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -726,8 +851,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
@@ -755,8 +884,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult | null> {
 		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" could not be found.`)
@@ -805,8 +938,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -852,8 +989,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		key: string
 		changedItemId: string
 		value: string
-	}): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -908,8 +1049,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		key: string
-	}): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -955,8 +1100,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		layerId: string | null
 		resourceId: string
-	}): Promise<UndoableResult> {
-		const { rundown, part } = this.getPart(arg)
+	}): Promise<UndoableResult | null> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		if (group.locked || part.locked) {
+			return null
+		}
 
 		const resource = this.session.getResource(arg.resourceId)
 		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
@@ -999,6 +1148,279 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 			throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
+		} else if (resource.resourceType === ResourceType.ATEM_ME) {
+			obj = literal<TimelineObjAtemME>({
+				id: short.generate(),
+				layer: '', // set later,
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.ME,
+					me: {
+						input: 1,
+						transition: AtemTransitionStyle.CUT,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_DSK) {
+			obj = literal<TimelineObjAtemDSK>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.DSK,
+					dsk: {
+						onAir: true,
+						sources: {
+							fillSource: 1,
+							cutSource: 2,
+						},
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_AUX) {
+			obj = literal<TimelineObjAtemAUX>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.AUX,
+					aux: {
+						input: 1,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
+			obj = literal<TimelineObjAtemSsrc>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.SSRC,
+					ssrc: {
+						boxes: [
+							{
+								enabled: true,
+								source: 0,
+								x: -758,
+								y: 425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: 758,
+								y: 425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: -758,
+								y: -425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+							{
+								enabled: true,
+								source: 0,
+								x: 758,
+								y: -425,
+								size: 417,
+								cropped: false,
+								cropTop: 0,
+								cropBottom: 0,
+								cropLeft: 0,
+								cropRight: 0,
+							},
+						],
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
+			obj = literal<TimelineObjAtemSsrcProps>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.SSRCPROPS,
+					ssrcProps: {
+						artPreMultiplied: true,
+						artFillSource: 0,
+						artCutSource: 0,
+						artOption: 0,
+						borderEnabled: false,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
+			obj = literal<TimelineObjAtemMacroPlayer>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.MACROPLAYER,
+					macroPlayer: {
+						macroIndex: 0,
+						isRunning: true,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
+			obj = literal<TimelineObjAtemAudioChannel>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.AUDIOCHANNEL,
+					audioChannel: {},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
+			obj = literal<TimelineObjAtemMediaPlayer>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.ATEM,
+					type: TimelineContentTypeAtem.MEDIAPLAYER,
+					mediaPlayer: {
+						sourceType: MediaSourceType.Clip,
+						clipIndex: 0,
+						stillIndex: 0,
+						playing: true,
+						loop: false,
+						atBeginning: true,
+						clipFrame: 0,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OBS_SCENE) {
+			obj = literal<TimelineObjOBSCurrentScene>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OBS,
+					type: TimelineContentTypeOBS.CURRENT_SCENE,
+					sceneName: resource.name,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
+			obj = literal<TimelineObjOBSCurrentTransition>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OBS,
+					type: TimelineContentTypeOBS.CURRENT_TRANSITION,
+					transitionName: resource.name,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
+			obj = literal<TimelineObjOBSRecording>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.RECORDING, on: true },
+			})
+		} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
+			obj = literal<TimelineObjOBSStreaming>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.STREAMING, on: true },
+			})
+		} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
+			obj = literal<TimelineObjOBSSourceSettings>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OBS,
+					type: TimelineContentTypeOBS.SOURCE_SETTINGS,
+					sourceType: 'dshow_input',
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OBS_MUTE) {
+			obj = literal<TimelineObjOBSMute>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.MUTE, mute: true },
+			})
+		} else if (resource.resourceType === ResourceType.OBS_RENDER) {
+			obj = literal<TimelineObjOBSSceneItemRender>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.SCENE_ITEM_RENDER, on: true },
+			})
 		} else {
 			assertNever(resource)
 			// @ts-expect-error never
@@ -1021,6 +1443,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			createdNewLayer = result.createdNewLayer
 		}
 		obj.layer = addToLayerId
+
+		const project = this.getProject()
+		const mapping = project.mappings[obj.layer]
+		const allow = allowAddingResourceToLayer(project, resource, mapping)
+		if (!allow) {
+			console.warn(
+				`Preventing addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
+			)
+			return null
+		}
 
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,
@@ -1049,8 +1481,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.AddResourceToTimeline,
 		}
 	}
-	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
 		const originalValue = group.loop
 
 		updateGroupPlaying(group)
@@ -1072,8 +1509,17 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.ToggleGroupLoop,
 		}
 	}
-	async toggleGroupAutoplay(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupAutoplay(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
 		const originalValue = group.autoPlay
 
 		updateGroupPlaying(group)
@@ -1095,8 +1541,17 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.ToggleGroupAutoplay,
 		}
 	}
-	async toggleGroupOneAtATime(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupOneAtATime(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
 		const originalValue = group.oneAtATime
 
 		updateGroupPlaying(group)
@@ -1118,8 +1573,17 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.toggleGroupOneAtATime,
 		}
 	}
-	async toggleGroupDisable(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupDisable(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
 		const originalValue = group.disabled
 
 		updateGroupPlaying(group)
@@ -1139,6 +1603,53 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.ToggleGroupDisable,
+		}
+	}
+	async toggleGroupCollapse(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult | null> {
+		const { rundown, group } = this.getGroup(arg)
+
+		if (group.locked) {
+			return null
+		}
+
+		const originalValue = group.collapsed
+
+		group.collapsed = arg.value
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.collapsed = originalValue
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
+	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.locked
+
+		group.locked = arg.value
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.locked = originalValue
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.ToggleGroupLock,
 		}
 	}
 	async refreshResources(): Promise<void> {

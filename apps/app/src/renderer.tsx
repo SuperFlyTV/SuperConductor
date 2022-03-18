@@ -113,6 +113,9 @@ export const ContextWrapper: React.FC = () => {
 									background: 'none',
 								},
 							},
+							'&.Mui-disabled': {
+								border: 'none',
+							},
 						},
 					},
 				},

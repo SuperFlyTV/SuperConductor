@@ -106,6 +106,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 				>
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>
 					<MenuItem value={DeviceType.ATEM}>ATEM</MenuItem>
+					<MenuItem value={DeviceType.OBS}>OBS</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 				<TextField

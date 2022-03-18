@@ -13,10 +13,14 @@ export const EditTrigger: React.FC<{
 	trigger: Trigger
 	index: number
 	onEdit: (index: number, trigger: Trigger | null) => void
-}> = ({ trigger, index, onEdit }) => {
+	locked?: boolean
+}> = ({ trigger, index, onEdit, locked }) => {
 	const [anchorEl, setAnchorEl] = React.useState<HTMLDivElement | null>(null)
 
 	const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+		if (locked) {
+			return
+		}
 		setAnchorEl(event.currentTarget)
 	}
 
@@ -28,7 +32,7 @@ export const EditTrigger: React.FC<{
 	const labelParts = trigger.label.split('+')
 
 	return (
-		<div className={classNames('trigger', { 'trigger-open': editing })}>
+		<div className={classNames('trigger', { 'trigger--open': editing, 'trigger--locked': locked })}>
 			<div className="label" onClick={handleClick}>
 				<span className="label__action">
 					{trigger.action === 'play' ? (

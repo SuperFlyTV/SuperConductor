@@ -1,0 +1,21 @@
+.new-tab-button {
+	border-radius: 50%;
+	width: 1.7rem;
+	height: 1.7rem;
+	background: transparent;
+	position: relative;
+	border: 0;
+	cursor: pointer;
+
+	svg {
+		position: absolute;
+		fill: white;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.2);
+	}
+}

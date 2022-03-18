@@ -1,4 +1,4 @@
-@import './globals.scss';
+@import './global.scss';
 
 @mixin useObjectTypeStyles() {
 	&.template {
@@ -7,5 +7,65 @@
 
 	&.media {
 		background: $mediaLayerColor;
+	}
+
+	&.me {
+		background: $mixEffectLayerColor;
+	}
+
+	&.dsk {
+		background: $downstreamKeyerLayerColor;
+	}
+
+	&.aux {
+		background: $auxiliaryLayerColor;
+	}
+
+	&.ssrc {
+		background: $superSourceLayerColor;
+	}
+
+	&.ssrcProps {
+		background: $superSourcePropsLayerColor;
+	}
+
+	&.macroPlayer {
+		background: $macroPlayerLayerColor;
+	}
+
+	&.audioChan {
+		background: $audioLayerColor;
+	}
+
+	&.mp {
+		background: $mediaPlayerLayerColor;
+	}
+
+	&.CURRENT_SCENE {
+		background: $currentSceneLayerColor;
+	}
+
+	&.CURRENT_TRANSITION {
+		background: $currentTransitionLayerColor;
+	}
+
+	&.MUTE {
+		background: $muteLayerColor;
+	}
+
+	&.RECORDING {
+		background: $recordingLayerColor;
+	}
+
+	&.SCENE_ITEM_RENDER {
+		background: $sceneItemRenderLayerColor;
+	}
+
+	&.STREAMING {
+		background: $streamingLayerColor;
+	}
+
+	&.SOURCE_SETTINGS {
+		background: $sourceSettingsLayerColor;
 	}
 }

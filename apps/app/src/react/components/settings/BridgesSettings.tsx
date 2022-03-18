@@ -1,21 +1,24 @@
 import React, { useCallback, useContext, useMemo } from 'react'
-import { Bridge as BridgeType, BridgeStatus, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
+import { Bridge as BridgeType, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
-import { Button, Divider, Typography, FormControlLabel, Switch } from '@mui/material'
+import { Button, Typography, FormControlLabel, Switch } from '@mui/material'
 import { Bridge } from './Bridge'
 import { literal } from '@shared/lib'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../contexts/IPCServer'
+import { store } from '../../mobx/store'
+import { observer } from 'mobx-react-lite'
 
 interface IBridgesSettingsProps {
 	project: Project
-	bridgeStatuses: { [bridgeId: string]: BridgeStatus }
 }
 
-export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, bridgeStatuses }) => {
+export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+
+	const bridgeStatuses = store.appStore.bridgeStatuses
 
 	const internalBridge = useMemo(() => {
 		return project.bridges[INTERNAL_BRIDGE_ID]
@@ -61,11 +64,6 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 
 	return (
 		<>
-			<Typography variant="h6" marginTop="3rem">
-				Bridges
-			</Typography>
-			<Divider />
-
 			<FormControlLabel
 				control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
 				label="Enable internal bridge"
@@ -105,4 +103,4 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = ({ project, brid
 			</Button>
 		</>
 	)
-}
+})

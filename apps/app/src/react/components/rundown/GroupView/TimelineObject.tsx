@@ -23,7 +23,8 @@ export const TimelineObject: React.FC<{
 	msPerPixel: number
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
-}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel }) => {
+	locked?: boolean
+}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked }) => {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
 	const gui = store.guiStore
@@ -91,7 +92,7 @@ export const TimelineObject: React.FC<{
 
 	// This useEffect hook and the one immediately following it are order-sensitive.
 	useEffect(() => {
-		if (!isMoved) {
+		if (!isMoved || locked) {
 			return
 		}
 
@@ -134,8 +135,13 @@ export const TimelineObject: React.FC<{
 		originY,
 		allowDuplicate,
 		moveType,
+		locked,
 	])
 	useEffect(() => {
+		if (locked) {
+			return
+		}
+
 		if (isMoved && !handledMoveStart) {
 			// A move has begun.
 
@@ -152,7 +158,7 @@ export const TimelineObject: React.FC<{
 				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [handledMoveStart, isMoved, timelineObjMove.moveType, updateTimelineObjMove])
+	}, [handledMoveStart, isMoved, locked, timelineObjMove.moveType, updateTimelineObjMove])
 
 	const updateSelection = () => {
 		if (
@@ -236,6 +242,7 @@ export const TimelineObject: React.FC<{
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 				isAtMinWidth,
+				locked,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={updateSelection}

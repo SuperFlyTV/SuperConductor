@@ -305,6 +305,7 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.rundowns) {
 			for (const rundownId of Object.keys(updates.rundowns)) {
+				console.log('processing update of rundown:', rundownId)
 				this.rundownsHasChanged[rundownId] = true
 				this.rundownsNeedsWrite[rundownId] = true
 			}
@@ -453,6 +454,7 @@ export class StorageHandler extends EventEmitter {
 			for (const fileName of Object.keys(this.rundowns)) {
 				this.rundownsHasChanged[fileName] = true
 			}
+			this.emitEverything = false
 		}
 
 		if (this.appDataHasChanged) {
