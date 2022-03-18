@@ -31,6 +31,7 @@ export class BridgeHandler {
 	private mappings: Mappings = {}
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
+	private closed = false
 
 	constructor(
 		private session: SessionHandler,
@@ -67,8 +68,14 @@ export class BridgeHandler {
 	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
-
+	async onClose() {
+		if (this.internalBridge) {
+			await this.internalBridge.destroy()
+		}
+		this.closed = true
+	}
 	onUpdatedProject(project: Project) {
+		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
 				console.log('Setting up internal bridge')
