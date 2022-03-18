@@ -642,7 +642,10 @@ export const PartView: React.FC<{
 
 	const groupOrPartDisabled = parentGroup.disabled || part.disabled
 	const groupOrPartLocked = parentGroup.locked || part.locked
-	const firstTimelineObj: TimelineObj | undefined = part.timeline[0]
+	const sortedLayers = useMemo(() => {
+		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
+	}, [mappings, resolvedTimeline.layers])
+	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0][1][0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
 	if (typeof firstTimelineObjType === 'string') {
@@ -838,7 +841,7 @@ export const PartView: React.FC<{
 						})}
 						ref={layersDivRef}
 					>
-						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
+						{sortedLayers.map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
 								timelineObj: TimelineObj
