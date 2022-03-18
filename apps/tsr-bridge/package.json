@@ -1,7 +1,7 @@
 {
 	"name": "tsr-bridge",
 	"private": true,
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"description": "",
 	"main": "dist/main.js",
 	"engines": {
@@ -49,9 +49,9 @@
 		"webpack-dev-server": "^4.3.0"
 	},
 	"dependencies": {
-		"@shared/api": "^0.4.0",
-		"@shared/lib": "^0.4.0",
-		"@shared/tsr-bridge": "^0.4.0",
+		"@shared/api": "^0.5.0",
+		"@shared/lib": "^0.5.0",
+		"@shared/tsr-bridge": "^0.5.0",
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^4.6.1",
