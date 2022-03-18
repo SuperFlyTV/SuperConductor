@@ -19,8 +19,13 @@ import {
 	AtemSsrcProps,
 	OBSScene,
 	OBSTransition,
+	OBSRecording,
+	OBSStreaming,
+	OBSSourceSettings,
+	OBSRender,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
+import { OBSMute } from '@shared/models'
 
 export class TSR {
 	public newConnection = false
@@ -445,17 +450,19 @@ export class TSR {
 					return Object.values(resources)
 				}
 
+				// Scenes and Scene Items
 				const { scenes } = await obs.send('GetSceneList')
 				for (const scene of scenes) {
-					const resource: OBSScene = {
+					const sceneResource: OBSScene = {
 						resourceType: ResourceType.OBS_SCENE,
 						deviceId,
 						id: `${deviceId}_scene_${scene.name}`,
 						name: scene.name,
 					}
-					resources[resource.id] = resource
+					resources[sceneResource.id] = sceneResource
 				}
 
+				// Transitions
 				const { transitions } = await obs.send('GetTransitionList')
 				for (const transition of transitions) {
 					const resource: OBSTransition = {
@@ -463,6 +470,56 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_transition_${transition.name}`,
 						name: transition.name,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Recording
+				{
+					const resource: OBSRecording = {
+						resourceType: ResourceType.OBS_RECORDING,
+						deviceId,
+						id: `${deviceId}_recording`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Streaming
+				{
+					const resource: OBSStreaming = {
+						resourceType: ResourceType.OBS_STREAMING,
+						deviceId,
+						id: `${deviceId}_streaming`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Mute
+				{
+					const resource: OBSMute = {
+						resourceType: ResourceType.OBS_MUTE,
+						deviceId,
+						id: `${deviceId}_mute`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Render
+				{
+					const resource: OBSRender = {
+						resourceType: ResourceType.OBS_RENDER,
+						deviceId,
+						id: `${deviceId}_render`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Source Settings
+				{
+					const resource: OBSSourceSettings = {
+						resourceType: ResourceType.OBS_SOURCE_SETTINGS,
+						deviceId,
+						id: `${deviceId}_source_settings`,
 					}
 					resources[resource.id] = resource
 				}

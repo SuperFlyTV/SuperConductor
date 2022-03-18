@@ -48,4 +48,24 @@
 	&.CURRENT_TRANSITION {
 		background: $currentTransitionLayerColor;
 	}
+
+	&.MUTE {
+		background: $muteLayerColor;
+	}
+
+	&.RECORDING {
+		background: $recordingLayerColor;
+	}
+
+	&.SCENE_ITEM_RENDER {
+		background: $sceneItemRenderLayerColor;
+	}
+
+	&.STREAMING {
+		background: $streamingLayerColor;
+	}
+
+	&.SOURCE_SETTINGS {
+		background: $sourceSettingsLayerColor;
+	}
 }

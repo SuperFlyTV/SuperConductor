@@ -1,7 +1,15 @@
 import { Box, Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material'
 import { literal } from '@shared/lib'
 import React, { useCallback, useContext, useState } from 'react'
-import { DeviceType, MappingAtem, MappingAtemType, MappingCasparCG, Mappings } from 'timeline-state-resolver-types'
+import {
+	DeviceType,
+	MappingAtem,
+	MappingAtemType,
+	MappingCasparCG,
+	MappingOBS,
+	MappingOBSType,
+	Mappings,
+} from 'timeline-state-resolver-types'
 import { describeMappingConfiguration, getDeviceName } from '../../../../lib/TSRMappings'
 import { findDevice, listAvailableDeviceIDs } from '../../../../lib/util'
 import { Project } from '../../../../models/project/Project'
@@ -31,7 +39,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 			}
 
 			const layerName = mappingId
-			let newMapping: MappingCasparCG | MappingAtem
+			let newMapping: MappingCasparCG | MappingAtem | MappingOBS
 
 			switch (device.type) {
 				case DeviceType.CASPARCG: {
@@ -52,6 +60,17 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 						deviceId,
 						layerName,
 						mappingType: MappingAtemType.MixEffect,
+					})
+
+					break
+				}
+
+				case DeviceType.OBS: {
+					newMapping = literal<MappingOBS>({
+						device: DeviceType.OBS,
+						deviceId,
+						layerName,
+						mappingType: MappingOBSType.CurrentScene,
 					})
 
 					break

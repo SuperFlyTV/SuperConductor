@@ -14,6 +14,11 @@ enum GeneralResourceType {
 	MEDIA_PLAYER = 'mp',
 	CURRENT_SCENE = 'CURRENT_SCENE',
 	CURRENT_TRANSITION = 'CURRENT_TRANSITION',
+	MUTE = 'MUTE',
+	RECORDING = 'RECORDING',
+	SCENE_ITEM_RENDER = 'SCENE_ITEM_RENDER',
+	SOURCE_SETTINGS = 'SOURCE_SETTINGS',
+	STREAMING = 'STREAMING',
 	UNKNOWN = 'unknown',
 }
 
@@ -45,6 +50,16 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.CURRENT_SCENE
 		case ResourceType.OBS_TRANSITION:
 			return GeneralResourceType.CURRENT_TRANSITION
+		case ResourceType.OBS_RECORDING:
+			return GeneralResourceType.RECORDING
+		case ResourceType.OBS_SOURCE_SETTINGS:
+			return GeneralResourceType.SOURCE_SETTINGS
+		case ResourceType.OBS_STREAMING:
+			return GeneralResourceType.STREAMING
+		case ResourceType.OBS_MUTE:
+			return GeneralResourceType.MUTE
+		case ResourceType.OBS_RENDER:
+			return GeneralResourceType.SCENE_ITEM_RENDER
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

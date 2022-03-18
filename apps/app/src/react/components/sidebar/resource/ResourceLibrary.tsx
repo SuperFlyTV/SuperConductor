@@ -203,6 +203,41 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Transition: {resource.name}</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Recording</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Streaming</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Source Settings</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OBS_MUTE) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Mute</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OBS_RENDER) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Scene Item Render</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]
