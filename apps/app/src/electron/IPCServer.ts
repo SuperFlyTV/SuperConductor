@@ -1612,10 +1612,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}): Promise<UndoableResult | null> {
 		const { rundown, group } = this.getGroup(arg)
 
-		if (group.locked) {
-			return null
-		}
-
 		const originalValue = group.collapsed
 
 		group.collapsed = arg.value
