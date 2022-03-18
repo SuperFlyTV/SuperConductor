@@ -1,5 +1,6 @@
 .project-page-layout {
 	display: flex;
+	min-height: 0;
 
 	.menubar {
 		flex-grow: 0;
@@ -22,6 +23,7 @@
 
 	.main {
 		flex-grow: 1;
+		overflow: auto;
 
 		.title {
 			padding: 1rem 1.5rem;
