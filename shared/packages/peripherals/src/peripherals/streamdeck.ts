@@ -3,6 +3,7 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
+import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 
 export class PeripheralStreamDeck extends Peripheral {
@@ -210,6 +211,8 @@ export async function drawKeyDisplay(
 	const padding = 5
 	const SIZE = streamDeck.ICON_SIZE
 
+	const maxTextWidth = SIZE - padding * 2
+
 	const dampen = keyDisplay.attentionLevel === AttentionLevel.IGNORE
 	const dampenBackground = dampen || keyDisplay.attentionLevel === AttentionLevel.ALERT
 
@@ -317,7 +320,7 @@ export async function drawKeyDisplay(
 	}
 
 	if (keyDisplay.header) {
-		const text = keyDisplay.header.short || keyDisplay.header.long.slice(0, 8)
+		const text = keyDisplay.header.short || limitTextWidth(keyDisplay.header.long, fontsize, maxTextWidth)
 
 		const textFontSize = Math.floor(fontsize * (text.length > 7 ? 0.8 : 1))
 		svg += `<text
@@ -364,10 +367,9 @@ export async function drawKeyDisplay(
 				}
 			} else {
 				let line = ''
-				const lineLength = 9
 				for (let i = 0; i < 3; i++) {
-					line = text.slice(0, lineLength)
-					text = text.slice(lineLength)
+					line = limitTextWidth(text, fontsize, maxTextWidth)
+					text = text.slice(line.length)
 					if (line) {
 						svg += `<text
 							font-family="Arial, Helvetica, sans-serif"
