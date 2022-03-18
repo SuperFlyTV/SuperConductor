@@ -347,30 +347,28 @@ export const GroupView: React.FC<{
 									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
 								</div>
 							</Button>
-							{group.oneAtATime && (
-								<>
-									<Button
-										variant="contained"
-										size="small"
-										disabled={!canStepDown}
-										onClick={handleStepDown}
-									>
-										<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-											<AiFillStepForward size={22} />
-										</div>
-									</Button>
-									<Button
-										variant="contained"
-										size="small"
-										disabled={!canStepUp}
-										onClick={handleStepUp}
-									>
-										<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
-											<AiFillStepForward size={22} />
-										</div>
-									</Button>
-								</>
-							)}
+							<Button
+								variant="contained"
+								size="small"
+								disabled={!canStepDown}
+								onClick={handleStepDown}
+								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+							>
+								<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+									<AiFillStepForward size={22} />
+								</div>
+							</Button>
+							<Button
+								variant="contained"
+								size="small"
+								disabled={!canStepUp}
+								onClick={handleStepUp}
+								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+							>
+								<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+									<AiFillStepForward size={22} />
+								</div>
+							</Button>
 						</div>
 
 						<ToggleButton
