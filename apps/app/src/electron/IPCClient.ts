@@ -33,7 +33,4 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralTriggers', peripheralTriggers)
 	}
-	openSettings(): void {
-		this.mainWindow?.webContents.send('callMethod', 'openSettings')
-	}
 }

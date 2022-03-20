@@ -44,9 +44,6 @@ const createWindow = (): void => {
 		undoEnabled: false,
 		redoLabel: 'Redo',
 		redoEnabled: false,
-		onPreferencesClick: () => {
-			tpt.ipcClient?.openSettings()
-		},
 		onUndoClick: () => {
 			return tpt.ipcServer?.undo().catch(console.error)
 		},

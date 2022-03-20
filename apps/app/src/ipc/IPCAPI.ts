@@ -187,5 +187,4 @@ export interface IPCClientMethods {
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 	updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
-	openSettings: () => void
 }
