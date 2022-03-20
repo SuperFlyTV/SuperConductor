@@ -69,7 +69,7 @@ export const ResourceLibrary: React.FC = observer(() => {
 	return (
 		<div className="sidebar media-library-sidebar">
 			<SidebarInfoGroup
-				title="Available Assets"
+				title="Available Resources"
 				enableRefresh={true}
 				refreshActive={refreshing}
 				onRefreshClick={async () => {
@@ -86,7 +86,7 @@ export const ResourceLibrary: React.FC = observer(() => {
 					size="small"
 					margin="normal"
 					fullWidth
-					label="Filter Assets"
+					label="Filter Resources"
 					value={filterValue}
 					InputProps={{
 						type: 'search',
