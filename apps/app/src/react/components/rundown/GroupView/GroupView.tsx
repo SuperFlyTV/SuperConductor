@@ -407,25 +407,6 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 
 						<ToggleButton
-							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
-							value="loop"
-							selected={group.oneAtATime && group.loop}
-							size="small"
-							disabled={!canModifyLoop}
-							onChange={() => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId: group.id,
-										value: !group.loop,
-									})
-									.catch(handleError)
-							}}
-						>
-							<MdRepeat size={18} />
-						</ToggleButton>
-
-						<ToggleButton
 							title={group.oneAtATime ? 'Disable One-at-a-time' : 'Enable One-at-a-time'}
 							value="one-at-a-time"
 							selected={group.oneAtATime}
@@ -442,6 +423,25 @@ export const GroupView: React.FC<{
 							}}
 						>
 							<MdLooksOne size={22} />
+						</ToggleButton>
+
+						<ToggleButton
+							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
+							value="loop"
+							selected={group.oneAtATime && group.loop}
+							size="small"
+							disabled={!canModifyLoop}
+							onChange={() => {
+								ipcServer
+									.toggleGroupLoop({
+										rundownId,
+										groupId: group.id,
+										value: !group.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdRepeat size={18} />
 						</ToggleButton>
 
 						<ToggleButton
