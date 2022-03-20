@@ -425,23 +425,55 @@ export class TSR {
 		} else if (deviceOptions.type === DeviceType.OBS) {
 			const obs = new OBSWebsocket()
 			let obsConnected = false
+			let obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
+
+			const _connect = async () => {
+				if (deviceOptions.options?.host && deviceOptions.options?.port) {
+					await obs.connect({
+						address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
+						password: deviceOptions.options.password,
+					})
+				}
+			}
+
+			const _triggerRetryConnection = () => {
+				if (!obsConnectionRetryTimeout) {
+					obsConnectionRetryTimeout = setTimeout(() => {
+						_retryConnection()
+					}, 5000)
+				}
+			}
+
+			const _retryConnection = () => {
+				if (obsConnectionRetryTimeout) {
+					clearTimeout(obsConnectionRetryTimeout)
+					obsConnectionRetryTimeout = undefined
+				}
+
+				if (!obsConnected) {
+					_connect().catch((error) => {
+						this.log?.error(error)
+						_triggerRetryConnection()
+					})
+				}
+			}
 
 			obs.on('ConnectionOpened', () => {
 				obsConnected = true
 				this.log?.info(`OBS ${deviceId}: Sideload connection initialized`)
+				if (obsConnectionRetryTimeout) {
+					clearTimeout(obsConnectionRetryTimeout)
+					obsConnectionRetryTimeout = undefined
+				}
 			})
 
 			obs.on('ConnectionClosed', () => {
 				obsConnected = false
 				this.log?.info(`OBS ${deviceId}: Sideload connection disconnected`)
+				_triggerRetryConnection()
 			})
 
-			if (deviceOptions.options?.host && deviceOptions.options?.port) {
-				obs.connect({
-					address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
-					password: deviceOptions.options.password,
-				}).catch((error) => this.log?.error(error))
-			}
+			_connect().catch((error) => this.log?.error(error))
 
 			const refreshResources = async () => {
 				const resources: { [id: string]: ResourceAny } = {}
