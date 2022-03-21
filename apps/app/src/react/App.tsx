@@ -46,6 +46,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
+	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
 	const rundownsStore = store.rundownsStore
@@ -193,7 +194,12 @@ export const App = observer(() => {
 	}
 
 	useEffect(() => {
-		sorensen.init().catch(console.error)
+		sorensen
+			.init()
+			.then(() => {
+				setSorensenInitialized(true)
+			})
+			.catch(console.error)
 	}, [])
 
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
@@ -341,7 +347,7 @@ export const App = observer(() => {
 		triggers,
 	}
 
-	if (!project) {
+	if (!project || !sorensenInitialized) {
 		return <div>Loading...</div>
 	}
 

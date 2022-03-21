@@ -329,20 +329,15 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else if (mapping0.mappingType === MappingOBSType.CurrentTransition) {
 			return resource.resourceType === ResourceType.OBS_TRANSITION
 		} else if (mapping0.mappingType === MappingOBSType.Mute) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.OBS_MUTE
 		} else if (mapping0.mappingType === MappingOBSType.Recording) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.OBS_RECORDING
 		} else if (mapping0.mappingType === MappingOBSType.SceneItemRender) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.OBS_RENDER
 		} else if (mapping0.mappingType === MappingOBSType.SourceSettings) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS
 		} else if (mapping0.mappingType === MappingOBSType.Streaming) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.OBS_STREAMING
 		} else {
 			assertNever(mapping0.mappingType)
 		}

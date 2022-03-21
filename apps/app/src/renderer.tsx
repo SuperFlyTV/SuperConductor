@@ -109,12 +109,14 @@ export const ContextWrapper: React.FC = () => {
 								background: 'none',
 								filter: 'drop-shadow(0px 0px 4px rgba(255, 255, 0, 0.25))',
 								opacity: 1,
+								visibility: 'visible !important',
 								'&:hover': {
 									background: 'none',
 								},
 							},
 							'&.Mui-disabled': {
 								border: 'none',
+								visibility: 'hidden',
 							},
 						},
 					},

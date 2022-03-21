@@ -16,6 +16,7 @@ export const NewRundownPage = () => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const guiStore = store.guiStore
+	const rundownsStore = store.rundownsStore
 
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
@@ -25,6 +26,8 @@ export const NewRundownPage = () => {
 	}
 
 	const handleCloseCreateNewRundown = () => setNewRundownOpen(false)
+
+	const defaultName = rundownsStore.rundowns ? `Rundown${Object.keys(rundownsStore.rundowns).length}` : 'Rundown0'
 
 	return (
 		<div className="new-rundown-page">
@@ -45,7 +48,7 @@ export const NewRundownPage = () => {
 
 			{/* New Rundown dialog */}
 			<Formik
-				initialValues={{ name: 'New Rundown' }}
+				initialValues={{ name: defaultName }}
 				validationSchema={Yup.object({
 					name: Yup.string().label('Rundown Name').required(),
 				})}

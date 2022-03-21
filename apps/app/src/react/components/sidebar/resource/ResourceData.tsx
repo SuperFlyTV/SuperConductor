@@ -90,6 +90,36 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Name" value={resource.name} />
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
+		return (
+			<SidebarInfoGroup title="OBS Recording">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
+		return (
+			<SidebarInfoGroup title="OBS Streaming">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="OBS Source Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
+		return (
+			<SidebarInfoGroup title="OBS Mute">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
+		return (
+			<SidebarInfoGroup title="OBS Render">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

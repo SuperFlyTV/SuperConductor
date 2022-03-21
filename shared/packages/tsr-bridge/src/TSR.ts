@@ -19,8 +19,13 @@ import {
 	AtemSsrcProps,
 	OBSScene,
 	OBSTransition,
+	OBSRecording,
+	OBSStreaming,
+	OBSSourceSettings,
+	OBSRender,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
+import { OBSMute } from '@shared/models'
 
 export class TSR {
 	public newConnection = false
@@ -420,23 +425,55 @@ export class TSR {
 		} else if (deviceOptions.type === DeviceType.OBS) {
 			const obs = new OBSWebsocket()
 			let obsConnected = false
+			let obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
+
+			const _connect = async () => {
+				if (deviceOptions.options?.host && deviceOptions.options?.port) {
+					await obs.connect({
+						address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
+						password: deviceOptions.options.password,
+					})
+				}
+			}
+
+			const _triggerRetryConnection = () => {
+				if (!obsConnectionRetryTimeout) {
+					obsConnectionRetryTimeout = setTimeout(() => {
+						_retryConnection()
+					}, 5000)
+				}
+			}
+
+			const _retryConnection = () => {
+				if (obsConnectionRetryTimeout) {
+					clearTimeout(obsConnectionRetryTimeout)
+					obsConnectionRetryTimeout = undefined
+				}
+
+				if (!obsConnected) {
+					_connect().catch((error) => {
+						this.log?.error(error)
+						_triggerRetryConnection()
+					})
+				}
+			}
 
 			obs.on('ConnectionOpened', () => {
 				obsConnected = true
 				this.log?.info(`OBS ${deviceId}: Sideload connection initialized`)
+				if (obsConnectionRetryTimeout) {
+					clearTimeout(obsConnectionRetryTimeout)
+					obsConnectionRetryTimeout = undefined
+				}
 			})
 
 			obs.on('ConnectionClosed', () => {
 				obsConnected = false
 				this.log?.info(`OBS ${deviceId}: Sideload connection disconnected`)
+				_triggerRetryConnection()
 			})
 
-			if (deviceOptions.options?.host && deviceOptions.options?.port) {
-				obs.connect({
-					address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
-					password: deviceOptions.options.password,
-				}).catch((error) => this.log?.error(error))
-			}
+			_connect().catch((error) => this.log?.error(error))
 
 			const refreshResources = async () => {
 				const resources: { [id: string]: ResourceAny } = {}
@@ -445,17 +482,19 @@ export class TSR {
 					return Object.values(resources)
 				}
 
+				// Scenes and Scene Items
 				const { scenes } = await obs.send('GetSceneList')
 				for (const scene of scenes) {
-					const resource: OBSScene = {
+					const sceneResource: OBSScene = {
 						resourceType: ResourceType.OBS_SCENE,
 						deviceId,
 						id: `${deviceId}_scene_${scene.name}`,
 						name: scene.name,
 					}
-					resources[resource.id] = resource
+					resources[sceneResource.id] = sceneResource
 				}
 
+				// Transitions
 				const { transitions } = await obs.send('GetTransitionList')
 				for (const transition of transitions) {
 					const resource: OBSTransition = {
@@ -463,6 +502,56 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_transition_${transition.name}`,
 						name: transition.name,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Recording
+				{
+					const resource: OBSRecording = {
+						resourceType: ResourceType.OBS_RECORDING,
+						deviceId,
+						id: `${deviceId}_recording`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Streaming
+				{
+					const resource: OBSStreaming = {
+						resourceType: ResourceType.OBS_STREAMING,
+						deviceId,
+						id: `${deviceId}_streaming`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Mute
+				{
+					const resource: OBSMute = {
+						resourceType: ResourceType.OBS_MUTE,
+						deviceId,
+						id: `${deviceId}_mute`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Render
+				{
+					const resource: OBSRender = {
+						resourceType: ResourceType.OBS_RENDER,
+						deviceId,
+						id: `${deviceId}_render`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Source Settings
+				{
+					const resource: OBSSourceSettings = {
+						resourceType: ResourceType.OBS_SOURCE_SETTINGS,
+						deviceId,
+						id: `${deviceId}_source_settings`,
 					}
 					resources[resource.id] = resource
 				}

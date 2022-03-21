@@ -50,9 +50,18 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 			label = obj.content.sceneName
 		} else if (obj.content.type === TimelineContentTypeOBS.CURRENT_TRANSITION) {
 			label = obj.content.transitionName
+		} else if (obj.content.type === TimelineContentTypeOBS.MUTE) {
+			label = `Mute ${obj.content.mute ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeOBS.RECORDING) {
+			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
+			label = `Render ${obj.content.on ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeOBS.SOURCE_SETTINGS) {
+			label = 'Source Settings'
+		} else if (obj.content.type === TimelineContentTypeOBS.STREAMING) {
+			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
 		} else {
-			// todo: for later:
-			// assertNever(obj.content)
+			assertNever(obj.content)
 		}
 	} else {
 		// todo: for later:

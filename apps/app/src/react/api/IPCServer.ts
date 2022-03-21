@@ -10,7 +10,9 @@ export class IPCServer implements IPCServerMethods {
 	constructor(private ipcRenderer: Electron.IpcRenderer) {}
 
 	private async invokeServerMethod(methodname: string, ...args: any[]): Promise<any> {
-		return this.ipcRenderer.invoke(methodname, ...args)
+		// Stringifying and parsing data will convert Mobx observable objects into object literals.
+		// Otherwise, Electron won't be able to clone it.
+		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
 	}
 
 	triggerSendAll(): Promise<void> {

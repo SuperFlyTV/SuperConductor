@@ -12,6 +12,8 @@ import {
 	MappingLawo,
 	MappingLawoType,
 	MappingOBS,
+	MappingOBSAny,
+	MappingOBSSourceSettings,
 	MappingOBSType,
 	MappingOSC,
 	MappingPanasonicPtz,
@@ -726,8 +728,35 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			return ''
 		case DeviceType.VMIX:
 			return ''
-		case DeviceType.OBS:
-			return ''
+		case DeviceType.OBS: {
+			// This is here to fix a typing bug in TSR. MappingOBSSourceSettings is not part of the MappingOBSAny type.
+			// See https://github.com/nrkno/sofie-timeline-state-resolver/pull/208 for more details.
+			const mapping0 = mapping as MappingOBS
+			if (mapping0.mappingType === MappingOBSType.SourceSettings) {
+				const mapping1 = mapping0 as MappingOBSSourceSettings
+				return `Source: ${mapping1.source}`
+			}
+
+			const typedMapping = mapping as MappingOBSAny
+			switch (typedMapping.mappingType) {
+				case MappingOBSType.CurrentScene:
+					return ''
+				case MappingOBSType.CurrentTransition:
+					return ''
+				case MappingOBSType.Mute:
+					return `Source: "${typedMapping.source}"`
+				case MappingOBSType.Recording:
+					return ''
+				case MappingOBSType.SceneItemRender:
+					return `Scene: "${typedMapping.sceneName}", Source: "${typedMapping.source}"`
+				case MappingOBSType.Streaming: {
+					return ''
+				}
+				default:
+					// assertNever(typedMapping.mappingType)
+					return ''
+			}
+		}
 		default:
 			assertNever(mapping.device)
 			return ''
