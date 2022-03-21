@@ -115,6 +115,15 @@
 			"entitlements": "entitlements.mac.plist",
 			"entitlementsInherit": "entitlements.mac.plist"
 		},
+		"dmg": {
+			"artifactName": "SuperConductor ${version} macOS Installer.${ext}"
+		},
+		"nsis": {
+			"artifactName": "SuperConductor ${version} Windows Installer.${ext}"
+		},
+		"appImage": {
+			"artifactName": "SuperConductor ${version} Linux Executable.${ext}"
+		},
 		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",
 		"files": [

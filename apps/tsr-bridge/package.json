@@ -111,6 +111,15 @@
 				}
 			]
 		},
+		"dmg": {
+			"artifactName": "TSR-Bridge ${version} macOS Installer.${ext}"
+		},
+		"nsis": {
+			"artifactName": "TSR-Bridge ${version} Windows Installer.${ext}"
+		},
+		"appImage": {
+			"artifactName": "TSR-Bridge ${version} Linux Executable.${ext}"
+		},
 		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",
 		"files": [
