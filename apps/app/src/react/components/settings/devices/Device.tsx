@@ -93,6 +93,12 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		const deviceOptions = deviceSettings?.options as CasparCGOptions | AtemOptions
 		setHost(deviceOptions?.host ?? '')
 		setPort(deviceOptions?.port ?? MIN_PORT)
+
+		if (deviceSettings.type === DeviceType.OBS) {
+			setPassword(deviceSettings.options?.password ?? '')
+		} else {
+			setPassword('')
+		}
 	}, [deviceSettings])
 
 	if (!deviceSettings) {
