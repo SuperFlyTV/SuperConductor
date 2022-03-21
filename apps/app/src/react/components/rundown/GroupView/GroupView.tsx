@@ -466,6 +466,7 @@ export const GroupView: React.FC<{
 						<TrashBtn
 							className="delete"
 							disabled={group.locked}
+							title={group.locked ? 'Disabled due to locked Group' : 'Delete Group'}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
