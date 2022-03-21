@@ -180,11 +180,16 @@ export class TSR {
 				},
 			})
 
+			/**
+			 * A cache of resources to be used when the device is offline.
+			 */
+			let prevResources: { [id: string]: ResourceAny } = {}
+
 			const refreshResources = async () => {
 				const resources: { [id: string]: ResourceAny } = {}
 
 				if (!ccg.connected) {
-					return Object.values(resources)
+					return Object.values(prevResources)
 				}
 
 				// Refresh media:
@@ -241,6 +246,7 @@ export class TSR {
 					}
 				}
 
+				prevResources = resources
 				return Object.values(resources)
 			}
 
@@ -269,11 +275,16 @@ export class TSR {
 				atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
 			}
 
+			/**
+			 * A cache of resources to be used when the device is offline.
+			 */
+			let prevResources: { [id: string]: ResourceAny } = {}
+
 			const refreshResources = async () => {
 				const resources: { [id: string]: ResourceAny } = {}
 
 				if (atem.status !== AtemConnectionStatus.CONNECTED || !atem.state) {
-					return Object.values(resources)
+					return Object.values(prevResources)
 				}
 
 				for (const me of atem.state.video.mixEffects) {
@@ -411,6 +422,7 @@ export class TSR {
 					resources[resource.id] = resource
 				}
 
+				prevResources = resources
 				return Object.values(resources)
 			}
 
@@ -475,11 +487,16 @@ export class TSR {
 
 			_connect().catch((error) => this.log?.error(error))
 
+			/**
+			 * A cache of resources to be used when the device is offline.
+			 */
+			let prevResources: { [id: string]: ResourceAny } = {}
+
 			const refreshResources = async () => {
 				const resources: { [id: string]: ResourceAny } = {}
 
 				if (!obsConnected) {
-					return Object.values(resources)
+					return Object.values(prevResources)
 				}
 
 				// Scenes and Scene Items
@@ -556,6 +573,7 @@ export class TSR {
 					resources[resource.id] = resource
 				}
 
+				prevResources = resources
 				return Object.values(resources)
 			}
 
