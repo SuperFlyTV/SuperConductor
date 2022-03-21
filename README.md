@@ -28,6 +28,7 @@ Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases
 ### Playout
 
 Under the hood, SuperConductor is powered by the same playout-backend as [the Sofie project](https://github.com/nrkno/sofie-core), with timeline-based control of multiple devices.
+
 ![Timeline playout](/doc/img/play.gif)
 
 ### Edit Timeline
