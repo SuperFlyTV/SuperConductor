@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
-import { limitTextWidth } from './lib/estimateTextSize'
+import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 
 export class PeripheralStreamDeck extends Peripheral {
@@ -211,7 +211,7 @@ export async function drawKeyDisplay(
 	const padding = 5
 	const SIZE = streamDeck.ICON_SIZE
 
-	const maxTextWidth = SIZE - padding * 2
+	const maxTextWidth = SIZE - padding // note
 
 	const dampen = keyDisplay.attentionLevel === AttentionLevel.IGNORE
 	const dampenBackground = dampen || keyDisplay.attentionLevel === AttentionLevel.ALERT
@@ -428,7 +428,7 @@ export async function drawKeyDisplay(
 			}
 		})
 	} catch (e) {
-		console.log(keyDisplay)
+		console.error(keyDisplay)
 		throw e
 	}
 }
