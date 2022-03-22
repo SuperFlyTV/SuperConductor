@@ -1448,10 +1448,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const mapping = project.mappings[obj.layer]
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
-			console.warn(
-				`Preventing addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
+			throw new Error(
+				`Prevented addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
 			)
-			return null
 		}
 
 		const timelineObj: TimelineObj = {
