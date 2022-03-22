@@ -8,7 +8,8 @@ export const SelectEnum: React.FC<{
 	onChange: (newValue: any) => void
 	allowUndefined?: boolean
 	defaultValue?: any
-}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label }) => {
+	fullWidth?: boolean
+}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label, fullWidth }) => {
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -53,8 +54,8 @@ export const SelectEnum: React.FC<{
 		<TextField
 			select
 			margin="dense"
-			fullWidth
 			size="small"
+			fullWidth={fullWidth}
 			label={label}
 			value={currentValue}
 			onChange={(e) => {

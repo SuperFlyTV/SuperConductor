@@ -52,6 +52,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Input"
+						fullWidth
 						currentValue={obj.content.me.input}
 						onChange={(v) => {
 							obj.content.me.input = v
@@ -63,6 +64,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<SelectEnum
 						label={'Transition'}
+						fullWidth
 						currentValue={obj.content.me.transition}
 						options={AtemTransitionStyle}
 						onChange={(v) => {
@@ -76,6 +78,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<div className="setting">
 						<IntInput
 							label={'Transition: Mix Rate'}
+							fullWidth
 							currentValue={obj.content.me.transitionSettings?.mix?.rate ?? DEFAULT_TRANSITION_RATE}
 							onChange={(v) => {
 								if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
@@ -93,6 +96,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label={'Transition: Rate'}
+								fullWidth
 								currentValue={obj.content.me.transitionSettings?.wipe?.rate ?? DEFAULT_TRANSITION_RATE}
 								onChange={(v) => {
 									if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
@@ -130,6 +134,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="DSK: Source Fill"
+						fullWidth
 						currentValue={obj.content.dsk.sources?.fillSource || 0}
 						onChange={(v) => {
 							if (!obj.content.dsk.sources)
@@ -147,6 +152,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="DSK: Source Cut (key)"
+						fullWidth
 						currentValue={obj.content.dsk.sources?.cutSource || 0}
 						onChange={(v) => {
 							if (!obj.content.dsk.sources)
@@ -171,6 +177,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Input"
+						fullWidth
 						currentValue={obj.content.aux.input}
 						onChange={(v) => {
 							obj.content.aux.input = v
@@ -210,6 +217,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Source"
+								fullWidth
 								currentValue={box.source}
 								onChange={(v) => {
 									box.source = v
@@ -221,6 +229,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="X Position (-4800 - 4800)"
+								fullWidth
 								currentValue={box.x}
 								onChange={(v) => {
 									box.x = v
@@ -232,6 +241,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Y Position (-2700 - 2700)"
+								fullWidth
 								currentValue={box.y}
 								onChange={(v) => {
 									box.y = v
@@ -243,6 +253,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Size (70 - 1000)"
+								fullWidth
 								currentValue={box.size}
 								onChange={(v) => {
 									box.size = v
@@ -264,6 +275,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Crop Top (0 - 18000)"
+								fullWidth
 								currentValue={box.cropTop}
 								onChange={(v) => {
 									box.cropTop = v
@@ -275,6 +287,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Crop Bottom (0 - 18000)"
+								fullWidth
 								currentValue={box.cropBottom}
 								onChange={(v) => {
 									box.cropBottom = v
@@ -286,6 +299,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Crop Left (0 - 32000)"
+								fullWidth
 								currentValue={box.cropLeft}
 								onChange={(v) => {
 									box.cropLeft = v
@@ -297,6 +311,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Crop Right (0 - 32000)"
+								fullWidth
 								currentValue={box.cropRight}
 								onChange={(v) => {
 									box.cropRight = v
@@ -326,6 +341,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Art Fill Source"
+						fullWidth
 						currentValue={obj.content.ssrcProps.artFillSource}
 						onChange={(v) => {
 							obj.content.ssrcProps.artFillSource = v
@@ -337,6 +353,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Art Cut (Key) Source"
+						fullWidth
 						currentValue={obj.content.ssrcProps.artCutSource}
 						onChange={(v) => {
 							obj.content.ssrcProps.artCutSource = v
@@ -348,6 +365,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<SelectEnum
 						label={'Art Option'}
+						fullWidth
 						currentValue={obj.content.ssrcProps.artOption}
 						options={ATEMArtOption}
 						onChange={(v) => {
@@ -371,6 +389,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Art Clip (0 - 1000)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.artClip}
 								onChange={(v) => {
 									if (obj.content.ssrcProps.artPreMultiplied) {
@@ -385,6 +404,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Art Gain (0 - 1000)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.artGain}
 								onChange={(v) => {
 									if (obj.content.ssrcProps.artPreMultiplied) {
@@ -426,6 +446,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<SelectEnum
 								label="Border Bevel"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderBevel}
 								options={ATEMBorderBevel}
 								onChange={(v) => {
@@ -441,6 +462,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Outer Width (0 - 1600)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderOuterWidth}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -455,6 +477,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Inner Width (0 - 1600)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderInnerWidth}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -469,6 +492,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Outer Softness (0 - 100)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderOuterSoftness}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -483,6 +507,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Inner Softness (0 - 100)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderInnerSoftness}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -497,6 +522,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Bevel Softness (0 - 100)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderBevelSoftness}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -511,6 +537,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Bevel Position (0 - 100)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderBevelPosition}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -525,6 +552,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Hue (0 - 3599)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderHue}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -539,6 +567,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Saturation (0 - 1000)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderSaturation}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -553,6 +582,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Luma (0 - 1000)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderLuma}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -567,6 +597,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Light Source Direction (0 - 3590)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderLightSourceDirection}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -581,6 +612,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<div className="setting">
 							<IntInput
 								label="Border Light Source Altitude (10 - 100)"
+								fullWidth
 								currentValue={obj.content.ssrcProps.borderLightSourceAltitude}
 								onChange={(v) => {
 									if (!obj.content.ssrcProps.borderEnabled) {
@@ -603,6 +635,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<SelectEnum
 						label={'Source Type'}
+						fullWidth
 						currentValue={obj.content.mediaPlayer.sourceType}
 						options={MediaSourceType}
 						onChange={(v) => {
@@ -615,6 +648,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Clip Index"
+						fullWidth
 						currentValue={obj.content.mediaPlayer.clipIndex}
 						onChange={(v) => {
 							obj.content.mediaPlayer.clipIndex = v
@@ -626,6 +660,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Still Index"
+						fullWidth
 						currentValue={obj.content.mediaPlayer.stillIndex}
 						onChange={(v) => {
 							obj.content.mediaPlayer.stillIndex = v
@@ -667,6 +702,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Clip Frame"
+						fullWidth
 						currentValue={obj.content.mediaPlayer.clipFrame}
 						onChange={(v) => {
 							obj.content.mediaPlayer.clipFrame = v
@@ -684,6 +720,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Macro Index"
+						fullWidth
 						currentValue={obj.content.macroPlayer.macroIndex}
 						onChange={(v) => {
 							obj.content.macroPlayer.macroIndex = v
@@ -721,6 +758,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Gain (0 - 65381)"
+						fullWidth
 						currentValue={obj.content.audioChannel.gain}
 						onChange={(v) => {
 							obj.content.audioChannel.gain = v
@@ -732,6 +770,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<IntInput
 						label="Balance (-10000 - 10000)"
+						fullWidth
 						currentValue={obj.content.audioChannel.balance}
 						onChange={(v) => {
 							obj.content.audioChannel.balance = v
@@ -743,6 +782,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<SelectEnum
 						label="Mix Option"
+						fullWidth
 						currentValue={obj.content.audioChannel.mixOption}
 						options={ATEMAudioChannelMixOption}
 						onChange={(v) => {

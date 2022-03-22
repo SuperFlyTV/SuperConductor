@@ -9,6 +9,7 @@ export const DurationInput: React.FC<
 			allowUndefined: true
 			label?: string
 			disabled?: boolean
+			fullWidth?: boolean
 	  }
 	| {
 			currentValue: number
@@ -16,6 +17,7 @@ export const DurationInput: React.FC<
 			allowUndefined: false
 			label?: string
 			disabled?: boolean
+			fullWidth?: boolean
 	  }
 > = (props) => {
 	if (props.allowUndefined) {
@@ -27,7 +29,8 @@ export const DurationInput: React.FC<
 			formatDuration,
 			props.label,
 			'text',
-			props.disabled
+			props.disabled,
+			props.fullWidth
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -38,7 +41,8 @@ export const DurationInput: React.FC<
 			formatDuration,
 			props.label,
 			'text',
-			props.disabled
+			props.disabled,
+			props.fullWidth
 		)
 	}
 }

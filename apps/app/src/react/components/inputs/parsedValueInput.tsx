@@ -9,7 +9,8 @@ export function ParsedValueInput<V>(
 	stringify: (val: V) => string,
 	label?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
-	disabled?: boolean
+	disabled?: boolean,
+	fullWidth?: boolean
 ): JSX.Element {
 	const [value, setValue] = React.useState<string>('')
 	React.useEffect(() => {
@@ -55,8 +56,8 @@ export function ParsedValueInput<V>(
 				}
 			}}
 			size="small"
+			fullWidth={fullWidth}
 			margin="dense"
-			fullWidth
 			label={label}
 			value={value}
 			disabled={disabled}
