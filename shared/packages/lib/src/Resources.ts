@@ -19,6 +19,7 @@ enum GeneralResourceType {
 	SCENE_ITEM_RENDER = 'SCENE_ITEM_RENDER',
 	SOURCE_SETTINGS = 'SOURCE_SETTINGS',
 	STREAMING = 'STREAMING',
+	INPUT = 'INPUT',
 	UNKNOWN = 'unknown',
 }
 
@@ -60,6 +61,10 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.MUTE
 		case ResourceType.OBS_RENDER:
 			return GeneralResourceType.SCENE_ITEM_RENDER
+		case ResourceType.VMIX_INPUT:
+			return GeneralResourceType.INPUT
+		case ResourceType.VMIX_INPUT_SETTINGS:
+			return GeneralResourceType.SOURCE_SETTINGS
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

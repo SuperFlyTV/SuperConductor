@@ -238,6 +238,27 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Scene Item Render</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+										return [
+											resource,
+											<>
+												<div className="resource__details">
+													<div className="resource__name" title={`Input ${resource.number}`}>
+														Input {resource.number}
+													</div>
+													<div className="resource__attributes">
+														<div>{resource.type}</div>
+													</div>
+												</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Input Settings</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

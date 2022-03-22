@@ -68,4 +68,12 @@
 	&.SOURCE_SETTINGS {
 		background: $sourceSettingsLayerColor;
 	}
+
+	&.INPUT {
+		background: $inputLayerColor;
+	}
+
+	&.PROGRAM {
+		background: $programLayerColor;
+	}
 }

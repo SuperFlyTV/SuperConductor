@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
+import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
 import { CasparCG } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
 import OBSWebsocket from 'obs-websocket-js'
@@ -23,6 +24,8 @@ import {
 	OBSStreaming,
 	OBSSourceSettings,
 	OBSRender,
+	VMixInput,
+	VMixInputSettings,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -583,6 +586,66 @@ export class TSR {
 				},
 				close: async () => {
 					return obs.disconnect()
+				},
+			}
+		} else if (deviceOptions.type === DeviceType.VMIX) {
+			const vmix = new VMix()
+
+			vmix.on('connected', () => {
+				this.log?.info(`vMix ${deviceId}: Sideload connection initialized`)
+			})
+			vmix.on('disconnected', () => {
+				this.log?.info(`vMix ${deviceId}: Sideload connection disconnected`)
+			})
+
+			if (deviceOptions.options?.host && deviceOptions.options?.port) {
+				vmix.connect({
+					host: deviceOptions.options.host,
+					port: deviceOptions.options.port,
+				}).catch((error) => this.log?.error(error))
+			}
+
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
+
+				if (!vmix.connected) {
+					return Object.values(resources)
+				}
+
+				// Inputs
+				for (const key in vmix.state.inputs) {
+					const input = vmix.state.inputs[key]
+					if (typeof input.number !== 'undefined' && typeof input.type !== 'undefined') {
+						const resource: VMixInput = {
+							resourceType: ResourceType.VMIX_INPUT,
+							deviceId,
+							id: `${deviceId}_input_${key}`,
+							number: input.number,
+							type: input.type,
+						}
+						resources[resource.id] = resource
+					}
+				}
+
+				// Input Settings
+				{
+					const resource: VMixInputSettings = {
+						resourceType: ResourceType.VMIX_INPUT_SETTINGS,
+						deviceId,
+						id: `${deviceId}_input_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: async () => {
+					return vmix.dispose()
 				},
 			}
 		}

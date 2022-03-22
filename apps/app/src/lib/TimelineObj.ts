@@ -4,6 +4,7 @@ import {
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
 	TimelineContentTypeOBS,
+	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { assertNever, parseMs } from '@shared/lib'
@@ -59,6 +60,32 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		} else if (obj.content.type === TimelineContentTypeOBS.SOURCE_SETTINGS) {
 			label = 'Source Settings'
 		} else if (obj.content.type === TimelineContentTypeOBS.STREAMING) {
+			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
+		} else {
+			assertNever(obj.content)
+		}
+	} else if (obj.content.deviceType === DeviceType.VMIX) {
+		if (obj.content.type === TimelineContentTypeVMix.AUDIO) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.EXTERNAL) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.FADER) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.FADE_TO_BLACK) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.INPUT) {
+			label = 'Input Settings'
+		} else if (obj.content.type === TimelineContentTypeVMix.OUTPUT) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {
+			label = obj.id
+		} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {
+			label = `Input ${obj.content.input}`
+		} else if (obj.content.type === TimelineContentTypeVMix.RECORDING) {
+			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
 			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
 		} else {
 			assertNever(obj.content)

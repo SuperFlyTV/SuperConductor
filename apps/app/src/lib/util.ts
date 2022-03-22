@@ -13,6 +13,8 @@ import {
 	MappingAtemType,
 	MappingOBS,
 	MappingOBSType,
+	MappingVMix,
+	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever } from '@shared/lib'
@@ -369,8 +371,32 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.VMIX) {
-		// @TODO
-		return false
+		const mapping0 = mapping as MappingVMix
+		if (mapping0.mappingType === MappingVMixType.AudioChannel) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.External) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.FadeToBlack) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.Fader) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.Input) {
+			return resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS
+		} else if (mapping0.mappingType === MappingVMixType.Output) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.Overlay) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.Preview) {
+			return resource.resourceType === ResourceType.VMIX_INPUT
+		} else if (mapping0.mappingType === MappingVMixType.Program) {
+			return resource.resourceType === ResourceType.VMIX_INPUT
+		} else if (mapping0.mappingType === MappingVMixType.Recording) {
+			return false
+		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
+			return false
+		} else {
+			assertNever(mapping0.mappingType)
+		}
 	} else {
 		assertNever(mapping.device)
 	}

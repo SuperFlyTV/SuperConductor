@@ -9,6 +9,8 @@ import {
 	MappingOBS,
 	MappingOBSType,
 	Mappings,
+	MappingVMix,
+	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { describeMappingConfiguration, getDeviceName } from '../../../../lib/TSRMappings'
 import { findDevice, listAvailableDeviceIDs } from '../../../../lib/util'
@@ -39,7 +41,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 			}
 
 			const layerName = mappingId
-			let newMapping: MappingCasparCG | MappingAtem | MappingOBS
+			let newMapping: MappingCasparCG | MappingAtem | MappingOBS | MappingVMix
 
 			switch (device.type) {
 				case DeviceType.CASPARCG: {
@@ -71,6 +73,17 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 						deviceId,
 						layerName,
 						mappingType: MappingOBSType.CurrentScene,
+					})
+
+					break
+				}
+
+				case DeviceType.VMIX: {
+					newMapping = literal<MappingVMix>({
+						device: DeviceType.VMIX,
+						deviceId,
+						layerName,
+						mappingType: MappingVMixType.Program,
 					})
 
 					break

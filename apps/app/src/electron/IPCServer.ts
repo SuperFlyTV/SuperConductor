@@ -40,6 +40,10 @@ import {
 	TimelineObjOBSSceneItemRender,
 	TimelineObjOBSMute,
 	TimelineObjOBSSourceSettings,
+	TimelineObjVMixInput,
+	TimelineContentTypeVMix,
+	TimelineObjVMixProgram,
+	VMixTransitionType,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1420,6 +1424,37 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					duration: 5 * 1000,
 				},
 				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.SCENE_ITEM_RENDER, on: true },
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+			obj = literal<TimelineObjVMixProgram>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.PROGRAM,
+					input: resource.number,
+					transition: {
+						effect: VMixTransitionType.Cut,
+						duration: 0,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+			obj = literal<TimelineObjVMixInput>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.INPUT,
+				},
 			})
 		} else {
 			assertNever(resource)

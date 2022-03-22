@@ -120,6 +120,19 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<></>
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+		return (
+			<SidebarInfoGroup title="vMix Input">
+				<DataRow label="Number" value={resource.number} />
+				<DataRow label="Type" value={resource.type} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Input Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null
