@@ -1,6 +1,6 @@
-import { Typography } from '@mui/material'
+import { Link, Typography } from '@mui/material'
 import { assertNever } from '@shared/lib'
-import React from 'react'
+import React, { useState } from 'react'
 import {
 	TimelineContentTypeVMix,
 	TimelineObjVMixAny,
@@ -25,11 +25,104 @@ const DEFAULT_TRANSFORM: VMixTransform = {
 const OVERLAYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave: OnSave }> = ({ obj, onSave }) => {
+	const [showAll, setShowAll] = useState(false)
 	let settings: JSX.Element = NOT_IMPLEMENTED_SETTINGS
+
+	const showAllButton = showAll ? (
+		<Link href="#" onClick={() => setShowAll(false)}>
+			Hide more settings
+		</Link>
+	) : (
+		<Link href="#" onClick={() => setShowAll(true)}>
+			Show more settings
+		</Link>
+	)
 
 	const obj0 = obj
 	if (obj.content.type === TimelineContentTypeVMix.AUDIO) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<IntInput
+						label="Volume (0 - 100)"
+						fullWidth
+						currentValue={obj.content.volume}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.volume = v
+							onSave(obj)
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+
+				<div className="setting">
+					<IntInput
+						label="Fade Duration (milliseconds)"
+						fullWidth
+						currentValue={obj.content.fade}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.fade = v
+							onSave(obj)
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+
+				<div className="setting">
+					<IntInput
+						label="Balance (-1 - 1)"
+						fullWidth
+						currentValue={obj.content.balance}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.balance = v
+							onSave(obj)
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+
+				<div className="setting">
+					<BooleanInput
+						label="Muted"
+						currentValue={obj.content.muted}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.muted = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+
+				<div className="setting">
+					<TextInput
+						label="Audio Buses (M,A,B,C,D,E,F,G)"
+						fullWidth
+						currentValue={obj.content.audioBuses}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.audioBuses = v
+							onSave(obj)
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+
+				<div className="setting">
+					<BooleanInput
+						label="Audio Follow Video"
+						currentValue={obj.content.audioAuto}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.AUDIO) return
+							obj.content.audioAuto = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.EXTERNAL) {
 		settings = NOT_IMPLEMENTED_SETTINGS
 	} else if (obj.content.type === TimelineContentTypeVMix.FADER) {
@@ -166,29 +259,32 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 					/>
 				</div>
 
-				{OVERLAYS.map((overlayIndex) => {
-					if (obj.content.type !== TimelineContentTypeVMix.INPUT) return null
-					const overlayInput = obj.content.overlays ? obj.content.overlays[overlayIndex] : 0
-					return (
-						<React.Fragment key={overlayIndex}>
-							<Typography variant="body2">Overlay #{overlayIndex}</Typography>
-							<div className="setting">
-								<IntInput
-									label="Input"
-									fullWidth
-									currentValue={overlayInput as number}
-									onChange={(v) => {
-										if (obj.content.type !== TimelineContentTypeVMix.INPUT) return
-										if (!obj.content.overlays) obj.content.overlays = {}
-										obj.content.overlays[overlayIndex] = v
-										onSave(obj)
-									}}
-									allowUndefined={false}
-								/>
-							</div>
-						</React.Fragment>
-					)
-				})}
+				{showAll &&
+					OVERLAYS.map((overlayIndex) => {
+						if (obj.content.type !== TimelineContentTypeVMix.INPUT) return null
+						const overlayInput = obj.content.overlays ? obj.content.overlays[overlayIndex] : 0
+						return (
+							<React.Fragment key={overlayIndex}>
+								<Typography variant="body2">Overlay #{overlayIndex}</Typography>
+								<div className="setting">
+									<IntInput
+										label="Input"
+										fullWidth
+										currentValue={overlayInput as number}
+										onChange={(v) => {
+											if (obj.content.type !== TimelineContentTypeVMix.INPUT) return
+											if (!obj.content.overlays) obj.content.overlays = {}
+											obj.content.overlays[overlayIndex] = v
+											onSave(obj)
+										}}
+										allowUndefined={false}
+									/>
+								</div>
+							</React.Fragment>
+						)
+					})}
+
+				{showAllButton}
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeVMix.OUTPUT) {

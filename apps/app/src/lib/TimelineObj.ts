@@ -66,7 +66,7 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		}
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
 		if (obj.content.type === TimelineContentTypeVMix.AUDIO) {
-			label = obj.id
+			label = 'Audio Settings'
 		} else if (obj.content.type === TimelineContentTypeVMix.EXTERNAL) {
 			label = obj.id
 		} else if (obj.content.type === TimelineContentTypeVMix.FADER) {

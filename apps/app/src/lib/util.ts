@@ -373,7 +373,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 	} else if (mapping.device === DeviceType.VMIX) {
 		const mapping0 = mapping as MappingVMix
 		if (mapping0.mappingType === MappingVMixType.AudioChannel) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS
 		} else if (mapping0.mappingType === MappingVMixType.External) {
 			return false
 		} else if (mapping0.mappingType === MappingVMixType.FadeToBlack) {

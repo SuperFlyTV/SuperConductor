@@ -65,6 +65,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.INPUT
 		case ResourceType.VMIX_INPUT_SETTINGS:
 			return GeneralResourceType.SOURCE_SETTINGS
+		case ResourceType.VMIX_AUDIO_SETTINGS:
+			return GeneralResourceType.AUDIO_CHANNEL
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
