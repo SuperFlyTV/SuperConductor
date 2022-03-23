@@ -315,6 +315,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Video Fader</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Preview</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

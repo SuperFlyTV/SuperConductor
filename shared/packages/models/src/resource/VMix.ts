@@ -2,6 +2,7 @@ import { ResourceBase, ResourceType } from './resource'
 
 export type VMixAny =
 	| VMixInput
+	| VMixPreview
 	| VMixInputSettings
 	| VMixAudioSettings
 	| VMixOutputSettings
@@ -17,6 +18,10 @@ export interface VMixInput extends ResourceBase {
 
 	number: number
 	type: string
+}
+
+export interface VMixPreview extends ResourceBase {
+	resourceType: ResourceType.VMIX_PREVIEW
 }
 
 export interface VMixInputSettings extends ResourceBase {

@@ -34,6 +34,7 @@ import {
 	VMixExternal,
 	VMixFadeToBlack,
 	VMixFader,
+	VMixPreview,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -681,6 +682,16 @@ export class TSR {
 						resourceType: ResourceType.VMIX_FADER,
 						deviceId,
 						id: `${deviceId}_fader`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Preview
+				{
+					const resource: VMixPreview = {
+						resourceType: ResourceType.VMIX_PREVIEW,
+						deviceId,
+						id: `${deviceId}_preview`,
 					}
 					resources[resource.id] = resource
 				}

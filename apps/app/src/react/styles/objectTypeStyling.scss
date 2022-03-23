@@ -94,4 +94,8 @@
 	&.FADER {
 		background: $videoFaderLayerColor;
 	}
+
+	&.PREVIEW {
+		background: $previewLayerColor;
+	}
 }

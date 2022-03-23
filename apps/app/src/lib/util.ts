@@ -387,7 +387,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else if (mapping0.mappingType === MappingVMixType.Overlay) {
 			return resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS
 		} else if (mapping0.mappingType === MappingVMixType.Preview) {
-			return resource.resourceType === ResourceType.VMIX_INPUT
+			return resource.resourceType === ResourceType.VMIX_PREVIEW
 		} else if (mapping0.mappingType === MappingVMixType.Program) {
 			return resource.resourceType === ResourceType.VMIX_INPUT
 		} else if (mapping0.mappingType === MappingVMixType.Recording) {

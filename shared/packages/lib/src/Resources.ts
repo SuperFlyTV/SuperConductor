@@ -24,6 +24,7 @@ enum GeneralResourceType {
 	OVERLAY = 'OVERLAY',
 	FADE_TO_BLACK = 'FADE_TO_BLACK',
 	FADER = 'FADER',
+	PREVIEW = 'PREVIEW',
 	UNKNOWN = 'unknown',
 }
 
@@ -85,6 +86,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.FADE_TO_BLACK
 		case ResourceType.VMIX_FADER:
 			return GeneralResourceType.FADER
+		case ResourceType.VMIX_PREVIEW:
+			return GeneralResourceType.PREVIEW
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
