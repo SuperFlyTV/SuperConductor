@@ -1833,13 +1833,20 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 
 		for (const rundown of rundowns) {
-			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed.
+			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed or changed.
 			let modifiedTimeline = false
 			for (const group of rundown.groups) {
 				for (const part of group.parts) {
 					const timelineObjsToRemove: TimelineObj[] = []
 					for (const timelineObj of part.timeline) {
-						if (!(timelineObj.obj.layer in data.project.mappings)) {
+						const layerExists = timelineObj.obj.layer in data.project.mappings
+						if (layerExists) {
+							const mapping = data.project.mappings[timelineObj.obj.layer]
+							const layerCanHoldThisTimelineObj = filterMapping(mapping, timelineObj.obj)
+							if (!layerCanHoldThisTimelineObj) {
+								timelineObjsToRemove.push(timelineObj)
+							}
+						} else {
 							timelineObjsToRemove.push(timelineObj)
 						}
 					}
