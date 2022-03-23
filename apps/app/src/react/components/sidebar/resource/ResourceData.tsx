@@ -139,6 +139,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<></>
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Output Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

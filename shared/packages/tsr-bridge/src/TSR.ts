@@ -27,6 +27,7 @@ import {
 	VMixInput,
 	VMixInputSettings,
 	VMixAudioSettings,
+	VMixOutputSettings,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -644,6 +645,16 @@ export class TSR {
 						resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
 						deviceId,
 						id: `${deviceId}_audio_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Output Settings
+				{
+					const resource: VMixOutputSettings = {
+						resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
+						deviceId,
+						id: `${deviceId}_output_settings`,
 					}
 					resources[resource.id] = resource
 				}

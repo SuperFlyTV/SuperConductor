@@ -20,6 +20,7 @@ enum GeneralResourceType {
 	SOURCE_SETTINGS = 'SOURCE_SETTINGS',
 	STREAMING = 'STREAMING',
 	INPUT = 'INPUT',
+	OUTPUT = 'OUTPUT',
 	UNKNOWN = 'unknown',
 }
 
@@ -67,6 +68,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.SOURCE_SETTINGS
 		case ResourceType.VMIX_AUDIO_SETTINGS:
 			return GeneralResourceType.AUDIO_CHANNEL
+		case ResourceType.VMIX_OUTPUT_SETTINGS:
+			return GeneralResourceType.OUTPUT
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

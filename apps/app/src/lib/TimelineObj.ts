@@ -76,7 +76,17 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		} else if (obj.content.type === TimelineContentTypeVMix.INPUT) {
 			label = 'Input Settings'
 		} else if (obj.content.type === TimelineContentTypeVMix.OUTPUT) {
-			label = obj.id
+			if (obj.content.source === 'Preview') {
+				label = 'Preview'
+			} else if (obj.content.source === 'Program') {
+				label = 'Program'
+			} else if (obj.content.source === 'MultiView') {
+				label = 'MultiView'
+			} else if (obj.content.source === 'Input') {
+				label = `Input #${obj.content.input}`
+			} else {
+				assertNever(obj.content.source)
+			}
 		} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
 			label = obj.id
 		} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {

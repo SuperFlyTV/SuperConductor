@@ -9,7 +9,8 @@
 		background: $mediaLayerColor;
 	}
 
-	&.me {
+	&.me,
+	&.OUTPUT {
 		background: $mixEffectLayerColor;
 	}
 

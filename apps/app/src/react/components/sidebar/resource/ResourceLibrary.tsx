@@ -266,6 +266,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Audio Settings</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Output Settings</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

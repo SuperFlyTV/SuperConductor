@@ -24,6 +24,13 @@ const DEFAULT_TRANSFORM: VMixTransform = {
 
 const OVERLAYS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+enum VMixOutputSourceType {
+	Preview = 'Preview',
+	Program = 'Program',
+	MultiView = 'MultiView',
+	Input = 'Input',
+}
+
 export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave: OnSave }> = ({ obj, onSave }) => {
 	const [showAll, setShowAll] = useState(false)
 	let settings: JSX.Element = NOT_IMPLEMENTED_SETTINGS
@@ -288,7 +295,38 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeVMix.OUTPUT) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<SelectEnum
+						label="Source"
+						fullWidth
+						currentValue={obj.content.source}
+						options={VMixOutputSourceType}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.OUTPUT) return
+							obj.content.source = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+					/>
+				</div>
+
+				<div className="setting">
+					<IntInput
+						label="Input"
+						fullWidth
+						currentValue={obj.content.input as number}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.OUTPUT) return
+							obj.content.input = v
+							onSave(obj)
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
 		settings = NOT_IMPLEMENTED_SETTINGS
 	} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {
