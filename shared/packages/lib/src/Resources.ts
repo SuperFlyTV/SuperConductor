@@ -19,6 +19,12 @@ enum GeneralResourceType {
 	SCENE_ITEM_RENDER = 'SCENE_ITEM_RENDER',
 	SOURCE_SETTINGS = 'SOURCE_SETTINGS',
 	STREAMING = 'STREAMING',
+	INPUT = 'INPUT',
+	OUTPUT = 'OUTPUT',
+	OVERLAY = 'OVERLAY',
+	FADE_TO_BLACK = 'FADE_TO_BLACK',
+	FADER = 'FADER',
+	PREVIEW = 'PREVIEW',
 	UNKNOWN = 'unknown',
 }
 
@@ -60,6 +66,28 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.MUTE
 		case ResourceType.OBS_RENDER:
 			return GeneralResourceType.SCENE_ITEM_RENDER
+		case ResourceType.VMIX_INPUT:
+			return GeneralResourceType.INPUT
+		case ResourceType.VMIX_INPUT_SETTINGS:
+			return GeneralResourceType.SOURCE_SETTINGS
+		case ResourceType.VMIX_AUDIO_SETTINGS:
+			return GeneralResourceType.AUDIO_CHANNEL
+		case ResourceType.VMIX_OUTPUT_SETTINGS:
+			return GeneralResourceType.OUTPUT
+		case ResourceType.VMIX_OVERLAY_SETTINGS:
+			return GeneralResourceType.OVERLAY
+		case ResourceType.VMIX_RECORDING:
+			return GeneralResourceType.RECORDING
+		case ResourceType.VMIX_STREAMING:
+			return GeneralResourceType.STREAMING
+		case ResourceType.VMIX_EXTERNAL:
+			return GeneralResourceType.AUX
+		case ResourceType.VMIX_FADE_TO_BLACK:
+			return GeneralResourceType.FADE_TO_BLACK
+		case ResourceType.VMIX_FADER:
+			return GeneralResourceType.FADER
+		case ResourceType.VMIX_PREVIEW:
+			return GeneralResourceType.PREVIEW
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

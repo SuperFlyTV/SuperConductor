@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
+import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
 import { CasparCG } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
 import OBSWebsocket from 'obs-websocket-js'
@@ -23,6 +24,17 @@ import {
 	OBSStreaming,
 	OBSSourceSettings,
 	OBSRender,
+	VMixInput,
+	VMixInputSettings,
+	VMixAudioSettings,
+	VMixOutputSettings,
+	VMixOverlaySettings,
+	VMixRecording,
+	VMixStreaming,
+	VMixExternal,
+	VMixFadeToBlack,
+	VMixFader,
+	VMixPreview,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -583,6 +595,156 @@ export class TSR {
 				},
 				close: async () => {
 					return obs.disconnect()
+				},
+			}
+		} else if (deviceOptions.type === DeviceType.VMIX) {
+			const vmix = new VMix()
+
+			vmix.on('connected', () => {
+				this.log?.info(`vMix ${deviceId}: Sideload connection initialized`)
+			})
+			vmix.on('disconnected', () => {
+				this.log?.info(`vMix ${deviceId}: Sideload connection disconnected`)
+			})
+
+			if (deviceOptions.options?.host && deviceOptions.options?.port) {
+				vmix.connect({
+					host: deviceOptions.options.host,
+					port: deviceOptions.options.port,
+				}).catch((error) => this.log?.error(error))
+			}
+
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
+
+				if (!vmix.connected) {
+					return Object.values(resources)
+				}
+
+				// Inputs
+				for (const key in vmix.state.inputs) {
+					const input = vmix.state.inputs[key]
+					if (typeof input.number !== 'undefined' && typeof input.type !== 'undefined') {
+						const resource: VMixInput = {
+							resourceType: ResourceType.VMIX_INPUT,
+							deviceId,
+							id: `${deviceId}_input_${key}`,
+							number: input.number,
+							type: input.type,
+						}
+						resources[resource.id] = resource
+					}
+				}
+
+				// Input Settings
+				{
+					const resource: VMixInputSettings = {
+						resourceType: ResourceType.VMIX_INPUT_SETTINGS,
+						deviceId,
+						id: `${deviceId}_input_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Recording
+				{
+					const resource: VMixRecording = {
+						resourceType: ResourceType.VMIX_RECORDING,
+						deviceId,
+						id: `${deviceId}_recording`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Streaming
+				{
+					const resource: VMixStreaming = {
+						resourceType: ResourceType.VMIX_STREAMING,
+						deviceId,
+						id: `${deviceId}_streaming`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Audio Settings
+				{
+					const resource: VMixAudioSettings = {
+						resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
+						deviceId,
+						id: `${deviceId}_audio_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Fader
+				{
+					const resource: VMixFader = {
+						resourceType: ResourceType.VMIX_FADER,
+						deviceId,
+						id: `${deviceId}_fader`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Preview
+				{
+					const resource: VMixPreview = {
+						resourceType: ResourceType.VMIX_PREVIEW,
+						deviceId,
+						id: `${deviceId}_preview`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Output Settings
+				{
+					const resource: VMixOutputSettings = {
+						resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
+						deviceId,
+						id: `${deviceId}_output_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Overlay Settings
+				{
+					const resource: VMixOverlaySettings = {
+						resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
+						deviceId,
+						id: `${deviceId}_overlay_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Externals
+				{
+					const resource: VMixExternal = {
+						resourceType: ResourceType.VMIX_EXTERNAL,
+						deviceId,
+						id: `${deviceId}_external`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Fade To Black
+				{
+					const resource: VMixFadeToBlack = {
+						resourceType: ResourceType.VMIX_FADE_TO_BLACK,
+						deviceId,
+						id: `${deviceId}_fade_to_black`,
+					}
+					resources[resource.id] = resource
+				}
+
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: async () => {
+					return vmix.dispose()
 				},
 			}
 		}

@@ -1,8 +1,9 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
 import { OBSAny } from './OBS'
+import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -32,4 +33,16 @@ export enum ResourceType {
 	OBS_SOURCE_SETTINGS = 'OBS_SOURCE_SETTINGS',
 	OBS_MUTE = 'OBS_MUTE',
 	OBS_RENDER = 'OBS_RENDER',
+
+	VMIX_INPUT = 'VMIX_INPUT',
+	VMIX_PREVIEW = 'VMIX_PREVIEW',
+	VMIX_INPUT_SETTINGS = 'VMIX_INPUT_SETTINGS',
+	VMIX_AUDIO_SETTINGS = 'VMIX_AUDIO_SETTINGS',
+	VMIX_OUTPUT_SETTINGS = 'VMIX_OUTPUT_SETTINGS',
+	VMIX_OVERLAY_SETTINGS = 'VMIX_OVERLAY_SETTINGS',
+	VMIX_RECORDING = 'VMIX_RECORDING',
+	VMIX_STREAMING = 'VMIX_STREAMING',
+	VMIX_EXTERNAL = 'VMIX_EXTERNAL',
+	VMIX_FADE_TO_BLACK = 'VMIX_FADE_TO_BLACK',
+	VMIX_FADER = 'VMIX_FADER',
 }

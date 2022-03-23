@@ -726,8 +726,36 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			return ''
 		case DeviceType.SHOTOKU:
 			return ''
-		case DeviceType.VMIX:
-			return ''
+		case DeviceType.VMIX: {
+			const typedMapping = mapping as MappingVMixAny
+			switch (typedMapping.mappingType) {
+				case MappingVMixType.AudioChannel:
+					return `Index: ${typedMapping.index}, Input Layer: ${typedMapping.inputLayer}`
+				case MappingVMixType.External:
+					return ''
+				case MappingVMixType.FadeToBlack:
+					return ''
+				case MappingVMixType.Fader:
+					return ''
+				case MappingVMixType.Input:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Output:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Overlay:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Preview:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Program:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Recording:
+					return ''
+				case MappingVMixType.Streaming:
+					return ''
+				default:
+					assertNever(typedMapping)
+					return ''
+			}
+		}
 		case DeviceType.OBS: {
 			// This is here to fix a typing bug in TSR. MappingOBSSourceSettings is not part of the MappingOBSAny type.
 			// See https://github.com/nrkno/sofie-timeline-state-resolver/pull/208 for more details.
