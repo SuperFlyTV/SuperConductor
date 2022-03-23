@@ -71,3 +71,14 @@ Problems and Issues can be reported here: [Issues](https://github.com/SuperFlyTV
 Contributions are very much appreciated!
 
 Installation and usage instructions are documented here: [For developers](/doc/FOR_DEVELOPERS.md)
+
+## Acknowledgements
+
+SuperConductor uses many open source libraries, some of which include:
+
+- [`caniuse-lite`](https://github.com/browserslist/caniuse-lite) with data sourced from [caniuse.com](https://caniuse.com)
+- [`react-icons`](https://github.com/react-icons/react-icons)
+
+## License
+
+SuperConductor is licensed under the GNU Affero General Public License v3.0 or later and the license is available to read in the [LICENSE] and [COPYING] files.

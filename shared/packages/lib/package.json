@@ -8,7 +8,7 @@
 		"url": "https://superfly.tv"
 	},
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
-	"license": "MIT",
+	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"engines": {
 		"node": "^12.20 || ^14.15.3 || 16"

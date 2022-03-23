@@ -29,7 +29,7 @@
 		"email": "info@superfly.tv",
 		"url": "https://superfly.tv"
 	},
-	"license": "MIT",
+	"license": "AGPL-3.0-or-later",
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
 	},

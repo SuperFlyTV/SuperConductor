@@ -31,7 +31,8 @@
 		"start": "yarn && yarn build:shared && yarn dev:electron",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge",
-		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge"
+		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge",
+		"license-validate": "yarn sofie-licensecheck --allowPackages \"buffers@0.1.1;caniuse-lite@1.0.30001301;cycle@1.0.3;truncate-utf8-bytes@1.0.2;utf8-byte-length@1.0.4;@shared/api@$(node -p \"require('@shared/api/package.json').version\");@shared/lib@$(node -p \"require('@shared/lib/package.json').version\");@shared/models@$(node -p \"require('@shared/models/package.json').version\");@shared/peripherals@$(node -p \"require('@shared/peripherals/package.json').version\");@shared/tsr-bridge@$(node -p \"require('@shared/tsr-bridge/package.json').version\");superconductor@$(node -p \"require('superconductor/package.json').version\");tsr-bridge@$(node -p \"require('tsr-bridge/package.json').version\")\""
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0"
@@ -45,7 +46,6 @@
 		"lerna": "^3.22.1",
 		"nexe": "^4.0.0-beta.19",
 		"rimraf": "^3.0.2",
-		"ts-lib": "^0.0.5",
 		"typescript": "^4.5.5"
 	},
 	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json"
