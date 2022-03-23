@@ -81,4 +81,4 @@ SuperConductor uses many open source libraries, some of which include:
 
 ## License
 
-SuperConductor is licensed under the GNU Affero General Public License v3.0 or later and the license is available to read in the [LICENSE] and [COPYING] files.
+SuperConductor is licensed under the GNU Affero General Public License v3.0 or later and the license is available to read in the [LICENSE](LICENSE) and [COPYING](COPYING) files.
