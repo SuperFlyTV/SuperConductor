@@ -375,11 +375,11 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		if (mapping0.mappingType === MappingVMixType.AudioChannel) {
 			return resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS
 		} else if (mapping0.mappingType === MappingVMixType.External) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_EXTERNAL
 		} else if (mapping0.mappingType === MappingVMixType.FadeToBlack) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK
 		} else if (mapping0.mappingType === MappingVMixType.Fader) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_FADER
 		} else if (mapping0.mappingType === MappingVMixType.Input) {
 			return resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS
 		} else if (mapping0.mappingType === MappingVMixType.Output) {
@@ -391,9 +391,9 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else if (mapping0.mappingType === MappingVMixType.Program) {
 			return resource.resourceType === ResourceType.VMIX_INPUT
 		} else if (mapping0.mappingType === MappingVMixType.Recording) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_RECORDING
 		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
-			return false
+			return resource.resourceType === ResourceType.VMIX_STREAMING
 		} else {
 			assertNever(mapping0.mappingType)
 		}

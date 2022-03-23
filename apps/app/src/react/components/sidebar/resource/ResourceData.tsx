@@ -151,6 +151,36 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<></>
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+		return (
+			<SidebarInfoGroup title="vMix Recording">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+		return (
+			<SidebarInfoGroup title="vMix Streaming">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+		return (
+			<SidebarInfoGroup title="vMix External Output">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+		return (
+			<SidebarInfoGroup title="vMix Fade To Black">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+		return (
+			<SidebarInfoGroup title="vMix Fader">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

@@ -47,6 +47,11 @@ import {
 	TimelineObjVMixAudio,
 	TimelineObjVMixOutput,
 	TimelineObjVMixOverlay,
+	TimelineObjVMixRecording,
+	TimelineObjVMixStreaming,
+	TimelineObjVMixExternal,
+	TimelineObjVMixFadeToBlack,
+	TimelineObjVMixFader,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1499,6 +1504,76 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					deviceType: DeviceType.VMIX,
 					type: TimelineContentTypeVMix.OVERLAY,
 					input: 1,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+			obj = literal<TimelineObjVMixRecording>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.RECORDING,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+			obj = literal<TimelineObjVMixStreaming>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.STREAMING,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+			obj = literal<TimelineObjVMixExternal>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.EXTERNAL,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+			obj = literal<TimelineObjVMixFadeToBlack>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.FADE_TO_BLACK,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+			obj = literal<TimelineObjVMixFader>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.FADER,
+					position: 255,
 				},
 			})
 		} else {

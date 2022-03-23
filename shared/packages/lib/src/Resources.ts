@@ -22,6 +22,8 @@ enum GeneralResourceType {
 	INPUT = 'INPUT',
 	OUTPUT = 'OUTPUT',
 	OVERLAY = 'OVERLAY',
+	FADE_TO_BLACK = 'FADE_TO_BLACK',
+	FADER = 'FADER',
 	UNKNOWN = 'unknown',
 }
 
@@ -73,6 +75,16 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.OUTPUT
 		case ResourceType.VMIX_OVERLAY_SETTINGS:
 			return GeneralResourceType.OVERLAY
+		case ResourceType.VMIX_RECORDING:
+			return GeneralResourceType.RECORDING
+		case ResourceType.VMIX_STREAMING:
+			return GeneralResourceType.STREAMING
+		case ResourceType.VMIX_EXTERNAL:
+			return GeneralResourceType.AUX
+		case ResourceType.VMIX_FADE_TO_BLACK:
+			return GeneralResourceType.FADE_TO_BLACK
+		case ResourceType.VMIX_FADER:
+			return GeneralResourceType.FADER
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

@@ -280,6 +280,41 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Overlay Settings</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Recording</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Streaming</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">External Output Settings</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Fade To Black</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Video Fader</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

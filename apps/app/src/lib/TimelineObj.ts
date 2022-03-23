@@ -68,11 +68,11 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		if (obj.content.type === TimelineContentTypeVMix.AUDIO) {
 			label = 'Audio Settings'
 		} else if (obj.content.type === TimelineContentTypeVMix.EXTERNAL) {
-			label = obj.id
+			label = `External ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.FADER) {
-			label = obj.id
+			label = `Fader Level ${obj.content.position}/255`
 		} else if (obj.content.type === TimelineContentTypeVMix.FADE_TO_BLACK) {
-			label = obj.id
+			label = `FTB ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.INPUT) {
 			label = 'Input Settings'
 		} else if (obj.content.type === TimelineContentTypeVMix.OUTPUT) {
@@ -90,7 +90,7 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
 			label = `Input #${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {
-			label = obj.id
+			label = `Input ${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {
 			label = `Input ${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.RECORDING) {

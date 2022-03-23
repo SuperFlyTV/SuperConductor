@@ -29,6 +29,11 @@ import {
 	VMixAudioSettings,
 	VMixOutputSettings,
 	VMixOverlaySettings,
+	VMixRecording,
+	VMixStreaming,
+	VMixExternal,
+	VMixFadeToBlack,
+	VMixFader,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -640,12 +645,42 @@ export class TSR {
 					resources[resource.id] = resource
 				}
 
+				// Recording
+				{
+					const resource: VMixRecording = {
+						resourceType: ResourceType.VMIX_RECORDING,
+						deviceId,
+						id: `${deviceId}_recording`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Streaming
+				{
+					const resource: VMixStreaming = {
+						resourceType: ResourceType.VMIX_STREAMING,
+						deviceId,
+						id: `${deviceId}_streaming`,
+					}
+					resources[resource.id] = resource
+				}
+
 				// Audio Settings
 				{
 					const resource: VMixAudioSettings = {
 						resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
 						deviceId,
 						id: `${deviceId}_audio_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Fader
+				{
+					const resource: VMixFader = {
+						resourceType: ResourceType.VMIX_FADER,
+						deviceId,
+						id: `${deviceId}_fader`,
 					}
 					resources[resource.id] = resource
 				}
@@ -666,6 +701,26 @@ export class TSR {
 						resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
 						deviceId,
 						id: `${deviceId}_overlay_settings`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Externals
+				{
+					const resource: VMixExternal = {
+						resourceType: ResourceType.VMIX_EXTERNAL,
+						deviceId,
+						id: `${deviceId}_external`,
+					}
+					resources[resource.id] = resource
+				}
+
+				// Fade To Black
+				{
+					const resource: VMixFadeToBlack = {
+						resourceType: ResourceType.VMIX_FADE_TO_BLACK,
+						deviceId,
+						id: `${deviceId}_fade_to_black`,
 					}
 					resources[resource.id] = resource
 				}

@@ -131,11 +131,55 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeVMix.EXTERNAL) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<BooleanInput
+						label="On"
+						currentValue={obj.content.on}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.EXTERNAL) return
+							obj.content.on = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.FADER) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<IntInput
+						label="Position (0 - 255)"
+						fullWidth
+						currentValue={obj.content.position}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.FADER) return
+							obj.content.position = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.FADE_TO_BLACK) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<BooleanInput
+						label="On"
+						currentValue={obj.content.on}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.FADE_TO_BLACK) return
+							obj.content.on = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.INPUT) {
 		settings = (
 			<>
@@ -425,9 +469,37 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeVMix.RECORDING) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<BooleanInput
+						label="On"
+						currentValue={obj.content.on}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.RECORDING) return
+							obj.content.on = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<BooleanInput
+						label="On"
+						currentValue={obj.content.on}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.STREAMING) return
+							obj.content.on = v
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
 	} else {
 		assertNever(obj.content)
 	}
