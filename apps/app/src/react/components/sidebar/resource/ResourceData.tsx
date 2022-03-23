@@ -145,6 +145,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<></>
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Overlay Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

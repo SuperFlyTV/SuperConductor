@@ -81,4 +81,8 @@
 	&.AUDIO {
 		background: $audioLayerColor;
 	}
+
+	&.OVERLAY {
+		background: $overlayLayerColor;
+	}
 }

@@ -21,6 +21,7 @@ enum GeneralResourceType {
 	STREAMING = 'STREAMING',
 	INPUT = 'INPUT',
 	OUTPUT = 'OUTPUT',
+	OVERLAY = 'OVERLAY',
 	UNKNOWN = 'unknown',
 }
 
@@ -70,6 +71,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.AUDIO_CHANNEL
 		case ResourceType.VMIX_OUTPUT_SETTINGS:
 			return GeneralResourceType.OUTPUT
+		case ResourceType.VMIX_OVERLAY_SETTINGS:
+			return GeneralResourceType.OVERLAY
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

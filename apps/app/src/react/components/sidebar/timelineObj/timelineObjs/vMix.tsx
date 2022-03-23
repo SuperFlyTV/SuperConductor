@@ -328,7 +328,23 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
-		settings = NOT_IMPLEMENTED_SETTINGS
+		settings = (
+			<>
+				<div className="setting">
+					<IntInput
+						label="Input"
+						fullWidth
+						currentValue={obj.content.input as number}
+						onChange={(v) => {
+							if (obj.content.type !== TimelineContentTypeVMix.OVERLAY) return
+							obj.content.input = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+					/>
+				</div>
+			</>
+		)
 	} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {
 		settings = NOT_IMPLEMENTED_SETTINGS
 	} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {

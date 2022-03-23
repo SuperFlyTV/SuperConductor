@@ -273,6 +273,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">Output Settings</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">Overlay Settings</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

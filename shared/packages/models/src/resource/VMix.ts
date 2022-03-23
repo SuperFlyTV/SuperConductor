@@ -1,6 +1,6 @@
 import { ResourceBase, ResourceType } from './resource'
 
-export type VMixAny = VMixInput | VMixInputSettings | VMixAudioSettings | VMixOutputSettings
+export type VMixAny = VMixInput | VMixInputSettings | VMixAudioSettings | VMixOutputSettings | VMixOverlaySettings
 
 export interface VMixInput extends ResourceBase {
 	resourceType: ResourceType.VMIX_INPUT
@@ -19,4 +19,8 @@ export interface VMixAudioSettings extends ResourceBase {
 
 export interface VMixOutputSettings extends ResourceBase {
 	resourceType: ResourceType.VMIX_OUTPUT_SETTINGS
+}
+
+export interface VMixOverlaySettings extends ResourceBase {
+	resourceType: ResourceType.VMIX_OVERLAY_SETTINGS
 }

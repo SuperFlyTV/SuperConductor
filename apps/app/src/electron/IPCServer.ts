@@ -46,6 +46,7 @@ import {
 	VMixTransitionType,
 	TimelineObjVMixAudio,
 	TimelineObjVMixOutput,
+	TimelineObjVMixOverlay,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1483,6 +1484,20 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					deviceType: DeviceType.VMIX,
 					type: TimelineContentTypeVMix.OUTPUT,
 					source: 'Input',
+					input: 1,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+			obj = literal<TimelineObjVMixOverlay>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.OVERLAY,
 					input: 1,
 				},
 			})

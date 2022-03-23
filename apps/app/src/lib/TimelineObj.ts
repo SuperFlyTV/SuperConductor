@@ -83,12 +83,12 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 			} else if (obj.content.source === 'MultiView') {
 				label = 'MultiView'
 			} else if (obj.content.source === 'Input') {
-				label = `Input #${obj.content.input}`
+				label = `Input ${obj.content.input}`
 			} else {
 				assertNever(obj.content.source)
 			}
 		} else if (obj.content.type === TimelineContentTypeVMix.OVERLAY) {
-			label = obj.id
+			label = `Input #${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.PREVIEW) {
 			label = obj.id
 		} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {
