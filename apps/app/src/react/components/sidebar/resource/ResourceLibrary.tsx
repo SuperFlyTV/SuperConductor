@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { RundownContext } from '../../../contexts/Rundown'
@@ -13,12 +13,37 @@ import { findPartInRundown } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { Button, Divider, Grid, MenuItem, TextField, Typography } from '@mui/material'
+import {
+	Button,
+	Divider,
+	FormControl,
+	Grid,
+	InputLabel,
+	ListItemText,
+	MenuItem,
+	OutlinedInput,
+	TextField,
+	Typography,
+	Checkbox,
+	Select,
+	SelectChangeEvent,
+} from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
 import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
+
+const ITEM_HEIGHT = 48
+const ITEM_PADDING_TOP = 8
+const MenuProps = {
+	PaperProps: {
+		style: {
+			maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+			width: 250,
+		},
+	},
+}
 
 export const ResourceLibrary: React.FC = observer(() => {
 	const ipcServer = useContext(IPCServerContext)
@@ -36,27 +61,38 @@ export const ResourceLibrary: React.FC = observer(() => {
 
 	const [refreshing, setRefreshing] = useState(false)
 
-	const [filterValue, setFilterValue] = React.useState('')
+	const [nameFilterValue, setNameFilterValue] = React.useState('')
+	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
-	const filteredResources = useMemo(() => {
-		if (filterValue.trim().length === 0) {
+	const resourcesFilteredByDevice = useMemo(() => {
+		if (deviceFilterValue.length <= 0) {
 			return Object.values(resourcesStore.resources)
 		}
 
 		return Object.values(resourcesStore.resources).filter((resource) => {
+			return deviceFilterValue.includes(resource.deviceId)
+		})
+	}, [deviceFilterValue, resourcesStore.resources])
+
+	const resourcesFilteredByDeviceAndName = useMemo(() => {
+		if (nameFilterValue.trim().length === 0) {
+			return resourcesFilteredByDevice
+		}
+
+		return resourcesFilteredByDevice.filter((resource) => {
 			if ('name' in resource) {
 				const name: string = (resource as any).name
-				return name.toLowerCase().includes(filterValue.toLowerCase())
+				return name.toLowerCase().includes(nameFilterValue.toLowerCase())
 			}
 
 			return false
 		})
-	}, [resourcesStore.resources, filterValue])
+	}, [nameFilterValue, resourcesFilteredByDevice])
 
-	const resourcesByDeviceId = useMemo(() => {
+	const filteredResourcesByDeviceId = useMemo(() => {
 		const ret: { [key: string]: ResourceAny[] } = {}
 
-		for (const resource of filteredResources) {
+		for (const resource of resourcesFilteredByDeviceAndName) {
 			if (!(resource.deviceId in ret)) {
 				ret[resource.deviceId] = []
 			}
@@ -64,7 +100,28 @@ export const ResourceLibrary: React.FC = observer(() => {
 		}
 
 		return ret
-	}, [filteredResources])
+	}, [resourcesFilteredByDeviceAndName])
+
+	const deviceIds = useMemo(() => {
+		const deviceIds = new Set<string>()
+		for (const bridgeId in project.bridges) {
+			const bridge = project.bridges[bridgeId]
+			for (const deviceId in bridge.settings.devices) {
+				deviceIds.add(deviceId)
+			}
+		}
+		return Array.from(deviceIds)
+	}, [project.bridges])
+
+	const handleDeviceFilterChange = useCallback((event: SelectChangeEvent<typeof deviceFilterValue>) => {
+		const {
+			target: { value },
+		} = event
+		setDeviceFilterValue(
+			// On autofill we get a stringified value.
+			typeof value === 'string' ? value.split(',') : value
+		)
+	}, [])
 
 	return (
 		<div className="sidebar media-library-sidebar">
@@ -82,21 +139,42 @@ export const ResourceLibrary: React.FC = observer(() => {
 					setRefreshing(false)
 				}}
 			>
+				<FormControl margin="dense" size="small" fullWidth>
+					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
+					<Select
+						labelId="resource-library-deviceid-filter-label"
+						id="resource-library-deviceid-filter"
+						multiple
+						value={deviceFilterValue}
+						onChange={handleDeviceFilterChange}
+						input={<OutlinedInput label="Filter Resources by Device" />}
+						renderValue={(selected) => selected.join(', ')}
+						MenuProps={MenuProps}
+					>
+						{deviceIds.map((deviceId) => (
+							<MenuItem key={deviceId} value={deviceId}>
+								<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
+								<ListItemText primary={deviceId} />
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+
 				<TextField
 					size="small"
 					margin="normal"
 					fullWidth
-					label="Filter Resources"
-					value={filterValue}
+					label="Filter Resources by Name"
+					value={nameFilterValue}
 					InputProps={{
 						type: 'search',
 					}}
 					onChange={(event) => {
-						setFilterValue(event.target.value)
+						setNameFilterValue(event.target.value)
 					}}
 				/>
 
-				{Object.entries(resourcesByDeviceId).map(([deviceId, resources]) => {
+				{Object.entries(filteredResourcesByDeviceId).map(([deviceId, resources]) => {
 					return (
 						<React.Fragment key={deviceId}>
 							<Typography variant="body2">{deviceId}</Typography>
