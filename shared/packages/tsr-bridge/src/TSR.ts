@@ -35,6 +35,7 @@ import {
 	VMixFadeToBlack,
 	VMixFader,
 	VMixPreview,
+	OSCMessage,
 } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
 import { OBSMute } from '@shared/models'
@@ -765,6 +766,32 @@ export class TSR {
 				},
 				close: async () => {
 					return vmix.dispose()
+				},
+			}
+		} else if (deviceOptions.type === DeviceType.OSC) {
+			const refreshResources = async () => {
+				const resources: { [id: string]: ResourceAny } = {}
+
+				// Message
+				{
+					const resource: OSCMessage = {
+						resourceType: ResourceType.OSC_MESSAGE,
+						deviceId,
+						id: `${deviceId}_osc_message`,
+						displayName: 'OSC Message',
+					}
+					resources[resource.id] = resource
+				}
+
+				return Object.values(resources)
+			}
+
+			this.sideLoadedDevices[deviceId] = {
+				refreshResources: () => {
+					return refreshResources()
+				},
+				close: async () => {
+					// Nothing to cleanup.
 				},
 			}
 		}

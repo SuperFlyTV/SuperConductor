@@ -396,6 +396,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
+									} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
 									} else {
 										assertNever(resource)
 										return [resource, <></>]

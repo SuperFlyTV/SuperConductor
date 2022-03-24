@@ -1,9 +1,10 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
 import { OBSAny } from './OBS'
+import { OSCAny } from './OSC'
 import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -50,4 +51,6 @@ export enum ResourceType {
 	VMIX_EXTERNAL = 'VMIX_EXTERNAL',
 	VMIX_FADE_TO_BLACK = 'VMIX_FADE_TO_BLACK',
 	VMIX_FADER = 'VMIX_FADER',
+
+	OSC_MESSAGE = 'OSC_MESSAGE',
 }

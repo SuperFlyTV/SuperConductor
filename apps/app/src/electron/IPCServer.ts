@@ -53,6 +53,8 @@ import {
 	TimelineObjVMixFadeToBlack,
 	TimelineObjVMixFader,
 	TimelineObjVMixPreview,
+	TimelineObjOSCMessage,
+	TimelineContentTypeOSC,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -1589,6 +1591,21 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					deviceType: DeviceType.VMIX,
 					type: TimelineContentTypeVMix.FADER,
 					position: 255,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
+			obj = literal<TimelineObjOSCMessage>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OSC,
+					type: TimelineContentTypeOSC.OSC,
+					path: '/',
+					values: [],
 				},
 			})
 		} else {

@@ -98,4 +98,8 @@
 	&.PREVIEW {
 		background: $previewLayerColor;
 	}
+
+	&.osc {
+		background: $oscLayerColor;
+	}
 }

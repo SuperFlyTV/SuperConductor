@@ -344,8 +344,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			assertNever(mapping0.mappingType)
 		}
 	} else if (mapping.device === DeviceType.OSC) {
-		// @TODO
-		return false
+		return resource.resourceType === ResourceType.OSC_MESSAGE
 	} else if (mapping.device === DeviceType.PANASONIC_PTZ) {
 		// @TODO
 		return false

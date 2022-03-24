@@ -100,6 +100,8 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		} else {
 			assertNever(obj.content)
 		}
+	} else if (obj.content.deviceType === DeviceType.OSC) {
+		label = obj.content.path
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)

@@ -25,6 +25,7 @@ enum GeneralResourceType {
 	FADE_TO_BLACK = 'FADE_TO_BLACK',
 	FADER = 'FADER',
 	PREVIEW = 'PREVIEW',
+	OSC = 'osc',
 	UNKNOWN = 'unknown',
 }
 
@@ -88,6 +89,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.FADER
 		case ResourceType.VMIX_PREVIEW:
 			return GeneralResourceType.PREVIEW
+		case ResourceType.OSC_MESSAGE:
+			return GeneralResourceType.OSC
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

@@ -6,8 +6,10 @@ import {
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
 	DeviceOptionsOBS,
+	DeviceOptionsOSC,
 	DeviceOptionsVMix,
 	DeviceType,
+	OSCDeviceType,
 } from 'timeline-state-resolver-types'
 import { Bridge, BridgeStatus } from '../../../../models/project/Bridge'
 import { Project } from '../../../../models/project/Project'
@@ -99,6 +101,24 @@ export const DeviceList: React.FC<IDeviceListProps> = ({ bridge, devices }) => {
 						(device) => device.type === DeviceType.VMIX
 					).length
 					newDeviceId = `vmix${numVMixDevices}`
+
+					break
+				}
+
+				case DeviceType.OSC: {
+					newDevice = literal<DeviceOptionsOSC>({
+						type: DeviceType.OSC,
+						options: {
+							host: '127.0.0.1',
+							port: 9000,
+							type: OSCDeviceType.UDP,
+						},
+					})
+
+					const numOSCDevices = Object.values(bridge.settings.devices).filter(
+						(device) => device.type === DeviceType.OSC
+					).length
+					newDeviceId = `osc${numOSCDevices}`
 
 					break
 				}
