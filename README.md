@@ -50,13 +50,13 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - **[CasparCG](http://casparcg.com/)** Video and graphics playout software
 - **Blackmagic Design ATEM** Vision mixers
 - **[OBS Studio](https://obsproject.com/)** Live video production software
+- **[vMix](https://www.vmix.com/)** software vision mixer
 - (GUI not implemented yet) **Blackmagic Design Hyperdeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
 - (GUI not implemented yet) **Pharos** light control devices
 - (GUI not implemented yet) **[Sisyfos](https://github.com/olzzon/sisyfos-audio-controller)** audio controller
 - (GUI not implemented yet) **Quantel** video servers
-- (GUI not implemented yet) **[vMix](https://www.vmix.com/)** software vision mixer
 - (GUI not implemented yet) **VizRT MediaSequencer** graphics system
 - (GUI not implemented yet) Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
 - (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
