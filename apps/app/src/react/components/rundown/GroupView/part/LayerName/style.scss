@@ -1,0 +1,65 @@
+@import '../../../../../styles/foundation/all';
+
+.layer-name {
+	height: $layerHeight;
+	position: relative;
+	margin-bottom: 1px;
+
+	&:nth-child(odd) {
+		background: #222630;
+	}
+
+	&:not(:last-child) {
+		border-bottom: 1px;
+		border-color: #2d3340;
+		border-bottom-style: solid;
+	}
+}
+
+.layer-names-dropdown {
+	position: relative;
+
+	&.open {
+		.selected-item {
+			border: 0.1rem solid #545a78;
+			border-bottom: none;
+		}
+		.other-items {
+			display: block;
+			border-radius: 0 0 0.4rem 0.4rem;
+		}
+	}
+
+	.selected-item {
+	}
+
+	.other-items {
+		border: 0.1rem solid #545a78;
+		border-top: none;
+		display: none;
+		position: absolute;
+		width: 100%;
+		top: 100%;
+		left: 0;
+		z-index: 10;
+		background: #464646;
+	}
+
+	.item {
+		padding: 0 0.3rem;
+		font-size: 1.4rem;
+		font-size: 1.4rem;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		height: $layerHeight;
+
+		&:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+
+		&.selected {
+			display: block;
+		}
+	}
+}

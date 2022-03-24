@@ -4,7 +4,7 @@
 .part {
 	position: relative;
 	margin-top: 2px;
-	overflow: hidden;
+	// overflow: hidden; // Create an alternative
 	display: grid;
 	grid-template-columns: $partTabWidth 18rem minmax(auto, 100px) 1fr 0.9rem;
 	grid-template-rows: 1.6rem 1fr;

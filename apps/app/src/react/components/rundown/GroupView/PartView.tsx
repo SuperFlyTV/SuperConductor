@@ -39,6 +39,7 @@ import { RiEyeCloseLine } from 'react-icons/ri'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
+import { LayerName } from './part/LayerName/LayerName'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -808,11 +809,28 @@ export const PartView: React.FC<{
 			<div className="part__dropdown">{/** TODO **/}</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
-					const name = mappings[layerId]?.layerName ?? layerId
+					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
+
 					return (
-						<div className="part__layer-names__name" key={layerId} title={name}>
-							<span>{name}</span>
-						</div>
+						<LayerName
+							key={layerId}
+							layerId={layerId}
+							mappings={mappings}
+							onSelect={(selectedLayerId) => {
+								objectsOnThisLayer.forEach((objectOnThisLayer) => {
+									objectOnThisLayer.obj.layer = selectedLayerId
+									ipcServer
+										.updateTimelineObj({
+											rundownId,
+											groupId: parentGroup.id,
+											partId: part.id,
+											timelineObj: objectOnThisLayer,
+											timelineObjId: objectOnThisLayer.obj.id,
+										})
+										.catch(handleError)
+								})
+							}}
+						/>
 					)
 				})}
 			</div>
