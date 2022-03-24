@@ -80,12 +80,8 @@ export const ResourceLibrary: React.FC = observer(() => {
 		}
 
 		return resourcesFilteredByDevice.filter((resource) => {
-			if ('name' in resource) {
-				const name: string = (resource as any).name
-				return name.toLowerCase().includes(nameFilterValue.toLowerCase())
-			}
-
-			return false
+			const name = resource.displayName
+			return name.toLowerCase().includes(nameFilterValue.toLowerCase())
 		})
 	}, [nameFilterValue, resourcesFilteredByDevice])
 
@@ -187,8 +183,8 @@ export const ResourceLibrary: React.FC = observer(() => {
 											<>
 												<ResourceLibraryItemThumbnail resource={resource} />
 												<div className="resource__details">
-													<div className="resource__name" title={resource.name}>
-														{resource.name}
+													<div className="resource__name" title={resource.displayName}>
+														{resource.displayName}
 													</div>
 													<div className="resource__attributes">
 														<div>{resource.type}</div>
@@ -206,7 +202,7 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
@@ -215,105 +211,105 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_DSK) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_AUX) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Scene: {resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Transition: {resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Recording</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Streaming</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Source Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_MUTE) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Mute</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_RENDER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Scene Item Render</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
@@ -321,8 +317,8 @@ export const ResourceLibrary: React.FC = observer(() => {
 											resource,
 											<>
 												<div className="resource__details">
-													<div className="resource__name" title={`Input ${resource.number}`}>
-														Input {resource.number}
+													<div className="resource__name" title={resource.displayName}>
+														{resource.displayName}
 													</div>
 													<div className="resource__attributes">
 														<div>{resource.type}</div>
@@ -334,70 +330,70 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Input Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Audio Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Output Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Overlay Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Recording</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Streaming</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">External Output Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Fade To Black</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_FADER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Video Fader</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Preview</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else {

@@ -224,6 +224,7 @@ export class TSR {
 							deviceId: deviceId,
 							id: `${deviceId}_media_${media.name}`,
 							...media,
+							displayName: media.name,
 						}
 
 						if (media.type === 'image' || media.type === 'video') {
@@ -253,6 +254,7 @@ export class TSR {
 							deviceId: deviceId,
 							id: `${deviceId}_template_${template.name}`,
 							...template,
+							displayName: template.name,
 						}
 						resources[resource.id] = resource
 					}
@@ -308,7 +310,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_me_${me.index}`,
 						index: me.index,
-						name: `ATEM ME ${me.index + 1}`,
+						displayName: `ATEM ME ${me.index + 1}`,
 					}
 					resources[resource.id] = resource
 				}
@@ -324,7 +326,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_dsk_${i}`,
 						index: i,
-						name: `ATEM DSK ${i + 1}`,
+						displayName: `ATEM DSK ${i + 1}`,
 					}
 					resources[resource.id] = resource
 				}
@@ -340,7 +342,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_aux_${i}`,
 						index: i,
-						name: `ATEM AUX ${i + 1}`,
+						displayName: `ATEM AUX ${i + 1}`,
 					}
 					resources[resource.id] = resource
 				}
@@ -357,7 +359,7 @@ export class TSR {
 							deviceId,
 							id: `${deviceId}_ssrc_${i}`,
 							index: i,
-							name: `ATEM SuperSource ${i + 1}`,
+							displayName: `ATEM SuperSource ${i + 1}`,
 						}
 						resources[resource.id] = resource
 					}
@@ -368,7 +370,7 @@ export class TSR {
 							deviceId,
 							id: `${deviceId}_ssrc_props_${i}`,
 							index: i,
-							name: `ATEM SuperSource ${i + 1} Props`,
+							displayName: `ATEM SuperSource ${i + 1} Props`,
 						}
 						resources[resource.id] = resource
 					}
@@ -379,7 +381,7 @@ export class TSR {
 						resourceType: ResourceType.ATEM_MACRO_PLAYER,
 						deviceId,
 						id: `${deviceId}_macro_player`,
-						name: 'ATEM Macro Player',
+						displayName: 'ATEM Macro Player',
 					}
 					resources[resource.id] = resource
 				}
@@ -396,7 +398,7 @@ export class TSR {
 							deviceId,
 							id: `${deviceId}_audio_channel_${inputNumber}`,
 							index: parseInt(inputNumber, 10),
-							name: `ATEM Audio Channel ${inputNumber}`,
+							displayName: `ATEM Audio Channel ${inputNumber}`,
 						}
 						resources[resource.id] = resource
 					}
@@ -412,7 +414,7 @@ export class TSR {
 							deviceId,
 							id: `${deviceId}_audio_channel_${channelNumber}`,
 							index: parseInt(channelNumber, 10),
-							name: `ATEM Audio Channel ${channelNumber}`,
+							displayName: `ATEM Audio Channel ${channelNumber}`,
 						}
 						resources[resource.id] = resource
 					}
@@ -429,7 +431,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_media_player_${i}`,
 						index: i,
-						name: `ATEM Media Player ${i + 1}`,
+						displayName: `ATEM Media Player ${i + 1}`,
 					}
 					resources[resource.id] = resource
 				}
@@ -519,6 +521,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_scene_${scene.name}`,
 						name: scene.name,
+						displayName: `Scene: ${scene.name}`,
 					}
 					resources[sceneResource.id] = sceneResource
 				}
@@ -531,6 +534,7 @@ export class TSR {
 						deviceId,
 						id: `${deviceId}_transition_${transition.name}`,
 						name: transition.name,
+						displayName: `Transition: ${transition.name}`,
 					}
 					resources[resource.id] = resource
 				}
@@ -541,6 +545,7 @@ export class TSR {
 						resourceType: ResourceType.OBS_RECORDING,
 						deviceId,
 						id: `${deviceId}_recording`,
+						displayName: 'Recording',
 					}
 					resources[resource.id] = resource
 				}
@@ -551,6 +556,7 @@ export class TSR {
 						resourceType: ResourceType.OBS_STREAMING,
 						deviceId,
 						id: `${deviceId}_streaming`,
+						displayName: 'Streaming',
 					}
 					resources[resource.id] = resource
 				}
@@ -561,6 +567,7 @@ export class TSR {
 						resourceType: ResourceType.OBS_MUTE,
 						deviceId,
 						id: `${deviceId}_mute`,
+						displayName: 'Mute',
 					}
 					resources[resource.id] = resource
 				}
@@ -571,6 +578,7 @@ export class TSR {
 						resourceType: ResourceType.OBS_RENDER,
 						deviceId,
 						id: `${deviceId}_render`,
+						displayName: 'Scene Item Render',
 					}
 					resources[resource.id] = resource
 				}
@@ -581,6 +589,7 @@ export class TSR {
 						resourceType: ResourceType.OBS_SOURCE_SETTINGS,
 						deviceId,
 						id: `${deviceId}_source_settings`,
+						displayName: 'Source Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -631,6 +640,7 @@ export class TSR {
 							id: `${deviceId}_input_${key}`,
 							number: input.number,
 							type: input.type,
+							displayName: `Input ${input.number}`,
 						}
 						resources[resource.id] = resource
 					}
@@ -642,6 +652,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_INPUT_SETTINGS,
 						deviceId,
 						id: `${deviceId}_input_settings`,
+						displayName: 'Input Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -652,6 +663,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_RECORDING,
 						deviceId,
 						id: `${deviceId}_recording`,
+						displayName: 'Recording',
 					}
 					resources[resource.id] = resource
 				}
@@ -662,6 +674,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_STREAMING,
 						deviceId,
 						id: `${deviceId}_streaming`,
+						displayName: 'Streaming',
 					}
 					resources[resource.id] = resource
 				}
@@ -672,6 +685,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
 						deviceId,
 						id: `${deviceId}_audio_settings`,
+						displayName: 'Audio Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -682,6 +696,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_FADER,
 						deviceId,
 						id: `${deviceId}_fader`,
+						displayName: 'Transition Fader',
 					}
 					resources[resource.id] = resource
 				}
@@ -692,6 +707,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_PREVIEW,
 						deviceId,
 						id: `${deviceId}_preview`,
+						displayName: 'Preview',
 					}
 					resources[resource.id] = resource
 				}
@@ -702,6 +718,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
 						deviceId,
 						id: `${deviceId}_output_settings`,
+						displayName: 'Output Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -712,6 +729,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
 						deviceId,
 						id: `${deviceId}_overlay_settings`,
+						displayName: 'Overlay Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -722,6 +740,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_EXTERNAL,
 						deviceId,
 						id: `${deviceId}_external`,
+						displayName: 'External Output Settings',
 					}
 					resources[resource.id] = resource
 				}
@@ -732,6 +751,7 @@ export class TSR {
 						resourceType: ResourceType.VMIX_FADE_TO_BLACK,
 						deviceId,
 						id: `${deviceId}_fade_to_black`,
+						displayName: 'Fade To Black',
 					}
 					resources[resource.id] = resource
 				}

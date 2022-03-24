@@ -9,7 +9,12 @@ export interface ResourceBase {
 	resourceType: ResourceType
 
 	deviceId: string
-	id: string // Must be globally unique
+
+	/** Must be globally unique. */
+	id: string
+
+	/** Required because it is used to search/filter resources in the sidebar. Does not need to be unique. */
+	displayName: string
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',
