@@ -3,13 +3,14 @@ import { IoIosHelpCircle } from 'react-icons/io'
 
 import './style.scss'
 
+// WIP
 export const ProjectPageLayout: React.FC<{
 	title: string
 	subtitle?: string
 	help?: React.ReactNode
 	controls?: React.ReactNode
 }> = (props) => {
-	const [showHelp, setShowHelp] = useState(true)
+	const [showHelp, setShowHelp] = useState(false)
 
 	return (
 		<div className="main">

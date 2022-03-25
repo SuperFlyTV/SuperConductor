@@ -31,20 +31,23 @@ export const NewRundownPage = () => {
 
 	return (
 		<div className="new-rundown-page">
-			<NewRundownOption
-				label="Create new Rundown"
-				icon={<NewGroupIcon />}
-				onClick={() => {
-					setNewRundownOpen(true)
-				}}
-			/>
-			<NewRundownOption
-				label="Import rundown from another project"
-				icon={<ImportRundownIcon />}
-				onClick={() => {
-					alert('To do')
-				}}
-			/>
+			<div className="title">Create New Rundown</div>
+			<div className="options">
+				<NewRundownOption
+					label="Empty Rundown"
+					icon={<NewGroupIcon />}
+					onClick={() => {
+						setNewRundownOpen(true)
+					}}
+				/>
+				<NewRundownOption
+					label="Import Rundown From Another Project"
+					icon={<ImportRundownIcon />}
+					onClick={() => {
+						alert('To do')
+					}}
+				/>
+			</div>
 
 			{/* New Rundown dialog */}
 			<Formik

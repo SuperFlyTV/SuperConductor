@@ -1,5 +1,13 @@
 import React from 'react'
 
-export const TextBtn: React.FC<{ label: string }> = (props) => {
-	return <button className="sc-btn">{props.label}</button>
+import './style.scss'
+
+export const TextBtn: React.FC<{ label: string; onClick?: React.MouseEventHandler<HTMLButtonElement> | undefined }> = (
+	props
+) => {
+	return (
+		<button className="sc-btn" onClick={props.onClick}>
+			{props.label}
+		</button>
+	)
 }

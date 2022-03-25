@@ -50,7 +50,7 @@ export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 					},
 				]}
 			/>
-			{activeHomePageId === 'project' && <ProjectPage />}
+			{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
 			{activeHomePageId === 'bridgeSettings' && <BridgesPage project={props.project} />}
 			{activeHomePageId === 'mappingsSettings' && <MappingsPage project={props.project} />}
 		</div>
