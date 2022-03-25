@@ -27,12 +27,14 @@ import {
 	Checkbox,
 	Select,
 	SelectChangeEvent,
+	Stack,
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
 import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { HiRefresh } from 'react-icons/hi'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -58,8 +60,6 @@ export const ResourceLibrary: React.FC = observer(() => {
 
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
 	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
-
-	const [refreshing, setRefreshing] = useState(false)
 
 	const [nameFilterValue, setNameFilterValue] = React.useState('')
 	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
@@ -124,15 +124,13 @@ export const ResourceLibrary: React.FC = observer(() => {
 			<SidebarInfoGroup
 				title="Available Resources"
 				enableRefresh={true}
-				refreshActive={refreshing}
+				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
 				onRefreshClick={async () => {
-					setRefreshing(true)
 					try {
 						await ipcServer.refreshResources()
 					} catch (err) {
 						handleError(err)
 					}
-					setRefreshing(false)
 				}}
 			>
 				<FormControl margin="dense" size="small" fullWidth>
@@ -173,7 +171,14 @@ export const ResourceLibrary: React.FC = observer(() => {
 				{Object.entries(filteredResourcesByDeviceId).map(([deviceId, resources]) => {
 					return (
 						<React.Fragment key={deviceId}>
-							<Typography variant="body2">{deviceId}</Typography>
+							<Stack direction="row" justifyContent="space-between">
+								<Typography variant="body2">{deviceId}</Typography>
+								{resourcesStore.refreshStatuses[deviceId] && (
+									<div className="refresh active" style={{ opacity: '0.6' }}>
+										<HiRefresh size={15} color="white" />
+									</div>
+								)}
+							</Stack>
 							<Divider />
 							{resources
 								.map<[ResourceAny, JSX.Element]>((resource) => {

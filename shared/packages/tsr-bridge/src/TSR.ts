@@ -153,12 +153,38 @@ export class TSR {
 	}
 	public refreshResources(cb: (deviceId: string, resources: ResourceAny[]) => void) {
 		for (const [deviceId, sideload] of Object.entries(this.sideLoadedDevices)) {
+			let timedOut = false
+			this.send({
+				type: 'DeviceRefreshStatus',
+				deviceId,
+				refreshing: true,
+			})
+
+			const refreshTimeout = setTimeout(() => {
+				timedOut = true
+				this.send({
+					type: 'DeviceRefreshStatus',
+					deviceId,
+					refreshing: false,
+				})
+			}, 10 * 1000)
+
 			sideload
 				.refreshResources()
 				.then((resources) => {
 					cb(deviceId, resources)
 				})
 				.catch((e) => this.log?.error(e))
+				.finally(() => {
+					clearTimeout(refreshTimeout)
+					if (!timedOut) {
+						this.send({
+							type: 'DeviceRefreshStatus',
+							deviceId,
+							refreshing: false,
+						})
+					}
+				})
 		}
 	}
 	public reportAllStatuses() {

@@ -14,6 +14,7 @@ export namespace BridgeAPI {
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
+			| DeviceRefreshStatus
 
 		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -62,6 +63,12 @@ export namespace BridgeAPI {
 			deviceId: string
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
+		}
+
+		export interface DeviceRefreshStatus extends MessageBase {
+			type: 'DeviceRefreshStatus'
+			deviceId: string
+			refreshing: boolean
 		}
 	}
 

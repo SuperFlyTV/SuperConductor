@@ -39,6 +39,7 @@ export class BridgeHandler {
 		private callbacks: {
 			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
 			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
+			onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
 		}
 	) {
 		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
@@ -184,6 +185,7 @@ export class BridgeHandler {
 interface BridgeConnectionCallbacks {
 	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
 	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
+	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
 }
 
 abstract class AbstractBridgeConnection {
@@ -350,6 +352,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
+		} else if (msg.type === 'DeviceRefreshStatus') {
+			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
 		} else {
 			assertNever(msg)
 		}

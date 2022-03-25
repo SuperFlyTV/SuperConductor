@@ -33,4 +33,7 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralTriggers', peripheralTriggers)
 	}
+	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateDeviceRefreshStatus', deviceId, refreshing)
+	}
 }
