@@ -3,7 +3,7 @@ import { WebsocketConnection, WebsocketServer, BridgeAPI } from '@shared/api'
 import { BaseBridge } from '@shared/tsr-bridge'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
+export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 const SERVER_PORT = 5401
 const baseBridges = new Set<BaseBridge>()
 

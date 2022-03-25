@@ -37,6 +37,7 @@ import { HeaderBar } from './components/headerBar/HeaderBar'
 import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
+import { SplashScreen } from './components/SplashScreen'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -360,6 +361,8 @@ export const App = observer(() => {
 							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
 									<HeaderBar />
+
+									<SplashScreen />
 
 									{store.guiStore.isNewRundownSelected() ? (
 										<NewRundownPage />

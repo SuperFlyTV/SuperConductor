@@ -1,5 +1,11 @@
 export interface AppData {
 	windowPosition: WindowPosition
+	version: {
+		/** The version of the SuperConductor that the user has seen */
+		seenVersion: string | null
+		/** The version of the SuperConductor who saved the data*/
+		currentVersion: string
+	}
 	project: {
 		id: string
 	}

@@ -212,6 +212,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.setKeyboardKeys(activeKeys)
 	}
 
+	async acknowledgeSeenVersion(): Promise<void> {
+		const appData = this.storage.getAppData()
+		appData.version.seenVersion = appData.version.currentVersion
+		this.storage.updateAppData(appData)
+	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group, part } = this.getPart(arg)
 
