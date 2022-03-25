@@ -31,11 +31,9 @@ export const LayerName: React.FC<{
 
 	const otherItems: DropdownItem[] = Object.entries(props.mappings)
 		// Remove all used layers in this part from the dropdown list
-		.filter(
-			(mappingKeyArray) => !props.timelineObjs.find((timelineObj) => timelineObj.obj.layer === mappingKeyArray[0])
-		)
+		.filter(([mappingId]) => !props.timelineObjs.find((timelineObj) => timelineObj.obj.layer === mappingId))
 		// Map to a simple readable format
-		.map((mappingKeyArray) => ({ id: mappingKeyArray[0], label: mappingKeyArray[1].layerName ?? 'Unknown' }))
+		.map(([mappingId, mappingValue]) => ({ id: mappingId, label: mappingValue.layerName ?? 'Unknown' }))
 
 	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings' })
 
@@ -47,8 +45,7 @@ export const LayerName: React.FC<{
 					otherItems={otherItems}
 					onSelect={(id: string) => {
 						if (id === 'editMappings') {
-							store.guiStore.activeTabId = 'project'
-							store.guiStore.activeProjectPageId = 'mappingsSettings'
+							store.guiStore.goToHome('mappingsSettings')
 						} else {
 							props.onSelect(id)
 						}

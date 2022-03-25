@@ -361,9 +361,9 @@ export const App = observer(() => {
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
 									<HeaderBar />
 
-									{store.guiStore.activeTabId === 'new-rundown' ? (
+									{store.guiStore.isNewRundownSelected() ? (
 										<NewRundownPage />
-									) : store.guiStore.activeTabId === 'project' ? (
+									) : store.guiStore.isHomeSelected() ? (
 										<HomePage project={project} />
 									) : (
 										modifiedCurrentRundown && (

@@ -16,7 +16,6 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const handleSelect = (rundownId: string) => {
-		// guiStore.activeTabId = rundownId
 		store.rundownsStore.setCurrentRundown(rundownId)
 	}
 
@@ -30,21 +29,21 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 		}
 	}
 
-	const isProjectSelected = guiStore.activeTabId === 'project'
+	const isHomeSelected = guiStore.isHomeSelected()
 	const isFirstRundownSelected = rundownsStore.openRundowns[0]?.rundownId === guiStore.activeTabId
 
 	return (
 		<div className="tabs">
 			<Tab
-				id="project"
-				name="Project"
+				id="home"
+				name="Home"
 				onClick={() => {
-					guiStore.activeTabId = 'project'
+					guiStore.goToHome()
 				}}
 				disableClose={true}
-				active={isProjectSelected}
+				active={isHomeSelected}
 				icon={<AiFillHome />}
-				showSeparator={!isProjectSelected && !isFirstRundownSelected}
+				showSeparator={!isHomeSelected && !isFirstRundownSelected}
 			/>
 
 			{rundownsStore.openRundowns.map((rundown, idx) => {
@@ -69,7 +68,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 
 			<NewTabBtn
 				onClick={() => {
-					guiStore.activeTabId = 'new-rundown'
+					guiStore.goToNewRundown()
 				}}
 			/>
 		</div>

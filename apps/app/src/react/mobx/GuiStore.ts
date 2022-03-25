@@ -4,21 +4,31 @@ import { makeAutoObservable } from 'mobx'
  * Store contains only information about user interface
  */
 
-// type ActiveTabSection = 'project' | 'rundown' | 'new-rundown'
+export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
 	selectedGroupId?: string
 	selectedPartId?: string
 	selectedTimelineObjIds: string[] = []
 
-	private _activeProjectPageId?: string = undefined
-	get activeProjectPageId() {
-		return this._activeProjectPageId
-	}
-	set activeProjectPageId(projectPageId: string | undefined) {
-		this._activeProjectPageId = projectPageId
+	activeTabId = 'home'
+	activeHomePageId = 'project'
+
+	goToHome(pageId?: HomePageId) {
+		this.activeTabId = 'home'
+		if (pageId) this.activeHomePageId = pageId
 	}
 
-	activeTabId: 'project' | 'new-rundown' | string = 'project'
+	isHomeSelected() {
+		return this.activeTabId === 'home'
+	}
+
+	goToNewRundown() {
+		this.activeTabId = 'new-rundown'
+	}
+
+	isNewRundownSelected() {
+		return this.activeTabId === 'new-rundown'
+	}
 
 	constructor() {
 		makeAutoObservable(this)

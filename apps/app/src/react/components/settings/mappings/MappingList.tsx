@@ -97,6 +97,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 				<Table>
 					<TableHead>
 						<TableRow>
+							<TableCell>Mapping ID</TableCell>
 							<TableCell>Mapping Name</TableCell>
 							<TableCell>Mapping Type</TableCell>
 							<TableCell>Device ID</TableCell>
@@ -106,6 +107,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 					<TableBody>
 						{Object.entries(mappings).map(([id, mapping]) => (
 							<TableRow key={id}>
+								<TableCell>{id}</TableCell>
 								<TableCell>{mapping.layerName}</TableCell>
 								<TableCell>{getDeviceName(mapping.device)}</TableCell>
 								<TableCell>{mapping.deviceId}</TableCell>

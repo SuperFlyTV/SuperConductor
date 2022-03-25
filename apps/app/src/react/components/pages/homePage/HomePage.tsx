@@ -8,21 +8,22 @@ import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
 import { BridgesPage } from './BridgesPage'
 import { MappingsPage } from './MappingsPage'
+import { HomePageId } from 'src/react/mobx/GuiStore'
 
 export const HomePage: React.FC<{ project: Project }> = observer((props) => {
-	const apId = store.guiStore.activeProjectPageId
+	const activeHomePageId = store.guiStore.activeHomePageId
 
 	return (
 		<div className="project-page-layout">
 			<ProjectPageMenubar
-				activeItemId={apId}
+				activeItemId={activeHomePageId}
 				onItemClick={(itemId) => {
 					if (itemId === 'newProject') {
 						alert('TODO: New Project')
 					} else if (itemId === 'openProject') {
 						alert('TODO: Open Project')
 					} else {
-						store.guiStore.activeProjectPageId = itemId
+						store.guiStore.goToHome(itemId as HomePageId)
 					}
 				}}
 				menubar={[
@@ -49,9 +50,9 @@ export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 					},
 				]}
 			/>
-			{apId === 'project' && <ProjectPage />}
-			{apId === 'bridgeSettings' && <BridgesPage project={props.project} />}
-			{apId === 'mappingsSettings' && <MappingsPage project={props.project} />}
+			{activeHomePageId === 'project' && <ProjectPage />}
+			{activeHomePageId === 'bridgeSettings' && <BridgesPage project={props.project} />}
+			{activeHomePageId === 'mappingsSettings' && <MappingsPage project={props.project} />}
 		</div>
 	)
 })
