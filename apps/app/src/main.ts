@@ -1,5 +1,5 @@
 import { literal } from '@shared/lib'
-import { app, BrowserWindow, dialog, Menu } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
@@ -20,6 +20,7 @@ const createWindow = (): void => {
 		webPreferences: {
 			nodeIntegration: true,
 			contextIsolation: false,
+			nativeWindowOpen: false,
 		},
 		title: 'SuperConductor',
 	})
@@ -141,6 +142,23 @@ const createWindow = (): void => {
 	})
 	win.on('moved', () => {
 		updateSizeAndPosition()
+	})
+
+	// Handle links <a target='_blank'>, to open in an external browser:
+	win.webContents.setWindowOpenHandler(({ url }) => {
+		// List urls which are OK to open in an Electron window:
+		// if (url.startsWith('https://github.com/')) return { action: 'allow' }
+		// if (url.startsWith('https://superfly.tv/')) return { action: 'allow' }
+
+		// open url in a browser and prevent default
+		shell.openExternal(url).catch(console.error)
+
+		return { action: 'deny' } // preventDefault
+	})
+	win.webContents.on('did-create-window', (childWindow) => {
+		childWindow.webContents.on('will-navigate', (e) => {
+			e.preventDefault()
+		})
 	})
 }
 
