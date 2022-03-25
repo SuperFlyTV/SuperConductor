@@ -1,11 +1,12 @@
 .new-tab-button {
 	border-radius: 50%;
-	width: 1.7rem;
-	height: 1.7rem;
+	width: 2.4rem;
+	height: 2.4rem;
 	background: transparent;
 	position: relative;
 	border: 0;
 	cursor: pointer;
+	margin-left: 0.4rem;
 
 	svg {
 		position: absolute;
@@ -13,6 +14,8 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		width: 1.7rem;
+		height: 1.7rem;
 	}
 
 	&:hover {

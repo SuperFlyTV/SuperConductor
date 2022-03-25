@@ -6,7 +6,8 @@ import { store } from '../../../mobx/store'
 import { NewTabBtn } from './newTabBtn/NewTabBtn'
 import { Tab } from './tab/Tab'
 
-import './tabs.scss'
+import './style.scss'
+import { AiFillHome } from 'react-icons/ai'
 
 export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer((props) => {
 	const rundownsStore = store.rundownsStore
@@ -15,8 +16,8 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const handleSelect = (rundownId: string) => {
+		// guiStore.activeTabId = rundownId
 		store.rundownsStore.setCurrentRundown(rundownId)
-		guiStore.currentlyActiveTabSection = 'rundown'
 	}
 
 	const handleClose = (rundownId: string) => {
@@ -29,39 +30,46 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 		}
 	}
 
+	const isProjectSelected = guiStore.activeTabId === 'project'
+	const isFirstRundownSelected = rundownsStore.openRundowns[0]?.rundownId === guiStore.activeTabId
+
 	return (
 		<div className="tabs">
 			<Tab
 				id="project"
 				name="Project"
 				onClick={() => {
-					guiStore.currentlyActiveTabSection = 'project'
-					rundownsStore.setCurrentRundown(undefined)
+					guiStore.activeTabId = 'project'
 				}}
 				disableClose={true}
-				active={guiStore.currentlyActiveTabSection === 'project'}
+				active={isProjectSelected}
+				icon={<AiFillHome />}
+				showSeparator={!isProjectSelected && !isFirstRundownSelected}
 			/>
 
-			{rundownsStore.openRundowns.map((rundown) => {
+			{rundownsStore.openRundowns.map((rundown, idx) => {
+				const isThisSelected = rundown.rundownId === guiStore.activeTabId
+				const isNextSelected = rundownsStore.openRundowns[idx + 1]?.rundownId === guiStore.activeTabId
+
 				return (
-					<Tab
-						key={rundown.rundownId}
-						id={rundown.rundownId}
-						name={rundown.name}
-						active={
-							guiStore.currentlyActiveTabSection === 'rundown' &&
-							rundown.rundownId === rundownsStore.currentRundownId
-						}
-						onClick={() => handleSelect(rundown.rundownId)}
-						onDoubleClick={() => props.onTabDoubleClick(rundown)}
-						onClose={(id) => handleClose(id)}
-					/>
+					<>
+						<Tab
+							key={rundown.rundownId}
+							id={rundown.rundownId}
+							name={rundown.name}
+							active={isThisSelected}
+							onClick={() => handleSelect(rundown.rundownId)}
+							onDoubleClick={() => props.onTabDoubleClick(rundown)}
+							onClose={(id) => handleClose(id)}
+							showSeparator={!isThisSelected && !isNextSelected}
+						/>
+					</>
 				)
 			})}
 
 			<NewTabBtn
 				onClick={() => {
-					guiStore.currentlyActiveTabSection = 'new-rundown'
+					guiStore.activeTabId = 'new-rundown'
 				}}
 			/>
 		</div>

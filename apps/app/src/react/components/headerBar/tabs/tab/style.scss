@@ -1,0 +1,73 @@
+@import '../../../../styles/foundation/all';
+
+.tab {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2.5rem;
+	border-radius: 0.5rem 0.5rem 0 0;
+	padding: 0 2.4rem 0 1.6rem;
+	min-width: 8rem;
+
+	.icon {
+		margin-right: 0.5rem;
+		display: flex;
+		align-items: center;
+
+		svg {
+			height: 1.4rem;
+		}
+	}
+
+	.separator {
+		width: 0.1rem;
+		height: 1rem;
+		background: #b7bdd4;
+		position: absolute;
+		right: 0;
+	}
+
+	.label {
+		font-size: 1.2rem;
+	}
+
+	.close {
+		position: absolute;
+		right: 0.6rem;
+		top: 0.1rem;
+		display: none;
+		opacity: 0.5;
+
+		&:hover {
+			opacity: 1;
+		}
+
+		button {
+			padding: 0;
+			background: transparent;
+			border: 0;
+			cursor: pointer;
+		}
+
+		svg {
+			fill: white;
+		}
+	}
+
+	&:hover .close {
+		display: block;
+	}
+
+	&.active {
+		background: #191b23;
+
+		.separator {
+			display: none;
+		}
+
+		.close {
+			display: block;
+		}
+	}
+}

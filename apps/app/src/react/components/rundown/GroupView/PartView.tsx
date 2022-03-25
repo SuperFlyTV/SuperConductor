@@ -816,6 +816,7 @@ export const PartView: React.FC<{
 							key={layerId}
 							layerId={layerId}
 							mappings={mappings}
+							timelineObjs={modifiedTimeline}
 							onSelect={(selectedLayerId) => {
 								objectsOnThisLayer.forEach((objectOnThisLayer) => {
 									objectOnThisLayer.obj.layer = selectedLayerId

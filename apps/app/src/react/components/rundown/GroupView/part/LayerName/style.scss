@@ -21,16 +21,13 @@
 
 	&.open {
 		.selected-item {
-			border: 0.1rem solid #545a78;
+			background-color: rgba(255, 255, 255, 0.1);
 			border-bottom: none;
 		}
 		.other-items {
 			display: block;
 			border-radius: 0 0 0.4rem 0.4rem;
 		}
-	}
-
-	.selected-item {
 	}
 
 	.other-items {
@@ -60,6 +57,14 @@
 
 		&.selected {
 			display: block;
+		}
+
+		&.editMappings {
+			background: #545a78;
+
+			&:hover {
+				background: #697091;
+			}
 		}
 	}
 }
