@@ -3,6 +3,8 @@
 .header-bar {
 	display: flex;
 	align-items: stretch;
+	height: 5rem;
+	background: linear-gradient(180deg, #545972 0%, #414556 100%);
 
 	.device-statuses {
 		margin-left: auto;

@@ -35,7 +35,7 @@ import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { HeaderBar } from './components/headerBar/HeaderBar'
 import { store } from './mobx/store'
-import { ProjectPage } from './components/pages/projectPage/ProjectPage'
+import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 
 /**
@@ -361,20 +361,21 @@ export const App = observer(() => {
 								<div className="app" onPointerDown={handlePointerDownAnywhere}>
 									<HeaderBar />
 
-									{/* TODO - refactor */}
-									{store.guiStore.currentlyActiveTabSection === 'new-rundown' ? (
+									{store.guiStore.isNewRundownSelected() ? (
 										<NewRundownPage />
-									) : modifiedCurrentRundown ? (
-										<RundownContext.Provider value={modifiedCurrentRundown}>
-											<div className="main-area">
-												<RundownView mappings={project.mappings} />
-											</div>
-											<div className="side-bar">
-												<Sidebar mappings={project.mappings} />
-											</div>
-										</RundownContext.Provider>
+									) : store.guiStore.isHomeSelected() ? (
+										<HomePage project={project} />
 									) : (
-										<ProjectPage project={project} />
+										modifiedCurrentRundown && (
+											<RundownContext.Provider value={modifiedCurrentRundown}>
+												<div className="main-area">
+													<RundownView mappings={project.mappings} />
+												</div>
+												<div className="side-bar">
+													<Sidebar mappings={project.mappings} />
+												</div>
+											</RundownContext.Provider>
+										)
 									)}
 								</div>
 							</ErrorHandlerContext.Provider>

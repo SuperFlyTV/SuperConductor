@@ -15,14 +15,14 @@ import './newRundownPage.scss'
 export const NewRundownPage = () => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const guiStore = store.guiStore
+	// const guiStore = store.guiStore
 	const rundownsStore = store.rundownsStore
 
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
 	const handleCreateNewRundown = (rundownName: string) => {
 		serverAPI.newRundown({ name: rundownName }).catch(handleError)
-		guiStore.currentlyActiveTabSection = 'rundown'
+		// guiStore.currentlyActiveTabSection = 'rundown'
 	}
 
 	const handleCloseCreateNewRundown = () => setNewRundownOpen(false)
@@ -31,20 +31,23 @@ export const NewRundownPage = () => {
 
 	return (
 		<div className="new-rundown-page">
-			<NewRundownOption
-				label="Create new Rundown"
-				icon={<NewGroupIcon />}
-				onClick={() => {
-					setNewRundownOpen(true)
-				}}
-			/>
-			<NewRundownOption
-				label="Import rundown from another project"
-				icon={<ImportRundownIcon />}
-				onClick={() => {
-					alert('To do')
-				}}
-			/>
+			<div className="title">Create New Rundown</div>
+			<div className="options">
+				<NewRundownOption
+					label="Empty Rundown"
+					icon={<NewGroupIcon />}
+					onClick={() => {
+						setNewRundownOpen(true)
+					}}
+				/>
+				<NewRundownOption
+					label="Import Rundown From Another Project"
+					icon={<ImportRundownIcon />}
+					onClick={() => {
+						alert('To do')
+					}}
+				/>
+			</div>
 
 			{/* New Rundown dialog */}
 			<Formik

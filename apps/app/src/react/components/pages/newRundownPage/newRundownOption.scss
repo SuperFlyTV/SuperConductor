@@ -1,19 +1,30 @@
 .new-rundown-option {
-	background: #1c1c1c;
+	background: transparent;
 	border-radius: 1rem;
-	border: 0;
+	border: 2px solid #4e4f59;
 	color: white;
-	width: 100%;
-	padding: 3rem 2rem;
+	padding: 1.5rem 2.5rem;
 	display: flex;
 	align-items: center;
-	margin-bottom: 2rem;
+	width: 35rem;
+
+	&:not(:last-child) {
+		margin-bottom: 2rem;
+	}
 
 	&:hover {
-		background: #2b2b2b;
+		background: rgba(255, 255, 255, 0.05);
 	}
 
 	.icon {
+		svg {
+			height: 3.8rem;
+			width: 3.8rem;
+
+			path {
+				stroke: #a8aaba;
+			}
+		}
 	}
 	.label {
 		margin-left: 2rem;
