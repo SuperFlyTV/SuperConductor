@@ -28,10 +28,10 @@ export const ContextWrapper: React.FC = () => {
 			components: {
 				MuiCssBaseline: {
 					styleOverrides: {
-						'*, *::before, *::after': {
-							transition: 'none !important',
-							animation: 'none !important',
-						},
+						// '*, *::before, *::after': {
+						// 	transition: 'none !important',
+						// 	animation: 'none !important',
+						// },
 					},
 				},
 				MuiButtonBase: {
