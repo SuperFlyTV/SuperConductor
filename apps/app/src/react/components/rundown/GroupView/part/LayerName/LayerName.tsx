@@ -6,6 +6,7 @@ import { Mappings } from 'timeline-state-resolver-types'
 
 import './style.scss'
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
+import { MdWarningAmber } from 'react-icons/md'
 
 export const LayerName: React.FC<{
 	/**
@@ -25,7 +26,8 @@ export const LayerName: React.FC<{
 	 */
 	timelineObjs: TimelineObj[]
 }> = observer((props) => {
-	const name = props.mappings[props.layerId]?.layerName ?? 'Unknown'
+	const mappingExists = props.layerId in props.mappings
+	const name = props.mappings[props.layerId]?.layerName ?? props.layerId
 
 	const selectedItem: DropdownItem = { id: props.layerId, label: name }
 
@@ -38,7 +40,12 @@ export const LayerName: React.FC<{
 	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings' })
 
 	return (
-		<div className="layer-name">
+		<div className={classNames('layer-name', { warning: !mappingExists })}>
+			{!mappingExists && (
+				<div className="warning-icon" title="No mapping by this ID exists.">
+					<MdWarningAmber size={18} />
+				</div>
+			)}
 			{
 				<LayerNamesDropdown
 					selectedItem={selectedItem}

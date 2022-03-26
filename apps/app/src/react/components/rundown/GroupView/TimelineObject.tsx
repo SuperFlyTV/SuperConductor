@@ -11,6 +11,7 @@ import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts
 import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
+import { MdWarningAmber } from 'react-icons/md'
 
 const HANDLE_WIDTH = 8
 
@@ -24,7 +25,8 @@ export const TimelineObject: React.FC<{
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
-}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked }) => {
+	warnings?: string[]
+}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked, warnings }) => {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
 	const gui = store.guiStore
@@ -243,10 +245,11 @@ export const TimelineObject: React.FC<{
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 				isAtMinWidth,
 				locked,
+				warning: warnings && warnings.length > 0,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={updateSelection}
-			title={description.label + ' ' + durationTitle}
+			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
 		>
 			<div
 				className="handle handle--left"
@@ -267,6 +270,11 @@ export const TimelineObject: React.FC<{
 					setMoveType('whole')
 				}}
 			>
+				{warnings && warnings.length > 0 && (
+					<div className="warning-icon">
+						<MdWarningAmber size={18} />
+					</div>
+				)}
 				<div className="title">{description.label}</div>
 				<div className="duration">
 					{minutes ? (

@@ -4,6 +4,7 @@
 	height: $layerHeight;
 	position: relative;
 	margin-bottom: 1px;
+	display: flex;
 
 	&:nth-child(odd) {
 		background: #222630;
@@ -14,10 +15,23 @@
 		border-color: #2d3340;
 		border-bottom-style: solid;
 	}
+
+	&.warning {
+		background: $invalidLayerColor;
+	}
+
+	.warning-icon {
+		cursor: help;
+		position: relative;
+		top: 3px;
+		left: 2px;
+	}
 }
 
 .layer-names-dropdown {
 	position: relative;
+	flex-grow: 1;
+	flex-shrink: 1;
 
 	&.open {
 		.selected-item {

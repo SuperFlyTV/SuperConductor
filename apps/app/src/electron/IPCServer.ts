@@ -4,7 +4,6 @@ import {
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
-	findDevice,
 	findGroup,
 	findPart,
 	findTimelineObj,
@@ -1838,52 +1837,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		const rundowns = this.storage.getAllRundowns()
-
-		for (const mappingId in data.project.mappings) {
-			// Go through all Mappings and remove any belonging to devices which have been removed.
-			const mapping = data.project.mappings[mappingId]
-			const device = findDevice(data.project.bridges, mapping.deviceId)
-			if (!device) {
-				delete data.project.mappings[mappingId]
-			}
-		}
-
-		for (const rundown of rundowns) {
-			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed or changed.
-			let modifiedTimeline = false
-			for (const group of rundown.groups) {
-				for (const part of group.parts) {
-					const timelineObjsToRemove: TimelineObj[] = []
-					for (const timelineObj of part.timeline) {
-						const layerExists = timelineObj.obj.layer in data.project.mappings
-						if (layerExists) {
-							const mapping = data.project.mappings[timelineObj.obj.layer]
-							const layerCanHoldThisTimelineObj = filterMapping(mapping, timelineObj.obj)
-							if (!layerCanHoldThisTimelineObj) {
-								timelineObjsToRemove.push(timelineObj)
-							}
-						} else {
-							timelineObjsToRemove.push(timelineObj)
-						}
-					}
-					if (timelineObjsToRemove.length) {
-						part.timeline = part.timeline.filter(
-							(timelineObj) => !timelineObjsToRemove.includes(timelineObj)
-						)
-						modifiedTimeline = true
-						this._updatePart(part)
-					}
-				}
-				if (modifiedTimeline) {
-					this._updateTimeline(group)
-				}
-			}
-			if (modifiedTimeline) {
-				this.storage.updateRundown(rundown.id, rundown)
-			}
-		}
-
 		this.storage.updateProject(data.project)
 	}
 	async newRundown(data: { name: string }): Promise<UndoableResult> {
