@@ -8,6 +8,7 @@ import {
 	MappingCasparCG,
 	MappingOBS,
 	MappingOBSType,
+	MappingOSC,
 	Mappings,
 	MappingVMix,
 	MappingVMixType,
@@ -41,7 +42,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 			}
 
 			const layerName = mappingId
-			let newMapping: MappingCasparCG | MappingAtem | MappingOBS | MappingVMix
+			let newMapping: MappingCasparCG | MappingAtem | MappingOBS | MappingVMix | MappingOSC
 
 			switch (device.type) {
 				case DeviceType.CASPARCG: {
@@ -84,6 +85,16 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 						deviceId,
 						layerName,
 						mappingType: MappingVMixType.Program,
+					})
+
+					break
+				}
+
+				case DeviceType.OSC: {
+					newMapping = literal<MappingOSC>({
+						device: DeviceType.OSC,
+						deviceId,
+						layerName,
 					})
 
 					break
