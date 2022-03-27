@@ -108,12 +108,12 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					disabled={locked}
 					onTrigger={handleTriggerBtn}
 					active={triggerActive}
-					title={locked ? 'Disabled due to locked Part or Group' : 'Assign Trigger'}
+					title={'Assign Trigger' + locked ? ' (disabled due to locked Part or Group)' : ''}
 				/>
 
 				<TrashBtn
 					disabled={locked}
-					title={locked ? 'Disabled due to locked Part or Group' : 'Delete Part'}
+					title={'Delete Part' + locked ? ' (disabled due to locked Part or Group)' : ''}
 					onClick={() => {
 						const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
