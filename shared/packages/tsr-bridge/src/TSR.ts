@@ -2,7 +2,7 @@ import _ from 'lodash'
 import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
-import { CasparCG } from 'casparcg-connection'
+import { CasparCG, AMCP } from 'casparcg-connection'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
 import OBSWebsocket from 'obs-websocket-js'
 import {
@@ -259,8 +259,11 @@ export class TSR {
 								const thumbnail = await ccg.thumbnailRetrieve(media.name)
 								resource.thumbnail = thumbnail.response.data
 							} catch (error) {
-								// console.error(`Could not set thumbnail for media "${media.name}".`, error)
-								this.log?.error(`Could not set thumbnail for media "${media.name}".`)
+								if ((error as AMCP.ThumbnailRetrieveCommand)?.response?.code === 404) {
+									// Suppress error, this is probably because CasparCG's media-scanner isn't running.
+								} else {
+									this.log?.error(`Could not set thumbnail for media "${media.name}".`, error)
+								}
 							}
 						}
 
