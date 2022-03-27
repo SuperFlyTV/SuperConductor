@@ -177,7 +177,7 @@ export const GroupView: React.FC<{
 				store.guiStore.groupMoveDone = true
 			},
 		},
-		[group.id]
+		[group.id, groupIndex, store.guiStore]
 	)
 	const [{ handlerId }, drop] = useDrop(
 		{
