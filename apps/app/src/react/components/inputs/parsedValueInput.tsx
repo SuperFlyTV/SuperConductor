@@ -63,9 +63,9 @@ export function ParsedValueInput<V>(
 			}}
 			onKeyDown={(e) => {
 				const target = e.target as EventTarget & HTMLInputElement
-				if (e.code === 'Enter') {
+				if (e.key === 'Enter') {
 					onSave(target.value)
-				} else if (e.code === 'Escape') {
+				} else if (e.key === 'Escape') {
 					// revert to previous value:
 					setValue(stringify(currentValue))
 				}
