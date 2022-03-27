@@ -36,6 +36,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 		(newDeviceType: Mapping['device']) => {
 			const newDeviceId = findDeviceOfType(project.bridges, newDeviceType)
 			if (!newDeviceId) {
+				setDevice(mapping.device)
 				return
 			}
 
@@ -44,7 +45,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 			setDeviceId(newDeviceId)
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[handleError, ipcServer, mappingId, project]
+		[handleError, ipcServer, mapping.device, mappingId, project]
 	)
 
 	const handleDeviceIdChange = useCallback(
