@@ -661,7 +661,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			part = getPartResult.part
 		} catch (error) {
 			// Ignore
-			console.log('movePart caught error:', (error as any).message)
+			console.error('movePart caught error:', (error as any).message)
 			return null
 		}
 

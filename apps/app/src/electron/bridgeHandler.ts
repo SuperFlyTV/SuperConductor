@@ -75,13 +75,13 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				console.log('Setting up internal bridge')
+				// console.log('Setting up internal bridge')
 				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
 			if (this.internalBridge) {
-				console.log('Destroying internal bridge')
+				// console.log('Destroying internal bridge')
 				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
 				const bridgeIndex = this.connectedBridges.findIndex(
 					(connectedBridge) => connectedBridge === this.internalBridge
@@ -119,7 +119,7 @@ export class BridgeHandler {
 						// remove bridge:
 						delete this.outgoingBridges[bridge.id]
 					})
-					console.log('Connecting to bridge', bridge.id, connection.connectionId)
+					// console.log('Connecting to bridge', bridge.id, connection.connectionId)
 					this.outgoingBridges[bridge.id] = {
 						bridge,
 						connection,
@@ -262,7 +262,7 @@ abstract class AbstractBridgeConnection {
 		if (bridge) {
 			this.setSettings(bridge.settings, true)
 		} else {
-			console.log(`Error: Settings bridge "${this.bridgeId}" not found`)
+			console.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
 		if (this.sentMappings) {
 			this.setMappings(this.sentMappings, true)
@@ -422,7 +422,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 		if (this.connection.connected) {
 			this.connection.send(msg)
 		} else {
-			console.log('not sending, because not connected', msg.type)
+			// console.log('not sending, because not connected', msg.type)
 		}
 	}
 	protected getConnectionId(): number {

@@ -45,13 +45,10 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 				})}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					console.log(values)
 					const newName = values.name
 					if (newName.trim().length <= 0) {
 						return
 					}
-
-					console.log('Renaming', newName)
 
 					props.project.name = newName
 					serverAPI.updateProject({ id: props.project.id, project: props.project }).catch(handleError)

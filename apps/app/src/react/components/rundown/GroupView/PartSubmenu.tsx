@@ -35,7 +35,6 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					fullIdentifiers: triggers.map((t) => t.fullIdentifier),
 					action: 'play',
 				}
-				console.log('Assign Trigger ', trigger)
 
 				ipcServer
 					.setPartTrigger({

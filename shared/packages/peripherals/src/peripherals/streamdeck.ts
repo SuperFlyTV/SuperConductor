@@ -416,17 +416,12 @@ export async function drawKeyDisplay(
 		img = img.composite(inputs)
 	}
 
-	try {
-		const tmpImg = await img.raw().toBuffer()
-		await queue.add(async () => {
-			if (keyGotAnyContent) {
-				await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
-			} else {
-				await streamDeck.clearKey(keyIndex)
-			}
-		})
-	} catch (e) {
-		console.log(keyDisplay)
-		throw e
-	}
+	const tmpImg = await img.raw().toBuffer()
+	await queue.add(async () => {
+		if (keyGotAnyContent) {
+			await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
+		} else {
+			await streamDeck.clearKey(keyIndex)
+		}
+	})
 }

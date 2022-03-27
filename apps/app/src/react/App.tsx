@@ -66,7 +66,6 @@ export const App = observer(() => {
 				setProject(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
-				console.log(activeTriggersToString(peripheralTriggers))
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 		})
@@ -100,7 +99,6 @@ export const App = observer(() => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		console.log('triggerSendAll')
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
 

@@ -131,8 +131,7 @@ export const GroupView: React.FC<{
 
 			if (stopPlayingRef.current) {
 				// Stop the group, so that the "stop"-buttons reflect the correct state:
-				console.log('Auto-stopping group', group.id)
-
+				// console.log('Auto-stopping group', group.id)
 				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 				stopPlayingRef.current = false
 			}
