@@ -25,7 +25,7 @@ import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/Timeli
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
 import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
