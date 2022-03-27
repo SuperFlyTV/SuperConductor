@@ -95,13 +95,9 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					value={device.toString()}
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
-						setDevice(parseInt(event.target.value, 10))
-					}}
-					onBlur={() => {
-						handleDeviceTypeChange(device)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleDeviceTypeChange(device)
+						const parsedValue = parseInt(event.target.value, 10)
+						setDevice(parsedValue)
+						handleDeviceTypeChange(parsedValue)
 					}}
 				>
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>
@@ -120,12 +116,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
 						setDeviceId(event.target.value)
-					}}
-					onBlur={() => {
-						handleDeviceIdChange(deviceId)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleDeviceIdChange(deviceId)
+						handleDeviceIdChange(event.target.value)
 					}}
 				>
 					{listAvailableDeviceIDs(project.bridges, mapping.device).map((deviceId) => (

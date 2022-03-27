@@ -1,9 +1,10 @@
-import { MenuItem, TextField } from '@mui/material'
+import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { MappingAtem, MappingAtemType } from 'timeline-state-resolver-types'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
+import { SelectEnum } from '../../../inputs/SelectEnum'
 
 interface IAtemMappingSettingsProps {
 	mapping: MappingAtem
@@ -14,7 +15,6 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const [mappingType, setMappingType] = useState(mapping.mappingType)
 	const [index, setIndex] = useState(mapping.index)
 
 	const handleMappingTypeChange = useCallback(
@@ -34,38 +34,20 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 	)
 
 	useEffect(() => {
-		setMappingType(mapping.mappingType)
 		setIndex(mapping.index)
 	}, [mapping])
 
 	return (
 		<>
-			<TextField
-				select
-				margin="normal"
-				size="small"
+			<SelectEnum
 				label="Type"
-				value={mappingType}
-				sx={{ width: '21rem' }}
-				onChange={(event) => {
-					setMappingType(parseInt(event.target.value, 10))
+				currentValue={mapping.mappingType}
+				options={MappingAtemType}
+				onChange={(v) => {
+					handleMappingTypeChange(v)
 				}}
-				onBlur={() => {
-					handleMappingTypeChange(mappingType)
-				}}
-				onKeyUp={(e) => {
-					if (e.key === 'Enter') handleMappingTypeChange(mappingType)
-				}}
-			>
-				<MenuItem value={MappingAtemType.MixEffect}>MixEffect</MenuItem>
-				<MenuItem value={MappingAtemType.DownStreamKeyer}>DownStreamKeyer</MenuItem>
-				<MenuItem value={MappingAtemType.SuperSourceBox}>SuperSourceBox</MenuItem>
-				<MenuItem value={MappingAtemType.Auxilliary}>Auxilliary</MenuItem>
-				<MenuItem value={MappingAtemType.MediaPlayer}>MediaPlayer</MenuItem>
-				<MenuItem value={MappingAtemType.SuperSourceProperties}>SuperSourceProperties</MenuItem>
-				<MenuItem value={MappingAtemType.AudioChannel}>AudioChannel</MenuItem>
-				<MenuItem value={MappingAtemType.MacroPlayer}>MacroPlayer</MenuItem>
-			</TextField>
+			/>
+
 			<TextField
 				margin="normal"
 				size="small"
