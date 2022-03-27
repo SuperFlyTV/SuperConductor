@@ -1,6 +1,13 @@
 import { Box, Button, TextField, Typography } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { AtemOptions, CasparCGOptions, DeviceType, OBSOptions, OSCDeviceType } from 'timeline-state-resolver-types'
+import {
+	AtemOptions,
+	CasparCGOptions,
+	DeviceOptionsAny,
+	DeviceType,
+	OBSOptions,
+	OSCDeviceType,
+} from 'timeline-state-resolver-types'
 import { Bridge, BridgeDevice } from '../../../../models/project/Bridge'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -26,7 +33,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 	const [host, setHost] = useState('')
 	const [port, setPort] = useState(MIN_PORT)
 	const [password, setPassword] = useState('')
-	const deviceSettings = bridge.settings.devices[deviceId]
+	const deviceSettings = bridge.settings.devices[deviceId] as DeviceOptionsAny | undefined
 
 	const handleDeviceIdChange = useCallback(
 		(newId: string) => {
@@ -95,7 +102,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		setHost(deviceOptions?.host ?? '')
 		setPort(deviceOptions?.port ?? MIN_PORT)
 
-		if (deviceSettings.type === DeviceType.OBS) {
+		if (deviceSettings?.type === DeviceType.OBS) {
 			setPassword(deviceSettings.options?.password ?? '')
 		} else {
 			setPassword('')
