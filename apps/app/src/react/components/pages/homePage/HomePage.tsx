@@ -19,9 +19,9 @@ export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 				activeItemId={activeHomePageId}
 				onItemClick={(itemId) => {
 					if (itemId === 'newProject') {
-						alert('TODO: New Project')
+						alert('This feature is not implemented yet.')
 					} else if (itemId === 'openProject') {
-						alert('TODO: Open Project')
+						alert('This feature is not implemented yet.')
 					} else {
 						store.guiStore.goToHome(itemId as HomePageId)
 					}
