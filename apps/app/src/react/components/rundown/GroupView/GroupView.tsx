@@ -6,8 +6,14 @@ import { PartView } from './PartView'
 import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../../api/DragItemTypes'
-import { useDrop } from 'react-dnd'
+import {
+	DragItemTypes,
+	GroupDragItem,
+	isGroupDragItem,
+	isPartDragItem,
+	isResourceDragItem,
+} from '../../../api/DragItemTypes'
+import { useDrag, useDrop, XYCoord } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
@@ -28,6 +34,7 @@ import {
 	MdPlaylistPlay,
 	MdStop,
 	MdRepeat,
+	MdOutlineDragIndicator,
 } from 'react-icons/md'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
@@ -147,9 +154,34 @@ export const GroupView: React.FC<{
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
+	// Drag n' Drop re-ordering
+	const dragRef = useRef<HTMLDivElement>(null)
+	const [{ isDragging }, drag, preview] = useDrag(
+		{
+			type: DragItemTypes.GROUP_ITEM,
+			item: (): GroupDragItem => {
+				store.guiStore.groupMoveGroupId = group.id
+				store.guiStore.groupMovePosition = groupIndex
+				return {
+					type: DragItemTypes.GROUP_ITEM,
+					groupId: group.id,
+				}
+			},
+			collect: (monitor) => ({
+				isDragging: monitor.isDragging(),
+			}),
+			isDragging: (monitor) => {
+				return group.id === monitor.getItem().groupId
+			},
+			end: () => {
+				store.guiStore.groupMoveDone = true
+			},
+		},
+		[group.id]
+	)
 	const [{ handlerId }, drop] = useDrop(
 		{
-			accept: DragItemTypes.PART_ITEM,
+			accept: [DragItemTypes.PART_ITEM, DragItemTypes.GROUP_ITEM],
 			collect(monitor) {
 				return {
 					handlerId: monitor.getHandlerId(),
@@ -162,58 +194,104 @@ export const GroupView: React.FC<{
 
 				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)
 			},
-			hover(movedItem) {
-				if (!isPartDragItem(movedItem)) {
-					return
+			hover(movedItem, monitor) {
+				if (isGroupDragItem(movedItem)) {
+					if (!wrapperRef.current) {
+						return
+					}
+
+					// Don't replace items with themselves
+					if (movedItem.groupId === group.id) {
+						return // TODO: does this cause more problems than it solves?
+					}
+
+					const dragIndex = store.guiStore.groupMovePosition
+					const hoverIndex = groupIndex
+
+					if (typeof dragIndex === 'undefined') {
+						return
+					}
+
+					// Determine rectangle on screen
+					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
+
+					// Get vertical middle
+					const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+
+					// Determine mouse position
+					const clientOffset = monitor.getClientOffset()
+
+					// Get pixels to the top
+					const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+
+					// Only perform the move when the mouse has crossed half of the items height
+					// When dragging downwards, only move when the cursor is below 50%
+					// When dragging upwards, only move when the cursor is above 50%
+
+					// Dragging downwards
+					if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+						return
+					}
+
+					// Dragging upwards
+					if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+						return
+					}
+
+					store.guiStore.groupMovePosition = hoverIndex
+				} else if (isPartDragItem(movedItem)) {
+					// Don't use the GroupView as a drop target when there are Parts present.
+					if (group.parts.length > 0) {
+						return
+					}
+
+					if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
+						return
+					}
+
+					const hoverIndex = 0
+					const hoverGroup = group
+					const hoverGroupIndex = groupIndex
+
+					// Don't allow dragging into transparent groups, which can only have one part.
+					if (hoverGroup.transparent) {
+						return
+					}
+
+					// Don't replace items with themselves
+					if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
+						return
+					}
+
+					// Time to actually perform the action
+				    store.guiStore.updatePartMove({
+					    partId: movedItem.partId,
+					    fromGroupId: movedItem.fromGroup.id,
+					    toGroupId: hoverGroup.id,
+					    position: hoverIndex,
+                    })
+
+					// Note: we're mutating the monitor item here!
+					// Generally it's better to avoid mutations,
+					// but it's good here for the sake of performance
+					// to avoid expensive index searches.
+					movedItem.toGroupId = hoverGroup.id
+					movedItem.toGroupIndex = hoverGroupIndex
+					movedItem.toGroupTransparent = false
+					movedItem.position = hoverIndex
 				}
-
-				// Don't use the GroupView as a drop target when there are Parts present.
-				if (group.parts.length > 0) {
-					return
-				}
-
-				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
-					return
-				}
-
-				const hoverIndex = 0
-				const hoverGroup = group
-				const hoverGroupIndex = groupIndex
-
-				// Don't allow dragging into transparent groups, which can only have one part.
-				if (hoverGroup.transparent) {
-					return
-				}
-
-				// Don't replace items with themselves
-				if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
-					return
-				}
-
-				// Time to actually perform the action
-				store.guiStore.updatePartMove({
-					partId: movedItem.partId,
-					fromGroupId: movedItem.fromGroup.id,
-					toGroupId: hoverGroup.id,
-					position: hoverIndex,
-				})
-
-				// Note: we're mutating the monitor item here!
-				// Generally it's better to avoid mutations,
-				// but it's good here for the sake of performance
-				// to avoid expensive index searches.
-				movedItem.toGroupId = hoverGroup.id
-				movedItem.toGroupIndex = hoverGroupIndex
-				movedItem.toGroupTransparent = false
-				movedItem.position = hoverIndex
 			},
 		},
 		[group]
 	)
 
 	useEffect(() => {
-		drop(wrapperRef)
-	}, [drop])
+		drag(dragRef)
+	}, [drag])
+
+	useEffect(() => {
+		drop(preview(wrapperRef))
+	}, [drop, preview])
 
 	// Delete button:
 	const handleDelete = () => {
@@ -277,10 +355,19 @@ export const GroupView: React.FC<{
 		return (
 			<div
 				ref={wrapperRef}
-				className={classNames('group', { disabled: group.disabled, collapsed: group.collapsed })}
+				className={classNames('group', {
+					disabled: group.disabled,
+					collapsed: group.collapsed,
+					dragging: isDragging,
+				})}
 				data-drop-handler-id={handlerId}
 			>
+				<div className="group__dragArrow" />
 				<div className="group__header">
+					<div ref={dragRef} className="group__drag-handle">
+						{!group.locked && <MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />}
+					</div>
+
 					<div
 						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
 						title="Toggle Group collapse"

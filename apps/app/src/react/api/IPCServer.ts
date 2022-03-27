@@ -112,6 +112,9 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<Group | undefined> {
 		return this.invokeServerMethod('movePart', data)
 	}
+	moveGroup(data: { rundownId: string; groupId: string; position: number }): Promise<void> {
+		return this.invokeServerMethod('moveGroup', data)
+	}
 	newTemplateData(data: {
 		rundownId: string
 		groupId: string

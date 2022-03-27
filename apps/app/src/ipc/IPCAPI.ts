@@ -23,6 +23,7 @@ export const enum ActionDescription {
 	DeletePart = 'delete part',
 	DeleteGroup = 'delete group',
 	MovePart = 'move part',
+	MoveGroup = 'move group',
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
@@ -99,6 +100,7 @@ export interface IPCServerMethods {
 		from: { rundownId: string; groupId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}) => Promise<unknown>
+	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
 
 	updateTimelineObj: (data: {
 		rundownId: string

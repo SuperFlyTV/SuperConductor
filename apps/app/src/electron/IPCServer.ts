@@ -788,6 +788,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: toGroup,
 		}
 	}
+	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+
+		// Save the original position for use in undo.
+		const originalPosition = rundown.groups.findIndex((g) => g.id === arg.groupId)
+
+		// Remove the group from the groups array and re-insert it at its new position
+		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
+		rundown.groups.splice(arg.position, 0, group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: async () => {
+				await this.moveGroup({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					position: originalPosition,
+				})
+			},
+			description: ActionDescription.MoveGroup,
+		}
+	}
 
 	async updateTimelineObj(arg: {
 		rundownId: string

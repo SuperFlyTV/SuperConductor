@@ -40,6 +40,10 @@ export class GuiStore {
 		done: null,
 	}
 
+	groupMoveGroupId?: string = undefined
+	groupMovePosition?: number = undefined
+	groupMoveDone = false
+
 	goToHome(pageId?: HomePageId) {
 		this.activeTabId = 'home'
 		if (pageId) this.activeHomePageId = pageId

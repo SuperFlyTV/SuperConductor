@@ -45,6 +45,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
+	const [waitingForMoveGroupUpdate, setWaitingForMoveGroupUpdate] = useState(false)
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
@@ -186,7 +187,24 @@ export const App = observer(() => {
 
 		const modifiedRundown = deepClone(rundownsStore.currentRundown)
 
-		if (partMoveData.partId) {
+		if (gui.groupMoveGroupId) {
+			if (typeof gui.groupMovePosition !== 'number') {
+				return rundownsStore.currentRundown
+			}
+
+			/** The group being moved */
+			const group = modifiedRundown.groups.find((g) => g.id === gui.groupMoveGroupId)
+
+			if (!group) {
+				return rundownsStore.currentRundown
+			}
+
+			// Remove the group from the groups array and re-insert it at its new position
+			modifiedRundown.groups = modifiedRundown.groups.filter((g) => g.id !== gui.groupMoveGroupId)
+			modifiedRundown.groups.splice(gui.groupMovePosition, 0, group)
+
+			return modifiedRundown
+		} else if (partMoveData.partId) {
 			if (typeof partMoveData.position !== 'number') {
 				return rundownsStore.currentRundown
 			}
@@ -264,12 +282,17 @@ export const App = observer(() => {
 		return rundownsStore.currentRundown
 	}, [
 		rundownsStore.currentRundown,
-		partMoveData.fromGroupId,
+		gui.groupMoveGroupId,
+		gui.groupMovePosition,
 		partMoveData.partId,
 		partMoveData.position,
 		partMoveData.toGroupId,
+		partMoveData.fromGroupId,
 	])
 
+	/**
+	 * When a Part move is complete, this is what dispatches the IPC API call to actually execute the move.
+	 */
 	useEffect(() => {
 		if (partMoveData.moveId && partMoveData.done === true) {
 			if (
@@ -302,6 +325,11 @@ export const App = observer(() => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [partMoveData.moveId, partMoveData.done])
+
+	/**
+	 * This waits for the Electron backend to update us about the move before clearing all the temporary move data.
+	 * This helps avoid a brief flash of movement where the Part would temporarily revert to its original position while waiting for the backend.
+	 */
 	useEffect(() => {
 		if (waitingForMovePartUpdate) {
 			return () => {
@@ -318,6 +346,44 @@ export const App = observer(() => {
 			}
 		}
 	}, [waitingForMovePartUpdate, rundownsStore.currentRundown])
+
+	/**
+	 * When a Group move is complete, this is what dispatches the IPC API call to actually execute the move.
+	 */
+	useEffect(() => {
+		if (!store.rundownsStore.currentRundownId || typeof gui.groupMovePosition !== 'number') {
+			return
+		}
+
+		if (gui.groupMoveGroupId && gui.groupMoveDone) {
+			setWaitingForMoveGroupUpdate(true)
+			serverAPI
+				.moveGroup({
+					rundownId: store.rundownsStore.currentRundownId,
+					groupId: gui.groupMoveGroupId,
+					position: gui.groupMovePosition,
+				})
+				.catch((error) => {
+					setWaitingForMoveGroupUpdate(false)
+					handleError(error)
+				})
+		}
+	}, [gui.groupMoveGroupId, gui.groupMoveDone, gui.groupMovePosition, serverAPI, handleError])
+
+	/**
+	 * This waits for the Electron backend to update us about the move before clearing all the temporary move data.
+	 * This helps avoid a brief flash of movement where the Group would temporarily revert to its original position while waiting for the backend.
+	 */
+	useEffect(() => {
+		if (waitingForMoveGroupUpdate) {
+			return () => {
+				setWaitingForMoveGroupUpdate(false)
+				gui.groupMoveDone = false
+				gui.groupMoveGroupId = undefined
+				gui.groupMovePosition = undefined
+			}
+		}
+	}, [waitingForMoveGroupUpdate, rundownsStore.currentRundown, gui])
 
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
