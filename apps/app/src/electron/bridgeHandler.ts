@@ -36,11 +36,7 @@ export class BridgeHandler {
 	constructor(
 		private session: SessionHandler,
 		private storage: StorageHandler,
-		private callbacks: {
-			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
-			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
-			onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
-		}
+		private callbacks: BridgeConnectionCallbacks
 	) {
 		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
