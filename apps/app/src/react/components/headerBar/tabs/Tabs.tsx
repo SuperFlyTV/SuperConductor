@@ -51,18 +51,16 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 				const isNextSelected = rundownsStore.openRundowns[idx + 1]?.rundownId === guiStore.activeTabId
 
 				return (
-					<>
-						<Tab
-							key={rundown.rundownId}
-							id={rundown.rundownId}
-							name={rundown.name}
-							active={isThisSelected}
-							onClick={() => handleSelect(rundown.rundownId)}
-							onDoubleClick={() => props.onTabDoubleClick(rundown)}
-							onClose={(id) => handleClose(id)}
-							showSeparator={!isThisSelected && !isNextSelected}
-						/>
-					</>
+					<Tab
+						key={rundown.rundownId}
+						id={rundown.rundownId}
+						name={rundown.name}
+						active={isThisSelected}
+						onClick={() => handleSelect(rundown.rundownId)}
+						onDoubleClick={() => props.onTabDoubleClick(rundown)}
+						onClose={(id) => handleClose(id)}
+						showSeparator={!isThisSelected && !isNextSelected}
+					/>
 				)
 			})}
 
