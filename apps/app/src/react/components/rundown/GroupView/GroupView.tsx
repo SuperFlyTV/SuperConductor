@@ -43,6 +43,7 @@ import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
+import shortUUID from 'short-uuid'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -160,8 +161,11 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
-				store.guiStore.groupMoveGroupId = group.id
-				store.guiStore.groupMovePosition = groupIndex
+				store.guiStore.updateGroupMove({
+					groupId: group.id,
+					position: groupIndex,
+					moveId: shortUUID.generate(),
+				})
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
@@ -174,7 +178,9 @@ export const GroupView: React.FC<{
 				return group.id === monitor.getItem().groupId
 			},
 			end: () => {
-				store.guiStore.groupMoveDone = true
+				store.guiStore.updateGroupMove({
+					done: true,
+				})
 			},
 		},
 		[group.id, groupIndex, store.guiStore]
@@ -205,10 +211,10 @@ export const GroupView: React.FC<{
 						return // TODO: does this cause more problems than it solves?
 					}
 
-					const dragIndex = store.guiStore.groupMovePosition
+					const dragIndex = store.guiStore.groupMove.position
 					const hoverIndex = groupIndex
 
-					if (typeof dragIndex === 'undefined') {
+					if (dragIndex === null) {
 						return
 					}
 
@@ -238,7 +244,9 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					store.guiStore.groupMovePosition = hoverIndex
+					store.guiStore.updateGroupMove({
+						position: hoverIndex,
+					})
 				} else if (isPartDragItem(movedItem)) {
 					// Don't use the GroupView as a drop target when there are Parts present.
 					if (group.parts.length > 0) {
@@ -264,12 +272,12 @@ export const GroupView: React.FC<{
 					}
 
 					// Time to actually perform the action
-				    store.guiStore.updatePartMove({
-					    partId: movedItem.partId,
-					    fromGroupId: movedItem.fromGroup.id,
-					    toGroupId: hoverGroup.id,
-					    position: hoverIndex,
-                    })
+					store.guiStore.updatePartMove({
+						partId: movedItem.partId,
+						fromGroupId: movedItem.fromGroup.id,
+						toGroupId: hoverGroup.id,
+						position: hoverIndex,
+					})
 
 					// Note: we're mutating the monitor item here!
 					// Generally it's better to avoid mutations,

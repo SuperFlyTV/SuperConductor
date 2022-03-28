@@ -187,21 +187,21 @@ export const App = observer(() => {
 
 		const modifiedRundown = deepClone(rundownsStore.currentRundown)
 
-		if (gui.groupMoveGroupId) {
-			if (typeof gui.groupMovePosition !== 'number') {
+		if (gui.groupMove.groupId) {
+			if (typeof gui.groupMove.position !== 'number') {
 				return rundownsStore.currentRundown
 			}
 
 			/** The group being moved */
-			const group = modifiedRundown.groups.find((g) => g.id === gui.groupMoveGroupId)
+			const group = modifiedRundown.groups.find((g) => g.id === gui.groupMove.groupId)
 
 			if (!group) {
 				return rundownsStore.currentRundown
 			}
 
 			// Remove the group from the groups array and re-insert it at its new position
-			modifiedRundown.groups = modifiedRundown.groups.filter((g) => g.id !== gui.groupMoveGroupId)
-			modifiedRundown.groups.splice(gui.groupMovePosition, 0, group)
+			modifiedRundown.groups = modifiedRundown.groups.filter((g) => g.id !== gui.groupMove.groupId)
+			modifiedRundown.groups.splice(gui.groupMove.position, 0, group)
 
 			return modifiedRundown
 		} else if (partMoveData.partId) {
@@ -282,8 +282,8 @@ export const App = observer(() => {
 		return rundownsStore.currentRundown
 	}, [
 		rundownsStore.currentRundown,
-		gui.groupMoveGroupId,
-		gui.groupMovePosition,
+		gui.groupMove.groupId,
+		gui.groupMove.position,
 		partMoveData.partId,
 		partMoveData.position,
 		partMoveData.toGroupId,
@@ -351,24 +351,24 @@ export const App = observer(() => {
 	 * When a Group move is complete, this is what dispatches the IPC API call to actually execute the move.
 	 */
 	useEffect(() => {
-		if (!store.rundownsStore.currentRundownId || typeof gui.groupMovePosition !== 'number') {
+		if (!store.rundownsStore.currentRundownId || typeof gui.groupMove.position !== 'number') {
 			return
 		}
 
-		if (gui.groupMoveGroupId && gui.groupMoveDone) {
+		if (gui.groupMove.groupId && gui.groupMove.done) {
 			setWaitingForMoveGroupUpdate(true)
 			serverAPI
 				.moveGroup({
 					rundownId: store.rundownsStore.currentRundownId,
-					groupId: gui.groupMoveGroupId,
-					position: gui.groupMovePosition,
+					groupId: gui.groupMove.groupId,
+					position: gui.groupMove.position,
 				})
 				.catch((error) => {
 					setWaitingForMoveGroupUpdate(false)
 					handleError(error)
 				})
 		}
-	}, [gui.groupMoveGroupId, gui.groupMoveDone, gui.groupMovePosition, serverAPI, handleError])
+	}, [serverAPI, handleError, gui.groupMove.position, gui.groupMove.groupId, gui.groupMove.done])
 
 	/**
 	 * This waits for the Electron backend to update us about the move before clearing all the temporary move data.
@@ -378,9 +378,12 @@ export const App = observer(() => {
 		if (waitingForMoveGroupUpdate) {
 			return () => {
 				setWaitingForMoveGroupUpdate(false)
-				gui.groupMoveDone = false
-				gui.groupMoveGroupId = undefined
-				gui.groupMovePosition = undefined
+				gui.updateGroupMove({
+					done: null,
+					groupId: null,
+					position: null,
+					moveId: null,
+				})
 			}
 		}
 	}, [waitingForMoveGroupUpdate, rundownsStore.currentRundown, gui])

@@ -21,6 +21,17 @@ export interface PartMove {
 	done: null | boolean
 }
 
+export interface GroupMove {
+	/** The ID of the group being moved. null = no move */
+	groupId: null | string
+	/** The position that the group is being moved to. null = no move */
+	position: null | number
+	/** A unique ID for each move transaction. null = no move */
+	moveId: null | string
+	/** True = the move associated with the current moveId is complete and can be sent to the backend. null = no move */
+	done: null | boolean
+}
+
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
 	selectedGroupId?: string
@@ -40,9 +51,12 @@ export class GuiStore {
 		done: null,
 	}
 
-	groupMoveGroupId?: string = undefined
-	groupMovePosition?: number = undefined
-	groupMoveDone = false
+	groupMove: GroupMove = {
+		groupId: null,
+		position: null,
+		moveId: null,
+		done: null,
+	}
 
 	goToHome(pageId?: HomePageId) {
 		this.activeTabId = 'home'
@@ -64,6 +78,13 @@ export class GuiStore {
 	updatePartMove(data: Partial<PartMove>) {
 		this.partMove = {
 			...this.partMove,
+			...data,
+		}
+	}
+
+	updateGroupMove(data: Partial<GroupMove>) {
+		this.groupMove = {
+			...this.groupMove,
 			...data,
 		}
 	}
