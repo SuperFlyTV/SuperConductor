@@ -208,7 +208,7 @@ export const GroupView: React.FC<{
 
 					// Don't replace items with themselves
 					if (movedItem.groupId === group.id) {
-						return // TODO: does this cause more problems than it solves?
+						return
 					}
 
 					const dragIndex = store.guiStore.groupMove.position
