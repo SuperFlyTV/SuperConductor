@@ -21,7 +21,6 @@ import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { RundownContext } from './contexts/Rundown'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
-import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
@@ -134,25 +133,6 @@ export const App = observer(() => {
 		document.addEventListener('keyup', (e) => handleKey(e))
 	}, [handleError, triggers, serverAPI])
 
-	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		moveType: null,
-		wasMoved: null,
-		partId: null,
-		hoveredLayerId: null,
-		moveId: null,
-	})
-	const timelineObjectMoveContextValue = useMemo(() => {
-		return {
-			timelineObjMove: timelineObjectMoveData,
-			updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => {
-				setTimelineObjectMoveData({
-					...timelineObjectMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [timelineObjectMoveData])
-
 	const gui = store.guiStore
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -161,7 +141,7 @@ export const App = observer(() => {
 		const isOnSidebar = tarEl.closest('.side-bar')
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
+		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.partId) {
 			if (gui.selectedTimelineObjIds.length > 0) {
 				gui.selectedTimelineObjIds = []
 				gui.selectedGroupId = undefined
@@ -401,30 +381,28 @@ export const App = observer(() => {
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<IPCServerContext.Provider value={serverAPI}>
 				<ProjectContext.Provider value={project}>
-					<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-							<div className="app" onPointerDown={handlePointerDownAnywhere}>
-								<HeaderBar />
+					<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+						<div className="app" onPointerDown={handlePointerDownAnywhere}>
+							<HeaderBar />
 
-								{store.guiStore.isNewRundownSelected() ? (
-									<NewRundownPage />
-								) : store.guiStore.isHomeSelected() ? (
-									<HomePage project={project} />
-								) : (
-									modifiedCurrentRundown && (
-										<RundownContext.Provider value={modifiedCurrentRundown}>
-											<div className="main-area">
-												<RundownView mappings={project.mappings} />
-											</div>
-											<div className="side-bar">
-												<Sidebar mappings={project.mappings} />
-											</div>
-										</RundownContext.Provider>
-									)
-								)}
-							</div>
-						</ErrorHandlerContext.Provider>
-					</TimelineObjectMoveContext.Provider>
+							{store.guiStore.isNewRundownSelected() ? (
+								<NewRundownPage />
+							) : store.guiStore.isHomeSelected() ? (
+								<HomePage project={project} />
+							) : (
+								modifiedCurrentRundown && (
+									<RundownContext.Provider value={modifiedCurrentRundown}>
+										<div className="main-area">
+											<RundownView mappings={project.mappings} />
+										</div>
+										<div className="side-bar">
+											<Sidebar mappings={project.mappings} />
+										</div>
+									</RundownContext.Provider>
+								)
+							)}
+						</div>
+					</ErrorHandlerContext.Provider>
 				</ProjectContext.Provider>
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>

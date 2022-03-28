@@ -25,7 +25,6 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -66,7 +65,7 @@ export const PartView: React.FC<{
 }> = observer(({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
-	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
+	const timelineObjMove = gui.timelineObjMove
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
@@ -81,8 +80,6 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
-	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
-	updateTimelineObjMoveRef.current = updateTimelineObjMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -167,13 +164,13 @@ export const PartView: React.FC<{
 				// This is where a move operation has truly completed, including the backend response.
 
 				setWaitingForBackendUpdate(false)
-				updateTimelineObjMoveRef.current({
+				gui.updateTimelineObjMove({
 					partId: null,
 					moveId: undefined,
 				})
 			}
 		}
-	}, [waitingForBackendUpdate, part])
+	}, [waitingForBackendUpdate, part, gui])
 
 	// Initialize trackWidth.
 	useLayoutEffect(() => {

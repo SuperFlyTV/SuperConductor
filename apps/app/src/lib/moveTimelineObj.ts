@@ -2,7 +2,7 @@ import { deepClone } from '@shared/lib'
 import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache } from 'superfly-timeline'
 import short from 'short-uuid'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { TimelineObjectMove } from '../react/contexts/TimelineObjectMove'
+import { TimelineObjectMove } from '../react/mobx/GuiStore'
 
 const MIN_DURATION = 1
 
