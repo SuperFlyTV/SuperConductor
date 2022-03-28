@@ -680,7 +680,7 @@ export const PartView: React.FC<{
 				<div className="part__meta__left">
 					{!editingPartName && (
 						<div
-							title={groupOrPartLocked ? part.name : 'Click to edit'}
+							title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
 							className="title"
 							onClick={() => {
 								if (groupOrPartLocked) {
@@ -720,7 +720,11 @@ export const PartView: React.FC<{
 
 					<div className="controls">
 						<ToggleButton
-							title={part.disabled ? 'Enable Part' : 'Disable Part'}
+							title={
+								part.disabled
+									? 'Disabledn\n\nClick to enable Part.'
+									: 'Disable/Skip Part during playback.'
+							}
 							value="disabled"
 							disabled={parentGroup.locked}
 							selected={part.disabled}
@@ -739,7 +743,7 @@ export const PartView: React.FC<{
 							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							title={part.locked ? 'Unlock Part' : 'Lock Part'}
+							title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
 							value="locked"
 							disabled={parentGroup.locked}
 							selected={part.locked}
@@ -758,7 +762,9 @@ export const PartView: React.FC<{
 							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							title={part.loop ? 'Disable Loop' : 'Enable Loop'}
+							title={
+								part.loop ? 'Looping.\n\nDisable Looping.' : 'Enable Looping of Part during playout.'
+							}
 							value="loop"
 							disabled={groupOrPartLocked}
 							selected={part.loop}
@@ -786,6 +792,7 @@ export const PartView: React.FC<{
 						size="small"
 						disabled={groupOrPartDisabled || !canStop}
 						onClick={handleStop}
+						title="Stop playout of Part"
 					>
 						<MdStop size={22} />
 					</Button>
@@ -796,6 +803,7 @@ export const PartView: React.FC<{
 						size="small"
 						disabled={groupOrPartDisabled}
 						onClick={handleStart}
+						title={canStop ? 'Restart Part' : 'Play Part'}
 					>
 						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 					</Button>

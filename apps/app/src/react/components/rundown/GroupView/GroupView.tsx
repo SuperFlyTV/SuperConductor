@@ -443,7 +443,7 @@ export const GroupView: React.FC<{
 
 					<div
 						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
-						title="Toggle Group collapse"
+						title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
 					>
 						<MdChevronRight size={22} onClick={handleCollapse} />
 					</div>
@@ -451,7 +451,7 @@ export const GroupView: React.FC<{
 					{!editingGroupName && (
 						<div
 							className="title"
-							title={group.locked ? group.name : 'Click to edit'}
+							title={group.locked ? group.name : 'Click to edit Group name'}
 							onClick={() => {
 								if (group.locked) {
 									return
@@ -495,10 +495,25 @@ export const GroupView: React.FC<{
 								size="small"
 								disabled={group.disabled || !canStop}
 								onClick={handleStop}
+								title={group.oneAtATime ? 'Stop' : 'Stop playout of all Parts in Group'}
 							>
 								<MdStop size={22} />
 							</Button>
-							<Button variant="contained" size="small" disabled={group.disabled} onClick={handlePlay}>
+							<Button
+								variant="contained"
+								size="small"
+								disabled={group.disabled}
+								onClick={handlePlay}
+								title={
+									group.oneAtATime
+										? canStop
+											? 'Restart and play first Part'
+											: 'Play first Part'
+										: canStop
+										? 'Restart and play all Parts in Group'
+										: 'Play all Parts in Group'
+								}
+							>
 								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 								<div className="playcount">
 									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
@@ -510,6 +525,7 @@ export const GroupView: React.FC<{
 								disabled={!canStepDown}
 								onClick={handleStepDown}
 								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+								title="Play next"
 							>
 								<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
 									<AiFillStepForward size={22} />
@@ -521,6 +537,7 @@ export const GroupView: React.FC<{
 								disabled={!canStepUp}
 								onClick={handleStepUp}
 								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+								title="Play previous"
 							>
 								<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
 									<AiFillStepForward size={22} />
@@ -529,7 +546,11 @@ export const GroupView: React.FC<{
 						</div>
 
 						<ToggleButton
-							title={group.disabled ? 'Enable Group' : 'Disable Group'}
+							title={
+								group.disabled
+									? 'Playout disabled.\n\nClick to enable playout of Group.'
+									: 'Disable playout of Group.'
+							}
 							value="disabled"
 							selected={group.disabled}
 							size="small"
@@ -546,7 +567,7 @@ export const GroupView: React.FC<{
 							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							title={group.locked ? 'Unlock Group' : 'Lock Group'}
+							title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
 							value="locked"
 							selected={group.locked}
 							size="small"
@@ -564,7 +585,11 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 
 						<ToggleButton
-							title={group.oneAtATime ? 'Disable One-at-a-time' : 'Enable One-at-a-time'}
+							title={
+								group.oneAtATime
+									? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
+									: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
+							}
 							value="one-at-a-time"
 							selected={group.oneAtATime}
 							size="small"
@@ -583,7 +608,11 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 
 						<ToggleButton
-							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
+							title={
+								group.loop
+									? 'Playout Loop enabled.\n\nClick to disable.'
+									: 'Click to set Group to Loop playout.'
+							}
 							value="loop"
 							selected={group.oneAtATime && group.loop}
 							size="small"
@@ -602,7 +631,11 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 
 						<ToggleButton
-							title={group.autoPlay ? 'Disable Auto-step' : 'Enable Auto-step'}
+							title={
+								group.autoPlay
+									? 'Auto-step enabled.\n\nClick to disable.'
+									: 'Enable Auto-step (continue to next Part on end, like a playlist).'
+							}
 							value="auto-step"
 							selected={group.oneAtATime && group.autoPlay}
 							size="small"
@@ -623,7 +656,7 @@ export const GroupView: React.FC<{
 						<TrashBtn
 							className="delete"
 							disabled={group.locked}
-							title={'Delete Group' + group.locked ? ' (disabled due to locked Group)' : ''}
+							title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {

@@ -5,7 +5,7 @@ import { BsTrash } from 'react-icons/bs'
 type PropsType = {
 	className?: string
 	disabled?: boolean
-	title?: string
+	title: string
 	onClick: () => void
 }
 
@@ -17,7 +17,7 @@ export const TrashBtn = (props: PropsType) => {
 			size="small"
 			onClick={props.onClick}
 			color="error"
-			title={props.title ?? 'Delete'}
+			title={props.title}
 			disabled={props.disabled}
 		>
 			<BsTrash size={12} />

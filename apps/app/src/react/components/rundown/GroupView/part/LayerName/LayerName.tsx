@@ -42,7 +42,7 @@ export const LayerName: React.FC<{
 	return (
 		<div className={classNames('layer-name', { warning: !mappingExists })}>
 			{!mappingExists && (
-				<div className="warning-icon" title="No mapping by this ID exists.">
+				<div className="warning-icon" title={`No mapping by this ID exists ("${props.layerId}").`}>
 					<MdWarningAmber size={18} />
 				</div>
 			)}

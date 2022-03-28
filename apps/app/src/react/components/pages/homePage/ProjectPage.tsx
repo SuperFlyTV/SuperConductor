@@ -112,6 +112,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 									onClick={() => {
 										alert('To do')
 									}}
+									title="Delete rundown"
 								/>
 							</div>
 						</div>

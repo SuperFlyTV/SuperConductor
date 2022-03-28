@@ -201,6 +201,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									obj.content.ssrc.boxes.splice(index, 1)
 									onSave(obj)
 								}}
+								title="Delete SuperSource Box"
 							/>
 						</Stack>
 
