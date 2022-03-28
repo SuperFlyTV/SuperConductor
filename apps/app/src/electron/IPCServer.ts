@@ -54,6 +54,7 @@ import {
 	TimelineObjVMixPreview,
 	TimelineObjOSCMessage,
 	TimelineContentTypeOSC,
+	Mapping,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -114,7 +115,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	) {
 		super()
-		for (const methodName of Object.keys(IPCServer.prototype)) {
+		for (const methodName of Object.getOwnPropertyNames(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
@@ -1900,6 +1901,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		const { rundown } = this.getRundown(data)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Stop playout
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		}
+
 		await this.storage.closeRundown(data.rundownId)
 
 		return {
@@ -1928,6 +1939,71 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				await this.storage.renameRundown(newRundownId, originalName)
 			},
 			description: ActionDescription.RenameRundown,
+		}
+	}
+	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
+		const project = this.getProject()
+		const rundown = this.storage.getRundown(data.rundownId)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Find all timeline objects which reside on the missing layer.
+		const createdMappings: { [mappingId: string]: Mapping } = {}
+		for (const group of rundown.groups) {
+			for (const part of group.parts) {
+				for (const timelineObj of part.timeline) {
+					if (timelineObj.obj.layer === data.mappingId) {
+						if (!timelineObj.resourceId)
+							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+
+						const resource = this.session.getResource(timelineObj.resourceId)
+						if (!resource) continue
+
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, resource.deviceId)
+						if (newMapping && newMapping.layerName) {
+							createdMappings[newMapping.layerName] = newMapping
+						}
+					}
+				}
+			}
+		}
+
+		let newLayerId: string | undefined = undefined
+		switch (Object.keys(createdMappings).length) {
+			case 0:
+				throw new Error('No mapping could be automatically created.')
+			case 1: {
+				const newMapping = Object.values(createdMappings)[0]
+
+				if (!newMapping.layerName) {
+					throw new Error('INTERNAL ERROR: Mapping lacks a layer name.')
+				}
+
+				// Add the new layer to the project
+				newLayerId = this.storage.convertToFilename(newMapping.layerName)
+				project.mappings = {
+					...project.mappings,
+					[newLayerId]: newMapping,
+				}
+				this.storage.updateProject(project)
+				break
+			}
+			default:
+				throw new Error(
+					'No mapping could be automatically created because the timeline objects on this layer are of incompatible types.'
+				)
+		}
+
+		return {
+			undo: async () => {
+				if (newLayerId) {
+					const project = this.getProject()
+					delete project.mappings[newLayerId]
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.CreateMissingMapping,
 		}
 	}
 

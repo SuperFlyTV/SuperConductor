@@ -217,4 +217,7 @@ export class IPCServer implements IPCServerMethods {
 	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
 		return this.invokeServerMethod('renameRundown', data)
 	}
+	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
+		return this.invokeServerMethod('createMissingMapping', data)
+	}
 }

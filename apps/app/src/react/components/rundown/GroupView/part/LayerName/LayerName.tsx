@@ -1,12 +1,15 @@
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
 import { Mappings } from 'timeline-state-resolver-types'
+import { useSnackbar } from 'notistack'
 
 import './style.scss'
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
+import { IPCServerContext } from '../../../../../contexts/IPCServer'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 
 export const LayerName: React.FC<{
 	/**
@@ -26,6 +29,9 @@ export const LayerName: React.FC<{
 	 */
 	timelineObjs: TimelineObj[]
 }> = observer((props) => {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+	const { enqueueSnackbar } = useSnackbar()
 	const mappingExists = props.layerId in props.mappings
 	const name = props.mappings[props.layerId]?.layerName ?? props.layerId
 
@@ -41,21 +47,32 @@ export const LayerName: React.FC<{
 
 	return (
 		<div className={classNames('layer-name', { warning: !mappingExists })}>
-			{!mappingExists && (
-				<div className="warning-icon" title={`No mapping by this ID exists ("${props.layerId}").`}>
-					<MdWarningAmber size={18} />
-				</div>
-			)}
 			{
 				<LayerNamesDropdown
 					selectedItem={selectedItem}
 					otherItems={otherItems}
+					exists={mappingExists}
 					onSelect={(id: string) => {
 						if (id === 'editMappings') {
 							store.guiStore.goToHome('mappingsSettings')
 						} else {
 							props.onSelect(id)
 						}
+					}}
+					onCreateMissingMapping={(id: string) => {
+						if (!store.rundownsStore.currentRundownId) {
+							return
+						}
+						serverAPI
+							.createMissingMapping({
+								rundownId: store.rundownsStore.currentRundownId,
+								mappingId: id,
+							})
+							.then(() => {
+								enqueueSnackbar(`Mapping "${id}" created.`, { variant: 'success' })
+								store.guiStore.goToHome('mappingsSettings')
+							})
+							.catch(handleError)
 					}}
 				/>
 			}
@@ -72,7 +89,9 @@ interface DropdownItem {
 const LayerNamesDropdown: React.FC<{
 	selectedItem: DropdownItem
 	otherItems: DropdownItem[]
+	exists: boolean
 	onSelect: (id: string) => void
+	onCreateMissingMapping: (id: string) => void
 }> = (props) => {
 	const [isOpen, setOpen] = useState(false)
 
@@ -84,7 +103,22 @@ const LayerNamesDropdown: React.FC<{
 					setOpen(!isOpen)
 				}}
 			>
-				<div className="item">{props.selectedItem.label}</div>
+				<div className="item">
+					{!props.exists && (
+						<div
+							className="warning-icon"
+							title="No mapping by this ID exists. Click here to create it."
+							onClick={(e) => {
+								e.preventDefault()
+								e.stopPropagation()
+								props.onCreateMissingMapping(props.selectedItem.id)
+							}}
+						>
+							<MdWarningAmber size={18} />
+						</div>
+					)}
+					<div className="item-label">{props.selectedItem.label}</div>
+				</div>
 			</div>
 			<DropdownOtherItems
 				otherItems={props.otherItems}
@@ -129,7 +163,7 @@ const DropdownOtherItems: React.FC<{
 						props.onSelect(item.id)
 					}}
 				>
-					{item.label}
+					<div className="item-label">{item.label}</div>
 				</div>
 			))}
 		</div>
