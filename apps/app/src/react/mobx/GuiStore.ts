@@ -5,7 +5,7 @@ import { makeAutoObservable } from 'mobx'
  */
 
 export interface PartMove {
-	/** Whether to make a duplicate of the moved part or not. null = no move */
+	/** NOT IMPLEMENTED YET - Whether to make a duplicate of the moved part or not. null = no move */
 	duplicate: null | boolean
 	/** The ID of the part being moved. null = no move */
 	partId: null | string

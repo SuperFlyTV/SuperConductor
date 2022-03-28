@@ -248,45 +248,117 @@ export const GroupView: React.FC<{
 						position: hoverIndex,
 					})
 				} else if (isPartDragItem(movedItem)) {
-					// Don't use the GroupView as a drop target when there are Parts present.
-					if (group.parts.length > 0) {
+					if (!monitor.isOver({ shallow: true })) {
 						return
 					}
 
-					if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
+					if (!wrapperRef.current) {
 						return
 					}
 
-					const hoverIndex = 0
-					const hoverGroup = group
-					const hoverGroupIndex = groupIndex
+					const dragIndex = store.guiStore.partMove.position
+					const hoverIndex = groupIndex
 
-					// Don't allow dragging into transparent groups, which can only have one part.
-					if (hoverGroup.transparent) {
+					if (dragIndex === null) {
 						return
 					}
 
 					// Don't replace items with themselves
-					if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
+					if (movedItem.fromGroup.id === group.id && movedItem.position === hoverIndex) {
 						return
 					}
 
-					// Time to actually perform the action
-					store.guiStore.updatePartMove({
-						partId: movedItem.partId,
-						fromGroupId: movedItem.fromGroup.id,
-						toGroupId: hoverGroup.id,
-						position: hoverIndex,
-					})
+					// Determine rectangle on screen
+					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
 
-					// Note: we're mutating the monitor item here!
-					// Generally it's better to avoid mutations,
-					// but it's good here for the sake of performance
-					// to avoid expensive index searches.
-					movedItem.toGroupId = hoverGroup.id
-					movedItem.toGroupIndex = hoverGroupIndex
-					movedItem.toGroupTransparent = false
-					movedItem.position = hoverIndex
+					// Get vertical middle
+					const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+
+					// Determine mouse position
+					const clientOffset = monitor.getClientOffset()
+
+					// Get pixels to the top
+					const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+
+					/**
+					 * Defines a band of pixels around the vertical middle of the Group,
+					 * used to determine how to handle this hover event depending on if
+					 * the user's cursor is within this band or not.
+					 */
+					const midBand = hoverBoundingRect.height / 3 / 2
+
+					/**
+					 * An array of this Group's Parts, minus the Part currently being dragged.
+					 */
+					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
+
+					if (groupPartsWithoutMovedPart.length <= 0 && Math.abs(hoverClientY - hoverMiddleY) <= midBand) {
+						// If the group is empty, and if the user's cursor is hovering within midBand
+						// pixels of the group's vertical center, then we assume that the user wants to move
+						// the Part into the hovered Group.
+
+						if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
+							return
+						}
+
+						const hoverIndex = 0
+						const hoverGroup = group
+						const hoverGroupIndex = groupIndex
+
+						// Don't allow dragging into transparent groups, which can only have one part.
+						if (hoverGroup.transparent) {
+							return
+						}
+
+						// Don't replace items with themselves
+						if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
+							return
+						}
+
+						// Time to actually perform the action
+						store.guiStore.updatePartMove({
+							toGroupId: hoverGroup.id,
+							position: hoverIndex,
+						})
+
+						// Note: we're mutating the monitor item here!
+						// Generally it's better to avoid mutations,
+						// but it's good here for the sake of performance
+						// to avoid expensive index searches.
+						movedItem.toGroupId = hoverGroup.id
+						movedItem.toGroupIndex = hoverGroupIndex
+						movedItem.toGroupTransparent = false
+						movedItem.position = hoverIndex
+					} else {
+						// Else, we assume that the user wants to move the Part as a Transparent Group
+						// and therefore move it either above or below the currently hovered Group.
+
+						if (dragIndex === hoverIndex - 1 && hoverClientY < hoverMiddleY) {
+							return
+						}
+
+						if (dragIndex === hoverIndex + 1 && hoverClientY > hoverMiddleY) {
+							return
+						}
+
+						if (hoverClientY < hoverMiddleY) {
+							console.log('setting position to:', hoverIndex)
+							store.guiStore.updatePartMove({
+								toGroupId: null,
+								position: hoverIndex,
+							})
+							movedItem.position = hoverIndex
+						} else {
+							console.log('setting position to (+1):', hoverIndex + 1)
+							store.guiStore.updatePartMove({
+								toGroupId: null,
+								position: hoverIndex + 1,
+							})
+							movedItem.position = hoverIndex + 1
+						}
+
+						movedItem.toGroupId = null
+					}
 				}
 			},
 		},

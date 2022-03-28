@@ -46,8 +46,6 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(({ mapping
 
 				// Time to actually perform the action
 				store.guiStore.updatePartMove({
-					partId: movedItem.partId,
-					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: null,
 					position: hoverIndex,
 				})
