@@ -591,6 +591,10 @@ export const PartView: React.FC<{
 			item: (): PartDragItem => {
 				store.guiStore.updatePartMove({
 					moveId: short.generate(),
+					position: partIndex,
+					partId: part.id,
+					fromGroupId: parentGroup.id,
+					toGroupId: parentGroup.id,
 					done: false,
 				})
 				return {
@@ -609,12 +613,8 @@ export const PartView: React.FC<{
 			isDragging: (monitor) => {
 				return part.id === monitor.getItem().partId
 			},
-			end: (draggedItem) => {
+			end: () => {
 				store.guiStore.updatePartMove({
-					partId: draggedItem.partId,
-					fromGroupId: draggedItem.fromGroup.id,
-					toGroupId: draggedItem.toGroupId,
-					position: draggedItem.position,
 					done: true,
 				})
 			},

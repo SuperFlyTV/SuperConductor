@@ -4,6 +4,7 @@ import { Group } from '../../models/rundown/Group'
 export enum DragItemTypes {
 	RESOURCE_ITEM = 'resource_item',
 	PART_ITEM = 'part_item',
+	GROUP_ITEM = 'group_item',
 }
 
 export interface ResourceDragItem {
@@ -23,7 +24,12 @@ export interface PartDragItem {
 	position: number
 }
 
-export type AnyDragItem = ResourceDragItem | PartDragItem
+export interface GroupDragItem {
+	type: DragItemTypes.GROUP_ITEM
+	groupId: string
+}
+
+export type AnyDragItem = ResourceDragItem | PartDragItem | GroupDragItem
 
 export function isDragItem(item: unknown): item is AnyDragItem {
 	return typeof item === 'object' && item !== null && 'type' in item
@@ -35,4 +41,8 @@ export function isResourceDragItem(item: unknown): item is ResourceDragItem {
 
 export function isPartDragItem(item: unknown): item is PartDragItem {
 	return isDragItem(item) && item.type === DragItemTypes.PART_ITEM
+}
+
+export function isGroupDragItem(item: unknown): item is GroupDragItem {
+	return isDragItem(item) && item.type === DragItemTypes.GROUP_ITEM
 }
