@@ -9,6 +9,7 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { RoundedSection } from '../pages/homePage/roundedSection/RoundedSection'
 
 interface IBridgesSettingsProps {
 	project: Project
@@ -64,15 +65,17 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 
 	return (
 		<>
-			<FormControlLabel
-				control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
-				label="Enable internal bridge"
-				labelPlacement="start"
-			/>
+			<RoundedSection title="Internal Bridge">
+				<FormControlLabel
+					control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
+					label="Enable internal bridge"
+					labelPlacement="start"
+				/>
 
-			{internalBridge && project.settings.enableInternalBridge && (
-				<Bridge bridge={internalBridge} bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]} internal />
-			)}
+				{internalBridge && project.settings.enableInternalBridge && (
+					<Bridge bridge={internalBridge} bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]} internal />
+				)}
+			</RoundedSection>
 
 			<Typography variant="subtitle1">Incoming bridges</Typography>
 			<Typography variant="subtitle2" sx={{ fontStyle: 'italic' }}>

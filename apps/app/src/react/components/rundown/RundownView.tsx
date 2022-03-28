@@ -205,7 +205,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				<DropZone
 					isOver={partDropIsOver}
 					ref={newPartRef}
-					style={{ height: '96vh' }}
+					// style={{ height: '96vh' }}
 					data-drop-handler-id={partDropHandlerId}
 				>
 					<Button variant="contained" onClick={() => setNewPartOpen(true)}>
@@ -215,7 +215,8 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				<DropZone
 					isOver={groupDropIsOver}
 					ref={newGroupRef}
-					style={{ flexGrow: 1, height: '96vh' }}
+					// style={{ flexGrow: 1, height: '96vh' }}
+					style={{ flexGrow: 1 }}
 					data-drop-handler-id={groupDropHandlerId}
 				>
 					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>

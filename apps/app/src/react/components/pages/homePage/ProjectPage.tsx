@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useState } from 'react'
 import { TrashBtn } from '../../inputs/TrashBtn'
@@ -12,6 +13,7 @@ import { TextBtn } from '../../inputs/textBtn/TextBtn'
 import { Project } from '../../../../models/project/Project'
 import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
+import { RoundedSection } from './roundedSection/RoundedSection'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 	const serverAPI = useContext(IPCServerContext)
@@ -37,6 +39,30 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 			help="Help Content Here"
 			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
 		>
+			<RoundedSection title="Rundowns archive">
+				<ul className="sc-list">
+					{rundownsStore.closedRundowns.map((closedRundown) => {
+						return (
+							<li key={closedRundown.rundownId}>
+								<div className="label">
+									<div className="title">{closedRundown.name}</div>
+								</div>
+								<div className="controls">
+									<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+									<TextBtn
+										label="Permanently delete"
+										style="danger"
+										onClick={() => handleReopen(closedRundown.rundownId)}
+									/>
+								</div>
+							</li>
+						)
+					})}
+				</ul>
+			</RoundedSection>
+
+			<div className="rundowns-page"></div>
+
 			{/* Rename Project dialog */}
 			<Formik
 				initialValues={{ name: props.project.name }}
@@ -97,30 +123,6 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 					)
 				}}
 			</Formik>
-
-			<div className="rundowns-page">
-				{rundownsStore.closedRundowns.map((closedRundown) => {
-					return (
-						<div key={closedRundown.rundownId} className="rundown">
-							<div className="label">{closedRundown.name}</div>
-							<div className="controls">
-								<Button
-									variant="contained"
-									size="medium"
-									onClick={() => handleReopen(closedRundown.rundownId)}
-								>
-									Reopen
-								</Button>
-								<TrashBtn
-									onClick={() => {
-										alert('To do')
-									}}
-								/>
-							</div>
-						</div>
-					)
-				})}
-			</div>
 		</ProjectPageLayout>
 	)
 })

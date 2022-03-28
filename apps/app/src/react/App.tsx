@@ -372,6 +372,7 @@ export const App = observer(() => {
 													<RundownView mappings={project.mappings} />
 												</div>
 												<div className="side-bar">
+													<div className="bokeh" />
 													<Sidebar mappings={project.mappings} />
 												</div>
 											</RundownContext.Provider>

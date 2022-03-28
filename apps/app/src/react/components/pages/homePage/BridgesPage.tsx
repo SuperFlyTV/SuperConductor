@@ -23,7 +23,10 @@ export const BridgesPage: React.FC<{ project: Project }> = observer((props) => {
 	}
 
 	return (
-		<ProjectPageLayout title="Bridges">
+		<ProjectPageLayout
+			title="Bridges"
+			help="Bridges are helper applications that communicate with the SuperConductor. The role of the bridge is to communicate with devices such as CasparCG, Atem, OBS, vMix, etc. SuperConductor sends all the timeline objects and settings to the bridge which then transmits information to different devices. SuperConductor communicates with bridges using WebSocket protocol."
+		>
 			<BridgesSettings project={props.project} />
 		</ProjectPageLayout>
 	)
