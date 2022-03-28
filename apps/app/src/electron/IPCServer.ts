@@ -114,7 +114,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	) {
 		super()
-		for (const methodName of Object.keys(IPCServer.prototype)) {
+		for (const methodName of Object.getOwnPropertyNames(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
