@@ -14,7 +14,6 @@ import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
-import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
@@ -35,21 +34,20 @@ import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
 
 export const GroupView: React.FC<{
 	rundownId: string
 	group: Group
 	groupIndex: number
 	mappings: Mappings
-}> = ({ group, groupIndex, rundownId, mappings }) => {
+}> = observer(({ group, groupIndex, rundownId, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const { updatePartMove } = useContext(PartMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const rundown = useContext(RundownContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -193,7 +191,7 @@ export const GroupView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: movedItem.partId,
 					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: hoverGroup.id,
@@ -514,7 +512,7 @@ export const GroupView: React.FC<{
 			</div>
 		)
 	}
-}
+})
 
 const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
 	const ipcServer = useContext(IPCServerContext)

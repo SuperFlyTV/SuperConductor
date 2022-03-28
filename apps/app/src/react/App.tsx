@@ -27,7 +27,6 @@ import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
-import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
@@ -153,27 +152,6 @@ export const App = observer(() => {
 		}
 	}, [timelineObjectMoveData])
 
-	const [partMoveData, setPartMoveData] = useState<PartMove>({
-		duplicate: null,
-		partId: null,
-		fromGroupId: null,
-		toGroupId: null,
-		position: null,
-		moveId: null,
-		done: null,
-	})
-	const partMoveContextValue = useMemo(() => {
-		return {
-			partMove: partMoveData,
-			updatePartMove: (newData: Partial<PartMove>) => {
-				setPartMoveData({
-					...partMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [partMoveData])
-
 	const gui = store.guiStore
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -200,6 +178,7 @@ export const App = observer(() => {
 			.catch(console.error)
 	}, [])
 
+	const partMoveData = store.guiStore.partMove
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
 		if (!rundownsStore.currentRundown) {
 			return rundownsStore.currentRundown
@@ -327,7 +306,7 @@ export const App = observer(() => {
 		if (waitingForMovePartUpdate) {
 			return () => {
 				setWaitingForMovePartUpdate(false)
-				setPartMoveData({
+				store.guiStore.updatePartMove({
 					duplicate: null,
 					partId: null,
 					fromGroupId: null,
@@ -353,32 +332,30 @@ export const App = observer(() => {
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<IPCServerContext.Provider value={serverAPI}>
 				<ProjectContext.Provider value={project}>
-					<PartMoveContext.Provider value={partMoveContextValue}>
-						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-								<div className="app" onPointerDown={handlePointerDownAnywhere}>
-									<HeaderBar />
+					<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
+						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+								<HeaderBar />
 
-									{store.guiStore.isNewRundownSelected() ? (
-										<NewRundownPage />
-									) : store.guiStore.isHomeSelected() ? (
-										<HomePage project={project} />
-									) : (
-										modifiedCurrentRundown && (
-											<RundownContext.Provider value={modifiedCurrentRundown}>
-												<div className="main-area">
-													<RundownView mappings={project.mappings} />
-												</div>
-												<div className="side-bar">
-													<Sidebar mappings={project.mappings} />
-												</div>
-											</RundownContext.Provider>
-										)
-									)}
-								</div>
-							</ErrorHandlerContext.Provider>
-						</TimelineObjectMoveContext.Provider>
-					</PartMoveContext.Provider>
+								{store.guiStore.isNewRundownSelected() ? (
+									<NewRundownPage />
+								) : store.guiStore.isHomeSelected() ? (
+									<HomePage project={project} />
+								) : (
+									modifiedCurrentRundown && (
+										<RundownContext.Provider value={modifiedCurrentRundown}>
+											<div className="main-area">
+												<RundownView mappings={project.mappings} />
+											</div>
+											<div className="side-bar">
+												<Sidebar mappings={project.mappings} />
+											</div>
+										</RundownContext.Provider>
+									)
+								)}
+							</div>
+						</ErrorHandlerContext.Provider>
+					</TimelineObjectMoveContext.Provider>
 				</ProjectContext.Provider>
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>

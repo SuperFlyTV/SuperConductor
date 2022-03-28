@@ -31,7 +31,6 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
-import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
@@ -40,6 +39,7 @@ import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
+import { observer } from 'mobx-react-lite'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -63,14 +63,13 @@ export const PartView: React.FC<{
 	part: Part
 	playhead: GroupPlayData
 	mappings: Mappings
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
+}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
-	const { partMove, updatePartMove } = useContext(PartMoveContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
 		[objectId: string]: TimelineObj
@@ -84,10 +83,6 @@ export const PartView: React.FC<{
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
 	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
 	updateTimelineObjMoveRef.current = updateTimelineObjMove
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
-	const partMoveRef = useRef(partMove)
-	partMoveRef.current = partMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -571,7 +566,7 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: movedItem.partId,
 					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: hoverGroup?.id ?? null,
@@ -594,7 +589,7 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem => {
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					moveId: short.generate(),
 					done: false,
 				})
@@ -615,7 +610,7 @@ export const PartView: React.FC<{
 				return part.id === monitor.getItem().partId
 			},
 			end: (draggedItem) => {
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: draggedItem.partId,
 					fromGroupId: draggedItem.fromGroup.id,
 					toGroupId: draggedItem.toGroupId,
@@ -915,7 +910,7 @@ export const PartView: React.FC<{
 			</Popover>
 		</div>
 	)
-}
+})
 
 type TEntries = [string, string[]][]
 
