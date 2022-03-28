@@ -1901,6 +1901,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		const { rundown } = this.getRundown(data)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Stop playout
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		}
+
 		await this.storage.closeRundown(data.rundownId)
 
 		return {
