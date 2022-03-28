@@ -1,12 +1,15 @@
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
 import { Mappings } from 'timeline-state-resolver-types'
+import { useSnackbar } from 'notistack'
 
 import './style.scss'
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
+import { IPCServerContext } from '../../../../../contexts/IPCServer'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 
 export const LayerName: React.FC<{
 	/**
@@ -26,6 +29,9 @@ export const LayerName: React.FC<{
 	 */
 	timelineObjs: TimelineObj[]
 }> = observer((props) => {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+	const { enqueueSnackbar } = useSnackbar()
 	const mappingExists = props.layerId in props.mappings
 	const name = props.mappings[props.layerId]?.layerName ?? props.layerId
 
@@ -53,6 +59,21 @@ export const LayerName: React.FC<{
 							props.onSelect(id)
 						}
 					}}
+					onCreateMissingMapping={(id: string) => {
+						if (!store.rundownsStore.currentRundownId) {
+							return
+						}
+						serverAPI
+							.createMissingMapping({
+								rundownId: store.rundownsStore.currentRundownId,
+								mappingId: id,
+							})
+							.then(() => {
+								enqueueSnackbar(`Mapping "${id}" created.`, { variant: 'success' })
+								store.guiStore.goToHome('mappingsSettings')
+							})
+							.catch(handleError)
+					}}
 				/>
 			}
 		</div>
@@ -70,6 +91,7 @@ const LayerNamesDropdown: React.FC<{
 	otherItems: DropdownItem[]
 	exists: boolean
 	onSelect: (id: string) => void
+	onCreateMissingMapping: (id: string) => void
 }> = (props) => {
 	const [isOpen, setOpen] = useState(false)
 
@@ -83,7 +105,15 @@ const LayerNamesDropdown: React.FC<{
 			>
 				<div className="item">
 					{!props.exists && (
-						<div className="warning-icon" title="No mapping by this ID exists.">
+						<div
+							className="warning-icon"
+							title="No mapping by this ID exists. Click here to create it."
+							onClick={(e) => {
+								e.preventDefault()
+								e.stopPropagation()
+								props.onCreateMissingMapping(props.selectedItem.id)
+							}}
+						>
 							<MdWarningAmber size={18} />
 						</div>
 					)}

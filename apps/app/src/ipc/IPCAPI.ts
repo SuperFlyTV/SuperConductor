@@ -43,6 +43,7 @@ export const enum ActionDescription {
 	CloseRundown = 'close rundown',
 	RenameRundown = 'rename rundown',
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
+	CreateMissingMapping = 'create missing mapping',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -180,6 +181,8 @@ export interface IPCServerMethods {
 		projectId: string
 	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
 	renameRundown: (data: { rundownId: string; newName: string }) => Promise<unknown>
+
+	createMissingMapping: (data: { rundownId: string; mappingId: string }) => Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void
