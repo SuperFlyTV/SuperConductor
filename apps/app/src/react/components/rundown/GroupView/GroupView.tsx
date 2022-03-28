@@ -263,11 +263,6 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					// Don't replace items with themselves
-					if (movedItem.fromGroup.id === group.id && movedItem.position === hoverIndex) {
-						return
-					}
-
 					// Determine rectangle on screen
 					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
 
@@ -342,14 +337,12 @@ export const GroupView: React.FC<{
 						}
 
 						if (hoverClientY < hoverMiddleY) {
-							console.log('setting position to:', hoverIndex)
 							store.guiStore.updatePartMove({
 								toGroupId: null,
 								position: hoverIndex,
 							})
 							movedItem.position = hoverIndex
 						} else {
-							console.log('setting position to (+1):', hoverIndex + 1)
 							store.guiStore.updatePartMove({
 								toGroupId: null,
 								position: hoverIndex + 1,
