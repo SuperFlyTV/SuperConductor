@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { RundownContext } from '../../../contexts/Rundown'
@@ -13,12 +13,39 @@ import { findPartInRundown } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { Button, Divider, Grid, MenuItem, TextField, Typography } from '@mui/material'
+import {
+	Button,
+	Divider,
+	FormControl,
+	Grid,
+	InputLabel,
+	ListItemText,
+	MenuItem,
+	OutlinedInput,
+	TextField,
+	Typography,
+	Checkbox,
+	Select,
+	SelectChangeEvent,
+	Stack,
+} from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
 import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { HiRefresh } from 'react-icons/hi'
+
+const ITEM_HEIGHT = 48
+const ITEM_PADDING_TOP = 8
+const MenuProps = {
+	PaperProps: {
+		style: {
+			maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+			width: 250,
+		},
+	},
+}
 
 export const ResourceLibrary: React.FC = observer(() => {
 	const ipcServer = useContext(IPCServerContext)
@@ -34,29 +61,34 @@ export const ResourceLibrary: React.FC = observer(() => {
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
 	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
 
-	const [refreshing, setRefreshing] = useState(false)
+	const [nameFilterValue, setNameFilterValue] = React.useState('')
+	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
-	const [filterValue, setFilterValue] = React.useState('')
-
-	const filteredResources = useMemo(() => {
-		if (filterValue.trim().length === 0) {
+	const resourcesFilteredByDevice = useMemo(() => {
+		if (deviceFilterValue.length <= 0) {
 			return Object.values(resourcesStore.resources)
 		}
 
 		return Object.values(resourcesStore.resources).filter((resource) => {
-			if ('name' in resource) {
-				const name: string = (resource as any).name
-				return name.toLowerCase().includes(filterValue.toLowerCase())
-			}
-
-			return false
+			return deviceFilterValue.includes(resource.deviceId)
 		})
-	}, [resourcesStore.resources, filterValue])
+	}, [deviceFilterValue, resourcesStore.resources])
 
-	const resourcesByDeviceId = useMemo(() => {
+	const resourcesFilteredByDeviceAndName = useMemo(() => {
+		if (nameFilterValue.trim().length === 0) {
+			return resourcesFilteredByDevice
+		}
+
+		return resourcesFilteredByDevice.filter((resource) => {
+			const name = resource.displayName
+			return name.toLowerCase().includes(nameFilterValue.toLowerCase())
+		})
+	}, [nameFilterValue, resourcesFilteredByDevice])
+
+	const filteredResourcesByDeviceId = useMemo(() => {
 		const ret: { [key: string]: ResourceAny[] } = {}
 
-		for (const resource of filteredResources) {
+		for (const resource of resourcesFilteredByDeviceAndName) {
 			if (!(resource.deviceId in ret)) {
 				ret[resource.deviceId] = []
 			}
@@ -64,42 +96,89 @@ export const ResourceLibrary: React.FC = observer(() => {
 		}
 
 		return ret
-	}, [filteredResources])
+	}, [resourcesFilteredByDeviceAndName])
+
+	const deviceIds = useMemo(() => {
+		const deviceIds = new Set<string>()
+		for (const bridgeId in project.bridges) {
+			const bridge = project.bridges[bridgeId]
+			for (const deviceId in bridge.settings.devices) {
+				deviceIds.add(deviceId)
+			}
+		}
+		return Array.from(deviceIds)
+	}, [project.bridges])
+
+	const handleDeviceFilterChange = useCallback((event: SelectChangeEvent<typeof deviceFilterValue>) => {
+		const {
+			target: { value },
+		} = event
+		setDeviceFilterValue(
+			// On autofill we get a stringified value.
+			typeof value === 'string' ? value.split(',') : value
+		)
+	}, [])
 
 	return (
 		<div className="sidebar media-library-sidebar">
 			<SidebarInfoGroup
-				title="Available Assets"
+				title="Available Resources"
 				enableRefresh={true}
-				refreshActive={refreshing}
+				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
 				onRefreshClick={async () => {
-					setRefreshing(true)
 					try {
 						await ipcServer.refreshResources()
 					} catch (err) {
 						handleError(err)
 					}
-					setRefreshing(false)
 				}}
 			>
+				<FormControl margin="dense" size="small" fullWidth>
+					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
+					<Select
+						labelId="resource-library-deviceid-filter-label"
+						id="resource-library-deviceid-filter"
+						multiple
+						value={deviceFilterValue}
+						onChange={handleDeviceFilterChange}
+						input={<OutlinedInput label="Filter Resources by Device" />}
+						renderValue={(selected) => selected.join(', ')}
+						MenuProps={MenuProps}
+					>
+						{deviceIds.map((deviceId) => (
+							<MenuItem key={deviceId} value={deviceId}>
+								<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
+								<ListItemText primary={deviceId} />
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+
 				<TextField
 					size="small"
 					margin="normal"
 					fullWidth
-					label="Filter Assets"
-					value={filterValue}
+					label="Filter Resources by Name"
+					value={nameFilterValue}
 					InputProps={{
 						type: 'search',
 					}}
 					onChange={(event) => {
-						setFilterValue(event.target.value)
+						setNameFilterValue(event.target.value)
 					}}
 				/>
 
-				{Object.entries(resourcesByDeviceId).map(([deviceId, resources]) => {
+				{Object.entries(filteredResourcesByDeviceId).map(([deviceId, resources]) => {
 					return (
 						<React.Fragment key={deviceId}>
-							<Typography variant="body2">{deviceId}</Typography>
+							<Stack direction="row" justifyContent="space-between">
+								<Typography variant="body2">{deviceId}</Typography>
+								{resourcesStore.refreshStatuses[deviceId] && (
+									<div className="refresh active" style={{ opacity: '0.6' }}>
+										<HiRefresh size={15} color="white" />
+									</div>
+								)}
+							</Stack>
 							<Divider />
 							{resources
 								.map<[ResourceAny, JSX.Element]>((resource) => {
@@ -109,8 +188,8 @@ export const ResourceLibrary: React.FC = observer(() => {
 											<>
 												<ResourceLibraryItemThumbnail resource={resource} />
 												<div className="resource__details">
-													<div className="resource__name" title={resource.name}>
-														{resource.name}
+													<div className="resource__name" title={resource.displayName}>
+														{resource.displayName}
 													</div>
 													<div className="resource__attributes">
 														<div>{resource.type}</div>
@@ -128,7 +207,7 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
@@ -137,105 +216,196 @@ export const ResourceLibrary: React.FC = observer(() => {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_DSK) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_AUX) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">{resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Scene: {resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Transition: {resource.name}</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Recording</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Streaming</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Source Settings</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_MUTE) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Mute</div>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else if (resource.resourceType === ResourceType.OBS_RENDER) {
 										return [
 											resource,
 											<>
-												<div className="resource__name">Scene Item Render</div>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+										return [
+											resource,
+											<>
+												<div className="resource__details">
+													<div className="resource__name" title={resource.displayName}>
+														{resource.displayName}
+													</div>
+													<div className="resource__attributes">
+														<div>{resource.type}</div>
+													</div>
+												</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
+											</>,
+										]
+									} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
+										return [
+											resource,
+											<>
+												<div className="resource__name">{resource.displayName}</div>
 											</>,
 										]
 									} else {

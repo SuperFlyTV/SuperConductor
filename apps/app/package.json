@@ -29,7 +29,7 @@
 		"email": "info@superfly.tv",
 		"url": "https://superfly.tv"
 	},
-	"license": "MIT",
+	"license": "AGPL-3.0-or-later",
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
 	},
@@ -113,7 +113,47 @@
 			"hardenedRuntime": true,
 			"gatekeeperAssess": false,
 			"entitlements": "entitlements.mac.plist",
-			"entitlementsInherit": "entitlements.mac.plist"
+			"entitlementsInherit": "entitlements.mac.plist",
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/vendor/8.12.2/darwin-x64/lib",
+					"to": "Frameworks",
+					"filter": [
+						"!glib-2.0/**/*"
+					]
+				}
+			]
+		},
+		"win": {
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/build/Release",
+					"to": ".",
+					"filter": [
+						"lib*.dll"
+					]
+				}
+			]
+		},
+		"linux": {
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/vendor/8.12.2/linux-x64/lib",
+					"to": ".",
+					"filter": [
+						"libvips*.so.*"
+					]
+				}
+			]
+		},
+		"dmg": {
+			"artifactName": "SuperConductor ${version} macOS Installer.${ext}"
+		},
+		"nsis": {
+			"artifactName": "SuperConductor ${version} Windows Installer.${ext}"
+		},
+		"appImage": {
+			"artifactName": "SuperConductor ${version} Linux Executable.${ext}"
 		},
 		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",

@@ -1,12 +1,21 @@
 import React, { useCallback } from 'react'
 import { ParsedValueInput } from './parsedValueInput'
 export const IntInput: React.FC<
-	| { currentValue: number; onChange: (newValue: number) => void; allowUndefined: false; label: string }
+	| {
+			currentValue: number
+			onChange: (newValue: number) => void
+			allowUndefined: false
+			label: string
+			disabled?: boolean
+			fullWidth?: boolean
+	  }
 	| {
 			currentValue: number | undefined
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			label: string
+			disabled?: boolean
+			fullWidth?: boolean
 	  }
 > = (props) => {
 	const parse = useCallback((str: string) => {
@@ -25,9 +34,22 @@ export const IntInput: React.FC<
 			undefined,
 			parse,
 			stringify,
-			props.label
+			props.label,
+			'text',
+			props.disabled,
+			props.fullWidth
 		)
 	} else {
-		return ParsedValueInput<number>(props.currentValue, props.onChange, 0, parse, stringify, props.label)
+		return ParsedValueInput<number>(
+			props.currentValue,
+			props.onChange,
+			0,
+			parse,
+			stringify,
+			props.label,
+			'text',
+			props.disabled,
+			props.fullWidth
+		)
 	}
 }

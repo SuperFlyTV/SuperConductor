@@ -36,10 +36,7 @@ export class BridgeHandler {
 	constructor(
 		private session: SessionHandler,
 		private storage: StorageHandler,
-		private callbacks: {
-			updatedResources: (deviceId: string, resources: ResourceAny[]) => void
-			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
-		}
+		private callbacks: BridgeConnectionCallbacks
 	) {
 		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
@@ -78,13 +75,13 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				console.log('Setting up internal bridge')
+				// console.log('Setting up internal bridge')
 				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
 			if (this.internalBridge) {
-				console.log('Destroying internal bridge')
+				// console.log('Destroying internal bridge')
 				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
 				const bridgeIndex = this.connectedBridges.findIndex(
 					(connectedBridge) => connectedBridge === this.internalBridge
@@ -122,7 +119,7 @@ export class BridgeHandler {
 						// remove bridge:
 						delete this.outgoingBridges[bridge.id]
 					})
-					console.log('Connecting to bridge', bridge.id, connection.connectionId)
+					// console.log('Connecting to bridge', bridge.id, connection.connectionId)
 					this.outgoingBridges[bridge.id] = {
 						bridge,
 						connection,
@@ -184,6 +181,7 @@ export class BridgeHandler {
 interface BridgeConnectionCallbacks {
 	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
 	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
+	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
 }
 
 abstract class AbstractBridgeConnection {
@@ -264,7 +262,7 @@ abstract class AbstractBridgeConnection {
 		if (bridge) {
 			this.setSettings(bridge.settings, true)
 		} else {
-			console.log(`Error: Settings bridge "${this.bridgeId}" not found`)
+			console.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
 		if (this.sentMappings) {
 			this.setMappings(this.sentMappings, true)
@@ -350,6 +348,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
+		} else if (msg.type === 'DeviceRefreshStatus') {
+			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
 		} else {
 			assertNever(msg)
 		}
@@ -422,7 +422,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 		if (this.connection.connected) {
 			this.connection.send(msg)
 		} else {
-			console.log('not sending, because not connected', msg.type)
+			// console.log('not sending, because not connected', msg.type)
 		}
 	}
 	protected getConnectionId(): number {

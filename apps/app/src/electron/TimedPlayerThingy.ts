@@ -95,6 +95,9 @@ export class TimedPlayerThingy {
 					})
 					.catch(console.error)
 			},
+			onDeviceRefreshStatus: (deviceId, refreshing) => {
+				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
+			},
 		})
 		this.bridgeHandler = bridgeHandler
 

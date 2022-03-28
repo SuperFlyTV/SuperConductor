@@ -31,7 +31,6 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
-import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
@@ -39,6 +38,8 @@ import { RiEyeCloseLine } from 'react-icons/ri'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
+import { LayerName } from './part/LayerName/LayerName'
+import { observer } from 'mobx-react-lite'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -62,14 +63,13 @@ export const PartView: React.FC<{
 	part: Part
 	playhead: GroupPlayData
 	mappings: Mappings
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
+}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
 	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
-	const { partMove, updatePartMove } = useContext(PartMoveContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
 		[objectId: string]: TimelineObj
@@ -83,10 +83,6 @@ export const PartView: React.FC<{
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
 	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
 	updateTimelineObjMoveRef.current = updateTimelineObjMove
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
-	const partMoveRef = useRef(partMove)
-	partMoveRef.current = partMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -570,7 +566,7 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: movedItem.partId,
 					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: hoverGroup?.id ?? null,
@@ -593,7 +589,7 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem => {
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					moveId: short.generate(),
 					done: false,
 				})
@@ -614,7 +610,7 @@ export const PartView: React.FC<{
 				return part.id === monitor.getItem().partId
 			},
 			end: (draggedItem) => {
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: draggedItem.partId,
 					fromGroupId: draggedItem.fromGroup.id,
 					toGroupId: draggedItem.toGroupId,
@@ -642,7 +638,10 @@ export const PartView: React.FC<{
 
 	const groupOrPartDisabled = parentGroup.disabled || part.disabled
 	const groupOrPartLocked = parentGroup.locked || part.locked
-	const firstTimelineObj: TimelineObj | undefined = part.timeline[0]
+	const sortedLayers = useMemo(() => {
+		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
+	}, [mappings, resolvedTimeline.layers])
+	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0][1][0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
 	if (typeof firstTimelineObjType === 'string') {
@@ -805,11 +804,29 @@ export const PartView: React.FC<{
 			<div className="part__dropdown">{/** TODO **/}</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
-					const name = mappings[layerId]?.layerName ?? layerId
+					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
+
 					return (
-						<div className="part__layer-names__name" key={layerId} title={name}>
-							<span>{name}</span>
-						</div>
+						<LayerName
+							key={layerId}
+							layerId={layerId}
+							mappings={mappings}
+							timelineObjs={modifiedTimeline}
+							onSelect={(selectedLayerId) => {
+								objectsOnThisLayer.forEach((objectOnThisLayer) => {
+									objectOnThisLayer.obj.layer = selectedLayerId
+									ipcServer
+										.updateTimelineObj({
+											rundownId,
+											groupId: parentGroup.id,
+											partId: part.id,
+											timelineObj: objectOnThisLayer,
+											timelineObjId: objectOnThisLayer.obj.id,
+										})
+										.catch(handleError)
+								})
+							}}
+						/>
 					)
 				})}
 			</div>
@@ -838,7 +855,7 @@ export const PartView: React.FC<{
 						})}
 						ref={layersDivRef}
 					>
-						{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId, objectIds]) => {
+						{sortedLayers.map(([layerId, objectIds]) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
 								timelineObj: TimelineObj
@@ -893,7 +910,7 @@ export const PartView: React.FC<{
 			</Popover>
 		</div>
 	)
-}
+})
 
 type TEntries = [string, string[]][]
 

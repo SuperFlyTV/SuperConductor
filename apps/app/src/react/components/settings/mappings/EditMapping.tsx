@@ -36,6 +36,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 		(newDeviceType: Mapping['device']) => {
 			const newDeviceId = findDeviceOfType(project.bridges, newDeviceType)
 			if (!newDeviceId) {
+				setDevice(mapping.device)
 				return
 			}
 
@@ -44,7 +45,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 			setDeviceId(newDeviceId)
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[handleError, ipcServer, mappingId, project]
+		[handleError, ipcServer, mapping.device, mappingId, project]
 	)
 
 	const handleDeviceIdChange = useCallback(
@@ -95,18 +96,16 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					value={device.toString()}
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
-						setDevice(parseInt(event.target.value, 10))
-					}}
-					onBlur={() => {
-						handleDeviceTypeChange(device)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleDeviceTypeChange(device)
+						const parsedValue = parseInt(event.target.value, 10)
+						setDevice(parsedValue)
+						handleDeviceTypeChange(parsedValue)
 					}}
 				>
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>
 					<MenuItem value={DeviceType.ATEM}>ATEM</MenuItem>
 					<MenuItem value={DeviceType.OBS}>OBS</MenuItem>
+					<MenuItem value={DeviceType.VMIX}>VMIX</MenuItem>
+					<MenuItem value={DeviceType.OSC}>OSC</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 				<TextField
@@ -118,12 +117,7 @@ export const EditMapping: React.FC<IMappingProps> = ({ mapping, mappingId }) => 
 					sx={{ width: '12rem' }}
 					onChange={(event) => {
 						setDeviceId(event.target.value)
-					}}
-					onBlur={() => {
-						handleDeviceIdChange(deviceId)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleDeviceIdChange(deviceId)
+						handleDeviceIdChange(event.target.value)
 					}}
 				>
 					{listAvailableDeviceIDs(project.bridges, mapping.device).map((deviceId) => (

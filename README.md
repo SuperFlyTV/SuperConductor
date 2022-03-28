@@ -1,98 +1,84 @@
 # SuperConductor
 
+A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!
+
+![Screenshot](/doc/img/screenshot0.png)
+
 ## Installation
 
 ### Windows
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download `SuperConductor-Setup-X.Y.Z.exe`.
-2. Run `SuperConductor-Setup-X.Y.Z.exe` to install the main SuperConductor application, then launch SuperConductor from either the Desktop shortcut or the Start Menu.
+Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .exe file.
 
-### macOS
+### MacOS
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download either the `.dmg` or `-mac.zip` builds of SuperConductor.
-2. If you downloaded the `.dmg` build, double click it to install the application. Then, launch the application from Finder.
-3. If you downloaded the `.zip` build, double-click it to extract the application, then double click on the extracted application to run it.
+Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .dmg file.
 
 ### Linux (Ubuntu)
 
-1. Head to the [releases page](https://github.com/SuperFlyTV/SuperConductor/releases) and download `SuperConductor-X.Y.Z.AppImage`.
-2. Execute the following before double-clicking on the AppImage to run it:
-
+1. Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download the installer .AppImage file.
+2. Execute the following before running the file:
    ```bash
    # Replace X.Y.Z with the actual version number.
    chmod +x Downloads/SuperConductor-X.Y.Z.AppImage
    ```
 
-## Advanced Usage
+## Features
 
-If you've installed the SuperConductor UI and TSR-Bridge on two different computers, then you'll need to configure the SuperConductor UI with the IP/host of the computer where TSR-Bridge is running:
+### Playout
 
-1. Open the SuperConductor UI.
-2. Navigate to `Edit > Preferences` (`SuperConductor > Preferences` on macOS).
-3. Locate the "Bridges" section and click "ADD BRIDGE CONNECTION".
-4. Edit the `URL` field to point to the computer where TSR-Bridge is running by replacing `localhost` with the IP address of that computer.
+Under the hood, SuperConductor is powered by the same playout-backend as [the Sofie project](https://github.com/nrkno/sofie-core), with timeline-based control of multiple devices.
 
-The TSR-Bridge program can be downloaded and installed on a different computer than the main SuperConductor application. This can be useful to minimize latency between TSR-Bridge and the devices it is controlling.
+![Timeline playout](/doc/img/play.gif)
 
-To connect SuperConductor to such a so-called "outgoing bridge", open SuperConductor's Settings/Preferences menu and click "ADD BRIDGE CONNECTION".
+### Edit Timeline
 
-## For Developers
+Drag objects onto the timeline, edit them and play them out instantly.
 
-### Prerequisites
+![Edit timeline](/doc/img/edit-timeline.gif)
 
-SuperConductor has some native dependencies which need to be (re)built from source. This requires a full Node.js native module compiler toolchain, including Python 3.
+### Streamdeck and X-keys support
 
-On Windows, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required. If you have issues with Python, install [Python 3](https://www.python.org/downloads/).
+Assign keys on Streamdeck or X-keys to playout actions.
 
-On Linux, install the `build-essential` package and then install Python 3.
+![Streamdeck GUI](/doc/img/streamdeck-GUI.gif) ![Streamdeck](/doc/img/streamdeck.gif)
 
-On macOS, install XCode and its optional tools `xcode-select --install` and then install Python 3.
+### Supported devices
 
-### Quick start
+_SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-timeline-state-resolver) used in [Sofie](https://github.com/nrkno/sofie-core), so it can play anything that it can._
 
-- [Install Yarn](https://yarnpkg.com/getting-started/install)
-- `cd >>path-to-this-folder<<`
-- `yarn`
-- `yarn setup`
-- `yarn start` (Builds the project and starts the SuperConductor)
+- **[CasparCG](http://casparcg.com/)** Video and graphics playout software
+- **Blackmagic Design ATEM** Vision mixers
+- **[OBS Studio](https://obsproject.com/)** Live video production software
+- **[vMix](https://www.vmix.com/)** software vision mixer
+- Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
+- (GUI not implemented yet) **Blackmagic Design Hyperdeck** record/playback devices
+- (GUI not implemented yet) **Lawo** audio mixers
+- (GUI not implemented yet) **Panasoniz PTZ** cameras
+- (GUI not implemented yet) **Pharos** light control devices
+- (GUI not implemented yet) **[Sisyfos](https://github.com/olzzon/sisyfos-audio-controller)** audio controller
+- (GUI not implemented yet) **Quantel** video servers
+- (GUI not implemented yet) **VizRT MediaSequencer** graphics system
+- (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
+- (GUI not implemented yet) Arbitrary TCP-socket compatible devices
 
-### Architecture Overview
+## Problems and Issues
 
-The project consists of 3 applications:
+Problems and Issues can be reported here: [Issues](https://github.com/SuperFlyTV/SuperConductor/issues)
 
-- React application (application UI)
-- Electron backend (hosts frontend and implements logic)
-- TSR Bridge (node app that exposes HTTP server and executes TSR)
+## For developers
 
-Instructions for running each app are in their respective folder.
+Contributions are very much appreciated!
 
-### Installing Dependencies
+Installation and usage instructions are documented here: [For developers](/doc/FOR_DEVELOPERS.md)
 
-This project is a Lerna monorepo, which means that installing dependencies is handled a little differently. To properly bootstrap this project, install all dependencies, and cross-link the various packages, execute the following commands in the root of the project:
+## Acknowledgements
 
-```bash
-# Installs all dependencies, including Lerna.
-yarn
+SuperConductor uses many open source libraries, some of which include:
 
-# Installs all dependencies and symlinks projects together, using Lerna.
-yarn setup
-```
+- [`caniuse-lite`](https://github.com/browserslist/caniuse-lite) with data sourced from [caniuse.com](https://caniuse.com)
+- [`react-icons`](https://github.com/react-icons/react-icons)
 
-### Building the project
+## License
 
-```bash
-# Compile Typescript, run Webpack, etc:
-yarn build
-
-# Make binaries for the SuperConductor UI and tsr-bridge. Must have run "yarn build" first.
-# The SuperConductor UI binary will be located at apps/app/dist.
-# The tsr-bridge binary will be located at apps/tsr-bridge/dist.
-# This command should work on all platforms (Windows, macOS, and Linux).
-yarn build:binary
-```
-
-### Making a new release
-
-1. Run `lerna version --force-publish` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
-2. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish.
-3. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release.
+SuperConductor is licensed under the GNU Affero General Public License v3.0 or later and the license is available to read in the [LICENSE](LICENSE) and [COPYING](COPYING) files.

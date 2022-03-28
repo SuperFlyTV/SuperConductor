@@ -14,6 +14,7 @@ export namespace BridgeAPI {
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
+			| DeviceRefreshStatus
 
 		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -62,6 +63,19 @@ export namespace BridgeAPI {
 			deviceId: string
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
+		}
+
+		/**
+		 * Used to tell SuperConductor when a device is refreshing its resources.
+		 * Will be sent in response to refreshResources messages,
+		 * but can also be sent independently. For example, this message
+		 * will be sent when a device changes status, because TSR-Bridge
+		 * automatically refreshes devices when their statuses change.
+		 */
+		export interface DeviceRefreshStatus extends MessageBase {
+			type: 'DeviceRefreshStatus'
+			deviceId: string
+			refreshing: boolean
 		}
 	}
 

@@ -31,6 +31,7 @@ export const EditWrapper: React.FC<{
 				<div className="setting">
 					<SelectEnum
 						label={'Device Type'}
+						fullWidth
 						currentValue={obj.content.deviceType}
 						options={DeviceType}
 						onChange={(newValue) => {
@@ -68,6 +69,7 @@ export const EditWrapper: React.FC<{
 					{startIsExpression ? (
 						<TextInput
 							label="Start"
+							fullWidth
 							allowUndefined={false}
 							currentValue={enableStartExpression}
 							onChange={(newVal) => {
@@ -80,6 +82,7 @@ export const EditWrapper: React.FC<{
 					) : (
 						<DurationInput
 							label="Start"
+							fullWidth
 							allowUndefined={false}
 							currentValue={enableStartNum}
 							onChange={(newVal) => {
@@ -94,6 +97,7 @@ export const EditWrapper: React.FC<{
 					{durationIsExpression ? (
 						<TextInput
 							label="Duration"
+							fullWidth
 							allowUndefined={false}
 							currentValue={enableDurationExpression}
 							onChange={(newVal) => {
@@ -106,6 +110,7 @@ export const EditWrapper: React.FC<{
 					) : (
 						<DurationInput
 							label="Duration"
+							fullWidth
 							allowUndefined={false}
 							currentValue={enableDurationNum}
 							onChange={(newVal) => {

@@ -14,7 +14,6 @@ import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
-import { PartMoveContext } from '../../../contexts/PartMove'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
@@ -35,21 +34,20 @@ import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../../mobx/store'
 
 export const GroupView: React.FC<{
 	rundownId: string
 	group: Group
 	groupIndex: number
 	mappings: Mappings
-}> = ({ group, groupIndex, rundownId, mappings }) => {
+}> = observer(({ group, groupIndex, rundownId, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const { updatePartMove } = useContext(PartMoveContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	const rundown = useContext(RundownContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -131,8 +129,7 @@ export const GroupView: React.FC<{
 
 			if (stopPlayingRef.current) {
 				// Stop the group, so that the "stop"-buttons reflect the correct state:
-				console.log('Auto-stopping group', group.id)
-
+				// console.log('Auto-stopping group', group.id)
 				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 				stopPlayingRef.current = false
 			}
@@ -194,7 +191,7 @@ export const GroupView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: movedItem.partId,
 					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: hoverGroup.id,
@@ -347,30 +344,28 @@ export const GroupView: React.FC<{
 									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
 								</div>
 							</Button>
-							{group.oneAtATime && (
-								<>
-									<Button
-										variant="contained"
-										size="small"
-										disabled={!canStepDown}
-										onClick={handleStepDown}
-									>
-										<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-											<AiFillStepForward size={22} />
-										</div>
-									</Button>
-									<Button
-										variant="contained"
-										size="small"
-										disabled={!canStepUp}
-										onClick={handleStepUp}
-									>
-										<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
-											<AiFillStepForward size={22} />
-										</div>
-									</Button>
-								</>
-							)}
+							<Button
+								variant="contained"
+								size="small"
+								disabled={!canStepDown}
+								onClick={handleStepDown}
+								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+							>
+								<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+									<AiFillStepForward size={22} />
+								</div>
+							</Button>
+							<Button
+								variant="contained"
+								size="small"
+								disabled={!canStepUp}
+								onClick={handleStepUp}
+								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+							>
+								<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+									<AiFillStepForward size={22} />
+								</div>
+							</Button>
 						</div>
 
 						<ToggleButton
@@ -409,25 +404,6 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 
 						<ToggleButton
-							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
-							value="loop"
-							selected={group.oneAtATime && group.loop}
-							size="small"
-							disabled={!canModifyLoop}
-							onChange={() => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId: group.id,
-										value: !group.loop,
-									})
-									.catch(handleError)
-							}}
-						>
-							<MdRepeat size={18} />
-						</ToggleButton>
-
-						<ToggleButton
 							title={group.oneAtATime ? 'Disable One-at-a-time' : 'Enable One-at-a-time'}
 							value="one-at-a-time"
 							selected={group.oneAtATime}
@@ -444,6 +420,25 @@ export const GroupView: React.FC<{
 							}}
 						>
 							<MdLooksOne size={22} />
+						</ToggleButton>
+
+						<ToggleButton
+							title={group.loop ? 'Disable Loop' : 'Enable Loop'}
+							value="loop"
+							selected={group.oneAtATime && group.loop}
+							size="small"
+							disabled={!canModifyLoop}
+							onChange={() => {
+								ipcServer
+									.toggleGroupLoop({
+										rundownId,
+										groupId: group.id,
+										value: !group.loop,
+									})
+									.catch(handleError)
+							}}
+						>
+							<MdRepeat size={18} />
 						</ToggleButton>
 
 						<ToggleButton
@@ -468,6 +463,7 @@ export const GroupView: React.FC<{
 						<TrashBtn
 							className="delete"
 							disabled={group.locked}
+							title={'Delete Group' + group.locked ? ' (disabled due to locked Group)' : ''}
 							onClick={() => {
 								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
 								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
@@ -516,7 +512,7 @@ export const GroupView: React.FC<{
 			</div>
 		)
 	}
-}
+})
 
 const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
 	const ipcServer = useContext(IPCServerContext)

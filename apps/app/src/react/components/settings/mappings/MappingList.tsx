@@ -8,7 +8,10 @@ import {
 	MappingCasparCG,
 	MappingOBS,
 	MappingOBSType,
+	MappingOSC,
 	Mappings,
+	MappingVMix,
+	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { describeMappingConfiguration, getDeviceName } from '../../../../lib/TSRMappings'
 import { findDevice, listAvailableDeviceIDs } from '../../../../lib/util'
@@ -39,7 +42,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 			}
 
 			const layerName = mappingId
-			let newMapping: MappingCasparCG | MappingAtem | MappingOBS
+			let newMapping: MappingCasparCG | MappingAtem | MappingOBS | MappingVMix | MappingOSC
 
 			switch (device.type) {
 				case DeviceType.CASPARCG: {
@@ -76,6 +79,27 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 					break
 				}
 
+				case DeviceType.VMIX: {
+					newMapping = literal<MappingVMix>({
+						device: DeviceType.VMIX,
+						deviceId,
+						layerName,
+						mappingType: MappingVMixType.Program,
+					})
+
+					break
+				}
+
+				case DeviceType.OSC: {
+					newMapping = literal<MappingOSC>({
+						device: DeviceType.OSC,
+						deviceId,
+						layerName,
+					})
+
+					break
+				}
+
 				// @TODO: Add more device types
 
 				default:
@@ -97,6 +121,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 				<Table>
 					<TableHead>
 						<TableRow>
+							<TableCell>Mapping ID</TableCell>
 							<TableCell>Mapping Name</TableCell>
 							<TableCell>Mapping Type</TableCell>
 							<TableCell>Device ID</TableCell>
@@ -106,6 +131,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 					<TableBody>
 						{Object.entries(mappings).map(([id, mapping]) => (
 							<TableRow key={id}>
+								<TableCell>{id}</TableCell>
 								<TableCell>{mapping.layerName}</TableCell>
 								<TableCell>{getDeviceName(mapping.device)}</TableCell>
 								<TableCell>{mapping.deviceId}</TableCell>

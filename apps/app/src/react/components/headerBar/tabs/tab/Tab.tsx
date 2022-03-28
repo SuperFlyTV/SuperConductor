@@ -1,10 +1,8 @@
 import classNames from 'classnames'
 import React from 'react'
 import { MdClose } from 'react-icons/md'
-import { TabLeftEdge } from './TabLeftEdge'
-import { TabRightEdge } from './TabRightEdge'
 
-import './tab.scss'
+import './style.scss'
 
 export const Tab: React.FC<{
 	id: string
@@ -14,6 +12,8 @@ export const Tab: React.FC<{
 	onDoubleClick?: () => void
 	onClose?: (id: string) => void
 	disableClose?: boolean
+	icon?: React.ReactNode
+	showSeparator?: boolean
 }> = (props) => {
 	return (
 		<div
@@ -24,7 +24,7 @@ export const Tab: React.FC<{
 			onClick={props.onClick}
 			onDoubleClick={props.onDoubleClick}
 		>
-			<TabLeftEdge />
+			{props.icon && <div className="icon">{props.icon}</div>}
 			<div className="label">{props.name}</div>
 			{!props.disableClose && (
 				<div className="close">
@@ -41,7 +41,7 @@ export const Tab: React.FC<{
 					</button>
 				</div>
 			)}
-			<TabRightEdge />
+			{props.showSeparator && <div className="separator" />}
 		</div>
 	)
 }

@@ -7,7 +7,6 @@ export interface GenerateMenuArgs {
 	undoEnabled: boolean
 	redoLabel: string
 	redoEnabled: boolean
-	onPreferencesClick: () => void
 	onUndoClick: () => void
 	onRedoClick: () => void
 	onAboutClick: () => void
@@ -19,7 +18,6 @@ export function generateMenu({
 	undoEnabled,
 	redoLabel,
 	redoEnabled,
-	onPreferencesClick,
 	onUndoClick,
 	onRedoClick,
 	onAboutClick,
@@ -33,12 +31,6 @@ export function generateMenu({
 			label: app.name,
 			submenu: [
 				{ role: 'about' },
-				{ type: 'separator' },
-				{
-					label: 'Preferences',
-					accelerator: 'Command+P',
-					click: onPreferencesClick,
-				},
 				{ type: 'separator' },
 				{ role: 'services' },
 				{ type: 'separator' },
@@ -61,14 +53,6 @@ export function generateMenu({
 	menuTemplate.push({
 		label: 'Edit',
 		submenu: [
-			...(isMac
-				? []
-				: [
-						{
-							label: 'Preferences',
-							click: onPreferencesClick,
-						},
-				  ]),
 			{
 				label: undoLabel,
 				accelerator: 'CommandOrControl+Z',

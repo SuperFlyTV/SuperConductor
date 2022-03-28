@@ -39,6 +39,8 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded }: INewDeviceDia
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>
 					<MenuItem value={DeviceType.ATEM}>ATEM</MenuItem>
 					<MenuItem value={DeviceType.OBS}>OBS</MenuItem>
+					<MenuItem value={DeviceType.VMIX}>vMix</MenuItem>
+					<MenuItem value={DeviceType.OSC}>OSC</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 			</DialogContent>

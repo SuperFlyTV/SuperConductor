@@ -1,11 +1,19 @@
 import { Box, Button, TextField, Typography } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { AtemOptions, CasparCGOptions, DeviceType, OBSOptions } from 'timeline-state-resolver-types'
+import {
+	AtemOptions,
+	CasparCGOptions,
+	DeviceOptionsAny,
+	DeviceType,
+	OBSOptions,
+	OSCDeviceType,
+} from 'timeline-state-resolver-types'
 import { Bridge, BridgeDevice } from '../../../../models/project/Bridge'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
 import { ConnectionStatus } from '../../headerBar/deviceStatuses/ConnectionStatus'
+import { SelectEnum } from '../../inputs/SelectEnum'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -25,7 +33,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 	const [host, setHost] = useState('')
 	const [port, setPort] = useState(MIN_PORT)
 	const [password, setPassword] = useState('')
-	const deviceSettings = bridge.settings.devices[deviceId]
+	const deviceSettings = bridge.settings.devices[deviceId] as DeviceOptionsAny | undefined
 
 	const handleDeviceIdChange = useCallback(
 		(newId: string) => {
@@ -93,6 +101,12 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 		const deviceOptions = deviceSettings?.options as CasparCGOptions | AtemOptions
 		setHost(deviceOptions?.host ?? '')
 		setPort(deviceOptions?.port ?? MIN_PORT)
+
+		if (deviceSettings?.type === DeviceType.OBS) {
+			setPassword(deviceSettings.options?.password ?? '')
+		} else {
+			setPassword('')
+		}
 	}, [deviceSettings])
 
 	if (!deviceSettings) {
@@ -121,7 +135,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 						label="ID"
 						value={editedDeviceId}
 						size="small"
-						margin="normal"
+						margin="dense"
 						onChange={(event) => {
 							setEditedDeviceId(event.target.value)
 						}}
@@ -139,7 +153,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 						label="URL"
 						value={host}
 						size="small"
-						margin="normal"
+						margin="dense"
 						onChange={(event) => {
 							setHost(event.target.value)
 						}}
@@ -154,7 +168,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 						label="Port"
 						value={port}
 						size="small"
-						margin="normal"
+						margin="dense"
 						type="number"
 						InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
 						onChange={(event) => {
@@ -176,7 +190,7 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 							type="password"
 							value={password}
 							size="small"
-							margin="normal"
+							margin="dense"
 							onChange={(event) => {
 								setPassword(event.target.value)
 							}}
@@ -186,6 +200,21 @@ export const Device: React.FC<IDeviceProps> = ({ bridge, deviceId, device, editi
 							onKeyUp={(e) => {
 								if (e.key === 'Enter') handlePasswordChange(password)
 							}}
+						/>
+					</Box>
+				) : deviceSettings.type === DeviceType.OSC && deviceSettings.options ? (
+					<Box gridColumn="span 1">
+						<SelectEnum
+							label="Type"
+							fullWidth
+							currentValue={deviceSettings.options.type}
+							options={OSCDeviceType}
+							onChange={(v) => {
+								if (!deviceSettings.options) return
+								deviceSettings.options.type = v
+								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+							}}
+							allowUndefined={false}
 						/>
 					</Box>
 				) : (

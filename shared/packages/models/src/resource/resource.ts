@@ -1,14 +1,21 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
 import { OBSAny } from './OBS'
+import { OSCAny } from './OSC'
+import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
 
 	deviceId: string
-	id: string // Must be globally unique
+
+	/** Must be globally unique. */
+	id: string
+
+	/** Required because it is used to search/filter resources in the sidebar. Does not need to be unique. */
+	displayName: string
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',
@@ -32,4 +39,18 @@ export enum ResourceType {
 	OBS_SOURCE_SETTINGS = 'OBS_SOURCE_SETTINGS',
 	OBS_MUTE = 'OBS_MUTE',
 	OBS_RENDER = 'OBS_RENDER',
+
+	VMIX_INPUT = 'VMIX_INPUT',
+	VMIX_PREVIEW = 'VMIX_PREVIEW',
+	VMIX_INPUT_SETTINGS = 'VMIX_INPUT_SETTINGS',
+	VMIX_AUDIO_SETTINGS = 'VMIX_AUDIO_SETTINGS',
+	VMIX_OUTPUT_SETTINGS = 'VMIX_OUTPUT_SETTINGS',
+	VMIX_OVERLAY_SETTINGS = 'VMIX_OVERLAY_SETTINGS',
+	VMIX_RECORDING = 'VMIX_RECORDING',
+	VMIX_STREAMING = 'VMIX_STREAMING',
+	VMIX_EXTERNAL = 'VMIX_EXTERNAL',
+	VMIX_FADE_TO_BLACK = 'VMIX_FADE_TO_BLACK',
+	VMIX_FADER = 'VMIX_FADER',
+
+	OSC_MESSAGE = 'OSC_MESSAGE',
 }

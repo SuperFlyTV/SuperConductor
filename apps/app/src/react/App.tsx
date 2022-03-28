@@ -25,9 +25,8 @@ import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/Timeli
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
-import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
@@ -35,7 +34,7 @@ import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { HeaderBar } from './components/headerBar/HeaderBar'
 import { store } from './mobx/store'
-import { ProjectPage } from './components/pages/projectPage/ProjectPage'
+import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 
 /**
@@ -46,6 +45,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
+	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
 	const rundownsStore = store.rundownsStore
@@ -65,7 +65,6 @@ export const App = observer(() => {
 				setProject(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
-				console.log(activeTriggersToString(peripheralTriggers))
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 		})
@@ -99,7 +98,6 @@ export const App = observer(() => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		console.log('triggerSendAll')
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
 
@@ -154,27 +152,6 @@ export const App = observer(() => {
 		}
 	}, [timelineObjectMoveData])
 
-	const [partMoveData, setPartMoveData] = useState<PartMove>({
-		duplicate: null,
-		partId: null,
-		fromGroupId: null,
-		toGroupId: null,
-		position: null,
-		moveId: null,
-		done: null,
-	})
-	const partMoveContextValue = useMemo(() => {
-		return {
-			partMove: partMoveData,
-			updatePartMove: (newData: Partial<PartMove>) => {
-				setPartMoveData({
-					...partMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [partMoveData])
-
 	const gui = store.guiStore
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -193,9 +170,15 @@ export const App = observer(() => {
 	}
 
 	useEffect(() => {
-		sorensen.init().catch(console.error)
+		sorensen
+			.init()
+			.then(() => {
+				setSorensenInitialized(true)
+			})
+			.catch(console.error)
 	}, [])
 
+	const partMoveData = store.guiStore.partMove
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
 		if (!rundownsStore.currentRundown) {
 			return rundownsStore.currentRundown
@@ -323,7 +306,7 @@ export const App = observer(() => {
 		if (waitingForMovePartUpdate) {
 			return () => {
 				setWaitingForMovePartUpdate(false)
-				setPartMoveData({
+				store.guiStore.updatePartMove({
 					duplicate: null,
 					partId: null,
 					fromGroupId: null,
@@ -341,7 +324,7 @@ export const App = observer(() => {
 		triggers,
 	}
 
-	if (!project) {
+	if (!project || !sorensenInitialized) {
 		return <div>Loading...</div>
 	}
 
@@ -349,16 +332,17 @@ export const App = observer(() => {
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<IPCServerContext.Provider value={serverAPI}>
 				<ProjectContext.Provider value={project}>
-					<PartMoveContext.Provider value={partMoveContextValue}>
-						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-								<div className="app" onPointerDown={handlePointerDownAnywhere}>
-									<HeaderBar />
+					<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
+						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+								<HeaderBar />
 
-									{/* TODO - refactor */}
-									{store.guiStore.currentlyActiveTabSection === 'new-rundown' ? (
-										<NewRundownPage />
-									) : modifiedCurrentRundown ? (
+								{store.guiStore.isNewRundownSelected() ? (
+									<NewRundownPage />
+								) : store.guiStore.isHomeSelected() ? (
+									<HomePage project={project} />
+								) : (
+									modifiedCurrentRundown && (
 										<RundownContext.Provider value={modifiedCurrentRundown}>
 											<div className="main-area">
 												<RundownView mappings={project.mappings} />
@@ -367,13 +351,11 @@ export const App = observer(() => {
 												<Sidebar mappings={project.mappings} />
 											</div>
 										</RundownContext.Provider>
-									) : (
-										<ProjectPage project={project} />
-									)}
-								</div>
-							</ErrorHandlerContext.Provider>
-						</TimelineObjectMoveContext.Provider>
-					</PartMoveContext.Provider>
+									)
+								)}
+							</div>
+						</ErrorHandlerContext.Provider>
+					</TimelineObjectMoveContext.Provider>
 				</ProjectContext.Provider>
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>
