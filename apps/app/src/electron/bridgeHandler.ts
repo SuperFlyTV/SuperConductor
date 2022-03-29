@@ -416,7 +416,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 				}
 			}
 		})
-		this.connection.on('message', this.handleMessage)
+		this.connection.on('message', this.handleMessage.bind(this))
 	}
 	protected send(msg: BridgeAPI.FromTPT.Any) {
 		if (this.connection.connected) {
