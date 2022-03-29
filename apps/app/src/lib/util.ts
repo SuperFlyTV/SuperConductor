@@ -248,30 +248,40 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 }
 
 /**
- * @returns The index of the part which will be played next. Skips disabled parts. Returns -1 if there is no next part to play.
+ * @returns The index of the part which will be played next. Skips disabled parts. Accounts for looping. Returns -1 if there is no next part to play.
  */
 export function getNextPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex + 1; i < group.parts.length; i++) {
+
+	let startingI = currentPartIndex + 1
+	if (group.loop && startingI >= group.parts.length) startingI = 0
+
+	for (let i = startingI; i < group.parts.length; i++) {
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
 	}
+
 	return -1
 }
 
 /**
- * @returns The index of the part which will was previously played. Skips disabled parts. Returns -1 if there is no previous part.
+ * @returns The index of the part which will was previously played. Skips disabled parts. Accounts for looping. Returns -1 if there is no previous part.
  */
 export function getPrevPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex - 1; i > -1; i--) {
+
+	let startingI = currentPartIndex - 1
+	if (group.loop && startingI < 0) startingI = group.parts.length - 1
+
+	for (let i = startingI; i > -1; i--) {
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
 	}
+
 	return -1
 }
 
