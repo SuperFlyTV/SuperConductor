@@ -1,24 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useCallback, useState } from 'react'
-import { MdKeyboardArrowDown } from 'react-icons/md'
-import { Bridge as Temp2 } from '../../../settings/Bridge'
+import React, { useState } from 'react'
 import { Bridge, BridgeStatus } from '../../../../../models/project/Bridge'
-import {
-	DeviceOptionsAny,
-	DeviceOptionsAtem,
-	DeviceOptionsCasparCG,
-	DeviceOptionsOBS,
-	DeviceOptionsOSC,
-	DeviceOptionsVMix,
-	DeviceType,
-	OSCDeviceType,
-} from 'timeline-state-resolver-types'
-import './style.scss'
 import { RoundedSection } from '../roundedSection/RoundedSection'
 import { DevicesList } from '../deviceItem/DevicesList'
 import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
 import { NewDeviceDialog } from '../../../settings/devices/NewDeviceDialog'
-import { literal } from '@shared/lib'
+
+import './style.scss'
 
 export const BridgeItemContent: React.FC<{
 	id: string

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
 import { Bridge, BridgeStatus } from '../../../../../models/project/Bridge'
 import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
@@ -26,11 +25,19 @@ export const BridgeItemHeader: React.FC<{
 			</div>
 			<div className="device-statuses">
 				<div className="label">Device statuses:</div>
-				{Object.entries(props.bridgeStatus?.devices).map(([deviceId, device]) => {
-					const deviceSettings = props.bridge.settings.devices[deviceId]
+				{Object.entries(props.bridgeStatus?.devices)
+					/**
+					 * Temporary fix - just like in DevicesList.tsx.
+					 * TODO - fix this bug on the backend side.
+					 */
+					.filter(([id]) => {
+						return props.bridge.settings.devices[id]
+					})
+					.map(([deviceId, device]) => {
+						const deviceSettings = props.bridge.settings.devices[deviceId]
 
-					return <DeviceShortcut key={deviceId} device={device} type={deviceSettings?.type} />
-				})}
+						return <DeviceShortcut key={deviceId} device={device} type={deviceSettings?.type} />
+					})}
 			</div>
 		</div>
 	)
