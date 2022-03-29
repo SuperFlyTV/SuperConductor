@@ -1,0 +1,44 @@
+.message {
+	background: linear-gradient(180deg, #383a45 0%, #393a45 100%);
+	font-size: 1.2rem;
+	padding: 1rem 2rem;
+	display: flex;
+	border-radius: 0.5rem;
+	align-items: center;
+
+	.icon {
+		flex-grow: 0;
+		margin-right: 1rem;
+		display: flex;
+		align-items: center;
+
+		svg {
+			width: 2rem;
+			height: 2rem;
+		}
+	}
+	.content {
+		flex-grow: 1;
+		// margin-top: 0.2rem;
+	}
+
+	button.close {
+		background: none;
+		padding: 0;
+		border: 0;
+		color: white;
+		opacity: 0.7;
+		display: flex;
+		align-items: center;
+		margin-left: 1rem;
+
+		&:hover {
+			opacity: 1;
+		}
+
+		svg {
+			width: 1.5rem;
+			height: 1.5rem;
+		}
+	}
+}

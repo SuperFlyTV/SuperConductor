@@ -25,7 +25,7 @@ import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/Timeli
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
 import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
@@ -66,7 +66,6 @@ export const App = observer(() => {
 				setProject(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
-				console.log(activeTriggersToString(peripheralTriggers))
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 		})
@@ -100,7 +99,6 @@ export const App = observer(() => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		console.log('triggerSendAll')
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
 

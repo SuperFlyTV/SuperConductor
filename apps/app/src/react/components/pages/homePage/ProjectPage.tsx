@@ -14,6 +14,7 @@ import { Project } from '../../../../models/project/Project'
 import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
 import { RoundedSection } from './roundedSection/RoundedSection'
+import { ScList } from './scList/ScList'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 	const serverAPI = useContext(IPCServerContext)
@@ -40,25 +41,28 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
 		>
 			<RoundedSection title="Rundowns archive">
-				<ul className="sc-list">
-					{rundownsStore.closedRundowns.map((closedRundown) => {
-						return (
-							<li key={closedRundown.rundownId}>
-								<div className="label">
-									<div className="title">{closedRundown.name}</div>
-								</div>
-								<div className="controls">
-									<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
-									<TextBtn
-										label="Permanently delete"
-										style="danger"
-										onClick={() => handleReopen(closedRundown.rundownId)}
-									/>
-								</div>
-							</li>
-						)
+				<ScList
+					list={rundownsStore.closedRundowns.map((closedRundown) => {
+						return {
+							id: closedRundown.rundownId,
+							header: (
+								<>
+									<div className="label">
+										<div className="title">{closedRundown.name}</div>
+									</div>
+									<div className="controls">
+										<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+										<TextBtn
+											label="Permanently delete"
+											style="danger"
+											onClick={() => handleReopen(closedRundown.rundownId)}
+										/>
+									</div>
+								</>
+							),
+						}
 					})}
-				</ul>
+				/>
 			</RoundedSection>
 
 			<div className="rundowns-page"></div>

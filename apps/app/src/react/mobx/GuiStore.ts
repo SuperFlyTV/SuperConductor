@@ -4,14 +4,14 @@ import { makeAutoObservable } from 'mobx'
  * Store contains only information about user interface
  */
 
-export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
+export type HomePageId = 'project' | 'bridgeSettings' | 'mappingsSettings'
 export class GuiStore {
 	selectedGroupId?: string
 	selectedPartId?: string
 	selectedTimelineObjIds: string[] = []
 
 	activeTabId = 'home'
-	activeHomePageId = 'project'
+	activeHomePageId = 'bridgeSettings'
 
 	goToHome(pageId?: HomePageId) {
 		this.activeTabId = 'home'

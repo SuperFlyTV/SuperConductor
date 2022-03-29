@@ -1,0 +1,13 @@
+.device-shortcut {
+	display: flex;
+	align-items: center;
+	margin-right: 1.5rem;
+
+	.status-circle {
+		margin-right: 0.5rem;
+	}
+
+	img {
+		max-height: 2rem;
+	}
+}

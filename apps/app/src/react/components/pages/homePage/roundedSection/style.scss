@@ -1,43 +1,22 @@
 $borderColor: rgba(176, 176, 176, 0.5);
 
-ul.sc-list {
-	list-style: none;
-	padding: 0;
-	margin: 0;
+.rounded-section-message {
+	// MUI Switch
+	.switch {
+		display: block !important;
+		text-align: center;
+		margin: 0 !important;
+		padding: 0 !important;
+		padding-bottom: 2rem !important;
+		background: transparent !important;
 
-	> li {
-		display: flex;
-		justify-content: space-between;
-		height: 4.2rem;
-		align-items: center;
-		padding: 0 2rem;
-
-		&:nth-child(even) {
-			background: rgba(255, 255, 255, 0.03);
+		.MuiSwitch-root {
+			// display: block;
+			margin-bottom: -0.5rem;
 		}
 
-		&:hover {
-			background: rgba(255, 255, 255, 0.1);
-
-			.controls {
-				display: block;
-			}
-		}
-
-		.label {
-			.title {
-				font-weight: 600;
-				font-size: 1.4rem;
-				color: rgba(255, 255, 255, 0.8);
-			}
-		}
-
-		.controls {
-			display: none;
-
-			button:not(:last-child) {
-				margin-right: 1rem;
-			}
+		.MuiTypography-root {
+			display: block;
 		}
 	}
 }
@@ -45,8 +24,9 @@ ul.sc-list {
 .rounded-section {
 	margin-bottom: 2rem;
 	position: relative;
+	margin-top: 1.2rem;
 
-	.header {
+	> .header {
 		display: flex;
 		align-items: center;
 		width: 100%;
@@ -55,7 +35,7 @@ ul.sc-list {
 		padding: 0 1.4rem;
 		height: 2.4rem;
 
-		.title {
+		> .title {
 			flex-grow: 0;
 			padding: 0 1rem;
 			font-size: 1.4rem;
@@ -63,21 +43,52 @@ ul.sc-list {
 			color: rgba(255, 255, 255, 0.8);
 		}
 
-		.fake-border {
+		> .controls {
+			margin-right: 1rem;
+		}
+
+		> .fake-border {
 			height: 0.1rem;
 			flex-grow: 1;
 			background: $borderColor;
 		}
+
+		> button.help {
+			padding: 0;
+			background: transparent;
+			color: $borderColor;
+			border: 0;
+			margin-top: 0.4rem;
+
+			&:hover,
+			&.open {
+				color: #a5a5a5;
+			}
+
+			svg {
+				width: 1.6rem;
+				height: 1.6rem;
+			}
+		}
 	}
 
-	.border-cropper {
+	> .border-cropper {
 		overflow: hidden;
 
-		.border {
+		> .border {
 			border-radius: 2rem;
 			border: 1px solid $borderColor;
-			padding: 3rem 0;
+			padding: 3rem 0 2.5rem;
 			margin-top: -0.1rem;
+
+			> .message-wrapper {
+				padding: 0rem 2rem 2rem 2rem;
+			}
+
+			> .central {
+				padding: 2rem;
+				text-align: center;
+			}
 		}
 	}
 }

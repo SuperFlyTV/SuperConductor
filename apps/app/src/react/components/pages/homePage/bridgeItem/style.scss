@@ -1,0 +1,21 @@
+.bridge-item-header {
+	display: flex;
+	align-items: center;
+
+	> .header-label {
+		border-right: 0.2rem solid rgba(255, 255, 255, 0.3);
+		padding-right: 2rem;
+		margin-right: 2rem;
+	}
+
+	.device-statuses {
+		display: flex;
+		align-items: center;
+
+		> .label {
+			font-size: 1.2rem;
+			color: rgba(255, 255, 255, 0.7);
+			margin-right: 1.5rem;
+		}
+	}
+}

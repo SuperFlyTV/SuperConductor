@@ -1,10 +1,8 @@
 import classNames from 'classnames'
 import React, { useState } from 'react'
-import { IoClose } from 'react-icons/io5'
 import { FiHelpCircle } from 'react-icons/fi'
-
+import { Message } from '../message/Message'
 import './style.scss'
-import { IoIosHelpCircleOutline } from 'react-icons/io'
 
 // WIP
 export const ProjectPageLayout: React.FC<{
@@ -34,17 +32,7 @@ export const ProjectPageLayout: React.FC<{
 					</button>
 				)}
 			</div>
-			{showHelp && props.help && (
-				<div className="message help">
-					<div className="icon">
-						<IoIosHelpCircleOutline />
-					</div>
-					<div className="content">{props.help}</div>
-					<button className="close" onClick={() => setShowHelp(false)}>
-						<IoClose />
-					</button>
-				</div>
-			)}
+			{showHelp && props.help && <Message type="help" content={props.help} onClose={() => setShowHelp(false)} />}
 			<div className="content">{props.children}</div>
 		</div>
 	)
