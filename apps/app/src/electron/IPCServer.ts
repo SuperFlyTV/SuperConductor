@@ -1950,6 +1950,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		// Find all timeline objects which reside on the missing layer.
 		const createdMappings: { [mappingId: string]: Mapping } = {}
+
 		for (const group of rundown.groups) {
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
@@ -1957,12 +1958,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 						if (!timelineObj.resourceId)
 							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
 
+						let deviceId: string | undefined
 						const resource = this.session.getResource(timelineObj.resourceId)
-						if (!resource) continue
+						if (resource) {
+							deviceId = resource.deviceId
+						}
+						if (!deviceId) {
+							// Pick the first compatible deviceId we find:
+							for (const bridge of Object.values(project.bridges)) {
+								if (deviceId) break
+								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
+									if (device.type === timelineObj.obj.content.deviceType) {
+										deviceId = findDeviceId
+										break
+									}
+								}
+							}
+						}
 
-						const newMapping = getMappingFromTimelineObject(timelineObj.obj, resource.deviceId)
-						if (newMapping && newMapping.layerName) {
-							createdMappings[newMapping.layerName] = newMapping
+						if (!deviceId) continue
+
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId)
+						if (newMapping) {
+							createdMappings[data.mappingId] = newMapping
 						}
 					}
 				}
