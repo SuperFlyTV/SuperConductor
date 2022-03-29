@@ -1992,6 +1992,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			case 0:
 				throw new Error('No mapping could be automatically created.')
 			case 1: {
+				newLayerId = Object.keys(createdMappings)[0]
 				const newMapping = Object.values(createdMappings)[0]
 
 				if (!newMapping.layerName) {
@@ -1999,7 +2000,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				}
 
 				// Add the new layer to the project
-				newLayerId = this.storage.convertToFilename(newMapping.layerName)
 				project.mappings = {
 					...project.mappings,
 					[newLayerId]: newMapping,
