@@ -141,7 +141,12 @@ export class TSR {
 					delete this.sideLoadedDevices[deviceId]
 				}
 
-				await this.conductor.removeDevice(deviceId)
+				// HACK: There are some scenarios in which this method will never return.
+				// For example, when trying to remove a CasparCG device that has never connected.
+				// So, to prevent this code from being blocked indefinitely waiting for this promise
+				// to resolve, we instead let it run async.
+				this.conductor.removeDevice(deviceId).catch((e) => this.log?.error(e))
+
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
 				this.reportRemovedDevice(deviceId)
