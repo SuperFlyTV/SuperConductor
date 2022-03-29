@@ -23,22 +23,26 @@ export const BridgeItemHeader: React.FC<{
 				<div className="title">{props.bridge.name}</div>
 				<div className="subtitle">{props.bridge.url}</div>
 			</div>
-			<div className="device-statuses">
-				<div className="label">Device statuses:</div>
-				{Object.entries(props.bridgeStatus?.devices)
-					/**
-					 * Temporary fix - just like in DevicesList.tsx.
-					 * TODO - fix this bug on the backend side.
-					 */
-					.filter(([id]) => {
-						return props.bridge.settings.devices[id]
-					})
-					.map(([deviceId, device]) => {
-						const deviceSettings = props.bridge.settings.devices[deviceId]
+			{Object.entries(props.bridgeStatus?.devices).filter(([id]) => {
+				return props.bridge.settings.devices[id]
+			}).length > 0 && (
+				<div className="device-statuses">
+					<div className="label">Device statuses:</div>
+					{Object.entries(props.bridgeStatus?.devices)
+						/**
+						 * Temporary fix - just like in DevicesList.tsx.
+						 * TODO - fix this bug on the backend side.
+						 */
+						.filter(([id]) => {
+							return props.bridge.settings.devices[id]
+						})
+						.map(([deviceId, device]) => {
+							const deviceSettings = props.bridge.settings.devices[deviceId]
 
-						return <DeviceShortcut key={deviceId} device={device} type={deviceSettings?.type} />
-					})}
-			</div>
+							return <DeviceShortcut key={deviceId} device={device} type={deviceSettings?.type} />
+						})}
+				</div>
+			)}
 		</div>
 	)
 }

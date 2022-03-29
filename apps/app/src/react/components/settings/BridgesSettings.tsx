@@ -119,6 +119,31 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 				help="This is a list of Bridges that SuperConductor will connect to"
 				controls={<TextBtn label="Add" onClick={addBridge} />}
 			>
+				<ScList
+					list={outgoingBridges
+						.filter((bridge) => bridgeStatuses[bridge.id])
+						.map((bridge) => {
+							return {
+								id: bridge.id,
+								header: (
+									<BridgeItemHeader
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+								content: (
+									<BridgeItemContent
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+							}
+						})}
+				/>
+
+				{/* TODO - delete old list */}
 				{outgoingBridges.map((bridge) => (
 					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
 				))}
