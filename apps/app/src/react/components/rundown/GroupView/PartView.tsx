@@ -165,8 +165,12 @@ export const PartView: React.FC<{
 
 				setWaitingForBackendUpdate(false)
 				gui.updateTimelineObjMove({
+					moveType: null,
+					wasMoved: null,
 					partId: null,
-					moveId: undefined,
+					hoveredLayerId: null,
+					hoveredPartId: null,
+					moveId: null,
 				})
 			}
 		}
@@ -216,7 +220,7 @@ export const PartView: React.FC<{
 				newObjectsToMoveToNewLayer = [leaderObj.obj.id]
 			} else if (
 				(dragDelta || leaderObjLayerChanged) &&
-				timelineObjMove.partId === part.id &&
+				timelineObjMove.hoveredPartId === part.id &&
 				leaderObj &&
 				timelineObjMove.leaderTimelineObjId &&
 				timelineObjMove.moveId !== null &&
@@ -229,8 +233,8 @@ export const PartView: React.FC<{
 				if (moveToLayerId) {
 					const newLayerMapping = project.mappings[moveToLayerId]
 					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+						// handleError(`Unable to move to that layer "${moveToLayerId}" (incompatible layer type)`)
 						moveToLayerId = null
-						handleError('Unable to move to that layer (incompatible layer type)')
 					}
 				}
 

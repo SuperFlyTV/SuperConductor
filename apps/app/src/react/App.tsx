@@ -28,7 +28,7 @@ import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
 import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
-import { allowMovingItemIntoGroup } from '../lib/util'
+import { allowMovingItemIntoGroup, findPartInRundown, findTimelineObj } from '../lib/util'
 import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { HeaderBar } from './components/headerBar/HeaderBar'
@@ -167,7 +167,35 @@ export const App = observer(() => {
 
 		const modifiedRundown = deepClone(rundownsStore.currentRundown)
 
-		if (gui.groupMove.groupId) {
+		if (
+			gui.timelineObjMove.leaderTimelineObjId &&
+			gui.timelineObjMove.partId !== null &&
+			gui.timelineObjMove.hoveredPartId !== null &&
+			gui.timelineObjMove.partId !== gui.timelineObjMove.hoveredPartId
+		) {
+			// Handle moving a timelineObj to another Part
+
+			// Find the source and destination Parts
+			const findSrcResult = findPartInRundown(modifiedRundown, gui.timelineObjMove.partId)
+			if (!findSrcResult) return rundownsStore.currentRundown
+			const srcPart = findSrcResult.part
+
+			const findDestResult = findPartInRundown(modifiedRundown, gui.timelineObjMove.hoveredPartId)
+			if (!findDestResult) return rundownsStore.currentRundown
+			const destPart = findDestResult.part
+
+			// Remove the timelineObj from its original Part
+			const timelineObj = findTimelineObj(srcPart, gui.timelineObjMove.leaderTimelineObjId)
+			if (!timelineObj) return rundownsStore.currentRundown
+			srcPart.timeline = srcPart.timeline.filter((obj) => obj.obj.id !== gui.timelineObjMove.leaderTimelineObjId)
+
+			// Add the timelineObj to its new Part
+			destPart.timeline.push(timelineObj)
+
+			return modifiedRundown
+		} else if (gui.groupMove.groupId) {
+			// Handle Group moves
+
 			if (typeof gui.groupMove.position !== 'number') {
 				return rundownsStore.currentRundown
 			}
@@ -185,6 +213,8 @@ export const App = observer(() => {
 
 			return modifiedRundown
 		} else if (partMoveData.partId) {
+			// Handle Part moves
+
 			if (typeof partMoveData.position !== 'number') {
 				return rundownsStore.currentRundown
 			}
@@ -262,6 +292,9 @@ export const App = observer(() => {
 		return rundownsStore.currentRundown
 	}, [
 		rundownsStore.currentRundown,
+		gui.timelineObjMove.leaderTimelineObjId,
+		gui.timelineObjMove.partId,
+		gui.timelineObjMove.hoveredPartId,
 		gui.groupMove.groupId,
 		gui.groupMove.position,
 		partMoveData.partId,

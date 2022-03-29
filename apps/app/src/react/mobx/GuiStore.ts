@@ -24,6 +24,8 @@ export interface TimelineObjectMove {
 	partId: null | string
 	/** The corresponding layer ID of the layer element that the user's mouse is hovering over. null = not over a valid layer */
 	hoveredLayerId: null | string
+	/** The ID of the Part that the user's mouse is hovering over. null = not over a valid Part */
+	hoveredPartId: null | string
 	/** The current client X position of the pointer [pixels] */
 	pointerX?: number
 	/** The current client Y position of the pointer [pixels] */
@@ -97,6 +99,7 @@ export class GuiStore {
 		wasMoved: null,
 		partId: null,
 		hoveredLayerId: null,
+		hoveredPartId: null,
 		moveId: null,
 	}
 

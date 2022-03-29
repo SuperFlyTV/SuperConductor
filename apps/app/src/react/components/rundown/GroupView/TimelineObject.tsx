@@ -1,7 +1,6 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-// import { GUIContext } from '../../../contexts/GUI'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
@@ -27,8 +26,6 @@ export const TimelineObject: React.FC<{
 	locked?: boolean
 	warnings?: string[]
 }> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked, warnings }) => {
-	// const { gui, updateGUI } = useContext(GUIContext)
-
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove
 
@@ -98,7 +95,6 @@ export const TimelineObject: React.FC<{
 
 		const update: Partial<TimelineObjectMove> = {
 			wasMoved: null,
-			partId,
 			leaderTimelineObjId: timelineObj.obj.id,
 			moveType,
 			dragDelta: deltaX * msPerPixel,
@@ -113,12 +109,12 @@ export const TimelineObject: React.FC<{
 		const hoveredPartEl = hoveredEl?.closest('.part')
 		if (hoveredPartEl) {
 			const hoveredPartId = hoveredPartEl.getAttribute('data-part-id')
-			if (hoveredPartId === partId) {
-				const hoveredLayerEl = hoveredEl?.closest('.layer')
-				if (hoveredLayerEl) {
-					const hoveredLayerId = hoveredLayerEl.getAttribute('data-layer-id')
-					update.hoveredLayerId = hoveredLayerId
-				}
+			update.hoveredPartId = hoveredPartId
+
+			const hoveredLayerEl = hoveredEl?.closest('.layer')
+			if (hoveredLayerEl) {
+				const hoveredLayerId = hoveredLayerEl.getAttribute('data-layer-id')
+				update.hoveredLayerId = hoveredLayerId
 			}
 		}
 
@@ -147,11 +143,21 @@ export const TimelineObject: React.FC<{
 			// A move has begun.
 
 			setHandledMoveStart(true)
+
+			if (gui.timelineObjMove.moveId) {
+				// A move is already ongoing. This case happens when moving a timelineObj between Parts.
+				return
+			}
+
+			console.log(partId, 'move started')
+
 			gui.updateTimelineObjMove({
 				moveId: short.generate(),
+				partId,
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.
+			console.log(partId, 'move completed')
 
 			setHandledMoveStart(false)
 			gui.updateTimelineObjMove({
@@ -159,7 +165,7 @@ export const TimelineObject: React.FC<{
 				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [gui, handledMoveStart, isMoved, locked, timelineObjMove.moveType])
+	}, [gui, handledMoveStart, isMoved, locked, partId, timelineObjMove.moveType])
 
 	const updateSelection = () => {
 		if (
@@ -170,9 +176,6 @@ export const TimelineObject: React.FC<{
 			if (allowMultiSelection) {
 				// Deselect this timelineObj.
 				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
-				// updateGUI({
-				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-				// })
 			}
 
 			return
@@ -182,29 +185,16 @@ export const TimelineObject: React.FC<{
 			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
 				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
 					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
-					// updateGUI({
-					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-					// })
 				}
 			} else {
 				store.guiStore.selectedGroupId = groupId
 				store.guiStore.selectedPartId = partId
 				store.guiStore.selectedTimelineObjIds = [obj.id]
-				// updateGUI({
-				// 	selectedGroupId: groupId,
-				// 	selectedPartId: partId,
-				// 	selectedTimelineObjIds: [obj.id],
-				// })
 			}
 		} else {
 			store.guiStore.selectedGroupId = groupId
 			store.guiStore.selectedPartId = partId
 			store.guiStore.selectedTimelineObjIds = [obj.id]
-			// updateGUI({
-			// 	selectedGroupId: groupId,
-			// 	selectedPartId: partId,
-			// 	selectedTimelineObjIds: [obj.id],
-			// })
 		}
 	}
 
