@@ -206,7 +206,7 @@ export async function drawKeyDisplay(
 	keyDisplay: KeyDisplay,
 	darkBG = false
 ) {
-	const fontsize = 20
+	const fontsize = 16
 	const padding = 5
 	const SIZE = streamDeck.ICON_SIZE
 
