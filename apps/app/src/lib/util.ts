@@ -253,13 +253,35 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 export function getNextPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
+	/**
+	 * Whether or not we've looped through the end of the group back
+	 * to the beginning of it in our search for the next part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
 	let startingI = currentPartIndex + 1
-	if (group.loop && startingI >= group.parts.length) startingI = 0
+	if (startingI >= group.parts.length) {
+		startingI = 0
+	}
 
 	for (let i = startingI; i < group.parts.length; i++) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
+		}
+
+		const isAtEnd = i === group.parts.length - 1
+		if (isAtEnd && group.loop && !looped) {
+			i = -1
+			looped = true
 		}
 	}
 
@@ -272,13 +294,35 @@ export function getNextPartIndex(group: Group): number {
 export function getPrevPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
+	/**
+	 * Whether or not we've looped through the beginning of the group back
+	 * to the end of it in our search for the previous part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
 	let startingI = currentPartIndex - 1
-	if (group.loop && startingI < 0) startingI = group.parts.length - 1
+	if (startingI < 0) {
+		startingI = group.parts.length - 1
+	}
 
 	for (let i = startingI; i > -1; i--) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
+		}
+
+		const isAtStart = i === 0
+		if (isAtStart && group.loop && !looped) {
+			i = group.parts.length
+			looped = true
 		}
 	}
 
