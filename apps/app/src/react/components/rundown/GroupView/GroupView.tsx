@@ -383,7 +383,7 @@ export const GroupView: React.FC<{
 	}
 
 	// Step down button:
-	const nextPartIndex = getNextPartIndex(group)
+	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
 	const nextPart = group.parts[nextPartIndex]
 	const canStepDown = !group.disabled && playhead.anyPartIsPlaying && Boolean(nextPart)
 	const handleStepDown = () => {
@@ -391,7 +391,7 @@ export const GroupView: React.FC<{
 	}
 
 	// Step down up:
-	const prevPartIndex = getPrevPartIndex(group)
+	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
 	const prevPart = group.parts[prevPartIndex]
 	const canStepUp = !group.disabled && playhead.anyPartIsPlaying && Boolean(prevPart)
 	const handleStepUp = () => {
