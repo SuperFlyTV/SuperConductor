@@ -2,7 +2,7 @@
 	"name": "superconductor",
 	"private": true,
 	"version": "0.5.0",
-	"description": "",
+	"description": "A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!",
 	"main": "dist/main.js",
 	"engines": {
 		"node": "^12.20 || ^14.15.3 || 16"
