@@ -1,6 +1,7 @@
 import React from 'react'
 import { Bridge, BridgeStatus } from '../../../../../models/project/Bridge'
 import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
+import { ScListItemLabel } from '../scList/ScListItemLabel'
 import { StatusCircle } from '../scList/StatusCircle'
 
 import './style.scss'
@@ -19,10 +20,8 @@ export const BridgeItemHeader: React.FC<{
 	return (
 		<div className="bridge-item-header">
 			<StatusCircle status={props.bridgeStatus.connected ? 'connected' : 'disconnected'} />
-			<div className="header-label">
-				<div className="title">{props.bridge.name}</div>
-				<div className="subtitle">{props.bridge.url}</div>
-			</div>
+			<ScListItemLabel title={props.bridge.name} subtitle={props.bridge.url} />
+
 			{Object.entries(props.bridgeStatus?.devices).filter(([id]) => {
 				return props.bridge.settings.devices[id]
 			}).length > 0 && (

@@ -10,30 +10,25 @@ export const ScList: React.FC<{ list: { id: string; header: React.ReactNode; con
 	return (
 		<ul className="sc-list">
 			{props.list.map((item) => {
-				if (item.content) {
-					return <ScListItem key={item.id} id={item.id} header={item.header} content={item.content} />
-				}
-				return <li key={item.id}>{item.header}</li>
+				return <ScListItem key={item.id} id={item.id} header={item.header} content={item.content} />
 			})}
 		</ul>
 	)
 }
 
 export const ScListItem: React.FC<{ id: string; header: React.ReactNode; content?: React.ReactNode }> = (props) => {
-	const [isOpen, setOpen] = useState(true)
+	const [isOpen, setOpen] = useState(false)
 
-	if (props.content) {
-		return (
-			<li className={classNames('sc-list-item', { open: isOpen })}>
-				<div className="header" onClick={() => setOpen(!isOpen)}>
-					<div className="arrow">
-						<MdKeyboardArrowDown />
-					</div>
-					<div className="header-content">{props.header}</div>
+	return (
+		<li className={classNames('sc-list-item', { open: isOpen, openable: !!props.content })}>
+			<div className="sc-list-item__header" onClick={() => setOpen(!isOpen)}>
+				<div className="arrow">
+					<MdKeyboardArrowDown />
 				</div>
-				{isOpen && <div className="content">{props.content}</div>}
-			</li>
-		)
-	}
-	return <li className="sc-list-item">{props.header}</li>
+				<div className="sc-list-item__header__content">{props.header}</div>
+			</div>
+
+			{props.content && isOpen && <div className="sc-list-item__content">{props.content}</div>}
+		</li>
+	)
 }

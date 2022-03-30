@@ -2,7 +2,7 @@
 	display: flex;
 	align-items: center;
 	margin-right: 1.7rem;
-	width: 3.6rem;
+	min-width: 4.5rem;
 
 	.status-circle {
 		margin-right: 0.8rem;
@@ -10,5 +10,6 @@
 
 	img {
 		max-height: 2rem;
+		max-width: 3rem;
 	}
 }

@@ -144,10 +144,10 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 				/>
 
 				{/* TODO - delete old list */}
-				{outgoingBridges.map((bridge) => (
+				{/* {outgoingBridges.map((bridge) => (
 					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
 				))}
-				{outgoingBridges.length === 0 && <div className="central">There are no outgoing bridges.</div>}
+				{outgoingBridges.length === 0 && <div className="central">There are no outgoing bridges.</div>} */}
 			</RoundedSection>
 		</>
 	)

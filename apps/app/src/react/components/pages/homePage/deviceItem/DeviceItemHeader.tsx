@@ -4,6 +4,7 @@ import { AtemOptions, CasparCGOptions } from 'timeline-state-resolver-types'
 
 import './style.scss'
 import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
+import { ScListItemLabel } from '../scList/ScListItemLabel'
 
 export const DeviceItemHeader: React.FC<{
 	bridge: Bridge
@@ -22,12 +23,9 @@ export const DeviceItemHeader: React.FC<{
 	const deviceAddress = `${deviceOptions.host}:${deviceOptions.port}`
 
 	return (
-		<div className="device-item-header">
+		<div className="device-item-header openable">
 			<DeviceShortcut device={props.device} type={deviceSettings.type} />
-			<div className="header-label">
-				<div className="title">{props.deviceId}</div>
-				<div className="subtitle">{deviceAddress}</div>
-			</div>
+			<ScListItemLabel title={props.deviceId} subtitle={deviceAddress} />
 			<div className="status">
 				{props.device.ok ? 'Connected' : props.device.message ? props.device.message : 'Not Connected'}
 			</div>

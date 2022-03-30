@@ -183,7 +183,6 @@ export const DeviceItemContent: React.FC<{
 					<Box gridColumn="span 1">
 						<SelectEnum
 							label="Type"
-							fullWidth
 							currentValue={deviceSettings.options.type}
 							options={OSCDeviceType}
 							onChange={(v) => {

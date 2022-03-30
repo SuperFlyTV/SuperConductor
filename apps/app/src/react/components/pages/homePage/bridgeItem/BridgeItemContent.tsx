@@ -55,8 +55,6 @@ export const BridgeItemContent: React.FC<{
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
 
-	console.log('props.')
-
 	return (
 		<div className="content">
 			{!props.isInternal && (

@@ -1,20 +1,23 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useState } from 'react'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { store } from '../../../mobx/store'
+import { TrashBtn } from '../../../inputs/TrashBtn'
+import { store } from '../../../../mobx/store'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import * as Yup from 'yup'
 
-import { ProjectPageLayout } from './projectPageLayout/ProjectPageLayout'
-import { TextBtn } from '../../inputs/textBtn/TextBtn'
-import { Project } from '../../../../models/project/Project'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
+import { TextBtn } from '../../../inputs/textBtn/TextBtn'
+import { Project } from '../../../../../models/project/Project'
 import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
-import { RoundedSection } from './roundedSection/RoundedSection'
-import { ScList } from './scList/ScList'
+import { RoundedSection } from '../roundedSection/RoundedSection'
+import { ScList } from '../scList/ScList'
+import { ScListItemLabel } from '../scList/ScListItemLabel'
+
+import './style.scss'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 	const serverAPI = useContext(IPCServerContext)
@@ -46,10 +49,8 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 						return {
 							id: closedRundown.rundownId,
 							header: (
-								<>
-									<div className="label">
-										<div className="title">{closedRundown.name}</div>
-									</div>
+								<div className="rundown-header-item">
+									<ScListItemLabel title={closedRundown.name} />
 									<div className="controls">
 										<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
 										<TextBtn
@@ -58,7 +59,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 											onClick={() => handleReopen(closedRundown.rundownId)}
 										/>
 									</div>
-								</>
+								</div>
 							),
 						}
 					})}
