@@ -6,9 +6,9 @@ import { store } from '../../../mobx/store'
 import { ProjectPage } from './projectPage/ProjectPage'
 import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
-import { BridgesPage } from './BridgesPage'
 import { MappingsPage } from './MappingsPage'
 import { HomePageId } from 'src/react/mobx/GuiStore'
+import { BridgesPage } from './bridgesPage/BridgesPage'
 
 export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 	const activeHomePageId = store.guiStore.activeHomePageId
@@ -39,7 +39,7 @@ export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 						items: [
 							{ id: 'project', label: 'Project' },
 							{
-								id: 'bridgeSettings',
+								id: 'bridgesSettings',
 								label: 'Brigdes',
 							},
 							{
@@ -51,7 +51,7 @@ export const HomePage: React.FC<{ project: Project }> = observer((props) => {
 				]}
 			/>
 			{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
-			{activeHomePageId === 'bridgeSettings' && <BridgesPage project={props.project} />}
+			{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}
 			{activeHomePageId === 'mappingsSettings' && <MappingsPage project={props.project} />}
 		</div>
 	)

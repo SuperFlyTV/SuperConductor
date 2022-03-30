@@ -11,7 +11,7 @@ export const ProjectPageLayout: React.FC<{
 	help?: React.ReactNode
 	controls?: React.ReactNode
 }> = (props) => {
-	const [showHelp, setShowHelp] = useState(true)
+	const [showHelp, setShowHelp] = useState(false)
 
 	return (
 		<div className="main">

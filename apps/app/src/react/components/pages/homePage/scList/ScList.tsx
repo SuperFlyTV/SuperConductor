@@ -21,10 +21,17 @@ export const ScListItem: React.FC<{ id: string; header: React.ReactNode; content
 
 	return (
 		<li className={classNames('sc-list-item', { open: isOpen, openable: !!props.content })}>
-			<div className="sc-list-item__header" onClick={() => setOpen(!isOpen)}>
-				<div className="arrow">
-					<MdKeyboardArrowDown />
-				</div>
+			<div
+				className="sc-list-item__header"
+				onClick={() => {
+					if (props.content) setOpen(!isOpen)
+				}}
+			>
+				{props.content && (
+					<div className="arrow">
+						<MdKeyboardArrowDown />
+					</div>
+				)}
 				<div className="sc-list-item__header__content">{props.header}</div>
 			</div>
 

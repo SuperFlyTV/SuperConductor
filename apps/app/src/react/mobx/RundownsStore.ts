@@ -22,8 +22,7 @@ export class RundownsStore {
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateRundown: (rundownId: string, rundown: Rundown) => {
-			// TODO - REVERT THIS BACK!
-			// store.guiStore.activeTabId = rundownId
+			store.guiStore.activeTabId = rundownId
 			this.currentRundownId = rundownId
 			this.currentRundown = rundown
 		},

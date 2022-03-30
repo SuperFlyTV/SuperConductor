@@ -1,25 +1,22 @@
 import React, { useCallback, useContext, useMemo } from 'react'
-import { Bridge as BridgeType, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
-import { Project } from '../../../models/project/Project'
+import { Bridge as BridgeType, INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
+import { Project } from '../../../../../models/project/Project'
 import { FormControlLabel, Switch } from '@mui/material'
-import { Bridge } from './Bridge'
+import { Bridge } from '../../../settings/Bridge'
 import { literal } from '@shared/lib'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../contexts/IPCServer'
-import { store } from '../../mobx/store'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { store } from '../../../../mobx/store'
 import { observer } from 'mobx-react-lite'
-import { RoundedSection } from '../pages/homePage/roundedSection/RoundedSection'
-import { TextBtn } from '../inputs/textBtn/TextBtn'
-import { ScList } from '../pages/homePage/scList/ScList'
-import { BridgeItemHeader } from '../pages/homePage/bridgeItem/BridgeItemHeader'
-import { BridgeItemContent } from '../pages/homePage/bridgeItem/BridgeItemContent'
+import { RoundedSection } from '../roundedSection/RoundedSection'
+import { TextBtn } from '../../../inputs/textBtn/TextBtn'
+import { ScList } from '../scList/ScList'
+import { BridgeItemHeader } from '../bridgeItem/BridgeItemHeader'
+import { BridgeItemContent } from '../bridgeItem/BridgeItemContent'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 
-interface IBridgesSettingsProps {
-	project: Project
-}
-
-export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ project }) => {
+export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
@@ -68,7 +65,10 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 	}, [handleError, ipcServer, project])
 
 	return (
-		<>
+		<ProjectPageLayout
+			title="Bridges"
+			help="Bridges are helper applications that communicate with the SuperConductor. The role of the bridge is to communicate with devices such as CasparCG, Atem, OBS, vMix, etc. SuperConductor sends all the timeline objects and settings to the bridge which then transmits information to different devices. SuperConductor communicates with bridges using WebSocket protocol."
+		>
 			<RoundedSection title="Internal Bridge">
 				<div className="rounded-section-message">
 					<FormControlLabel
@@ -144,11 +144,8 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 				/>
 
 				{/* TODO - delete old list */}
-				{/* {outgoingBridges.map((bridge) => (
-					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
-				))}
-				{outgoingBridges.length === 0 && <div className="central">There are no outgoing bridges.</div>} */}
+				{outgoingBridges.length === 0 && <div className="central">There are no outgoing bridges.</div>}
 			</RoundedSection>
-		</>
+		</ProjectPageLayout>
 	)
 })
