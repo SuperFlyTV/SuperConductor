@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useMemo } from 'react'
 import { Bridge as BridgeType, INTERNAL_BRIDGE_ID } from '../../../models/project/Bridge'
 import { Project } from '../../../models/project/Project'
-import { Button, Typography, FormControlLabel, Switch } from '@mui/material'
+import { FormControlLabel, Switch } from '@mui/material'
 import { Bridge } from './Bridge'
 import { literal } from '@shared/lib'
 import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
@@ -9,6 +9,11 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { RoundedSection } from '../pages/homePage/roundedSection/RoundedSection'
+import { TextBtn } from '../inputs/textBtn/TextBtn'
+import { ScList } from '../pages/homePage/scList/ScList'
+import { BridgeItemHeader } from '../pages/homePage/bridgeItem/BridgeItemHeader'
+import { BridgeItemContent } from '../pages/homePage/bridgeItem/BridgeItemContent'
 
 interface IBridgesSettingsProps {
 	project: Project
@@ -64,43 +69,86 @@ export const BridgesSettings: React.FC<IBridgesSettingsProps> = observer(({ proj
 
 	return (
 		<>
-			<FormControlLabel
-				control={<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />}
-				label="Enable internal bridge"
-				labelPlacement="start"
-			/>
+			<RoundedSection title="Internal Bridge">
+				<div className="rounded-section-message">
+					<FormControlLabel
+						control={
+							<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />
+						}
+						label="Enable internal bridge"
+						labelPlacement="start"
+						className="switch"
+					/>
+				</div>
 
-			{internalBridge && project.settings.enableInternalBridge && (
-				<Bridge bridge={internalBridge} bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]} internal />
-			)}
+				{internalBridge && project.settings.enableInternalBridge && bridgeStatuses[INTERNAL_BRIDGE_ID] && (
+					<ScList
+						list={[
+							{
+								id: 'internalBridge',
+								header: (
+									<BridgeItemHeader
+										id="internalBridge"
+										bridge={internalBridge}
+										bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]}
+									/>
+								),
+								content: (
+									<BridgeItemContent
+										id="internalBridge"
+										bridge={internalBridge}
+										bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]}
+										isInternal
+									/>
+								),
+							},
+						]}
+					/>
+				)}
+			</RoundedSection>
 
-			<Typography variant="subtitle1">Incoming bridges</Typography>
-			<Typography variant="subtitle2" sx={{ fontStyle: 'italic' }}>
-				This is a list of Bridges that have connected to SuperConductor
-			</Typography>
-			{incomingBridges.map((bridge) => (
-				<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
-			))}
-			{incomingBridges.length === 0 && <Typography variant="body1">There are no incoming bridges.</Typography>}
+			<RoundedSection title="Incoming Bridges" help="A list of bridges that have connected to SuperConductor">
+				{incomingBridges.map((bridge) => (
+					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
+				))}
+				{incomingBridges.length === 0 && <div className="central">There are no incoming bridges.</div>}{' '}
+			</RoundedSection>
 
-			<Typography variant="subtitle1" marginTop="2rem">
-				Outgoing bridges
-			</Typography>
-			<Typography variant="subtitle2" sx={{ fontStyle: 'italic' }}>
-				This is a list of Bridges that SuperConductor will connect to
-			</Typography>
-			{outgoingBridges.map((bridge) => (
-				<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
-			))}
-			{outgoingBridges.length === 0 && (
-				<Typography variant="body1" marginBottom="1.8rem">
-					There are no outgoing bridges.
-				</Typography>
-			)}
+			<RoundedSection
+				title="Outgoing Bridges"
+				help="This is a list of Bridges that SuperConductor will connect to"
+				controls={<TextBtn label="Add" onClick={addBridge} />}
+			>
+				<ScList
+					list={outgoingBridges
+						.filter((bridge) => bridgeStatuses[bridge.id])
+						.map((bridge) => {
+							return {
+								id: bridge.id,
+								header: (
+									<BridgeItemHeader
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+								content: (
+									<BridgeItemContent
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+							}
+						})}
+				/>
 
-			<Button variant="contained" onClick={addBridge}>
-				Add Bridge connection
-			</Button>
+				{/* TODO - delete old list */}
+				{/* {outgoingBridges.map((bridge) => (
+					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
+				))}
+				{outgoingBridges.length === 0 && <div className="central">There are no outgoing bridges.</div>} */}
+			</RoundedSection>
 		</>
 	)
 })

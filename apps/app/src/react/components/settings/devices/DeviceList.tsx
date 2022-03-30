@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/**
+ * File to be deleted
+ */
+
 import { Typography, Button, Box } from '@mui/material'
 import { literal } from '@shared/lib'
 import React, { useCallback, useContext, useState } from 'react'
@@ -17,7 +23,6 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
 import { Device } from './Device'
-import { NewDeviceDialog } from './NewDeviceDialog'
 
 interface IDeviceListProps {
 	bridge: Bridge
@@ -187,13 +192,13 @@ export const DeviceList: React.FC<IDeviceListProps> = ({ bridge, devices }) => {
 				{editing ? 'Finish editing' : 'Edit devices'}
 			</Button>
 
-			<NewDeviceDialog
+			{/* <NewDeviceDialog
 				open={addDeviceOpen}
 				onAccepted={onNewDeviceAccepted}
 				onDiscarded={() => {
 					setAddDeviceOpen(false)
 				}}
-			/>
+			/> */}
 		</div>
 	)
 }

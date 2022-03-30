@@ -4,10 +4,14 @@
 	padding: 0 1rem;
 	box-sizing: border-box;
 
+	flex-direction: column;
+	height: 100%;
+
 	.group-list__control-row {
 		display: flex;
 		margin-top: 2rem;
 		display: flex;
+		flex-grow: 1;
 
 		> * {
 			margin-right: 1rem;

@@ -1,3 +1,5 @@
+@import '../../../../styles/foundation/all';
+
 .project-page-layout {
 	display: flex;
 	min-height: 0;
@@ -5,12 +7,13 @@
 	.main {
 		flex-grow: 1;
 		overflow: auto;
+		padding: 2rem 2.5rem;
 
-		.header {
-			padding: 2rem 2.5rem;
+		> .header {
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
+			margin-bottom: 4rem;
 
 			.titles {
 				flex-grow: 0;
@@ -41,6 +44,10 @@
 				cursor: pointer;
 				opacity: 0.7;
 
+				&.open {
+					opacity: 1;
+				}
+
 				&:hover {
 					opacity: 1;
 				}
@@ -53,8 +60,12 @@
 			}
 		}
 
-		.content {
-			padding: 1.5rem 2.5rem;
+		> .message {
+			margin-bottom: 4rem;
+			margin-top: -2rem;
+		}
+
+		> .content {
 		}
 	}
 }

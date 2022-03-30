@@ -73,7 +73,7 @@ export class GuiStore {
 	selectedTimelineObjIds: string[] = []
 
 	activeTabId = 'home'
-	activeHomePageId = 'project'
+	activeHomePageId = 'bridgeSettings'
 
 	partMove: PartMove = {
 		duplicate: null,
