@@ -111,6 +111,12 @@ export class BridgeHandler {
 				}
 
 				if (addNew) {
+					// Set an initial status
+					this.session.updateBridgeStatus(bridge.id, {
+						connected: false,
+						devices: {},
+					})
+
 					// Guard against invalid addresses entered by the user
 					try {
 						const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
