@@ -28,7 +28,7 @@ export class WebsocketServer extends EventEmitter {
 		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
-			console.log('Websocket server closed')
+			// console.log('Websocket server closed')
 			// The websocekt server is closed.
 			this.connections.forEach((client) => {
 				// this.clients = []
@@ -39,8 +39,8 @@ export class WebsocketServer extends EventEmitter {
 			this.emit('close')
 		})
 		this.wss.on('error', (err: any) => {
-			console.log('Error in WebSocket server')
-			console.log(err)
+			console.error('Error in WebSocket server')
+			console.error(err)
 		})
 
 		this.wss.on('connection', (ws) => {
@@ -148,8 +148,8 @@ export class WebsocketConnection extends EventEmitter {
 			this._onDisconnected()
 		})
 		ws.on('error', (err) => {
-			console.log('Error in WebSocket connection')
-			console.log(err)
+			console.error('Error in WebSocket connection')
+			console.error(err)
 		})
 		ws.on('ping', () => {
 			this.lastPingReceived = Date.now()
@@ -209,7 +209,7 @@ export class WebsocketConnection extends EventEmitter {
 		this.pingInterval = setInterval(() => {
 			// Monitor pings
 			if (Date.now() - this.lastPingReceived > PING_INTERVAL * 2.5) {
-				console.log('ping monitor: no pings!')
+				// console.log('ping monitor: no pings!')
 				this._onDisconnected()
 			} else {
 				// The client sends pings:

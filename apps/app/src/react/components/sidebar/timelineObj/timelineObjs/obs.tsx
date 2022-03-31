@@ -27,6 +27,7 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 				<div className="setting">
 					<TextInput
 						label="Scene Name"
+						fullWidth
 						currentValue={obj.content.sceneName}
 						onChange={(v) => {
 							obj.content.sceneName = v
@@ -44,6 +45,7 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 				<div className="setting">
 					<TextInput
 						label="Transition Name"
+						fullWidth
 						currentValue={obj.content.transitionName}
 						onChange={(v) => {
 							obj.content.transitionName = v
@@ -177,6 +179,7 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 						<div className="setting">
 							<TextInput
 								label="Input"
+								fullWidth
 								currentValue={obj.content.sourceSettings.input}
 								onChange={(v) => {
 									if (!obj.content.sourceSettings) {
@@ -204,6 +207,7 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 						<div className="setting">
 							<TextInput
 								label="Local file"
+								fullWidth
 								currentValue={obj.content.sourceSettings.local_file}
 								onChange={(v) => {
 									if (!obj.content.sourceSettings) {

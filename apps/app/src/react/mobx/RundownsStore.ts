@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { makeAutoObservable } from 'mobx'
 import { Rundown } from '../../models/rundown/Rundown'
 import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
+import { store } from './store'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -20,6 +22,7 @@ export class RundownsStore {
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateRundown: (rundownId: string, rundown: Rundown) => {
+			store.guiStore.activeTabId = rundownId
 			this.currentRundownId = rundownId
 			this.currentRundown = rundown
 		},

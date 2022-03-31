@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+/**
+ * File to be deleted
+ */
+
 import { Typography, Button, Box } from '@mui/material'
 import { literal } from '@shared/lib'
 import React, { useCallback, useContext, useState } from 'react'
@@ -6,7 +12,10 @@ import {
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
 	DeviceOptionsOBS,
+	DeviceOptionsOSC,
+	DeviceOptionsVMix,
 	DeviceType,
+	OSCDeviceType,
 } from 'timeline-state-resolver-types'
 import { Bridge, BridgeStatus } from '../../../../models/project/Bridge'
 import { Project } from '../../../../models/project/Project'
@@ -14,7 +23,6 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
 import { Device } from './Device'
-import { NewDeviceDialog } from './NewDeviceDialog'
 
 interface IDeviceListProps {
 	bridge: Bridge
@@ -85,6 +93,41 @@ export const DeviceList: React.FC<IDeviceListProps> = ({ bridge, devices }) => {
 					break
 				}
 
+				case DeviceType.VMIX: {
+					newDevice = literal<DeviceOptionsVMix>({
+						type: DeviceType.VMIX,
+						options: {
+							host: '127.0.0.1',
+							port: 8088,
+						},
+					})
+
+					const numVMixDevices = Object.values(bridge.settings.devices).filter(
+						(device) => device.type === DeviceType.VMIX
+					).length
+					newDeviceId = `vmix${numVMixDevices}`
+
+					break
+				}
+
+				case DeviceType.OSC: {
+					newDevice = literal<DeviceOptionsOSC>({
+						type: DeviceType.OSC,
+						options: {
+							host: '127.0.0.1',
+							port: 9000,
+							type: OSCDeviceType.UDP,
+						},
+					})
+
+					const numOSCDevices = Object.values(bridge.settings.devices).filter(
+						(device) => device.type === DeviceType.OSC
+					).length
+					newDeviceId = `osc${numOSCDevices}`
+
+					break
+				}
+
 				// @TODO: Add more device types
 
 				default:
@@ -149,13 +192,13 @@ export const DeviceList: React.FC<IDeviceListProps> = ({ bridge, devices }) => {
 				{editing ? 'Finish editing' : 'Edit devices'}
 			</Button>
 
-			<NewDeviceDialog
+			{/* <NewDeviceDialog
 				open={addDeviceOpen}
 				onAccepted={onNewDeviceAccepted}
 				onDiscarded={() => {
 					setAddDeviceOpen(false)
 				}}
-			/>
+			/> */}
 		</div>
 	)
 }

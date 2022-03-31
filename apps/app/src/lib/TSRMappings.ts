@@ -229,7 +229,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'MixEffect',
+					layerName: 'Atem ME 1',
 					mappingType: MappingAtemType.MixEffect,
 					index: 0,
 				})
@@ -238,7 +238,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'DownStreamKeyer',
+					layerName: 'Atem DSK 1',
 					mappingType: MappingAtemType.DownStreamKeyer,
 					index: 0,
 				})
@@ -247,7 +247,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'SuperSourceBox',
+					layerName: 'Atem SS 1',
 					mappingType: MappingAtemType.SuperSourceBox,
 					index: 0,
 				})
@@ -256,7 +256,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Auxilliary',
+					layerName: 'Atem AUX 1',
 					mappingType: MappingAtemType.Auxilliary,
 					index: 0,
 				})
@@ -265,7 +265,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'MediaPlayer',
+					layerName: 'Atem MP 1',
 					mappingType: MappingAtemType.MediaPlayer,
 					index: 0,
 				})
@@ -274,7 +274,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'SuperSourceProperties',
+					layerName: 'Atem SS 1 props',
 					mappingType: MappingAtemType.SuperSourceProperties,
 					index: 0,
 				})
@@ -283,7 +283,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'AudioChannel',
+					layerName: 'Atem Audio 1',
 					mappingType: MappingAtemType.AudioChannel,
 					index: 0,
 				})
@@ -292,7 +292,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'MacroPlayer',
+					layerName: 'Atem Macro 1',
 					mappingType: MappingAtemType.MacroPlayer,
 					index: 0,
 				})
@@ -305,7 +305,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceId,
-			layerName: 'Caspar layer',
+			layerName: 'CasparCG 1-10',
 			channel: 1,
 			layer: 10,
 		})
@@ -331,7 +331,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingHyperdeck>({
 					device: DeviceType.HYPERDECK,
 					deviceId: deviceId,
-					layerName: 'Hyperdeck',
+					layerName: 'Hyperdeck 1',
 					mappingType: MappingHyperdeckType.TRANSPORT,
 					index: 0,
 				})
@@ -477,7 +477,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 		return literal<MappingQuantel>({
 			device: DeviceType.QUANTEL,
 			deviceId: deviceId,
-			layerName: 'Quantel',
+			layerName: 'Quantel 1',
 			channelId: 1,
 			portId: 'port-id',
 		})
@@ -497,7 +497,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				return literal<MappingSisyfos>({
 					device: DeviceType.SISYFOS,
 					deviceId: deviceId,
-					layerName: 'Channel',
+					layerName: 'Channel 1',
 					mappingType: MappingSisyfosType.CHANNEL,
 					channel: 0,
 					setLabelToLayerName: true,
@@ -726,8 +726,36 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			return ''
 		case DeviceType.SHOTOKU:
 			return ''
-		case DeviceType.VMIX:
-			return ''
+		case DeviceType.VMIX: {
+			const typedMapping = mapping as MappingVMixAny
+			switch (typedMapping.mappingType) {
+				case MappingVMixType.AudioChannel:
+					return `Index: ${typedMapping.index}, Input Layer: ${typedMapping.inputLayer}`
+				case MappingVMixType.External:
+					return ''
+				case MappingVMixType.FadeToBlack:
+					return ''
+				case MappingVMixType.Fader:
+					return ''
+				case MappingVMixType.Input:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Output:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Overlay:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Preview:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Program:
+					return `Index: ${typedMapping.index}`
+				case MappingVMixType.Recording:
+					return ''
+				case MappingVMixType.Streaming:
+					return ''
+				default:
+					assertNever(typedMapping)
+					return ''
+			}
+		}
 		case DeviceType.OBS: {
 			// This is here to fix a typing bug in TSR. MappingOBSSourceSettings is not part of the MappingOBSAny type.
 			// See https://github.com/nrkno/sofie-timeline-state-resolver/pull/208 for more details.

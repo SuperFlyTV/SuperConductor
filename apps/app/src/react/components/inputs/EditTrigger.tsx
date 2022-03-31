@@ -89,7 +89,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'play' })
 							}}
 							color={trigger.action === 'play' ? 'primary' : 'inherit'}
-							title="Trigger Play"
+							title={(trigger.action === 'play' ? '' : 'Set trigger to ') + 'Play-mode'}
 							size="small"
 						>
 							<MdPlayArrow size={ACTION_ICON_SIZE} />
@@ -100,7 +100,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'stop' })
 							}}
 							color={trigger.action === 'stop' ? 'primary' : 'inherit'}
-							title="Trigger Stop"
+							title={(trigger.action === 'stop' ? '' : 'Set trigger to ') + 'Stop-mode'}
 							size="small"
 						>
 							<MdStop size={ACTION_ICON_SIZE} />
@@ -111,7 +111,7 @@ export const EditTrigger: React.FC<{
 								onEdit(index, { ...trigger, action: 'playStop' })
 							}}
 							color={trigger.action === 'playStop' ? 'primary' : 'inherit'}
-							title="Trigger Toggle Play/Stop"
+							title={(trigger.action === 'playStop' ? '' : 'Set trigger to ') + 'Play/Stop-mode'}
 							size="small"
 						>
 							<MdPlayArrow size={ACTION_ICON_SIZE} />

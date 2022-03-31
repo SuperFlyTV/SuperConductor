@@ -25,13 +25,11 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
-import { PartMoveContext } from '../../../contexts/PartMove'
 import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
@@ -39,6 +37,8 @@ import { RiEyeCloseLine } from 'react-icons/ri'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
+import { LayerName } from './part/LayerName/LayerName'
+import { observer } from 'mobx-react-lite'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -62,14 +62,13 @@ export const PartView: React.FC<{
 	part: Part
 	playhead: GroupPlayData
 	mappings: Mappings
-}> = ({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
+}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
-	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
+	const timelineObjMove = gui.timelineObjMove
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
-	const { partMove, updatePartMove } = useContext(PartMoveContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
 		[objectId: string]: TimelineObj
@@ -81,12 +80,6 @@ export const PartView: React.FC<{
 	const [trackWidth, setTrackWidth] = useState(0)
 	const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
-	const updateTimelineObjMoveRef = useRef(updateTimelineObjMove)
-	updateTimelineObjMoveRef.current = updateTimelineObjMove
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
-	const partMoveRef = useRef(partMove)
-	partMoveRef.current = partMove
 
 	const cache = useRef<ResolverCache>({})
 
@@ -171,13 +164,13 @@ export const PartView: React.FC<{
 				// This is where a move operation has truly completed, including the backend response.
 
 				setWaitingForBackendUpdate(false)
-				updateTimelineObjMoveRef.current({
+				gui.updateTimelineObjMove({
 					partId: null,
 					moveId: undefined,
 				})
 			}
 		}
-	}, [waitingForBackendUpdate, part])
+	}, [waitingForBackendUpdate, part, gui])
 
 	// Initialize trackWidth.
 	useLayoutEffect(() => {
@@ -570,7 +563,7 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					partId: movedItem.partId,
 					fromGroupId: movedItem.fromGroup.id,
 					toGroupId: hoverGroup?.id ?? null,
@@ -593,8 +586,12 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem => {
-				updatePartMoveRef.current({
+				store.guiStore.updatePartMove({
 					moveId: short.generate(),
+					position: partIndex,
+					partId: part.id,
+					fromGroupId: parentGroup.id,
+					toGroupId: parentGroup.id,
 					done: false,
 				})
 				return {
@@ -613,12 +610,8 @@ export const PartView: React.FC<{
 			isDragging: (monitor) => {
 				return part.id === monitor.getItem().partId
 			},
-			end: (draggedItem) => {
-				updatePartMoveRef.current({
-					partId: draggedItem.partId,
-					fromGroupId: draggedItem.fromGroup.id,
-					toGroupId: draggedItem.toGroupId,
-					position: draggedItem.position,
+			end: () => {
+				store.guiStore.updatePartMove({
 					done: true,
 				})
 			},
@@ -684,7 +677,7 @@ export const PartView: React.FC<{
 				<div className="part__meta__left">
 					{!editingPartName && (
 						<div
-							title={groupOrPartLocked ? part.name : 'Click to edit'}
+							title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
 							className="title"
 							onClick={() => {
 								if (groupOrPartLocked) {
@@ -724,7 +717,11 @@ export const PartView: React.FC<{
 
 					<div className="controls">
 						<ToggleButton
-							title={part.disabled ? 'Enable Part' : 'Disable Part'}
+							title={
+								part.disabled
+									? 'Disabledn\n\nClick to enable Part.'
+									: 'Disable/Skip Part during playback.'
+							}
 							value="disabled"
 							disabled={parentGroup.locked}
 							selected={part.disabled}
@@ -743,7 +740,7 @@ export const PartView: React.FC<{
 							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							title={part.locked ? 'Unlock Part' : 'Lock Part'}
+							title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
 							value="locked"
 							disabled={parentGroup.locked}
 							selected={part.locked}
@@ -762,7 +759,9 @@ export const PartView: React.FC<{
 							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
 						<ToggleButton
-							title={part.loop ? 'Disable Loop' : 'Enable Loop'}
+							title={
+								part.loop ? 'Looping.\n\nDisable Looping.' : 'Enable Looping of Part during playout.'
+							}
 							value="loop"
 							disabled={groupOrPartLocked}
 							selected={part.loop}
@@ -790,6 +789,7 @@ export const PartView: React.FC<{
 						size="small"
 						disabled={groupOrPartDisabled || !canStop}
 						onClick={handleStop}
+						title="Stop playout of Part"
 					>
 						<MdStop size={22} />
 					</Button>
@@ -800,6 +800,7 @@ export const PartView: React.FC<{
 						size="small"
 						disabled={groupOrPartDisabled}
 						onClick={handleStart}
+						title={canStop ? 'Restart Part' : 'Play Part'}
 					>
 						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
 					</Button>
@@ -808,11 +809,29 @@ export const PartView: React.FC<{
 			<div className="part__dropdown">{/** TODO **/}</div>
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
-					const name = mappings[layerId]?.layerName ?? layerId
+					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
+
 					return (
-						<div className="part__layer-names__name" key={layerId} title={name}>
-							<span>{name}</span>
-						</div>
+						<LayerName
+							key={layerId}
+							layerId={layerId}
+							mappings={mappings}
+							timelineObjs={modifiedTimeline}
+							onSelect={(selectedLayerId) => {
+								objectsOnThisLayer.forEach((objectOnThisLayer) => {
+									objectOnThisLayer.obj.layer = selectedLayerId
+									ipcServer
+										.updateTimelineObj({
+											rundownId,
+											groupId: parentGroup.id,
+											partId: part.id,
+											timelineObj: objectOnThisLayer,
+											timelineObjId: objectOnThisLayer.obj.id,
+										})
+										.catch(handleError)
+								})
+							}}
+						/>
 					)
 				})}
 			</div>
@@ -896,7 +915,7 @@ export const PartView: React.FC<{
 			</Popover>
 		</div>
 	)
-}
+})
 
 type TEntries = [string, string[]][]
 

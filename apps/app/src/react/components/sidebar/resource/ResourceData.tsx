@@ -120,6 +120,79 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<></>
 			</SidebarInfoGroup>
 		)
+	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+		return (
+			<SidebarInfoGroup title="vMix Input">
+				<DataRow label="Number" value={resource.number} />
+				<DataRow label="Type" value={resource.type} />
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Input Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Audio Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Output Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+		return (
+			<SidebarInfoGroup title="vMix Overlay Settings">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+		return (
+			<SidebarInfoGroup title="vMix Recording">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+		return (
+			<SidebarInfoGroup title="vMix Streaming">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+		return (
+			<SidebarInfoGroup title="vMix External Output">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+		return (
+			<SidebarInfoGroup title="vMix Fade To Black">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+		return (
+			<SidebarInfoGroup title="vMix Fader">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
+		return (
+			<SidebarInfoGroup title="vMix Preview">
+				<></>
+			</SidebarInfoGroup>
+		)
+	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
+		return (
+			<SidebarInfoGroup title="OSC Message">
+				<></>
+			</SidebarInfoGroup>
+		)
 	} else {
 		assertNever(resource)
 		return null

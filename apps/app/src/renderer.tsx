@@ -28,10 +28,10 @@ export const ContextWrapper: React.FC = () => {
 			components: {
 				MuiCssBaseline: {
 					styleOverrides: {
-						'*, *::before, *::after': {
-							transition: 'none !important',
-							animation: 'none !important',
-						},
+						// '*, *::before, *::after': {
+						// 	transition: 'none !important',
+						// 	animation: 'none !important',
+						// },
 					},
 				},
 				MuiButtonBase: {
@@ -41,6 +41,15 @@ export const ContextWrapper: React.FC = () => {
 				},
 				MuiButton: {
 					styleOverrides: {
+						root: {
+							'&.Mui-disabled': {
+								/** Used to make "title" tooltips appear on disabled buttons */
+								pointerEvents: 'auto',
+								'&:hover': {
+									backgroundColor: 'rgba(255, 255, 255, 0.12)',
+								},
+							},
+						},
 						sizeSmall: {
 							padding: 0,
 							minWidth: 0,
@@ -98,6 +107,12 @@ export const ContextWrapper: React.FC = () => {
 				},
 				MuiToggleButton: {
 					styleOverrides: {
+						root: {
+							'&.Mui-disabled': {
+								/** Used to make "title" tooltips appear on disabled buttons */
+								pointerEvents: 'auto',
+							},
+						},
 						sizeSmall: {
 							padding: 0,
 							width: SMALL_BTN_SIZE,

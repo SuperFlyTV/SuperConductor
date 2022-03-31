@@ -9,7 +9,7 @@ import { observer } from 'mobx-react-lite'
 import { DeviceStatuses } from './deviceStatuses/DeviceStatuses'
 import { Tabs } from './tabs/Tabs'
 
-import './headerBar.scss'
+import './style.scss'
 
 export const HeaderBar: React.FC = observer(() => {
 	const serverAPI = useContext(IPCServerContext)

@@ -13,6 +13,8 @@ import {
 	MappingAtemType,
 	MappingOBS,
 	MappingOBSType,
+	MappingVMix,
+	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever } from '@shared/lib'
@@ -246,30 +248,84 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 }
 
 /**
- * @returns The index of the part which will be played next. Skips disabled parts. Returns -1 if there is no next part to play.
+ * @returns The index of the part which will be played next. Skips disabled parts. Accounts for looping. Returns -1 if there is no next part to play.
  */
 export function getNextPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex + 1; i < group.parts.length; i++) {
+
+	/**
+	 * Whether or not we've looped through the end of the group back
+	 * to the beginning of it in our search for the next part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
+	let startingI = currentPartIndex + 1
+	if (startingI >= group.parts.length) {
+		startingI = 0
+	}
+
+	for (let i = startingI; i < group.parts.length; i++) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
+
+		const isAtEnd = i === group.parts.length - 1
+		if (isAtEnd && group.loop && !looped) {
+			i = -1
+			looped = true
+		}
 	}
+
 	return -1
 }
 
 /**
- * @returns The index of the part which will was previously played. Skips disabled parts. Returns -1 if there is no previous part.
+ * @returns The index of the part which will was previously played. Skips disabled parts. Accounts for looping. Returns -1 if there is no previous part.
  */
 export function getPrevPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex - 1; i > -1; i--) {
+
+	/**
+	 * Whether or not we've looped through the beginning of the group back
+	 * to the end of it in our search for the previous part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
+	let startingI = currentPartIndex - 1
+	if (startingI < 0) {
+		startingI = group.parts.length - 1
+	}
+
+	for (let i = startingI; i > -1; i--) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
+
+		const isAtStart = i === 0
+		if (isAtStart && group.loop && !looped) {
+			i = group.parts.length
+			looped = true
+		}
 	}
+
 	return -1
 }
 
@@ -342,8 +398,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			assertNever(mapping0.mappingType)
 		}
 	} else if (mapping.device === DeviceType.OSC) {
-		// @TODO
-		return false
+		return resource.resourceType === ResourceType.OSC_MESSAGE
 	} else if (mapping.device === DeviceType.PANASONIC_PTZ) {
 		// @TODO
 		return false
@@ -369,8 +424,32 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.VMIX) {
-		// @TODO
-		return false
+		const mapping0 = mapping as MappingVMix
+		if (mapping0.mappingType === MappingVMixType.AudioChannel) {
+			return resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS
+		} else if (mapping0.mappingType === MappingVMixType.External) {
+			return resource.resourceType === ResourceType.VMIX_EXTERNAL
+		} else if (mapping0.mappingType === MappingVMixType.FadeToBlack) {
+			return resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK
+		} else if (mapping0.mappingType === MappingVMixType.Fader) {
+			return resource.resourceType === ResourceType.VMIX_FADER
+		} else if (mapping0.mappingType === MappingVMixType.Input) {
+			return resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS
+		} else if (mapping0.mappingType === MappingVMixType.Output) {
+			return resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS
+		} else if (mapping0.mappingType === MappingVMixType.Overlay) {
+			return resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS
+		} else if (mapping0.mappingType === MappingVMixType.Preview) {
+			return resource.resourceType === ResourceType.VMIX_PREVIEW
+		} else if (mapping0.mappingType === MappingVMixType.Program) {
+			return resource.resourceType === ResourceType.VMIX_INPUT
+		} else if (mapping0.mappingType === MappingVMixType.Recording) {
+			return resource.resourceType === ResourceType.VMIX_RECORDING
+		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
+			return resource.resourceType === ResourceType.VMIX_STREAMING
+		} else {
+			assertNever(mapping0.mappingType)
+		}
 	} else {
 		assertNever(mapping.device)
 	}

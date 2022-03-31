@@ -1,4 +1,4 @@
-import { MenuItem, TextField } from '@mui/material'
+import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import {
 	MappingOBS,
@@ -10,6 +10,7 @@ import {
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
+import { SelectEnum } from '../../../inputs/SelectEnum'
 
 interface IOBSMappingSettingsProps {
 	mapping: MappingOBS
@@ -20,7 +21,6 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const [mappingType, setMappingType] = useState(mapping.mappingType)
 	const [sceneName, setSceneName] = useState('')
 	const [source, setSource] = useState('')
 
@@ -59,8 +59,6 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 	)
 
 	useEffect(() => {
-		setMappingType(mapping.mappingType)
-
 		if (mapping.mappingType === MappingOBSType.SceneItemRender) {
 			const mapping0 = mapping as MappingOBSSceneItemRender
 			setSceneName(mapping0.sceneName ?? '')
@@ -82,31 +80,14 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 
 	return (
 		<>
-			<TextField
-				select
-				margin="normal"
-				size="small"
+			<SelectEnum
 				label="Type"
-				value={mappingType}
-				sx={{ width: '21rem' }}
-				onChange={(event) => {
-					setMappingType(parseInt(event.target.value, 10))
+				currentValue={mapping.mappingType}
+				options={MappingOBSType}
+				onChange={(v) => {
+					handleMappingTypeChange(v)
 				}}
-				onBlur={() => {
-					handleMappingTypeChange(mappingType)
-				}}
-				onKeyUp={(e) => {
-					if (e.key === 'Enter') handleMappingTypeChange(mappingType)
-				}}
-			>
-				<MenuItem value={MappingOBSType.CurrentScene}>CurrentScene</MenuItem>
-				<MenuItem value={MappingOBSType.CurrentTransition}>CurrentTransition</MenuItem>
-				<MenuItem value={MappingOBSType.Mute}>Mute</MenuItem>
-				<MenuItem value={MappingOBSType.Recording}>Recording</MenuItem>
-				<MenuItem value={MappingOBSType.SceneItemRender}>SceneItemRender</MenuItem>
-				<MenuItem value={MappingOBSType.SourceSettings}>SourceSettings</MenuItem>
-				<MenuItem value={MappingOBSType.Streaming}>Streaming</MenuItem>
-			</TextField>
+			/>
 
 			{mapping.mappingType === MappingOBSType.SceneItemRender && (
 				<TextField

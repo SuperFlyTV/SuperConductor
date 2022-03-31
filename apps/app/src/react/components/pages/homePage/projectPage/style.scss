@@ -1,0 +1,21 @@
+.rundown-header-item {
+	display: flex;
+	align-items: center;
+	width: 100%;
+
+	.header-label {
+		flex-grow: 1;
+		border: 0;
+	}
+
+	.controls {
+		display: flex;
+		align-items: center;
+
+		button {
+			&:not(:last-child) {
+				margin-right: 2rem;
+			}
+		}
+	}
+}

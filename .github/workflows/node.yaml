@@ -32,3 +32,6 @@ jobs:
         run: |
           yarn build
           yarn lint
+      - name: Run license check
+        run: |
+          yarn license-validate

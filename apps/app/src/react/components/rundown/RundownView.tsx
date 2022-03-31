@@ -10,14 +10,12 @@ import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
-import { PartMoveContext } from '../../contexts/PartMove'
 import { DropZone } from '../util/DropZone'
+import { observer } from 'mobx-react-lite'
+import { store } from '../../mobx/store'
 
-export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
+export const RundownView: React.FC<{ mappings: Mappings }> = observer(({ mappings }) => {
 	const rundown = useContext(RundownContext)
-	const { updatePartMove } = useContext(PartMoveContext)
-	const updatePartMoveRef = useRef(updatePartMove)
-	updatePartMoveRef.current = updatePartMove
 
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
@@ -47,9 +45,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 				}
 
 				// Time to actually perform the action
-				updatePartMoveRef.current({
-					partId: movedItem.partId,
-					fromGroupId: movedItem.fromGroup.id,
+				store.guiStore.updatePartMove({
 					toGroupId: null,
 					position: hoverIndex,
 				})
@@ -88,7 +84,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = ({ mappings }) => {
 			<GroupListOptions rundown={rundown} />
 		</div>
 	)
-}
+})
 
 const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -205,7 +201,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				<DropZone
 					isOver={partDropIsOver}
 					ref={newPartRef}
-					style={{ height: '96vh' }}
+					// style={{ height: '96vh' }}
 					data-drop-handler-id={partDropHandlerId}
 				>
 					<Button variant="contained" onClick={() => setNewPartOpen(true)}>
@@ -215,7 +211,8 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				<DropZone
 					isOver={groupDropIsOver}
 					ref={newGroupRef}
-					style={{ flexGrow: 1, height: '96vh' }}
+					// style={{ flexGrow: 1, height: '96vh' }}
+					style={{ flexGrow: 1 }}
 					data-drop-handler-id={groupDropHandlerId}
 				>
 					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>

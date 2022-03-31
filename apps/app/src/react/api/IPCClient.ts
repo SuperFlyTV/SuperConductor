@@ -19,6 +19,7 @@ export class IPCClient implements IPCClientMethods {
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: Peripheral | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
+			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -54,6 +55,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		if (this.callbacks.updatePeripheralTriggers) this.callbacks.updatePeripheralTriggers(peripheralTriggers)
+	}
+	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
+		if (this.callbacks.updateDeviceRefreshStatus) this.callbacks.updateDeviceRefreshStatus(deviceId, refreshing)
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

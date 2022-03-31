@@ -69,6 +69,7 @@ export const TimelineObjData: React.FC<{
 				onClick={() => {
 					setDeleteConfirmationOpen(true)
 				}}
+				title="Delete timeline object"
 			/>
 
 			<ConfirmationDialog

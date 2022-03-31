@@ -21,13 +21,11 @@ import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { RundownContext } from './contexts/Rundown'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
-import { TimelineObjectMove, TimelineObjectMoveContext } from './contexts/TimelineObjectMove'
 import { useSnackbar } from 'notistack'
 import { AppData } from '../models/App/AppData'
 import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTrigger, ActiveTriggers, activeTriggersToString } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { deepClone } from '@shared/lib'
-import { PartMove, PartMoveContext } from './contexts/PartMove'
 import { Group } from '../models/rundown/Group'
 import { getDefaultGroup } from '../electron/defaults'
 import { allowMovingItemIntoGroup } from '../lib/util'
@@ -35,7 +33,7 @@ import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { HeaderBar } from './components/headerBar/HeaderBar'
 import { store } from './mobx/store'
-import { ProjectPage } from './components/pages/projectPage/ProjectPage'
+import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 
 /**
@@ -46,6 +44,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
+	const [waitingForMoveGroupUpdate, setWaitingForMoveGroupUpdate] = useState(false)
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
@@ -66,7 +65,6 @@ export const App = observer(() => {
 				setProject(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
-				console.log(activeTriggersToString(peripheralTriggers))
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 		})
@@ -100,7 +98,6 @@ export const App = observer(() => {
 	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
-		console.log('triggerSendAll')
 		serverAPI.triggerSendAll().catch(handleError)
 	}, [handleError, serverAPI])
 
@@ -136,46 +133,6 @@ export const App = observer(() => {
 		document.addEventListener('keyup', (e) => handleKey(e))
 	}, [handleError, triggers, serverAPI])
 
-	const [timelineObjectMoveData, setTimelineObjectMoveData] = useState<TimelineObjectMove>({
-		moveType: null,
-		wasMoved: null,
-		partId: null,
-		hoveredLayerId: null,
-		moveId: null,
-	})
-	const timelineObjectMoveContextValue = useMemo(() => {
-		return {
-			timelineObjMove: timelineObjectMoveData,
-			updateTimelineObjMove: (newData: Partial<TimelineObjectMove>) => {
-				setTimelineObjectMoveData({
-					...timelineObjectMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [timelineObjectMoveData])
-
-	const [partMoveData, setPartMoveData] = useState<PartMove>({
-		duplicate: null,
-		partId: null,
-		fromGroupId: null,
-		toGroupId: null,
-		position: null,
-		moveId: null,
-		done: null,
-	})
-	const partMoveContextValue = useMemo(() => {
-		return {
-			partMove: partMoveData,
-			updatePartMove: (newData: Partial<PartMove>) => {
-				setPartMoveData({
-					...partMoveData,
-					...newData,
-				})
-			},
-		}
-	}, [partMoveData])
-
 	const gui = store.guiStore
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
@@ -184,7 +141,7 @@ export const App = observer(() => {
 		const isOnSidebar = tarEl.closest('.side-bar')
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !timelineObjectMoveData.partId) {
+		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.partId) {
 			if (gui.selectedTimelineObjIds.length > 0) {
 				gui.selectedTimelineObjIds = []
 				gui.selectedGroupId = undefined
@@ -202,6 +159,7 @@ export const App = observer(() => {
 			.catch(console.error)
 	}, [])
 
+	const partMoveData = store.guiStore.partMove
 	const modifiedCurrentRundown = useMemo<Rundown | undefined>(() => {
 		if (!rundownsStore.currentRundown) {
 			return rundownsStore.currentRundown
@@ -209,7 +167,24 @@ export const App = observer(() => {
 
 		const modifiedRundown = deepClone(rundownsStore.currentRundown)
 
-		if (partMoveData.partId) {
+		if (gui.groupMove.groupId) {
+			if (typeof gui.groupMove.position !== 'number') {
+				return rundownsStore.currentRundown
+			}
+
+			/** The group being moved */
+			const group = modifiedRundown.groups.find((g) => g.id === gui.groupMove.groupId)
+
+			if (!group) {
+				return rundownsStore.currentRundown
+			}
+
+			// Remove the group from the groups array and re-insert it at its new position
+			modifiedRundown.groups = modifiedRundown.groups.filter((g) => g.id !== gui.groupMove.groupId)
+			modifiedRundown.groups.splice(gui.groupMove.position, 0, group)
+
+			return modifiedRundown
+		} else if (partMoveData.partId) {
 			if (typeof partMoveData.position !== 'number') {
 				return rundownsStore.currentRundown
 			}
@@ -287,12 +262,17 @@ export const App = observer(() => {
 		return rundownsStore.currentRundown
 	}, [
 		rundownsStore.currentRundown,
-		partMoveData.fromGroupId,
+		gui.groupMove.groupId,
+		gui.groupMove.position,
 		partMoveData.partId,
 		partMoveData.position,
 		partMoveData.toGroupId,
+		partMoveData.fromGroupId,
 	])
 
+	/**
+	 * When a Part move is complete, this is what dispatches the IPC API call to actually execute the move.
+	 */
 	useEffect(() => {
 		if (partMoveData.moveId && partMoveData.done === true) {
 			if (
@@ -325,11 +305,16 @@ export const App = observer(() => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [partMoveData.moveId, partMoveData.done])
+
+	/**
+	 * This waits for the Electron backend to update us about the move before clearing all the temporary move data.
+	 * This helps avoid a brief flash of movement where the Part would temporarily revert to its original position while waiting for the backend.
+	 */
 	useEffect(() => {
 		if (waitingForMovePartUpdate) {
 			return () => {
 				setWaitingForMovePartUpdate(false)
-				setPartMoveData({
+				store.guiStore.updatePartMove({
 					duplicate: null,
 					partId: null,
 					fromGroupId: null,
@@ -341,6 +326,47 @@ export const App = observer(() => {
 			}
 		}
 	}, [waitingForMovePartUpdate, rundownsStore.currentRundown])
+
+	/**
+	 * When a Group move is complete, this is what dispatches the IPC API call to actually execute the move.
+	 */
+	useEffect(() => {
+		if (!store.rundownsStore.currentRundownId || typeof gui.groupMove.position !== 'number') {
+			return
+		}
+
+		if (gui.groupMove.groupId && gui.groupMove.done) {
+			setWaitingForMoveGroupUpdate(true)
+			serverAPI
+				.moveGroup({
+					rundownId: store.rundownsStore.currentRundownId,
+					groupId: gui.groupMove.groupId,
+					position: gui.groupMove.position,
+				})
+				.catch((error) => {
+					setWaitingForMoveGroupUpdate(false)
+					handleError(error)
+				})
+		}
+	}, [serverAPI, handleError, gui.groupMove.position, gui.groupMove.groupId, gui.groupMove.done])
+
+	/**
+	 * This waits for the Electron backend to update us about the move before clearing all the temporary move data.
+	 * This helps avoid a brief flash of movement where the Group would temporarily revert to its original position while waiting for the backend.
+	 */
+	useEffect(() => {
+		if (waitingForMoveGroupUpdate) {
+			return () => {
+				setWaitingForMoveGroupUpdate(false)
+				gui.updateGroupMove({
+					done: null,
+					groupId: null,
+					position: null,
+					moveId: null,
+				})
+			}
+		}
+	}, [waitingForMoveGroupUpdate, rundownsStore.currentRundown, gui])
 
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
@@ -355,31 +381,28 @@ export const App = observer(() => {
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<IPCServerContext.Provider value={serverAPI}>
 				<ProjectContext.Provider value={project}>
-					<PartMoveContext.Provider value={partMoveContextValue}>
-						<TimelineObjectMoveContext.Provider value={timelineObjectMoveContextValue}>
-							<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-								<div className="app" onPointerDown={handlePointerDownAnywhere}>
-									<HeaderBar />
+					<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+						<div className="app" onPointerDown={handlePointerDownAnywhere}>
+							<HeaderBar />
 
-									{/* TODO - refactor */}
-									{store.guiStore.currentlyActiveTabSection === 'new-rundown' ? (
-										<NewRundownPage />
-									) : modifiedCurrentRundown ? (
-										<RundownContext.Provider value={modifiedCurrentRundown}>
-											<div className="main-area">
-												<RundownView mappings={project.mappings} />
-											</div>
-											<div className="side-bar">
-												<Sidebar mappings={project.mappings} />
-											</div>
-										</RundownContext.Provider>
-									) : (
-										<ProjectPage project={project} />
-									)}
-								</div>
-							</ErrorHandlerContext.Provider>
-						</TimelineObjectMoveContext.Provider>
-					</PartMoveContext.Provider>
+							{store.guiStore.isNewRundownSelected() ? (
+								<NewRundownPage />
+							) : store.guiStore.isHomeSelected() ? (
+								<HomePage project={project} />
+							) : (
+								modifiedCurrentRundown && (
+									<RundownContext.Provider value={modifiedCurrentRundown}>
+										<div className="main-area">
+											<RundownView mappings={project.mappings} />
+										</div>
+										<div className="side-bar">
+											<Sidebar mappings={project.mappings} />
+										</div>
+									</RundownContext.Provider>
+								)
+							)}
+						</div>
+					</ErrorHandlerContext.Provider>
 				</ProjectContext.Provider>
 			</IPCServerContext.Provider>
 		</HotkeyContext.Provider>

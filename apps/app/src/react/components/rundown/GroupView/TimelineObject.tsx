@@ -7,10 +7,11 @@ import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
+import { MdWarningAmber } from 'react-icons/md'
+import { TimelineObjectMove } from '../../../mobx/GuiStore'
 
 const HANDLE_WIDTH = 8
 
@@ -24,12 +25,13 @@ export const TimelineObject: React.FC<{
 	timelineObj: TimelineObj
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
-}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked }) => {
+	warnings?: string[]
+}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked, warnings }) => {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
 	const gui = store.guiStore
+	const timelineObjMove = gui.timelineObjMove
 
-	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
 		dragging: timelineObjMove.leaderTimelineObjId === timelineObj.obj.id && Boolean(timelineObjMove.moveType),
@@ -43,8 +45,6 @@ export const TimelineObject: React.FC<{
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
-	const updateMoveRef = useRef(updateTimelineObjMove)
-	updateMoveRef.current = updateTimelineObjMove
 
 	const obj: TSRTimelineObj = timelineObj.obj
 	const instance = resolved.instances[0]
@@ -122,7 +122,7 @@ export const TimelineObject: React.FC<{
 			}
 		}
 
-		updateMoveRef.current(update)
+		gui.updateTimelineObjMove(update)
 	}, [
 		isMoved,
 		deltaX,
@@ -136,6 +136,7 @@ export const TimelineObject: React.FC<{
 		allowDuplicate,
 		moveType,
 		locked,
+		gui,
 	])
 	useEffect(() => {
 		if (locked) {
@@ -146,19 +147,19 @@ export const TimelineObject: React.FC<{
 			// A move has begun.
 
 			setHandledMoveStart(true)
-			updateTimelineObjMove({
+			gui.updateTimelineObjMove({
 				moveId: short.generate(),
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.
 
 			setHandledMoveStart(false)
-			updateTimelineObjMove({
+			gui.updateTimelineObjMove({
 				moveType: null,
 				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [handledMoveStart, isMoved, locked, timelineObjMove.moveType, updateTimelineObjMove])
+	}, [gui, handledMoveStart, isMoved, locked, timelineObjMove.moveType])
 
 	const updateSelection = () => {
 		if (
@@ -243,10 +244,11 @@ export const TimelineObject: React.FC<{
 				selected: gui.selectedTimelineObjIds?.includes(obj.id),
 				isAtMinWidth,
 				locked,
+				warning: warnings && warnings.length > 0,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
 			onPointerDown={updateSelection}
-			title={description.label + ' ' + durationTitle}
+			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
 		>
 			<div
 				className="handle handle--left"
@@ -267,6 +269,11 @@ export const TimelineObject: React.FC<{
 					setMoveType('whole')
 				}}
 			>
+				{warnings && warnings.length > 0 && (
+					<div className="warning-icon">
+						<MdWarningAmber size={18} />
+					</div>
+				)}
 				<div className="title">{description.label}</div>
 				<div className="duration">
 					{minutes ? (

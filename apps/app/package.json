@@ -2,7 +2,7 @@
 	"name": "superconductor",
 	"private": true,
 	"version": "0.5.0",
-	"description": "",
+	"description": "A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!",
 	"main": "dist/main.js",
 	"engines": {
 		"node": "^12.20 || ^14.15.3 || 16"
@@ -29,7 +29,7 @@
 		"email": "info@superfly.tv",
 		"url": "https://superfly.tv"
 	},
-	"license": "MIT",
+	"license": "AGPL-3.0-or-later",
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
 	},
@@ -77,6 +77,7 @@
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^4.6.1",
+		"file-loader": "^6.2.0",
 		"formik": "^2.2.9",
 		"formik-mui": "^4.0.0-alpha.3",
 		"lodash": "^4.17.21",
@@ -113,7 +114,47 @@
 			"hardenedRuntime": true,
 			"gatekeeperAssess": false,
 			"entitlements": "entitlements.mac.plist",
-			"entitlementsInherit": "entitlements.mac.plist"
+			"entitlementsInherit": "entitlements.mac.plist",
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/vendor/8.12.2/darwin-x64/lib",
+					"to": "Frameworks",
+					"filter": [
+						"!glib-2.0/**/*"
+					]
+				}
+			]
+		},
+		"win": {
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/build/Release",
+					"to": ".",
+					"filter": [
+						"lib*.dll"
+					]
+				}
+			]
+		},
+		"linux": {
+			"extraFiles": [
+				{
+					"from": "../../node_modules/sharp/vendor/8.12.2/linux-x64/lib",
+					"to": ".",
+					"filter": [
+						"libvips*.so.*"
+					]
+				}
+			]
+		},
+		"dmg": {
+			"artifactName": "SuperConductor ${version} macOS Installer.${ext}"
+		},
+		"nsis": {
+			"artifactName": "SuperConductor ${version} Windows Installer.${ext}"
+		},
+		"appImage": {
+			"artifactName": "SuperConductor ${version} Linux Executable.${ext}"
 		},
 		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",

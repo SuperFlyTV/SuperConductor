@@ -112,6 +112,9 @@ export class IPCServer implements IPCServerMethods {
 	}): Promise<Group | undefined> {
 		return this.invokeServerMethod('movePart', data)
 	}
+	moveGroup(data: { rundownId: string; groupId: string; position: number }): Promise<void> {
+		return this.invokeServerMethod('moveGroup', data)
+	}
 	newTemplateData(data: {
 		rundownId: string
 		groupId: string
@@ -213,5 +216,8 @@ export class IPCServer implements IPCServerMethods {
 	}
 	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
 		return this.invokeServerMethod('renameRundown', data)
+	}
+	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
+		return this.invokeServerMethod('createMissingMapping', data)
 	}
 }

@@ -27,7 +27,7 @@
 		"email": "info@superfly.tv",
 		"url": "https://superfly.tv"
 	},
-	"license": "MIT",
+	"license": "AGPL-3.0-or-later",
 	"devDependencies": {
 		"@types/node": "^16.10.3",
 		"@types/triple-beam": "^1.3.2",
@@ -110,6 +110,15 @@
 					]
 				}
 			]
+		},
+		"dmg": {
+			"artifactName": "TSR-Bridge ${version} macOS Installer.${ext}"
+		},
+		"nsis": {
+			"artifactName": "TSR-Bridge ${version} Windows Installer.${ext}"
+		},
+		"appImage": {
+			"artifactName": "TSR-Bridge ${version} Linux Executable.${ext}"
 		},
 		"afterSign": "tools/notarize.js",
 		"electronVersion": "15.3.5",

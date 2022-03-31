@@ -10,6 +10,7 @@ import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
 const fsWriteFile = promisify(fs.writeFile)
+
 const fsRm = promisify(fs.rm)
 const fsAccess = promisify(fs.access)
 const fsExists = async (filePath: string): Promise<boolean> => {
@@ -21,6 +22,7 @@ const fsExists = async (filePath: string): Promise<boolean> => {
 	}
 }
 const fsRename = promisify(fs.rename)
+const fsUnlink = promisify(fs.unlink)
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -81,22 +83,46 @@ export class StorageHandler extends EventEmitter {
 		}
 
 		// filter out non-json files
-		const jsonFiles = files.filter((file) => file.endsWith('.json'))
+		const jsonFiles = files.filter((file) => file.endsWith('.json') || file.endsWith('.json.tmp'))
+
+		const jsonFilesMap = new Set<string>()
+		jsonFiles.forEach((fileName) => {
+			jsonFilesMap.add(fileName.replace('.json.tmp', '.json'))
+		})
 
 		// read the files to parse some data out of them for display purposes
-		return jsonFiles.map((fileName) => {
+		return Array.from(jsonFilesMap.keys()).map((fileName) => {
 			const fullFilePath = path.join(rundownsDir, fileName)
+
+			let rundown: FileRundown | undefined
+			let readError: any = undefined
+
 			try {
 				const unparsed = fs.readFileSync(fullFilePath, 'utf8')
-				const parsed = JSON.parse(unparsed) as FileRundown
+				rundown = JSON.parse(unparsed)
+			} catch (e) {
+				readError = e
+			}
+			if (!rundown) {
+				const tmpFullFilePath = this.getTmpFilePath(fullFilePath)
+				// Try reading the temporary file instead?
+				try {
+					const unparsed = fs.readFileSync(tmpFullFilePath, 'utf8')
+					rundown = JSON.parse(unparsed)
+				} catch (e) {
+					readError = e
+				}
+			}
+
+			if (!rundown) {
+				throw new Error(`Unable to read file "${fullFilePath}": ${readError}`)
+			} else {
 				return {
 					fileName,
-					name: parsed.rundown.name,
-					version: parsed.version,
+					name: rundown.rundown.name,
+					version: rundown.version,
 					open: this.rundowns ? fileName in this.rundowns : false,
 				}
-			} catch (error) {
-				throw new Error(`Unable to read file "${fullFilePath}": ${error}`)
 			}
 		})
 	}
@@ -207,6 +233,15 @@ export class StorageHandler extends EventEmitter {
 				throw error
 			}
 		}
+		try {
+			await fsRm(this.getTmpFilePath(fullPath))
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// The file is already gone, do nothing.
+			} else {
+				throw error
+			}
+		}
 	}
 
 	/**
@@ -305,7 +340,6 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.rundowns) {
 			for (const rundownId of Object.keys(updates.rundowns)) {
-				console.log('processing update of rundown:', rundownId)
 				this.rundownsHasChanged[rundownId] = true
 				this.rundownsNeedsWrite[rundownId] = true
 			}
@@ -327,33 +361,81 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	private loadAppData(defaultWindowPosition: WindowPosition): FileAppData {
+		let appData: FileAppData | undefined = undefined
 		try {
 			const read = fs.readFileSync(this.appDataPath, 'utf8')
-			return JSON.parse(read) as FileAppData
+			appData = JSON.parse(read)
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				this.appDataNeedsWrite = true
-				return this.getDefaultAppData(defaultWindowPosition)
 			} else {
-				throw error
+				throw new Error(`Unable to read AppData file "${this.appDataPath}": ${error}`)
 			}
 		}
+		if (!appData) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(this.appDataPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				appData = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.appDataNeedsWrite = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp AppData file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+
+		if (!appData) {
+			// Default:
+			this.appDataNeedsWrite = true
+			return this.getDefaultAppData(defaultWindowPosition)
+		}
+		return appData
 	}
 	private loadProject(newName?: string): FileProject {
+		let project: FileProject | undefined = undefined
 		const projectPath = this.projectPath(this._projectId)
 		try {
 			const read = fs.readFileSync(projectPath, 'utf8')
-			return JSON.parse(read) as FileProject
+			project = JSON.parse(read)
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				this.projectNeedsWrite = true
-				return this.getDefaultProject(newName)
+				project = undefined
 			} else {
 				throw new Error(`Unable to read Project file "${projectPath}": ${error}`)
 			}
 		}
+
+		if (!project) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(projectPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				project = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.projectNeedsWrite = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp Project file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+		if (!project) {
+			// Create a default project instead
+			this.projectNeedsWrite = true
+			return this.getDefaultProject(newName)
+		}
+
+		return project
 	}
 	private loadRundowns(): { [fileName: string]: FileRundown } {
 		const rundowns: { [fileName: string]: FileRundown } = {}
@@ -406,18 +488,43 @@ export class StorageHandler extends EventEmitter {
 	}
 	private _loadRundown(projectName: string, fileName: string, newName?: string): FileRundown {
 		const rundownPath = this.rundownPath(projectName, fileName)
+
+		let rundown: FileRundown | undefined = undefined
 		try {
 			const read = fs.readFileSync(rundownPath, 'utf8')
-			return JSON.parse(read) as FileRundown
+			rundown = JSON.parse(read)
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				this.rundownsNeedsWrite[fileName] = true
-				return this.getDefaultRundown(newName)
+				rundown = undefined
 			} else {
 				throw new Error(`Unable to read Rundown file "${rundownPath}": ${error}`)
 			}
 		}
+		if (!rundown) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(rundownPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				rundown = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.rundownsNeedsWrite[fileName] = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp Rundown file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+		if (!rundown) {
+			// Create a default rundown then:
+			this.rundownsNeedsWrite[fileName] = true
+			return this.getDefaultRundown(newName)
+		}
+
+		return rundown
 	}
 
 	private getDefaultAppData(defaultWindowPosition: WindowPosition): FileAppData {
@@ -488,25 +595,39 @@ export class StorageHandler extends EventEmitter {
 
 		// Store AppData:
 		if (this.appDataNeedsWrite) {
-			await fsWriteFile(this.appDataPath, JSON.stringify(this.appData), 'utf-8')
+			await this.writeFileSafe(this.appDataPath, JSON.stringify(this.appData))
 			this.appDataNeedsWrite = false
 		}
 
 		// Store Project:
 		if (this.projectNeedsWrite) {
-			await fsWriteFile(this.projectPath(this._projectId), JSON.stringify(this.project), 'utf-8')
+			await this.writeFileSafe(this.projectPath(this._projectId), JSON.stringify(this.project))
 			this.projectNeedsWrite = false
 		}
 		// Store Rundowns:
 		for (const fileName of Object.keys(this.rundownsNeedsWrite)) {
-			await fsWriteFile(
+			await this.writeFileSafe(
 				this.rundownPath(this._projectId, fileName),
-				JSON.stringify(this.rundowns[fileName]),
-				'utf-8'
+				JSON.stringify(this.rundowns[fileName])
 			)
 
 			delete this.rundownsNeedsWrite[fileName]
 		}
+	}
+	private getTmpFilePath(filePath: string): string {
+		return `${filePath}.tmp`
+	}
+	private async writeFileSafe(filePath: string, data: string) {
+		const tmpPath = this.getTmpFilePath(filePath)
+		await fsWriteFile(tmpPath, data, 'utf-8')
+		try {
+			await fsUnlink(filePath)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// not found, that's okay
+			} else throw error
+		}
+		await fsRename(tmpPath, filePath)
 	}
 
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {

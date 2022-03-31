@@ -2,6 +2,7 @@ import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { Mapping } from 'timeline-state-resolver-types'
+import { filterMapping } from '../../../../lib/TSRMappings'
 import { allowAddingResourceToLayer } from '../../../../lib/util'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
@@ -23,7 +24,7 @@ export const Layer: React.FC<{
 	partDuration: number
 	msPerPixel: number
 	locked?: boolean
-	mapping: Mapping
+	mapping: Mapping | undefined
 }> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel, locked, mapping }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -32,7 +33,7 @@ export const Layer: React.FC<{
 		() => ({
 			accept: locked ? [] : DragItemTypes.RESOURCE_ITEM,
 			canDrop: (item) => {
-				return allowAddingResourceToLayer(project, item.resource, mapping)
+				return typeof mapping !== 'undefined' && allowAddingResourceToLayer(project, item.resource, mapping)
 			},
 			drop: (item: ResourceDragItem) => {
 				ipcServer
@@ -56,6 +57,16 @@ export const Layer: React.FC<{
 		<DropZone ref={drop} className="layer" isOver={isOver} data-layer-id={layerId}>
 			<div className="layer__content">
 				{objectsOnLayer.map((objectOnLayer) => {
+					const warnings = []
+
+					if (typeof mapping !== 'undefined' && !filterMapping(mapping, objectOnLayer.timelineObj.obj)) {
+						warnings.push('This object is not allowed on this layer type.')
+					}
+
+					if (typeof mapping === 'undefined') {
+						warnings.push(`The layer "${layerId}" could not be found.`)
+					}
+
 					return (
 						<TimelineObject
 							key={objectOnLayer.timelineObj.obj.id}
@@ -66,6 +77,7 @@ export const Layer: React.FC<{
 							partDuration={partDuration}
 							msPerPixel={msPerPixel}
 							locked={locked}
+							warnings={warnings}
 						></TimelineObject>
 					)
 				})}

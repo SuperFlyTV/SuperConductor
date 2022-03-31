@@ -4,7 +4,6 @@ import {
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
-	findDevice,
 	findGroup,
 	findPart,
 	findTimelineObj,
@@ -40,6 +39,22 @@ import {
 	TimelineObjOBSSceneItemRender,
 	TimelineObjOBSMute,
 	TimelineObjOBSSourceSettings,
+	TimelineObjVMixInput,
+	TimelineContentTypeVMix,
+	TimelineObjVMixProgram,
+	VMixTransitionType,
+	TimelineObjVMixAudio,
+	TimelineObjVMixOutput,
+	TimelineObjVMixOverlay,
+	TimelineObjVMixRecording,
+	TimelineObjVMixStreaming,
+	TimelineObjVMixExternal,
+	TimelineObjVMixFadeToBlack,
+	TimelineObjVMixFader,
+	TimelineObjVMixPreview,
+	TimelineObjOSCMessage,
+	TimelineContentTypeOSC,
+	Mapping,
 } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
@@ -100,7 +115,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	) {
 		super()
-		for (const methodName of Object.keys(IPCServer.prototype)) {
+		for (const methodName of Object.getOwnPropertyNames(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
@@ -647,7 +662,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			part = getPartResult.part
 		} catch (error) {
 			// Ignore
-			console.log('movePart caught error:', (error as any).message)
+			console.error('movePart caught error:', (error as any).message)
 			return null
 		}
 
@@ -772,6 +787,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			},
 			description: ActionDescription.MovePart,
 			result: toGroup,
+		}
+	}
+	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+
+		// Save the original position for use in undo.
+		const originalPosition = rundown.groups.findIndex((g) => g.id === arg.groupId)
+
+		// Remove the group from the groups array and re-insert it at its new position
+		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
+		rundown.groups.splice(arg.position, 0, group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: async () => {
+				await this.moveGroup({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					position: originalPosition,
+				})
+			},
+			description: ActionDescription.MoveGroup,
 		}
 	}
 
@@ -1421,6 +1459,178 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				},
 				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.SCENE_ITEM_RENDER, on: true },
 			})
+		} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
+			obj = literal<TimelineObjVMixProgram>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.PROGRAM,
+					input: resource.number,
+					transition: {
+						effect: VMixTransitionType.Cut,
+						duration: 0,
+					},
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
+			obj = literal<TimelineObjVMixPreview>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.PREVIEW,
+					input: 1,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
+			obj = literal<TimelineObjVMixInput>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.INPUT,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
+			obj = literal<TimelineObjVMixAudio>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.AUDIO,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
+			obj = literal<TimelineObjVMixOutput>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.OUTPUT,
+					source: 'Input',
+					input: 1,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
+			obj = literal<TimelineObjVMixOverlay>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.OVERLAY,
+					input: 1,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
+			obj = literal<TimelineObjVMixRecording>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.RECORDING,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
+			obj = literal<TimelineObjVMixStreaming>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.STREAMING,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
+			obj = literal<TimelineObjVMixExternal>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.EXTERNAL,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
+			obj = literal<TimelineObjVMixFadeToBlack>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.FADE_TO_BLACK,
+					on: true,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.VMIX_FADER) {
+			obj = literal<TimelineObjVMixFader>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.VMIX,
+					type: TimelineContentTypeVMix.FADER,
+					position: 255,
+				},
+			})
+		} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
+			obj = literal<TimelineObjOSCMessage>({
+				id: short.generate(),
+				layer: '', // set later
+				enable: {
+					start: 0,
+					duration: 5 * 1000,
+				},
+				content: {
+					deviceType: DeviceType.OSC,
+					type: TimelineContentTypeOSC.OSC,
+					path: '/',
+					values: [],
+				},
+			})
 		} else {
 			assertNever(resource)
 			// @ts-expect-error never
@@ -1448,10 +1658,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const mapping = project.mappings[obj.layer]
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
-			console.warn(
-				`Preventing addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
+			throw new Error(
+				`Prevented addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
 			)
-			return null
 		}
 
 		const timelineObj: TimelineObj = {
@@ -1652,45 +1861,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		const rundowns = this.storage.getAllRundowns()
-
-		for (const mappingId in data.project.mappings) {
-			// Go through all Mappings and remove any belonging to devices which have been removed.
-			const mapping = data.project.mappings[mappingId]
-			const device = findDevice(data.project.bridges, mapping.deviceId)
-			if (!device) {
-				delete data.project.mappings[mappingId]
-			}
-		}
-
-		for (const rundown of rundowns) {
-			// Go through all Parts and remove any timelineObjs belonging to layers which have been removed.
-			let modifiedTimeline = false
-			for (const group of rundown.groups) {
-				for (const part of group.parts) {
-					const timelineObjsToRemove: TimelineObj[] = []
-					for (const timelineObj of part.timeline) {
-						if (!(timelineObj.obj.layer in data.project.mappings)) {
-							timelineObjsToRemove.push(timelineObj)
-						}
-					}
-					if (timelineObjsToRemove.length) {
-						part.timeline = part.timeline.filter(
-							(timelineObj) => !timelineObjsToRemove.includes(timelineObj)
-						)
-						modifiedTimeline = true
-						this._updatePart(part)
-					}
-				}
-				if (modifiedTimeline) {
-					this._updateTimeline(group)
-				}
-			}
-			if (modifiedTimeline) {
-				this.storage.updateRundown(rundown.id, rundown)
-			}
-		}
-
 		this.storage.updateProject(data.project)
 	}
 	async newRundown(data: { name: string }): Promise<UndoableResult> {
@@ -1731,6 +1901,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		const { rundown } = this.getRundown(data)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Stop playout
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		}
+
 		await this.storage.closeRundown(data.rundownId)
 
 		return {
@@ -1759,6 +1939,89 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				await this.storage.renameRundown(newRundownId, originalName)
 			},
 			description: ActionDescription.RenameRundown,
+		}
+	}
+	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
+		const project = this.getProject()
+		const rundown = this.storage.getRundown(data.rundownId)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Find all timeline objects which reside on the missing layer.
+		const createdMappings: { [mappingId: string]: Mapping } = {}
+
+		for (const group of rundown.groups) {
+			for (const part of group.parts) {
+				for (const timelineObj of part.timeline) {
+					if (timelineObj.obj.layer === data.mappingId) {
+						if (!timelineObj.resourceId)
+							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+
+						let deviceId: string | undefined
+						const resource = this.session.getResource(timelineObj.resourceId)
+						if (resource) {
+							deviceId = resource.deviceId
+						}
+						if (!deviceId) {
+							// Pick the first compatible deviceId we find:
+							for (const bridge of Object.values(project.bridges)) {
+								if (deviceId) break
+								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
+									if (device.type === timelineObj.obj.content.deviceType) {
+										deviceId = findDeviceId
+										break
+									}
+								}
+							}
+						}
+
+						if (!deviceId) continue
+
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId)
+						if (newMapping) {
+							createdMappings[data.mappingId] = newMapping
+						}
+					}
+				}
+			}
+		}
+
+		let newLayerId: string | undefined = undefined
+		switch (Object.keys(createdMappings).length) {
+			case 0:
+				throw new Error('No mapping could be automatically created.')
+			case 1: {
+				newLayerId = Object.keys(createdMappings)[0]
+				const newMapping = Object.values(createdMappings)[0]
+
+				if (!newMapping.layerName) {
+					throw new Error('INTERNAL ERROR: Mapping lacks a layer name.')
+				}
+
+				// Add the new layer to the project
+				project.mappings = {
+					...project.mappings,
+					[newLayerId]: newMapping,
+				}
+				this.storage.updateProject(project)
+				break
+			}
+			default:
+				throw new Error(
+					'No mapping could be automatically created because the timeline objects on this layer are of incompatible types.'
+				)
+		}
+
+		return {
+			undo: async () => {
+				if (newLayerId) {
+					const project = this.getProject()
+					delete project.mappings[newLayerId]
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.CreateMissingMapping,
 		}
 	}
 

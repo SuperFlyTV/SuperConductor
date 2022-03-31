@@ -1,0 +1,24 @@
+button.sc-btn {
+	border-radius: 0.5rem;
+	color: white;
+	border: 0;
+	font-size: 1.1rem;
+	padding: 0.4rem 0.8rem;
+	box-shadow: inset 0px -2px 0px rgba(0, 0, 0, 0.25);
+
+	&.normal {
+		background: #545a78;
+
+		&:hover {
+			background: #666d8d;
+		}
+	}
+
+	&.danger {
+		background: #963939;
+
+		&:hover {
+			background: #b14949;
+		}
+	}
+}

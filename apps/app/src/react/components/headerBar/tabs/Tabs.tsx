@@ -1,22 +1,28 @@
 import { observer } from 'mobx-react-lite'
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { store } from '../../../mobx/store'
 import { NewTabBtn } from './newTabBtn/NewTabBtn'
 import { Tab } from './tab/Tab'
 
-import './tabs.scss'
+import './style.scss'
+import { AiFillHome } from 'react-icons/ai'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 
 export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer((props) => {
 	const rundownsStore = store.rundownsStore
 	const guiStore = store.guiStore
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const [closeConfirmationDialogOpen, setCloseConfirmationDialogOpen] = useState(false)
+	const [rundownToClose, setRundownToClose] = useState<{
+		rundownId: string
+		name: string
+	}>()
 
 	const handleSelect = (rundownId: string) => {
 		store.rundownsStore.setCurrentRundown(rundownId)
-		guiStore.currentlyActiveTabSection = 'rundown'
 	}
 
 	const handleClose = (rundownId: string) => {
@@ -29,40 +35,64 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 		}
 	}
 
+	const isHomeSelected = guiStore.isHomeSelected()
+	const isFirstRundownSelected = rundownsStore.openRundowns[0]?.rundownId === guiStore.activeTabId
+
 	return (
 		<div className="tabs">
 			<Tab
-				id="project"
-				name="Project"
+				id="home"
+				name="Home"
 				onClick={() => {
-					guiStore.currentlyActiveTabSection = 'project'
-					rundownsStore.setCurrentRundown(undefined)
+					guiStore.goToHome()
 				}}
 				disableClose={true}
-				active={guiStore.currentlyActiveTabSection === 'project'}
+				active={isHomeSelected}
+				icon={<AiFillHome />}
+				showSeparator={!isHomeSelected && !isFirstRundownSelected}
 			/>
 
-			{rundownsStore.openRundowns.map((rundown) => {
+			{rundownsStore.openRundowns.map((rundown, idx) => {
+				const isThisSelected = rundown.rundownId === guiStore.activeTabId
+				const isNextSelected = rundownsStore.openRundowns[idx + 1]?.rundownId === guiStore.activeTabId
+
 				return (
 					<Tab
 						key={rundown.rundownId}
 						id={rundown.rundownId}
 						name={rundown.name}
-						active={
-							guiStore.currentlyActiveTabSection === 'rundown' &&
-							rundown.rundownId === rundownsStore.currentRundownId
-						}
+						active={isThisSelected}
 						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => props.onTabDoubleClick(rundown)}
-						onClose={(id) => handleClose(id)}
+						onClose={() => {
+							setRundownToClose(rundown)
+							setCloseConfirmationDialogOpen(true)
+						}}
+						showSeparator={!isThisSelected && !isNextSelected}
 					/>
 				)
 			})}
 
 			<NewTabBtn
 				onClick={() => {
-					guiStore.currentlyActiveTabSection = 'new-rundown'
+					guiStore.goToNewRundown()
 				}}
+			/>
+
+			<ConfirmationDialog
+				open={closeConfirmationDialogOpen}
+				onAccepted={() => {
+					if (rundownToClose) {
+						handleClose(rundownToClose.rundownId)
+					}
+					setCloseConfirmationDialogOpen(false)
+				}}
+				onDiscarded={() => {
+					setCloseConfirmationDialogOpen(false)
+				}}
+				acceptLabel="Close"
+				title="Close Rundown"
+				body={`Are you sure you wish to close ${rundownToClose ? rundownToClose.name : 'this rundown'}?`}
 			/>
 		</div>
 	)

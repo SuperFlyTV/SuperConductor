@@ -9,7 +9,8 @@
 		background: $mediaLayerColor;
 	}
 
-	&.me {
+	&.me,
+	&.OUTPUT {
 		background: $mixEffectLayerColor;
 	}
 
@@ -17,7 +18,8 @@
 		background: $downstreamKeyerLayerColor;
 	}
 
-	&.aux {
+	&.aux,
+	&.EXTERNAL {
 		background: $auxiliaryLayerColor;
 	}
 
@@ -67,5 +69,37 @@
 
 	&.SOURCE_SETTINGS {
 		background: $sourceSettingsLayerColor;
+	}
+
+	&.INPUT {
+		background: $inputLayerColor;
+	}
+
+	&.PROGRAM {
+		background: $programLayerColor;
+	}
+
+	&.AUDIO {
+		background: $audioLayerColor;
+	}
+
+	&.OVERLAY {
+		background: $overlayLayerColor;
+	}
+
+	&.FADE_TO_BLACK {
+		background: $fadeToBlackLayerColor;
+	}
+
+	&.FADER {
+		background: $videoFaderLayerColor;
+	}
+
+	&.PREVIEW {
+		background: $previewLayerColor;
+	}
+
+	&.osc {
+		background: $oscLayerColor;
 	}
 }

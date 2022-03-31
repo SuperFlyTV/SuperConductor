@@ -4,7 +4,6 @@ import { EMPTY_LAYER_ID_PREFIX } from '../../../../lib/util'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import { DropZone } from '../../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
@@ -18,7 +17,6 @@ export const EmptyLayer: React.FC<{
 }> = observer(({ rundownId, groupId, partId }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const { timelineObjMove } = useContext(TimelineObjectMoveContext)
 	const [{ isOver }, drop] = useDrop(
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
@@ -45,8 +43,8 @@ export const EmptyLayer: React.FC<{
 	}, [])
 
 	const canMoveTimelineObjToThisEmptyLayer =
-		timelineObjMove.moveType === 'whole' &&
-		timelineObjMove.hoveredLayerId === layerId &&
+		store.guiStore.timelineObjMove.moveType === 'whole' &&
+		store.guiStore.timelineObjMove.hoveredLayerId === layerId &&
 		store.guiStore.selectedTimelineObjIds.length === 1
 
 	return (

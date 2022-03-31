@@ -1,0 +1,95 @@
+@import '../../../../../styles/foundation/all';
+
+.layer-name {
+	height: $layerHeight;
+	position: relative;
+	margin-bottom: 1px;
+
+	&:nth-child(odd) {
+		background: #222630;
+	}
+
+	&:not(:last-child) {
+		border-bottom: 1px;
+		border-color: #2d3340;
+		border-bottom-style: solid;
+	}
+
+	&.warning {
+		background: $invalidLayerColor;
+	}
+
+	.warning-icon {
+		cursor: help;
+		position: relative;
+		top: 3px;
+		left: 2px;
+	}
+}
+
+.layer-names-dropdown {
+	position: relative;
+
+	&.open {
+		.selected-item {
+			background-color: rgba(255, 255, 255, 0.1);
+			border-bottom: none;
+		}
+		.other-items {
+			display: block;
+			border-radius: 0 0 0.4rem 0.4rem;
+		}
+	}
+
+	.warning-icon {
+		margin-right: 0.3rem;
+		flex-shrink: 0;
+	}
+
+	.other-items {
+		border: 0.1rem solid #545a78;
+		border-top: none;
+		display: none;
+		position: absolute;
+		width: 100%;
+		top: 100%;
+		left: 0;
+		z-index: 10;
+		background: #464646;
+	}
+
+	.item {
+		padding: 0 0.3rem;
+		font-size: 1.4rem;
+		font-size: 1.4rem;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		height: $layerHeight;
+
+		&:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+
+		&.selected {
+			display: block;
+		}
+
+		&.editMappings {
+			background: #545a78;
+
+			&:hover {
+				background: #697091;
+			}
+		}
+
+		&-label {
+			min-width: 0;
+			flex-shrink: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			margin-left: auto;
+		}
+	}
+}

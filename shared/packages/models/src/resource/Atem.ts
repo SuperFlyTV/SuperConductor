@@ -15,8 +15,6 @@ export interface AtemMe extends ResourceBase {
 
 	/** The 0-based index of the ME */
 	index: number
-
-	name: string
 }
 
 export interface AtemDsk extends ResourceBase {
@@ -24,8 +22,6 @@ export interface AtemDsk extends ResourceBase {
 
 	/** The 0-based index of the DSK */
 	index: number
-
-	name: string
 }
 
 export interface AtemAux extends ResourceBase {
@@ -33,8 +29,6 @@ export interface AtemAux extends ResourceBase {
 
 	/** The 0-based index of the Aux output */
 	index: number
-
-	name: string
 }
 
 export interface AtemSsrc extends ResourceBase {
@@ -42,8 +36,6 @@ export interface AtemSsrc extends ResourceBase {
 
 	/** The 0-based index of the SSrc */
 	index: number
-
-	name: string
 }
 
 export interface AtemSsrcProps extends ResourceBase {
@@ -51,14 +43,10 @@ export interface AtemSsrcProps extends ResourceBase {
 
 	/** The 0-based index of the SSrc */
 	index: number
-
-	name: string
 }
 
 export interface AtemMacroPlayer extends ResourceBase {
 	resourceType: ResourceType.ATEM_MACRO_PLAYER
-
-	name: string
 }
 
 export interface AtemAudioChannel extends ResourceBase {
@@ -66,8 +54,6 @@ export interface AtemAudioChannel extends ResourceBase {
 
 	/** The 1-based index of the Audio Channel */
 	index: number
-
-	name: string
 }
 
 export interface AtemMediaPlayer extends ResourceBase {
@@ -75,6 +61,4 @@ export interface AtemMediaPlayer extends ResourceBase {
 
 	/** The 0-based index of the Media Player */
 	index: number
-
-	name: string
 }
