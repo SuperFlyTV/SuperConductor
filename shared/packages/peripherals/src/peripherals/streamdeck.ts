@@ -94,6 +94,7 @@ export class PeripheralStreamDeck extends Peripheral {
 					console.error(error)
 				}
 			})
+			await sleep(10) // to avoid an common initial "unable to write to HID device" error.
 			await this._updateAllKeys('Initializing')
 
 			this.initializing = false
@@ -199,9 +200,10 @@ export class PeripheralStreamDeck extends Peripheral {
 		keyDisplay: KeyDisplay,
 		darkBG = false
 	) {
-		const fontsize = 16
-		const padding = 5
 		const SIZE = streamDeck.ICON_SIZE
+
+		const fontsize = SIZE >= 96 ? 20 : 16 // XL vs original
+		const padding = 5
 
 		const maxTextWidth = SIZE - padding // note
 
@@ -447,4 +449,7 @@ function keyIndexToIdentifier(keyIndex: number): string {
 }
 function identifierToKeyIndex(identifier: string): number {
 	return parseInt(identifier)
+}
+function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }
