@@ -2,6 +2,7 @@ import { literal } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
+import installExtension, { REACT_DEVELOPER_TOOLS, MOBX_DEVTOOLS } from 'electron-devtools-installer'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
@@ -33,7 +34,12 @@ const createWindow = (): void => {
 	tpt.initWindow(win)
 
 	if (isDev) {
-		win.webContents.openDevTools()
+		installExtension(REACT_DEVELOPER_TOOLS)
+			.then((name) => console.log(`Added Extension:  ${name}`))
+			.then(() => installExtension(MOBX_DEVTOOLS))
+			.then((name) => console.log(`Added Extension:  ${name}`))
+			.then(() => win.webContents.openDevTools())
+			.catch((err) => console.log('An error occurred: ', err))
 	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
 
