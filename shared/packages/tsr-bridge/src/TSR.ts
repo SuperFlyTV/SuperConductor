@@ -238,8 +238,7 @@ export class TSR {
 
 				// Refresh media:
 				{
-					const res = await ccg.cls()
-					const mediaList = res.response.data as {
+					let mediaList: {
 						type: 'image' | 'video' | 'audio'
 						name: string
 						size: number
@@ -250,6 +249,18 @@ export class TSR {
 						duration: number
 						thumbnail?: string
 					}[]
+					try {
+						const res = await ccg.cls()
+						mediaList = res.response.data
+					} catch (error) {
+						if ((error as AMCP.ClsCommand)?.response?.code === 501) {
+							// This probably means that media-scanner isn't running
+							mediaList = []
+						} else {
+							throw error
+						}
+					}
+
 					for (const media of mediaList) {
 						const resource: CasparCGMedia = {
 							resourceType: ResourceType.CASPARCG_MEDIA,
