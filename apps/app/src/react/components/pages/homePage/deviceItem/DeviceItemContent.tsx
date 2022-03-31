@@ -31,9 +31,14 @@ export const DeviceItemContent: React.FC<{
 				return
 			}
 
+			if (newId === deviceId) {
+				return
+			}
+
 			const device = project.bridges[bridge.id].settings.devices[deviceId]
-			project.bridges[bridge.id].settings.devices[newId] = device
 			delete project.bridges[bridge.id].settings.devices[deviceId]
+			project.bridges[bridge.id].settings.devices[newId] = device
+
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
 		[bridge, deviceId, handleError, ipcServer, project]
