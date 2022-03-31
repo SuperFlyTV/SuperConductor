@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useCallback, useMemo } from 'react'
-import _ from 'lodash'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { Group } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
-import { getGroupPlayData, GroupPlayData } from '../../../../lib/playhead'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import {
@@ -106,32 +104,18 @@ export const GroupView: React.FC<{
 		setActiveParts(activeParts0)
 	}, [group])
 
-	const [playhead, setPlayhead] = useState<GroupPlayData>(getGroupPlayData(playheadData.current))
-	const requestRef = useRef<number>(0)
-	const updatePlayhead = useCallback(() => {
-		const newPlayhead = getGroupPlayData(playheadData.current)
-
-		setPlayhead((oldPlayhead) => {
-			if (!_.isEqual(oldPlayhead, newPlayhead)) {
-				return newPlayhead
-			} else {
-				return oldPlayhead
-			}
-		})
-		requestRef.current = window.requestAnimationFrame(updatePlayhead)
-	}, [])
-	useEffect(() => {
-		requestRef.current = window.requestAnimationFrame(updatePlayhead)
-		return () => {
-			window.cancelAnimationFrame(requestRef.current)
-		}
-	}, [updatePlayhead])
+	const groupIsPlaying = store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false
+	const anyPartIsPlaying = store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
 
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
 	const stopPlayingRef = useRef(true)
 	useEffect(() => {
-		if (group.preparedPlayData && wasPlayingRef.current && !group.oneAtATime && !playhead.groupIsPlaying) {
+		if (!groupIsPlaying) {
+			return
+		}
+
+		if (group.preparedPlayData && wasPlayingRef.current && !group.oneAtATime && !groupIsPlaying) {
 			// We believe that we are are playing, but the playhead says otherwise.
 			// That probably means that we have reached the end.
 
@@ -146,12 +130,12 @@ export const GroupView: React.FC<{
 		}
 
 		// We are definitely playing
-		if (group.preparedPlayData && playhead.groupIsPlaying) {
+		if (group.preparedPlayData && groupIsPlaying) {
 			wasPlayingRef.current = true
 		} else {
 			wasPlayingRef.current = false
 		}
-	}, [playhead, group, ipcServer, rundownId, handleError])
+	}, [groupIsPlaying, group, ipcServer, rundownId, handleError])
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -372,7 +356,7 @@ export const GroupView: React.FC<{
 	}
 
 	// Stop button:
-	const canStop = playhead.anyPartIsPlaying
+	const canStop = anyPartIsPlaying
 	const handleStop = () => {
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
@@ -385,7 +369,7 @@ export const GroupView: React.FC<{
 	// Step down button:
 	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
 	const nextPart = group.parts[nextPartIndex]
-	const canStepDown = !group.disabled && playhead.anyPartIsPlaying && Boolean(nextPart)
+	const canStepDown = !group.disabled && anyPartIsPlaying && Boolean(nextPart)
 	const handleStepDown = () => {
 		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
 	}
@@ -393,7 +377,7 @@ export const GroupView: React.FC<{
 	// Step down up:
 	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
 	const prevPart = group.parts[prevPartIndex]
-	const canStepUp = !group.disabled && playhead.anyPartIsPlaying && Boolean(prevPart)
+	const canStepUp = !group.disabled && anyPartIsPlaying && Boolean(prevPart)
 	const handleStepUp = () => {
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
 	}
@@ -412,13 +396,12 @@ export const GroupView: React.FC<{
 					part={firstPart}
 					parentGroup={group}
 					parentGroupIndex={groupIndex}
-					playhead={playhead}
 					mappings={mappings}
 				/>
 			</div>
 		) : null
 	} else {
-		const canModifyOneAtATime = !(!group.oneAtATime && playhead.anyPartIsPlaying) && !group.locked
+		const canModifyOneAtATime = !(!group.oneAtATime && anyPartIsPlaying) && !group.locked
 		// (group.oneAtATime && playhead.anyPartIsPlaying) || !group.oneAtATime
 		// || !group.oneAtATime // && !playhead.groupIsPlaying
 
@@ -679,7 +662,6 @@ export const GroupView: React.FC<{
 									part={part}
 									parentGroup={group}
 									parentGroupIndex={groupIndex}
-									playhead={playhead}
 									mappings={mappings}
 								/>
 							))}

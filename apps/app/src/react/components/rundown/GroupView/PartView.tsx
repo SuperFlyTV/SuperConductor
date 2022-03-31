@@ -6,9 +6,8 @@ import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } fro
 import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
-import { GroupPlayData } from '../../../../lib/playhead'
 import classNames from 'classnames'
-import { CountDownHead } from '../CountdownHead'
+// import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
@@ -60,9 +59,8 @@ export const PartView: React.FC<{
 	parentGroup: Group
 	parentGroupIndex: number
 	part: Part
-	playhead: GroupPlayData
 	mappings: Mappings
-}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, playhead, mappings }) => {
+}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, mappings }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove
@@ -447,15 +445,18 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	const partPlayhead = playhead.anyPartIsPlaying ? playhead.playheads[part.id] : undefined
+	const anyPartIsPlaying = store.groupPlayDataStore.groups.get(parentGroup.id)?.anyPartIsPlaying ?? false
+	const groupIsPlaying = store.groupPlayDataStore.groups.get(parentGroup.id)?.groupIsPlaying ?? false
+
+	const partPlayhead = anyPartIsPlaying ? true : undefined // playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
 
-	const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
+	const timesUntilStart = null // (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
 
-	const playheadTime = partPlayhead ? partPlayhead.playheadTime : 0
-	const countDownTime = partPlayhead
-		? partPlayhead.partEndTime - partPlayhead.partStartTime - partPlayhead.playheadTime
-		: 0
+	// const playheadTime = partPlayhead ? partPlayhead.playheadTime : 0
+	// const countDownTime = partPlayhead
+	// 	? partPlayhead.partEndTime - partPlayhead.partStartTime - partPlayhead.playheadTime
+	// 	: 0
 
 	const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
@@ -465,7 +466,7 @@ export const PartView: React.FC<{
 	}
 
 	// Stop button:
-	const canStop = parentGroup.oneAtATime ? playhead.groupIsPlaying : partIsPlaying
+	const canStop = parentGroup.oneAtATime ? groupIsPlaying : partIsPlaying
 	const handleStop = () => {
 		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
@@ -839,8 +840,9 @@ export const PartView: React.FC<{
 				})}
 			</div>
 			<div className="part__time">
-				{playheadTime ? <div className="part__time__current-time">{msToTime(playheadTime)}</div> : ''}
-				{countDownTime ? <div className="part__time__remaining-time">{msToTime(countDownTime)}</div> : ''}
+				{/* TODO: Add components for presenting playheadTime and countDownTime */}
+				{/* {playheadTime ? <div className="part__time__current-time">{msToTime(playheadTime)}</div> : ''}
+				{countDownTime ? <div className="part__time__remaining-time">{msToTime(countDownTime)}</div> : ''} */}
 				<div className="part__time__duration">
 					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
 				</div>
@@ -848,15 +850,14 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__timeline">
 				<div className="countdown-wrapper">
-					{timesUntilStart &&
+					{/* TODO: Add component for presenting timesUntilStart */}
+					{/* {timesUntilStart &&
 						timesUntilStart.map((timeUntilStart, index) => (
 							<CountDownHead key={index} timeUntilStart={timeUntilStart} />
-						))}
+						))} */}
 				</div>
 				<div className="layers-wrapper">
-					{playheadTime ? (
-						<PlayHead percentage={(playheadTime * 100) / part.resolved.duration + '%'} />
-					) : null}
+					{partIsPlaying ? <PlayHead part={part} groupId={parentGroup.id} /> : null}
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,
