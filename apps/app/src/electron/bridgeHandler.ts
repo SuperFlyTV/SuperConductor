@@ -111,18 +111,22 @@ export class BridgeHandler {
 				}
 
 				if (addNew) {
-					const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
-					// connection.id = bridge.id
-
-					connection.on('close', () => {
-						// 'close' means that it's really gone.
-						// remove bridge:
-						delete this.outgoingBridges[bridge.id]
-					})
-					// console.log('Connecting to bridge', bridge.id, connection.connectionId)
-					this.outgoingBridges[bridge.id] = {
-						bridge,
-						connection,
+					// Guard against invalid addresses entered by the user
+					try {
+						const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
+						// connection.id = bridge.id
+						connection.on('close', () => {
+							// 'close' means that it's really gone.
+							// remove bridge:
+							delete this.outgoingBridges[bridge.id]
+						})
+						// console.log('Connecting to bridge', bridge.id, connection.connectionId)
+						this.outgoingBridges[bridge.id] = {
+							bridge,
+							connection,
+						}
+					} catch (error) {
+						console.error(`Failed to create a websocket connection to "${bridge.url}"`)
 					}
 				}
 			}
