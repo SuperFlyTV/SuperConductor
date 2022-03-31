@@ -38,6 +38,7 @@ import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
 import { observer } from 'mobx-react-lite'
+import { computed } from 'mobx'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -445,8 +446,12 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	const anyPartIsPlaying = store.groupPlayDataStore.groups.get(parentGroup.id)?.anyPartIsPlaying ?? false
-	const groupIsPlaying = store.groupPlayDataStore.groups.get(parentGroup.id)?.groupIsPlaying ?? false
+	const anyPartIsPlaying = computed(
+		() => store.groupPlayDataStore.groups.get(parentGroup.id)?.anyPartIsPlaying ?? false
+	).get()
+	const groupIsPlaying = computed(
+		() => store.groupPlayDataStore.groups.get(parentGroup.id)?.groupIsPlaying ?? false
+	).get()
 
 	const partPlayhead = anyPartIsPlaying ? true : undefined // playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined

@@ -42,6 +42,7 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import shortUUID from 'short-uuid'
+import { computed } from 'mobx'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -104,8 +105,10 @@ export const GroupView: React.FC<{
 		setActiveParts(activeParts0)
 	}, [group])
 
-	const groupIsPlaying = store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false
-	const anyPartIsPlaying = store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
+	const groupIsPlaying = computed(() => store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false).get()
+	const anyPartIsPlaying = computed(
+		() => store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
+	).get()
 
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
