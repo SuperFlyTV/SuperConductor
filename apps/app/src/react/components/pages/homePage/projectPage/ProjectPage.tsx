@@ -62,6 +62,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 						}
 					})}
 				/>
+				{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
 			</RoundedSection>
 
 			<div className="rundowns-page"></div>

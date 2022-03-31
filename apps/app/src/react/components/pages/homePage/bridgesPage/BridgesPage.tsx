@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
 import { Project } from '../../../../../models/project/Project'
-import { FormControlLabel, Switch } from '@mui/material'
 import { Bridge } from '../../../settings/Bridge'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -14,6 +13,9 @@ import { BridgeItemHeader } from '../bridgeItem/BridgeItemHeader'
 import { BridgeItemContent } from '../bridgeItem/BridgeItemContent'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 import { NewBridgeDialog } from './NewBridgeDialog'
+
+import Toggle from 'react-toggle'
+import 'react-toggle/style.css'
 
 export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -50,19 +52,18 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 			help="Bridges are helper applications that communicate with the SuperConductor. The role of the bridge is to communicate with devices such as CasparCG, Atem, OBS, vMix, etc. SuperConductor sends all the timeline objects and settings to the bridge which then transmits information to different devices. SuperConductor communicates with bridges using WebSocket protocol."
 		>
 			<NewBridgeDialog open={isNewBridgeDialogOpen} onClose={() => setNewBridgeDialogOpen(false)} />
-			<RoundedSection title="Internal Bridge">
-				<div className="rounded-section-message">
-					<FormControlLabel
-						control={
-							<Switch checked={project.settings.enableInternalBridge} onChange={toggleInternalBridge} />
-						}
-						label="Enable internal bridge"
-						labelPlacement="start"
-						className="switch"
-					/>
-				</div>
-
-				{internalBridge && project.settings.enableInternalBridge && bridgeStatuses[INTERNAL_BRIDGE_ID] && (
+			<RoundedSection
+				title="Internal Bridge"
+				controls={
+					<div className="sc-switch">
+						<Toggle
+							defaultChecked={project.settings.enableInternalBridge}
+							onChange={toggleInternalBridge}
+						/>
+					</div>
+				}
+			>
+				{internalBridge && project.settings.enableInternalBridge && bridgeStatuses[INTERNAL_BRIDGE_ID] ? (
 					<ScList
 						list={[
 							{
@@ -85,6 +86,8 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 							},
 						]}
 					/>
+				) : (
+					<div className="central">Internal bridge is off.</div>
 				)}
 			</RoundedSection>
 
