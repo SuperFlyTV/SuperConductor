@@ -9,9 +9,14 @@ type PropsType = {
 }
 
 export const PlayHead = observer((props: PropsType) => {
-	const playheadTime = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.part.id]?.playheadTime ?? 0
-	const duration = props.part.resolved.duration
+	const playhead = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.part.id]
 
+	if (!playhead) {
+		return null
+	}
+
+	const playheadTime = playhead.playheadTime
+	const duration = props.part.resolved.duration
 	const percentage = (playheadTime / duration) * 100 + '%'
 
 	return (

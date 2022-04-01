@@ -462,9 +462,8 @@ export const PartView: React.FC<{
 	const partPlayhead = anyPartIsPlaying ? true : undefined // playhead.playheads[part.id] : undefined
 	const partIsPlaying = partPlayhead !== undefined
 
-	const timesUntilStart = null // (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
-
-	const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
+	// const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
+	// const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
 	const handleStart = () => {
@@ -658,8 +657,8 @@ export const PartView: React.FC<{
 			data-part-id={part.id}
 			ref={previewRef}
 			className={classNames('part', {
-				active: isActive === 'active',
-				queued: isActive === 'queued',
+				// active: isActive === 'active',
+				// queued: isActive === 'queued',
 				dragging: isDragging,
 				disabled: groupOrPartDisabled,
 				locked: groupOrPartLocked,
@@ -861,7 +860,7 @@ export const PartView: React.FC<{
 					<CountdownHeads groupId={parentGroup.id} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
-					{partIsPlaying ? <PlayHead part={part} groupId={parentGroup.id} /> : null}
+					<PlayHead part={part} groupId={parentGroup.id} />
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,
