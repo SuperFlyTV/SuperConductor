@@ -4,7 +4,6 @@ import { FiHelpCircle } from 'react-icons/fi'
 import { Message } from '../message/Message'
 import './style.scss'
 
-// WIP
 export const ProjectPageLayout: React.FC<{
 	title: string
 	subtitle?: string
@@ -20,7 +19,6 @@ export const ProjectPageLayout: React.FC<{
 					<div className="subtitle">{props.subtitle}</div>
 					<div className="title">{props.title}</div>
 				</div>
-				{props.controls && <div className="controls">{props.controls}</div>}
 				{props.help && (
 					<button
 						className={classNames('help', { open: showHelp })}
@@ -31,6 +29,7 @@ export const ProjectPageLayout: React.FC<{
 						<FiHelpCircle />
 					</button>
 				)}
+				{props.controls && <div className="controls">{props.controls}</div>}
 			</div>
 			{showHelp && props.help && <Message type="help" content={props.help} onClose={() => setShowHelp(false)} />}
 			<div className="content">{props.children}</div>

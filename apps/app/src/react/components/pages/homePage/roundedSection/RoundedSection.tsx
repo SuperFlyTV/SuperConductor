@@ -27,9 +27,9 @@ export const RoundedSection: React.FC<{ title: string; controls?: React.ReactNod
 			</div>
 			<div className="border-cropper">
 				<div className="border">
-					{showHelp && (
+					{showHelp && props.help && (
 						<div className="message-wrapper">
-							<Message type="help" content="Abcdef" onClose={() => setShowHelp(false)} />
+							<Message type="help" content={props.help} onClose={() => setShowHelp(false)} />
 						</div>
 					)}
 					{props.children}

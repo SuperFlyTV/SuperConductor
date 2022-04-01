@@ -11,8 +11,7 @@
 
 		> .header {
 			display: flex;
-			align-items: center;
-			justify-content: space-between;
+			align-items: flex-end;
 			margin-bottom: 4rem;
 
 			.titles {
@@ -31,10 +30,10 @@
 			}
 
 			.controls {
-				flex-grow: 1;
 				display: flex;
 				align-items: center;
 				margin-left: 3rem;
+				margin-bottom: 0.7rem;
 			}
 
 			.help {
@@ -43,6 +42,8 @@
 				background: transparent;
 				cursor: pointer;
 				opacity: 0.7;
+				margin-bottom: 0.4rem;
+				margin-left: 2rem;
 
 				&.open {
 					opacity: 1;

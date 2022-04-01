@@ -38,10 +38,9 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 		<ProjectPageLayout
 			title={props.project.name}
 			subtitle="Project"
-			help="Help Content Here"
 			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
 		>
-			<RoundedSection title="Rundowns archive">
+			<RoundedSection title="Rundown archive">
 				<ScList
 					list={rundownsStore.closedRundowns.map((closedRundown) => {
 						return {

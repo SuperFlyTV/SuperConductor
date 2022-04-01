@@ -91,7 +91,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 				)}
 			</RoundedSection>
 
-			<RoundedSection title="Incoming Bridges" help="A list of bridges that have connected to SuperConductor">
+			<RoundedSection title="Incoming Bridges">
 				{incomingBridges.map((bridge) => (
 					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
 				))}
@@ -100,7 +100,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 
 			<RoundedSection
 				title="Outgoing Bridges"
-				help="This is a list of Bridges that SuperConductor will connect to"
+				help="A list of Bridges that SuperConductor will connect to using WebSocket."
 				controls={<TextBtn label="Add" onClick={() => setNewBridgeDialogOpen(true)} />}
 			>
 				<ScList

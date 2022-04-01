@@ -5,11 +5,11 @@ import { store } from '../../../../../mobx/store'
 import { Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
 
-import './style.scss'
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
+import './style.scss'
 
 export const LayerName: React.FC<{
 	/**
@@ -37,9 +37,17 @@ export const LayerName: React.FC<{
 
 	const selectedItem: DropdownItem = { id: props.layerId, label: name }
 
+	const thisLayerMapping = props.mappings[props.layerId]
+
 	const otherItems: DropdownItem[] = Object.entries(props.mappings)
-		// Remove all used layers in this part from the dropdown list
-		.filter(([mappingId]) => !props.timelineObjs.find((timelineObj) => timelineObj.obj.layer === mappingId))
+		.filter(([mappingId, mapping]) => {
+			return (
+				// Remove used layer from the dropdown list
+				mappingId !== props.layerId &&
+				// Remove all incompatible mapping types
+				mapping.device === thisLayerMapping.device
+			)
+		})
 		// Map to a simple readable format
 		.map(([mappingId, mappingValue]) => ({ id: mappingId, label: mappingValue.layerName ?? 'Unknown' }))
 

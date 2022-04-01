@@ -818,9 +818,6 @@ export const PartView: React.FC<{
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
 
-					// console.log('mappings', JSON.parse(JSON.stringify(mappings)))
-					// console.log('objectsOnThisLayer', JSON.parse(JSON.stringify(objectsOnThisLayer)))
-
 					return (
 						<LayerName
 							key={layerId}

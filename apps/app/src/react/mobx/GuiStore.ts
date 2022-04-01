@@ -72,7 +72,14 @@ export class GuiStore {
 	selectedPartId?: string
 	selectedTimelineObjIds: string[] = []
 
-	activeTabId = 'home'
+	private _activeTabId = 'home'
+	get activeTabId() {
+		return this._activeTabId
+	}
+	set activeTabId(id: string) {
+		this._activeTabId = id
+	}
+
 	activeHomePageId = 'project'
 
 	partMove: PartMove = {
