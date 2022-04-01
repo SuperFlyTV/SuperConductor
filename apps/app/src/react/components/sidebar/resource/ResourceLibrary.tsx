@@ -119,19 +119,31 @@ export const ResourceLibrary: React.FC = observer(() => {
 		)
 	}, [])
 
+	const handleResourceLibraryItemSelect = useCallback((resource: ResourceAny) => {
+		setSelectedResourceId((value) => {
+			if (value === resource.id) {
+				return undefined
+			} else {
+				return resource.id
+			}
+		})
+	}, [])
+
+	const handleRefresh = useCallback(async () => {
+		try {
+			await ipcServer.refreshResources()
+		} catch (err) {
+			handleError(err)
+		}
+	}, [ipcServer, handleError])
+
 	return (
 		<div className="sidebar media-library-sidebar">
 			<SidebarInfoGroup
 				title="Available Resources"
 				enableRefresh={true}
 				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
-				onRefreshClick={async () => {
-					try {
-						await ipcServer.refreshResources()
-					} catch (err) {
-						handleError(err)
-					}
-				}}
+				onRefreshClick={handleRefresh}
 			>
 				<FormControl margin="dense" size="small" fullWidth>
 					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
@@ -418,21 +430,14 @@ export const ResourceLibrary: React.FC = observer(() => {
 									const child: JSX.Element = d[1]
 
 									return (
-										<React.Fragment key={resource.id}>
-											<ResourceLibraryItem
-												resource={resource}
-												selected={resource.id === selectedResourceId}
-												onClick={() => {
-													if (selectedResourceId === resource.id) {
-														setSelectedResourceId(undefined)
-													} else {
-														setSelectedResourceId(resource.id)
-													}
-												}}
-											>
-												{child}
-											</ResourceLibraryItem>
-										</React.Fragment>
+										<ResourceLibraryItem
+											key={resource.id}
+											resource={resource}
+											selected={resource.id === selectedResourceId}
+											onSelect={handleResourceLibraryItemSelect}
+										>
+											{child}
+										</ResourceLibraryItem>
 									)
 								})}
 						</React.Fragment>

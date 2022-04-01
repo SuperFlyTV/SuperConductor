@@ -1,13 +1,17 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import classNames from 'classnames'
 import { ResourceAny } from '@shared/models'
 import { useDrag } from 'react-dnd'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { describeResource } from '@shared/lib'
 
-type IProps = React.PropsWithChildren<{ resource: ResourceAny; selected: boolean; onClick?: React.MouseEventHandler }>
+type IProps = React.PropsWithChildren<{
+	resource: ResourceAny
+	selected: boolean
+	onSelect?: (resource: ResourceAny) => void
+}>
 
-export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onClick, children }: IProps) {
+export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onSelect, children }: IProps) {
 	const [{ dragged }, dragRef] = useDrag(
 		() => ({
 			type: DragItemTypes.RESOURCE_ITEM,
@@ -23,6 +27,8 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 
 	const resourceType = describeResource(resource)
 
+	const clickHandler = useCallback(() => onSelect && onSelect(resource), [onSelect, resource])
+
 	return (
 		<div
 			ref={dragRef}
@@ -31,7 +37,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 				selected,
 				dragged,
 			})}
-			onClick={onClick}
+			onClick={clickHandler}
 		>
 			{children}
 		</div>
