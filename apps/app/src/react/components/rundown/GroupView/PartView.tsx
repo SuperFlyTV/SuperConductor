@@ -41,6 +41,7 @@ import { observer } from 'mobx-react-lite'
 import { computed } from 'mobx'
 import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
+import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -448,6 +449,9 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
+	// These are wrapped in a MobX computed as a performance optimization.
+	// Without this optimization, the entire Group re-renders every frame during playout,
+	// dramatically reducing the framerate of the program.
 	const anyPartIsPlaying = computed(
 		() => store.groupPlayDataStore.groups.get(parentGroup.id)?.anyPartIsPlaying ?? false
 	).get()
@@ -857,11 +861,7 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__timeline">
 				<div className="countdown-wrapper">
-					{/* TODO: Add component for presenting timesUntilStart */}
-					{/* {timesUntilStart &&
-						timesUntilStart.map((timeUntilStart, index) => (
-							<CountDownHead key={index} timeUntilStart={timeUntilStart} />
-						))} */}
+					<CountdownHeads groupId={parentGroup.id} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
 					{partIsPlaying ? <PlayHead part={part} groupId={parentGroup.id} /> : null}
