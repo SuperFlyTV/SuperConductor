@@ -1,0 +1,60 @@
+{
+	"$id": "https://superfly.tv/superconductor-extension",
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"allOf": [
+		{
+			"$ref": "https://json.schemastore.org/package.json"
+		}
+	],
+	"$defs": {
+		"activationEvent": {
+			"oneOf": [
+				{
+					"type": "string",
+					"pattern": "^onStartupFinished$"
+				},
+				{
+					"type": "string",
+					"pattern": "^projectContains:[\\w+]$"
+				},
+				{
+					"type": "string",
+					"pattern": "^onCommand:[\\w+]$"
+				}
+			]
+		}
+	},
+	"properties": {
+		"contributes": {
+			"type": "object",
+			"properties": {
+				"resources": {
+					"type": "array"
+				},
+				"views": {
+					"type": "array"
+				},
+				"menus": {
+					"type": "array"
+				},
+				"commands": {
+					"type": "array"
+				}
+			}
+		},
+		"engines": {
+			"type": "object",
+			"properties": {
+				"superconductor": {
+					"type": "string"
+				}
+			}
+		},
+		"activationEvents": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/activationEvent"
+			}
+		}
+	}
+}
