@@ -39,6 +39,8 @@ import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
 import { observer } from 'mobx-react-lite'
 import { computed } from 'mobx'
+import { CurrentTime } from './part/CurrentTime/CurrentTime'
+import { RemainingTime } from './part/RemainingTime/RemainingTime'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -458,11 +460,6 @@ export const PartView: React.FC<{
 
 	const timesUntilStart = null // (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
 
-	// const playheadTime = partPlayhead ? partPlayhead.playheadTime : 0
-	// const countDownTime = partPlayhead
-	// 	? partPlayhead.partEndTime - partPlayhead.partStartTime - partPlayhead.playheadTime
-	// 	: 0
-
 	const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
@@ -845,9 +842,14 @@ export const PartView: React.FC<{
 				})}
 			</div>
 			<div className="part__time">
-				{/* TODO: Add components for presenting playheadTime and countDownTime */}
-				{/* {playheadTime ? <div className="part__time__current-time">{msToTime(playheadTime)}</div> : ''}
-				{countDownTime ? <div className="part__time__remaining-time">{msToTime(countDownTime)}</div> : ''} */}
+				<div className="part__time__current-time">
+					<CurrentTime groupId={parentGroup.id} partId={part.id} />
+				</div>
+
+				<div className="part__time__remaining-time">
+					<RemainingTime groupId={parentGroup.id} partId={part.id} />
+				</div>
+
 				<div className="part__time__duration">
 					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
 				</div>
