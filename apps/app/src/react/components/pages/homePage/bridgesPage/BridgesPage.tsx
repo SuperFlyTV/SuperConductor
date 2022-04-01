@@ -49,11 +49,12 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 	return (
 		<ProjectPageLayout
 			title="Bridges"
-			help="Bridges are helper applications that communicate with the SuperConductor. The role of the bridge is to communicate with devices such as CasparCG, Atem, OBS, vMix, etc. SuperConductor sends all the timeline objects and settings to the bridge which then transmits information to different devices. SuperConductor communicates with bridges using WebSocket protocol."
+			help="Bridges are helper applications that communicate with the SuperConductor. The role of the bridge is to communicate with devices such as CasparCG, Atem, OBS, vMix, etc. SuperConductor sends all the timeline objects and settings to the bridge which then transmits information to different devices. SuperConductor can work with remote bridges using WebSocket protocol or with it's own built-in internal bridge which runs locally."
 		>
 			<NewBridgeDialog open={isNewBridgeDialogOpen} onClose={() => setNewBridgeDialogOpen(false)} />
 			<RoundedSection
 				title="Internal Bridge"
+				help="This bridge runs internally (locally) by SuperConductor application."
 				controls={
 					<div className="sc-switch">
 						<Toggle
@@ -100,7 +101,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }
 
 			<RoundedSection
 				title="Outgoing Bridges"
-				help="A list of Bridges that SuperConductor will connect to using WebSocket."
+				help="A list of remote bridges that SuperConductor will connect to using WebSocket."
 				controls={<TextBtn label="Add" onClick={() => setNewBridgeDialogOpen(true)} />}
 			>
 				<ScList
