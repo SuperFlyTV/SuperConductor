@@ -119,8 +119,9 @@ export const ContextWrapper: React.FC = () => {
 							height: SMALL_BTN_SIZE,
 							border: 'none',
 							background: 'none',
-							opacity: 0.1,
+							opacity: 0.3,
 							'&.Mui-selected': {
+								border: '1px solid rgba(255, 255, 255, 0.12)',
 								background: 'none',
 								filter: 'drop-shadow(0px 0px 4px rgba(255, 255, 0, 0.25))',
 								opacity: 1,
