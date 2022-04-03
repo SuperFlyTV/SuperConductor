@@ -29,7 +29,6 @@ import {
 	MdLockOpen,
 	MdLooksOne,
 	MdPlaylistPlay,
-	MdStop,
 	MdRepeat,
 	MdOutlineDragIndicator,
 } from 'react-icons/md'
@@ -42,6 +41,7 @@ import { store } from '../../../mobx/store'
 import shortUUID from 'short-uuid'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
+import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -358,7 +358,6 @@ export const GroupView: React.FC<{
 	}
 
 	// Stop button:
-	const canStop = anyPartIsPlaying
 	const handleStop = () => {
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}
@@ -475,15 +474,7 @@ export const GroupView: React.FC<{
 
 					<div className="controls">
 						<div className="playback">
-							<Button
-								variant="contained"
-								size="small"
-								disabled={group.disabled || !canStop}
-								onClick={handleStop}
-								title={group.oneAtATime ? 'Stop' : 'Stop playout of all Parts in Group'}
-							>
-								<MdStop size={22} />
-							</Button>
+							<StopBtn className="part__stop" group={group} onClick={handleStop} />
 							<PlayBtn group={group} onClick={handlePlay} />
 							<Button
 								variant="contained"

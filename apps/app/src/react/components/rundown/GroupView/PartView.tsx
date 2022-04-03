@@ -11,7 +11,7 @@ import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import { MdOutlineDragIndicator, MdStop, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
+import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -22,18 +22,18 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
 import short from 'short-uuid'
-import { Button, Popover, TextField, ToggleButton } from '@mui/material'
+import { Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
 import { observer } from 'mobx-react-lite'
-import { computed } from 'mobx'
 import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
+import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -441,19 +441,6 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	// These are wrapped in a MobX computed as a performance optimization.
-	// Without this optimization, the entire Group re-renders every frame during playout,
-	// dramatically reducing the framerate of the program.
-	const anyPartIsPlaying = computed(
-		() => store.groupPlayDataStore.groups.get(parentGroup.id)?.anyPartIsPlaying ?? false
-	).get()
-	const groupIsPlaying = computed(
-		() => store.groupPlayDataStore.groups.get(parentGroup.id)?.groupIsPlaying ?? false
-	).get()
-
-	const partPlayhead = anyPartIsPlaying ? true : undefined // playhead.playheads[part.id] : undefined
-	const partIsPlaying = partPlayhead !== undefined
-
 	// const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
 	// const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
@@ -463,7 +450,6 @@ export const PartView: React.FC<{
 	}
 
 	// Stop button:
-	const canStop = parentGroup.oneAtATime ? groupIsPlaying : partIsPlaying
 	const handleStop = () => {
 		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
 	}
@@ -781,17 +767,7 @@ export const PartView: React.FC<{
 				</div>
 
 				<div className="part__meta__right">
-					<Button
-						className="part__stop"
-						variant="contained"
-						size="small"
-						disabled={groupOrPartDisabled || !canStop}
-						onClick={handleStop}
-						title="Stop playout of Part"
-					>
-						<MdStop size={22} />
-					</Button>
-
+					<StopBtn className="part__stop" group={parentGroup} part={part} onClick={handleStop} />
 					<PlayBtn className="part__play" group={parentGroup} part={part} onClick={handleStart} />
 				</div>
 			</div>
