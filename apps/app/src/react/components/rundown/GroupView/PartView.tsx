@@ -11,15 +11,7 @@ import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
-import {
-	MdOutlineDragIndicator,
-	MdPlayArrow,
-	MdStop,
-	MdMoreHoriz,
-	MdLockOpen,
-	MdLock,
-	MdRepeatOne,
-} from 'react-icons/md'
+import { MdOutlineDragIndicator, MdStop, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { compact, msToTime } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -33,7 +25,6 @@ import short from 'short-uuid'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
-import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
@@ -42,6 +33,7 @@ import { computed } from 'mobx'
 import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
+import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -800,16 +792,7 @@ export const PartView: React.FC<{
 						<MdStop size={22} />
 					</Button>
 
-					<Button
-						className="part__play"
-						variant="contained"
-						size="small"
-						disabled={groupOrPartDisabled}
-						onClick={handleStart}
-						title={canStop ? 'Restart Part' : 'Play Part'}
-					>
-						{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
-					</Button>
+					<PlayBtn className="part__play" group={parentGroup} part={part} onClick={handleStart} />
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>

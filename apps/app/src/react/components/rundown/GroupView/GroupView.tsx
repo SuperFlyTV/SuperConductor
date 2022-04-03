@@ -28,13 +28,11 @@ import {
 	MdLock,
 	MdLockOpen,
 	MdLooksOne,
-	MdPlayArrow,
 	MdPlaylistPlay,
 	MdStop,
 	MdRepeat,
 	MdOutlineDragIndicator,
 } from 'react-icons/md'
-import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { AiFillStepForward } from 'react-icons/ai'
@@ -43,6 +41,7 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import shortUUID from 'short-uuid'
 import { computed } from 'mobx'
+import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -485,26 +484,7 @@ export const GroupView: React.FC<{
 							>
 								<MdStop size={22} />
 							</Button>
-							<Button
-								variant="contained"
-								size="small"
-								disabled={group.disabled}
-								onClick={handlePlay}
-								title={
-									group.oneAtATime
-										? canStop
-											? 'Restart and play first Part'
-											: 'Play first Part'
-										: canStop
-										? 'Restart and play all Parts in Group'
-										: 'Play all Parts in Group'
-								}
-							>
-								{canStop ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
-								<div className="playcount">
-									{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}
-								</div>
-							</Button>
+							<PlayBtn group={group} onClick={handlePlay} />
 							<Button
 								variant="contained"
 								size="small"
