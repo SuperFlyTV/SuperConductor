@@ -2,7 +2,7 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mapping, Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
 
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
@@ -37,7 +37,7 @@ export const LayerName: React.FC<{
 
 	const selectedItem: DropdownItem = { id: props.layerId, label: name }
 
-	const thisLayerMapping = props.mappings[props.layerId]
+	const thisLayerMapping: Mapping | undefined = props.mappings[props.layerId]
 
 	const otherItems: DropdownItem[] = Object.entries(props.mappings)
 		.filter(([mappingId, mapping]) => {
@@ -45,7 +45,7 @@ export const LayerName: React.FC<{
 				// Remove used layer from the dropdown list
 				mappingId !== props.layerId &&
 				// Remove all incompatible mapping types
-				mapping.device === thisLayerMapping.device
+				mapping.device === thisLayerMapping?.device
 			)
 		})
 		// Map to a simple readable format
