@@ -6,6 +6,7 @@ import { MdPlayArrow } from 'react-icons/md'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import { store } from '../../../mobx/store'
+import { useMemoComputedObject } from '../../../mobx/lib'
 import './style.scss'
 
 type PlayBtnProps = {
@@ -16,14 +17,23 @@ type PlayBtnProps = {
 }
 
 export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group, part, className, onClick }) {
-	const playData = store.groupPlayDataStore.groups.get(group.id)
+	const { groupIsPlaying, anyPartIsPlaying, partIsPlaying } = useMemoComputedObject(() => {
+		const playData = store.groupPlayDataStore.groups.get(group.id)
 
-	if (!playData) {
-		return null
-	}
+		if (!playData) {
+			return {
+				groupIsPlaying: false,
+				anyPartIsPlaying: false,
+				partIsPlaying: false,
+			}
+		}
+		return {
+			groupIsPlaying: playData.groupIsPlaying,
+			anyPartIsPlaying: playData.anyPartIsPlaying,
+			partIsPlaying: Boolean(part && part.id in playData.playheads),
+		}
+	}, [group.id])
 
-	const { groupIsPlaying, anyPartIsPlaying } = playData
-	const partIsPlaying = Boolean(part && part.id in playData.playheads)
 	const groupOrPartDisabled = group.disabled || part?.disabled
 	let canRestart = false
 	let title = ''

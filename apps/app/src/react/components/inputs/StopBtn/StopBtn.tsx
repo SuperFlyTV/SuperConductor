@@ -5,6 +5,7 @@ import { MdStop } from 'react-icons/md'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import { store } from '../../../mobx/store'
+import { useMemoComputedObject } from '../../../mobx/lib'
 
 type StopBtnProps = {
 	group: Group
@@ -13,15 +14,24 @@ type StopBtnProps = {
 	onClick?: () => void
 }
 
-export const StopBtn: React.FC<StopBtnProps> = observer(function PlayBtn({ group, part, className, onClick }) {
-	const playData = store.groupPlayDataStore.groups.get(group.id)
+export const StopBtn: React.FC<StopBtnProps> = observer(function StopBtn({ group, part, className, onClick }) {
+	const { groupIsPlaying, anyPartIsPlaying, partIsPlaying } = useMemoComputedObject(() => {
+		const playData = store.groupPlayDataStore.groups.get(group.id)
 
-	if (!playData) {
-		return null
-	}
+		if (!playData) {
+			return {
+				groupIsPlaying: false,
+				anyPartIsPlaying: false,
+				partIsPlaying: false,
+			}
+		}
+		return {
+			groupIsPlaying: playData.groupIsPlaying,
+			anyPartIsPlaying: playData.anyPartIsPlaying,
+			partIsPlaying: Boolean(part && part.id in playData.playheads),
+		}
+	}, [group.id])
 
-	const { groupIsPlaying, anyPartIsPlaying } = playData
-	const partIsPlaying = Boolean(part && part.id in playData.playheads)
 	const groupOrPartDisabled = group.disabled || part?.disabled
 	let canStop = false
 	let title = ''
