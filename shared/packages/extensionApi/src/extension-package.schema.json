@@ -39,6 +39,9 @@
 				},
 				"commands": {
 					"type": "array"
+				},
+				"peripherals": {
+					"type": "array"
 				}
 			}
 		},
