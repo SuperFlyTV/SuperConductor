@@ -421,8 +421,12 @@ export const GroupView: React.FC<{
 			>
 				<div className="group__dragArrow" />
 				<div className="group__header">
-					<div ref={dragRef} className="group__drag-handle">
-						{!group.locked && <MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />}
+					<div
+						ref={dragRef}
+						className="group__drag-handle"
+						style={{ visibility: group.locked ? 'hidden' : 'visible' }}
+					>
+						<MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />
 					</div>
 
 					<div
