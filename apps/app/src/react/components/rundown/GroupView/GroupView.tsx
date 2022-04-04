@@ -21,7 +21,6 @@ import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '..
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
-import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
 import {
 	MdChevronRight,
@@ -38,7 +37,6 @@ import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
-import shortUUID from 'short-uuid'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
@@ -52,8 +50,8 @@ export const GroupView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
-	const rundown = useContext(RundownContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+	const rundown = store.rundownsStore.currentRundown
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -147,11 +145,11 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
-				store.guiStore.updateGroupMove({
-					groupId: group.id,
-					position: groupIndex,
-					moveId: shortUUID.generate(),
-				})
+				// store.guiStore.updateGroupMove({
+				// 	groupId: group.id,
+				// 	position: groupIndex,
+				// 	moveId: shortUUID.generate(),
+				// })
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
@@ -230,9 +228,10 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					store.guiStore.updateGroupMove({
-						position: hoverIndex,
-					})
+					// store.guiStore.updateGroupMove({
+					// 	position: hoverIndex,
+					// })
+					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex) // TODO: Store commit function somewhere
 				} else if (isPartDragItem(movedItem)) {
 					if (!monitor.isOver({ shallow: true })) {
 						return
@@ -273,10 +272,16 @@ export const GroupView: React.FC<{
 					 */
 					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
 
-					if (groupPartsWithoutMovedPart.length <= 0 && Math.abs(hoverClientY - hoverMiddleY) <= midBand) {
+					console.log(groupPartsWithoutMovedPart.length, Math.abs(hoverClientY - hoverMiddleY), midBand)
+
+					if (groupPartsWithoutMovedPart.length <= 0) {
 						// If the group is empty, and if the user's cursor is hovering within midBand
 						// pixels of the group's vertical center, then we assume that the user wants to move
 						// the Part into the hovered Group.
+
+						if (Math.abs(hoverClientY - hoverMiddleY) > midBand) {
+							return
+						}
 
 						if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
 							return
@@ -297,10 +302,16 @@ export const GroupView: React.FC<{
 						}
 
 						// Time to actually perform the action
-						store.guiStore.updatePartMove({
-							toGroupId: hoverGroup.id,
-							position: hoverIndex,
-						})
+						// store.guiStore.updatePartMove({
+						// 	toGroupId: hoverGroup.id,
+						// 	position: hoverIndex,
+						// })
+						store.rundownsStore.movePartInCurrentRundown(
+							movedItem.partId,
+							movedItem.fromGroup.id,
+							hoverGroup.id,
+							hoverIndex
+						) // TODO: Store commit
 
 						// Note: we're mutating the monitor item here!
 						// Generally it's better to avoid mutations,
@@ -323,16 +334,28 @@ export const GroupView: React.FC<{
 						}
 
 						if (hoverClientY < hoverMiddleY) {
-							store.guiStore.updatePartMove({
-								toGroupId: null,
-								position: hoverIndex,
-							})
+							// store.guiStore.updatePartMove({
+							// 	toGroupId: null,
+							// 	position: hoverIndex,
+							// })
+							store.rundownsStore.movePartInCurrentRundown(
+								movedItem.partId,
+								movedItem.fromGroup.id,
+								null,
+								hoverIndex
+							) // TODO: Store commit
 							movedItem.position = hoverIndex
 						} else {
-							store.guiStore.updatePartMove({
-								toGroupId: null,
-								position: hoverIndex + 1,
-							})
+							// store.guiStore.updatePartMove({
+							// 	toGroupId: null,
+							// 	position: hoverIndex + 1,
+							// })
+							store.rundownsStore.movePartInCurrentRundown(
+								movedItem.partId,
+								movedItem.fromGroup.id,
+								null,
+								hoverIndex + 1
+							) // TODO: Store commit
 							movedItem.position = hoverIndex + 1
 						}
 
@@ -388,6 +411,10 @@ export const GroupView: React.FC<{
 		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
 	}
 
+	if (!rundown) {
+		return null
+	}
+
 	if (group.transparent) {
 		const firstPart = group.parts[0]
 		return firstPart ? (
@@ -395,8 +422,9 @@ export const GroupView: React.FC<{
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
-					parentGroup={group}
+					parentGroupId={group.id}
 					parentGroupIndex={groupIndex}
+					partIndex={0}
 					mappings={mappings}
 				/>
 			</div>
@@ -478,8 +506,8 @@ export const GroupView: React.FC<{
 
 					<div className="controls">
 						<div className="playback">
-							<StopBtn className="part__stop" group={group} onClick={handleStop} />
-							<PlayBtn group={group} onClick={handlePlay} />
+							<StopBtn className="part__stop" groupId={group.id} onClick={handleStop} />
+							<PlayBtn groupId={group.id} onClick={handlePlay} />
 							<Button
 								variant="contained"
 								size="small"
@@ -633,13 +661,14 @@ export const GroupView: React.FC<{
 				{!group.collapsed && (
 					<div className="group__content">
 						<div className="group__content__parts">
-							{group.parts.map((part) => (
+							{group.parts.map((part, index) => (
 								<PartView
 									key={part.id}
 									rundownId={rundownId}
 									part={part}
-									parentGroup={group}
+									parentGroupId={group.id}
 									parentGroupIndex={groupIndex}
+									partIndex={index}
 									mappings={mappings}
 								/>
 							))}

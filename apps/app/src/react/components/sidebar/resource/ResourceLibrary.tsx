@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { RundownContext } from '../../../contexts/Rundown'
 import { ProjectContext } from '../../../contexts/Project'
 import { ResourceAny } from '@shared/models'
 import { ResourceData } from './ResourceData'
@@ -49,13 +48,13 @@ const NAME_FILTER_DEBOUNCE = 100
 
 export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const ipcServer = useContext(IPCServerContext)
-	const rundown = useContext(RundownContext)
+	const rundown = store.rundownsStore.currentRundown
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const resourcesStore = store.resourcesStore
 
-	const defaultPart = rundown.groups[0]?.parts[0] as Part | undefined
+	const defaultPart = rundown?.groups[0]?.parts[0] as Part | undefined
 	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
 
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
@@ -137,6 +136,10 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 			handleError(err)
 		}
 	}, [ipcServer, handleError])
+
+	if (!rundown) {
+		return null
+	}
 
 	return (
 		<div className="sidebar media-library-sidebar">

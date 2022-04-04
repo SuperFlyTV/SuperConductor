@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { GroupView } from './GroupView/GroupView'
-import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { Rundown } from '../../../models/rundown/Rundown'
 import { useDrop } from 'react-dnd'
@@ -15,7 +14,7 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
-	const rundown = useContext(RundownContext)
+	const rundown = store.rundownsStore.currentRundown
 
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
@@ -28,6 +27,10 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				}
 			},
 			hover(movedItem, monitor) {
+				if (!rundown) {
+					return
+				}
+
 				if (!isPartDragItem(movedItem)) {
 					return
 				}
@@ -60,12 +63,16 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				movedItem.position = hoverIndex
 			},
 		},
-		[rundown.groups]
+		[rundown, rundown?.groups]
 	)
 
 	useEffect(() => {
 		drop(wrapperRef)
 	}, [drop])
+
+	if (!rundown) {
+		return null
+	}
 
 	return (
 		<div className="group-list" ref={wrapperRef} data-drop-handler-id={handlerId}>

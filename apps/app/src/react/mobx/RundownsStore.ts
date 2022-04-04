@@ -1,9 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { makeAutoObservable } from 'mobx'
+import { makeAutoObservable, IObservableArray } from 'mobx'
+import { getDefaultGroup } from '../../electron/defaults'
 import { Rundown } from '../../models/rundown/Rundown'
+import { Group } from '../../models/rundown/Group'
 import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
+import short from 'short-uuid'
+import { allowMovingItemIntoGroup } from '../../lib/util'
+import { Part } from '../../models/rundown/Part'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -12,6 +17,8 @@ interface IRundownsItems {
 		open: boolean
 	}
 }
+
+type CommitFunction = () => Promise<void>
 
 export class RundownsStore {
 	/**
@@ -107,5 +114,140 @@ export class RundownsStore {
 				rundownId,
 				name: closedRundown.name,
 			}))
+	}
+
+	moveGroupInCurrentRundown(groupId: string, position: number | null): CommitFunction | undefined {
+		const currentRundown = this._currentRundown
+
+		if (currentRundown === undefined) {
+			return
+		}
+
+		if (position === null) {
+			return
+		}
+
+		/** The group being moved */
+		const group = currentRundown.groups.find((g) => g.id === groupId)
+
+		if (!group) {
+			return
+		}
+
+		// Remove the group from the groups array and re-insert it at its new position
+		currentRundown.groups = currentRundown.groups.filter((g) => g.id !== groupId)
+		currentRundown.groups.splice(position, 0, group)
+
+		return async () => {
+			await this.serverAPI.moveGroup({
+				rundownId: currentRundown.id,
+				groupId: groupId,
+				position: position,
+			})
+		}
+	}
+
+	movePartInCurrentRundown(
+		partId: string,
+		fromGroupId: string,
+		toGroupId: string | null,
+		position: number | null
+	): CommitFunction | undefined {
+		const currentRundown = this._currentRundown
+
+		if (currentRundown === undefined) {
+			return
+		}
+
+		// Part Move
+
+		if (position === null) {
+			return
+		}
+
+		const fromGroup = currentRundown.groups.find((g) => g.id === fromGroupId)
+
+		if (!fromGroup) {
+			return
+		}
+
+		const part = fromGroup.parts.find((p) => p.id === partId)
+
+		if (!part) {
+			return
+		}
+
+		let toGroup: Group | undefined
+		let madeNewTransparentGroup = false
+		const isTransparentGroupMove = fromGroup.transparent && toGroupId === null
+
+		if (toGroupId) {
+			toGroup = currentRundown.groups.find((g) => g.id === toGroupId)
+		} else {
+			if (isTransparentGroupMove) {
+				toGroup = fromGroup
+			} else {
+				toGroup = {
+					...getDefaultGroup(),
+
+					id: short.generate(),
+					name: part.name,
+					transparent: true,
+
+					parts: [part],
+				}
+				madeNewTransparentGroup = true
+			}
+		}
+
+		if (!toGroup) {
+			return
+		}
+
+		const allow = allowMovingItemIntoGroup(part.id, fromGroup, toGroup)
+
+		if (!allow) {
+			return
+		}
+
+		if (!isTransparentGroupMove) {
+			// Remove the part from its original group.
+			const partsArr = fromGroup.parts as IObservableArray<Part>
+			partsArr.remove(part)
+		}
+
+		if (madeNewTransparentGroup) {
+			// Add the new transparent group to the rundown.
+			currentRundown.groups.splice(position, 0, toGroup)
+		} else if (isTransparentGroupMove) {
+			// Move the transparent group to its new position.
+			const index = currentRundown.groups.findIndex((g) => toGroup && g.id === toGroup.id)
+			if (index >= 0) currentRundown.groups.splice(index, 1)
+			currentRundown.groups.splice(position, 0, toGroup)
+		} else if (!isTransparentGroupMove) {
+			// Add the part to its new group, in its new position.
+			toGroup.parts.splice(position, 0, part)
+		}
+
+		// Clean up leftover empty transparent groups.
+		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
+			const index = currentRundown.groups.findIndex((g) => g.id === fromGroup.id)
+			if (index >= 0) currentRundown.groups.splice(index, 1)
+		}
+
+		return async () => {
+			await this.serverAPI.movePart({
+				from: {
+					rundownId: currentRundown.id,
+					groupId: fromGroupId,
+					partId: partId,
+				},
+				to: {
+					rundownId: currentRundown.id,
+					groupId: toGroupId,
+					position: position,
+				},
+			})
+		}
 	}
 }

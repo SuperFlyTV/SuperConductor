@@ -21,7 +21,6 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping } from '../../../../lib/TSRMappings'
-import short from 'short-uuid'
 import { Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -29,6 +28,7 @@ import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
 import { LayerName } from './part/LayerName/LayerName'
 import { observer } from 'mobx-react-lite'
+import { computed } from 'mobx'
 import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
@@ -52,11 +52,12 @@ const MAX_HANDLED_MOVE_IDS = 100
 
 export const PartView: React.FC<{
 	rundownId: string
-	parentGroup: Group
+	parentGroupId: string
 	parentGroupIndex: number
 	part: Part
+	partIndex: number
 	mappings: Mappings
-}> = observer(function PartView({ rundownId, parentGroup, parentGroupIndex, part, mappings }) {
+}> = observer(function PartView({ rundownId, parentGroupId, parentGroupIndex, part, partIndex, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove
@@ -86,7 +87,7 @@ export const PartView: React.FC<{
 		ipcServer
 			.updatePart({
 				rundownId,
-				groupId: parentGroup.id,
+				groupId: parentGroupId,
 				partId: part.id,
 				part: {
 					...part,
@@ -95,7 +96,7 @@ export const PartView: React.FC<{
 			})
 			.catch(handleError)
 		setEditingPartName(false)
-	}, [editedName, handleError, ipcServer, parentGroup.id, part, rundownId])
+	}, [editedName, handleError, ipcServer, parentGroupId, part, rundownId])
 
 	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
 		const orgResolvedTimeline = Resolver.resolveTimeline(
@@ -346,7 +347,7 @@ export const PartView: React.FC<{
 					const promise = ipcServer.updateTimelineObj({
 						rundownId: rundownId,
 						partId: part.id,
-						groupId: parentGroup.id,
+						groupId: parentGroupId,
 						timelineObjId: obj.obj.id,
 						timelineObj: obj,
 					})
@@ -359,7 +360,7 @@ export const PartView: React.FC<{
 					const promise = ipcServer.addTimelineObj({
 						rundownId: rundownId,
 						partId: part.id,
-						groupId: parentGroup.id,
+						groupId: parentGroupId,
 						timelineObjId: obj.obj.id,
 						timelineObj: obj,
 					})
@@ -372,7 +373,7 @@ export const PartView: React.FC<{
 					const promise = ipcServer.moveTimelineObjToNewLayer({
 						rundownId: rundownId,
 						partId: part.id,
-						groupId: parentGroup.id,
+						groupId: parentGroupId,
 						timelineObjId: objId,
 					})
 					promises.push(promise)
@@ -403,19 +404,7 @@ export const PartView: React.FC<{
 					setWaitingForBackendUpdate(false)
 				})
 		}
-	}, [
-		part.id,
-		snapDistanceInMilliseconds,
-		ipcServer,
-		rundownId,
-		parentGroup.id,
-		waitingForBackendUpdate,
-		handleError,
-		timelineObjMove.partId,
-		timelineObjMove.moveType,
-		timelineObjMove.wasMoved,
-		timelineObjMove.moveId,
-	])
+	}, [part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroupId, waitingForBackendUpdate, handleError, timelineObjMove.partId, timelineObjMove.moveType, timelineObjMove.wasMoved, timelineObjMove.moveId])
 
 	useEffect(() => {
 		const sorensen = hotkeyContext.sorensen
@@ -446,17 +435,16 @@ export const PartView: React.FC<{
 
 	// Play button:
 	const handleStart = () => {
-		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
+		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
 	}
 
 	// Stop button:
 	const handleStop = () => {
-		ipcServer.stopPart({ rundownId, groupId: parentGroup.id, partId: part.id }).catch(handleError)
+		ipcServer.stopPart({ rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
 	}
 
 	// Drag n' Drop re-ordering:
 	// Adapted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
-	const partIndex = parentGroup.parts.findIndex(({ id }) => id === part.id)
 	const dragRef = useRef<HTMLDivElement>(null)
 	const previewRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(
@@ -472,6 +460,15 @@ export const PartView: React.FC<{
 					return false
 				}
 
+				const parentGroup =
+					computed(() =>
+						store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
+					).get() || null
+
+				if (!parentGroup) {
+					return false
+				}
+
 				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)
 			},
 			hover(movedItem, monitor: DropTargetMonitor) {
@@ -484,9 +481,17 @@ export const PartView: React.FC<{
 				}
 
 				let hoverIndex = partIndex
+				const parentGroup =
+					computed(() =>
+						store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
+					).get() || null
 				let hoverGroup: Group | null = parentGroup
 				const hoverPartId = part.id
 				const hoverGroupIndex = parentGroupIndex
+
+				if (parentGroup === null || hoverGroup === null) {
+					return
+				}
 
 				// Don't replace items with themselves
 				if (movedItem.partId === hoverPartId) {
@@ -547,12 +552,18 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				store.guiStore.updatePartMove({
-					partId: movedItem.partId,
-					fromGroupId: movedItem.fromGroup.id,
-					toGroupId: hoverGroup?.id ?? null,
-					position: hoverIndex,
-				})
+				// store.guiStore.updatePartMove({
+				// 	partId: movedItem.partId,
+				// 	fromGroupId: movedItem.fromGroup.id,
+				// 	toGroupId: hoverGroup?.id ?? null,
+				// 	position: hoverIndex,
+				// })
+				store.rundownsStore.movePartInCurrentRundown(
+					movedItem.partId,
+					movedItem.fromGroup.id,
+					hoverGroup?.id ?? null,
+					hoverIndex
+				)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
@@ -564,25 +575,33 @@ export const PartView: React.FC<{
 				movedItem.position = hoverIndex
 			},
 		},
-		[parentGroup, parentGroupIndex, partIndex, part.id]
+		[parentGroupId, parentGroupIndex, partIndex, part.id]
 	)
 	const [{ isDragging }, drag, preview] = useDrag(
 		{
 			type: DragItemTypes.PART_ITEM,
-			item: (): PartDragItem => {
-				store.guiStore.updatePartMove({
-					moveId: short.generate(),
-					position: partIndex,
-					partId: part.id,
-					fromGroupId: parentGroup.id,
-					toGroupId: parentGroup.id,
-					done: false,
-				})
+			item: (): PartDragItem | null => {
+				// store.guiStore.updatePartMove({
+				// 	moveId: short.generate(),
+				// 	position: partIndex,
+				// 	partId: part.id,
+				// 	fromGroupId: parentGroupId,
+				// 	toGroupId: parentGroupId,
+				// 	done: false,
+				// })
+				const parentGroup = computed(() =>
+					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
+				).get()
+
+				if (!parentGroup) {
+					return null
+				}
+
 				return {
 					type: DragItemTypes.PART_ITEM,
 					partId: part.id,
 					fromGroup: parentGroup,
-					toGroupId: parentGroup.id,
+					toGroupId: parentGroupId,
 					toGroupIndex: parentGroupIndex,
 					toGroupTransparent: parentGroup.transparent,
 					position: partIndex,
@@ -595,12 +614,12 @@ export const PartView: React.FC<{
 				return part.id === monitor.getItem().partId
 			},
 			end: () => {
-				store.guiStore.updatePartMove({
-					done: true,
-				})
+				// store.guiStore.updatePartMove({
+				// 	done: true,
+				// })
 			},
 		},
-		[part.id, parentGroup, parentGroupIndex, partIndex]
+		[part.id, parentGroupId, parentGroupIndex, partIndex]
 	)
 
 	useEffect(() => {
@@ -617,8 +636,16 @@ export const PartView: React.FC<{
 	}, [])
 	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
 
-	const groupOrPartDisabled = parentGroup.disabled || part.disabled
-	const groupOrPartLocked = parentGroup.locked || part.locked
+	const groupDisabled =
+		computed(
+			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)?.disabled
+		).get() || false
+	const groupOrPartDisabled = groupDisabled || part.disabled
+	const groupLocked =
+		computed(
+			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)?.locked
+		).get() || false
+	const groupOrPartLocked = groupLocked || part.locked
 	const sortedLayers = useMemo(() => {
 		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
 	}, [mappings, resolvedTimeline.layers])
@@ -707,14 +734,14 @@ export const PartView: React.FC<{
 									: 'Disable/Skip Part during playback.'
 							}
 							value="disabled"
-							disabled={parentGroup.locked}
+							disabled={groupLocked}
 							selected={part.disabled}
 							size="small"
 							onChange={() => {
 								ipcServer
 									.togglePartDisable({
 										rundownId,
-										groupId: parentGroup.id,
+										groupId: parentGroupId,
 										partId: part.id,
 										value: !part.disabled,
 									})
@@ -726,14 +753,14 @@ export const PartView: React.FC<{
 						<ToggleButton
 							title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
 							value="locked"
-							disabled={parentGroup.locked}
+							disabled={groupLocked}
 							selected={part.locked}
 							size="small"
 							onChange={() => {
 								ipcServer
 									.togglePartLock({
 										rundownId,
-										groupId: parentGroup.id,
+										groupId: parentGroupId,
 										partId: part.id,
 										value: !part.locked,
 									})
@@ -754,7 +781,7 @@ export const PartView: React.FC<{
 								ipcServer
 									.togglePartLoop({
 										rundownId,
-										groupId: parentGroup.id,
+										groupId: parentGroupId,
 										partId: part.id,
 										value: !part.loop,
 									})
@@ -767,8 +794,8 @@ export const PartView: React.FC<{
 				</div>
 
 				<div className="part__meta__right">
-					<StopBtn className="part__stop" group={parentGroup} part={part} onClick={handleStop} />
-					<PlayBtn className="part__play" group={parentGroup} part={part} onClick={handleStart} />
+					<StopBtn className="part__stop" groupId={parentGroupId} part={part} onClick={handleStop} />
+					<PlayBtn className="part__play" groupId={parentGroupId} part={part} onClick={handleStart} />
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>
@@ -788,7 +815,7 @@ export const PartView: React.FC<{
 									ipcServer
 										.updateTimelineObj({
 											rundownId,
-											groupId: parentGroup.id,
+											groupId: parentGroupId,
 											partId: part.id,
 											timelineObj: objectOnThisLayer,
 											timelineObjId: objectOnThisLayer.obj.id,
@@ -802,11 +829,11 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__time">
 				<div className="part__time__current-time">
-					<CurrentTime groupId={parentGroup.id} partId={part.id} />
+					<CurrentTime groupId={parentGroupId} partId={part.id} />
 				</div>
 
 				<div className="part__time__remaining-time">
-					<RemainingTime groupId={parentGroup.id} partId={part.id} />
+					<RemainingTime groupId={parentGroupId} partId={part.id} />
 				</div>
 
 				<div className="part__time__duration">
@@ -816,10 +843,10 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__timeline">
 				<div className="countdown-wrapper">
-					<CountdownHeads groupId={parentGroup.id} partId={part.id} />
+					<CountdownHeads groupId={parentGroupId} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
-					<PlayHead part={part} groupId={parentGroup.id} />
+					<PlayHead part={part} groupId={parentGroupId} />
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,
@@ -848,7 +875,7 @@ export const PartView: React.FC<{
 								<Layer
 									key={layerId}
 									rundownId={rundownId}
-									groupId={parentGroup.id}
+									groupId={parentGroupId}
 									partId={part.id}
 									partDuration={orgMaxDuration}
 									objectsOnLayer={objectsOnLayer}
@@ -861,7 +888,7 @@ export const PartView: React.FC<{
 						})}
 
 						{!groupOrPartLocked && (
-							<EmptyLayer rundownId={rundownId} groupId={parentGroup.id} partId={part.id} />
+							<EmptyLayer rundownId={rundownId} groupId={parentGroupId} partId={part.id} />
 						)}
 					</div>
 				</div>
@@ -877,7 +904,7 @@ export const PartView: React.FC<{
 					horizontal: 'left',
 				}}
 			>
-				<PartSubmenu rundownId={rundownId} groupId={parentGroup.id} part={part} locked={groupOrPartLocked} />
+				<PartSubmenu rundownId={rundownId} groupId={parentGroupId} part={part} locked={groupOrPartLocked} />
 			</Popover>
 		</div>
 	)
