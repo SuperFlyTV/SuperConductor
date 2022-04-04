@@ -41,6 +41,18 @@ import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage
  */
 const ErrorCruftRegex = /^Error invoking remote method '.+': /
 
+// Set this to true when debugging rendering:
+const ENABLE_WHY_DID_YOU_RENDER = false
+
+if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
+	console.log('Why-did-you-render-endabled')
+	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
+	const whyDidYouRender = require('@welldone-software/why-did-you-render')
+	whyDidYouRender(React, {
+		trackAllPureComponents: true,
+	})
+}
+
 export const App = observer(() => {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
