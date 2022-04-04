@@ -25,6 +25,26 @@
 		}
 	},
 	"properties": {
+		"displayName": {
+			"type": "string"
+		},
+		"categories": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"preview": {
+			"type": "boolean"
+		},
+		"engines": {
+			"type": "object",
+			"properties": {
+				"superconductor": {
+					"type": "string"
+				}
+			}
+		},
 		"contributes": {
 			"type": "object",
 			"properties": {
@@ -42,14 +62,9 @@
 				},
 				"peripherals": {
 					"type": "array"
-				}
-			}
-		},
-		"engines": {
-			"type": "object",
-			"properties": {
-				"superconductor": {
-					"type": "string"
+				},
+				"configuration": {
+					"type": "array"
 				}
 			}
 		},
