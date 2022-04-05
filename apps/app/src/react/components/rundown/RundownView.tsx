@@ -1,8 +1,6 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { GroupView } from './GroupView/GroupView'
-import { RundownContext } from '../../contexts/Rundown'
 import { IPCServerContext } from '../../contexts/IPCServer'
-import { Rundown } from '../../../models/rundown/Rundown'
 import { useDrop } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes'
 import { Mappings } from 'timeline-state-resolver-types'
@@ -13,9 +11,10 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { DropZone } from '../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
+import { useMemoComputedObject } from '../../mobx/lib'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
-	const rundown = useContext(RundownContext)
+	const rundown = store.rundownsStore.currentRundown
 
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
@@ -28,11 +27,15 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				}
 			},
 			hover(movedItem, monitor) {
+				if (!store.rundownsStore.currentRundown) {
+					return
+				}
+
 				if (!isPartDragItem(movedItem)) {
 					return
 				}
 
-				const hoverIndex = rundown.groups.length
+				const hoverIndex = store.rundownsStore.currentRundown.groups.length
 
 				// Don't replace items with themselves
 				if (movedItem.fromGroup.transparent) {
@@ -45,10 +48,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				}
 
 				// Time to actually perform the action
-				store.guiStore.updatePartMove({
-					toGroupId: null,
-					position: hoverIndex,
-				})
+				store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
@@ -60,12 +60,16 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				movedItem.position = hoverIndex
 			},
 		},
-		[rundown.groups]
+		[store.rundownsStore]
 	)
 
 	useEffect(() => {
 		drop(wrapperRef)
 	}, [drop])
+
+	if (!rundown) {
+		return null
+	}
 
 	return (
 		<div className="group-list" ref={wrapperRef} data-drop-handler-id={handlerId}>
@@ -81,21 +85,25 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				)
 			})}
 
-			<GroupListOptions rundown={rundown} />
+			<GroupListOptions rundownId={rundown.id} />
 		</div>
 	)
 })
 
-const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
+const GroupListOptions: React.FC<{ rundownId: string }> = observer(function GroupListOptions({ rundownId }) {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const numParts = useMemo(() => {
-		return rundown.groups.reduce((prev, current) => {
-			return prev + current.parts.length
-		}, 0)
-	}, [rundown])
+	const { numParts, numGroups } = useMemoComputedObject(() => {
+		return {
+			numParts:
+				store.rundownsStore.currentRundown?.groups.reduce((prev, current) => {
+					return prev + current.parts.length
+				}, 0) ?? 0,
+			numGroups: store.rundownsStore.currentRundown?.groups.length ?? 0,
+		}
+	}, [store])
 	const newPartRef = useRef<HTMLDivElement>(null)
 	const newGroupRef = useRef<HTMLDivElement>(null)
 
@@ -118,7 +126,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 					}
 
 					const { partId, groupId } = await ipcServer.newPart({
-						rundownId: rundown.id,
+						rundownId,
 						groupId: null, // Creates a transparent group.
 						name: droppedItem.resource.id,
 					})
@@ -128,7 +136,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 					}
 
 					await ipcServer.addResourceToTimeline({
-						rundownId: rundown.id,
+						rundownId,
 						groupId,
 						partId,
 						layerId: null,
@@ -139,7 +147,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				}
 			},
 		},
-		[rundown]
+		[rundownId]
 	)
 	useEffect(() => {
 		newPartDrop(newPartRef)
@@ -167,18 +175,18 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 						'name' in droppedItem.resource ? (droppedItem.resource as any).name : droppedItem.resource.id
 
 					const groupId = await ipcServer.newGroup({
-						rundownId: rundown.id,
+						rundownId,
 						name: groupAndPartName,
 					})
 
 					const { partId } = await ipcServer.newPart({
-						rundownId: rundown.id,
+						rundownId,
 						groupId,
 						name: groupAndPartName,
 					})
 
 					await ipcServer.addResourceToTimeline({
-						rundownId: rundown.id,
+						rundownId,
 						groupId,
 						partId,
 						layerId: null,
@@ -189,7 +197,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				}
 			},
 		},
-		[rundown]
+		[rundownId]
 	)
 	useEffect(() => {
 		newGroupDrop(newGroupRef)
@@ -229,7 +237,7 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
-							rundownId: rundown.id,
+							rundownId,
 							name: newPart.name,
 							groupId: null,
 						})
@@ -245,11 +253,11 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 				open={newGroupOpen}
 				title="New Group"
 				acceptLabel="Create"
-				initial={{ name: `Group ${rundown.groups.length + 1}` }}
+				initial={{ name: `Group ${numGroups + 1}` }}
 				onAccepted={(newGroup) => {
 					ipcServer
 						.newGroup({
-							rundownId: rundown.id,
+							rundownId,
 							name: newGroup.name,
 						})
 						.catch(handleError)
@@ -261,4 +269,4 @@ const GroupListOptions: React.FC<{ rundown: Rundown }> = ({ rundown }) => {
 			/>
 		</>
 	)
-}
+})

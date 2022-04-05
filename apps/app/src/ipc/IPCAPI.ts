@@ -99,7 +99,7 @@ export interface IPCServerMethods {
 	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	movePart: (data: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}) => Promise<unknown>
 	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>

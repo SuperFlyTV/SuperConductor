@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { findGroup, findPart, findTimelineObj } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
-import { RundownContext } from '../../contexts/Rundown'
+// import { RundownContext } from '../../contexts/Rundown'
 // import { GUIContext } from '../../contexts/GUI'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ResourceAny } from '@shared/models'
@@ -17,7 +17,7 @@ import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
-	const rundown = useContext(RundownContext)
+	const rundown = store.rundownsStore.currentRundown
 
 	const resourcesStore = store.resourcesStore
 	const gui2 = store.guiStore
@@ -30,6 +30,10 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	const [resources, setResources] = useState<Array<ResourceAny | undefined>>([])
 
 	useEffect(() => {
+		if (!rundown) {
+			return
+		}
+
 		if (gui2.selectedGroupId && gui2.selectedPartId && gui2.selectedTimelineObjIds.length > 0) {
 			const group = findGroup(rundown, gui2.selectedGroupId)
 			if (group) {
@@ -68,6 +72,10 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 		setResources([])
 	}, [editing])
+
+	if (!rundown) {
+		return null
+	}
 
 	if (editing) {
 		const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))

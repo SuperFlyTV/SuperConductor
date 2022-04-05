@@ -21,7 +21,6 @@ import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '..
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { Rundown } from '../../../../models/rundown/Rundown'
-import { RundownContext } from '../../../contexts/Rundown'
 import { DropZone } from '../../util/DropZone'
 import {
 	MdChevronRight,
@@ -38,7 +37,6 @@ import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
-import shortUUID from 'short-uuid'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
@@ -52,8 +50,8 @@ export const GroupView: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
-	const rundown = useContext(RundownContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+	const rundown = store.rundownsStore.currentRundown
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -147,14 +145,10 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
-				store.guiStore.updateGroupMove({
-					groupId: group.id,
-					position: groupIndex,
-					moveId: shortUUID.generate(),
-				})
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
+					position: groupIndex,
 				}
 			},
 			collect: (monitor) => ({
@@ -164,9 +158,7 @@ export const GroupView: React.FC<{
 				return group.id === monitor.getItem().groupId
 			},
 			end: () => {
-				store.guiStore.updateGroupMove({
-					done: true,
-				})
+				store.rundownsStore.commitMoveGroupInCurrentRundown()?.catch(handleError)
 			},
 		},
 		[group.id, groupIndex, store.guiStore]
@@ -197,7 +189,7 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					const dragIndex = store.guiStore.groupMove.position
+					const dragIndex = movedItem.position
 					const hoverIndex = groupIndex
 
 					if (dragIndex === null) {
@@ -230,9 +222,8 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					store.guiStore.updateGroupMove({
-						position: hoverIndex,
-					})
+					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex)
+					movedItem.position = hoverIndex
 				} else if (isPartDragItem(movedItem)) {
 					if (!monitor.isOver({ shallow: true })) {
 						return
@@ -242,12 +233,8 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					const dragIndex = store.guiStore.partMove.position
+					const dragIndex = movedItem.position
 					const hoverIndex = groupIndex
-
-					if (dragIndex === null) {
-						return
-					}
 
 					// Determine rectangle on screen
 					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
@@ -273,10 +260,14 @@ export const GroupView: React.FC<{
 					 */
 					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
 
-					if (groupPartsWithoutMovedPart.length <= 0 && Math.abs(hoverClientY - hoverMiddleY) <= midBand) {
+					if (groupPartsWithoutMovedPart.length <= 0) {
 						// If the group is empty, and if the user's cursor is hovering within midBand
 						// pixels of the group's vertical center, then we assume that the user wants to move
 						// the Part into the hovered Group.
+
+						if (Math.abs(hoverClientY - hoverMiddleY) > midBand) {
+							return
+						}
 
 						if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
 							return
@@ -297,10 +288,7 @@ export const GroupView: React.FC<{
 						}
 
 						// Time to actually perform the action
-						store.guiStore.updatePartMove({
-							toGroupId: hoverGroup.id,
-							position: hoverIndex,
-						})
+						store.rundownsStore.movePartInCurrentRundown(movedItem.partId, hoverGroup.id, hoverIndex)
 
 						// Note: we're mutating the monitor item here!
 						// Generally it's better to avoid mutations,
@@ -323,16 +311,10 @@ export const GroupView: React.FC<{
 						}
 
 						if (hoverClientY < hoverMiddleY) {
-							store.guiStore.updatePartMove({
-								toGroupId: null,
-								position: hoverIndex,
-							})
+							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
 							movedItem.position = hoverIndex
 						} else {
-							store.guiStore.updatePartMove({
-								toGroupId: null,
-								position: hoverIndex + 1,
-							})
+							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex + 1)
 							movedItem.position = hoverIndex + 1
 						}
 
@@ -341,7 +323,7 @@ export const GroupView: React.FC<{
 				}
 			},
 		},
-		[group]
+		[group, groupIndex]
 	)
 
 	useEffect(() => {
@@ -353,39 +335,107 @@ export const GroupView: React.FC<{
 	}, [drop, preview])
 
 	// Delete button:
-	const handleDelete = () => {
+	const handleDelete = useCallback(() => {
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
+	const handleDeleteClick = useCallback(() => {
+		const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+			// Delete immediately with no confirmation dialog.
+			handleDelete()
+		} else {
+			setDeleteConfirmationOpen(true)
+		}
+	}, [handleDelete, hotkeyContext.sorensen])
 
 	// Stop button:
-	const handleStop = () => {
+	const handleStop = useCallback(() => {
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Play button:
-	const handlePlay = () => {
+	const handlePlay = useCallback(() => {
 		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down button:
 	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
-	const nextPart = group.parts[nextPartIndex]
-	const canStepDown = !group.disabled && anyPartIsPlaying && Boolean(nextPart)
-	const handleStepDown = () => {
+	const nextPartExists = nextPartIndex in group.parts
+	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
+	const handleStepDown = useCallback(() => {
 		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down up:
 	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
-	const prevPart = group.parts[prevPartIndex]
-	const canStepUp = !group.disabled && anyPartIsPlaying && Boolean(prevPart)
-	const handleStepUp = () => {
+	const prevPartExists = prevPartIndex in group.parts
+	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
+	const handleStepUp = useCallback(() => {
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Collapse button:
-	const handleCollapse = () => {
+	const handleCollapse = useCallback(() => {
 		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
+	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
+
+	// Disable button:
+	const toggleDisable = useCallback(() => {
+		ipcServer
+			.toggleGroupDisable({
+				rundownId,
+				groupId: group.id,
+				value: !group.disabled,
+			})
+			.catch(handleError)
+	}, [group.disabled, group.id, handleError, ipcServer, rundownId])
+
+	// Lock button:
+	const toggleLock = useCallback(() => {
+		ipcServer
+			.toggleGroupLock({
+				rundownId,
+				groupId: group.id,
+				value: !group.locked,
+			})
+			.catch(handleError)
+	}, [group.id, group.locked, handleError, ipcServer, rundownId])
+
+	// One-at-a-time button:
+	const toggleOneAtATime = useCallback(() => {
+		ipcServer
+			.toggleGroupOneAtATime({
+				rundownId,
+				groupId: group.id,
+				value: !group.oneAtATime,
+			})
+			.catch(handleError)
+	}, [group.id, group.oneAtATime, handleError, ipcServer, rundownId])
+
+	// Loop button:
+	const toggleLoop = useCallback(() => {
+		ipcServer
+			.toggleGroupLoop({
+				rundownId,
+				groupId: group.id,
+				value: !group.loop,
+			})
+			.catch(handleError)
+	}, [group.id, group.loop, handleError, ipcServer, rundownId])
+
+	// Auto-play button:
+	const toggleAutoPlay = useCallback(() => {
+		ipcServer
+			.toggleGroupAutoplay({
+				rundownId,
+				groupId: group.id,
+				value: !group.autoPlay,
+			})
+			.catch(handleError)
+	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
+
+	if (!rundown) {
+		return null
 	}
 
 	if (group.transparent) {
@@ -395,8 +445,9 @@ export const GroupView: React.FC<{
 				<PartView
 					rundownId={rundownId}
 					part={firstPart}
-					parentGroup={group}
+					parentGroupId={group.id}
 					parentGroupIndex={groupIndex}
+					partIndex={0}
 					mappings={mappings}
 				/>
 			</div>
@@ -478,8 +529,8 @@ export const GroupView: React.FC<{
 
 					<div className="controls">
 						<div className="playback">
-							<StopBtn className="part__stop" group={group} onClick={handleStop} />
-							<PlayBtn group={group} onClick={handlePlay} />
+							<StopBtn className="part__stop" groupId={group.id} onClick={handleStop} />
+							<PlayBtn groupId={group.id} onClick={handlePlay} />
 							<Button
 								variant="contained"
 								size="small"
@@ -515,15 +566,7 @@ export const GroupView: React.FC<{
 							value="disabled"
 							selected={group.disabled}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.toggleGroupDisable({
-										rundownId,
-										groupId: group.id,
-										value: !group.disabled,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleDisable}
 						>
 							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
@@ -532,15 +575,7 @@ export const GroupView: React.FC<{
 							value="locked"
 							selected={group.locked}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.toggleGroupLock({
-										rundownId,
-										groupId: group.id,
-										value: !group.locked,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLock}
 						>
 							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
@@ -555,15 +590,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime}
 							size="small"
 							disabled={!canModifyOneAtATime}
-							onChange={() => {
-								ipcServer
-									.toggleGroupOneAtATime({
-										rundownId,
-										groupId: group.id,
-										value: !group.oneAtATime,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleOneAtATime}
 						>
 							<MdLooksOne size={22} />
 						</ToggleButton>
@@ -578,15 +605,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime && group.loop}
 							size="small"
 							disabled={!canModifyLoop}
-							onChange={() => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId: group.id,
-										value: !group.loop,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLoop}
 						>
 							<MdRepeat size={18} />
 						</ToggleButton>
@@ -601,15 +620,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime && group.autoPlay}
 							size="small"
 							disabled={!canModifyAutoPlay}
-							onChange={() => {
-								ipcServer
-									.toggleGroupAutoplay({
-										rundownId,
-										groupId: group.id,
-										value: !group.autoPlay,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleAutoPlay}
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
@@ -618,28 +629,21 @@ export const GroupView: React.FC<{
 							className="delete"
 							disabled={group.locked}
 							title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
-							onClick={() => {
-								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
-									// Delete immediately with no confirmation dialog.
-									handleDelete()
-								} else {
-									setDeleteConfirmationOpen(true)
-								}
-							}}
+							onClick={handleDeleteClick}
 						/>
 					</div>
 				</div>
 				{!group.collapsed && (
 					<div className="group__content">
 						<div className="group__content__parts">
-							{group.parts.map((part) => (
+							{group.parts.map((part, index) => (
 								<PartView
 									key={part.id}
 									rundownId={rundownId}
 									part={part}
-									parentGroup={group}
+									parentGroupId={group.id}
 									parentGroupIndex={groupIndex}
+									partIndex={index}
 									mappings={mappings}
 								/>
 							))}
@@ -719,7 +723,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				}
 			},
 		},
-		[rundown, group]
+		[rundown.id, group.id]
 	)
 
 	useEffect(() => {

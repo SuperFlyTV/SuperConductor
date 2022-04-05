@@ -100,6 +100,12 @@
 		overflow: visible;
 		padding: 0;
 		border-radius: 0;
+		margin-bottom: calc(-2rem - 1px) !important;
+		top: calc(-1rem - 2px);
+
+		&:not(:first-child) {
+			margin-top: 0 !important;
+		}
 
 		> * {
 			display: none;

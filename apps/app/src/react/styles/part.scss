@@ -44,6 +44,8 @@
 		border-top: 0;
 		display: block;
 		overflow: visible;
+		margin-top: 0;
+		margin-bottom: -1px;
 
 		> * {
 			display: none;

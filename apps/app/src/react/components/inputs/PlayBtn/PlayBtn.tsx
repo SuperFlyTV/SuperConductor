@@ -1,24 +1,24 @@
 import { Button } from '@mui/material'
 import { observer } from 'mobx-react-lite'
+import { computed } from 'mobx'
 import React from 'react'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { MdPlayArrow } from 'react-icons/md'
-import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import { store } from '../../../mobx/store'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import './style.scss'
 
 type PlayBtnProps = {
-	group: Group
+	groupId: string
 	part?: Part
 	className?: string
 	onClick?: () => void
 }
 
-export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group, part, className, onClick }) {
+export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ groupId, part, className, onClick }) {
 	const { groupIsPlaying, anyPartIsPlaying, partIsPlaying } = useMemoComputedObject(() => {
-		const playData = store.groupPlayDataStore.groups.get(group.id)
+		const playData = store.groupPlayDataStore.groups.get(groupId)
 
 		if (!playData) {
 			return {
@@ -32,9 +32,25 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 			anyPartIsPlaying: playData.anyPartIsPlaying,
 			partIsPlaying: Boolean(part && part.id in playData.playheads),
 		}
-	}, [group.id])
+	}, [groupId])
 
-	const groupOrPartDisabled = group.disabled || part?.disabled
+	const groupDisabled =
+		computed(
+			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === groupId)?.disabled
+		).get() || false
+	const groupOneAtATime =
+		computed(
+			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === groupId)?.oneAtATime
+		).get() || false
+	const numNonDisabledPartsInGroup =
+		computed(
+			() =>
+				store.rundownsStore.currentRundown?.groups
+					.find((group) => group.id === groupId)
+					?.parts.filter((p) => !p.disabled).length
+		).get() ?? 0
+
+	const groupOrPartDisabled = groupDisabled || part?.disabled
 	let canRestart = false
 	let title = ''
 	if (part) {
@@ -44,7 +60,7 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 	} else {
 		// This is a play button for a Group.
 		canRestart = groupIsPlaying || anyPartIsPlaying
-		title = group.oneAtATime
+		title = groupOneAtATime
 			? canRestart
 				? 'Restart and play first Part'
 				: 'Play first Part'
@@ -63,9 +79,7 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 			title={title}
 		>
 			{canRestart ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
-			{!part && (
-				<div className="playcount">{group.oneAtATime ? 1 : group.parts.filter((p) => !p.disabled).length}</div>
-			)}
+			{!part && <div className="playcount">{groupOneAtATime ? 1 : numNonDisabledPartsInGroup}</div>}
 		</Button>
 	)
 })
