@@ -126,7 +126,7 @@ export class RundownsStore {
 			}))
 	}
 
-	moveGroupInCurrentRundown(groupId: string, position: number): CommitFunction | undefined {
+	moveGroupInCurrentRundown(groupId: string, position: number): void {
 		const currentRundown = this._currentRundown
 
 		if (currentRundown === undefined) {
@@ -161,7 +161,7 @@ export class RundownsStore {
 		return this._commitMoveGroupFn()
 	}
 
-	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): CommitFunction | undefined {
+	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
 		const currentRundown = this._currentRundown
 
 		if (currentRundown === undefined) {
