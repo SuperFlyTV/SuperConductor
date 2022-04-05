@@ -9,9 +9,6 @@ export const SplashScreen: React.FC = () => {
 
 	const [open, setOpen] = React.useState(false)
 
-	const handleClickOpen = () => {
-		setOpen(true)
-	}
 	const handleRemindMeLater = () => {
 		setOpen(false)
 	}
@@ -33,9 +30,6 @@ export const SplashScreen: React.FC = () => {
 
 	return (
 		<div>
-			<Button variant="outlined" onClick={handleClickOpen}>
-				Open dialog
-			</Button>
 			<BootstrapDialog onClose={handleClose} aria-labelledby="customized-dialog-title" open={open}>
 				<BootstrapDialogTitle id="customized-dialog-title" onClose={handleClose}>
 					{seenVersion ? <>SuperConductor has been updated!</> : <>SuperConductor</>}
