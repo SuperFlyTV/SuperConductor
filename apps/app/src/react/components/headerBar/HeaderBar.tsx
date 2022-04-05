@@ -11,7 +11,7 @@ import { Tabs } from './tabs/Tabs'
 
 import './style.scss'
 
-export const HeaderBar: React.FC = observer(() => {
+export const HeaderBar: React.FC = observer(function HeaderBar() {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [renameRundownOpen, setRenameRundownOpen] = useState(false)

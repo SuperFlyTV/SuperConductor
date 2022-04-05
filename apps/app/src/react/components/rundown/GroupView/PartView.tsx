@@ -56,7 +56,7 @@ export const PartView: React.FC<{
 	parentGroupIndex: number
 	part: Part
 	mappings: Mappings
-}> = observer(({ rundownId, parentGroup, parentGroupIndex, part, mappings }) => {
+}> = observer(function PartView({ rundownId, parentGroup, parentGroupIndex, part, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove

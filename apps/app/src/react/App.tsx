@@ -54,7 +54,7 @@ if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
 	})
 }
 
-export const App = observer(() => {
+export const App = observer(function App() {
 	const [project, setProject] = useState<Project>()
 	const [waitingForMovePartUpdate, setWaitingForMovePartUpdate] = useState(false)
 	const [waitingForMoveGroupUpdate, setWaitingForMoveGroupUpdate] = useState(false)

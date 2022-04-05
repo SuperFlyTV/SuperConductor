@@ -48,7 +48,7 @@ export const GroupView: React.FC<{
 	group: Group
 	groupIndex: number
 	mappings: Mappings
-}> = observer(({ group, groupIndex, rundownId, mappings }) => {
+}> = observer(function GroupView({ group, groupIndex, rundownId, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)

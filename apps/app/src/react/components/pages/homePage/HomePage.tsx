@@ -10,7 +10,7 @@ import { MappingsPage } from './MappingsPage'
 import { HomePageId } from 'src/react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
 
-export const HomePage: React.FC<{ project: Project }> = observer((props) => {
+export const HomePage: React.FC<{ project: Project }> = observer(function HomePage(props) {
 	const activeHomePageId = store.guiStore.activeHomePageId
 
 	return (

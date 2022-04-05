@@ -10,7 +10,7 @@ import './style.scss'
 import { AiFillHome } from 'react-icons/ai'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 
-export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer((props) => {
+export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer(function Tabs(props) {
 	const rundownsStore = store.rundownsStore
 	const guiStore = store.guiStore
 	const serverAPI = useContext(IPCServerContext)

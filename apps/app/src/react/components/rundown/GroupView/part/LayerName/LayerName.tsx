@@ -28,7 +28,7 @@ export const LayerName: React.FC<{
 	 * All timelineObj objects used in this part, required for filtering out used layers in current part from the dropdown
 	 */
 	timelineObjs: TimelineObj[]
-}> = observer((props) => {
+}> = observer(function LayerName(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { enqueueSnackbar } = useSnackbar()

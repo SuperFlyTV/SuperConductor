@@ -47,7 +47,7 @@ const MenuProps = {
 
 const NAME_FILTER_DEBOUNCE = 100
 
-export const ResourceLibrary: React.FC = observer(() => {
+export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const ipcServer = useContext(IPCServerContext)
 	const rundown = useContext(RundownContext)
 	const project = useContext(ProjectContext)

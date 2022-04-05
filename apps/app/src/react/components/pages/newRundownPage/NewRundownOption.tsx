@@ -4,7 +4,7 @@ import React from 'react'
 import './newRundownOption.scss'
 
 export const NewRundownOption: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void }> = observer(
-	(props) => {
+	function NewRundownOption(props) {
 		return (
 			<button className="new-rundown-option" onClick={props.onClick}>
 				<div className="icon">{props.icon}</div>

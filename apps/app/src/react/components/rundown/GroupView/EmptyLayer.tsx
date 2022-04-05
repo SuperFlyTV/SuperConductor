@@ -14,7 +14,7 @@ export const EmptyLayer: React.FC<{
 	rundownId: string
 	groupId: string
 	partId: string
-}> = observer(({ rundownId, groupId, partId }) => {
+}> = observer(function EmptyLayer({ rundownId, groupId, partId }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(

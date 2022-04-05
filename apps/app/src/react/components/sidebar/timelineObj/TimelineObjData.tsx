@@ -19,7 +19,7 @@ export const TimelineObjData: React.FC<{
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
 	disabled?: boolean
-}> = observer((props) => {
+}> = observer(function TimelineObjData(props) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)

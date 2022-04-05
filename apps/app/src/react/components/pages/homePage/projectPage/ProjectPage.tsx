@@ -17,7 +17,7 @@ import { ScListItemLabel } from '../scList/ScListItemLabel'
 
 import './style.scss'
 
-export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
+export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore

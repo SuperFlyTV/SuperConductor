@@ -14,7 +14,7 @@ import { DropZone } from '../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 
-export const RundownView: React.FC<{ mappings: Mappings }> = observer(({ mappings }) => {
+export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	const rundown = useContext(RundownContext)
 
 	// Drag n' Drop:

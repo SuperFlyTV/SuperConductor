@@ -11,7 +11,7 @@ import { ProjectPageLayout } from './projectPageLayout/ProjectPageLayout'
 import { Project } from 'src/models/project/Project'
 import { MappingSettings } from '../../settings/mappings/MappingSettings'
 
-export const MappingsPage: React.FC<{ project: Project }> = observer((props) => {
+export const MappingsPage: React.FC<{ project: Project }> = observer(function MappingsPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore

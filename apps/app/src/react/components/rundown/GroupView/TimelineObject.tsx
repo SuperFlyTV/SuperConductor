@@ -26,7 +26,16 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
 	warnings?: string[]
-}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked, warnings }) => {
+}> = observer(function TimelineObject({
+	groupId,
+	partId,
+	timelineObj,
+	partDuration,
+	resolved,
+	msPerPixel,
+	locked,
+	warnings,
+}) {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
 	const gui = store.guiStore

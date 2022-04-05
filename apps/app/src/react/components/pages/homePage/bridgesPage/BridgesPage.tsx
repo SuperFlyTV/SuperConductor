@@ -17,7 +17,7 @@ import { NewBridgeDialog } from './NewBridgeDialog'
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
 
-export const BridgesPage: React.FC<{ project: Project }> = observer(({ project }) => {
+export const BridgesPage: React.FC<{ project: Project }> = observer(function BridgesPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
