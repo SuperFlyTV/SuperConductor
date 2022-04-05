@@ -18,7 +18,15 @@ interface IRundownsItems {
 	}
 }
 
+type ArrayElement<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[]
+	? ElementType
+	: never
+
 type CommitFunction = () => Promise<void>
+
+type IObservableObject<T extends object> = {
+	[k in keyof T]: T[k] extends Array<any> ? IObservableArray<ArrayElement<T[k]>> : T[k]
+}
 
 export class RundownsStore {
 	/**
@@ -62,7 +70,7 @@ export class RundownsStore {
 		return this._currentRundown
 	}
 	private set currentRundown(rd: Rundown | undefined) {
-		this._currentRundown = rd
+		this._currentRundown = rd as any
 	}
 
 	/**
@@ -127,7 +135,7 @@ export class RundownsStore {
 	}
 
 	moveGroupInCurrentRundown(groupId: string, position: number): void {
-		const currentRundown = this._currentRundown
+		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -141,8 +149,8 @@ export class RundownsStore {
 		}
 
 		// Remove the group from the groups array and re-insert it at its new position
-		currentRundown.groups = currentRundown.groups.filter((g) => g.id !== groupId)
-		currentRundown.groups.splice(position, 0, group)
+		currentRundown.groups.remove(group)
+		currentRundown.groups.spliceWithArray(position, 0, [group])
 
 		this._commitMoveGroupFn = async () => {
 			await this.serverAPI.moveGroup({
@@ -162,7 +170,7 @@ export class RundownsStore {
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
-		const currentRundown = this._currentRundown
+		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -216,21 +224,20 @@ export class RundownsStore {
 
 		if (madeNewTransparentGroup) {
 			// Add the new transparent group to the rundown.
-			currentRundown.groups.splice(position, 0, toGroup)
+			currentRundown.groups.spliceWithArray(position, 0, [toGroup])
 		} else if (isTransparentGroupMove) {
 			// Move the transparent group to its new position.
-			const index = currentRundown.groups.findIndex((g) => toGroup && g.id === toGroup.id)
-			if (index >= 0) currentRundown.groups.splice(index, 1)
-			currentRundown.groups.splice(position, 0, toGroup)
+			currentRundown.groups.remove(toGroup)
+			currentRundown.groups.spliceWithArray(position, 0, [toGroup])
 		} else if (!isTransparentGroupMove) {
 			// Add the part to its new group, in its new position.
-			toGroup.parts.splice(position, 0, part)
+			;(toGroup as any as IObservableObject<Group>).parts.spliceWithArray(position, 0, [part])
 		}
 
 		// Clean up leftover empty transparent groups.
 		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
-			const index = currentRundown.groups.findIndex((g) => g.id === fromGroup.id)
-			if (index >= 0) currentRundown.groups.splice(index, 1)
+			const item = currentRundown.groups.find((g) => g.id === fromGroup.id)
+			if (item) currentRundown.groups.remove(item)
 		}
 
 		this._commitMovePartFn = async () => {
