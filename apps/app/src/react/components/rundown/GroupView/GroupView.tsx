@@ -323,7 +323,7 @@ export const GroupView: React.FC<{
 				}
 			},
 		},
-		[group]
+		[group, groupIndex]
 	)
 
 	useEffect(() => {
@@ -335,40 +335,104 @@ export const GroupView: React.FC<{
 	}, [drop, preview])
 
 	// Delete button:
-	const handleDelete = () => {
+	const handleDelete = useCallback(() => {
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
+	const handleDeleteClick = useCallback(() => {
+		const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+			// Delete immediately with no confirmation dialog.
+			handleDelete()
+		} else {
+			setDeleteConfirmationOpen(true)
+		}
+	}, [handleDelete, hotkeyContext.sorensen])
 
 	// Stop button:
-	const handleStop = () => {
+	const handleStop = useCallback(() => {
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Play button:
-	const handlePlay = () => {
+	const handlePlay = useCallback(() => {
 		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down button:
 	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
-	const nextPart = group.parts[nextPartIndex]
-	const canStepDown = !group.disabled && anyPartIsPlaying && Boolean(nextPart)
-	const handleStepDown = () => {
+	const nextPartExists = nextPartIndex in group.parts
+	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
+	const handleStepDown = useCallback(() => {
 		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down up:
 	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
-	const prevPart = group.parts[prevPartIndex]
-	const canStepUp = !group.disabled && anyPartIsPlaying && Boolean(prevPart)
-	const handleStepUp = () => {
+	const prevPartExists = prevPartIndex in group.parts
+	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
+	const handleStepUp = useCallback(() => {
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
-	}
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Collapse button:
-	const handleCollapse = () => {
+	const handleCollapse = useCallback(() => {
 		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
-	}
+	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
+
+	// Disable button:
+	const toggleDisable = useCallback(() => {
+		ipcServer
+			.toggleGroupDisable({
+				rundownId,
+				groupId: group.id,
+				value: !group.disabled,
+			})
+			.catch(handleError)
+	}, [group.disabled, group.id, handleError, ipcServer, rundownId])
+
+	// Lock button:
+	const toggleLock = useCallback(() => {
+		ipcServer
+			.toggleGroupLock({
+				rundownId,
+				groupId: group.id,
+				value: !group.locked,
+			})
+			.catch(handleError)
+	}, [group.id, group.locked, handleError, ipcServer, rundownId])
+
+	// One-at-a-time button:
+	const toggleOneAtATime = useCallback(() => {
+		ipcServer
+			.toggleGroupOneAtATime({
+				rundownId,
+				groupId: group.id,
+				value: !group.oneAtATime,
+			})
+			.catch(handleError)
+	}, [group.id, group.oneAtATime, handleError, ipcServer, rundownId])
+
+	// Loop button:
+	const toggleLoop = useCallback(() => {
+		ipcServer
+			.toggleGroupLoop({
+				rundownId,
+				groupId: group.id,
+				value: !group.loop,
+			})
+			.catch(handleError)
+	}, [group.id, group.loop, handleError, ipcServer, rundownId])
+
+	// Auto-play button:
+	const toggleAutoPlay = useCallback(() => {
+		ipcServer
+			.toggleGroupAutoplay({
+				rundownId,
+				groupId: group.id,
+				value: !group.autoPlay,
+			})
+			.catch(handleError)
+	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
 
 	if (!rundown) {
 		return null
@@ -502,15 +566,7 @@ export const GroupView: React.FC<{
 							value="disabled"
 							selected={group.disabled}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.toggleGroupDisable({
-										rundownId,
-										groupId: group.id,
-										value: !group.disabled,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleDisable}
 						>
 							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
@@ -519,15 +575,7 @@ export const GroupView: React.FC<{
 							value="locked"
 							selected={group.locked}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.toggleGroupLock({
-										rundownId,
-										groupId: group.id,
-										value: !group.locked,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLock}
 						>
 							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
@@ -542,15 +590,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime}
 							size="small"
 							disabled={!canModifyOneAtATime}
-							onChange={() => {
-								ipcServer
-									.toggleGroupOneAtATime({
-										rundownId,
-										groupId: group.id,
-										value: !group.oneAtATime,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleOneAtATime}
 						>
 							<MdLooksOne size={22} />
 						</ToggleButton>
@@ -565,15 +605,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime && group.loop}
 							size="small"
 							disabled={!canModifyLoop}
-							onChange={() => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId: group.id,
-										value: !group.loop,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLoop}
 						>
 							<MdRepeat size={18} />
 						</ToggleButton>
@@ -588,15 +620,7 @@ export const GroupView: React.FC<{
 							selected={group.oneAtATime && group.autoPlay}
 							size="small"
 							disabled={!canModifyAutoPlay}
-							onChange={() => {
-								ipcServer
-									.toggleGroupAutoplay({
-										rundownId,
-										groupId: group.id,
-										value: !group.autoPlay,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleAutoPlay}
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
@@ -605,15 +629,7 @@ export const GroupView: React.FC<{
 							className="delete"
 							disabled={group.locked}
 							title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
-							onClick={() => {
-								const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-								if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
-									// Delete immediately with no confirmation dialog.
-									handleDelete()
-								} else {
-									setDeleteConfirmationOpen(true)
-								}
-							}}
+							onClick={handleDeleteClick}
 						/>
 					</div>
 				</div>
@@ -707,7 +723,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				}
 			},
 		},
-		[rundown, group]
+		[rundown.id, group.id]
 	)
 
 	useEffect(() => {

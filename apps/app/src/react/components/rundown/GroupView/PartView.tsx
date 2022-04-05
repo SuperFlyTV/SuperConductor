@@ -434,14 +434,50 @@ export const PartView: React.FC<{
 	// const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
-	const handleStart = () => {
+	const handleStart = useCallback(() => {
 		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
-	}
+	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
 
 	// Stop button:
-	const handleStop = () => {
+	const handleStop = useCallback(() => {
 		ipcServer.stopPart({ rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
-	}
+	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
+
+	// Disable button:
+	const toggleDisable = useCallback(() => {
+		ipcServer
+			.togglePartDisable({
+				rundownId,
+				groupId: parentGroupId,
+				partId: part.id,
+				value: !part.disabled,
+			})
+			.catch(handleError)
+	}, [handleError, ipcServer, parentGroupId, part.disabled, part.id, rundownId])
+
+	// Lock button:
+	const toggleLock = useCallback(() => {
+		ipcServer
+			.togglePartLock({
+				rundownId,
+				groupId: parentGroupId,
+				partId: part.id,
+				value: !part.locked,
+			})
+			.catch(handleError)
+	}, [handleError, ipcServer, parentGroupId, part.id, part.locked, rundownId])
+
+	// Loop button:
+	const toggleLoop = useCallback(() => {
+		ipcServer
+			.togglePartLoop({
+				rundownId,
+				groupId: parentGroupId,
+				partId: part.id,
+				value: !part.loop,
+			})
+			.catch(handleError)
+	}, [handleError, ipcServer, parentGroupId, part.id, part.loop, rundownId])
 
 	// Drag n' Drop re-ordering:
 	// Adapted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
@@ -712,16 +748,7 @@ export const PartView: React.FC<{
 							disabled={groupLocked}
 							selected={part.disabled}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.togglePartDisable({
-										rundownId,
-										groupId: parentGroupId,
-										partId: part.id,
-										value: !part.disabled,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleDisable}
 						>
 							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
 						</ToggleButton>
@@ -731,16 +758,7 @@ export const PartView: React.FC<{
 							disabled={groupLocked}
 							selected={part.locked}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.togglePartLock({
-										rundownId,
-										groupId: parentGroupId,
-										partId: part.id,
-										value: !part.locked,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLock}
 						>
 							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 						</ToggleButton>
@@ -752,16 +770,7 @@ export const PartView: React.FC<{
 							disabled={groupOrPartLocked}
 							selected={part.loop}
 							size="small"
-							onChange={() => {
-								ipcServer
-									.togglePartLoop({
-										rundownId,
-										groupId: parentGroupId,
-										partId: part.id,
-										value: !part.loop,
-									})
-									.catch(handleError)
-							}}
+							onChange={toggleLoop}
 						>
 							<MdRepeatOne size={18} />
 						</ToggleButton>

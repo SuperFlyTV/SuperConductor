@@ -60,7 +60,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				movedItem.position = hoverIndex
 			},
 		},
-		[rundown, rundown?.groups]
+		[rundown, rundown?.groups.length]
 	)
 
 	useEffect(() => {
