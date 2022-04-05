@@ -90,7 +90,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 	)
 })
 
-const GroupListOptions: React.FC<{ rundownId: string }> = React.memo(function GroupListOptions({ rundownId }) {
+const GroupListOptions: React.FC<{ rundownId: string }> = observer(function GroupListOptions({ rundownId }) {
 	const ipcServer = useContext(IPCServerContext)
 	const [newPartOpen, setNewPartOpen] = useState(false)
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
