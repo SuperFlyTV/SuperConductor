@@ -16,7 +16,7 @@ import { Project } from '../../../models/project/Project'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 
-export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer((props) => {
+export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
 	const rundown = store.rundownsStore.currentRundown
 
 	const resourcesStore = store.resourcesStore
