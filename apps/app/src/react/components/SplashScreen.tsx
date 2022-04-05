@@ -55,19 +55,20 @@ export const SplashScreen: React.FC = () => {
 						</Typography>
 					) : null}
 					<Typography gutterBottom>
-						This is an open beta, please try it out and{' '}
+						This is a pet project from{' '}
+						<em>
+							<a href="https://superfly.tv/" target="_blank" rel="noreferrer">
+								SuperFly.tv
+							</a>
+						</em>
+						. It&apos;s still in early development, there might be bugs and some features are probably
+						missing, but we hope you&apos;ll find it useful and we invite you to join us in improving it!
+						<br></br>
+						Be sure to{' '}
 						<a href="https://github.com/SuperFlyTV/SuperConductor/issues" target="_blank" rel="noreferrer">
-							be sure to report any issues you might have
+							report any issues you might have
 						</a>
-						. If you&apos;re missing a feature, we&apos;re happy to accept Pull Requests, or add new
-						features as paid work.
-					</Typography>
-					<Typography gutterBottom>
-						<h3>About us</h3>
-						<a href="https://superfly.tv" target="_blank" rel="noreferrer">
-							SuperFly.tv
-						</a>{' '}
-						is a consultancy company, we deliver custom solution for live broadcasts and events.
+						. If you&apos;re missing a feature, we&apos;re happy to accept contributions as pull requests!
 					</Typography>
 				</DialogContent>
 				<DialogActions>
