@@ -2,6 +2,7 @@ import React from 'react'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../../../mobx/store'
 import { CountDownHead } from './CountdownHead'
+import { useMemoComputedObject } from '../../../../../mobx/lib'
 
 type PropsType = {
 	groupId: string
@@ -9,11 +10,13 @@ type PropsType = {
 }
 
 export const CountdownHeads = observer(function CountdownHeads(props: PropsType) {
-	const playhead = store.groupPlayDataStore.groups.get(props.groupId)
+	const timesUntilStart = useMemoComputedObject(() => {
+		const playhead = store.groupPlayDataStore.groups.get(props.groupId)
 
-	if (!playhead) return null
+		if (!playhead) return null
 
-	const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[props.partId]) || null
+		return (playhead.anyPartIsPlaying && playhead.countdowns[props.partId]) || null
+	}, [props.groupId, props.partId])
 
 	return (
 		<>
