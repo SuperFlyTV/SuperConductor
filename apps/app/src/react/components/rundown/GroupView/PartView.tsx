@@ -461,9 +461,7 @@ export const PartView: React.FC<{
 				}
 
 				const parentGroup =
-					computed(() =>
-						store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
-					).get() || null
+					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId) || null
 
 				if (!parentGroup) {
 					return false
@@ -482,9 +480,7 @@ export const PartView: React.FC<{
 
 				let hoverIndex = partIndex
 				const parentGroup =
-					computed(() =>
-						store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
-					).get() || null
+					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId) || null
 				let hoverGroup: Group | null = parentGroup
 				const hoverPartId = part.id
 				const hoverGroupIndex = parentGroupIndex
@@ -570,9 +566,9 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem | null => {
-				const parentGroup = computed(() =>
-					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
-				).get()
+				const parentGroup = store.rundownsStore.currentRundown?.groups.find(
+					(group) => group.id === parentGroupId
+				)
 
 				if (!parentGroup) {
 					return null
