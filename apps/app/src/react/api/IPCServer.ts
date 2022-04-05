@@ -26,6 +26,9 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('setKeyboardKeys', activeKeys)
 	}
 
+	acknowledgeSeenVersion(): Promise<void> {
+		return this.invokeServerMethod('acknowledgeSeenVersion')
+	}
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}

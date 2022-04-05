@@ -9,6 +9,11 @@ const { ipcRenderer } = window.require('electron')
 export class AppStore {
 	windowPosition?: WindowPosition = undefined
 
+	version?: {
+		seenVersion: string | null
+		currentVersion: string
+	} = undefined
+
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	peripherals: { [peripheralId: string]: Peripheral } = {}
 
@@ -30,6 +35,7 @@ export class AppStore {
 
 	update(data: AppData) {
 		this.windowPosition = data.windowPosition
+		this.version = data.version
 	}
 
 	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null) {

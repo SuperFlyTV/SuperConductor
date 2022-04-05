@@ -10,7 +10,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
-import { BridgeHandler } from './bridgeHandler'
+import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
@@ -30,13 +30,16 @@ export class TimedPlayerThingy {
 
 	constructor() {
 		this.session = new SessionHandler()
-		this.storage = new StorageHandler({
-			// Default window position:
-			y: undefined,
-			x: undefined,
-			width: 1200,
-			height: 600,
-		})
+		this.storage = new StorageHandler(
+			{
+				// Default window position:
+				y: undefined,
+				x: undefined,
+				width: 1200,
+				height: 600,
+			},
+			CURRENT_VERSION
+		)
 
 		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
 			this.ipcClient?.updateResource(id, resource)

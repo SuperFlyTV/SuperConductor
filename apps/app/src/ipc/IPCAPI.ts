@@ -64,6 +64,7 @@ export interface IPCServerMethods {
 	triggerSendAll: () => Promise<unknown>
 	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
+	acknowledgeSeenVersion: () => Promise<unknown>
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	setPartTrigger: (data: {

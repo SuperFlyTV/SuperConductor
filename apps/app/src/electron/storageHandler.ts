@@ -43,9 +43,9 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(defaultWindowPosition: WindowPosition) {
+	constructor(defaultWindowPosition: WindowPosition, appVersion: string) {
 		super()
-		this.appData = this.loadAppData(defaultWindowPosition)
+		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
@@ -360,7 +360,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 
-	private loadAppData(defaultWindowPosition: WindowPosition): FileAppData {
+	private loadAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
 		let appData: FileAppData | undefined = undefined
 		try {
 			const read = fs.readFileSync(this.appDataPath, 'utf8')
@@ -390,10 +390,18 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 
+		const defaultAppData = this.getDefaultAppData(defaultWindowPosition, appVersion)
 		if (!appData) {
 			// Default:
 			this.appDataNeedsWrite = true
-			return this.getDefaultAppData(defaultWindowPosition)
+			appData = defaultAppData
+		} else {
+			// Migrate old data:
+			if (!appData.appData.version) {
+				// Added 2022-03-25:
+				this.appDataNeedsWrite = true
+				appData.appData.version = defaultAppData.appData.version
+			}
 		}
 		return appData
 	}
@@ -527,11 +535,15 @@ export class StorageHandler extends EventEmitter {
 		return rundown
 	}
 
-	private getDefaultAppData(defaultWindowPosition: WindowPosition): FileAppData {
+	private getDefaultAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
 		return {
 			version: CURRENT_VERSION,
 			appData: {
 				windowPosition: defaultWindowPosition,
+				version: {
+					seenVersion: null,
+					currentVersion: appVersion,
+				},
 				project: {
 					id: 'default',
 				},
