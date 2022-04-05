@@ -29,52 +29,49 @@ export const SplashScreen: React.FC = () => {
 	if (!currentVersion) return null
 
 	return (
-		<div>
-			<BootstrapDialog onClose={handleClose} aria-labelledby="customized-dialog-title" open={open}>
-				<BootstrapDialogTitle id="customized-dialog-title" onClose={handleClose}>
-					{seenVersion ? <>SuperConductor has been updated!</> : <>SuperConductor</>}
-				</BootstrapDialogTitle>
-				<DialogContent dividers>
-					{seenVersion ? (
-						<Typography gutterBottom>
-							SuperConductor has been updated from version <b>{seenVersion}</b> to <b>{currentVersion}</b>
-							.{' '}
-							<a
-								href={`https://github.com/SuperFlyTV/SuperConductor/releases/tag/v${currentVersion}`}
-								target="_blank"
-								rel="noreferrer"
-							>
-								Release notes
-							</a>
-						</Typography>
-					) : null}
+		<BootstrapDialog onClose={handleClose} aria-labelledby="customized-dialog-title" open={open}>
+			<BootstrapDialogTitle id="customized-dialog-title" onClose={handleClose}>
+				{seenVersion ? <>SuperConductor has been updated!</> : <>SuperConductor</>}
+			</BootstrapDialogTitle>
+			<DialogContent dividers>
+				{seenVersion ? (
 					<Typography gutterBottom>
-						This is a pet project from{' '}
-						<em>
-							<a href="https://superfly.tv/" target="_blank" rel="noreferrer">
-								SuperFly.tv
-							</a>
-						</em>
-						. It&apos;s still in early development, there might be bugs and some features are probably
-						missing, but we hope you&apos;ll find it useful and we invite you to join us in improving it!
-						<br></br>
-						Be sure to{' '}
-						<a href="https://github.com/SuperFlyTV/SuperConductor/issues" target="_blank" rel="noreferrer">
-							report any issues you might have
+						SuperConductor has been updated from version <b>{seenVersion}</b> to <b>{currentVersion}</b>.{' '}
+						<a
+							href={`https://github.com/SuperFlyTV/SuperConductor/releases/tag/v${currentVersion}`}
+							target="_blank"
+							rel="noreferrer"
+						>
+							Release notes
 						</a>
-						. If you&apos;re missing a feature, we&apos;re happy to accept contributions as pull requests!
 					</Typography>
-				</DialogContent>
-				<DialogActions>
-					<Button autoFocus onClick={handleRemindMeLater}>
-						Remind me later
-					</Button>
-					<Button autoFocus onClick={handleClose}>
-						Close
-					</Button>
-				</DialogActions>
-			</BootstrapDialog>
-		</div>
+				) : null}
+				<Typography gutterBottom>
+					This is a pet project from{' '}
+					<em>
+						<a href="https://superfly.tv/" target="_blank" rel="noreferrer">
+							SuperFly.tv
+						</a>
+					</em>
+					. It&apos;s still in early development, there might be bugs and some features are probably missing,
+					but we hope you&apos;ll find it useful and we invite you to join us in improving it!
+					<br></br>
+					Be sure to{' '}
+					<a href="https://github.com/SuperFlyTV/SuperConductor/issues" target="_blank" rel="noreferrer">
+						report any issues you might have
+					</a>
+					. If you&apos;re missing a feature, we&apos;re happy to accept contributions as pull requests!
+				</Typography>
+			</DialogContent>
+			<DialogActions>
+				<Button autoFocus onClick={handleRemindMeLater}>
+					Remind me later
+				</Button>
+				<Button autoFocus onClick={handleClose}>
+					Close
+				</Button>
+			</DialogActions>
+		</BootstrapDialog>
 	)
 }
 
