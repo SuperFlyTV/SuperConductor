@@ -121,9 +121,9 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 				<Table>
 					<TableHead>
 						<TableRow>
-							<TableCell>Mapping ID</TableCell>
-							<TableCell>Mapping Name</TableCell>
-							<TableCell>Mapping Type</TableCell>
+							<TableCell>Layer ID</TableCell>
+							<TableCell>Layer Name</TableCell>
+							<TableCell>Layer Type</TableCell>
 							<TableCell>Device ID</TableCell>
 							<TableCell>Configuration</TableCell>
 						</TableRow>
@@ -155,7 +155,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 							setAddMappingOpen(true)
 						}}
 					>
-						Add Mapping
+						Add Layer
 					</Button>
 				</Box>
 			)}
@@ -167,7 +167,7 @@ export const MappingList: React.FC<IMappingListProps> = ({ mappings, bridges }) 
 					setEditing((editing) => !editing)
 				}}
 			>
-				{editing ? 'Finish editing' : 'Edit mappings'}
+				{editing ? 'Finish editing' : 'Edit layers'}
 			</Button>
 
 			<NewMappingDialog

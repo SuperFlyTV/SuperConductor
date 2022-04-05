@@ -31,7 +31,7 @@ export function NewMappingDialog({ open, deviceIds, mappings, onAccepted, onDisc
 				if (e.key === 'Enter') accept()
 			}}
 		>
-			<DialogTitle>Add New Mapping</DialogTitle>
+			<DialogTitle>Add New Layer</DialogTitle>
 			<DialogContent>
 				<TextField
 					select
@@ -55,7 +55,7 @@ export function NewMappingDialog({ open, deviceIds, mappings, onAccepted, onDisc
 					margin="normal"
 					fullWidth
 					autoFocus
-					label="Mapping ID"
+					label="Layer ID"
 					value={mappingId}
 					onChange={(event) => {
 						setMappingId(event.target.value)

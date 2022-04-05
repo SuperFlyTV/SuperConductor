@@ -23,7 +23,7 @@ export const MappingsPage: React.FC<{ project: Project }> = observer(function Ma
 	}
 
 	return (
-		<ProjectPageLayout title="Mappings">
+		<ProjectPageLayout title="Layers">
 			<MappingSettings project={props.project} />
 		</ProjectPageLayout>
 	)

@@ -43,7 +43,7 @@ export const enum ActionDescription {
 	CloseRundown = 'close rundown',
 	RenameRundown = 'rename rundown',
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
-	CreateMissingMapping = 'create missing mapping',
+	CreateMissingMapping = 'create missing layer',
 }
 
 export type UndoFunction = () => Promise<void> | void

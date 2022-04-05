@@ -44,7 +44,7 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 							},
 							{
 								id: 'mappingsSettings',
-								label: 'Mappings',
+								label: 'Layers',
 							},
 						],
 					},

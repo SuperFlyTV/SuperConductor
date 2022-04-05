@@ -1990,13 +1990,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		let newLayerId: string | undefined = undefined
 		switch (Object.keys(createdMappings).length) {
 			case 0:
-				throw new Error('No mapping could be automatically created.')
+				throw new Error('No layer could be automatically created.')
 			case 1: {
 				newLayerId = Object.keys(createdMappings)[0]
 				const newMapping = Object.values(createdMappings)[0]
 
 				if (!newMapping.layerName) {
-					throw new Error('INTERNAL ERROR: Mapping lacks a layer name.')
+					throw new Error('INTERNAL ERROR: Layer lacks a name.')
 				}
 
 				// Add the new layer to the project
@@ -2009,7 +2009,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 			default:
 				throw new Error(
-					'No mapping could be automatically created because the timeline objects on this layer are of incompatible types.'
+					'No layer could be automatically created because the timeline objects on this layer are of incompatible types.'
 				)
 		}
 
@@ -2112,7 +2112,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
 
 		// Verify that the layer is OK:
-		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid mapping for that timeline-object.')
+		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
 		return { layerId: addToLayerId, createdNewLayer }
 	}
