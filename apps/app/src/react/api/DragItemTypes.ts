@@ -27,6 +27,7 @@ export interface PartDragItem {
 export interface GroupDragItem {
 	type: DragItemTypes.GROUP_ITEM
 	groupId: string
+	position: number
 }
 
 export type AnyDragItem = ResourceDragItem | PartDragItem | GroupDragItem

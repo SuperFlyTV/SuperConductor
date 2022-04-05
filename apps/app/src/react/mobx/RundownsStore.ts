@@ -7,7 +7,7 @@ import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
 import short from 'short-uuid'
-import { allowMovingItemIntoGroup } from '../../lib/util'
+import { allowMovingItemIntoGroup, findPartInRundown } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
 const { ipcRenderer } = window.require('electron')
 
@@ -66,6 +66,16 @@ export class RundownsStore {
 	}
 
 	/**
+	 * The function which commits a Part move, sending an IPC API command to the electron backend.
+	 */
+	private _commitMovePartFn: CommitFunction | undefined = undefined
+
+	/**
+	 * The function which commits a Group move, sending an IPC API command to the electron backend.
+	 */
+	private _commitMoveGroupFn: CommitFunction | undefined = undefined
+
+	/**
 	 * Method triggers rundown update with the new rundown id.
 	 * @param rundownId ID of the new current rundown
 	 */
@@ -116,14 +126,10 @@ export class RundownsStore {
 			}))
 	}
 
-	moveGroupInCurrentRundown(groupId: string, position: number | null): CommitFunction | undefined {
+	moveGroupInCurrentRundown(groupId: string, position: number): CommitFunction | undefined {
 		const currentRundown = this._currentRundown
 
 		if (currentRundown === undefined) {
-			return
-		}
-
-		if (position === null) {
 			return
 		}
 
@@ -138,7 +144,7 @@ export class RundownsStore {
 		currentRundown.groups = currentRundown.groups.filter((g) => g.id !== groupId)
 		currentRundown.groups.splice(position, 0, group)
 
-		return async () => {
+		this._commitMoveGroupFn = async () => {
 			await this.serverAPI.moveGroup({
 				rundownId: currentRundown.id,
 				groupId: groupId,
@@ -147,36 +153,28 @@ export class RundownsStore {
 		}
 	}
 
-	movePartInCurrentRundown(
-		partId: string,
-		fromGroupId: string,
-		toGroupId: string | null,
-		position: number | null
-	): CommitFunction | undefined {
+	commitMoveGroupInCurrentRundown() {
+		if (!this._commitMoveGroupFn) {
+			return
+		}
+
+		return this._commitMoveGroupFn()
+	}
+
+	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): CommitFunction | undefined {
 		const currentRundown = this._currentRundown
 
 		if (currentRundown === undefined) {
 			return
 		}
 
-		// Part Move
+		const result = findPartInRundown(currentRundown, partId)
 
-		if (position === null) {
+		if (!result) {
 			return
 		}
 
-		const fromGroup = currentRundown.groups.find((g) => g.id === fromGroupId)
-
-		if (!fromGroup) {
-			return
-		}
-
-		const part = fromGroup.parts.find((p) => p.id === partId)
-
-		if (!part) {
-			return
-		}
-
+		const { part, group: fromGroup } = result
 		let toGroup: Group | undefined
 		let madeNewTransparentGroup = false
 		const isTransparentGroupMove = fromGroup.transparent && toGroupId === null
@@ -235,11 +233,10 @@ export class RundownsStore {
 			if (index >= 0) currentRundown.groups.splice(index, 1)
 		}
 
-		return async () => {
+		this._commitMovePartFn = async () => {
 			await this.serverAPI.movePart({
 				from: {
 					rundownId: currentRundown.id,
-					groupId: fromGroupId,
 					partId: partId,
 				},
 				to: {
@@ -249,5 +246,13 @@ export class RundownsStore {
 				},
 			})
 		}
+	}
+
+	commitMovePartInCurrentRundown() {
+		if (!this._commitMovePartFn) {
+			return
+		}
+
+		return this._commitMovePartFn()
 	}
 }

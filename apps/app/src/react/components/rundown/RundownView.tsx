@@ -48,10 +48,7 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 				}
 
 				// Time to actually perform the action
-				store.guiStore.updatePartMove({
-					toGroupId: null,
-					position: hoverIndex,
-				})
+				store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,

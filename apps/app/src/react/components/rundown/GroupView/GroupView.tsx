@@ -145,14 +145,10 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
-				// store.guiStore.updateGroupMove({
-				// 	groupId: group.id,
-				// 	position: groupIndex,
-				// 	moveId: shortUUID.generate(),
-				// })
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
+					position: groupIndex,
 				}
 			},
 			collect: (monitor) => ({
@@ -162,9 +158,7 @@ export const GroupView: React.FC<{
 				return group.id === monitor.getItem().groupId
 			},
 			end: () => {
-				store.guiStore.updateGroupMove({
-					done: true,
-				})
+				store.rundownsStore.commitMoveGroupInCurrentRundown()?.catch(handleError)
 			},
 		},
 		[group.id, groupIndex, store.guiStore]
@@ -195,7 +189,7 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					const dragIndex = store.guiStore.groupMove.position
+					const dragIndex = movedItem.position
 					const hoverIndex = groupIndex
 
 					if (dragIndex === null) {
@@ -228,10 +222,8 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					// store.guiStore.updateGroupMove({
-					// 	position: hoverIndex,
-					// })
-					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex) // TODO: Store commit function somewhere
+					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex)
+					movedItem.position = hoverIndex
 				} else if (isPartDragItem(movedItem)) {
 					if (!monitor.isOver({ shallow: true })) {
 						return
@@ -241,12 +233,8 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					const dragIndex = store.guiStore.partMove.position
+					const dragIndex = movedItem.position
 					const hoverIndex = groupIndex
-
-					if (dragIndex === null) {
-						return
-					}
 
 					// Determine rectangle on screen
 					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
@@ -271,8 +259,6 @@ export const GroupView: React.FC<{
 					 * An array of this Group's Parts, minus the Part currently being dragged.
 					 */
 					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
-
-					console.log(groupPartsWithoutMovedPart.length, Math.abs(hoverClientY - hoverMiddleY), midBand)
 
 					if (groupPartsWithoutMovedPart.length <= 0) {
 						// If the group is empty, and if the user's cursor is hovering within midBand
@@ -302,16 +288,7 @@ export const GroupView: React.FC<{
 						}
 
 						// Time to actually perform the action
-						// store.guiStore.updatePartMove({
-						// 	toGroupId: hoverGroup.id,
-						// 	position: hoverIndex,
-						// })
-						store.rundownsStore.movePartInCurrentRundown(
-							movedItem.partId,
-							movedItem.fromGroup.id,
-							hoverGroup.id,
-							hoverIndex
-						) // TODO: Store commit
+						store.rundownsStore.movePartInCurrentRundown(movedItem.partId, hoverGroup.id, hoverIndex)
 
 						// Note: we're mutating the monitor item here!
 						// Generally it's better to avoid mutations,
@@ -334,28 +311,10 @@ export const GroupView: React.FC<{
 						}
 
 						if (hoverClientY < hoverMiddleY) {
-							// store.guiStore.updatePartMove({
-							// 	toGroupId: null,
-							// 	position: hoverIndex,
-							// })
-							store.rundownsStore.movePartInCurrentRundown(
-								movedItem.partId,
-								movedItem.fromGroup.id,
-								null,
-								hoverIndex
-							) // TODO: Store commit
+							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
 							movedItem.position = hoverIndex
 						} else {
-							// store.guiStore.updatePartMove({
-							// 	toGroupId: null,
-							// 	position: hoverIndex + 1,
-							// })
-							store.rundownsStore.movePartInCurrentRundown(
-								movedItem.partId,
-								movedItem.fromGroup.id,
-								null,
-								hoverIndex + 1
-							) // TODO: Store commit
+							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex + 1)
 							movedItem.position = hoverIndex + 1
 						}
 

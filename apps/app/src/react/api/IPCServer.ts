@@ -110,7 +110,7 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('deleteGroup', data)
 	}
 	movePart(data: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}): Promise<Group | undefined> {
 		return this.invokeServerMethod('movePart', data)

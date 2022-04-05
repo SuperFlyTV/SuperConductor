@@ -6,6 +6,7 @@ import {
 	deleteTimelineObj,
 	findGroup,
 	findPart,
+	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
 	getNextPartIndex,
@@ -653,23 +654,18 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async movePart(arg: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<UndoableResult<Group> | null> {
-		let fromRundown: Rundown
-		let fromGroup: Group
-		let part: Part
-		// @TODO (Alex Van Camp): I'm not sure why this try/catch is necessary, but it is.
-		try {
-			const getPartResult = this.getPart(arg.from)
-			fromRundown = getPartResult.rundown
-			fromGroup = getPartResult.group
-			part = getPartResult.part
-		} catch (error) {
-			// Ignore
-			console.error('movePart caught error:', (error as any).message)
-			return null
+	}): Promise<UndoableResult<Group>> {
+		const { rundown: fromRundown } = this.getRundown(arg.from)
+		const findPartResult = findPartInRundown(fromRundown, arg.from.partId)
+
+		if (!findPartResult) {
+			throw new Error(`Part "${arg.from.partId}" does not exist in rundown "${arg.from.rundownId}"`)
 		}
+
+		const fromGroup = findPartResult.group
+		const part = findPartResult.part
 
 		let toRundown: Rundown
 		let toGroup: Group
@@ -702,7 +698,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
 		if (!allow) {
-			return null
+			throw new Error('Move prohibited')
 		}
 
 		const fromPlayhead = allow.fromPlayhead
@@ -711,7 +707,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		// Save the original position for use in undo.
 		const originalPosition = fromGroup.transparent
-			? fromRundown.groups.findIndex((g) => g.id === arg.from.groupId)
+			? fromRundown.groups.findIndex((g) => g.id === fromGroup.id)
 			: fromGroup.parts.findIndex((p) => p.id === arg.from.partId)
 
 		if (!isTransparentGroupMove) {
@@ -780,7 +776,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				await this.movePart({
 					from: {
 						rundownId: arg.to.rundownId,
-						groupId: toGroup.id,
 						partId: arg.from.partId,
 					},
 					to: {

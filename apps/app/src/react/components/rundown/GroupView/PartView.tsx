@@ -552,18 +552,7 @@ export const PartView: React.FC<{
 				}
 
 				// Time to actually perform the action
-				// store.guiStore.updatePartMove({
-				// 	partId: movedItem.partId,
-				// 	fromGroupId: movedItem.fromGroup.id,
-				// 	toGroupId: hoverGroup?.id ?? null,
-				// 	position: hoverIndex,
-				// })
-				store.rundownsStore.movePartInCurrentRundown(
-					movedItem.partId,
-					movedItem.fromGroup.id,
-					hoverGroup?.id ?? null,
-					hoverIndex
-				)
+				store.rundownsStore.movePartInCurrentRundown(movedItem.partId, hoverGroup?.id ?? null, hoverIndex)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
@@ -581,14 +570,6 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem | null => {
-				// store.guiStore.updatePartMove({
-				// 	moveId: short.generate(),
-				// 	position: partIndex,
-				// 	partId: part.id,
-				// 	fromGroupId: parentGroupId,
-				// 	toGroupId: parentGroupId,
-				// 	done: false,
-				// })
 				const parentGroup = computed(() =>
 					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)
 				).get()
@@ -614,9 +595,7 @@ export const PartView: React.FC<{
 				return part.id === monitor.getItem().partId
 			},
 			end: () => {
-				// store.guiStore.updatePartMove({
-				// 	done: true,
-				// })
+				store.rundownsStore.commitMovePartInCurrentRundown()?.catch(handleError)
 			},
 		},
 		[part.id, parentGroupId, parentGroupIndex, partIndex]
