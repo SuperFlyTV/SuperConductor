@@ -1,5 +1,6 @@
 import { getGroupPlayData, GroupPlayData } from '../../lib/playhead'
 import { makeAutoObservable } from 'mobx'
+import _ from 'lodash'
 import { IPCClient } from '../api/IPCClient'
 import { Rundown } from '../../models/rundown/Rundown'
 const { ipcRenderer } = window.require('electron')
@@ -27,7 +28,10 @@ export class GroupPlayDataStore {
 		if (this.rundown) {
 			// Update the groups map with the latest groups from the rundown and fresh playhead data for them.
 			for (const group of this.rundown.groups) {
-				this.groups.set(group.id, getGroupPlayData(group.preparedPlayData))
+				const newData = getGroupPlayData(group.preparedPlayData)
+				if (!_.isEqual(newData, this.groups.get(group.id))) {
+					this.groups.set(group.id, newData)
+				}
 			}
 
 			// Go through the groups map and remove any groups which no longer exist in the rundown.
