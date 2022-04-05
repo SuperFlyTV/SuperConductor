@@ -32,6 +32,7 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
+import { useDebounce } from '../../../../lib/useDebounce'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -43,6 +44,8 @@ const MenuProps = {
 		},
 	},
 }
+
+const NAME_FILTER_DEBOUNCE = 100
 
 export const ResourceLibrary: React.FC = observer(() => {
 	const ipcServer = useContext(IPCServerContext)
@@ -59,6 +62,7 @@ export const ResourceLibrary: React.FC = observer(() => {
 	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
 
 	const [nameFilterValue, setNameFilterValue] = React.useState('')
+	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
 	const resourcesFilteredByDevice = useMemo(() => {
@@ -72,15 +76,15 @@ export const ResourceLibrary: React.FC = observer(() => {
 	}, [deviceFilterValue, resourcesStore.resources])
 
 	const resourcesFilteredByDeviceAndName = useMemo(() => {
-		if (nameFilterValue.trim().length === 0) {
+		if (debouncedNameFilterValue.trim().length === 0) {
 			return resourcesFilteredByDevice
 		}
 
 		return resourcesFilteredByDevice.filter((resource) => {
 			const name = resource.displayName
-			return name.toLowerCase().includes(nameFilterValue.toLowerCase())
+			return name.toLowerCase().includes(debouncedNameFilterValue.toLowerCase())
 		})
-	}, [nameFilterValue, resourcesFilteredByDevice])
+	}, [debouncedNameFilterValue, resourcesFilteredByDevice])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
 		const ret: { [key: string]: ResourceAny[] } = {}
