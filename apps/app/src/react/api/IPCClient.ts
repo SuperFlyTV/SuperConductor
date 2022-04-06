@@ -15,7 +15,7 @@ export class IPCClient implements IPCClientMethods {
 			updateAppData?: (appData: AppData) => void
 			updateProject?: (project: Project) => void
 			updateRundown?: (fileName: string, rundown: Rundown) => void
-			updateResource?: (id: string, resource: ResourceAny | null) => void
+			updateResources?: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: Peripheral | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
@@ -44,8 +44,8 @@ export class IPCClient implements IPCClientMethods {
 	updateRundown(fileName: string, rundown: Rundown): void {
 		if (this.callbacks.updateRundown) this.callbacks.updateRundown(fileName, rundown)
 	}
-	updateResource(id: string, resource: ResourceAny | null): void {
-		if (this.callbacks.updateResource) this.callbacks.updateResource(id, resource)
+	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
+		if (this.callbacks.updateResources) this.callbacks.updateResources(resources)
 	}
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
 		if (this.callbacks.updateBridgeStatus) this.callbacks.updateBridgeStatus(id, bridgeStatus)
