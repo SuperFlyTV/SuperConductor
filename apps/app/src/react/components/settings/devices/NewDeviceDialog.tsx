@@ -30,16 +30,12 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
-	const accept = useCallback(() => {
-		onNewDeviceAccepted({ deviceType })
-	}, [deviceType, onAccepted])
-
 	const onNewDeviceAccepted = useCallback(
-		({ deviceType }: { deviceType: number }) => {
+		(newDeviceType: number) => {
 			let newDevice: DeviceOptionsAny
-			let newDeviceId = 'new-device'
+			let newDeviceId: string
 
-			switch (deviceType) {
+			switch (newDeviceType) {
 				case DeviceType.CASPARCG: {
 					newDevice = literal<DeviceOptionsCasparCG>({
 						type: DeviceType.CASPARCG,
@@ -155,10 +151,14 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 
 			ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
 
-			onAccepted({ deviceType })
+			onAccepted({ deviceType: newDeviceType })
 		},
-		[bridge, handleError, ipcServer, project]
+		[bridge, handleError, ipcServer, project, onAccepted]
 	)
+
+	const accept = useCallback(() => {
+		onNewDeviceAccepted(deviceType)
+	}, [deviceType, onNewDeviceAccepted])
 
 	return (
 		<Dialog
