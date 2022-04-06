@@ -220,6 +220,9 @@ export class IPCServer implements IPCServerMethods {
 	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
 		return this.invokeServerMethod('renameRundown', data)
 	}
+	isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
+		return this.invokeServerMethod('isRundownPlaying', data)
+	}
 	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
 		return this.invokeServerMethod('createMissingMapping', data)
 	}

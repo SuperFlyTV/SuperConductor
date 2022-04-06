@@ -73,6 +73,7 @@ import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { getGroupPlayData } from '../lib/playhead'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -1940,6 +1941,18 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			},
 			description: ActionDescription.RenameRundown,
 		}
+	}
+	async isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(data)
+
+		for (const group of rundown.groups) {
+			const playData = getGroupPlayData(group.preparedPlayData)
+			if (playData.anyPartIsPlaying) {
+				return true
+			}
+		}
+
+		return false
 	}
 	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
 		const project = this.getProject()

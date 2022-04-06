@@ -64,9 +64,21 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 						active={isThisSelected}
 						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => props.onTabDoubleClick(rundown)}
-						onClose={() => {
-							setRundownToClose(rundown)
-							setCloseConfirmationDialogOpen(true)
+						onClose={async () => {
+							try {
+								setRundownToClose(rundown)
+
+								const isPlaying = await serverAPI.isRundownPlaying({ rundownId: rundown.rundownId })
+
+								// If the rundown is currently playing, prompt the user for confirmation. before closing it.
+								if (isPlaying) {
+									setCloseConfirmationDialogOpen(true)
+								} else {
+									handleClose(rundown.rundownId)
+								}
+							} catch (error) {
+								handleError(error)
+							}
 						}}
 						showSeparator={!isThisSelected && !isNextSelected}
 					/>
@@ -92,7 +104,9 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 				}}
 				acceptLabel="Close"
 				title="Close Rundown"
-				body={`Are you sure you wish to close ${rundownToClose ? rundownToClose.name : 'this rundown'}?`}
+				body={`Are you sure you wish to close the rundown ${
+					rundownToClose ? `"${rundownToClose.name}"` : 'this rundown'
+				}? Anything currently playing in this rundown will be stopped!`}
 			/>
 		</div>
 	)

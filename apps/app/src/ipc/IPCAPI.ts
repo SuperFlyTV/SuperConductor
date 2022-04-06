@@ -182,6 +182,7 @@ export interface IPCServerMethods {
 		projectId: string
 	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
 	renameRundown: (data: { rundownId: string; newName: string }) => Promise<unknown>
+	isRundownPlaying: (data: { rundownId: string }) => Promise<unknown>
 
 	createMissingMapping: (data: { rundownId: string; mappingId: string }) => Promise<unknown>
 }
