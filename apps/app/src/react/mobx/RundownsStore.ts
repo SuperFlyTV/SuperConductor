@@ -166,7 +166,10 @@ export class RundownsStore {
 			return
 		}
 
-		return this._commitMoveGroupFn()
+		const fn = this._commitMoveGroupFn
+		this._commitMoveGroupFn = undefined
+
+		return fn()
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
@@ -260,6 +263,9 @@ export class RundownsStore {
 			return
 		}
 
-		return this._commitMovePartFn()
+		const fn = this._commitMovePartFn
+		this._commitMovePartFn = undefined
+
+		return fn()
 	}
 }
