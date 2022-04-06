@@ -53,7 +53,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 										<TextBtn
 											label="Permanently delete"
 											style="danger"
-											onClick={() => handleReopen(closedRundown.rundownId)}
+											onClick={() => alert('This feature is not implemented yet.')}
 										/>
 									</div>
 								</div>
