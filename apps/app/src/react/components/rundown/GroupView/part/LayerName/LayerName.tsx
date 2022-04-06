@@ -2,13 +2,13 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
-import { Mapping, Mappings } from 'timeline-state-resolver-types'
+import { Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
-
 import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
+import { filterMapping } from '../../../../../../lib/TSRMappings'
 import './style.scss'
 
 export const LayerName: React.FC<{
@@ -25,9 +25,9 @@ export const LayerName: React.FC<{
 	 */
 	onSelect: (id: string) => void
 	/**
-	 * All timelineObj objects used in this part, required for filtering out used layers in current part from the dropdown
+	 * timelineObj objects used in this layer, required for filtering out available mappings
 	 */
-	timelineObjs: TimelineObj[]
+	objectsOnThisLayer: TimelineObj[]
 }> = observer(function LayerName(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -37,16 +37,22 @@ export const LayerName: React.FC<{
 
 	const selectedItem: DropdownItem = { id: props.layerId, label: name }
 
-	const thisLayerMapping: Mapping | undefined = props.mappings[props.layerId]
-
 	const otherItems: DropdownItem[] = Object.entries(props.mappings)
 		.filter(([mappingId, mapping]) => {
-			return (
-				// Remove used layer from the dropdown list
-				mappingId !== props.layerId &&
-				// Remove all incompatible mapping types
-				mapping.device === thisLayerMapping?.device
-			)
+			// Remove used layer from the dropdown list
+			const isUsedLayer = mappingId === props.layerId
+			if (isUsedLayer) {
+				return false
+			}
+
+			// If uncompatible mapping-timelineObj is found, remove mapping
+			for (const timelineObj of props.objectsOnThisLayer) {
+				if (!filterMapping(mapping, timelineObj.obj)) {
+					return false
+				}
+			}
+
+			return true
 		})
 		// Map to a simple readable format
 		.map(([mappingId, mappingValue]) => ({ id: mappingId, label: mappingValue.layerName ?? 'Unknown' }))

@@ -792,7 +792,7 @@ export const PartView: React.FC<{
 							key={layerId}
 							layerId={layerId}
 							mappings={mappings}
-							timelineObjs={modifiedTimeline}
+							objectsOnThisLayer={objectsOnThisLayer}
 							onSelect={(selectedLayerId) => {
 								objectsOnThisLayer.forEach((objectOnThisLayer) => {
 									objectOnThisLayer.obj.layer = selectedLayerId
