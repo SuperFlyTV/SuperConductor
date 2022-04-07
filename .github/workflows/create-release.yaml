@@ -86,6 +86,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
+          sudo apt install -y libudev-dev libusb-1.0-0 libusb-1.0-0-dev
           yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |

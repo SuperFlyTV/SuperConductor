@@ -27,6 +27,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
+          sudo apt install -y libudev-dev libusb-1.0-0 libusb-1.0-0-dev
           yarn setup
       - name: Run typecheck and linter
         run: |
