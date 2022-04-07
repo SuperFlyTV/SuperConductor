@@ -20,7 +20,7 @@ export const PlayHead = observer(function PlayHead(props: PropsType) {
 		const playheadTime = playhead.playheadTime
 		const duration = props.part.resolved.duration
 		return (playheadTime / duration) * 100 + '%'
-	}, [props.groupId, props.part.id])
+	}, [props.groupId, props.part.id, props.part.resolved.duration])
 
 	if (percentage === null) return null
 
