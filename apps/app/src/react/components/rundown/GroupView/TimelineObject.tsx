@@ -12,6 +12,7 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
+import { parseMs } from '@shared/lib'
 
 const HANDLE_WIDTH = 8
 
@@ -217,25 +218,7 @@ export const TimelineObject: React.FC<{
 		}
 	}
 
-	const { days, hours, minutes, seconds, milliseconds } = description.parsedDuration || {}
-	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
-	let durationTitle = ''
-	if (days) {
-		durationTitle += days + 'd'
-	}
-	if (hours) {
-		durationTitle += hours + 'h'
-	}
-	if (minutes) {
-		durationTitle += minutes + 'm'
-	}
-	if (seconds) {
-		if (secondTenths) {
-			durationTitle += seconds + '.' + secondTenths + 's'
-		} else {
-			durationTitle += seconds
-		}
-	}
+	const durationTitle = timelineObjectDurationString(description.parsedDuration)
 
 	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
 	useEffect(() => {
@@ -295,41 +278,7 @@ export const TimelineObject: React.FC<{
 					</div>
 				)}
 				<div className="title">{description.label}</div>
-				<div className="duration">
-					{days ? (
-						<>
-							<span>{days}</span>
-							<span style={{ fontWeight: 300 }}>d</span>
-						</>
-					) : null}
-					{hours ? (
-						<>
-							<span>{hours}</span>
-							<span style={{ fontWeight: 300 }}>h</span>
-						</>
-					) : null}
-					{minutes ? (
-						<>
-							<span>{minutes}</span>
-							<span style={{ fontWeight: 300 }}>m</span>
-						</>
-					) : null}
-					{seconds ? (
-						secondTenths ? (
-							<>
-								<span>{seconds}</span>
-								<span style={{ fontWeight: 300 }}>.</span>
-								<span>{secondTenths}</span>
-								<span style={{ fontWeight: 300 }}>s</span>
-							</>
-						) : (
-							<>
-								<span>{seconds}</span>
-								<span style={{ fontWeight: 300 }}>s</span>
-							</>
-						)
-					) : null}
-				</div>
+				<TimelineObjectDuration parsedDuration={description.parsedDuration} />
 			</div>
 			<div
 				className="handle handle--right"
@@ -347,3 +296,71 @@ export const TimelineObject: React.FC<{
 		</div>
 	)
 })
+
+function timelineObjectDurationString(parsedDuration: ReturnType<typeof parseMs> | null) {
+	if (parsedDuration === null) return '∞'
+	const { days, hours, minutes, seconds, milliseconds } = parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+
+	let durationTitle = ''
+	if (days) {
+		durationTitle += days + 'd'
+	}
+	if (hours) {
+		durationTitle += hours + 'h'
+	}
+	if (minutes) {
+		durationTitle += minutes + 'm'
+	}
+	if (seconds) {
+		if (secondTenths) {
+			durationTitle += seconds + '.' + secondTenths + 's'
+		} else {
+			durationTitle += seconds + 's'
+		}
+	}
+
+	return durationTitle
+}
+function TimelineObjectDuration(props: { parsedDuration: ReturnType<typeof parseMs> | null }) {
+	if (props.parsedDuration === null) return <div className="duration">∞</div>
+	const { days, hours, minutes, seconds, milliseconds } = props.parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+	return (
+		<div className="duration">
+			{days ? (
+				<>
+					<span>{days}</span>
+					<span style={{ fontWeight: 300 }}>d</span>
+				</>
+			) : null}
+			{hours ? (
+				<>
+					<span>{hours}</span>
+					<span style={{ fontWeight: 300 }}>h</span>
+				</>
+			) : null}
+			{minutes ? (
+				<>
+					<span>{minutes}</span>
+					<span style={{ fontWeight: 300 }}>m</span>
+				</>
+			) : null}
+			{seconds ? (
+				secondTenths ? (
+					<>
+						<span>{seconds}</span>
+						<span style={{ fontWeight: 300 }}>.</span>
+						<span>{secondTenths}</span>
+						<span style={{ fontWeight: 300 }}>s</span>
+					</>
+				) : (
+					<>
+						<span>{seconds}</span>
+						<span style={{ fontWeight: 300 }}>s</span>
+					</>
+				)
+			) : null}
+		</div>
+	)
+}

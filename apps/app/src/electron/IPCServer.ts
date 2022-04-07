@@ -2043,7 +2043,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+
+		console.log(
+			'tl',
+			part.timeline.map((o) => o.obj.enable)
+		)
+		console.log('maxDuration', maxDuration)
 
 		part.resolved = {
 			duration: maxDuration,

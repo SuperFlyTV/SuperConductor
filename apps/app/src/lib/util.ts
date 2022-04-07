@@ -86,15 +86,27 @@ export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean =>
 	return false
 }
 
-export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimeline) => {
+export function getResolvedTimelineTotalDuration(resolvedTimeline: ResolvedTimeline, filterInfinites: true): number
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: false
+): number | null
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: boolean
+): number | null {
 	let maxDuration = 0
+	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.end) {
+			if (instance.end === null) {
+				isInfinite = true
+			} else if (instance.end) {
 				maxDuration = Math.max(maxDuration, instance.end)
 			}
 		})
 	})
+	if (isInfinite && !filterInfinites) return null
 	return maxDuration
 }
 
