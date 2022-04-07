@@ -217,7 +217,8 @@ export const TimelineObject: React.FC<{
 		}
 	}
 
-	const { minutes, seconds, secondTenths } = description.parsedDuration || {}
+	const { minutes, seconds, milliseconds } = description.parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
 	let durationTitle = ''
 	if (minutes) {
 		durationTitle += minutes + 'm'
