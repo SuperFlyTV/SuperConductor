@@ -1,42 +1,28 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Button, DialogTitle, IconButton, Dialog, DialogContent, DialogActions, Typography } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { styled } from '@mui/material/styles'
-import { store } from '../mobx/store'
 
-export const SplashScreen: React.FC = () => {
-	const appStore = store.appStore
-
-	const [open, setOpen] = React.useState(false)
-
-	const handleRemindMeLater = () => {
-		setOpen(false)
-	}
-	const handleClose = () => {
-		setOpen(false)
-		appStore.serverAPI.acknowledgeSeenVersion().catch(console.error)
-	}
-
-	useEffect(() => {
-		if (appStore.version && appStore.version.seenVersion !== appStore.version.currentVersion) {
-			setOpen(true)
-		}
-	}, [appStore.version])
-
-	const seenVersion = appStore.version?.seenVersion
-	const currentVersion = appStore.version?.currentVersion
-
+export const SplashScreen: React.FC<{
+	seenVersion: string | null | undefined
+	currentVersion: string | undefined
+	onClose: (remindMeLater: boolean) => void
+}> = ({ seenVersion, currentVersion, onClose }) => {
 	if (!currentVersion) return null
 
 	return (
-		<BootstrapDialog onClose={handleClose} aria-labelledby="customized-dialog-title" open={open}>
-			<BootstrapDialogTitle id="customized-dialog-title" onClose={handleClose}>
-				{seenVersion ? <>SuperConductor has been updated!</> : <>SuperConductor</>}
+		<BootstrapDialog onClose={() => onClose(false)} aria-labelledby="customized-dialog-title" open={true}>
+			<BootstrapDialogTitle id="customized-dialog-title" onClose={() => onClose(false)}>
+				{seenVersion && seenVersion !== currentVersion ? (
+					<>SuperConductor has been updated!</>
+				) : (
+					<>SuperConductor</>
+				)}
 			</BootstrapDialogTitle>
 			<DialogContent dividers>
-				{seenVersion ? (
+				{seenVersion && seenVersion !== currentVersion ? (
 					<Typography gutterBottom>
-						SuperConductor has been updated from version <b>{seenVersion}</b> to <b>{currentVersion}</b>.{' '}
+						SuperConductor has been updated from version <b>{seenVersion}</b> to <b>{currentVersion}</b> (
 						<a
 							href={`https://github.com/SuperFlyTV/SuperConductor/releases/tag/v${currentVersion}`}
 							target="_blank"
@@ -44,8 +30,21 @@ export const SplashScreen: React.FC = () => {
 						>
 							Release notes
 						</a>
+						).
 					</Typography>
-				) : null}
+				) : (
+					<Typography gutterBottom>
+						SuperConductor, version {currentVersion}, (
+						<a
+							href={`https://github.com/SuperFlyTV/SuperConductor/releases/tag/v${currentVersion}`}
+							target="_blank"
+							rel="noreferrer"
+						>
+							Release notes
+						</a>
+						).
+					</Typography>
+				)}
 				<Typography gutterBottom>
 					This is a pet project from{' '}
 					<em>
@@ -53,21 +52,40 @@ export const SplashScreen: React.FC = () => {
 							SuperFly.tv
 						</a>
 					</em>
-					. It&apos;s still in early development, there might be bugs and some features are probably missing,
-					but we hope you&apos;ll find it useful and we invite you to join us in improving it!
-					<br></br>
+					.<br />
+					It is still in early development, there might be bugs and some features are probably missing, but we
+					hope you&apos;ll find it useful and we invite you to join us in improving it!
+					<br />
+					<br />
 					Be sure to{' '}
 					<a href="https://github.com/SuperFlyTV/SuperConductor/issues" target="_blank" rel="noreferrer">
 						report any issues you might have
 					</a>
 					. If you&apos;re missing a feature, we&apos;re happy to accept contributions as pull requests!
 				</Typography>
+				<Typography gutterBottom>
+					<br />
+					<br />
+					This program is free software: you can redistribute it and/or modify it under the terms of the GNU
+					Affero General Public License as published by the Free Software Foundation, either version 3 of the
+					License, or (at your option) any later version. This program is distributed in the hope that it will
+					be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+					FOR A PARTICULAR PURPOSE. See the{' '}
+					<a
+						href="https://github.com/SuperFlyTV/SuperConductor/blob/master/COPYING"
+						target="_blank"
+						rel="noreferrer"
+					>
+						GNU Affero General Public License
+					</a>{' '}
+					for more details.
+				</Typography>
 			</DialogContent>
 			<DialogActions>
-				<Button autoFocus onClick={handleRemindMeLater}>
+				<Button autoFocus onClick={() => onClose(true)}>
 					Remind me later
 				</Button>
-				<Button autoFocus onClick={handleClose}>
+				<Button autoFocus onClick={() => onClose(false)}>
 					Close
 				</Button>
 			</DialogActions>

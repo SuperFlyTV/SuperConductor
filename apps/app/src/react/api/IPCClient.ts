@@ -20,6 +20,7 @@ export class IPCClient implements IPCClientMethods {
 			updatePeripheral?: (peripheralId: string, peripheral: Peripheral | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
+			displayAboutDialog?: () => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -36,28 +37,31 @@ export class IPCClient implements IPCClientMethods {
 	}
 
 	updateAppData(appData: AppData): void {
-		if (this.callbacks.updateAppData) this.callbacks.updateAppData(appData)
+		this.callbacks.updateAppData?.(appData)
 	}
 	updateProject(project: Project): void {
-		if (this.callbacks.updateProject) this.callbacks.updateProject(project)
+		this.callbacks.updateProject?.(project)
 	}
 	updateRundown(fileName: string, rundown: Rundown): void {
-		if (this.callbacks.updateRundown) this.callbacks.updateRundown(fileName, rundown)
+		this.callbacks.updateRundown?.(fileName, rundown)
 	}
 	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
-		if (this.callbacks.updateResources) this.callbacks.updateResources(resources)
+		this.callbacks.updateResources?.(resources)
 	}
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
-		if (this.callbacks.updateBridgeStatus) this.callbacks.updateBridgeStatus(id, bridgeStatus)
+		this.callbacks.updateBridgeStatus?.(id, bridgeStatus)
 	}
 	updatePeripheral(peripheralId: string, peripheral: Peripheral | null): void {
-		if (this.callbacks.updatePeripheral) this.callbacks.updatePeripheral(peripheralId, peripheral)
+		this.callbacks.updatePeripheral?.(peripheralId, peripheral)
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
-		if (this.callbacks.updatePeripheralTriggers) this.callbacks.updatePeripheralTriggers(peripheralTriggers)
+		this.callbacks.updatePeripheralTriggers?.(peripheralTriggers)
 	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
-		if (this.callbacks.updateDeviceRefreshStatus) this.callbacks.updateDeviceRefreshStatus(deviceId, refreshing)
+		this.callbacks.updateDeviceRefreshStatus?.(deviceId, refreshing)
+	}
+	displayAboutDialog(): void {
+		this.callbacks.displayAboutDialog?.()
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

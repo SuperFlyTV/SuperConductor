@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
@@ -68,6 +68,9 @@ export const App = observer(function App() {
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				triggers.setPeripheralTriggers(peripheralTriggers)
+			},
+			displayAboutDialog: () => {
+				setSplashScreenOpen(true)
 			},
 		})
 
@@ -161,6 +164,28 @@ export const App = observer(function App() {
 			.catch(console.error)
 	}, [])
 
+	// Handle splash screen:
+	const appStore = store.appStore
+	const [splashScreenOpen, setSplashScreenOpen] = useState(false)
+	/** Will be set to true after appStore.version has been set and initially checked*/
+	const splashScreenInitial = useRef(false)
+	useEffect(() => {
+		// Check upon startup if the splash screen should be displayed:
+		if (appStore.version && splashScreenInitial.current === false) {
+			splashScreenInitial.current = true
+
+			if (!appStore.version.seenVersion || appStore.version.seenVersion !== appStore.version.currentVersion) {
+				setSplashScreenOpen(true)
+			}
+		}
+	}, [appStore.version])
+	function onSplashScreenClose(remindMeLater: boolean): void {
+		setSplashScreenOpen(false)
+		if (!remindMeLater) {
+			appStore.serverAPI.acknowledgeSeenVersion().catch(console.error)
+		}
+	}
+
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
 		triggers,
@@ -178,7 +203,13 @@ export const App = observer(function App() {
 						<div className="app" onPointerDown={handlePointerDownAnywhere}>
 							<HeaderBar />
 
-							<SplashScreen />
+							{splashScreenOpen && (
+								<SplashScreen
+									seenVersion={appStore.version?.seenVersion}
+									currentVersion={appStore.version?.currentVersion}
+									onClose={onSplashScreenClose}
+								/>
+							)}
 
 							{store.guiStore.isNewRundownSelected() ? (
 								<NewRundownPage />

@@ -60,13 +60,7 @@ const createWindow = (): void => {
 			return tpt.ipcServer?.redo().catch(console.error)
 		},
 		onAboutClick: () => {
-			return dialog
-				.showMessageBox(win, {
-					type: 'info',
-					title: 'About SuperConductor',
-					message: `Current Version: v${CURRENT_VERSION}`,
-				})
-				.catch(console.error)
+			tpt.ipcClient?.displayAboutDialog()
 		},
 		onUpdateClick: async () => {
 			try {

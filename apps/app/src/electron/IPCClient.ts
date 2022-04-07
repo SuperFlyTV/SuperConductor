@@ -36,4 +36,7 @@ export class IPCClient implements IPCClientMethods {
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDeviceRefreshStatus', deviceId, refreshing)
 	}
+	displayAboutDialog(): void {
+		this.mainWindow?.webContents.send('callMethod', 'displayAboutDialog')
+	}
 }
