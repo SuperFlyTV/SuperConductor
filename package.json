@@ -36,7 +36,8 @@
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",
-		"threadedclass": "^1.0.1"
+		"threadedclass": "^1.0.1",
+		"node-hid": "github:julusian/node-hid#hack/testing"
 	},
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^1.0.0",
