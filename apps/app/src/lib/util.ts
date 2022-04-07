@@ -264,7 +264,7 @@ export function getNextPartIndex(group: Group): number {
 	 * Also the index at which to end our search when looping.
 	 */
 	let startingI = currentPartIndex + 1
-	if (startingI >= group.parts.length) {
+	if (startingI >= group.parts.length && group.loop) {
 		startingI = 0
 	}
 
@@ -305,7 +305,7 @@ export function getPrevPartIndex(group: Group): number {
 	 * Also the index at which to end our search when looping.
 	 */
 	let startingI = currentPartIndex - 1
-	if (startingI < 0) {
+	if (startingI < 0 && group.loop) {
 		startingI = group.parts.length - 1
 	}
 
