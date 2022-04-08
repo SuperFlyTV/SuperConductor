@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
@@ -9,10 +9,6 @@ A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and 
 ### Windows
 
 Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .exe file.
-
-### MacOS
-
-Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .dmg file.
 
 ### Linux (Ubuntu)
 
@@ -23,11 +19,16 @@ Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases
    chmod +x Downloads/SuperConductor-X.Y.Z-Linux-Executable.AppImage
    ```
 
+### macOS
+
+Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .dmg file.
+
+
 ## Features
 
 ### Playout
 
-Under the hood, SuperConductor is powered by the same playout-backend as [the Sofie project](https://github.com/nrkno/sofie-core), with timeline-based control of multiple devices.
+Under the hood, _SuperConductor_ is powered by the same playout backend as the [Sofie Automation system](https://www.sofieautomation.com/), with timeline-based control of multiple devices.
 
 ![Timeline playout](/doc/img/play.gif)
 
@@ -37,22 +38,22 @@ Drag objects onto the timeline, edit them and play them out instantly.
 
 ![Edit timeline](/doc/img/edit-timeline.gif)
 
-### Streamdeck and X-keys support
+### Stream&nbsp;Deck and X-keys Support
 
-Assign keys on Streamdeck or X-keys to playout actions.
+Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
-![Streamdeck GUI](/doc/img/streamdeck-GUI.gif) ![Streamdeck](/doc/img/streamdeck.gif)
+![Stream&nbsp;Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream&nbsp;Deck](/doc/img/streamdeck.gif)
 
-### Supported devices
+### Supported Devices
 
-_SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-timeline-state-resolver) used in [Sofie](https://github.com/nrkno/sofie-core), so it can play anything that it can._
+_SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-timeline-state-resolver) used in the [Sofie Automation system](https://www.sofieautomation.com/), so it can play anything that TSR can play._
 
-- **[CasparCG](http://casparcg.com/)** Video and graphics playout software
-- **Blackmagic Design ATEM** Vision mixers
+- **[CasparCG&nbsp;Server](https://casparcg.com/)** Video and graphics playout software
+- **[Blackmagic Design ATEM](https://www.blackmagicdesign.com/products)** Vision mixers
 - **[OBS Studio](https://obsproject.com/)** Live video production software
 - **[vMix](https://www.vmix.com/)** software vision mixer
 - Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
-- (GUI not implemented yet) **Blackmagic Design Hyperdeck** record/playback devices
+- (GUI not implemented yet) **Blackmagic Design HyperDeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
 - (GUI not implemented yet) **Pharos** light control devices
@@ -66,7 +67,7 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 
 Problems and Issues can be reported here: [Issues](https://github.com/SuperFlyTV/SuperConductor/issues)
 
-## For developers
+## For Developers
 
 Contributions are very much appreciated!
 
