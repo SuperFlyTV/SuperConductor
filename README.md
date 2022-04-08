@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
