@@ -15,7 +15,7 @@ export const PlayHead = observer(function PlayHead(props: PropsType) {
 		const playhead = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.part.id]
 
 		if (!playhead) return null
-		if (!props.partViewDuration) return null
+		if (!props.partViewDuration) return 100 // infinitely long
 
 		return Math.min(1, playhead.playheadTime / props.partViewDuration) * 100
 	}, [props.groupId, props.part.id, props.partViewDuration])
