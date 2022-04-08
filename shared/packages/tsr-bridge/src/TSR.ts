@@ -1,44 +1,14 @@
 import _ from 'lodash'
 import winston from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
-import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
-import { CasparCG, AMCP } from 'casparcg-connection'
-import { Atem, AtemConnectionStatus } from 'atem-connection'
-import OBSWebsocket from 'obs-websocket-js'
-import {
-	ResourceAny,
-	ResourceType,
-	AtemMe,
-	AtemDsk,
-	CasparCGMedia,
-	CasparCGTemplate,
-	AtemAudioChannel,
-	AtemAux,
-	AtemMacroPlayer,
-	AtemMediaPlayer,
-	AtemSsrc,
-	AtemSsrcProps,
-	OBSScene,
-	OBSTransition,
-	OBSRecording,
-	OBSStreaming,
-	OBSSourceSettings,
-	OBSRender,
-	VMixInput,
-	VMixInputSettings,
-	VMixAudioSettings,
-	VMixOutputSettings,
-	VMixOverlaySettings,
-	VMixRecording,
-	VMixStreaming,
-	VMixExternal,
-	VMixFadeToBlack,
-	VMixFader,
-	VMixPreview,
-	OSCMessage,
-} from '@shared/models'
+import { ResourceAny } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
-import { OBSMute } from '@shared/models'
+import { CasparCGSideload } from './sideload/CasparCG'
+import { AtemSideload } from './sideload/Atem'
+import { OBSSideload } from './sideload/OBS'
+import { VMixSideload } from './sideload/VMix'
+import { OSCSideload } from './sideload/OSC'
+import { SideLoadDevice } from './sideload/sideload'
 
 export class TSR {
 	public newConnection = false
@@ -47,15 +17,12 @@ export class TSR {
 	private devices: { [deviceId: string]: DeviceOptionsAny } = {}
 
 	private sideLoadedDevices: {
-		[deviceId: string]: {
-			refreshResources: () => Promise<ResourceAny[]>
-			close: () => Promise<void>
-		}
+		[deviceId: string]: SideLoadDevice
 	} = {}
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor(private log?: winston.Logger | Console) {
+	constructor(private log: winston.Logger | Console) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,
@@ -65,17 +32,17 @@ export class TSR {
 		this.conductor = new Conductor(c)
 
 		this.conductor.on('error', (e, ...args) => {
-			log?.error('TSR', e, ...args)
+			log.error('TSR', e, ...args)
 		})
 		this.conductor.on('info', (msg, ...args) => {
-			log?.info('TSR', msg, ...args)
+			log.info('TSR', msg, ...args)
 		})
 		this.conductor.on('warning', (msg, ...args) => {
-			log?.warn('Warning: TSR', msg, ...args)
+			log.warn('Warning: TSR', msg, ...args)
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
-		this.conductor.init().catch((e) => log?.error(e))
+		this.conductor.init().catch((e) => log.error(e))
 
 		this.send = () => {
 			throw new Error('TSR.send() not set!')
@@ -129,7 +96,7 @@ export class TSR {
 					await this.conductor.initDevice(deviceId, newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
-				})().catch((error) => this.log?.error(error))
+				})().catch((error) => this.log.error(error))
 			}
 		}
 		// Removed:
@@ -141,11 +108,16 @@ export class TSR {
 					delete this.sideLoadedDevices[deviceId]
 				}
 
-				await this.conductor.removeDevice(deviceId)
+				// HACK: There are some scenarios in which this method will never return.
+				// For example, when trying to remove a CasparCG device that has never connected.
+				// So, to prevent this code from being blocked indefinitely waiting for this promise
+				// to resolve, we instead let it run async.
+				this.conductor.removeDevice(deviceId).catch((e) => this.log.error(e))
+
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
 				this.reportRemovedDevice(deviceId)
-				this.log?.info(`TSR Device ${deviceId} removed.`)
+				this.log.info(`TSR Device ${deviceId} removed.`)
 			}
 		}
 
@@ -174,7 +146,7 @@ export class TSR {
 				.then((resources) => {
 					cb(deviceId, resources)
 				})
-				.catch((e) => this.log?.error(e))
+				.catch((e) => this.log.error(e))
 				.finally(() => {
 					clearTimeout(refreshTimeout)
 					if (!timedOut) {
@@ -202,627 +174,15 @@ export class TSR {
 		}
 
 		if (deviceOptions.type === DeviceType.CASPARCG) {
-			const ccg = new CasparCG({
-				host: deviceOptions.options?.host,
-				port: deviceOptions.options?.port,
-				autoConnect: true,
-				onConnected: async () => {
-					this.log?.info(`CasparCG ${deviceId}: Sideload connection initialized`)
-					// this.fetchAndSetMedia()
-					// this.fetchAndSetTemplates()
-				},
-				onConnectionChanged: () => {
-					// console.log('CasparCG: Connection changed')
-				},
-				onDisconnected: () => {
-					this.log?.info(`CasparCG ${deviceId}: Sideload connection disconnected`)
-				},
-			})
-
-			/**
-			 * A cache of resources to be used when the device is offline.
-			 */
-			let prevResources: { [id: string]: ResourceAny } = {}
-
-			const refreshResources = async () => {
-				const resources: { [id: string]: ResourceAny } = {}
-
-				if (!ccg.connected) {
-					return Object.values(prevResources)
-				}
-
-				// Refresh media:
-				{
-					const res = await ccg.cls()
-					const mediaList = res.response.data as {
-						type: 'image' | 'video' | 'audio'
-						name: string
-						size: number
-						changed: number
-						frames: number
-						frameTime: string
-						frameRate: number
-						duration: number
-						thumbnail?: string
-					}[]
-					for (const media of mediaList) {
-						const resource: CasparCGMedia = {
-							resourceType: ResourceType.CASPARCG_MEDIA,
-							deviceId: deviceId,
-							id: `${deviceId}_media_${media.name}`,
-							...media,
-							displayName: media.name,
-						}
-
-						if (media.type === 'image' || media.type === 'video') {
-							try {
-								const thumbnail = await ccg.thumbnailRetrieve(media.name)
-								resource.thumbnail = thumbnail.response.data
-							} catch (error) {
-								if ((error as AMCP.ThumbnailRetrieveCommand)?.response?.code === 404) {
-									// Suppress error, this is probably because CasparCG's media-scanner isn't running.
-								} else {
-									this.log?.error(`Could not set thumbnail for media "${media.name}".`, error)
-								}
-							}
-						}
-
-						resources[resource.id] = resource
-					}
-				}
-
-				// Refresh templates:
-				{
-					const res = await ccg.tls()
-					const templatesList = res.response.data as {
-						type: 'template'
-						name: string
-					}[]
-					for (const template of templatesList) {
-						const resource: CasparCGTemplate = {
-							resourceType: ResourceType.CASPARCG_TEMPLATE,
-							deviceId: deviceId,
-							id: `${deviceId}_template_${template.name}`,
-							...template,
-							displayName: template.name,
-						}
-						resources[resource.id] = resource
-					}
-				}
-
-				prevResources = resources
-				return Object.values(resources)
-			}
-
-			this.sideLoadedDevices[deviceId] = {
-				refreshResources: () => {
-					return refreshResources()
-				},
-				close: async () => {
-					return ccg.disconnect()
-				},
-			}
-
-			// new CasparCGDevice(deviceOptions)
+			this.sideLoadedDevices[deviceId] = new CasparCGSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.ATEM) {
-			const atem = new Atem()
-
-			atem.on('connected', () => {
-				this.log?.info(`ATEM ${deviceId}: Sideload connection initialized`)
-			})
-
-			atem.on('disconnected', () => {
-				this.log?.info(`ATEM ${deviceId}: Sideload connection disconnected`)
-			})
-
-			if (deviceOptions.options?.host) {
-				atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
-			}
-
-			/**
-			 * A cache of resources to be used when the device is offline.
-			 */
-			let prevResources: { [id: string]: ResourceAny } = {}
-
-			const refreshResources = async () => {
-				const resources: { [id: string]: ResourceAny } = {}
-
-				if (atem.status !== AtemConnectionStatus.CONNECTED || !atem.state) {
-					return Object.values(prevResources)
-				}
-
-				for (const me of atem.state.video.mixEffects) {
-					if (!me) {
-						continue
-					}
-					const resource: AtemMe = {
-						resourceType: ResourceType.ATEM_ME,
-						deviceId,
-						id: `${deviceId}_me_${me.index}`,
-						index: me.index,
-						displayName: `ATEM ME ${me.index + 1}`,
-					}
-					resources[resource.id] = resource
-				}
-
-				for (let i = 0; i < atem.state.video.downstreamKeyers.length; i++) {
-					const dsk = atem.state.video.downstreamKeyers[i]
-					if (!dsk) {
-						continue
-					}
-
-					const resource: AtemDsk = {
-						resourceType: ResourceType.ATEM_DSK,
-						deviceId,
-						id: `${deviceId}_dsk_${i}`,
-						index: i,
-						displayName: `ATEM DSK ${i + 1}`,
-					}
-					resources[resource.id] = resource
-				}
-
-				for (let i = 0; i < atem.state.video.auxilliaries.length; i++) {
-					const aux = atem.state.video.auxilliaries[i]
-					if (typeof aux === 'undefined') {
-						continue
-					}
-
-					const resource: AtemAux = {
-						resourceType: ResourceType.ATEM_AUX,
-						deviceId,
-						id: `${deviceId}_aux_${i}`,
-						index: i,
-						displayName: `ATEM AUX ${i + 1}`,
-					}
-					resources[resource.id] = resource
-				}
-
-				for (let i = 0; i < atem.state.video.superSources.length; i++) {
-					const ssrc = atem.state.video.superSources[i]
-					if (!ssrc) {
-						continue
-					}
-
-					{
-						const resource: AtemSsrc = {
-							resourceType: ResourceType.ATEM_SSRC,
-							deviceId,
-							id: `${deviceId}_ssrc_${i}`,
-							index: i,
-							displayName: `ATEM SuperSource ${i + 1}`,
-						}
-						resources[resource.id] = resource
-					}
-
-					{
-						const resource: AtemSsrcProps = {
-							resourceType: ResourceType.ATEM_SSRC_PROPS,
-							deviceId,
-							id: `${deviceId}_ssrc_props_${i}`,
-							index: i,
-							displayName: `ATEM SuperSource ${i + 1} Props`,
-						}
-						resources[resource.id] = resource
-					}
-				}
-
-				if (atem.state.macro.macroPlayer) {
-					const resource: AtemMacroPlayer = {
-						resourceType: ResourceType.ATEM_MACRO_PLAYER,
-						deviceId,
-						id: `${deviceId}_macro_player`,
-						displayName: 'ATEM Macro Player',
-					}
-					resources[resource.id] = resource
-				}
-
-				if (atem.state.fairlight) {
-					for (const inputNumber in atem.state.fairlight.inputs) {
-						const input = atem.state.fairlight.inputs[inputNumber]
-						if (!input) {
-							continue
-						}
-
-						const resource: AtemAudioChannel = {
-							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
-							deviceId,
-							id: `${deviceId}_audio_channel_${inputNumber}`,
-							index: parseInt(inputNumber, 10),
-							displayName: `ATEM Audio Channel ${inputNumber}`,
-						}
-						resources[resource.id] = resource
-					}
-				} else if (atem.state.audio) {
-					for (const channelNumber in atem.state.audio.channels) {
-						const channel = atem.state.audio.channels[channelNumber]
-						if (!channel) {
-							continue
-						}
-
-						const resource: AtemAudioChannel = {
-							resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
-							deviceId,
-							id: `${deviceId}_audio_channel_${channelNumber}`,
-							index: parseInt(channelNumber, 10),
-							displayName: `ATEM Audio Channel ${channelNumber}`,
-						}
-						resources[resource.id] = resource
-					}
-				}
-
-				for (let i = 0; i < atem.state.media.players.length; i++) {
-					const mp = atem.state.media.players[i]
-					if (!mp) {
-						continue
-					}
-
-					const resource: AtemMediaPlayer = {
-						resourceType: ResourceType.ATEM_MEDIA_PLAYER,
-						deviceId,
-						id: `${deviceId}_media_player_${i}`,
-						index: i,
-						displayName: `ATEM Media Player ${i + 1}`,
-					}
-					resources[resource.id] = resource
-				}
-
-				prevResources = resources
-				return Object.values(resources)
-			}
-
-			this.sideLoadedDevices[deviceId] = {
-				refreshResources: () => {
-					return refreshResources()
-				},
-				close: () => {
-					return atem.destroy()
-				},
-			}
+			this.sideLoadedDevices[deviceId] = new AtemSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.OBS) {
-			const obs = new OBSWebsocket()
-			let obsConnected = false
-			let obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
-
-			const _connect = async () => {
-				if (deviceOptions.options?.host && deviceOptions.options?.port) {
-					await obs.connect({
-						address: `${deviceOptions.options?.host}:${deviceOptions.options?.port}`,
-						password: deviceOptions.options.password,
-					})
-				}
-			}
-
-			const _triggerRetryConnection = () => {
-				if (!obsConnectionRetryTimeout) {
-					obsConnectionRetryTimeout = setTimeout(() => {
-						_retryConnection()
-					}, 5000)
-				}
-			}
-
-			const _retryConnection = () => {
-				if (obsConnectionRetryTimeout) {
-					clearTimeout(obsConnectionRetryTimeout)
-					obsConnectionRetryTimeout = undefined
-				}
-
-				if (!obsConnected) {
-					_connect().catch((error) => {
-						this.log?.error(error)
-						_triggerRetryConnection()
-					})
-				}
-			}
-
-			obs.on('ConnectionOpened', () => {
-				obsConnected = true
-				this.log?.info(`OBS ${deviceId}: Sideload connection initialized`)
-				if (obsConnectionRetryTimeout) {
-					clearTimeout(obsConnectionRetryTimeout)
-					obsConnectionRetryTimeout = undefined
-				}
-			})
-
-			obs.on('ConnectionClosed', () => {
-				obsConnected = false
-				this.log?.info(`OBS ${deviceId}: Sideload connection disconnected`)
-				_triggerRetryConnection()
-			})
-
-			_connect().catch((error) => this.log?.error(error))
-
-			/**
-			 * A cache of resources to be used when the device is offline.
-			 */
-			let prevResources: { [id: string]: ResourceAny } = {}
-
-			const refreshResources = async () => {
-				const resources: { [id: string]: ResourceAny } = {}
-
-				if (!obsConnected) {
-					return Object.values(prevResources)
-				}
-
-				// Scenes and Scene Items
-				const { scenes } = await obs.send('GetSceneList')
-				for (const scene of scenes) {
-					const sceneResource: OBSScene = {
-						resourceType: ResourceType.OBS_SCENE,
-						deviceId,
-						id: `${deviceId}_scene_${scene.name}`,
-						name: scene.name,
-						displayName: `Scene: ${scene.name}`,
-					}
-					resources[sceneResource.id] = sceneResource
-				}
-
-				// Transitions
-				const { transitions } = await obs.send('GetTransitionList')
-				for (const transition of transitions) {
-					const resource: OBSTransition = {
-						resourceType: ResourceType.OBS_TRANSITION,
-						deviceId,
-						id: `${deviceId}_transition_${transition.name}`,
-						name: transition.name,
-						displayName: `Transition: ${transition.name}`,
-					}
-					resources[resource.id] = resource
-				}
-
-				// Recording
-				{
-					const resource: OBSRecording = {
-						resourceType: ResourceType.OBS_RECORDING,
-						deviceId,
-						id: `${deviceId}_recording`,
-						displayName: 'Recording',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Streaming
-				{
-					const resource: OBSStreaming = {
-						resourceType: ResourceType.OBS_STREAMING,
-						deviceId,
-						id: `${deviceId}_streaming`,
-						displayName: 'Streaming',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Mute
-				{
-					const resource: OBSMute = {
-						resourceType: ResourceType.OBS_MUTE,
-						deviceId,
-						id: `${deviceId}_mute`,
-						displayName: 'Mute',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Render
-				{
-					const resource: OBSRender = {
-						resourceType: ResourceType.OBS_RENDER,
-						deviceId,
-						id: `${deviceId}_render`,
-						displayName: 'Scene Item Render',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Source Settings
-				{
-					const resource: OBSSourceSettings = {
-						resourceType: ResourceType.OBS_SOURCE_SETTINGS,
-						deviceId,
-						id: `${deviceId}_source_settings`,
-						displayName: 'Source Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				prevResources = resources
-				return Object.values(resources)
-			}
-
-			this.sideLoadedDevices[deviceId] = {
-				refreshResources: () => {
-					return refreshResources()
-				},
-				close: async () => {
-					return obs.disconnect()
-				},
-			}
+			this.sideLoadedDevices[deviceId] = new OBSSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.VMIX) {
-			const vmix = new VMix()
-
-			vmix.on('connected', () => {
-				this.log?.info(`vMix ${deviceId}: Sideload connection initialized`)
-			})
-			vmix.on('disconnected', () => {
-				this.log?.info(`vMix ${deviceId}: Sideload connection disconnected`)
-			})
-
-			if (deviceOptions.options?.host && deviceOptions.options?.port) {
-				vmix.connect({
-					host: deviceOptions.options.host,
-					port: deviceOptions.options.port,
-				}).catch((error) => this.log?.error(error))
-			}
-
-			const refreshResources = async () => {
-				const resources: { [id: string]: ResourceAny } = {}
-
-				if (!vmix.connected) {
-					return Object.values(resources)
-				}
-
-				// Inputs
-				for (const key in vmix.state.inputs) {
-					const input = vmix.state.inputs[key]
-					if (typeof input.number !== 'undefined' && typeof input.type !== 'undefined') {
-						const resource: VMixInput = {
-							resourceType: ResourceType.VMIX_INPUT,
-							deviceId,
-							id: `${deviceId}_input_${key}`,
-							number: input.number,
-							type: input.type,
-							displayName: `Input ${input.number}`,
-						}
-						resources[resource.id] = resource
-					}
-				}
-
-				// Input Settings
-				{
-					const resource: VMixInputSettings = {
-						resourceType: ResourceType.VMIX_INPUT_SETTINGS,
-						deviceId,
-						id: `${deviceId}_input_settings`,
-						displayName: 'Input Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Recording
-				{
-					const resource: VMixRecording = {
-						resourceType: ResourceType.VMIX_RECORDING,
-						deviceId,
-						id: `${deviceId}_recording`,
-						displayName: 'Recording',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Streaming
-				{
-					const resource: VMixStreaming = {
-						resourceType: ResourceType.VMIX_STREAMING,
-						deviceId,
-						id: `${deviceId}_streaming`,
-						displayName: 'Streaming',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Audio Settings
-				{
-					const resource: VMixAudioSettings = {
-						resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
-						deviceId,
-						id: `${deviceId}_audio_settings`,
-						displayName: 'Audio Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Fader
-				{
-					const resource: VMixFader = {
-						resourceType: ResourceType.VMIX_FADER,
-						deviceId,
-						id: `${deviceId}_fader`,
-						displayName: 'Transition Fader',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Preview
-				{
-					const resource: VMixPreview = {
-						resourceType: ResourceType.VMIX_PREVIEW,
-						deviceId,
-						id: `${deviceId}_preview`,
-						displayName: 'Preview',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Output Settings
-				{
-					const resource: VMixOutputSettings = {
-						resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
-						deviceId,
-						id: `${deviceId}_output_settings`,
-						displayName: 'Output Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Overlay Settings
-				{
-					const resource: VMixOverlaySettings = {
-						resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
-						deviceId,
-						id: `${deviceId}_overlay_settings`,
-						displayName: 'Overlay Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Externals
-				{
-					const resource: VMixExternal = {
-						resourceType: ResourceType.VMIX_EXTERNAL,
-						deviceId,
-						id: `${deviceId}_external`,
-						displayName: 'External Output Settings',
-					}
-					resources[resource.id] = resource
-				}
-
-				// Fade To Black
-				{
-					const resource: VMixFadeToBlack = {
-						resourceType: ResourceType.VMIX_FADE_TO_BLACK,
-						deviceId,
-						id: `${deviceId}_fade_to_black`,
-						displayName: 'Fade To Black',
-					}
-					resources[resource.id] = resource
-				}
-
-				return Object.values(resources)
-			}
-
-			this.sideLoadedDevices[deviceId] = {
-				refreshResources: () => {
-					return refreshResources()
-				},
-				close: async () => {
-					return vmix.dispose()
-				},
-			}
+			this.sideLoadedDevices[deviceId] = new VMixSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.OSC) {
-			const refreshResources = async () => {
-				const resources: { [id: string]: ResourceAny } = {}
-
-				// Message
-				{
-					const resource: OSCMessage = {
-						resourceType: ResourceType.OSC_MESSAGE,
-						deviceId,
-						id: `${deviceId}_osc_message`,
-						displayName: 'OSC Message',
-					}
-					resources[resource.id] = resource
-				}
-
-				return Object.values(resources)
-			}
-
-			this.sideLoadedDevices[deviceId] = {
-				refreshResources: () => {
-					return refreshResources()
-				},
-				close: async () => {
-					// Nothing to cleanup.
-				},
-			}
+			this.sideLoadedDevices[deviceId] = new OSCSideload(deviceId, deviceOptions, this.log)
 		}
 	}
 	private onDeviceStatus(deviceId: string, status: DeviceStatus) {

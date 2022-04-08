@@ -10,7 +10,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
-import { BridgeHandler } from './bridgeHandler'
+import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
@@ -28,18 +28,26 @@ export class TimedPlayerThingy {
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
+	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
+	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
+
 	constructor() {
 		this.session = new SessionHandler()
-		this.storage = new StorageHandler({
-			// Default window position:
-			y: undefined,
-			x: undefined,
-			width: 1200,
-			height: 600,
-		})
+		this.storage = new StorageHandler(
+			{
+				// Default window position:
+				y: undefined,
+				x: undefined,
+				width: 1200,
+				height: 600,
+			},
+			CURRENT_VERSION
+		)
 
 		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
-			this.ipcClient?.updateResource(id, resource)
+			// Add the resource to the list of resources to send to the client in batches later:
+			this.resourceUpdatesToSend.push({ id, resource })
+			this._triggerBatchSendResources()
 		})
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
@@ -63,6 +71,18 @@ export class TimedPlayerThingy {
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
 			this.ipcClient?.updateRundown(fileName, rundown)
 		})
+	}
+	private _triggerBatchSendResources() {
+		// Send updates of resources in batches to the client.
+		// This is done to improve performance,
+		// it turns out that sending a large amount of messages is slowly received by the client.
+		if (!this.__triggerBatchSendResourcesTimeout) {
+			this.__triggerBatchSendResourcesTimeout = setTimeout(() => {
+				this.__triggerBatchSendResourcesTimeout = null
+				this.ipcClient?.updateResources(this.resourceUpdatesToSend)
+				this.resourceUpdatesToSend = []
+			}, 100)
+		}
 	}
 
 	initWindow(mainWindow: BrowserWindow) {

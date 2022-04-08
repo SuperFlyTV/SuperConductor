@@ -3,7 +3,7 @@ import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { ConnectionStatus } from './ConnectionStatus'
 
-export const DeviceStatuses: React.FC = observer(() => {
+export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	const appStore = store.appStore
 
 	return (

@@ -19,7 +19,7 @@ export class ResourcesStore {
 
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
-		updateResource: (resourceId, resource) => this.updateResource(resourceId, resource),
+		updateResources: (resources) => this.updateResources(resources),
 		updateDeviceRefreshStatus: (deviceId, refreshing) => this.updateDeviceRefreshStatus(deviceId, refreshing),
 	})
 	constructor(init?: Resources) {
@@ -30,6 +30,11 @@ export class ResourcesStore {
 		}
 	}
 
+	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>) {
+		for (const { id, resource } of resources) {
+			this.updateResource(id, resource)
+		}
+	}
 	updateResource(resourceId: string, resource: ResourceAny | null) {
 		const newResources = { ...this.resources }
 		if (resource) {

@@ -1,10 +1,8 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { RundownContext } from '../../../contexts/Rundown'
 import { ProjectContext } from '../../../contexts/Project'
-import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, bytesToSize } from '@shared/lib'
+import { ResourceAny } from '@shared/models'
 import { ResourceData } from './ResourceData'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
 import { Part } from '../../../../models/rundown/Part'
@@ -12,7 +10,6 @@ import { Field, Form, Formik } from 'formik'
 import { findPartInRundown } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
-import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
 import {
 	Button,
 	Divider,
@@ -31,10 +28,10 @@ import {
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { formatDurationLabeled } from '../../../../lib/timeLib'
 import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
+import { useDebounce } from '../../../../lib/useDebounce'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -47,21 +44,24 @@ const MenuProps = {
 	},
 }
 
-export const ResourceLibrary: React.FC = observer(() => {
+const NAME_FILTER_DEBOUNCE = 100
+
+export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const ipcServer = useContext(IPCServerContext)
-	const rundown = useContext(RundownContext)
+	const rundown = store.rundownsStore.currentRundown
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const resourcesStore = store.resourcesStore
 
-	const defaultPart = rundown.groups[0]?.parts[0] as Part | undefined
+	const defaultPart = rundown?.groups[0]?.parts[0] as Part | undefined
 	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
 
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
 	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
 
 	const [nameFilterValue, setNameFilterValue] = React.useState('')
+	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
 	const resourcesFilteredByDevice = useMemo(() => {
@@ -75,15 +75,15 @@ export const ResourceLibrary: React.FC = observer(() => {
 	}, [deviceFilterValue, resourcesStore.resources])
 
 	const resourcesFilteredByDeviceAndName = useMemo(() => {
-		if (nameFilterValue.trim().length === 0) {
+		if (debouncedNameFilterValue.trim().length === 0) {
 			return resourcesFilteredByDevice
 		}
 
 		return resourcesFilteredByDevice.filter((resource) => {
 			const name = resource.displayName
-			return name.toLowerCase().includes(nameFilterValue.toLowerCase())
+			return name.toLowerCase().includes(debouncedNameFilterValue.toLowerCase())
 		})
-	}, [nameFilterValue, resourcesFilteredByDevice])
+	}, [debouncedNameFilterValue, resourcesFilteredByDevice])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
 		const ret: { [key: string]: ResourceAny[] } = {}
@@ -119,19 +119,35 @@ export const ResourceLibrary: React.FC = observer(() => {
 		)
 	}, [])
 
+	const handleResourceLibraryItemSelect = useCallback((resource: ResourceAny) => {
+		setSelectedResourceId((value) => {
+			if (value === resource.id) {
+				return undefined
+			} else {
+				return resource.id
+			}
+		})
+	}, [])
+
+	const handleRefresh = useCallback(async () => {
+		try {
+			await ipcServer.refreshResources()
+		} catch (err) {
+			handleError(err)
+		}
+	}, [ipcServer, handleError])
+
+	if (!rundown) {
+		return null
+	}
+
 	return (
 		<div className="sidebar media-library-sidebar">
 			<SidebarInfoGroup
 				title="Available Resources"
 				enableRefresh={true}
 				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
-				onRefreshClick={async () => {
-					try {
-						await ipcServer.refreshResources()
-					} catch (err) {
-						handleError(err)
-					}
-				}}
+				onRefreshClick={handleRefresh}
 			>
 				<FormControl margin="dense" size="small" fullWidth>
 					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
@@ -180,261 +196,16 @@ export const ResourceLibrary: React.FC = observer(() => {
 								)}
 							</Stack>
 							<Divider />
-							{resources
-								.map<[ResourceAny, JSX.Element]>((resource) => {
-									if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
-										return [
-											resource,
-											<>
-												<ResourceLibraryItemThumbnail resource={resource} />
-												<div className="resource__details">
-													<div className="resource__name" title={resource.displayName}>
-														{resource.displayName}
-													</div>
-													<div className="resource__attributes">
-														<div>{resource.type}</div>
-														<div style={{ textAlign: 'right' }}>
-															{bytesToSize(resource.size)}
-														</div>
-														<div style={{ textAlign: 'right' }}>
-															{formatDurationLabeled(resource.duration * 1000)}
-														</div>
-													</div>
-												</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
-										return [resource, <></>]
-									} else if (resource.resourceType === ResourceType.ATEM_ME) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_DSK) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_AUX) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_SCENE) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_MUTE) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OBS_RENDER) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
-										return [
-											resource,
-											<>
-												<div className="resource__details">
-													<div className="resource__name" title={resource.displayName}>
-														{resource.displayName}
-													</div>
-													<div className="resource__attributes">
-														<div>{resource.type}</div>
-													</div>
-												</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_FADER) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
-										return [
-											resource,
-											<>
-												<div className="resource__name">{resource.displayName}</div>
-											</>,
-										]
-									} else {
-										assertNever(resource)
-										return [resource, <></>]
-									}
-								})
-								.map((d: [ResourceAny, JSX.Element]) => {
-									const resource: ResourceAny = d[0]
-									const child: JSX.Element = d[1]
-
-									return (
-										<React.Fragment key={resource.id}>
-											<ResourceLibraryItem
-												resource={resource}
-												selected={resource.id === selectedResourceId}
-												onClick={() => {
-													if (selectedResourceId === resource.id) {
-														setSelectedResourceId(undefined)
-													} else {
-														setSelectedResourceId(resource.id)
-													}
-												}}
-											>
-												{child}
-											</ResourceLibraryItem>
-										</React.Fragment>
-									)
-								})}
+							{resources.map((resource) => {
+								return (
+									<ResourceLibraryItem
+										key={resource.id}
+										resource={resource}
+										selected={resource.id === selectedResourceId}
+										onSelect={handleResourceLibraryItemSelect}
+									/>
+								)
+							})}
 						</React.Fragment>
 					)
 				})}

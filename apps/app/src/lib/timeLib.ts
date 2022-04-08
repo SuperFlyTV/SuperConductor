@@ -50,6 +50,16 @@ export function parseDuration(str: string): number | undefined {
 		if (m) return parseInt(m[1]) * 1000
 	}
 
+	// Transition-formats (ie these might show up while typing):
+	{
+		const m = str.match(/^(\d{1,2}):(\d{3,4})$/) // hh:mmxx
+		if (m) return parseDuration(m[1] + m[2]) // -> hhmmss
+	}
+	{
+		const m = str.match(/^(\d{1}):(\d{1,2}):(\d{3})$/) // h:mm:ssx
+		if (m) return parseDuration(m[1] + m[2] + m[3]) // -> hhmmss
+	}
+
 	return undefined
 }
 
@@ -119,6 +129,10 @@ assert(parseDuration('asdf'), undefined)
 assert(parseDuration('00:00:00.000'), 0)
 assert(parseDuration('1'), 1000)
 assert(parseDuration('12'), 12000)
+assert(parseDuration('123'), 1 * 60000 + 23 * 1000)
+assert(parseDuration('1234'), 12 * 60000 + 34 * 1000)
+assert(parseDuration('12345'), 1 * 3600000 + 23 * 60000 + 45 * 1000)
+assert(parseDuration('123456'), 12 * 3600000 + 34 * 60000 + 56 * 1000)
 assert(parseDuration('0:23'), 23000)
 assert(parseDuration('00:00:23'), 23000)
 assert(parseDuration('1:23'), 83000)
@@ -129,6 +143,10 @@ assert(parseDuration('123.5'), 83500)
 assert(parseDuration('1:00:01'), 3601000)
 assert(parseDuration('1:01:01'), 3661000)
 assert(parseDuration('10101'), 3661000)
+
+assert(parseDuration('1:234'), 12 * 60000 + 34 * 1000) // 12:34
+assert(parseDuration('12:345'), 1 * 3600000 + 23 * 60000 + 45 * 1000) // 1:23:45
+assert(parseDuration('1:23:456'), 12 * 3600000 + 34 * 60000 + 56 * 1000) // 12:34:56
 
 assert(formatDuration(1000), '1')
 assert(formatDuration(1500), '1.5')

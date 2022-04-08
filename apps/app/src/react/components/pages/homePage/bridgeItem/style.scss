@@ -1,0 +1,15 @@
+.bridge-item-header {
+	display: flex;
+	align-items: center;
+
+	.device-statuses {
+		display: flex;
+		align-items: center;
+
+		> .label {
+			font-size: 1.2rem;
+			color: rgba(255, 255, 255, 0.7);
+			margin-right: 1.5rem;
+		}
+	}
+}

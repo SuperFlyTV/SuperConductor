@@ -23,6 +23,7 @@ export const enum ActionDescription {
 	DeletePart = 'delete part',
 	DeleteGroup = 'delete group',
 	MovePart = 'move part',
+	MoveGroup = 'move group',
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
@@ -42,6 +43,7 @@ export const enum ActionDescription {
 	CloseRundown = 'close rundown',
 	RenameRundown = 'rename rundown',
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
+	CreateMissingMapping = 'create missing layer',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -62,6 +64,7 @@ export interface IPCServerMethods {
 	triggerSendAll: () => Promise<unknown>
 	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
+	acknowledgeSeenVersion: () => Promise<unknown>
 	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	setPartTrigger: (data: {
@@ -96,9 +99,10 @@ export interface IPCServerMethods {
 	deletePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	deleteGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	movePart: (data: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}) => Promise<unknown>
+	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
 
 	updateTimelineObj: (data: {
 		rundownId: string
@@ -178,12 +182,15 @@ export interface IPCServerMethods {
 		projectId: string
 	}) => Promise<{ fileName: string; version: number; name: string; open: boolean }[]>
 	renameRundown: (data: { rundownId: string; newName: string }) => Promise<unknown>
+	isRundownPlaying: (data: { rundownId: string }) => Promise<unknown>
+
+	createMissingMapping: (data: { rundownId: string; mappingId: string }) => Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
-	updateResource: (id: string, resource: ResourceAny | null) => void
+	updateResources: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 	updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void

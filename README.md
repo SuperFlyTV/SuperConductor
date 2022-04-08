@@ -20,7 +20,7 @@ Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases
 2. Execute the following before running the file:
    ```bash
    # Replace X.Y.Z with the actual version number.
-   chmod +x Downloads/SuperConductor-X.Y.Z.AppImage
+   chmod +x Downloads/SuperConductor-X.Y.Z-Linux-Executable.AppImage
    ```
 
 ## Features

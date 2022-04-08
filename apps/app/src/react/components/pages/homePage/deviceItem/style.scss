@@ -1,0 +1,32 @@
+.device-item-header {
+	display: flex;
+	align-items: center;
+
+	> .header-label {
+		border-right: 0.2rem solid rgba(255, 255, 255, 0.3);
+		padding-right: 2rem;
+		margin-right: 2rem;
+	}
+
+	.status {
+		font-size: 1.2rem;
+		color: rgba(255, 255, 255, 0.7);
+	}
+}
+
+.device-item-content {
+	display: flex;
+	align-items: flex-start;
+
+	.fields {
+		flex-grow: 1;
+
+		div {
+			margin-right: 1rem;
+		}
+	}
+
+	.actions {
+		margin-left: 2rem;
+	}
+}

@@ -26,6 +26,9 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('setKeyboardKeys', activeKeys)
 	}
 
+	acknowledgeSeenVersion(): Promise<void> {
+		return this.invokeServerMethod('acknowledgeSeenVersion')
+	}
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}
@@ -107,10 +110,13 @@ export class IPCServer implements IPCServerMethods {
 		return this.invokeServerMethod('deleteGroup', data)
 	}
 	movePart(data: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}): Promise<Group | undefined> {
 		return this.invokeServerMethod('movePart', data)
+	}
+	moveGroup(data: { rundownId: string; groupId: string; position: number }): Promise<void> {
+		return this.invokeServerMethod('moveGroup', data)
 	}
 	newTemplateData(data: {
 		rundownId: string
@@ -213,5 +219,11 @@ export class IPCServer implements IPCServerMethods {
 	}
 	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
 		return this.invokeServerMethod('renameRundown', data)
+	}
+	isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
+		return this.invokeServerMethod('isRundownPlaying', data)
+	}
+	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
+		return this.invokeServerMethod('createMissingMapping', data)
 	}
 }

@@ -1,7 +1,8 @@
 import { literal } from '@shared/lib'
-import { app, BrowserWindow, dialog, Menu } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
+// import installExtension, { REACT_DEVELOPER_TOOLS, MOBX_DEVTOOLS } from 'electron-devtools-installer'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
@@ -20,6 +21,7 @@ const createWindow = (): void => {
 		webPreferences: {
 			nodeIntegration: true,
 			contextIsolation: false,
+			nativeWindowOpen: false,
 		},
 		title: 'SuperConductor',
 	})
@@ -33,6 +35,13 @@ const createWindow = (): void => {
 	tpt.initWindow(win)
 
 	if (isDev) {
+		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
+		// installExtension(REACT_DEVELOPER_TOOLS)
+		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then(() => installExtension(MOBX_DEVTOOLS))
+		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then(() => win.webContents.openDevTools())
+		// 	.catch((err) => console.log('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
@@ -51,13 +60,7 @@ const createWindow = (): void => {
 			return tpt.ipcServer?.redo().catch(console.error)
 		},
 		onAboutClick: () => {
-			return dialog
-				.showMessageBox(win, {
-					type: 'info',
-					title: 'About SuperConductor',
-					message: `Current Version: v${CURRENT_VERSION}`,
-				})
-				.catch(console.error)
+			tpt.ipcClient?.displayAboutDialog()
 		},
 		onUpdateClick: async () => {
 			try {
@@ -141,6 +144,23 @@ const createWindow = (): void => {
 	})
 	win.on('moved', () => {
 		updateSizeAndPosition()
+	})
+
+	// Handle links <a target='_blank'>, to open in an external browser:
+	win.webContents.setWindowOpenHandler(({ url }) => {
+		// List urls which are OK to open in an Electron window:
+		// if (url.startsWith('https://github.com/')) return { action: 'allow' }
+		// if (url.startsWith('https://superfly.tv/')) return { action: 'allow' }
+
+		// open url in a browser and prevent default
+		shell.openExternal(url).catch(console.error)
+
+		return { action: 'deny' } // preventDefault
+	})
+	win.webContents.on('did-create-window', (childWindow) => {
+		childWindow.webContents.on('will-navigate', (e) => {
+			e.preventDefault()
+		})
 	})
 }
 

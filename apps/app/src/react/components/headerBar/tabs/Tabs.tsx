@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { store } from '../../../mobx/store'
@@ -8,12 +8,18 @@ import { Tab } from './tab/Tab'
 
 import './style.scss'
 import { AiFillHome } from 'react-icons/ai'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 
-export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer((props) => {
+export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer(function Tabs(props) {
 	const rundownsStore = store.rundownsStore
 	const guiStore = store.guiStore
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const [closeConfirmationDialogOpen, setCloseConfirmationDialogOpen] = useState(false)
+	const [rundownToClose, setRundownToClose] = useState<{
+		rundownId: string
+		name: string
+	}>()
 
 	const handleSelect = (rundownId: string) => {
 		store.rundownsStore.setCurrentRundown(rundownId)
@@ -58,7 +64,22 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 						active={isThisSelected}
 						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => props.onTabDoubleClick(rundown)}
-						onClose={(id) => handleClose(id)}
+						onClose={async () => {
+							try {
+								setRundownToClose(rundown)
+
+								const isPlaying = await serverAPI.isRundownPlaying({ rundownId: rundown.rundownId })
+
+								// If the rundown is currently playing, prompt the user for confirmation. before closing it.
+								if (isPlaying) {
+									setCloseConfirmationDialogOpen(true)
+								} else {
+									handleClose(rundown.rundownId)
+								}
+							} catch (error) {
+								handleError(error)
+							}
+						}}
 						showSeparator={!isThisSelected && !isNextSelected}
 					/>
 				)
@@ -68,6 +89,24 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 				onClick={() => {
 					guiStore.goToNewRundown()
 				}}
+			/>
+
+			<ConfirmationDialog
+				open={closeConfirmationDialogOpen}
+				onAccepted={() => {
+					if (rundownToClose) {
+						handleClose(rundownToClose.rundownId)
+					}
+					setCloseConfirmationDialogOpen(false)
+				}}
+				onDiscarded={() => {
+					setCloseConfirmationDialogOpen(false)
+				}}
+				acceptLabel="Close"
+				title="Close Rundown"
+				body={`Are you sure you wish to close the rundown ${
+					rundownToClose ? `"${rundownToClose.name}"` : 'this rundown'
+				}? Anything currently playing in this rundown will be stopped!`}
 			/>
 		</div>
 	)

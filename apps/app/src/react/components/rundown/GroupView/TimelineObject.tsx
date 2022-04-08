@@ -7,11 +7,11 @@ import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TimelineObjectMove, TimelineObjectMoveContext } from '../../../contexts/TimelineObjectMove'
 import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
+import { TimelineObjectMove } from '../../../mobx/GuiStore'
 
 const HANDLE_WIDTH = 8
 
@@ -26,12 +26,21 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
 	warnings?: string[]
-}> = observer(({ groupId, partId, timelineObj, partDuration, resolved, msPerPixel, locked, warnings }) => {
+}> = observer(function TimelineObject({
+	groupId,
+	partId,
+	timelineObj,
+	partDuration,
+	resolved,
+	msPerPixel,
+	locked,
+	warnings,
+}) {
 	// const { gui, updateGUI } = useContext(GUIContext)
 
 	const gui = store.guiStore
+	const timelineObjMove = gui.timelineObjMove
 
-	const { timelineObjMove, updateTimelineObjMove } = useContext(TimelineObjectMoveContext)
 	const ref = useRef<HTMLDivElement>(null)
 	const [isMoved, deltaX, _deltaY, pointerX, pointerY, originX, originY] = useMovable(ref.current, {
 		dragging: timelineObjMove.leaderTimelineObjId === timelineObj.obj.id && Boolean(timelineObjMove.moveType),
@@ -45,8 +54,6 @@ export const TimelineObject: React.FC<{
 	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
-	const updateMoveRef = useRef(updateTimelineObjMove)
-	updateMoveRef.current = updateTimelineObjMove
 
 	const obj: TSRTimelineObj = timelineObj.obj
 	const instance = resolved.instances[0]
@@ -124,7 +131,7 @@ export const TimelineObject: React.FC<{
 			}
 		}
 
-		updateMoveRef.current(update)
+		gui.updateTimelineObjMove(update)
 	}, [
 		isMoved,
 		deltaX,
@@ -138,6 +145,7 @@ export const TimelineObject: React.FC<{
 		allowDuplicate,
 		moveType,
 		locked,
+		gui,
 	])
 	useEffect(() => {
 		if (locked) {
@@ -148,19 +156,19 @@ export const TimelineObject: React.FC<{
 			// A move has begun.
 
 			setHandledMoveStart(true)
-			updateTimelineObjMove({
+			gui.updateTimelineObjMove({
 				moveId: short.generate(),
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.
 
 			setHandledMoveStart(false)
-			updateTimelineObjMove({
+			gui.updateTimelineObjMove({
 				moveType: null,
 				wasMoved: timelineObjMove.moveType,
 			})
 		}
-	}, [handledMoveStart, isMoved, locked, timelineObjMove.moveType, updateTimelineObjMove])
+	}, [gui, handledMoveStart, isMoved, locked, timelineObjMove.moveType])
 
 	const updateSelection = () => {
 		if (
@@ -209,13 +217,24 @@ export const TimelineObject: React.FC<{
 		}
 	}
 
-	const { minutes, seconds, secondTenths } = description.parsedDuration || {}
+	const { days, hours, minutes, seconds, milliseconds } = description.parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
 	let durationTitle = ''
+	if (days) {
+		durationTitle += days + 'd'
+	}
+	if (hours) {
+		durationTitle += hours + 'h'
+	}
 	if (minutes) {
 		durationTitle += minutes + 'm'
 	}
 	if (seconds) {
-		durationTitle += seconds + '.' + secondTenths + 's'
+		if (secondTenths) {
+			durationTitle += seconds + '.' + secondTenths + 's'
+		} else {
+			durationTitle += seconds
+		}
 	}
 
 	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
@@ -277,6 +296,18 @@ export const TimelineObject: React.FC<{
 				)}
 				<div className="title">{description.label}</div>
 				<div className="duration">
+					{days ? (
+						<>
+							<span>{days}</span>
+							<span style={{ fontWeight: 300 }}>d</span>
+						</>
+					) : null}
+					{hours ? (
+						<>
+							<span>{hours}</span>
+							<span style={{ fontWeight: 300 }}>h</span>
+						</>
+					) : null}
 					{minutes ? (
 						<>
 							<span>{minutes}</span>
@@ -284,12 +315,19 @@ export const TimelineObject: React.FC<{
 						</>
 					) : null}
 					{seconds ? (
-						<>
-							<span>{seconds}</span>
-							<span style={{ fontWeight: 300 }}>.</span>
-							<span>{secondTenths}</span>
-							<span style={{ fontWeight: 300 }}>s</span>
-						</>
+						secondTenths ? (
+							<>
+								<span>{seconds}</span>
+								<span style={{ fontWeight: 300 }}>.</span>
+								<span>{secondTenths}</span>
+								<span style={{ fontWeight: 300 }}>s</span>
+							</>
+						) : (
+							<>
+								<span>{seconds}</span>
+								<span style={{ fontWeight: 300 }}>s</span>
+							</>
+						)
 					) : null}
 				</div>
 			</div>

@@ -1,19 +1,23 @@
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useState } from 'react'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { store } from '../../../mobx/store'
+import { store } from '../../../../mobx/store'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import * as Yup from 'yup'
 
-import { ProjectPageLayout } from './projectPageLayout/ProjectPageLayout'
-import { TextBtn } from '../../inputs/textBtn/TextBtn'
-import { Project } from '../../../../models/project/Project'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
+import { TextBtn } from '../../../inputs/textBtn/TextBtn'
+import { Project } from '../../../../../models/project/Project'
 import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
+import { RoundedSection } from '../roundedSection/RoundedSection'
+import { ScList } from '../scList/ScList'
+import { ScListItemLabel } from '../scList/ScListItemLabel'
 
-export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
+import './style.scss'
+
+export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore
@@ -34,9 +38,34 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 		<ProjectPageLayout
 			title={props.project.name}
 			subtitle="Project"
-			help="Help Content Here"
 			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
 		>
+			<RoundedSection title="Rundown archive">
+				<ScList
+					list={rundownsStore.closedRundowns.map((closedRundown) => {
+						return {
+							id: closedRundown.rundownId,
+							header: (
+								<div className="rundown-header-item">
+									<ScListItemLabel title={closedRundown.name} />
+									<div className="controls">
+										<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+										<TextBtn
+											label="Permanently delete"
+											style="danger"
+											onClick={() => alert('This feature is not implemented yet.')}
+										/>
+									</div>
+								</div>
+							),
+						}
+					})}
+				/>
+				{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
+			</RoundedSection>
+
+			<div className="rundowns-page"></div>
+
 			{/* Rename Project dialog */}
 			<Formik
 				initialValues={{ name: props.project.name }}
@@ -94,30 +123,6 @@ export const ProjectPage: React.FC<{ project: Project }> = observer((props) => {
 					)
 				}}
 			</Formik>
-
-			<div className="rundowns-page">
-				{rundownsStore.closedRundowns.map((closedRundown) => {
-					return (
-						<div key={closedRundown.rundownId} className="rundown">
-							<div className="label">{closedRundown.name}</div>
-							<div className="controls">
-								<Button
-									variant="contained"
-									size="medium"
-									onClick={() => handleReopen(closedRundown.rundownId)}
-								>
-									Reopen
-								</Button>
-								<TrashBtn
-									onClick={() => {
-										alert('To do')
-									}}
-								/>
-							</div>
-						</div>
-					)
-				})}
-			</div>
 		</ProjectPageLayout>
 	)
 })

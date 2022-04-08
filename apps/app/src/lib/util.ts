@@ -248,30 +248,84 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 }
 
 /**
- * @returns The index of the part which will be played next. Skips disabled parts. Returns -1 if there is no next part to play.
+ * @returns The index of the part which will be played next. Skips disabled parts. Accounts for looping. Returns -1 if there is no next part to play.
  */
 export function getNextPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex + 1; i < group.parts.length; i++) {
+
+	/**
+	 * Whether or not we've looped through the end of the group back
+	 * to the beginning of it in our search for the next part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
+	let startingI = currentPartIndex + 1
+	if (startingI >= group.parts.length && group.loop) {
+		startingI = 0
+	}
+
+	for (let i = startingI; i < group.parts.length; i++) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
+
+		const isAtEnd = i === group.parts.length - 1
+		if (isAtEnd && group.loop && !looped) {
+			i = -1
+			looped = true
+		}
 	}
+
 	return -1
 }
 
 /**
- * @returns The index of the part which will was previously played. Skips disabled parts. Returns -1 if there is no previous part.
+ * @returns The index of the part which will was previously played. Skips disabled parts. Accounts for looping. Returns -1 if there is no previous part.
  */
 export function getPrevPartIndex(group: Group): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
-	for (let i = currentPartIndex - 1; i > -1; i--) {
+
+	/**
+	 * Whether or not we've looped through the beginning of the group back
+	 * to the end of it in our search for the previous part to play.
+	 */
+	let looped = false
+
+	/**
+	 * The index at which to begin our search.
+	 * Also the index at which to end our search when looping.
+	 */
+	let startingI = currentPartIndex - 1
+	if (startingI < 0 && group.loop) {
+		startingI = group.parts.length - 1
+	}
+
+	for (let i = startingI; i > -1; i--) {
+		if (looped && i === startingI) {
+			break
+		}
+
 		const part = group.parts[i]
 		if (!part.disabled) {
 			return i
 		}
+
+		const isAtStart = i === 0
+		if (isAtStart && group.loop && !looped) {
+			i = group.parts.length
+			looped = true
+		}
 	}
+
 	return -1
 }
 

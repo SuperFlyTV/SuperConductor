@@ -19,7 +19,7 @@
 
 		&:hover {
 			.MuiToggleButton-sizeSmall:not(.Mui-selected) {
-				opacity: 0.2;
+				opacity: 0.4;
 			}
 		}
 
@@ -43,7 +43,7 @@
 			margin-right: 1rem;
 			font-family: 'Barlow';
 			font-weight: 700;
-			width: 12.2rem;
+			width: 10.8rem;
 		}
 
 		.title {
@@ -68,13 +68,6 @@
 				& > * {
 					margin-right: 0.6rem;
 				}
-
-				.playcount {
-					position: absolute;
-					bottom: -12px;
-					right: 0;
-					color: white;
-				}
 			}
 
 			.delete {
@@ -98,5 +91,45 @@
 
 	&.collapsed {
 		padding-bottom: 0.4rem;
+	}
+
+	&.dragging {
+		border: 1px solid white;
+		border-top: 0;
+		display: block;
+		overflow: visible;
+		padding: 0;
+		border-radius: 0;
+		margin-bottom: calc(-2rem - 1px) !important;
+		top: calc(-1rem - 2px);
+
+		&:not(:first-child) {
+			margin-top: 0 !important;
+		}
+
+		> * {
+			display: none;
+		}
+
+		> .group__dragArrow {
+			display: block;
+		}
+	}
+
+	&__dragArrow {
+		display: none;
+		position: absolute;
+		top: 50%;
+		left: 0;
+		transform: translate(-100%, -50%);
+		width: 0;
+		height: 0;
+		border-top: $partDragIndicatorSize solid transparent;
+		border-bottom: $partDragIndicatorSize solid transparent;
+		border-left: $partDragIndicatorSize solid white;
+	}
+
+	&__drag-handle {
+		cursor: grab;
 	}
 }

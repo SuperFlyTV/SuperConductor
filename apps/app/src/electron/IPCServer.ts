@@ -6,6 +6,7 @@ import {
 	deleteTimelineObj,
 	findGroup,
 	findPart,
+	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
 	getNextPartIndex,
@@ -16,45 +17,7 @@ import {
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
-import {
-	TSRTimelineObj,
-	DeviceType,
-	TimelineContentTypeCasparCg,
-	TimelineObjAtemME,
-	TimelineContentTypeAtem,
-	AtemTransitionStyle,
-	TimelineObjAtemDSK,
-	TimelineObjAtemAUX,
-	TimelineObjAtemSsrc,
-	TimelineObjAtemSsrcProps,
-	TimelineObjAtemMacroPlayer,
-	TimelineObjAtemAudioChannel,
-	TimelineObjAtemMediaPlayer,
-	MediaSourceType,
-	TimelineObjOBSCurrentScene,
-	TimelineContentTypeOBS,
-	TimelineObjOBSCurrentTransition,
-	TimelineObjOBSRecording,
-	TimelineObjOBSStreaming,
-	TimelineObjOBSSceneItemRender,
-	TimelineObjOBSMute,
-	TimelineObjOBSSourceSettings,
-	TimelineObjVMixInput,
-	TimelineContentTypeVMix,
-	TimelineObjVMixProgram,
-	VMixTransitionType,
-	TimelineObjVMixAudio,
-	TimelineObjVMixOutput,
-	TimelineObjVMixOverlay,
-	TimelineObjVMixRecording,
-	TimelineObjVMixStreaming,
-	TimelineObjVMixExternal,
-	TimelineObjVMixFadeToBlack,
-	TimelineObjVMixFader,
-	TimelineObjVMixPreview,
-	TimelineObjOSCMessage,
-	TimelineContentTypeOSC,
-} from 'timeline-state-resolver-types'
+import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
 import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
@@ -62,8 +25,8 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, deepClone, literal } from '@shared/lib'
+import { ResourceAny } from '@shared/models'
+import { deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
@@ -71,6 +34,8 @@ import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { getGroupPlayData } from '../lib/playhead'
+import { TSRTimelineObjFromResource } from './resources'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -114,7 +79,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	) {
 		super()
-		for (const methodName of Object.keys(IPCServer.prototype)) {
+		for (const methodName of Object.getOwnPropertyNames(IPCServer.prototype)) {
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
@@ -211,6 +176,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.setKeyboardKeys(activeKeys)
 	}
 
+	async acknowledgeSeenVersion(): Promise<void> {
+		const appData = this.storage.getAppData()
+		appData.version.seenVersion = appData.version.currentVersion
+		this.storage.updateAppData(appData)
+	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -647,23 +617,18 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async movePart(arg: {
-		from: { rundownId: string; groupId: string; partId: string }
+		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<UndoableResult<Group> | null> {
-		let fromRundown: Rundown
-		let fromGroup: Group
-		let part: Part
-		// @TODO (Alex Van Camp): I'm not sure why this try/catch is necessary, but it is.
-		try {
-			const getPartResult = this.getPart(arg.from)
-			fromRundown = getPartResult.rundown
-			fromGroup = getPartResult.group
-			part = getPartResult.part
-		} catch (error) {
-			// Ignore
-			console.error('movePart caught error:', (error as any).message)
-			return null
+	}): Promise<UndoableResult<Group>> {
+		const { rundown: fromRundown } = this.getRundown(arg.from)
+		const findPartResult = findPartInRundown(fromRundown, arg.from.partId)
+
+		if (!findPartResult) {
+			throw new Error(`Part "${arg.from.partId}" does not exist in rundown "${arg.from.rundownId}"`)
 		}
+
+		const fromGroup = findPartResult.group
+		const part = findPartResult.part
 
 		let toRundown: Rundown
 		let toGroup: Group
@@ -696,7 +661,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
 		if (!allow) {
-			return null
+			throw new Error('Move prohibited')
 		}
 
 		const fromPlayhead = allow.fromPlayhead
@@ -705,7 +670,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		// Save the original position for use in undo.
 		const originalPosition = fromGroup.transparent
-			? fromRundown.groups.findIndex((g) => g.id === arg.from.groupId)
+			? fromRundown.groups.findIndex((g) => g.id === fromGroup.id)
 			: fromGroup.parts.findIndex((p) => p.id === arg.from.partId)
 
 		if (!isTransparentGroupMove) {
@@ -774,7 +739,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				await this.movePart({
 					from: {
 						rundownId: arg.to.rundownId,
-						groupId: toGroup.id,
 						partId: arg.from.partId,
 					},
 					to: {
@@ -786,6 +750,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			},
 			description: ActionDescription.MovePart,
 			result: toGroup,
+		}
+	}
+	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+
+		// Save the original position for use in undo.
+		const originalPosition = rundown.groups.findIndex((g) => g.id === arg.groupId)
+
+		// Remove the group from the groups array and re-insert it at its new position
+		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
+		rundown.groups.splice(arg.position, 0, group)
+
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: async () => {
+				await this.moveGroup({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					position: originalPosition,
+				})
+			},
+			description: ActionDescription.MoveGroup,
 		}
 	}
 
@@ -1124,494 +1111,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const resource = this.session.getResource(arg.resourceId)
 		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
 
-		// @ts-expect-error duration
-		const duration = (resource.duration || 5) * 1000
-
-		let obj: TSRTimelineObj
-
-		if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
-			obj = {
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration,
-				},
-				content: {
-					deviceType: DeviceType.CASPARCG,
-					type: TimelineContentTypeCasparCg.MEDIA,
-					file: resource.name,
-				},
-			}
-		} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-			obj = {
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.CASPARCG,
-					type: TimelineContentTypeCasparCg.TEMPLATE,
-					templateType: 'html',
-					name: resource.name,
-					data: JSON.stringify({}),
-					useStopCommand: true,
-				},
-			}
-		} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
-			throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
-		} else if (resource.resourceType === ResourceType.ATEM_ME) {
-			obj = literal<TimelineObjAtemME>({
-				id: short.generate(),
-				layer: '', // set later,
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.ME,
-					me: {
-						input: 1,
-						transition: AtemTransitionStyle.CUT,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_DSK) {
-			obj = literal<TimelineObjAtemDSK>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.DSK,
-					dsk: {
-						onAir: true,
-						sources: {
-							fillSource: 1,
-							cutSource: 2,
-						},
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_AUX) {
-			obj = literal<TimelineObjAtemAUX>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.AUX,
-					aux: {
-						input: 1,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
-			obj = literal<TimelineObjAtemSsrc>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.SSRC,
-					ssrc: {
-						boxes: [
-							{
-								enabled: true,
-								source: 0,
-								x: -758,
-								y: 425,
-								size: 417,
-								cropped: false,
-								cropTop: 0,
-								cropBottom: 0,
-								cropLeft: 0,
-								cropRight: 0,
-							},
-							{
-								enabled: true,
-								source: 0,
-								x: 758,
-								y: 425,
-								size: 417,
-								cropped: false,
-								cropTop: 0,
-								cropBottom: 0,
-								cropLeft: 0,
-								cropRight: 0,
-							},
-							{
-								enabled: true,
-								source: 0,
-								x: -758,
-								y: -425,
-								size: 417,
-								cropped: false,
-								cropTop: 0,
-								cropBottom: 0,
-								cropLeft: 0,
-								cropRight: 0,
-							},
-							{
-								enabled: true,
-								source: 0,
-								x: 758,
-								y: -425,
-								size: 417,
-								cropped: false,
-								cropTop: 0,
-								cropBottom: 0,
-								cropLeft: 0,
-								cropRight: 0,
-							},
-						],
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
-			obj = literal<TimelineObjAtemSsrcProps>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.SSRCPROPS,
-					ssrcProps: {
-						artPreMultiplied: true,
-						artFillSource: 0,
-						artCutSource: 0,
-						artOption: 0,
-						borderEnabled: false,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
-			obj = literal<TimelineObjAtemMacroPlayer>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.MACROPLAYER,
-					macroPlayer: {
-						macroIndex: 0,
-						isRunning: true,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
-			obj = literal<TimelineObjAtemAudioChannel>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.AUDIOCHANNEL,
-					audioChannel: {},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
-			obj = literal<TimelineObjAtemMediaPlayer>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.ATEM,
-					type: TimelineContentTypeAtem.MEDIAPLAYER,
-					mediaPlayer: {
-						sourceType: MediaSourceType.Clip,
-						clipIndex: 0,
-						stillIndex: 0,
-						playing: true,
-						loop: false,
-						atBeginning: true,
-						clipFrame: 0,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.OBS_SCENE) {
-			obj = literal<TimelineObjOBSCurrentScene>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.OBS,
-					type: TimelineContentTypeOBS.CURRENT_SCENE,
-					sceneName: resource.name,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
-			obj = literal<TimelineObjOBSCurrentTransition>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.OBS,
-					type: TimelineContentTypeOBS.CURRENT_TRANSITION,
-					transitionName: resource.name,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
-			obj = literal<TimelineObjOBSRecording>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.RECORDING, on: true },
-			})
-		} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
-			obj = literal<TimelineObjOBSStreaming>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.STREAMING, on: true },
-			})
-		} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
-			obj = literal<TimelineObjOBSSourceSettings>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.OBS,
-					type: TimelineContentTypeOBS.SOURCE_SETTINGS,
-					sourceType: 'dshow_input',
-				},
-			})
-		} else if (resource.resourceType === ResourceType.OBS_MUTE) {
-			obj = literal<TimelineObjOBSMute>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.MUTE, mute: true },
-			})
-		} else if (resource.resourceType === ResourceType.OBS_RENDER) {
-			obj = literal<TimelineObjOBSSceneItemRender>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.SCENE_ITEM_RENDER, on: true },
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
-			obj = literal<TimelineObjVMixProgram>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.PROGRAM,
-					input: resource.number,
-					transition: {
-						effect: VMixTransitionType.Cut,
-						duration: 0,
-					},
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
-			obj = literal<TimelineObjVMixPreview>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.PREVIEW,
-					input: 1,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
-			obj = literal<TimelineObjVMixInput>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.INPUT,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
-			obj = literal<TimelineObjVMixAudio>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.AUDIO,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
-			obj = literal<TimelineObjVMixOutput>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.OUTPUT,
-					source: 'Input',
-					input: 1,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
-			obj = literal<TimelineObjVMixOverlay>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.OVERLAY,
-					input: 1,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
-			obj = literal<TimelineObjVMixRecording>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.RECORDING,
-					on: true,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
-			obj = literal<TimelineObjVMixStreaming>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.STREAMING,
-					on: true,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
-			obj = literal<TimelineObjVMixExternal>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.EXTERNAL,
-					on: true,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
-			obj = literal<TimelineObjVMixFadeToBlack>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.FADE_TO_BLACK,
-					on: true,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.VMIX_FADER) {
-			obj = literal<TimelineObjVMixFader>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.VMIX,
-					type: TimelineContentTypeVMix.FADER,
-					position: 255,
-				},
-			})
-		} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
-			obj = literal<TimelineObjOSCMessage>({
-				id: short.generate(),
-				layer: '', // set later
-				enable: {
-					start: 0,
-					duration: 5 * 1000,
-				},
-				content: {
-					deviceType: DeviceType.OSC,
-					type: TimelineContentTypeOSC.OSC,
-					path: '/',
-					values: [],
-				},
-			})
-		} else {
-			assertNever(resource)
-			// @ts-expect-error never
-			throw new Error(`Unknown resource type "${resource.resourceType}"`)
-		}
+		const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
 
 		let addToLayerId: string
 		let createdNewLayer = false
@@ -1877,6 +1377,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+		const { rundown } = this.getRundown(data)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Stop playout
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		}
+
 		await this.storage.closeRundown(data.rundownId)
 
 		return {
@@ -1905,6 +1415,101 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				await this.storage.renameRundown(newRundownId, originalName)
 			},
 			description: ActionDescription.RenameRundown,
+		}
+	}
+	async isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(data)
+
+		for (const group of rundown.groups) {
+			const playData = getGroupPlayData(group.preparedPlayData)
+			if (playData.anyPartIsPlaying) {
+				return true
+			}
+		}
+
+		return false
+	}
+	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
+		const project = this.getProject()
+		const rundown = this.storage.getRundown(data.rundownId)
+		if (!rundown) {
+			throw new Error(`Rundown "${data.rundownId}" not found`)
+		}
+
+		// Find all timeline objects which reside on the missing layer.
+		const createdMappings: { [mappingId: string]: Mapping } = {}
+
+		for (const group of rundown.groups) {
+			for (const part of group.parts) {
+				for (const timelineObj of part.timeline) {
+					if (timelineObj.obj.layer === data.mappingId) {
+						if (!timelineObj.resourceId)
+							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+
+						let deviceId: string | undefined
+						const resource = this.session.getResource(timelineObj.resourceId)
+						if (resource) {
+							deviceId = resource.deviceId
+						}
+						if (!deviceId) {
+							// Pick the first compatible deviceId we find:
+							for (const bridge of Object.values(project.bridges)) {
+								if (deviceId) break
+								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
+									if (device.type === timelineObj.obj.content.deviceType) {
+										deviceId = findDeviceId
+										break
+									}
+								}
+							}
+						}
+
+						if (!deviceId) continue
+
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId)
+						if (newMapping) {
+							createdMappings[data.mappingId] = newMapping
+						}
+					}
+				}
+			}
+		}
+
+		let newLayerId: string | undefined = undefined
+		switch (Object.keys(createdMappings).length) {
+			case 0:
+				throw new Error('No layer could be automatically created.')
+			case 1: {
+				newLayerId = Object.keys(createdMappings)[0]
+				const newMapping = Object.values(createdMappings)[0]
+
+				if (!newMapping.layerName) {
+					throw new Error('INTERNAL ERROR: Layer lacks a name.')
+				}
+
+				// Add the new layer to the project
+				project.mappings = {
+					...project.mappings,
+					[newLayerId]: newMapping,
+				}
+				this.storage.updateProject(project)
+				break
+			}
+			default:
+				throw new Error(
+					'No layer could be automatically created because the timeline objects on this layer are of incompatible types.'
+				)
+		}
+
+		return {
+			undo: async () => {
+				if (newLayerId) {
+					const project = this.getProject()
+					delete project.mappings[newLayerId]
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.CreateMissingMapping,
 		}
 	}
 
@@ -1995,7 +1600,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
 
 		// Verify that the layer is OK:
-		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid mapping for that timeline-object.')
+		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
 		return { layerId: addToLayerId, createdNewLayer }
 	}

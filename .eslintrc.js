@@ -16,7 +16,7 @@ module.exports = {
 		'node/no-unpublished-import': [
 			'error',
 			{
-				allowModules: ['electron', 'typed-emitter'],
+				allowModules: ['electron', 'typed-emitter', 'electron-devtools-installer'],
 			},
 		],
 		'node/no-unpublished-require': [

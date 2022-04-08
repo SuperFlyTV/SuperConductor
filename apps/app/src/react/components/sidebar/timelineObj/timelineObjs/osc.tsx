@@ -135,6 +135,7 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 								obj.content.values.splice(index, 1)
 								onSave(obj)
 							}}
+							title="Delete value"
 						/>
 					</Stack>
 
@@ -180,6 +181,7 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 								delete obj.content.transition
 								onSave(obj)
 							}}
+							title="Delete transition"
 						/>
 					</Stack>
 
@@ -238,6 +240,7 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 											obj.content.from.splice(index, 1)
 											onSave(obj)
 										}}
+										title="Delete value"
 									/>
 								</Stack>
 

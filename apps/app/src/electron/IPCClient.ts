@@ -21,8 +21,8 @@ export class IPCClient implements IPCClientMethods {
 	updateRundown(fileName: string, rundown: Rundown): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateRundown', fileName, rundown)
 	}
-	updateResource(id: string, resource: ResourceAny | null): void {
-		this.mainWindow?.webContents.send('callMethod', 'updateResource', id, resource)
+	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateResources', resources)
 	}
 	updateBridgeStatus(id: string, status: BridgeStatus | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateBridgeStatus', id, status)
@@ -35,5 +35,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDeviceRefreshStatus', deviceId, refreshing)
+	}
+	displayAboutDialog(): void {
+		this.mainWindow?.webContents.send('callMethod', 'displayAboutDialog')
 	}
 }

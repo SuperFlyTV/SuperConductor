@@ -44,7 +44,7 @@ export const NewRundownPage = () => {
 					label="Import Rundown From Another Project"
 					icon={<ImportRundownIcon />}
 					onClick={() => {
-						alert('To do')
+						alert('This feature is not implemented yet.')
 					}}
 				/>
 			</div>

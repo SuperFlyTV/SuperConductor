@@ -2,17 +2,15 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import EventEmitter from 'events'
-import { promisify } from 'util'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
 import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
-const fsWriteFile = promisify(fs.writeFile)
-
-const fsRm = promisify(fs.rm)
-const fsAccess = promisify(fs.access)
+const fsWriteFile = fs.promises.writeFile
+const fsRm = fs.promises.rm
+const fsAccess = fs.promises.access
 const fsExists = async (filePath: string): Promise<boolean> => {
 	try {
 		await fsAccess(filePath)
@@ -21,8 +19,8 @@ const fsExists = async (filePath: string): Promise<boolean> => {
 		return false
 	}
 }
-const fsRename = promisify(fs.rename)
-const fsUnlink = promisify(fs.unlink)
+const fsRename = fs.promises.rename
+const fsUnlink = fs.promises.unlink
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
@@ -43,9 +41,9 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(defaultWindowPosition: WindowPosition) {
+	constructor(defaultWindowPosition: WindowPosition, appVersion: string) {
 		super()
-		this.appData = this.loadAppData(defaultWindowPosition)
+		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
@@ -360,7 +358,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 
-	private loadAppData(defaultWindowPosition: WindowPosition): FileAppData {
+	private loadAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
 		let appData: FileAppData | undefined = undefined
 		try {
 			const read = fs.readFileSync(this.appDataPath, 'utf8')
@@ -390,10 +388,18 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 
+		const defaultAppData = this.getDefaultAppData(defaultWindowPosition, appVersion)
 		if (!appData) {
 			// Default:
 			this.appDataNeedsWrite = true
-			return this.getDefaultAppData(defaultWindowPosition)
+			appData = defaultAppData
+		} else {
+			// Migrate old data:
+			if (!appData.appData.version) {
+				// Added 2022-03-25:
+				this.appDataNeedsWrite = true
+				appData.appData.version = defaultAppData.appData.version
+			}
 		}
 		return appData
 	}
@@ -527,11 +533,15 @@ export class StorageHandler extends EventEmitter {
 		return rundown
 	}
 
-	private getDefaultAppData(defaultWindowPosition: WindowPosition): FileAppData {
+	private getDefaultAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
 		return {
 			version: CURRENT_VERSION,
 			appData: {
 				windowPosition: defaultWindowPosition,
+				version: {
+					seenVersion: null,
+					currentVersion: appVersion,
+				},
 				project: {
 					id: 'default',
 				},
