@@ -2,17 +2,15 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import EventEmitter from 'events'
-import { promisify } from 'util'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
 import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 
-const fsWriteFile = promisify(fs.writeFile)
-
-const fsRm = promisify(fs.rm)
-const fsAccess = promisify(fs.access)
+const fsWriteFile = fs.promises.writeFile
+const fsRm = fs.promises.rm
+const fsAccess = fs.promises.access
 const fsExists = async (filePath: string): Promise<boolean> => {
 	try {
 		await fsAccess(filePath)
@@ -21,8 +19,8 @@ const fsExists = async (filePath: string): Promise<boolean> => {
 		return false
 	}
 }
-const fsRename = promisify(fs.rename)
-const fsUnlink = promisify(fs.unlink)
+const fsRename = fs.promises.rename
+const fsUnlink = fs.promises.unlink
 
 /** This class handles all persistant data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
