@@ -41,6 +41,7 @@ export class PeripheralXkeys extends Peripheral {
 			flashing: boolean
 		}
 	} = {}
+	private ignoreKeys = new Set<number>()
 
 	constructor(id: string, private xkeysPanel: XKeys) {
 		super(id)
@@ -54,10 +55,10 @@ export class PeripheralXkeys extends Peripheral {
 			this._name = name
 
 			this.xkeysPanel.on('down', (keyIndex) => {
-				this.emit('keyDown', `${keyIndex}`)
+				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
 			})
 			this.xkeysPanel.on('up', (keyIndex) => {
-				this.emit('keyUp', `${keyIndex}`)
+				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyUp', `${keyIndex}`)
 			})
 
 			this.xkeysPanel.on('disconnected', () => {
@@ -72,6 +73,15 @@ export class PeripheralXkeys extends Peripheral {
 			this.xkeysPanel.setAllBacklights(null)
 			this.xkeysPanel.setIndicatorLED(1, false) // green
 			this.xkeysPanel.setIndicatorLED(2, false) // red
+
+			// Some panels have "keys" permanently set, like when the "key" is actually a "power-on status".
+			// Solve this by filtering any keys that are pressed on startup:
+			const buttons = this.xkeysPanel.getButtons()
+			this.ignoreKeys.clear()
+			buttons.forEach((value, keyIndex) => {
+				if (value) this.ignoreKeys.add(keyIndex)
+			})
+
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
@@ -183,6 +193,7 @@ export class PeripheralXkeys extends Peripheral {
 		const buttons = this.xkeysPanel.getButtons()
 
 		for (const [keyIndex, value] of Array.from(buttons.entries())) {
+			if (this.ignoreKeys.has(keyIndex)) continue
 			this.emit(value ? 'keyDown' : 'keyUp', `${keyIndex}`)
 		}
 	}
