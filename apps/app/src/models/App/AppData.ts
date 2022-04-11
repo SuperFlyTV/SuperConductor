@@ -22,6 +22,7 @@ export type WindowPosition =
 			x: number
 			width: number
 			height: number
+			maximized: boolean
 	  }
 	| {
 			// Note: undefined will center the window
@@ -29,4 +30,5 @@ export type WindowPosition =
 			x: undefined
 			width: number
 			height: number
+			maximized: boolean
 	  }
