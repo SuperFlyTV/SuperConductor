@@ -1,4 +1,5 @@
 import type { TimelineKeyframe, TimelineObject } from 'superfly-timeline'
+import { XKeysInfo } from 'xkeys'
 
 /** This is a generic data structure which is used to display  */
 export interface KeyDisplay {
@@ -44,3 +45,27 @@ export interface KeyDisplayTimelineKeyframe extends TimelineKeyframe {
 	content: Partial<KeyDisplay>
 }
 export type KeyDisplayTimeline = KeyDisplayTimelineObj[]
+
+export interface PeripheralInfo {
+	/** Name of the peripheral device, to be used in GUI display */
+	name: string
+
+	/** Other info about the peripheral device, to be used in GUI*/
+	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys
+}
+
+export interface PeripheralInfo_StreamDeck {
+	type: 'streamdeck'
+
+	layout: {
+		width: number
+		height: number
+	}
+}
+export interface PeripheralInfo_XKeys {
+	type: 'xkeys'
+
+	colCount: number
+	rowCount: number
+	layout: XKeysInfo['layout']
+}

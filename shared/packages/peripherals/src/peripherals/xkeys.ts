@@ -1,4 +1,4 @@
-import { AttentionLevel, KeyDisplay } from '@shared/api'
+import { AttentionLevel, KeyDisplay, PeripheralInfo } from '@shared/api'
 import _ from 'lodash'
 import { XKeysWatcher, XKeys } from 'xkeys'
 import { Peripheral } from './peripheral'
@@ -33,6 +33,7 @@ export class PeripheralXkeys extends Peripheral {
 
 	public initializing = false
 	public connected = false
+	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private sentFrequency = 0
 	private sentBacklight: {
@@ -51,8 +52,15 @@ export class PeripheralXkeys extends Peripheral {
 		try {
 			this.initializing = true
 
-			const name = this.xkeysPanel.info.name
-			this._name = name
+			this._info = {
+				name: this.xkeysPanel.info.name,
+				gui: {
+					type: 'xkeys',
+					colCount: this.xkeysPanel.info.colCount,
+					rowCount: this.xkeysPanel.info.rowCount,
+					layout: this.xkeysPanel.info.layout,
+				},
+			}
 
 			this.xkeysPanel.on('down', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
@@ -87,6 +95,10 @@ export class PeripheralXkeys extends Peripheral {
 			this.initializing = false
 			throw e
 		}
+	}
+	get info(): PeripheralInfo {
+		if (!this._info) throw new Error('Peripheral not initialized')
+		return this._info
 	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		const keyIndex = parseInt(identifier)

@@ -52,6 +52,7 @@
 		"@shared/api": "^0.6.0",
 		"@shared/lib": "^0.6.0",
 		"@shared/tsr-bridge": "^0.6.0",
+		"@shared/server-lib": "^0.6.0",
 		"classnames": "^2.3.1",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^4.6.1",

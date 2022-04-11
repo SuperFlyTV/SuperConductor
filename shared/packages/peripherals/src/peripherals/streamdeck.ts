@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import sharp from 'sharp'
-import { AttentionLevel, KeyDisplay } from '@shared/api'
+import { AttentionLevel, KeyDisplay, PeripheralInfo } from '@shared/api'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
@@ -50,6 +50,7 @@ export class PeripheralStreamDeck extends Peripheral {
 	/** True if connected to the StreamDeck */
 	public connected = false
 	private streamDeck?: StreamDeck
+	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
@@ -67,7 +68,17 @@ export class PeripheralStreamDeck extends Peripheral {
 			let name = 'Stream Deck'
 			if (this.streamDeck.MODEL === DeviceModelId.MINI) name += ' Mini'
 			else if (this.streamDeck.MODEL === DeviceModelId.XL) name += ' XL'
-			this._name = name
+
+			this._info = {
+				name: name,
+				gui: {
+					type: 'streamdeck',
+					layout: {
+						height: this.streamDeck.KEY_ROWS,
+						width: this.streamDeck.KEY_COLUMNS,
+					},
+				},
+			}
 
 			this.connected = true
 
@@ -102,6 +113,10 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.initializing = false
 			throw e
 		}
+	}
+	get info(): PeripheralInfo {
+		if (!this._info) throw new Error('Peripheral not initialized')
+		return this._info
 	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		if (!this.streamDeck) return

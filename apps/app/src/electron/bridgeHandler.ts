@@ -1,4 +1,5 @@
-import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
+import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
@@ -331,9 +332,9 @@ abstract class AbstractBridgeConnection {
 		this.callbacks.updatedResources(deviceId, [])
 		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
-	protected _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
+	protected _onPeripheralStatus(deviceId: string, info: PeripheralInfo, status: 'connected' | 'disconnected') {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
-		this.session.updatePeripheralStatus(this.bridgeId, deviceId, deviceName, status === 'connected')
+		this.session.updatePeripheralStatus(this.bridgeId, deviceId, info, status === 'connected')
 	}
 	protected _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
@@ -355,7 +356,7 @@ abstract class AbstractBridgeConnection {
 		} else if (msg.type === 'timelineIds') {
 			this._syncTimelineIds(msg.timelineIds)
 		} else if (msg.type === 'PeripheralStatus') {
-			this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
+			this._onPeripheralStatus(msg.deviceId, msg.info, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 		} else if (msg.type === 'DeviceRefreshStatus') {

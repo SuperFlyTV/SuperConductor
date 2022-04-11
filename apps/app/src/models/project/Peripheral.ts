@@ -1,7 +1,10 @@
+import { PeripheralInfo } from '@shared/api'
+
 export interface Peripheral {
 	id: string
 	bridgeId: string
-	name: string
+
+	info: PeripheralInfo
 
 	status: {
 		connected: boolean

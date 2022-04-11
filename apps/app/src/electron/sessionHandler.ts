@@ -4,6 +4,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { PeripheralInfo } from '@shared/api'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -16,8 +17,10 @@ export class SessionHandler extends EventEmitter {
 	private peripherals: { [peripheralId: string]: Peripheral } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
+	/** Contains a collection of ALL triggers/keys/buttons on all Panels */
 	private allTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private allTriggersHasChanged: { [fullIdentifier: string]: true } = {}
+	/** Contains a collection of the currently active (pressed) triggers/keys/buttons on all Panels */
 	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private activeTriggersHasChanged = false
 
@@ -79,7 +82,7 @@ export class SessionHandler extends EventEmitter {
 
 		return this.peripherals[peripheralId]
 	}
-	updatePeripheralStatus(bridgeId: string, deviceId: string, deviceName: string, connected: boolean) {
+	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean) {
 		const peripheralId = `${bridgeId}-${deviceId}`
 
 		const existing: Peripheral | undefined = this.peripherals[peripheralId]
@@ -87,7 +90,7 @@ export class SessionHandler extends EventEmitter {
 		const newDevice: Peripheral = {
 			id: deviceId,
 			bridgeId: bridgeId,
-			name: deviceName,
+			info: info,
 			status: {
 				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
 				connected: connected,
@@ -127,7 +130,7 @@ export class SessionHandler extends EventEmitter {
 			fullIdentifier: fullIdentifier,
 			bridgeId: bridgeId,
 			deviceId: deviceId,
-			deviceName: device?.name ?? '',
+			deviceName: device?.info.name ?? '',
 			identifier: identifier,
 		}
 
