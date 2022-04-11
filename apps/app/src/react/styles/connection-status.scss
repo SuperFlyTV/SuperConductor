@@ -4,6 +4,7 @@
 	padding: 0 0.5rem;
 	color: $deviceOfflineColor;
 	font-size: 1.2rem;
+	text-decoration: none;
 
 	&__dot {
 		margin-left: 0.35rem;
@@ -12,6 +13,10 @@
 		height: 0.8rem;
 		background-color: $deviceOfflineColor;
 		flex-shrink: 0;
+	}
+	&.clickable:hover,
+	&.open {
+		background-color: rgba(255,255,255,0.05);
 	}
 
 	&.ok {
