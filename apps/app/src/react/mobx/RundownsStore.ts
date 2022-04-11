@@ -29,6 +29,8 @@ type IObservableObject<T extends object> = {
 }
 
 export class RundownsStore {
+	private _currentRundownId?: string = undefined
+	private _rundowns = new Map<string, Rundown>()
 	/**
 	 * List of all available rundowns
 	 */
@@ -37,9 +39,7 @@ export class RundownsStore {
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateRundown: (rundownId: string, rundown: Rundown) => {
-			store.guiStore.activeTabId = rundownId
-			this.currentRundownId = rundownId
-			this.currentRundown = rundown
+			this._rundowns.set(rundownId, rundown)
 		},
 	})
 
@@ -54,23 +54,16 @@ export class RundownsStore {
 	/**
 	 * Id of the currently opened rundown
 	 */
-	private _currentRundownId?: string = undefined
 	get currentRundownId() {
 		return this._currentRundownId
-	}
-	private set currentRundownId(id: string | undefined) {
-		this._currentRundownId = id
 	}
 
 	/**
 	 * Currently opened rundown data
 	 */
-	private _currentRundown?: Rundown = undefined
-	get currentRundown() {
-		return this._currentRundown
-	}
-	private set currentRundown(rd: Rundown | undefined) {
-		this._currentRundown = rd as any
+	get currentRundown(): Rundown | undefined {
+		if (!this._currentRundownId) return undefined
+		return this._rundowns.get(this._currentRundownId)
 	}
 
 	/**
@@ -89,13 +82,18 @@ export class RundownsStore {
 	 */
 	setCurrentRundown(rundownId?: string) {
 		if (rundownId) {
-			this.serverAPI.triggerSendRundown({ rundownId: rundownId }).catch(() => {
+			this._currentRundownId = rundownId
+			store.guiStore.activeTabId = rundownId
+			this.serverAPI.triggerSendRundown({ rundownId }).catch(() => {
 				//TODO
 			})
 		} else {
 			this._currentRundownId = undefined
-			this._currentRundown = undefined
 		}
+	}
+
+	getRundown(rundownId: string): Rundown | undefined {
+		return this._rundowns.get(rundownId)
 	}
 
 	/**
@@ -135,7 +133,7 @@ export class RundownsStore {
 	}
 
 	moveGroupInCurrentRundown(groupId: string, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -173,7 +171,7 @@ export class RundownsStore {
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
