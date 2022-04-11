@@ -85,7 +85,7 @@ export function getTimelineForGroup(
 			}
 
 			// Then add the parts that loop:
-			if (prepared.repeating) {
+			if (prepared.repeating && prepared.duration !== null) {
 				/** Repeating start time, relative to groupStartTime */
 				const repeatingStartTime = prepared.duration
 				/** unit timestamp */
@@ -95,8 +95,8 @@ export function getTimelineForGroup(
 					id: `repeating_${group.id}`,
 					enable: {
 						start: repeatingStartTime,
-						duration: prepared.repeating.duration,
-						repeating: prepared.repeating.duration,
+						duration: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
+						repeating: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
 					},
 					layer: '',
 					content: {

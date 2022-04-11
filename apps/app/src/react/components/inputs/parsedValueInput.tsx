@@ -8,6 +8,7 @@ export function ParsedValueInput<V>(
 	parse: (str: string) => V | undefined,
 	stringify: (val: V) => string,
 	label?: string,
+	emptyPlaceholder?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
 	fullWidth?: boolean
@@ -22,6 +23,7 @@ export function ParsedValueInput<V>(
 	const onSave = (str: string) => {
 		if (!str) {
 			onChange(defaultValue)
+			setValue(stringify(currentValue))
 		} else {
 			const value = parse(str)
 			if (value !== undefined) onChange(value)
@@ -76,6 +78,7 @@ export function ParsedValueInput<V>(
 			label={label}
 			value={value}
 			disabled={disabled}
+			placeholder={emptyPlaceholder}
 		/>
 	)
 }

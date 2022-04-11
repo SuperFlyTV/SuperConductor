@@ -18,9 +18,16 @@ export function idleKeyDisplay(_storage: StorageHandler): KeyDisplayTimeline {
 	]
 }
 
-export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+function getLongestActionDuration(actions: Action[]): number | null {
 	if (actions.length === 0) throw new Error('Actions array is empty')
+	return actions.reduce((max: number | null, action) => {
+		if (action.part.resolved.duration === null || max === null) return null
+		return Math.max(max, action.part.resolved.duration)
+	}, 0)
+}
+
+export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+	const longestDuration = getLongestActionDuration(actions)
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
@@ -32,7 +39,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `▶${action0.part.name.slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -48,7 +55,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `▶${label.slice(-7)}`,
 				},
 				info: {
-					long: `#timeToEnd`,
+					long: longestDuration === null ? '-' : `#timeToEnd`,
 				},
 			}
 		},
@@ -56,8 +63,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 }
 
 export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
-	if (actions.length === 0) throw new Error('Actions array is empty')
+	const longestDuration = getLongestActionDuration(actions)
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
@@ -69,7 +75,7 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `⏹${getLabel(actions, action0.part).slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? 'Infinite' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -84,14 +90,14 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `${data.part.name}\n#timeToEnd`,
+					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
 				},
 			}
 		},
 	})
 }
 export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
@@ -104,7 +110,7 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `▶${action0.part.name.slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -119,7 +125,7 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `${data.part.name}\n#timeToEnd`,
+					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
 				},
 			}
 		},

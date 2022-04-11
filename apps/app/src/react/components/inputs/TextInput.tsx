@@ -5,6 +5,7 @@ export const TextInput: React.FC<
 			currentValue: string
 			onChange: (newValue: string) => void
 			allowUndefined: false
+			emptyPlaceholder?: string
 			label?: string
 			disabled?: boolean
 			fullWidth?: boolean
@@ -13,6 +14,7 @@ export const TextInput: React.FC<
 			currentValue: string | undefined
 			onChange: (newValue: string | undefined) => void
 			allowUndefined: true
+			emptyPlaceholder?: string
 			label?: string
 			disabled?: boolean
 			fullWidth?: boolean
@@ -30,6 +32,7 @@ export const TextInput: React.FC<
 			parse,
 			stringify,
 			props.label,
+			props.emptyPlaceholder,
 			'text',
 			props.disabled,
 			props.fullWidth
@@ -42,6 +45,7 @@ export const TextInput: React.FC<
 			parse,
 			stringify,
 			props.label,
+			props.emptyPlaceholder,
 			'text',
 			props.disabled,
 			props.fullWidth

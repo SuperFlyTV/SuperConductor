@@ -14,6 +14,8 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 		const playhead = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.partId]
 		if (!playhead) return null
 
+		if (playhead.partEndTime === null) return null
+
 		const countDownTime = playhead.partEndTime - playhead.partStartTime - playhead.playheadTime
 		if (!countDownTime) return null
 		return msToTime(countDownTime)

@@ -22,7 +22,7 @@ export const EditWrapper: React.FC<{
 	const enableStartExpression = typeof enable.start === 'string' ? enable.start : ''
 
 	const durationIsExpression = typeof enable.duration === 'string'
-	const enableDurationNum = typeof enable.duration === 'number' ? enable.duration : 0
+	const enableDurationNum = typeof enable.duration === 'number' ? enable.duration : null
 	const enableDurationExpression = typeof enable.duration === 'string' ? enable.duration : ''
 
 	return (
@@ -75,6 +75,7 @@ export const EditWrapper: React.FC<{
 							onChange={(newVal) => {
 								if (!Array.isArray(obj.enable)) {
 									obj.enable.start = newVal
+									delete obj.enable.while
 								}
 								onSave(obj)
 							}}
@@ -84,10 +85,13 @@ export const EditWrapper: React.FC<{
 							label="Start"
 							fullWidth
 							allowUndefined={false}
+							allowNull={false}
+							defaultValue={0}
 							currentValue={enableStartNum}
 							onChange={(newVal) => {
 								if (!Array.isArray(obj.enable)) {
 									obj.enable.start = newVal
+									delete obj.enable.while
 								}
 								onSave(obj)
 							}}
@@ -103,6 +107,7 @@ export const EditWrapper: React.FC<{
 							onChange={(newVal) => {
 								if (!Array.isArray(obj.enable)) {
 									obj.enable.duration = newVal
+									delete obj.enable.end
 								}
 								onSave(obj)
 							}}
@@ -112,10 +117,14 @@ export const EditWrapper: React.FC<{
 							label="Duration"
 							fullWidth
 							allowUndefined={false}
+							allowNull={true}
+							defaultValue={null}
+							emptyPlaceholder="Infinite"
 							currentValue={enableDurationNum}
 							onChange={(newVal) => {
 								if (!Array.isArray(obj.enable)) {
 									obj.enable.duration = newVal
+									delete obj.enable.end
 								}
 								onSave(obj)
 							}}

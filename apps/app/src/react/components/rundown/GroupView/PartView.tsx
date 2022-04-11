@@ -103,7 +103,8 @@ export const PartView: React.FC<{
 			part.timeline.map((o) => o.obj),
 			{ time: 0, cache: cache.current }
 		)
-		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline)
+		/** Max duration for display. Infinite objects are counted to this */
+		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
 		const msPerPixel = orgMaxDuration / trackWidth
 		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
 
@@ -279,7 +280,7 @@ export const PartView: React.FC<{
 				resolvedTimeline = orgResolvedTimeline
 			}
 
-			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
 
 			return {
 				maxDuration,
@@ -830,7 +831,7 @@ export const PartView: React.FC<{
 					<CountdownHeads groupId={parentGroupId} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
-					<PlayHead part={part} groupId={parentGroupId} />
+					<PlayHead part={part} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,
