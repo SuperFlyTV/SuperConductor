@@ -1,11 +1,32 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { assertNever } from '@shared/lib'
 import { Action } from './action'
-import { StorageHandler } from '../storageHandler'
 import { Part } from '../../models/rundown/Part'
-import { getTimelineForGroup } from '../timeline'
+import { getTimelineForGroup } from '../../electron/timeline'
 import { Group } from '../../models/rundown/Group'
 
-export function idleKeyDisplay(_storage: StorageHandler): KeyDisplayTimeline {
+/** Return a KeyDisplay for a button */
+export function getKeyDisplayForButtonActions(actionsOnButton: Action[] | undefined): KeyDisplayTimeline | KeyDisplay {
+	if (actionsOnButton && actionsOnButton.length) {
+		const firstAction = actionsOnButton[0]
+
+		if (firstAction.trigger.action === 'play') {
+			return playKeyDisplay(actionsOnButton)
+		} else if (firstAction.trigger.action === 'stop') {
+			return stopKeyDisplay(actionsOnButton)
+		} else if (firstAction.trigger.action === 'playStop') {
+			return playStopKeyDisplay(actionsOnButton)
+		} else {
+			assertNever(firstAction.trigger.action)
+			return []
+		}
+	} else {
+		// is not used anywhere
+		return idleKeyDisplay()
+	}
+}
+
+export function idleKeyDisplay(): KeyDisplayTimeline {
 	return [
 		{
 			id: 'idle_not_assigned',

@@ -6,16 +6,19 @@ import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
-import { Action } from './triggers/action'
-import { idleKeyDisplay, playKeyDisplay, playStopKeyDisplay, stopKeyDisplay } from './triggers/keyDisplay'
+import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
+import { getKeyDisplayForButtonActions } from '../lib/triggers/keyDisplay'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
+	/** Contains a collection of the currently active (pressed) keys on the keyboard */
 	private activeKeys: ActiveTriggers = []
+	/** Contains a collection of ALL triggers/keys/buttons on all Panels */
 	private allTriggers: {
 		[fullIdentifier: string]: ActiveTrigger
 	} = {}
+	/** Contains a collection of the currently active (pressed) triggers/keys/buttons on all Panels */
 	private activeTriggers: ActiveTriggers = []
 
 	private updatePeripheralsTimeout: NodeJS.Timeout | null = null
@@ -78,25 +81,9 @@ export class TriggersHandler {
 		}
 
 		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
-			let keyDisplay: KeyDisplay | KeyDisplayTimeline
 			const used = usedTriggers[fullIdentifier]
-			if (used) {
-				const firstAction = used.actions[0]
 
-				if (firstAction.trigger.action === 'play') {
-					keyDisplay = playKeyDisplay(used.actions)
-				} else if (firstAction.trigger.action === 'stop') {
-					keyDisplay = stopKeyDisplay(used.actions)
-				} else if (firstAction.trigger.action === 'playStop') {
-					keyDisplay = playStopKeyDisplay(used.actions)
-				} else {
-					keyDisplay = []
-					assertNever(firstAction.trigger.action)
-				}
-			} else {
-				// is not used anywhere
-				keyDisplay = idleKeyDisplay(this.storage)
-			}
+			const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForButtonActions(used?.actions)
 
 			if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 				this.sentkeyDisplays[fullIdentifier] = keyDisplay
@@ -104,26 +91,9 @@ export class TriggersHandler {
 			}
 		}
 	}
+	/** Returns all Actions in all Rundowns */
 	private getActions(): Action[] {
-		const rundowns = this.storage.getAllRundowns()
-
-		// Collect all actions from the rundowns:
-		const actions: Action[] = []
-		for (const rundown of rundowns) {
-			for (const group of rundown.groups) {
-				for (const part of group.parts) {
-					for (const trigger of part.triggers) {
-						actions.push({
-							trigger,
-							rundownId: rundown.id,
-							group,
-							part,
-						})
-					}
-				}
-			}
-		}
-		return actions
+		return getAllActionsInRundowns(this.storage.getAllRundowns())
 	}
 
 	private handleUpdate() {
@@ -221,7 +191,11 @@ export class TriggersHandler {
 	}
 }
 
-function setKeyDisplay(bridgeHandler: BridgeHandler, trigger: ActiveTrigger, keyDisplay: KeyDisplayTimeline) {
+function setKeyDisplay(
+	bridgeHandler: BridgeHandler,
+	trigger: ActiveTrigger,
+	keyDisplay: KeyDisplay | KeyDisplayTimeline
+) {
 	const bridgeConnection = bridgeHandler.getBridgeConnection(trigger.bridgeId)
 	if (bridgeConnection) {
 		bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
