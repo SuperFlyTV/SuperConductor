@@ -12,7 +12,13 @@ type PropsType = {
 export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 	// Memoize this, to avoid recalculating it every time the playhead is calculated
 	const playheadTimeString = useMemoComputedValue(() => {
-		const playheadTime = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.partId]?.playheadTime
+		const group = store.groupPlayDataStore.groups.get(props.groupId)
+		if (!group) return null
+
+		const playhead = group?.playheads[props.partId]
+		if (!playhead) return null
+
+		const playheadTime = playhead.playheadTime
 		return typeof playheadTime === 'number' ? msToTime(playheadTime) : null
 	}, [props.groupId, props.partId])
 	return <>{playheadTimeString}</>

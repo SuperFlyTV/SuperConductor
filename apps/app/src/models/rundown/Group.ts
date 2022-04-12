@@ -26,6 +26,9 @@ export type Group = {
 			[partId: string]: {
 				/** Timestamp of when the part started playing (unix timestamp) */
 				startTime: number
+
+				/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+				pauseTime: number | undefined
 			}
 		}
 	}

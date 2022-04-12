@@ -145,7 +145,7 @@ export function allowMovingItemIntoGroup(
  * Update Group playing properties, so that they reflect the current playing status
  * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
  */
-export function updateGroupPlaying(group: Group) {
+export function updateGroupPlayingParts(group: Group) {
 	const now = Date.now()
 	const playhead = getGroupPlayData(group.preparedPlayData, now)
 
@@ -153,6 +153,7 @@ export function updateGroupPlaying(group: Group) {
 	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
 		group.playout.playingParts[partId] = {
 			startTime: playingPart.partStartTime,
+			pauseTime: playingPart.partPauseTime,
 		}
 	}
 }

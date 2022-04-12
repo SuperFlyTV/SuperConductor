@@ -107,6 +107,14 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 										deviceType: DeviceType.CASPARCG,
 									},
 								},
+								resolved: {
+									instances: [
+										{
+											start: 0,
+											end: 5000,
+										},
+									],
+								},
 							},
 						],
 						triggers: [],

@@ -1,8 +1,6 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
 
-const DEBUG = false
-
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
 /*
@@ -28,7 +26,6 @@ export class WebsocketServer extends EventEmitter {
 		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
-			// console.log('Websocket server closed')
 			// The websocekt server is closed.
 			this.connections.forEach((client) => {
 				// this.clients = []
@@ -121,14 +118,12 @@ export class WebsocketConnection extends EventEmitter {
 		if (!this._connected) throw new Error('Not connected')
 		if (!this.ws) throw new Error('No ws connection')
 
-		if (DEBUG) console.log('send', message.type)
-
 		this.ws.send(JSON.stringify(message))
 	}
 
 	private _onMessage(messageStr: string) {
 		const msg = JSON.parse(messageStr)
-		if (DEBUG) console.log('received', msg.type)
+
 		try {
 			this.emit('message', msg)
 		} catch (e) {
@@ -209,7 +204,6 @@ export class WebsocketConnection extends EventEmitter {
 		this.pingInterval = setInterval(() => {
 			// Monitor pings
 			if (Date.now() - this.lastPingReceived > PING_INTERVAL * 2.5) {
-				// console.log('ping monitor: no pings!')
 				this._onDisconnected()
 			} else {
 				// The client sends pings:
