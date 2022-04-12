@@ -36,6 +36,7 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
+import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -1666,15 +1667,115 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
 
-		bridge.peripheralSettings[data.peripheralId]
+		let peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		if (!peripheralSettings) {
+			bridge.peripheralSettings[data.peripheralId] = peripheralSettings = {
+				areas: {},
+			}
+		}
 
-		asdfasdf
+		const newAreaId = short.generate()
+		const newArea: PeripheralArea = {
+			name: `Area ${Object.keys(peripheralSettings.areas).length + 1}`,
+			identifiers: [],
+		}
+		peripheralSettings.areas[newAreaId] = newArea
+
+		this.storage.updateProject(project)
 
 		return {
 			undo: async () => {
-				if (newLayerId) {
-					const project = this.getProject()
-					delete project.mappings[newLayerId]
+				if (newAreaId) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+					delete peripheralSettings.areas[newAreaId]
+
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+	async removePeripheralArea(data: {
+		bridgeId: string
+		peripheralId: string
+		areaId: string
+	}): Promise<UndoableResult> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		let removedArea: PeripheralArea | undefined
+
+		const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		if (peripheralSettings) {
+			removedArea = peripheralSettings.areas[data.areaId]
+			delete peripheralSettings.areas[data.areaId]
+
+			this.storage.updateProject(project)
+		}
+
+		return {
+			undo: async () => {
+				if (removedArea) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+
+					peripheralSettings.areas[data.areaId] = removedArea
+
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+	async updatePeripheralArea(data: {
+		bridgeId: string
+		peripheralId: string
+		areaId: string
+		update: Partial<PeripheralArea>
+	}): Promise<UndoableResult> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		let orgArea: PeripheralArea | undefined
+
+		const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		if (peripheralSettings) {
+			orgArea = deepClone(peripheralSettings.areas[data.areaId])
+
+			peripheralSettings.areas[data.areaId] = {
+				...peripheralSettings.areas[data.areaId],
+				...data.update,
+			}
+
+			this.storage.updateProject(project)
+		}
+
+		return {
+			undo: async () => {
+				if (orgArea) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+
+					peripheralSettings.areas[data.areaId] = orgArea
+
 					this.storage.updateProject(project)
 				}
 			},

@@ -6,7 +6,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
-import { PeripheralStatus } from '../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
@@ -190,6 +190,13 @@ export interface IPCServerMethods {
 	createMissingMapping: (data: { rundownId: string; mappingId: string }) => Promise<unknown>
 
 	addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<unknown>
+	removePeripheralArea(data: { bridgeId: string; peripheralId: string; areaId: string }): Promise<unknown>
+	updatePeripheralArea(data: {
+		bridgeId: string
+		peripheralId: string
+		areaId: string
+		update: Partial<PeripheralArea>
+	}): Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

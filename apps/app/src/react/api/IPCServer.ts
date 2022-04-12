@@ -4,6 +4,7 @@ import { Group } from '../../models/rundown/Group'
 import { Project } from '../../models/project/Project'
 import { Part } from '../../models/rundown/Part'
 import { ActiveTrigger, Trigger } from '../../models/rundown/Trigger'
+import { PeripheralArea } from '../../models/project/Peripheral'
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements IPCServerMethods {
@@ -235,5 +236,16 @@ export class IPCServer implements IPCServerMethods {
 
 	addPeripheralArea(data: { peripheralId: string }): Promise<unknown> {
 		return this.invokeServerMethod('addPeripheralArea', data)
+	}
+	removePeripheralArea(data: { bridgeId: string; peripheralId: string; areaId: string }): Promise<unknown> {
+		return this.invokeServerMethod('removePeripheralArea', data)
+	}
+	updatePeripheralArea(data: {
+		bridgeId: string
+		peripheralId: string
+		areaId: string
+		update: Partial<PeripheralArea>
+	}): Promise<unknown> {
+		return this.invokeServerMethod('updatePeripheralArea', data)
 	}
 }

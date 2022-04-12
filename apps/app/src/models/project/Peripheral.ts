@@ -21,5 +21,6 @@ export interface PeripheralSettings {
 }
 
 export interface PeripheralArea {
+	name: string
 	identifiers: string[]
 }
