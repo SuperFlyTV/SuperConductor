@@ -39,6 +39,7 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
+import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 
 export const GroupView: React.FC<{
@@ -77,7 +78,7 @@ export const GroupView: React.FC<{
 	useEffect(() => {
 		playheadData.current = group.preparedPlayData
 
-		// console.log('playheadData', playheadData.current)
+		// console
 
 		const activeParts0: { [partId: string]: true } = {}
 
@@ -121,7 +122,6 @@ export const GroupView: React.FC<{
 
 			if (stopPlayingRef.current) {
 				// Stop the group, so that the "stop"-buttons reflect the correct state:
-				// console.log('Auto-stopping group', group.id)
 				ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
 				stopPlayingRef.current = false
 			}
@@ -358,6 +358,11 @@ export const GroupView: React.FC<{
 		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
+	// Pause button
+	const handlePause = useCallback(() => {
+		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [group.id, handleError, ipcServer, rundownId])
+
 	// Step down button:
 	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
 	const nextPartExists = nextPartIndex in group.parts
@@ -531,6 +536,7 @@ export const GroupView: React.FC<{
 						<div className="playback">
 							<StopBtn className="part__stop" groupId={group.id} onClick={handleStop} />
 							<PlayBtn groupId={group.id} onClick={handlePlay} />
+							<PauseBtn groupId={group.id} onClick={handlePause} />
 							<Button
 								variant="contained"
 								size="small"

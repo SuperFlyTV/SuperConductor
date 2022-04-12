@@ -39,7 +39,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 const ENABLE_WHY_DID_YOU_RENDER = false
 
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
-	console.log('Why-did-you-render-endabled')
+	console.log('Why-did-you-render-enabled')
 	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
 	whyDidYouRender(React, {

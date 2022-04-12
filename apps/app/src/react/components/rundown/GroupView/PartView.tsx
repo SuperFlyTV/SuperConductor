@@ -33,6 +33,7 @@ import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
+import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 
 /**
@@ -438,6 +439,9 @@ export const PartView: React.FC<{
 	const handleStart = useCallback(() => {
 		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
+	const handlePause = useCallback(() => {
+		ipcServer.pausePart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
+	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
 
 	// Stop button:
 	const handleStop = useCallback(() => {
@@ -781,6 +785,7 @@ export const PartView: React.FC<{
 				<div className="part__meta__right">
 					<StopBtn className="part__stop" groupId={parentGroupId} part={part} onClick={handleStop} />
 					<PlayBtn className="part__play" groupId={parentGroupId} part={part} onClick={handleStart} />
+					<PauseBtn className="part__pause" groupId={parentGroupId} part={part} onClick={handlePause} />
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>

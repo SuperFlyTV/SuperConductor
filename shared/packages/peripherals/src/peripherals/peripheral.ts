@@ -42,8 +42,6 @@ export abstract class Peripheral extends EventEmitter {
 			delete this.trackers[identifier]
 		}
 
-		// console.log('setKeyDisplay', JSON.stringify(keyDisplay))
-
 		if (Array.isArray(keyDisplay)) {
 			// It is a timeline, which means that we should resolve it and track it.
 
@@ -124,10 +122,6 @@ class TimelineTracker {
 					changedAnything: { changedAnything: false },
 			  }
 
-		// console.log('state', genericState.layers[this.LAYER].instance)
-
-		// console.log('currentState', currentState)
-
 		if (!_.isEqual(currentState, this.currentState)) {
 			this.currentState = currentState
 
@@ -156,7 +150,6 @@ class TimelineTracker {
 		}
 
 		const timeUntilNextTime = nextResolveTime - Date.now()
-		// console.log('timeUntilNextTime', timeUntilNextTime)
 
 		this.timeout = setTimeout(() => {
 			this.update(nextResolveTime + 1)

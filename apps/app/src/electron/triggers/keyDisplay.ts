@@ -4,6 +4,7 @@ import { StorageHandler } from '../storageHandler'
 import { Part } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../timeline'
 import { Group } from '../../models/rundown/Group'
+import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 
 export function idleKeyDisplay(_storage: StorageHandler): KeyDisplayTimeline {
 	return [
@@ -171,46 +172,51 @@ export function _getKeyDisplay(
 		// playout-content, we fill it with key-display contents, that are to be sent to the keys.
 		// That way the peripherals will stay in sync with the playout and GUI.
 
-		const tl = getTimelineForGroup(action.group, action.group.preparedPlayData, (part: Part, parentId: string) => {
-			// return content for the part
+		const tl = getTimelineForGroup(
+			action.group,
+			action.group.preparedPlayData,
+			(playingPart: GroupPreparedPlayDataPart, parentId: string) => {
+				// return content for the part
 
-			// if (action.part.id !== part.id) return []
+				const part: Part = playingPart.part
+				// if (action.part.id !== part.id) return []
 
-			const content = labels.playing({
-				group: action.group,
-				part: part,
-				action: action,
-			})
+				const content = labels.playing({
+					group: action.group,
+					part: part,
+					action: action,
+				})
 
-			if (!content) return []
+				if (!content) return []
 
-			const id = `playing_${parentId}`
-			return [
-				{
-					id: id,
-					layer: 'KEY',
-					priority: 0, // so it will show the one which ends first, first
-					enable: {
-						start: `#${parentId}.start`,
-						end: `#${parentId}.end`,
-					},
-					content: content,
-					keyframes: [
-						{
-							id: `${id}_kf_end`,
-							enable: {
-								// Notify when it is 5 seconds left
-								start: `#${parentId}.end - 5000`,
-								end: `#${parentId}.end`,
-							},
-							content: {
-								attentionLevel: AttentionLevel.NOTIFY,
-							},
+				const id = `playing_${parentId}`
+				return [
+					{
+						id: id,
+						layer: 'KEY',
+						priority: 0, // so it will show the one which ends first, first
+						enable: {
+							start: `#${parentId}.start`,
+							end: `#${parentId}.end`,
 						},
-					],
-				},
-			]
-		}) as unknown as KeyDisplayTimeline
+						content: content,
+						keyframes: [
+							{
+								id: `${id}_kf_end`,
+								enable: {
+									// Notify when it is 5 seconds left
+									start: `#${parentId}.end - 5000`,
+									end: `#${parentId}.end`,
+								},
+								content: {
+									attentionLevel: AttentionLevel.NOTIFY,
+								},
+							},
+						],
+					},
+				]
+			}
+		) as unknown as KeyDisplayTimeline
 
 		if (tl) keyTimeline.push(...tl)
 	}

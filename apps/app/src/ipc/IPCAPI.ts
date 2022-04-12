@@ -65,7 +65,8 @@ export interface IPCServerMethods {
 	triggerSendRundown: (data: { rundownId: string }) => Promise<unknown>
 
 	acknowledgeSeenVersion: () => Promise<unknown>
-	playPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
+	playPart: (data: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => Promise<unknown>
+	pausePart: (data: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => Promise<unknown>
 	stopPart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	setPartTrigger: (data: {
 		rundownId: string
@@ -84,6 +85,7 @@ export interface IPCServerMethods {
 	togglePartLock: (data: { rundownId: string; groupId: string; partId: string; value: boolean }) => Promise<unknown>
 	stopGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	playGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
+	pauseGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	playNext: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	playPrev: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 	newPart: (data: {

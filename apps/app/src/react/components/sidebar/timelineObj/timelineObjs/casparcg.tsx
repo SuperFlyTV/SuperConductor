@@ -137,7 +137,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div>
 				<div className="setting">
 					<BooleanInput
-						label="Looping"
+						label="Looping content"
 						currentValue={obj.content.loop}
 						onChange={(v) => {
 							obj.content.loop = v
