@@ -1,5 +1,5 @@
 import { literal } from '@shared/lib'
-import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell, screen } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
 // import installExtension, { REACT_DEVELOPER_TOOLS, MOBX_DEVTOOLS } from 'electron-devtools-installer'
@@ -29,7 +29,18 @@ const createWindow = (): void => {
 	if (appData.windowPosition.x !== undefined) {
 		// Hack to make it work on Windows with multi-dpi screens
 		// Ref: https://github.com/electron/electron/pull/10972
-		win.setBounds(appData.windowPosition)
+		const bestDisplay = screen.getDisplayMatching(appData.windowPosition)
+		const windowBounds = {
+			x: Math.max(appData.windowPosition.x, bestDisplay.workArea.x),
+			y: Math.max(appData.windowPosition.y, bestDisplay.workArea.y),
+			width: Math.min(appData.windowPosition.width, bestDisplay.workArea.width),
+			height: Math.min(appData.windowPosition.height, bestDisplay.workArea.height),
+		}
+		win.setBounds(windowBounds)
+	}
+
+	if (appData.windowPosition.maximized) {
+		win.maximize()
 	}
 
 	tpt.initWindow(win)
@@ -132,10 +143,18 @@ const createWindow = (): void => {
 
 		const appData = tpt.storage.getAppData()
 
-		appData.windowPosition.x = newBounds.x
-		appData.windowPosition.y = newBounds.y
-		appData.windowPosition.width = newBounds.width
-		appData.windowPosition.height = newBounds.height
+		const maximized = win.isMaximized()
+		if (maximized) {
+			// don't overwrite the X, Y, Width, Height, so that we can return to this size and position, once the
+			// user unmaximizes
+			appData.windowPosition.maximized = maximized
+		} else {
+			appData.windowPosition.x = newBounds.x
+			appData.windowPosition.y = newBounds.y
+			appData.windowPosition.width = newBounds.width
+			appData.windowPosition.height = newBounds.height
+			appData.windowPosition.maximized = maximized
+		}
 
 		tpt.storage.updateAppData(appData)
 	}
@@ -143,6 +162,12 @@ const createWindow = (): void => {
 		updateSizeAndPosition()
 	})
 	win.on('moved', () => {
+		updateSizeAndPosition()
+	})
+	win.on('maximize', () => {
+		updateSizeAndPosition()
+	})
+	win.on('unmaximize', () => {
 		updateSizeAndPosition()
 	})
 

@@ -40,6 +40,7 @@ export class TimedPlayerThingy {
 				x: undefined,
 				width: 1200,
 				height: 600,
+				maximized: false,
 			},
 			CURRENT_VERSION
 		)

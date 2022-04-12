@@ -30,8 +30,6 @@ export abstract class Peripheral extends EventEmitter {
 			delete this.trackers[identifier]
 		}
 
-		// console.log('setKeyDisplay', JSON.stringify(keyDisplay))
-
 		if (Array.isArray(keyDisplay)) {
 			// It is a timeline, which means that we should resolve it and track it.
 

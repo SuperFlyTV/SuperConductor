@@ -1,4 +1,5 @@
-export function parseDuration(str: string): number | undefined {
+export function parseDuration(str: string): number | null | undefined {
+	if (str === '') return null
 	if (!str) return undefined
 
 	{
@@ -83,7 +84,8 @@ function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: 
 	return { h, m: min, s: sec, ms }
 }
 
-export function formatDuration(inputMs: number | undefined): string {
+export function formatDuration(inputMs: number | null | undefined): string {
+	if (inputMs === null) return ''
 	if (inputMs === undefined) return ''
 
 	const { h, m: min, s: sec, ms } = millisecondsToTime(inputMs)
@@ -125,6 +127,7 @@ export function formatDurationLabeled(inputMs: number | undefined): string {
 }
 
 // Unit tests:
+assert(parseDuration(''), null)
 assert(parseDuration('asdf'), undefined)
 assert(parseDuration('00:00:00.000'), 0)
 assert(parseDuration('1'), 1000)
@@ -155,6 +158,7 @@ assert(formatDuration(1005), '1.005')
 assert(formatDuration(61000), '1:01')
 assert(formatDuration(3661000), '1:01:01')
 assert(formatDuration(3661500), '1:01:01.5')
+assert(formatDuration(null), '')
 
 assert(formatDuration(parseDuration('5')), '5')
 assert(formatDuration(parseDuration('10')), '10')

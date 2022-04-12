@@ -12,7 +12,7 @@ import {
 	getNextPartIndex,
 	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
-	updateGroupPlaying,
+	updateGroupPlayingParts,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
@@ -27,7 +27,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
 import { deepClone } from '@shared/lib'
-import { TimelineObj } from '../models/rundown/TimelineObj'
+import { TimelineObj, TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
@@ -119,20 +119,34 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
-		const group = findGroup(rundown, arg.groupId)
-		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}" ("${rundown.name}").`)
+		return this.getGroupOfRundown(rundown, arg.groupId)
+	}
+	private getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
+		const group = findGroup(rundown, groupId)
+		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
+
 	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-
-		const part = findPart(group, arg.partId)
-		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId} ("${group.name}").`)
+		return this.getPartOfGroup(rundown, group, arg.partId)
+	}
+	private getPartOfGroup(
+		rundown: Rundown,
+		group: Group,
+		partId: string
+	): {
+		rundown: Rundown
+		group: Group
+		part: Part
+	} {
+		const part = findPart(group, partId)
+		if (!part) throw new Error(`Part ${partId} not found in group ${group.id} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
@@ -182,8 +196,31 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.storage.updateAppData(appData)
 	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 
+		this._playPart(group, part, now)
+
+		this._updateTimeline(group)
+		this.storage.updateRundown(arg.rundownId, rundown)
+	}
+	private async playParts(rundownId: string, groupId: string, partIds: string[]): Promise<void> {
+		const now = Date.now()
+		const { rundown, group } = this.getGroup({
+			rundownId,
+			groupId,
+		})
+		for (const partId of partIds) {
+			const { part } = this.getPartOfGroup(rundown, group, partId)
+
+			this._playPart(group, part, now)
+		}
+
+		this._updateTimeline(group)
+
+		this.storage.updateRundown(rundownId, rundown)
+	}
+	private _playPart(group: Group, part: Part, now: number): void {
 		if (part.disabled) {
 			return
 		}
@@ -194,12 +231,78 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 		if (!group.playout.playingParts) group.playout.playingParts = {}
 		// Start playing this Part:
-		group.playout.playingParts[arg.partId] = {
-			startTime: Date.now(),
+		group.playout.playingParts[part.id] = {
+			startTime: now,
+			pauseTime: undefined,
 		}
+	}
+	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
+		const now = Date.now()
+		const { rundown, group, part } = this.getPart(arg)
+		updateGroupPlayingParts(group)
+		this._pausePart(group, part, arg.time, now)
 
 		this._updateTimeline(group)
 		this.storage.updateRundown(arg.rundownId, rundown)
+	}
+	async pauseParts(rundownId: string, groupId: string, partIds: string[], time?: number): Promise<void> {
+		const now = Date.now()
+		const { rundown, group } = this.getGroup({
+			rundownId,
+			groupId,
+		})
+		updateGroupPlayingParts(group)
+		for (const partId of partIds) {
+			const { part } = this.getPartOfGroup(rundown, group, partId)
+
+			this._pausePart(group, part, time, now)
+
+			// group.preparedPlayData
+		}
+
+		this._updateTimeline(group)
+		this.storage.updateRundown(rundownId, rundown)
+	}
+	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
+		if (part.disabled) {
+			return
+		}
+
+		if (!group.playout.playingParts) group.playout.playingParts = {}
+
+		if (group.oneAtATime) {
+			// If any other parts are playing, they should be stopped:
+			for (const partId of Object.keys(group.playout.playingParts)) {
+				if (partId !== part.id) {
+					delete group.playout.playingParts[partId]
+				}
+			}
+		}
+
+		// Handle this Part:
+		const playingPart = group.playout.playingParts[part.id]
+		if (playingPart) {
+			if (playingPart.pauseTime === undefined) {
+				// The part is playing, so it should be paused:
+
+				playingPart.pauseTime =
+					pauseTime ??
+					// If a specific pauseTime not specified, pause at the current time:
+					now - playingPart.startTime
+			} else {
+				// The part is paused, so it should be resumed:
+
+				// playingPart.startTime = now - playingPart.pauseTime
+				playingPart.startTime = now - playingPart.pauseTime
+				playingPart.pauseTime = undefined
+			}
+		} else {
+			// Part is not playing, cue (pause) it at the time specified:
+			group.playout.playingParts[part.id] = {
+				startTime: Date.now(),
+				pauseTime: pauseTime ?? 0,
+			}
+		}
 	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
@@ -273,7 +376,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = part.loop
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		part.loop = arg.value
 		this._updateTimeline(group)
 
@@ -283,7 +386,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group, part } = this.getPart(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				part.loop = originalValue
 				this._updateTimeline(group)
 
@@ -306,7 +409,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = part.disabled
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		part.disabled = arg.value
 		this._updateTimeline(group)
 
@@ -316,7 +419,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group, part } = this.getPart(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				part.disabled = originalValue
 				this._updateTimeline(group)
 
@@ -373,8 +476,51 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
-			for (const part of group.parts) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			this.playParts(
+				arg.rundownId,
+				arg.groupId,
+				group.parts.map((part) => part.id)
+			).catch(console.error)
+		}
+	}
+	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled) {
+			return
+		}
+
+		updateGroupPlayingParts(group)
+
+		if (group.oneAtATime) {
+			let partId: string | undefined
+
+			const playingPartId = Object.keys(group.playout.playingParts)[0] as string | undefined
+			if (playingPartId) {
+				// Cue / Pause / resume the currently playing part
+				partId = playingPartId
+				// Cue / Pause / resume the first non-disabled part
+			} else {
+				const firstPart = group.parts.find((p) => !p.disabled)
+				if (firstPart) partId = firstPart.id
+				else partId = undefined
+			}
+
+			if (partId) {
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(console.error)
+			}
+		} else {
+			const playingPartIds = Object.keys(group.playout.playingParts)
+			if (playingPartIds.length === 0) {
+				// Cue all parts
+				this.pauseParts(
+					arg.rundownId,
+					arg.groupId,
+					group.parts.map((part) => part.id)
+				).catch(console.error)
+			} else {
+				// Pause / resume all parts (disabled parts won't get played)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(console.error)
 			}
 		}
 	}
@@ -700,13 +846,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			if (fromGroup.id === toGroup.id) {
 				// Intra-group move.
 
-				updateGroupPlaying(toGroup)
+				updateGroupPlayingParts(toGroup)
 				if (movedPartIsPlaying && toGroup.oneAtATime) {
 					// Update the group's playhead, so that the currently playing
 					// part continues to play as if nothing happened:
 					toGroup.playout.playingParts = {
 						[arg.from.partId]: {
 							startTime: movedPartIsPlaying.partStartTime,
+							pauseTime: movedPartIsPlaying.partPauseTime,
 						},
 					}
 				}
@@ -1142,6 +1289,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,
 			obj,
+			resolved: { instances: [] }, // set later
 		}
 
 		part.timeline.push(timelineObj)
@@ -1175,7 +1323,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = group.loop
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.loop = arg.value
 		this._updateTimeline(group)
 
@@ -1185,7 +1333,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.loop = originalValue
 				this._updateTimeline(group)
 
@@ -1207,7 +1355,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = group.autoPlay
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.autoPlay = arg.value
 		this._updateTimeline(group)
 
@@ -1217,7 +1365,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.autoPlay = originalValue
 				this._updateTimeline(group)
 
@@ -1239,7 +1387,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = group.oneAtATime
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.oneAtATime = arg.value
 		this._updateTimeline(group)
 
@@ -1249,7 +1397,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.oneAtATime = originalValue
 				this._updateTimeline(group)
 
@@ -1271,7 +1419,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalValue = group.disabled
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.disabled = arg.value
 		this._updateTimeline(group)
 
@@ -1281,7 +1429,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.disabled = originalValue
 				this._updateTimeline(group)
 
@@ -1539,7 +1687,23 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+
+		for (const o of part.timeline) {
+			const resolvedObj = resolvedTimeline.objects[o.obj.id]
+			if (resolvedObj) {
+				o.resolved = {
+					instances: resolvedObj.resolved.instances.map<TimelineObjResolvedInstance>((i) => ({
+						start: i.start,
+						end: i.end,
+					})),
+				}
+			} else {
+				o.resolved = {
+					instances: [],
+				}
+			}
+		}
 
 		part.resolved = {
 			duration: maxDuration,

@@ -86,15 +86,27 @@ export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean =>
 	return false
 }
 
-export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimeline) => {
+export function getResolvedTimelineTotalDuration(resolvedTimeline: ResolvedTimeline, filterInfinites: true): number
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: false
+): number | null
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: boolean
+): number | null {
 	let maxDuration = 0
+	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.end) {
+			if (instance.end === null) {
+				isInfinite = true
+			} else if (instance.end) {
 				maxDuration = Math.max(maxDuration, instance.end)
 			}
 		})
 	})
+	if (isInfinite && !filterInfinites) return null
 	return maxDuration
 }
 
@@ -133,7 +145,7 @@ export function allowMovingItemIntoGroup(
  * Update Group playing properties, so that they reflect the current playing status
  * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
  */
-export function updateGroupPlaying(group: Group) {
+export function updateGroupPlayingParts(group: Group) {
 	const now = Date.now()
 	const playhead = getGroupPlayData(group.preparedPlayData, now)
 
@@ -141,6 +153,7 @@ export function updateGroupPlaying(group: Group) {
 	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
 		group.playout.playingParts[partId] = {
 			startTime: playingPart.partStartTime,
+			pauseTime: playingPart.partPauseTime,
 		}
 	}
 }

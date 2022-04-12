@@ -56,7 +56,7 @@ export class BridgeHandler {
 
 		this.server.on('close', () => {
 			// todo: handle server close?
-			console.log('Server closed')
+			console.error('Server closed')
 		})
 
 		this.storage.on('project', (project: Project) => {
@@ -76,13 +76,11 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				// console.log('Setting up internal bridge')
 				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
 			if (this.internalBridge) {
-				// console.log('Destroying internal bridge')
 				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
 				const bridgeIndex = this.connectedBridges.findIndex(
 					(connectedBridge) => connectedBridge === this.internalBridge
@@ -127,7 +125,6 @@ export class BridgeHandler {
 							// remove bridge:
 							delete this.outgoingBridges[bridge.id]
 						})
-						// console.log('Connecting to bridge', bridge.id, connection.connectionId)
 						this.outgoingBridges[bridge.id] = {
 							bridge,
 							connection,
@@ -432,8 +429,6 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	protected send(msg: BridgeAPI.FromTPT.Any) {
 		if (this.connection.connected) {
 			this.connection.send(msg)
-		} else {
-			// console.log('not sending, because not connected', msg.type)
 		}
 	}
 	protected getConnectionId(): number {

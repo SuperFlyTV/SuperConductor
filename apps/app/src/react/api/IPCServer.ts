@@ -32,6 +32,9 @@ export class IPCServer implements IPCServerMethods {
 	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('playPart', data)
 	}
+	pausePart(data: { rundownId: string; groupId: string; partId: string; pauseTime?: number }): Promise<void> {
+		return this.invokeServerMethod('pausePart', data)
+	}
 	stopPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		return this.invokeServerMethod('stopPart', data)
 	}
@@ -58,6 +61,9 @@ export class IPCServer implements IPCServerMethods {
 	}
 	playGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
 		return this.invokeServerMethod('playGroup', data)
+	}
+	pauseGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
+		return this.invokeServerMethod('pauseGroup', data)
 	}
 	playNext(data: { rundownId: string; groupId: string }): Promise<unknown> {
 		return this.invokeServerMethod('playNext', data)

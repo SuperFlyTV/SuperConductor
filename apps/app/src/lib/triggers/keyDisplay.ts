@@ -4,6 +4,7 @@ import { Action } from './action'
 import { Part } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../../electron/timeline'
 import { Group } from '../../models/rundown/Group'
+import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 
 /** Return a KeyDisplay for a button */
 export function getKeyDisplayForButtonActions(actionsOnButton: Action[] | undefined): KeyDisplayTimeline | KeyDisplay {
@@ -39,9 +40,16 @@ export function idleKeyDisplay(): KeyDisplayTimeline {
 	]
 }
 
-export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+function getLongestActionDuration(actions: Action[]): number | null {
 	if (actions.length === 0) throw new Error('Actions array is empty')
+	return actions.reduce((max: number | null, action) => {
+		if (action.part.resolved.duration === null || max === null) return null
+		return Math.max(max, action.part.resolved.duration)
+	}, 0)
+}
+
+export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+	const longestDuration = getLongestActionDuration(actions)
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
@@ -53,7 +61,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `▶${action0.part.name.slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -69,7 +77,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `▶${label.slice(-7)}`,
 				},
 				info: {
-					long: `#timeToEnd`,
+					long: longestDuration === null ? '-' : `#timeToEnd`,
 				},
 			}
 		},
@@ -77,8 +85,7 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 }
 
 export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
-	if (actions.length === 0) throw new Error('Actions array is empty')
+	const longestDuration = getLongestActionDuration(actions)
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
@@ -90,7 +97,7 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `⏹${getLabel(actions, action0.part).slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? 'Infinite' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -105,14 +112,14 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `${data.part.name}\n#timeToEnd`,
+					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
 				},
 			}
 		},
 	})
 }
 export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
-	const longestDuration: number = actions.reduce((max, action) => Math.max(max, action.part.resolved.duration), 0)
+	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
@@ -125,7 +132,7 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 				short: `▶${action0.part.name.slice(-7)}`,
 			},
 			info: {
-				long: `#duration(${longestDuration})`,
+				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
@@ -140,7 +147,7 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 					short: `⏹${label.slice(-7)}`,
 				},
 				info: {
-					long: `${data.part.name}\n#timeToEnd`,
+					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
 				},
 			}
 		},
@@ -186,46 +193,51 @@ export function _getKeyDisplay(
 		// playout-content, we fill it with key-display contents, that are to be sent to the keys.
 		// That way the peripherals will stay in sync with the playout and GUI.
 
-		const tl = getTimelineForGroup(action.group, action.group.preparedPlayData, (part: Part, parentId: string) => {
-			// return content for the part
+		const tl = getTimelineForGroup(
+			action.group,
+			action.group.preparedPlayData,
+			(playingPart: GroupPreparedPlayDataPart, parentId: string) => {
+				// return content for the part
 
-			// if (action.part.id !== part.id) return []
+				const part: Part = playingPart.part
+				// if (action.part.id !== part.id) return []
 
-			const content = labels.playing({
-				group: action.group,
-				part: part,
-				action: action,
-			})
+				const content = labels.playing({
+					group: action.group,
+					part: part,
+					action: action,
+				})
 
-			if (!content) return []
+				if (!content) return []
 
-			const id = `playing_${parentId}`
-			return [
-				{
-					id: id,
-					layer: 'KEY',
-					priority: 0, // so it will show the one which ends first, first
-					enable: {
-						start: `#${parentId}.start`,
-						end: `#${parentId}.end`,
-					},
-					content: content,
-					keyframes: [
-						{
-							id: `${id}_kf_end`,
-							enable: {
-								// Notify when it is 5 seconds left
-								start: `#${parentId}.end - 5000`,
-								end: `#${parentId}.end`,
-							},
-							content: {
-								attentionLevel: AttentionLevel.NOTIFY,
-							},
+				const id = `playing_${parentId}`
+				return [
+					{
+						id: id,
+						layer: 'KEY',
+						priority: 0, // so it will show the one which ends first, first
+						enable: {
+							start: `#${parentId}.start`,
+							end: `#${parentId}.end`,
 						},
-					],
-				},
-			]
-		}) as unknown as KeyDisplayTimeline
+						content: content,
+						keyframes: [
+							{
+								id: `${id}_kf_end`,
+								enable: {
+									// Notify when it is 5 seconds left
+									start: `#${parentId}.end - 5000`,
+									end: `#${parentId}.end`,
+								},
+								content: {
+									attentionLevel: AttentionLevel.NOTIFY,
+								},
+							},
+						],
+					},
+				]
+			}
+		) as unknown as KeyDisplayTimeline
 
 		if (tl) keyTimeline.push(...tl)
 	}

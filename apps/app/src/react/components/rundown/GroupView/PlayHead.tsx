@@ -7,27 +7,28 @@ import { useMemoComputedValue } from '../../../mobx/lib'
 type PropsType = {
 	groupId: string
 	part: Part
+	partViewDuration: number
 }
 
 export const PlayHead = observer(function PlayHead(props: PropsType) {
-	const percentage = useMemoComputedValue(() => {
+	const percentage: number | null = useMemoComputedValue(() => {
 		const playhead = store.groupPlayDataStore.groups.get(props.groupId)?.playheads[props.part.id]
 
-		if (!playhead) {
-			return null
+		if (!playhead) return null
+		if (!props.partViewDuration) {
+			// The part is infinitely long
+			if (playhead.partPauseTime !== undefined) return 0
+			else return 100
 		}
 
-		const playheadTime = playhead.playheadTime
-		const duration = props.part.resolved.duration
-		return (playheadTime / duration) * 100 + '%'
-	}, [props.groupId, props.part.id, props.part.resolved.duration])
-
+		return Math.min(1, playhead.playheadTime / props.partViewDuration) * 100
+	}, [props.groupId, props.part.id, props.partViewDuration])
 	if (percentage === null) return null
 
 	return (
 		<div className="playHead">
-			<div className="shade" style={{ width: percentage }}></div>
-			<div className="line" style={{ left: percentage }}></div>
+			<div className="shade" style={{ right: `${100 - percentage}%` }}></div>
+			<div className="line" style={{ left: `${percentage}%` }}></div>
 		</div>
 	)
 })

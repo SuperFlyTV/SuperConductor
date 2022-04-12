@@ -12,6 +12,6 @@ export type Part = {
 	triggers: Trigger[]
 
 	resolved: {
-		duration: number
+		duration: number | null // null means infinite
 	}
 }

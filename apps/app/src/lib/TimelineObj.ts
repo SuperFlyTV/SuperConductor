@@ -4,10 +4,13 @@ import {
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
 	TimelineContentTypeOBS,
+	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { assertNever, parseMs } from '@shared/lib'
+import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 
 export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	let label: string = obj.id
@@ -120,5 +123,67 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		label,
 		contentTypeClassNames,
 		parsedDuration,
+	}
+}
+
+/** Prepare timelineObject for the playout timeline.
+ * Modifies the provided object
+ */
+export function modifyTimelineObjectForPlayout(
+	obj: TSRTimelineObj,
+	playingPart: GroupPreparedPlayDataPart,
+	orgTimelineObj: TimelineObj
+): void {
+	let pauseTime = 0
+	let isPaused = false
+	if (playingPart.pauseTime !== undefined) {
+		// is paused
+
+		// Convert the timing of the timeline object to a infinite, paused object:
+
+		isPaused = true
+		pauseTime = playingPart.pauseTime
+
+		// Check if the object exists at the time of pauseTime:
+		let existsAtPauseTime = false
+		for (const instance of orgTimelineObj.resolved.instances) {
+			if (instance.start <= pauseTime && (instance.end ?? Infinity) >= pauseTime) {
+				existsAtPauseTime = true
+				break
+			}
+		}
+
+		if (existsAtPauseTime) {
+			obj.enable = { start: 0 }
+		} else {
+			obj.enable = { while: 0 }
+		}
+	}
+
+	if (obj.content.deviceType === DeviceType.CASPARCG) {
+		if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
+			if (isPaused) {
+				obj.content.pauseTime = playingPart.startTime + pauseTime
+				obj.content.playing = false
+			}
+		}
+	} else if (obj.content.deviceType === DeviceType.PHAROS) {
+		if (obj.content.type === TimelineContentTypePharos.TIMELINE) {
+			if (isPaused) {
+				obj.content.pause = true
+			}
+		}
+	} else if (obj.content.deviceType === DeviceType.QUANTEL) {
+		if (isPaused) {
+			obj.content.pauseTime = playingPart.startTime + pauseTime
+			obj.content.playing = false
+		}
+	} else if (obj.content.deviceType === DeviceType.VMIX) {
+		if (obj.content.type === TimelineContentTypeVMix.INPUT) {
+			if (isPaused) {
+				obj.content.playing = false
+				// obj.content.pauseTime = playingPart.startTime - pauseTime
+			}
+		}
 	}
 }
