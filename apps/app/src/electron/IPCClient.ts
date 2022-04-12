@@ -2,7 +2,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { BrowserWindow } from 'electron'
 import { IPCClientMethods } from '../ipc/IPCAPI'
 import { AppData } from '../models/App/AppData'
@@ -27,7 +27,7 @@ export class IPCClient implements IPCClientMethods {
 	updateBridgeStatus(id: string, status: BridgeStatus | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateBridgeStatus', id, status)
 	}
-	updatePeripheral(peripheralId: string, peripheral: Peripheral | null): void {
+	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updatePeripheral', peripheralId, peripheral)
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {

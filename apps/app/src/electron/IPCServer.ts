@@ -1513,6 +1513,27 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 
+	async addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<UndoableResult> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		bridge.peripheralSettings[data.peripheralId]
+
+		asdfasdf
+
+		return {
+			undo: async () => {
+				if (newLayerId) {
+					const project = this.getProject()
+					delete project.mappings[newLayerId]
+					this.storage.updateProject(project)
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+
 	private _updatePart(part: Part) {
 		const resolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),

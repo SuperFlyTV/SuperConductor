@@ -1,6 +1,6 @@
 import { PeripheralInfo } from '@shared/api'
 
-export interface Peripheral {
+export interface PeripheralStatus {
 	id: string
 	bridgeId: string
 
@@ -11,4 +11,15 @@ export interface Peripheral {
 		/** Timestamp */
 		lastConnected: number
 	}
+}
+export interface PeripheralSettings {
+	// overrideName?: string
+
+	areas: {
+		[areaId: string]: PeripheralArea
+	}
+}
+
+export interface PeripheralArea {
+	identifiers: string[]
 }

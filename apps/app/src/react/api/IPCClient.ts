@@ -1,7 +1,7 @@
 import { IPCClientMethods } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
-import { Peripheral } from '../../models/project/Peripheral'
+import { PeripheralStatus } from '../../models/project/Peripheral'
 import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
@@ -17,7 +17,7 @@ export class IPCClient implements IPCClientMethods {
 			updateRundown?: (fileName: string, rundown: Rundown) => void
 			updateResources?: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
-			updatePeripheral?: (peripheralId: string, peripheral: Peripheral | null) => void
+			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
@@ -51,7 +51,7 @@ export class IPCClient implements IPCClientMethods {
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
 		this.callbacks.updateBridgeStatus?.(id, bridgeStatus)
 	}
-	updatePeripheral(peripheralId: string, peripheral: Peripheral | null): void {
+	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
 		this.callbacks.updatePeripheral?.(peripheralId, peripheral)
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {

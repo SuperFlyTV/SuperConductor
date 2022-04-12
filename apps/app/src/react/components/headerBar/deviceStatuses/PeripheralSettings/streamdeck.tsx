@@ -5,7 +5,7 @@ import { Button } from '@mui/material'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo_StreamDeck, AttentionLevel } from '@shared/api'
 import { compact } from '@shared/lib'
 import { ActiveTriggers } from '../../../../../models/rundown/Trigger'
-import { Peripheral } from '../../../../../models/project/Peripheral'
+import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { Rundown } from '../../../../../models/rundown/Rundown'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
@@ -13,15 +13,22 @@ import { useMemoComputedObject } from '../../../../mobx/lib'
 import { Action, getAllActionsInRundowns } from '../../../../../lib/triggers/action'
 import { getKeyDisplayForButtonActions } from '../../../../../lib/triggers/keyDisplay'
 import { TimelineDisplay } from './TimelineDisplay'
+import { IPCServerContext } from 'src/react/contexts/IPCServer'
 
 export const StreamdeckSettings: React.FC<{
 	peripheralId: string
-	peripheral: Peripheral
+	peripheral: PeripheralStatus
 }> = observer(function StreamdeckSettings({ peripheralId, peripheral }) {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
 	// const ipcServer = useContext(IPCServerContext)
 	if (peripheral.info.gui.type !== 'streamdeck') throw new Error('Wrong type, expected "streamdeck"')
 	const gui: PeripheralInfo_StreamDeck = peripheral.info.gui
+
+	const createNewArea = useCallback(() => {
+		serverAPI.addPeripheralArea({ peripheralId }).catch(handleError)
+	}, [peripheralId])
 
 	const allButtonActions = useMemoComputedObject(() => {
 		const newButtonActions = new Map<string, Action[]>()
@@ -119,11 +126,11 @@ export const StreamdeckSettings: React.FC<{
 				})}
 			</div>
 
-			{/* <div>
+			<div>
 				<Button className="btn" variant="contained" onClick={() => createNewArea()}>
 					Create new button Area
 				</Button>
-			</div> */}
+			</div>
 		</div>
 	)
 })

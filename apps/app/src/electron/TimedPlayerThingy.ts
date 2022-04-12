@@ -13,7 +13,7 @@ import { ResourceAny } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 
@@ -52,7 +52,7 @@ export class TimedPlayerThingy {
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
-		this.session.on('peripheral', (peripheralId: string, peripheral: Peripheral | null) => {
+		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
 			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {

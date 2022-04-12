@@ -1,10 +1,10 @@
 import React from 'react'
-import { Peripheral } from '../../../../../models/project/Peripheral'
+import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { StreamdeckSettings } from './streamdeck'
 
 export const PeripheralSettings: React.FC<{
 	peripheralId: string
-	peripheral: Peripheral
+	peripheral: PeripheralStatus
 }> = ({ peripheralId, peripheral }) => {
 	return (
 		<div className="peripheral-settings">

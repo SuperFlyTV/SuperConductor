@@ -226,4 +226,8 @@ export class IPCServer implements IPCServerMethods {
 	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
 		return this.invokeServerMethod('createMissingMapping', data)
 	}
+
+	addPeripheralArea(data: { peripheralId: string }): Promise<unknown> {
+		return this.invokeServerMethod('addPeripheralArea', data)
+	}
 }

@@ -1,7 +1,7 @@
 import EventEmitter from 'events'
 import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { PeripheralInfo } from '@shared/api'
@@ -14,7 +14,7 @@ export class SessionHandler extends EventEmitter {
 	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
 
-	private peripherals: { [peripheralId: string]: Peripheral } = {}
+	private peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
 	/** Contains a collection of ALL triggers/keys/buttons on all Panels */
@@ -77,7 +77,7 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
-	getPeripheralStatus(bridgeId: string, deviceId: string): Peripheral | undefined {
+	getPeripheralStatus(bridgeId: string, deviceId: string): PeripheralStatus | undefined {
 		const peripheralId = `${bridgeId}-${deviceId}`
 
 		return this.peripherals[peripheralId]
@@ -85,9 +85,9 @@ export class SessionHandler extends EventEmitter {
 	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean) {
 		const peripheralId = `${bridgeId}-${deviceId}`
 
-		const existing: Peripheral | undefined = this.peripherals[peripheralId]
+		const existing: PeripheralStatus | undefined = this.peripherals[peripheralId]
 
-		const newDevice: Peripheral = {
+		const newDevice: PeripheralStatus = {
 			id: deviceId,
 			bridgeId: bridgeId,
 			info: info,

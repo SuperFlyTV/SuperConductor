@@ -6,7 +6,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
@@ -44,6 +44,7 @@ export const enum ActionDescription {
 	RenameRundown = 'rename rundown',
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
 	CreateMissingMapping = 'create missing layer',
+	AddPeripheralArea = 'Add button area',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -185,6 +186,8 @@ export interface IPCServerMethods {
 	isRundownPlaying: (data: { rundownId: string }) => Promise<unknown>
 
 	createMissingMapping: (data: { rundownId: string; mappingId: string }) => Promise<unknown>
+
+	addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<unknown>
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void
@@ -192,6 +195,6 @@ export interface IPCClientMethods {
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResources: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
-	updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) => void
+	updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
 }
