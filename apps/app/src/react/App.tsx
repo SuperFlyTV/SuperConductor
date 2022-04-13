@@ -131,7 +131,7 @@ export const App = observer(function App() {
 			// send the keys to the backend and unexpectedly trigger the action.
 			if (!triggers.isAnyoneListening()) {
 				// Send the currently pressed keys to backend, so that the server can execute triggers:
-				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
+				serverAPI.setKeyboardKeys({ activeKeys }).catch(handleError)
 			}
 		}
 		document.addEventListener('keydown', (e) => handleKey(e))

@@ -18,7 +18,7 @@ import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
-import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
@@ -38,14 +38,26 @@ import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
 import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
 
+type UndoableResult<T> = T extends void
+	? { undo: UndoFunction; description: ActionDescription }
+	: { undo: UndoFunction; description: ActionDescription; result: T }
+
 type UndoLedger = Action[]
 type UndoPointer = number
+type UndoFunction = () => Promise<void> | void
+type UndoableFunction = (...args: any[]) => Promise<UndoableResult<any>>
+interface Action {
+	description: ActionDescription
+	arguments: any[]
+	redo: UndoableFunction
+	undo: UndoFunction
+}
 
 type IPCServerEvents = {
 	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
 }
 
-function isUndoable(result: unknown): result is UndoableResult {
+function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
 		return false
 	}
@@ -61,8 +73,19 @@ function isUndoable(result: unknown): result is UndoableResult {
 	return true
 }
 
+type ConvertToServerSide<T> = {
+	[K in keyof T]: T[K] extends (...args: any[]) => any
+		? (
+				...args: Parameters<T[K]>
+		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
+		: T[K]
+}
+
 /** This class is used server-side, to handle requests from the client */
-export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>) implements IPCServerMethods {
+export class IPCServer
+	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
+	implements ConvertToServerSide<IPCServerMethods>
+{
 	private updateTimelineCache: UpdateTimelineCache = {}
 	private undoLedger: UndoLedger = []
 	private undoPointer: UndoPointer = -1
@@ -99,7 +122,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 							}
 							this.undoPointer = this.undoLedger.length - 1
 							this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
-							return result.result
+
+							// string represents "anything but undefined" here:
+							return (result as UndoableResult<string>).result
 						} else {
 							return result
 						}
@@ -187,8 +212,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
-	async setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
-		this.callbacks.setKeyboardKeys(activeKeys)
+	async setKeyboardKeys(data: { activeKeys: ActiveTrigger[] }): Promise<void> {
+		this.callbacks.setKeyboardKeys(data.activeKeys)
 	}
 
 	async acknowledgeSeenVersion(): Promise<void> {
@@ -325,11 +350,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		trigger: Trigger | null
 		triggerIndex: number | null
-	}): Promise<UndoableResult<string> | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const originalTriggers = deepClone(part.triggers)
@@ -360,7 +385,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				this.storage.updateRundown(arg.rundownId, rundown)
 			},
 			description: ActionDescription.SetPartTrigger,
-			// result: newPart.id,
 		}
 	}
 	async togglePartLoop(arg: {
@@ -368,11 +392,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const originalValue = part.loop
@@ -401,11 +425,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = part.disabled
@@ -434,7 +458,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult<void>> {
 		const { rundown, part } = this.getPart(arg)
 		const originalValue = part.locked
 
@@ -551,12 +575,19 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
 		}
 	}
+	// async newPart(arg: {
+	// 	rundownId: string
+	// 	/** The group to create the part into. If null; will create a "transparent group" */
+	// 	groupId: string | null
+	// 	name: string
+	// }): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
+
 		name: string
-	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | null> {
+	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -575,7 +606,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
 
 			if (group.locked) {
-				return null
+				return
 			}
 
 			group.parts.push(newPart)
@@ -623,11 +654,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		part: Part
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const partPreChange = deepClone(part)
@@ -669,11 +700,15 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: newGroup.id,
 		}
 	}
-	async updateGroup(arg: { rundownId: string; groupId: string; group: Group }): Promise<UndoableResult | null> {
+	async updateGroup(arg: {
+		rundownId: string
+		groupId: string
+		group: Group
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const groupPreChange = deepClone(group)
@@ -693,11 +728,15 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.UpdateGroup,
 		}
 	}
-	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult | null> {
+	async deletePart(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const deletedPartIndex = group.parts.findIndex((p) => p.id === arg.partId)
@@ -733,11 +772,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.DeletePart,
 		}
 	}
-	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult | null> {
+	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		// Stop the group (so that the updates are sent to TSR):
@@ -900,7 +939,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: toGroup,
 		}
 	}
-	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
+	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 
 		// Save the original position for use in undo.
@@ -930,11 +969,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -966,11 +1005,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1000,11 +1039,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1033,11 +1072,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1087,11 +1126,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1138,11 +1177,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		key: string
 		changedItemId: string
 		value: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1198,11 +1237,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		key: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1249,11 +1288,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		layerId: string | null
 		resourceId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const resource = this.session.getResource(arg.resourceId)
@@ -1315,11 +1354,15 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.AddResourceToTimeline,
 		}
 	}
-	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult | null> {
+	async toggleGroupLoop(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.loop
@@ -1347,11 +1390,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.autoPlay
@@ -1379,11 +1422,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.oneAtATime
@@ -1411,11 +1454,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.disabled
@@ -1443,7 +1486,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		const originalValue = group.collapsed
@@ -1463,7 +1506,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.ToggleGroupCollapse,
 		}
 	}
-	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 		const originalValue = group.locked
 
@@ -1488,7 +1531,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		this.storage.updateProject(data.project)
 	}
-	async newRundown(data: { name: string }): Promise<UndoableResult> {
+	async newRundown(data: { name: string }): Promise<UndoableResult<void>> {
 		this.storage.newRundown(data.name)
 
 		return {
@@ -1498,7 +1541,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.NewRundown,
 		}
 	}
-	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(data)
 
 		for (const group of rundown.groups) {
@@ -1515,7 +1558,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.DeleteRundown,
 		}
 	}
-	async openRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		await this.storage.openRundown(data.rundownId)
 
 		return {
@@ -1525,7 +1568,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.OpenRundown,
 		}
 	}
-	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async closeRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(data)
 		if (!rundown) {
 			throw new Error(`Rundown "${data.rundownId}" not found`)
@@ -1550,7 +1593,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
 		return this.storage.listRundownsInProject(data.projectId)
 	}
-	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult> {
+	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
 		const rundown = this.storage.getRundown(data.rundownId)
 		if (!rundown) {
 			throw new Error(`Rundown "${data.rundownId}" not found`)
@@ -1578,7 +1621,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		return false
 	}
-	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
+	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()
 		const rundown = this.storage.getRundown(data.rundownId)
 		if (!rundown) {
@@ -1662,7 +1705,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 	}
 
-	async addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<UndoableResult> {
+	async addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
@@ -1705,7 +1748,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		bridgeId: string
 		peripheralId: string
 		areaId: string
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
@@ -1744,7 +1787,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		peripheralId: string
 		areaId: string
 		update: Partial<PeripheralArea>
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)

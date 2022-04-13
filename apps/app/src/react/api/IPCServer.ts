@@ -1,251 +1,181 @@
 import { IPCServerMethods } from '../../ipc/IPCAPI'
-import { TimelineObj } from '../../models/rundown/TimelineObj'
-import { Group } from '../../models/rundown/Group'
-import { Project } from '../../models/project/Project'
-import { Part } from '../../models/rundown/Part'
-import { ActiveTrigger, Trigger } from '../../models/rundown/Trigger'
-import { PeripheralArea } from '../../models/project/Peripheral'
+
+type Promisify<T> = {
+	[K in keyof T]: T[K] extends (...arg: any[]) => any
+		? (...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>>
+		: T[K]
+}
+
+type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
+type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServerMethods[T]>>
 
 /** This class is used client-side, to send requests to the server */
-export class IPCServer implements IPCServerMethods {
+export class IPCServer implements Promisify<IPCServerMethods> {
 	constructor(private ipcRenderer: Electron.IpcRenderer) {}
 
-	private async invokeServerMethod(methodname: string, ...args: any[]): Promise<any> {
+	private async invokeServerMethod<T extends keyof IPCServerMethods>(methodname: T, ...args: any[]): ServerReturn<T> {
 		// Stringifying and parsing data will convert Mobx observable objects into object literals.
 		// Otherwise, Electron won't be able to clone it.
 		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
 	}
 
-	triggerSendAll(): Promise<void> {
-		return this.invokeServerMethod('triggerSendAll')
+	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
+		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
-	triggerSendRundown(data: { rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('triggerSendRundown', data)
-	}
-
-	setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
-		return this.invokeServerMethod('setKeyboardKeys', activeKeys)
+	triggerSendRundown(...args: ServerArgs<'triggerSendRundown'>) {
+		return this.invokeServerMethod('triggerSendRundown', ...args)
 	}
 
-	acknowledgeSeenVersion(): Promise<void> {
-		return this.invokeServerMethod('acknowledgeSeenVersion')
+	setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>) {
+		return this.invokeServerMethod('setKeyboardKeys', ...args)
 	}
-	playPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('playPart', data)
+
+	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
+		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
 	}
-	pausePart(data: { rundownId: string; groupId: string; partId: string; pauseTime?: number }): Promise<void> {
-		return this.invokeServerMethod('pausePart', data)
+	playPart(...args: ServerArgs<'playPart'>) {
+		return this.invokeServerMethod('playPart', ...args)
 	}
-	stopPart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('stopPart', data)
+	pausePart(...args: ServerArgs<'pausePart'>) {
+		return this.invokeServerMethod('pausePart', ...args)
 	}
-	setPartTrigger(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		trigger: Trigger | null
-		triggerIndex: number | null
-	}): Promise<void> {
-		return this.invokeServerMethod('setPartTrigger', data)
+	stopPart(...args: ServerArgs<'stopPart'>) {
+		return this.invokeServerMethod('stopPart', ...args)
 	}
-	togglePartLoop(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('togglePartLoop', data)
+	setPartTrigger(...args: ServerArgs<'setPartTrigger'>) {
+		return this.invokeServerMethod('setPartTrigger', ...args)
 	}
-	togglePartDisable(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('togglePartDisable', data)
+	togglePartLoop(...args: ServerArgs<'togglePartLoop'>) {
+		return this.invokeServerMethod('togglePartLoop', ...args)
 	}
-	togglePartLock(data: { rundownId: string; groupId: string; partId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('togglePartLock', data)
+	togglePartDisable(...args: ServerArgs<'togglePartDisable'>) {
+		return this.invokeServerMethod('togglePartDisable', ...args)
 	}
-	stopGroup(data: { rundownId: string; groupId: string }): Promise<void> {
-		return this.invokeServerMethod('stopGroup', data)
+	togglePartLock(...args: ServerArgs<'togglePartLock'>) {
+		return this.invokeServerMethod('togglePartLock', ...args)
 	}
-	playGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
-		return this.invokeServerMethod('playGroup', data)
+	stopGroup(...args: ServerArgs<'stopGroup'>) {
+		return this.invokeServerMethod('stopGroup', ...args)
 	}
-	pauseGroup(data: { rundownId: string; groupId: string }): Promise<unknown> {
-		return this.invokeServerMethod('pauseGroup', data)
+	playGroup(...args: ServerArgs<'playGroup'>) {
+		return this.invokeServerMethod('playGroup', ...args)
 	}
-	playNext(data: { rundownId: string; groupId: string }): Promise<unknown> {
-		return this.invokeServerMethod('playNext', data)
+	pauseGroup(...args: ServerArgs<'pauseGroup'>) {
+		return this.invokeServerMethod('pauseGroup', ...args)
 	}
-	playPrev(data: { rundownId: string; groupId: string }): Promise<unknown> {
-		return this.invokeServerMethod('playPrev', data)
+	playNext(...args: ServerArgs<'playNext'>) {
+		return this.invokeServerMethod('playNext', ...args)
 	}
-	updateTimelineObj(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-		timelineObj: TimelineObj
-	}): Promise<void> {
-		return this.invokeServerMethod('updateTimelineObj', data)
+	playPrev(...args: ServerArgs<'playPrev'>) {
+		return this.invokeServerMethod('playPrev', ...args)
 	}
-	moveTimelineObjToNewLayer(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-	}): Promise<void> {
-		return this.invokeServerMethod('moveTimelineObjToNewLayer', data)
+	updateTimelineObj(...args: ServerArgs<'updateTimelineObj'>) {
+		return this.invokeServerMethod('updateTimelineObj', ...args)
+	}
+	moveTimelineObjToNewLayer(...args: ServerArgs<'moveTimelineObjToNewLayer'>) {
+		return this.invokeServerMethod('moveTimelineObjToNewLayer', ...args)
 	}
 	/**
 	 * @returns An object containing the ID of the new part and, conditionally, the ID of the new group (if one was created).
 	 */
-	newPart(data: {
-		rundownId: string
-
-		name: string
-		/** The group to create the part into. If null; will create a "transparent group" */
-		groupId: string | null
-	}): Promise<{ partId: string; groupId?: string }> {
-		return this.invokeServerMethod('newPart', data)
+	newPart(...args: ServerArgs<'newPart'>) {
+		return this.invokeServerMethod('newPart', ...args)
 	}
-	updatePart(data: { rundownId: string; groupId: string; partId: string; part: Part }): Promise<void> {
-		return this.invokeServerMethod('updatePart', data)
+	updatePart(...args: ServerArgs<'updatePart'>) {
+		return this.invokeServerMethod('updatePart', ...args)
 	}
-	newGroup(data: { rundownId: string; name: string }): Promise<string> {
-		return this.invokeServerMethod('newGroup', data)
+	newGroup(...args: ServerArgs<'newGroup'>) {
+		return this.invokeServerMethod('newGroup', ...args)
 	}
-	updateGroup(data: { rundownId: string; groupId: string; group: Group }): Promise<void> {
-		return this.invokeServerMethod('updateGroup', data)
+	updateGroup(...args: ServerArgs<'updateGroup'>) {
+		return this.invokeServerMethod('updateGroup', ...args)
 	}
-	deletePart(data: { rundownId: string; groupId: string; partId: string }): Promise<void> {
-		return this.invokeServerMethod('deletePart', data)
+	deletePart(...args: ServerArgs<'deletePart'>) {
+		return this.invokeServerMethod('deletePart', ...args)
 	}
-	deleteGroup(data: { rundownId: string; groupId: string }): Promise<void> {
-		return this.invokeServerMethod('deleteGroup', data)
+	deleteGroup(...args: ServerArgs<'deleteGroup'>) {
+		return this.invokeServerMethod('deleteGroup', ...args)
 	}
-	movePart(data: {
-		from: { rundownId: string; partId: string }
-		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<Group | undefined> {
-		return this.invokeServerMethod('movePart', data)
+	movePart(...args: ServerArgs<'movePart'>) {
+		return this.invokeServerMethod('movePart', ...args)
 	}
-	moveGroup(data: { rundownId: string; groupId: string; position: number }): Promise<void> {
-		return this.invokeServerMethod('moveGroup', data)
+	moveGroup(...args: ServerArgs<'moveGroup'>) {
+		return this.invokeServerMethod('moveGroup', ...args)
 	}
-	newTemplateData(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-	}): Promise<void> {
-		return this.invokeServerMethod('newTemplateData', data)
+	newTemplateData(...args: ServerArgs<'newTemplateData'>) {
+		return this.invokeServerMethod('newTemplateData', ...args)
 	}
-	updateTemplateData(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-		key: string
-		changedItemId: string
-		value: string
-	}): Promise<void> {
-		return this.invokeServerMethod('updateTemplateData', data)
+	updateTemplateData(...args: ServerArgs<'updateTemplateData'>) {
+		return this.invokeServerMethod('updateTemplateData', ...args)
 	}
-	deleteTemplateData(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-		key: string
-	}): Promise<void> {
-		return this.invokeServerMethod('deleteTemplateData', data)
+	deleteTemplateData(...args: ServerArgs<'deleteTemplateData'>) {
+		return this.invokeServerMethod('deleteTemplateData', ...args)
 	}
-	deleteTimelineObj(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-	}): Promise<void> {
-		return this.invokeServerMethod('deleteTimelineObj', data)
+	deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>) {
+		return this.invokeServerMethod('deleteTimelineObj', ...args)
 	}
-	addTimelineObj(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		timelineObjId: string
-		timelineObj: TimelineObj
-	}): Promise<void> {
-		return this.invokeServerMethod('addTimelineObj', data)
+	addTimelineObj(...args: ServerArgs<'addTimelineObj'>) {
+		return this.invokeServerMethod('addTimelineObj', ...args)
 	}
-	addResourceToTimeline(data: {
-		rundownId: string
-		groupId: string
-		partId: string
-		/** What layer to insert resource into. null = insert into a new layer */
-		layerId: string | null
-		resourceId: string
-	}): Promise<void> {
-		return this.invokeServerMethod('addResourceToTimeline', data)
+	addResourceToTimeline(...args: ServerArgs<'addResourceToTimeline'>) {
+		return this.invokeServerMethod('addResourceToTimeline', ...args)
 	}
-	toggleGroupLoop(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupLoop', data)
+	toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>) {
+		return this.invokeServerMethod('toggleGroupLoop', ...args)
 	}
-	toggleGroupAutoplay(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupAutoplay', data)
+	toggleGroupAutoplay(...args: ServerArgs<'toggleGroupAutoplay'>) {
+		return this.invokeServerMethod('toggleGroupAutoplay', ...args)
 	}
-	toggleGroupOneAtATime(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupOneAtATime', data)
+	toggleGroupOneAtATime(...args: ServerArgs<'toggleGroupOneAtATime'>) {
+		return this.invokeServerMethod('toggleGroupOneAtATime', ...args)
 	}
-	toggleGroupDisable(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupDisable', data)
+	toggleGroupDisable(...args: ServerArgs<'toggleGroupDisable'>) {
+		return this.invokeServerMethod('toggleGroupDisable', ...args)
 	}
-	toggleGroupLock(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupLock', data)
+	toggleGroupLock(...args: ServerArgs<'toggleGroupLock'>) {
+		return this.invokeServerMethod('toggleGroupLock', ...args)
 	}
-	toggleGroupCollapse(data: { rundownId: string; groupId: string; value: boolean }): Promise<void> {
-		return this.invokeServerMethod('toggleGroupCollapse', data)
+	toggleGroupCollapse(...args: ServerArgs<'toggleGroupCollapse'>) {
+		return this.invokeServerMethod('toggleGroupCollapse', ...args)
 	}
-	refreshResources(): Promise<void> {
-		return this.invokeServerMethod('refreshResources')
+	refreshResources(...args: ServerArgs<'refreshResources'>) {
+		return this.invokeServerMethod('refreshResources', ...args)
 	}
-	refreshTemplates(): Promise<void> {
-		return this.invokeServerMethod('refreshTemplates')
+	updateProject(...args: ServerArgs<'updateProject'>) {
+		return this.invokeServerMethod('updateProject', ...args)
 	}
-	updateProject(data: { id: string; project: Project }): Promise<void> {
-		return this.invokeServerMethod('updateProject', data)
+	newRundown(...args: ServerArgs<'newRundown'>) {
+		return this.invokeServerMethod('newRundown', ...args)
 	}
-	newRundown(data: { name: string }): Promise<void> {
-		return this.invokeServerMethod('newRundown', data)
+	deleteRundown(...args: ServerArgs<'deleteRundown'>) {
+		return this.invokeServerMethod('deleteRundown', ...args)
 	}
-	deleteRundown(data: { rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('deleteRundown', data)
+	openRundown(...args: ServerArgs<'openRundown'>) {
+		return this.invokeServerMethod('openRundown', ...args)
 	}
-	openRundown(data: { rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('openRundown', data)
+	closeRundown(...args: ServerArgs<'closeRundown'>) {
+		return this.invokeServerMethod('closeRundown', ...args)
 	}
-	closeRundown(data: { rundownId: string }): Promise<void> {
-		return this.invokeServerMethod('closeRundown', data)
+	listRundowns(...args: ServerArgs<'listRundowns'>) {
+		return this.invokeServerMethod('listRundowns', ...args)
 	}
-	listRundowns(data: {
-		projectId: string
-	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
-		return this.invokeServerMethod('listRundowns', data)
+	renameRundown(...args: ServerArgs<'renameRundown'>) {
+		return this.invokeServerMethod('renameRundown', ...args)
 	}
-	renameRundown(data: { rundownId: string; newName: string }): Promise<unknown> {
-		return this.invokeServerMethod('renameRundown', data)
+	isRundownPlaying(...args: ServerArgs<'isRundownPlaying'>) {
+		return this.invokeServerMethod('isRundownPlaying', ...args)
 	}
-	isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
-		return this.invokeServerMethod('isRundownPlaying', data)
-	}
-	createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<void> {
-		return this.invokeServerMethod('createMissingMapping', data)
+	createMissingMapping(...args: ServerArgs<'createMissingMapping'>) {
+		return this.invokeServerMethod('createMissingMapping', ...args)
 	}
 
-	addPeripheralArea(data: { peripheralId: string }): Promise<unknown> {
-		return this.invokeServerMethod('addPeripheralArea', data)
+	addPeripheralArea(...args: ServerArgs<'addPeripheralArea'>) {
+		return this.invokeServerMethod('addPeripheralArea', ...args)
 	}
-	removePeripheralArea(data: { bridgeId: string; peripheralId: string; areaId: string }): Promise<unknown> {
-		return this.invokeServerMethod('removePeripheralArea', data)
+	removePeripheralArea(...args: ServerArgs<'removePeripheralArea'>) {
+		return this.invokeServerMethod('removePeripheralArea', ...args)
 	}
-	updatePeripheralArea(data: {
-		bridgeId: string
-		peripheralId: string
-		areaId: string
-		update: Partial<PeripheralArea>
-	}): Promise<unknown> {
-		return this.invokeServerMethod('updatePeripheralArea', data)
+	updatePeripheralArea(...args: ServerArgs<'updatePeripheralArea'>) {
+		return this.invokeServerMethod('updatePeripheralArea', ...args)
 	}
 }
