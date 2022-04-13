@@ -188,10 +188,16 @@ export function _getKeyDisplay(
 
 	const keyTimeline: KeyDisplayTimeline = []
 
+	const groupIds = new Set<string>()
+
 	for (const action of actions) {
 		// The idea here is to use the same logic for timeline generation as playout, but instead of
 		// playout-content, we fill it with key-display contents, that are to be sent to the keys.
 		// That way the peripherals will stay in sync with the playout and GUI.
+
+		// Only check each group once, otherwise getTimelineForGroup() returns non-unique timeline-objects:
+		if (groupIds.has(action.group.id)) continue
+		groupIds.add(action.group.id)
 
 		const tl = getTimelineForGroup(
 			action.group,

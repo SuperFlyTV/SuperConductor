@@ -379,6 +379,7 @@ abstract class AbstractBridgeConnection {
 				settings: {
 					devices: {},
 				},
+				peripheralSettings: {},
 			}
 			this.storage.updateProject(project)
 		}

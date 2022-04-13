@@ -174,6 +174,9 @@ export interface IPCServerMethods {
 		areaId: string
 		update: Partial<PeripheralArea>
 	}) => void
+
+	startDefiningArea: (arg: { bridgeId: string; peripheralId: string; areaId: string }) => void
+	finishDefiningArea: (arg: { bridgeId: string; peripheralId: string }) => void
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

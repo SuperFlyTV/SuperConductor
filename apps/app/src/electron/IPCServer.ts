@@ -1825,6 +1825,12 @@ export class IPCServer
 			description: ActionDescription.AddPeripheralArea,
 		}
 	}
+	async startDefiningArea(_arg: { bridgeId: string; peripheralId: string; areaId: string }): Promise<void> {
+		// TBD
+	}
+	async finishDefiningArea(_arg: { bridgeId: string; peripheralId: string }): Promise<void> {
+		// TBD
+	}
 
 	private _updatePart(part: Part) {
 		const resolvedTimeline = Resolver.resolveTimeline(

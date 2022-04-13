@@ -469,3 +469,39 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 
 	return mapping.device === resourceDevice.type
 }
+/** Usage:
+ * arrayToBeSorted.sort(sortOn((x) => x))
+ * arrayToBeSorted.sort(sortOn((x) => [x.rank, x.id]))
+ */
+export function sortOn<A>(getSortValue: (value: A) => number | string | undefined | (number | string | undefined)[]) {
+	return (a: A, b: A) => {
+		const valA = getSortValue(a)
+		const valB = getSortValue(b)
+
+		if (Array.isArray(valA) && Array.isArray(valB)) {
+			for (let i = 0; i < valA.length; i++) {
+				const iValA = valA[i]
+				const iValB = valB[i]
+
+				if (iValA === undefined || iValB === undefined) {
+					if (iValA && !iValB) return 1
+					if (!iValA && iValB) return -1
+				} else {
+					if (iValA > iValB) return 1
+					if (iValA < iValB) return -1
+				}
+			}
+
+			return 0
+		} else {
+			if (valA === undefined || valB === undefined) {
+				if (valA && !valB) return 1
+				if (!valA && valB) return -1
+			} else {
+				if (valA > valB) return 1
+				if (valA < valB) return -1
+			}
+			return 0
+		}
+	}
+}

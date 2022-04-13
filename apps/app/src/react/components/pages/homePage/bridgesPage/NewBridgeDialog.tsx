@@ -30,6 +30,7 @@ export const NewBridgeDialog: React.FC<{
 				settings: {
 					devices: {},
 				},
+				peripheralSettings: {},
 			})
 
 			project.bridges[newBridge.id] = newBridge
