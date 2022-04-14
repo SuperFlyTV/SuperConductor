@@ -151,12 +151,6 @@ export class RundownsStore {
 			return
 		}
 
-		const currentRundownClean = this._currentRundownClean as any as Readonly<IObservableObject<Rundown>>
-
-		if (!currentRundownClean) {
-			return
-		}
-
 		/** The group being moved */
 		const group = currentRundown.groups.find((g) => g.id === groupId)
 
@@ -195,12 +189,6 @@ export class RundownsStore {
 		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
-			return
-		}
-
-		const currentRundownClean = this._currentRundownClean as any as Readonly<IObservableObject<Rundown>>
-
-		if (!currentRundownClean) {
 			return
 		}
 
