@@ -44,6 +44,8 @@ export const enum ActionDescription {
 	RenameRundown = 'rename rundown',
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
 	CreateMissingMapping = 'create missing layer',
+	DuplicateGroup = 'duplicate group',
+	DuplicatePart = 'duplicate part',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -104,7 +106,12 @@ export interface IPCServerMethods {
 		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}) => Promise<unknown>
+	duplicatePart: (data: {
+		from: { rundownId: string; partId: string }
+		to: { groupId: string | null; position: number }
+	}) => Promise<unknown>
 	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
+	duplicateGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
 
 	updateTimelineObj: (data: {
 		rundownId: string

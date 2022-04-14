@@ -615,9 +615,15 @@ export const PartView: React.FC<{
 					return null
 				}
 
+				const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+				store.rundownsStore.duplicate = pressedKeys.includes('AltLeft') || pressedKeys.includes('AltRight')
+				if (store.rundownsStore.duplicate) {
+					store.rundownsStore.movePartInCurrentRundown(part.id, parentGroupId, partIndex)
+				}
+
 				return {
 					type: DragItemTypes.PART_ITEM,
-					partId: part.id,
+					partId: store.rundownsStore.madePartDuplicate ? store.rundownsStore.madePartDuplicate : part.id,
 					fromGroup: parentGroup,
 					toGroupId: parentGroupId,
 					toGroupIndex: parentGroupIndex,

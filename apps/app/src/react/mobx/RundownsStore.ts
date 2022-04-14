@@ -7,8 +7,9 @@ import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
 import short from 'short-uuid'
-import { allowMovingItemIntoGroup, findPartInRundown } from '../../lib/util'
+import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
+import { deepClone } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -40,6 +41,7 @@ export class RundownsStore {
 			store.guiStore.activeTabId = rundownId
 			this.currentRundownId = rundownId
 			this.currentRundown = rundown
+			this._currentRundownClean = deepClone(rundown)
 		},
 	})
 
@@ -71,7 +73,14 @@ export class RundownsStore {
 	}
 	private set currentRundown(rd: Rundown | undefined) {
 		this._currentRundown = rd as any
+		this._currentRundownClean = deepClone(rd)
 	}
+
+	/**
+	 * A copy of the current rundown that can't be modified by frontend code.
+	 * Used in Group and Part moves to compare our mutated state to the original state.
+	 */
+	private _currentRundownClean?: Readonly<Rundown> = undefined
 
 	/**
 	 * The function which commits a Part move, sending an IPC API command to the electron backend.
@@ -82,6 +91,34 @@ export class RundownsStore {
 	 * The function which commits a Group move, sending an IPC API command to the electron backend.
 	 */
 	private _commitMoveGroupFn: CommitFunction | undefined = undefined
+
+	/**
+	 * Used in Group moves to avoid making multiple duplicates of the Group when duplicate is enabled.
+	 * Contains the ID of the duplicate.
+	 * Gets set back to "false" when the move is committed.
+	 */
+	private _madeGroupDuplicate: string | false = false
+
+	/**
+	 * Used in Part moves to avoid making multiple duplicate of the Part when duplicate is enabled.
+	 * Contains the ID of the duplicate.
+	 * Gets set back to "false" when the move is committed.
+	 */
+	private _madePartDuplicate: string | false = false
+	get madePartDuplicate() {
+		return this._madePartDuplicate
+	}
+
+	/**
+	 * Used in Group and Part moves.
+	 */
+	private _duplicate = false
+	get duplicate() {
+		return this._duplicate
+	}
+	set duplicate(newValue: boolean) {
+		this._duplicate = newValue
+	}
 
 	/**
 	 * Method triggers rundown update with the new rundown id.
@@ -95,6 +132,7 @@ export class RundownsStore {
 		} else {
 			this._currentRundownId = undefined
 			this._currentRundown = undefined
+			this._currentRundownClean = undefined
 		}
 	}
 
@@ -141,6 +179,12 @@ export class RundownsStore {
 			return
 		}
 
+		const currentRundownClean = this._currentRundownClean as any as Readonly<IObservableObject<Rundown>>
+
+		if (!currentRundownClean) {
+			return
+		}
+
 		/** The group being moved */
 		const group = currentRundown.groups.find((g) => g.id === groupId)
 
@@ -148,16 +192,45 @@ export class RundownsStore {
 			return
 		}
 
+		if (this._duplicate && !this._madeGroupDuplicate) {
+			/**
+			 * The target group's position in the clean version of the rundown.
+			 */
+			const originalPosition = currentRundownClean.groups.findIndex((g) => g.id === groupId)
+
+			// Make a copy of the group, give it and all its children unique IDs, and leave it at the original position.
+			const copy = deepClone(group)
+			copy.id = short.generate()
+			this._madeGroupDuplicate = copy.id
+			for (const part of copy.parts) {
+				part.id = short.generate()
+				part.timeline = generateNewTimelineObjIds(part.timeline)
+			}
+			currentRundown.groups.splice(originalPosition, 1, copy)
+		}
+
 		// Remove the group from the groups array and re-insert it at its new position
 		currentRundown.groups.remove(group)
 		currentRundown.groups.spliceWithArray(position, 0, [group])
 
 		this._commitMoveGroupFn = async () => {
-			await this.serverAPI.moveGroup({
-				rundownId: currentRundown.id,
-				groupId: groupId,
-				position: position,
-			})
+			const duplicate = this._duplicate
+			this._madeGroupDuplicate = false
+			this._duplicate = false
+
+			if (duplicate) {
+				await this.serverAPI.duplicateGroup({
+					rundownId: currentRundown.id,
+					groupId: groupId,
+					position: position,
+				})
+			} else {
+				await this.serverAPI.moveGroup({
+					rundownId: currentRundown.id,
+					groupId: groupId,
+					position: position,
+				})
+			}
 		}
 	}
 
@@ -169,23 +242,97 @@ export class RundownsStore {
 		const fn = this._commitMoveGroupFn
 		this._commitMoveGroupFn = undefined
 
-		return fn()
+		return fn().catch((error) => {
+			this._revertRundown()
+			throw error
+		})
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
+		console.log('movePart')
 		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
 		}
 
-		const result = findPartInRundown(currentRundown, partId)
+		const currentRundownClean = this._currentRundownClean as any as Readonly<IObservableObject<Rundown>>
 
-		if (!result) {
+		if (!currentRundownClean) {
 			return
 		}
 
-		const { part, group: fromGroup } = result
+		let part: Part
+		let fromGroup: Group
+
+		if (this._duplicate) {
+			if (this._madePartDuplicate) {
+				const result = findPartInRundown(currentRundown, this._madePartDuplicate)
+
+				if (!result) {
+					throw new Error(
+						`Move Part failed: Could not find part "${this._madePartDuplicate}" in the dirty copy of rundown "${currentRundown.id}".`
+					)
+				}
+
+				part = result.part
+				fromGroup = result.group
+			} else {
+				const cleanResult = findPartInRundown(currentRundownClean, partId)
+
+				if (!cleanResult) {
+					throw new Error(
+						`Move Part failed: Could not find part "${partId}" in the clean copy of rundown "${currentRundownClean.id}".`
+					)
+				}
+
+				/**
+				 * The target part's group in the clean version of the rundown.
+				 */
+				const originalGroup = cleanResult.group
+
+				const tmp = currentRundown.groups.find((g) => g.id === originalGroup.id)
+
+				if (!tmp) {
+					throw new Error(
+						`Move Part failed: Could not find group "${originalGroup.id}" in the dirty copy of rundown "${currentRundown.id}".`
+					)
+				}
+
+				fromGroup = tmp
+
+				if (fromGroup.id !== originalGroup.id) {
+					throw new Error('Move Part failed: Group ID discrepancy during duplication.')
+				}
+
+				// If the fromGroup is transparent, then we can't start out by putting the copy in it,
+				// because transparent groups can only contain a single part.
+				// So, in this case, we start out by putting the copy into a new transparent group.
+				if (fromGroup.transparent) {
+					toGroupId = null
+				}
+
+				// Make a copy of the part, give it and all its children unique IDs, and set it as the part being moved.
+				const copy = deepClone(cleanResult.part)
+				copy.id = short.generate()
+				this._madePartDuplicate = copy.id
+				copy.timeline = generateNewTimelineObjIds(copy.timeline)
+				part = copy
+				console.log('made duplicate')
+			}
+		} else {
+			const result = findPartInRundown(currentRundown, partId)
+
+			if (!result) {
+				throw new Error(
+					`Move Part failed: Could not find part "${partId}" in the dirty copy of rundown "${currentRundown.id}".`
+				)
+			}
+
+			part = result.part
+			fromGroup = result.group
+		}
+
 		let toGroup: Group | undefined
 		let madeNewTransparentGroup = false
 		const isTransparentGroupMove = fromGroup.transparent && toGroupId === null
@@ -209,6 +356,20 @@ export class RundownsStore {
 			}
 		}
 
+		if (fromGroup.transparent && toGroupId === fromGroup.id && this._duplicate) {
+			toGroup = {
+				...getDefaultGroup(),
+
+				id: short.generate(),
+				name: part.name,
+				transparent: true,
+
+				parts: [part],
+			}
+			madeNewTransparentGroup = true
+			position = currentRundown.groups.findIndex((g) => g.id === fromGroup.id)
+		}
+
 		if (!toGroup) {
 			return
 		}
@@ -228,6 +389,7 @@ export class RundownsStore {
 		if (madeNewTransparentGroup) {
 			// Add the new transparent group to the rundown.
 			currentRundown.groups.spliceWithArray(position, 0, [toGroup])
+			console.log(position)
 		} else if (isTransparentGroupMove) {
 			// Move the transparent group to its new position.
 			currentRundown.groups.remove(toGroup)
@@ -244,17 +406,34 @@ export class RundownsStore {
 		}
 
 		this._commitMovePartFn = async () => {
-			await this.serverAPI.movePart({
-				from: {
-					rundownId: currentRundown.id,
-					partId: partId,
-				},
-				to: {
-					rundownId: currentRundown.id,
-					groupId: toGroupId,
-					position: position,
-				},
-			})
+			const duplicate = this._duplicate
+			this._madePartDuplicate = false
+			this._duplicate = false
+
+			if (duplicate) {
+				await this.serverAPI.duplicatePart({
+					from: {
+						rundownId: currentRundown.id,
+						partId: partId,
+					},
+					to: {
+						groupId: toGroupId,
+						position: position,
+					},
+				})
+			} else {
+				await this.serverAPI.movePart({
+					from: {
+						rundownId: currentRundown.id,
+						partId: partId,
+					},
+					to: {
+						rundownId: currentRundown.id,
+						groupId: toGroupId,
+						position: position,
+					},
+				})
+			}
 		}
 	}
 
@@ -266,6 +445,16 @@ export class RundownsStore {
 		const fn = this._commitMovePartFn
 		this._commitMovePartFn = undefined
 
-		return fn()
+		return fn().catch((error) => {
+			this._revertRundown()
+			throw error
+		})
+	}
+
+	/**
+	 * Reverts _currentRundown to a fresh copy of _currentRundownClean.
+	 */
+	private _revertRundown() {
+		this._currentRundown = deepClone(this._currentRundownClean)
 	}
 }

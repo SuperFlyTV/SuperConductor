@@ -145,6 +145,11 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
+				const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+				store.rundownsStore.duplicate = pressedKeys.includes('AltLeft') || pressedKeys.includes('AltRight')
+				if (store.rundownsStore.duplicate) {
+					store.rundownsStore.moveGroupInCurrentRundown(group.id, groupIndex)
+				}
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
@@ -444,6 +449,14 @@ export const GroupView: React.FC<{
 	}
 
 	if (group.transparent) {
+		if (group.parts.length > 1) {
+			return (
+				<div>
+					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.parts.length}) Parts.
+				</div>
+			)
+		}
+
 		const firstPart = group.parts[0]
 		return firstPart ? (
 			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
