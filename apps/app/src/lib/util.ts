@@ -17,7 +17,8 @@ import {
 	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
+import shortUUID from 'short-uuid'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -468,4 +469,65 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 	}
 
 	return mapping.device === resourceDevice.type
+}
+
+/**
+ * Takes a timeline as input and outputs an identical timeline with new IDs for all timelineObjs.
+ * Also updates enable expressions to make them point to the new IDs.
+ * Pure function, does not mutate the input.
+ */
+export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Part['timeline'] {
+	const idMap = new Map<string, string>()
+	const output: Part['timeline'] = []
+
+	// Generate the new IDs and store them in a map.
+	for (const timelineObj of input) {
+		idMap.set(timelineObj.obj.id, shortUUID.generate())
+	}
+
+	// Process each timeline object.
+	for (const timelineObj of input) {
+		const clone = deepClone(timelineObj)
+		const newId = idMap.get(timelineObj.obj.id)
+
+		if (!newId) {
+			throw new Error('Expected to find a new ID')
+		}
+
+		// Give our clone its new ID.
+		clone.obj.id = newId
+
+		const enable = clone.obj.enable
+		if (Array.isArray(enable)) continue
+
+		// Edit any expressions so that they point to the new ID from the map.
+		for (const [oldId, newId] of idMap) {
+			const regex = new RegExp(oldId, 'g')
+
+			if ('start' in enable && typeof enable.start === 'string') {
+				enable.start = enable.start.replace(regex, newId)
+			}
+
+			if ('end' in enable && typeof enable.end === 'string') {
+				enable.end = enable.end.replace(regex, newId)
+			}
+
+			if ('while' in enable && typeof enable.while === 'string') {
+				enable.while = enable.while.replace(regex, newId)
+			}
+
+			if ('duration' in enable && typeof enable.duration === 'string') {
+				enable.duration = enable.duration.replace(regex, newId)
+			}
+
+			if ('repeating' in enable && typeof enable.repeating === 'string') {
+				enable.repeating = enable.repeating.replace(regex, newId)
+			}
+		}
+
+		// Save the cloned object.
+		output.push(clone)
+	}
+
+	return output
 }

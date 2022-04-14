@@ -41,6 +41,7 @@ import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -348,6 +349,11 @@ export const GroupView: React.FC<{
 		}
 	}, [handleDelete, hotkeyContext.sorensen])
 
+	// Duplicate button:
+	const handleDuplicate = useCallback(() => {
+		ipcServer.duplicateGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [group.id, handleError, ipcServer, rundownId])
+
 	// Stop button:
 	const handleStop = useCallback(() => {
 		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
@@ -444,6 +450,14 @@ export const GroupView: React.FC<{
 	}
 
 	if (group.transparent) {
+		if (group.parts.length > 1) {
+			return (
+				<div>
+					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.parts.length}) Parts.
+				</div>
+			)
+		}
+
 		const firstPart = group.parts[0]
 		return firstPart ? (
 			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
@@ -630,6 +644,8 @@ export const GroupView: React.FC<{
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
+
+						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
 						<TrashBtn
 							className="delete"

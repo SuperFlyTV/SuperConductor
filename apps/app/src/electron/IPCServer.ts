@@ -9,6 +9,7 @@ import {
 	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
+	generateNewTimelineObjIds,
 	getNextPartIndex,
 	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
@@ -804,6 +805,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		}
 
+		if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
+			throw new Error('Cannot move a Part into an already-existing Transparent Group.')
+		}
+
 		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
 		if (!allow) {
@@ -899,6 +904,61 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: toGroup,
 		}
 	}
+	async duplicatePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
+		const copy = deepClone(part)
+		copy.id = short.generate()
+		copy.timeline = generateNewTimelineObjIds(copy.timeline)
+
+		let newGroup: Group | undefined = undefined
+		if (group.transparent) {
+			// We can't place the copy into the already-existing transparent group, so let's make a new one
+			newGroup = {
+				...getDefaultGroup(),
+
+				id: short.generate(),
+				name: copy.name,
+				transparent: true,
+
+				parts: [copy],
+			}
+
+			this._updateTimeline(newGroup)
+
+			// Add the new group just below the original in the rundown
+			const position = rundown.groups.findIndex((g) => g.id === arg.groupId)
+			rundown.groups.splice(position + 1, 0, newGroup)
+		} else {
+			// Add the copy just below the original in the group
+			const position = group.parts.findIndex((p) => p.id === arg.partId)
+			group.parts.splice(position + 1, 0, copy)
+			this._updateTimeline(group)
+		}
+
+		// Commit the changes.
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: async () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				if (newGroup) {
+					// Remove the group we added
+					rundown.groups = rundown.groups.filter((g) => (newGroup ? g.id !== newGroup.id : true))
+				} else {
+					// Remove the part copy we added
+					group.parts = group.parts.filter((p) => p.id !== copy.id)
+					this._updateTimeline(group)
+				}
+
+				// Commit the changes.
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DuplicatePart,
+		}
+	}
 	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -920,6 +980,38 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				})
 			},
 			description: ActionDescription.MoveGroup,
+		}
+	}
+	async duplicateGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult> {
+		const { rundown, group } = this.getGroup(arg)
+
+		// Make a copy of the group and give it and all its children unique IDs.
+		const copy = deepClone(group)
+		copy.id = short.generate()
+		for (const part of copy.parts) {
+			part.id = short.generate()
+			part.timeline = generateNewTimelineObjIds(part.timeline)
+		}
+
+		// Insert the copy just below the original.
+		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
+		rundown.groups.splice(originalPosition + 1, 0, copy)
+
+		this._updateTimeline(copy)
+		this._updateTimeline(group)
+		this.storage.updateRundown(arg.rundownId, rundown)
+
+		return {
+			undo: async () => {
+				// Stop playout.
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: copy.id })
+
+				// Delete the copy we made.
+				rundown.groups = rundown.groups.filter((g) => g.id !== copy.id)
+
+				this.storage.updateRundown(arg.rundownId, rundown)
+			},
+			description: ActionDescription.DuplicateGroup,
 		}
 	}
 

@@ -4,6 +4,7 @@ import { ActiveTriggers, Trigger, activeTriggersToString } from '../../../../mod
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../contexts/IPCServer'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { EditTrigger } from '../../inputs/EditTrigger'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { TriggerBtn } from '../../inputs/TriggerBtn'
@@ -87,6 +88,16 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 		ipcServer.deletePart({ rundownId, groupId, partId: part.id }).catch(handleError)
 	}, [groupId, handleError, ipcServer, part.id, rundownId])
 
+	const handleDuplicateBtn = useCallback(() => {
+		ipcServer
+			.duplicatePart({
+				rundownId,
+				groupId,
+				partId: part.id,
+			})
+			.catch(handleError)
+	}, [groupId, handleError, ipcServer, part.id, rundownId])
+
 	return (
 		<div className="part__submenu">
 			{part.triggers.length > 0 && (
@@ -110,6 +121,8 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					active={triggerActive}
 					title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 				/>
+
+				<DuplicateBtn title="Duplicate Part" onClick={handleDuplicateBtn} />
 
 				<TrashBtn
 					disabled={locked}
