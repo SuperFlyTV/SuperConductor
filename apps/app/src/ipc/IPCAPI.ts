@@ -106,12 +106,9 @@ export interface IPCServerMethods {
 		from: { rundownId: string; partId: string }
 		to: { rundownId: string; groupId: string | null; position: number }
 	}) => Promise<unknown>
-	duplicatePart: (data: {
-		from: { rundownId: string; partId: string }
-		to: { groupId: string | null; position: number }
-	}) => Promise<unknown>
+	duplicatePart: (data: { rundownId: string; groupId: string; partId: string }) => Promise<unknown>
 	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
-	duplicateGroup: (data: { rundownId: string; groupId: string; position: number }) => Promise<unknown>
+	duplicateGroup: (data: { rundownId: string; groupId: string }) => Promise<unknown>
 
 	updateTimelineObj: (data: {
 		rundownId: string

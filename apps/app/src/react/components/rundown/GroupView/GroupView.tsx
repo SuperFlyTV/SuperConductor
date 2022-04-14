@@ -41,6 +41,7 @@ import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -145,11 +146,6 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
-				const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-				store.rundownsStore.duplicate = pressedKeys.includes('AltLeft') || pressedKeys.includes('AltRight')
-				if (store.rundownsStore.duplicate) {
-					store.rundownsStore.moveGroupInCurrentRundown(group.id, groupIndex)
-				}
 				return {
 					type: DragItemTypes.GROUP_ITEM,
 					groupId: group.id,
@@ -352,6 +348,11 @@ export const GroupView: React.FC<{
 			setDeleteConfirmationOpen(true)
 		}
 	}, [handleDelete, hotkeyContext.sorensen])
+
+	// Duplicate button:
+	const handleDuplicate = useCallback(() => {
+		ipcServer.duplicateGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Stop button:
 	const handleStop = useCallback(() => {
@@ -643,6 +644,8 @@ export const GroupView: React.FC<{
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
+
+						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
 						<TrashBtn
 							className="delete"
