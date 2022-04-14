@@ -256,7 +256,6 @@ export class RundownsStore {
 		if (madeNewTransparentGroup) {
 			// Add the new transparent group to the rundown.
 			currentRundown.groups.spliceWithArray(position, 0, [toGroup])
-			console.log(position)
 		} else if (isTransparentGroupMove) {
 			// Move the transparent group to its new position.
 			currentRundown.groups.remove(toGroup)
