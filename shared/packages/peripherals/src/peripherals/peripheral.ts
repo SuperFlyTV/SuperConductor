@@ -1,3 +1,4 @@
+import winston from 'winston'
 import { EventEmitter } from 'events'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
@@ -16,6 +17,7 @@ export declare interface Peripheral {
 export abstract class Peripheral extends EventEmitter {
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
+		protected log: winston.Logger,
 		/** Locally unique id */
 		public readonly id: string
 	) {
@@ -33,11 +35,11 @@ export abstract class Peripheral extends EventEmitter {
 		if (Array.isArray(keyDisplay)) {
 			// It is a timeline, which means that we should resolve it and track it.
 
-			this.trackers[identifier] = new TimelineTracker(keyDisplay, (keyDisplay) => {
-				this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
+			this.trackers[identifier] = new TimelineTracker(this.log, keyDisplay, (keyDisplay) => {
+				this._setKeyDisplay(identifier, keyDisplay).catch(this.log.error)
 			})
 		} else {
-			this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
+			this._setKeyDisplay(identifier, keyDisplay).catch(this.log.error)
 		}
 	}
 	protected abstract _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): Promise<void>

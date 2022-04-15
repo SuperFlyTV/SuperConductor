@@ -11,7 +11,7 @@ const baseBridges = new Set<BaseBridge>()
 export const init = (log: winston.Logger): void => {
 	log.info('TSR-Bridge current version:', CURRENT_VERSION)
 
-	const _server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
+	const _server = new WebsocketServer(log, SERVER_PORT, (connection: WebsocketConnection) => {
 		// On connection
 		log.info('TSR-Bridge: New connection!')
 		const baseBridge = new BaseBridge(send, log)

@@ -23,11 +23,7 @@ export class VMixSideload implements SideLoadDevice {
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
-	constructor(
-		private deviceId: string,
-		private deviceOptions: DeviceOptionsVMix,
-		private log: winston.Logger | Console
-	) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: winston.Logger) {
 		this.vmix = new VMix()
 
 		this.vmix.on('connected', () => {

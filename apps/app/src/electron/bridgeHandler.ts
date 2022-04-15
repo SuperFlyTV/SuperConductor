@@ -10,6 +10,7 @@ import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
+import winston from 'winston'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -35,14 +36,21 @@ export class BridgeHandler {
 	private closed = false
 
 	constructor(
+		private log: winston.Logger,
 		private session: SessionHandler,
 		private storage: StorageHandler,
 		private callbacks: BridgeConnectionCallbacks
 	) {
-		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
+		this.server = new WebsocketServer(this.log, SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
 
-			const bridge = new WebsocketBridgeConnection(this.session, this.storage, connection, this.callbacks)
+			const bridge = new WebsocketBridgeConnection(
+				this.log,
+				this.session,
+				this.storage,
+				connection,
+				this.callbacks
+			)
 
 			// Lookup and set the bridgeId, if it is an outgoing
 			for (const [bridgeId, outgoing] of Object.entries(this.outgoingBridges)) {
@@ -56,7 +64,7 @@ export class BridgeHandler {
 
 		this.server.on('close', () => {
 			// todo: handle server close?
-			console.error('Server closed')
+			this.log.error('Server closed')
 		})
 
 		this.storage.on('project', (project: Project) => {
@@ -76,7 +84,7 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
+				this.internalBridge = new LocalBridgeConnection(this.log, this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
@@ -90,7 +98,7 @@ export class BridgeHandler {
 				}
 				const internalBridge = this.internalBridge
 				this.internalBridge = null
-				internalBridge.destroy().catch(console.error)
+				internalBridge.destroy().catch(this.log.error)
 			}
 		}
 
@@ -130,7 +138,7 @@ export class BridgeHandler {
 							connection,
 						}
 					} catch (error) {
-						console.error(`Failed to create a websocket connection to "${bridge.url}"`)
+						this.log.error(`Failed to create a websocket connection to "${bridge.url}"`)
 					}
 				}
 			}
@@ -200,6 +208,7 @@ abstract class AbstractBridgeConnection {
 	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
+		protected log: winston.Logger,
 		protected session: SessionHandler,
 		protected storage: StorageHandler,
 		protected callbacks: BridgeConnectionCallbacks
@@ -270,7 +279,7 @@ abstract class AbstractBridgeConnection {
 		if (bridge) {
 			this.setSettings(bridge.settings, true)
 		} else {
-			console.error(`Error: Settings bridge "${this.bridgeId}" not found`)
+			this.log.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
 		if (this.sentMappings) {
 			this.setMappings(this.sentMappings, true)
@@ -402,12 +411,13 @@ abstract class AbstractBridgeConnection {
 
 export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	constructor(
+		log: winston.Logger,
 		session: SessionHandler,
 		storage: StorageHandler,
 		private connection: WebsocketConnection,
 		callbacks: BridgeConnectionCallbacks
 	) {
-		super(session, storage, callbacks)
+		super(log, session, storage, callbacks)
 		const setConnected = () => {
 			if (this.bridgeId) {
 				this.createBridgeInProjectIfNotExists()
@@ -441,10 +451,15 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	private baseBridge: BaseBridge
 	private connectionId: number = Date.now() + Math.random()
 
-	constructor(session: SessionHandler, storage: StorageHandler, callbacks: BridgeConnectionCallbacks) {
-		super(session, storage, callbacks)
+	constructor(
+		log: winston.Logger,
+		session: SessionHandler,
+		storage: StorageHandler,
+		callbacks: BridgeConnectionCallbacks
+	) {
+		super(log, session, storage, callbacks)
 		this.bridgeId = INTERNAL_BRIDGE_ID
-		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), console)
+		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), this.log)
 		this.createBridgeInProjectIfNotExists()
 		this.send({
 			type: 'setId',
@@ -458,7 +473,7 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 		try {
 			this.baseBridge.handleMessage(msg)
 		} catch (err) {
-			console.error(err)
+			this.log.error(err)
 		}
 	}
 	protected getConnectionId(): number {

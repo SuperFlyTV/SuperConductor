@@ -1,3 +1,4 @@
+import winston from 'winston'
 import {
 	allowAddingResourceToLayer,
 	allowMovingItemIntoGroup,
@@ -37,12 +38,6 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
-import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
-
-type UndoableResult<T> = T extends void
-	? { undo: UndoFunction; description: ActionDescription }
-	: { undo: UndoFunction; description: ActionDescription; result: T }
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -94,6 +89,7 @@ export class IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
+		private log: winston.Logger,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
@@ -184,7 +180,7 @@ export class IPCServer
 			await action.undo()
 			this.undoPointer--
 		} catch (error) {
-			console.error('Error when undoing:', error)
+			this.log.error('Error when undoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -199,7 +195,7 @@ export class IPCServer
 			action.undo = redoResult.undo
 			this.undoPointer++
 		} catch (error) {
-			console.error('Error when redoing:', error)
+			this.log.error('Error when redoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -478,7 +474,7 @@ export class IPCServer
 			// Play the first non-disabled part
 			const part = group.parts.find((p) => !p.disabled)
 			if (part) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(this.log.error)
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
@@ -486,7 +482,7 @@ export class IPCServer
 				arg.rundownId,
 				arg.groupId,
 				group.parts.map((part) => part.id)
-			).catch(console.error)
+			).catch(this.log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -513,7 +509,7 @@ export class IPCServer
 			}
 
 			if (partId) {
-				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(console.error)
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(this.log.error)
 			}
 		} else {
 			const playingPartIds = Object.keys(group.playout.playingParts)
@@ -523,10 +519,10 @@ export class IPCServer
 					arg.rundownId,
 					arg.groupId,
 					group.parts.map((part) => part.id)
-				).catch(console.error)
+				).catch(this.log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(console.error)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this.log.error)
 			}
 		}
 	}
