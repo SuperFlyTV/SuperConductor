@@ -20,11 +20,7 @@ export class AtemSideload implements SideLoadDevice {
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
-	constructor(
-		private deviceId: string,
-		private deviceOptions: DeviceOptionsAtem,
-		private log: winston.Logger | Console
-	) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: winston.Logger) {
 		this.atem = new Atem()
 
 		this.atem.on('connected', () => {
@@ -36,7 +32,7 @@ export class AtemSideload implements SideLoadDevice {
 		})
 
 		if (deviceOptions.options?.host) {
-			this.atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(console.error)
+			this.atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(log.error)
 		}
 	}
 	refreshResources() {

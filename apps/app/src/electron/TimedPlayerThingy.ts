@@ -16,6 +16,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { Peripheral } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import winston from 'winston'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -31,9 +32,10 @@ export class TimedPlayerThingy {
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
-	constructor() {
+	constructor(private log: winston.Logger) {
 		this.session = new SessionHandler()
 		this.storage = new StorageHandler(
+			log,
 			{
 				// Default window position:
 				y: undefined,
@@ -89,7 +91,7 @@ export class TimedPlayerThingy {
 	initWindow(mainWindow: BrowserWindow) {
 		this.mainWindow = mainWindow
 
-		const bridgeHandler = new BridgeHandler(this.session, this.storage, {
+		const bridgeHandler = new BridgeHandler(this.log, this.session, this.storage, {
 			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
 				// Added/Updated:
 				const newResouceIds = new Set<string>()
@@ -114,7 +116,7 @@ export class TimedPlayerThingy {
 						SuperConductor version: v${ourVersion}
 						\nThis is likely to result in errors and unexpected behavior. Please ensure that both SuperConductor and tsr-bridge are up-to-date.`,
 					})
-					.catch(console.error)
+					.catch(this.log.error)
 			},
 			onDeviceRefreshStatus: (deviceId, refreshing) => {
 				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
@@ -122,7 +124,7 @@ export class TimedPlayerThingy {
 		})
 		this.bridgeHandler = bridgeHandler
 
-		this.ipcServer = new IPCServer(ipcMain, this.storage, this.session, {
+		this.ipcServer = new IPCServer(ipcMain, this.log, this.storage, this.session, {
 			refreshResources: () => {
 				// this.tptCaspar?.fetchAndSetMedia()
 				// this.tptCaspar?.fetchAndSetTemplates()
@@ -139,7 +141,7 @@ export class TimedPlayerThingy {
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
-		this.triggers = new TriggersHandler(this.storage, this.ipcServer, this.bridgeHandler)
+		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
 		// this.tptCaspar = new TPTCasparCG(this.session)
 	}
 }

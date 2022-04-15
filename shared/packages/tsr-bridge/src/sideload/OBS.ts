@@ -21,11 +21,7 @@ export class OBSSideload implements SideLoadDevice {
 	private obsConnected = false
 	private obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
 
-	constructor(
-		private deviceId: string,
-		private deviceOptions: DeviceOptionsOBS,
-		private log: winston.Logger | Console
-	) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsOBS, private log: winston.Logger) {
 		this.obs = new OBSWebsocket()
 
 		this.obs.on('ConnectionOpened', () => {

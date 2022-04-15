@@ -37,6 +37,7 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
+import winston from 'winston'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -69,6 +70,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
+		private log: winston.Logger,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
@@ -157,7 +159,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			await action.undo()
 			this.undoPointer--
 		} catch (error) {
-			console.error('Error when undoing:', error)
+			this.log.error('Error when undoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -172,7 +174,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			action.undo = redoResult.undo
 			this.undoPointer++
 		} catch (error) {
-			console.error('Error when redoing:', error)
+			this.log.error('Error when redoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -473,7 +475,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			// Play the first non-disabled part
 			const part = group.parts.find((p) => !p.disabled)
 			if (part) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(this.log.error)
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
@@ -481,7 +483,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				arg.rundownId,
 				arg.groupId,
 				group.parts.map((part) => part.id)
-			).catch(console.error)
+			).catch(this.log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -508,7 +510,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 
 			if (partId) {
-				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(console.error)
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(this.log.error)
 			}
 		} else {
 			const playingPartIds = Object.keys(group.playout.playingParts)
@@ -518,10 +520,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					arg.rundownId,
 					arg.groupId,
 					group.parts.map((part) => part.id)
-				).catch(console.error)
+				).catch(this.log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(console.error)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this.log.error)
 			}
 		}
 	}
@@ -535,7 +537,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const nextPartIndex = getNextPartIndex(group)
 		const nextPart = group.parts[nextPartIndex]
 		if (nextPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(console.error)
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(this.log.error)
 		}
 	}
 	async playPrev(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -548,7 +550,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const prevPartIndex = getPrevPartIndex(group)
 		const prevPart = group.parts[prevPartIndex]
 		if (prevPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
+			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(this.log.error)
 		}
 	}
 	async newPart(arg: {

@@ -8,6 +8,8 @@ import {
 	TimelineObjectInstance,
 } from 'superfly-timeline'
 import _ from 'lodash'
+// eslint-disable-next-line node/no-extraneous-import
+import winston from 'winston'
 
 export interface PeripheralEvents {
 	connected: () => void
@@ -25,6 +27,7 @@ export abstract class Peripheral extends EventEmitter {
 	protected _name = ''
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
+		protected log: winston.Logger,
 		/** Locally unique id */
 		public readonly id: string
 	) {
@@ -45,11 +48,11 @@ export abstract class Peripheral extends EventEmitter {
 		if (Array.isArray(keyDisplay)) {
 			// It is a timeline, which means that we should resolve it and track it.
 
-			this.trackers[identifier] = new TimelineTracker(keyDisplay, (keyDisplay) => {
-				this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
+			this.trackers[identifier] = new TimelineTracker(this.log, keyDisplay, (keyDisplay) => {
+				this._setKeyDisplay(identifier, keyDisplay).catch(this.log.error)
 			})
 		} else {
-			this._setKeyDisplay(identifier, keyDisplay).catch(console.error)
+			this._setKeyDisplay(identifier, keyDisplay).catch(this.log.error)
 		}
 	}
 	protected abstract _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): Promise<void>
@@ -77,7 +80,11 @@ class TimelineTracker {
 	private RESOLVE_LIMIT_TIME = 10 * 60 * 1000
 	private RESOLVE_LIMIT_COUNT = 20
 
-	constructor(keyDisplayTimeline: KeyDisplayTimeline, private callback: (keyDisplay: KeyDisplay) => void) {
+	constructor(
+		private log: winston.Logger,
+		keyDisplayTimeline: KeyDisplayTimeline,
+		private callback: (keyDisplay: KeyDisplay) => void
+	) {
 		this.timeline = keyDisplayTimeline.map((obj) => {
 			return {
 				// layer: this.LAYER,
@@ -128,7 +135,7 @@ class TimelineTracker {
 			try {
 				this.callback(currentState as any as KeyDisplay)
 			} catch (e) {
-				console.error(e)
+				this.log.error(e)
 				this.callbackErrorCount++
 			}
 		}

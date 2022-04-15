@@ -8,6 +8,7 @@ import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import { Action } from './triggers/action'
 import { idleKeyDisplay, playKeyDisplay, playStopKeyDisplay, stopKeyDisplay } from './triggers/keyDisplay'
+import winston from 'winston'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -22,7 +23,12 @@ export class TriggersHandler {
 
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 
-	constructor(private storage: StorageHandler, private ipcServer: IPCServer, private bridgeHandler: BridgeHandler) {}
+	constructor(
+		private log: winston.Logger,
+		private storage: StorageHandler,
+		private ipcServer: IPCServer,
+		private bridgeHandler: BridgeHandler
+	) {}
 
 	setKeyboardKeys(activeKeys: ActiveTriggers) {
 		this.activeKeys = activeKeys
@@ -178,7 +184,7 @@ export class TriggersHandler {
 							groupId: action.group.id,
 							partId: action.part.id,
 						})
-						.catch(console.error)
+						.catch(this.log.error)
 				} else if (action.trigger.action === 'stop') {
 					this.ipcServer
 						.stopPart({
@@ -186,7 +192,7 @@ export class TriggersHandler {
 							groupId: action.group.id,
 							partId: action.part.id,
 						})
-						.catch(console.error)
+						.catch(this.log.error)
 				} else if (action.trigger.action === 'playStop') {
 					const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
 					const myPlayhead = playData.playheads[action.part.id]
@@ -200,7 +206,7 @@ export class TriggersHandler {
 								groupId: action.group.id,
 								partId: action.part.id,
 							})
-							.catch(console.error)
+							.catch(this.log.error)
 					} else {
 						this.ipcServer
 							.playPart({
@@ -208,7 +214,7 @@ export class TriggersHandler {
 								groupId: action.group.id,
 								partId: action.part.id,
 							})
-							.catch(console.error)
+							.catch(this.log.error)
 					}
 				} else {
 					assertNever(action.trigger.action)

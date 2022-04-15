@@ -22,7 +22,7 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor(private log: winston.Logger | Console) {
+	constructor(private log: winston.Logger) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,

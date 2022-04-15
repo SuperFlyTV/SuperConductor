@@ -4,7 +4,7 @@ import { ResourceAny, ResourceType, OSCMessage } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 
 export class OSCSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: winston.Logger | Console) {}
+	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: winston.Logger) {}
 	refreshResources() {
 		return this._refreshResources()
 	}

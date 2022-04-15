@@ -5,9 +5,11 @@ import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elg
 import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
+// eslint-disable-next-line node/no-extraneous-import
+import winston from 'winston'
 
 export class PeripheralStreamDeck extends Peripheral {
-	static Watch(onDevice: (peripheral: PeripheralStreamDeck) => void) {
+	static Watch(log: winston.Logger, onDevice: (peripheral: PeripheralStreamDeck) => void) {
 		const seenDevices = new Map<string, PeripheralStreamDeck>()
 
 		const interval = setInterval(() => {
@@ -20,14 +22,14 @@ export class PeripheralStreamDeck extends Peripheral {
 
 				const existingDevice = seenDevices.get(id)
 				if (!existingDevice) {
-					const newDevice = new PeripheralStreamDeck(id, streamDeck.path)
+					const newDevice = new PeripheralStreamDeck(log, id, streamDeck.path)
 
 					seenDevices.set(id, newDevice)
 
 					newDevice
 						.init()
 						.then(() => onDevice(newDevice))
-						.catch(console.error)
+						.catch(log.error)
 				} else {
 					if (existingDevice && !existingDevice.connected && !existingDevice.initializing) {
 						existingDevice
@@ -35,7 +37,7 @@ export class PeripheralStreamDeck extends Peripheral {
 							.then(() => {
 								existingDevice.emit('connected')
 							})
-							.catch(console.error)
+							.catch(log.error)
 					}
 				}
 			}
@@ -54,8 +56,8 @@ export class PeripheralStreamDeck extends Peripheral {
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
 	private keys: { [identifier: string]: boolean } = {}
-	constructor(id: string, private path: string) {
-		super(id)
+	constructor(log: winston.Logger, id: string, private path: string) {
+		super(log, id)
 	}
 
 	async init(): Promise<void> {
@@ -88,10 +90,10 @@ export class PeripheralStreamDeck extends Peripheral {
 					// disconnected
 					this.connected = false
 					this.emit('disconnected')
-					this.streamDeck?.close().catch(console.error)
+					this.streamDeck?.close().catch(this.log.error)
 					delete this.streamDeck
 				} else {
-					console.error(error)
+					this.log.error(error)
 				}
 			})
 			await sleep(10) // to avoid an common initial "unable to write to HID device" error.
@@ -241,8 +243,8 @@ export class PeripheralStreamDeck extends Peripheral {
 					img.blur()
 					hasBackground = true
 				} catch (e) {
-					console.error('Error when processing thumbnail')
-					console.error(e)
+					this.log.error('Error when processing thumbnail')
+					this.log.error(e)
 					img = null
 				}
 			}
@@ -439,7 +441,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				}
 			})
 		} catch (e) {
-			console.error(keyDisplay)
+			this.log.error(keyDisplay)
 			throw e
 		}
 	}
