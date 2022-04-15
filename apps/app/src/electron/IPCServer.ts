@@ -205,6 +205,10 @@ export class IPCServer
 		}
 		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 	}
+
+	async log(method: LogLevel, ...args: any[]): Promise<void> {
+		this._renderLog[method](args[0], ...args.slice(1))
+	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
@@ -1768,9 +1772,6 @@ export class IPCServer
 			},
 			description: ActionDescription.CreateMissingMapping,
 		}
-	}
-	async log(method: LogLevel, ...args: any[]): Promise<void> {
-		this._renderLog[method](args[0], ...args.slice(1))
 	}
 
 	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {

@@ -197,4 +197,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 		// eslint-disable-next-line no-console
 		this.invokeServerMethod('log', method, ...args).catch(console.error)
 	}
+	log(method: LogLevel, ...args: any[]): void {
+		// eslint-disable-next-line no-console
+		this.invokeServerMethod('log', method, ...args).catch(console.error)
+	}
 }
