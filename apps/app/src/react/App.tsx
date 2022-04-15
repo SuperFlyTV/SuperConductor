@@ -31,6 +31,7 @@ import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage
 import { SplashScreen } from './components/SplashScreen'
 import { DefiningArea } from 'src/lib/triggers/keyDisplay'
 import { LogLevel } from '../lib/logging/log-levels'
+import { LoggerContext } from './contexts/Logger'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -41,6 +42,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 const ENABLE_WHY_DID_YOU_RENDER = false
 
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
+	// eslint-disable-next-line no-console
 	console.log('Why-did-you-render-enabled')
 	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
@@ -89,11 +91,44 @@ export const App = observer(function App() {
 		return new IPCServer(ipcRenderer)
 	}, [])
 
+	const log = useMemo(() => {
+		return {
+			/* eslint-disable no-console */
+			error: (...args: any[]) => {
+				console.error(...args)
+				return serverAPI.log(LogLevel.Error, ...args)
+			},
+			warn: (...args: any[]) => {
+				console.warn(...args)
+				return serverAPI.log(LogLevel.Warn, ...args)
+			},
+			info: (...args: any[]) => {
+				console.info(...args)
+				return serverAPI.log(LogLevel.Info, ...args)
+			},
+			HTTP: (...args: any[]) => {
+				console.debug(...args)
+				return serverAPI.log(LogLevel.HTTP, ...args)
+			},
+			verbose: (...args: any[]) => {
+				console.debug(...args)
+				return serverAPI.log(LogLevel.Verbose, ...args)
+			},
+			debug: (...args: any[]) => {
+				console.debug(...args)
+				return serverAPI.log(LogLevel.Debug, ...args)
+			},
+			silly: (...args: any[]) => {
+				console.debug(...args)
+				return serverAPI.log(LogLevel.Silly, ...args)
+			},
+			/* eslint-enable no-console */
+		}
+	}, [serverAPI])
+
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
-			// eslint-disable-next-line no-console
-			console.error(error)
-			serverAPI.log(LogLevel.Error, error)
+			log.error(error)
 			if (typeof error === 'object' && error !== null && 'message' in error) {
 				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 			} else if (typeof error === 'string') {
@@ -102,9 +137,7 @@ export const App = observer(function App() {
 				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
 			}
 		}
-	}, [enqueueSnackbar, serverAPI])
-
-	serverAPI.log(LogLevel.Info, 'This is only a test.')
+	}, [enqueueSnackbar, log])
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -172,8 +205,10 @@ export const App = observer(function App() {
 			.then(() => {
 				setSorensenInitialized(true)
 			})
-			.catch(console.error)
-	}, [])
+			.catch((error) => {
+				serverAPI.log(LogLevel.Error, error)
+			})
+	}, [serverAPI])
 
 	// Handle splash screen:
 	const appStore = store.appStore
@@ -193,7 +228,9 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
-			appStore.serverAPI.acknowledgeSeenVersion().catch(console.error)
+			appStore.serverAPI.acknowledgeSeenVersion().catch((error) => {
+				serverAPI.log(LogLevel.Error, error)
+			})
 		}
 	}
 
@@ -208,38 +245,40 @@ export const App = observer(function App() {
 
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
-			<IPCServerContext.Provider value={serverAPI}>
-				<ProjectContext.Provider value={project}>
-					<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-						<div className="app" onPointerDown={handlePointerDownAnywhere}>
-							<HeaderBar />
+			<LoggerContext.Provider value={log}>
+				<IPCServerContext.Provider value={serverAPI}>
+					<ProjectContext.Provider value={project}>
+						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+								<HeaderBar />
 
-							{splashScreenOpen && (
-								<SplashScreen
-									seenVersion={appStore.version?.seenVersion}
-									currentVersion={appStore.version?.currentVersion}
-									onClose={onSplashScreenClose}
-								/>
-							)}
+								{splashScreenOpen && (
+									<SplashScreen
+										seenVersion={appStore.version?.seenVersion}
+										currentVersion={appStore.version?.currentVersion}
+										onClose={onSplashScreenClose}
+									/>
+								)}
 
-							{store.guiStore.isNewRundownSelected() ? (
-								<NewRundownPage />
-							) : store.guiStore.isHomeSelected() ? (
-								<HomePage project={project} />
-							) : (
-								<>
-									<div className="main-area">
-										<RundownView mappings={project.mappings} />
-									</div>
-									<div className="side-bar">
-										<Sidebar mappings={project.mappings} />
-									</div>
-								</>
-							)}
-						</div>
-					</ErrorHandlerContext.Provider>
-				</ProjectContext.Provider>
-			</IPCServerContext.Provider>
+								{store.guiStore.isNewRundownSelected() ? (
+									<NewRundownPage />
+								) : store.guiStore.isHomeSelected() ? (
+									<HomePage project={project} />
+								) : (
+									<>
+										<div className="main-area">
+											<RundownView mappings={project.mappings} />
+										</div>
+										<div className="side-bar">
+											<Sidebar mappings={project.mappings} />
+										</div>
+									</>
+								)}
+							</div>
+						</ErrorHandlerContext.Provider>
+					</ProjectContext.Provider>
+				</IPCServerContext.Provider>
+			</LoggerContext.Provider>
 		</HotkeyContext.Provider>
 	)
 })
