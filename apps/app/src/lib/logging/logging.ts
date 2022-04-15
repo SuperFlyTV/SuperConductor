@@ -3,36 +3,47 @@ import winston from 'winston'
 import consoleTransport from 'winston/dist/winston/transports/console'
 import { utilFormatter } from './util-formatter'
 import DailyRotateFile from 'winston-daily-rotate-file'
+import { LogLevel } from './log-levels'
 
-/**
- * https://github.com/winstonjs/winston#logging-levels
- */
-export enum LogLevel {
-	Error = 'error',
-	Warn = 'warn',
-	Info = 'info',
-	HTTP = 'http',
-	Verbose = 'verbose',
-	Debug = 'debug',
-	Silly = 'silly',
-}
+const myFormat = winston.format.printf(({ level, message, label, timestamp }) => {
+	return `${timestamp} [${label}] ${level}: ${message}`
+})
 
-export const createLogger = (dirname: string) => {
-	return winston.createLogger({
+export const createLoggers = (dirname: string) => {
+	const transports = [
+		new consoleTransport(),
+		new DailyRotateFile({
+			dirname,
+			filename: 'SuperConductor-%DATE%.log',
+			maxSize: '20m',
+			maxFiles: '30d',
+			createSymlink: true,
+		}),
+	]
+
+	const electronLogger = winston.createLogger({
 		level: LogLevel.Silly,
-		format: utilFormatter(),
-		transports: [
-			new consoleTransport({
-				format: winston.format.simple(),
-			}),
-			new DailyRotateFile({
-				format: winston.format.combine(winston.format.timestamp(), winston.format.simple()),
-				dirname,
-				filename: 'SuperConductor-%DATE%.log',
-				maxSize: '20m',
-				maxFiles: '30d',
-				createSymlink: true,
-			}),
-		],
+		format: winston.format.combine(
+			winston.format.label({ label: 'electron' }),
+			winston.format.timestamp(),
+			utilFormatter(),
+			winston.format.simple(),
+			myFormat
+		),
+		transports,
 	})
+
+	const rendererLogger = winston.createLogger({
+		level: LogLevel.Silly,
+		format: winston.format.combine(
+			winston.format.label({ label: 'renderer' }),
+			winston.format.timestamp(),
+			utilFormatter(),
+			winston.format.simple(),
+			myFormat
+		),
+		transports,
+	})
+
+	return { electronLogger, rendererLogger }
 }

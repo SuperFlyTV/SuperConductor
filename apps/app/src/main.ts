@@ -6,14 +6,14 @@ import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
-import { createLogger } from './lib/logging'
+import { createLoggers } from './lib/logging'
 import { baseFolder } from './lib/baseFolder'
 import path from 'path'
 
 const createWindow = (): void => {
-	const log = createLogger(path.join(baseFolder(), 'Logs'))
+	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
 
-	const tpt = new TimedPlayerThingy(log)
+	const tpt = new TimedPlayerThingy(log, rendererLogger)
 
 	const appData = tpt.storage.getAppData()
 

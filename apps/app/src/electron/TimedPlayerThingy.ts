@@ -32,7 +32,7 @@ export class TimedPlayerThingy {
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: winston.Logger) {
+	constructor(private log: winston.Logger, private renderLog: winston.Logger) {
 		this.session = new SessionHandler()
 		this.storage = new StorageHandler(
 			log,
@@ -128,7 +128,7 @@ export class TimedPlayerThingy {
 		})
 		this.bridgeHandler = bridgeHandler
 
-		this.ipcServer = new IPCServer(ipcMain, this.log, this.storage, this.session, {
+		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
 			refreshResources: () => {
 				// this.tptCaspar?.fetchAndSetMedia()
 				// this.tptCaspar?.fetchAndSetTemplates()

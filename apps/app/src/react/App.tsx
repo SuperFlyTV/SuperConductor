@@ -30,6 +30,7 @@ import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
 import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { LogLevel } from '../lib/logging/log-levels'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -84,9 +85,15 @@ export const App = observer(function App() {
 		}
 	}, [triggers])
 
+	const serverAPI = useMemo<IPCServer>(() => {
+		return new IPCServer(ipcRenderer)
+	}, [])
+
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
+			// eslint-disable-next-line no-console
 			console.error(error)
+			serverAPI.log(LogLevel.Error, error)
 			if (typeof error === 'object' && error !== null && 'message' in error) {
 				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 			} else if (typeof error === 'string') {
@@ -95,7 +102,9 @@ export const App = observer(function App() {
 				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
 			}
 		}
-	}, [enqueueSnackbar])
+	}, [enqueueSnackbar, serverAPI])
+
+	serverAPI.log(LogLevel.Info, 'This is only a test.')
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -103,9 +112,6 @@ export const App = observer(function App() {
 		}
 	}, [handleError])
 
-	const serverAPI = useMemo<IPCServer>(() => {
-		return new IPCServer(ipcRenderer)
-	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(handleError)

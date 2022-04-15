@@ -8,6 +8,7 @@ import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { LogLevel } from '../lib/logging'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -65,6 +66,7 @@ export interface Action {
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
+	log: (method: LogLevel, ...args: any[]) => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void

@@ -38,6 +38,7 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
+import { LogLevel } from '../lib/logging'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -89,7 +90,8 @@ export class IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
-		private log: winston.Logger,
+		private _log: winston.Logger,
+		private _renderLog: winston.Logger,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
@@ -180,7 +182,7 @@ export class IPCServer
 			await action.undo()
 			this.undoPointer--
 		} catch (error) {
-			this.log.error('Error when undoing:', error)
+			this._log.error('Error when undoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -195,7 +197,7 @@ export class IPCServer
 			action.undo = redoResult.undo
 			this.undoPointer++
 		} catch (error) {
-			this.log.error('Error when redoing:', error)
+			this._log.error('Error when redoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -474,7 +476,9 @@ export class IPCServer
 			// Play the first non-disabled part
 			const part = group.parts.find((p) => !p.disabled)
 			if (part) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(this.log.error)
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(
+					this._log.error
+				)
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
@@ -482,7 +486,7 @@ export class IPCServer
 				arg.rundownId,
 				arg.groupId,
 				group.parts.map((part) => part.id)
-			).catch(this.log.error)
+			).catch(this._log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -509,7 +513,9 @@ export class IPCServer
 			}
 
 			if (partId) {
-				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(this.log.error)
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(
+					this._log.error
+				)
 			}
 		} else {
 			const playingPartIds = Object.keys(group.playout.playingParts)
@@ -519,10 +525,10 @@ export class IPCServer
 					arg.rundownId,
 					arg.groupId,
 					group.parts.map((part) => part.id)
-				).catch(this.log.error)
+				).catch(this._log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this.log.error)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this._log.error)
 			}
 		}
 	}
@@ -1762,6 +1768,9 @@ export class IPCServer
 			},
 			description: ActionDescription.CreateMissingMapping,
 		}
+	}
+	async log(method: LogLevel, ...args: any[]): Promise<void> {
+		this._renderLog[method](args[0], ...args.slice(1))
 	}
 
 	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {

@@ -1,4 +1,5 @@
 import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { LogLevel } from '../../lib/logging'
 
 type Promisify<T> = {
 	[K in keyof T]: T[K] extends (...arg: any[]) => any
@@ -191,5 +192,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
+	}
+	log(method: LogLevel, ...args: any[]): void {
+		// eslint-disable-next-line no-console
+		this.invokeServerMethod('log', method, ...args).catch(console.error)
 	}
 }
