@@ -29,6 +29,7 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
+import { DefiningArea } from 'src/lib/triggers/keyDisplay'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -65,12 +66,16 @@ export const App = observer(function App() {
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
+				store.projectStore.update(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			displayAboutDialog: () => {
 				setSplashScreenOpen(true)
+			},
+			updateDefiningArea: (definingArea: DefiningArea | null) => {
+				store.guiStore.updateDefiningArea(definingArea)
 			},
 		})
 
@@ -131,7 +136,7 @@ export const App = observer(function App() {
 			// send the keys to the backend and unexpectedly trigger the action.
 			if (!triggers.isAnyoneListening()) {
 				// Send the currently pressed keys to backend, so that the server can execute triggers:
-				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
+				serverAPI.setKeyboardKeys({ activeKeys }).catch(handleError)
 			}
 		}
 		document.addEventListener('keydown', (e) => handleKey(e))

@@ -69,6 +69,7 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 						},
 					},
 				},
+				peripheralSettings: {},
 			},
 		},
 

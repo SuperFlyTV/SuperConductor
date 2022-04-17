@@ -1,0 +1,108 @@
+.peripheral-settings {
+
+
+    padding: 1.5rem;
+
+    min-width: 20rem;
+
+    // &__settings {
+    // }
+
+
+
+
+
+
+    .button-grid {
+        display: grid;
+        column-gap: 0.5em;
+        row-gap: 0.5em;
+
+        .button {
+
+            border: 1px solid #999;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+
+            font-size: 0.7em;
+            line-height: 1.1;
+
+            height: 5em;
+            width: 5em;
+
+            &.pressed {
+                position: relative;
+                top: 2px;
+                left: 1px;
+            }
+
+            .key-bg {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                z-index: -1;
+            }
+            .key-label {
+                position: absolute;
+                top: 0;
+                right: 0;
+                font-size: 75%;
+                line-height: 1;
+                padding: 1px 1px 0 1px;
+                text-shadow: #999 0 0 3px;
+                z-index: 2;
+                background: #121212;
+            }
+            .key-display {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                overflow: hidden;
+                z-index: 1;
+                padding: 0.2em;
+
+
+                .area-label {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    max-width: 4em;
+                    overflow: hidden;
+                    font-size: 75%;
+                    z-index: 1;
+                    padding: 1px 1px 0 1px;
+                    background: #121212;
+                }
+                .single-line {
+                    display: block;
+                    white-space: nowrap;
+                }
+                .multi-line {
+                    display: block;
+                    white-space: normal;
+                }
+                .large-center {
+                    position: absolute;
+                    top: 0.6em;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    text-align: center;
+
+                    font-size: 200%;
+
+                }
+            }
+        }
+    }
+    .streamdeck {
+
+    }
+
+
+}

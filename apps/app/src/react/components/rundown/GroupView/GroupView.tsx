@@ -13,7 +13,7 @@ import {
 } from '../../../api/DragItemTypes'
 import { useDrag, useDrop, XYCoord } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button, TextField, ToggleButton } from '@mui/material'
+import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
@@ -42,6 +42,9 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
+import { TriggerBtn } from '../../inputs/TriggerBtn'
+import { PeripheralArea } from '../../../../models/project/Peripheral'
+import { useMemoComputedObject } from '../../../mobx/lib'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -54,6 +57,7 @@ export const GroupView: React.FC<{
 	const hotkeyContext = useContext(HotkeyContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const rundown = store.rundownsStore.currentRundown
+	const allAssignedAreas = store.projectStore.assignedAreas
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -445,6 +449,14 @@ export const GroupView: React.FC<{
 			.catch(handleError)
 	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
 
+	const assignedAreas = useMemoComputedObject(() => {
+		return allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
+	}, [allAssignedAreas, group.id])
+
+	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<Element | null>(null)
+	const buttonAreaPopoverOpen = Boolean(partSubmenuPopoverAnchorEl)
+	const closePartSubmenu = useCallback(() => {}, [])
+
 	if (!rundown) {
 		return null
 	}
@@ -644,6 +656,29 @@ export const GroupView: React.FC<{
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
+						<TriggerBtn
+							disabled={group.locked}
+							onTrigger={(event: React.MouseEvent<Element, MouseEvent>) => {
+								setPartSubmenuPopoverAnchorEl(event.currentTarget)
+							}}
+							active={assignedAreas.length > 0}
+							title={
+								'Assign Button Area' + (group.locked ? ' (disabled due to locked Part or Group)' : '')
+							}
+						/>
+						<Popover
+							open={buttonAreaPopoverOpen}
+							anchorEl={partSubmenuPopoverAnchorEl}
+							onClose={() => {
+								setPartSubmenuPopoverAnchorEl(null)
+							}}
+							anchorOrigin={{
+								vertical: 'bottom',
+								horizontal: 'left',
+							}}
+						>
+							<GroupButtonAreaPopover group={group} />
+						</Popover>
 
 						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
@@ -787,3 +822,82 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 		</>
 	)
 }
+
+const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function GroupButtonAreaPopover({ group }) {
+	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+	const project = store.projectStore.project
+
+	const allAreas = useMemoComputedObject(() => {
+		const allAreas: {
+			bridgeId: string
+			deviceId: string
+			areaId: string
+			area: PeripheralArea
+		}[] = []
+		for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
+			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+					allAreas.push({ area, areaId, bridgeId, deviceId })
+				}
+			}
+		}
+		return allAreas
+	}, [project])
+
+	return (
+		<>
+			<div>
+				Assign a Button Area to this Group:
+				<table>
+					<tbody>
+						{allAreas.map(({ area, areaId, bridgeId, deviceId }) => {
+							return (
+								<tr key={areaId}>
+									<td>{area.name}</td>
+									<td>{area.identifiers.length} buttons</td>
+									<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>
+									<td>
+										{area.assignedToGroupId === group.id ? (
+											<Button
+												variant="contained"
+												onClick={() => {
+													ipcServer
+														.assignAreaToGroup({
+															groupId: undefined,
+															areaId,
+															bridgeId,
+															deviceId,
+														})
+														.catch(handleError)
+												}}
+											>
+												Remove
+											</Button>
+										) : (
+											<Button
+												variant="contained"
+												onClick={() => {
+													ipcServer
+														.assignAreaToGroup({
+															groupId: group.id,
+															areaId,
+															bridgeId,
+															deviceId,
+														})
+														.catch(handleError)
+												}}
+											>
+												Assign
+											</Button>
+										)}
+									</td>
+								</tr>
+							)
+						})}
+					</tbody>
+				</table>
+			</div>
+		</>
+	)
+})

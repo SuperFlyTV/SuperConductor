@@ -30,6 +30,13 @@ type IObservableObject<T extends object> = {
 }
 
 export class RundownsStore {
+	private _currentRundownId?: string = undefined
+	private _rundowns = new Map<string, Rundown>()
+	/**
+	 * Keeps copies of the rundowns that can't be modified by frontend code.
+	 * Used in Group and Part moves to compare our mutated state to the original state.
+	 */
+	private _rundownsClean = new Map<string, Readonly<Rundown>>()
 	/**
 	 * List of all available rundowns
 	 */
@@ -38,10 +45,8 @@ export class RundownsStore {
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateRundown: (rundownId: string, rundown: Rundown) => {
-			store.guiStore.activeTabId = rundownId
-			this.currentRundownId = rundownId
-			this.currentRundown = rundown
-			this._currentRundownClean = deepClone(rundown)
+			this._rundowns.set(rundownId, rundown)
+			this._rundownsClean.set(rundownId, deepClone(rundown))
 		},
 	})
 
@@ -56,31 +61,17 @@ export class RundownsStore {
 	/**
 	 * Id of the currently opened rundown
 	 */
-	private _currentRundownId?: string = undefined
 	get currentRundownId() {
 		return this._currentRundownId
-	}
-	private set currentRundownId(id: string | undefined) {
-		this._currentRundownId = id
 	}
 
 	/**
 	 * Currently opened rundown data
 	 */
-	private _currentRundown?: Rundown = undefined
-	get currentRundown() {
-		return this._currentRundown
+	get currentRundown(): Rundown | undefined {
+		if (!this._currentRundownId) return undefined
+		return this._rundowns.get(this._currentRundownId)
 	}
-	private set currentRundown(rd: Rundown | undefined) {
-		this._currentRundown = rd as any
-		this._currentRundownClean = deepClone(rd)
-	}
-
-	/**
-	 * A copy of the current rundown that can't be modified by frontend code.
-	 * Used in Group and Part moves to compare our mutated state to the original state.
-	 */
-	private _currentRundownClean?: Readonly<Rundown> = undefined
 
 	/**
 	 * The function which commits a Part move, sending an IPC API command to the electron backend.
@@ -98,14 +89,18 @@ export class RundownsStore {
 	 */
 	setCurrentRundown(rundownId?: string) {
 		if (rundownId) {
-			this.serverAPI.triggerSendRundown({ rundownId: rundownId }).catch(() => {
+			this._currentRundownId = rundownId
+			store.guiStore.activeTabId = rundownId
+			this.serverAPI.triggerSendRundown({ rundownId }).catch(() => {
 				//TODO
 			})
 		} else {
 			this._currentRundownId = undefined
-			this._currentRundown = undefined
-			this._currentRundownClean = undefined
 		}
+	}
+
+	getRundown(rundownId: string): Rundown | undefined {
+		return this._rundowns.get(rundownId)
 	}
 
 	/**
@@ -145,7 +140,7 @@ export class RundownsStore {
 	}
 
 	moveGroupInCurrentRundown(groupId: string, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -172,21 +167,21 @@ export class RundownsStore {
 	}
 
 	commitMoveGroupInCurrentRundown() {
-		if (!this._commitMoveGroupFn) {
-			return
-		}
+		if (!this._commitMoveGroupFn) return
+		if (!this.currentRundownId) return
+		const currentRundownId = this.currentRundownId
 
 		const fn = this._commitMoveGroupFn
 		this._commitMoveGroupFn = undefined
 
 		return fn().catch((error) => {
-			this._revertRundown()
+			this._revertRundown(currentRundownId)
 			throw error
 		})
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -275,15 +270,15 @@ export class RundownsStore {
 	}
 
 	commitMovePartInCurrentRundown() {
-		if (!this._commitMovePartFn) {
-			return
-		}
+		if (!this._commitMovePartFn) return
+		if (!this.currentRundownId) return
+		const currentRundownId = this.currentRundownId
 
 		const fn = this._commitMovePartFn
 		this._commitMovePartFn = undefined
 
 		return fn().catch((error) => {
-			this._revertRundown()
+			this._revertRundown(currentRundownId)
 			throw error
 		})
 	}
@@ -291,7 +286,9 @@ export class RundownsStore {
 	/**
 	 * Reverts _currentRundown to a fresh copy of _currentRundownClean.
 	 */
-	private _revertRundown() {
-		this._currentRundown = deepClone(this._currentRundownClean)
+	private _revertRundown(rundownId: string) {
+		const reverted = deepClone(this._rundownsClean.get(rundownId))
+		if (reverted) this._rundowns.set(rundownId, reverted)
+		else this._rundowns.delete(rundownId)
 	}
 }

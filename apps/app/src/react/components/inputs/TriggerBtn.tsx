@@ -4,13 +4,13 @@ import { BsKeyboardFill, BsKeyboard } from 'react-icons/bs'
 
 export const TriggerBtn: React.FC<{
 	className?: string
-	onTrigger: () => void
+	onTrigger: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void
 	active: boolean
 	title: string
 	disabled?: boolean
 }> = (props) => {
-	const handleOnClick = (_e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-		props.onTrigger()
+	const handleOnClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+		props.onTrigger(e)
 	}
 	return (
 		<Button

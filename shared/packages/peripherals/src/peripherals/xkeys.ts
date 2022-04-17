@@ -1,17 +1,29 @@
-import { AttentionLevel, KeyDisplay } from '@shared/api'
+import { AttentionLevel, KeyDisplay, PeripheralInfo } from '@shared/api'
 import _ from 'lodash'
 import { XKeysWatcher, XKeys } from 'xkeys'
 import { Peripheral } from './peripheral'
 
+/** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
+/** An X-keys value for how fast the keys should flash, when flashing Slowly */
 const FLASH_NORMAL = 30
 
 export class PeripheralXkeys extends Peripheral {
 	private connectedToParent = false
 	static Watch(onDevice: (peripheral: PeripheralXkeys) => void) {
+		let usePolling = false
+		// Check if usb-detection is installed:
+		try {
+			// eslint-disable-next-line node/no-missing-require
+			require.resolve('usb-detection') // require.resolve() throws an error if module is not found
+		} catch (e) {
+			// usb-detection is not installed, fall back to polling:
+			usePolling = true
+		}
+
 		const watcher = new XKeysWatcher({
 			automaticUnitIdMode: true,
-			// usePolling: true,
+			usePolling,
 			// pollingInterval: 1000,
 		})
 
@@ -33,6 +45,7 @@ export class PeripheralXkeys extends Peripheral {
 
 	public initializing = false
 	public connected = false
+	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private sentFrequency = 0
 	private sentBacklight: {
@@ -51,8 +64,15 @@ export class PeripheralXkeys extends Peripheral {
 		try {
 			this.initializing = true
 
-			const name = this.xkeysPanel.info.name
-			this._name = name
+			this._info = {
+				name: this.xkeysPanel.info.name,
+				gui: {
+					type: 'xkeys',
+					colCount: this.xkeysPanel.info.colCount,
+					rowCount: this.xkeysPanel.info.rowCount,
+					layout: this.xkeysPanel.info.layout,
+				},
+			}
 
 			this.xkeysPanel.on('down', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
@@ -88,6 +108,10 @@ export class PeripheralXkeys extends Peripheral {
 			throw e
 		}
 	}
+	get info(): PeripheralInfo {
+		if (!this._info) throw new Error('Peripheral not initialized')
+		return this._info
+	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		const keyIndex = parseInt(identifier)
 		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
@@ -96,48 +120,49 @@ export class PeripheralXkeys extends Peripheral {
 		if (force || !_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
-			let color = 'black'
-			// let flashing = AttentionLevel.IGNORE
+			let { color, flashFrequency } = { color: 'black', flashFrequency: 0 }
+
 			if (this.connectedToParent) {
-				if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
-					color = 'blue'
-				} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
-					color = 'red'
-				} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
-					color = 'red' // flashing slowly
-				} else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) {
-					color = 'white' // flashing quickly
+				if (keyDisplay.intercept) {
+					// Normal functionality is intercepted / disabled
+
+					if (keyDisplay.area) {
+						if (keyDisplay.area.areaInDefinition) {
+							color = 'red'
+							flashFrequency = FLASH_FAST
+						} else {
+							color = 'blue'
+						}
+					} else {
+						color = 'black'
+					}
+				} else {
+					const o = this.getKeyColorAndFlash(keyDisplay)
+					color = o.color
+					flashFrequency = o.flashFrequency
 				}
 			}
 
 			// Because the xkeys-panel only has a single flashing-bus, we'll go through
 			// all the keys and pick the one with the highest flashing-level.
-			const worstAttentionLevel = Object.values(this.sentKeyDisplay).reduce(
-				(prev, keyDisplay) => Math.max(keyDisplay.attentionLevel, prev),
-				AttentionLevel.IGNORE
-			)
-
-			let frequency = 0
-			if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) frequency = FLASH_NORMAL
-			else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) frequency = FLASH_FAST
-
-			let worstFrequency = 0
-			if (worstAttentionLevel === AttentionLevel.NOTIFY) worstFrequency = FLASH_NORMAL
-			else if (worstAttentionLevel === AttentionLevel.ALERT) worstFrequency = FLASH_FAST
+			const fastestFlashFrequency = Object.values(this.sentKeyDisplay).reduce((prev, keyDisplay) => {
+				const { flashFrequency: flash } = this.getKeyColorAndFlash(keyDisplay)
+				return Math.max(flash, prev)
+			}, 0)
 
 			let notifyAll = false
 			if (!force) {
-				if (worstFrequency !== this.sentFrequency) {
-					this.sentFrequency = worstFrequency
-					if (worstFrequency) {
-						this.xkeysPanel.setFrequency(worstFrequency)
+				if (fastestFlashFrequency !== this.sentFrequency) {
+					this.sentFrequency = fastestFlashFrequency
+					if (fastestFlashFrequency) {
+						this.xkeysPanel.setFrequency(fastestFlashFrequency)
 					}
 					notifyAll = true
 				}
 			}
 
 			// Only flash this key, if its frequency mathces the one on the flashing-bus:
-			const flashing = frequency > 0 && frequency === worstFrequency
+			const flashing = flashFrequency > 0 && flashFrequency === fastestFlashFrequency
 
 			const backlight = {
 				color,
@@ -151,6 +176,28 @@ export class PeripheralXkeys extends Peripheral {
 					await this._updateAllKeys()
 				}
 			}
+		}
+	}
+	private getKeyColorAndFlash(keyDisplay: KeyDisplay): { color: string; flashFrequency: number } {
+		let color = 'black'
+		let flashFrequency = 0
+		if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
+			color = 'blue'
+			flashFrequency = 0
+		} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
+			color = 'red'
+			flashFrequency = 0
+		} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
+			color = 'red' // flashing slowly
+			flashFrequency = FLASH_NORMAL
+		} else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) {
+			color = 'white' // flashing quickly
+			flashFrequency = FLASH_FAST
+		}
+
+		return {
+			color,
+			flashFrequency,
 		}
 	}
 	async setConnectedToParent(connected: boolean): Promise<void> {
