@@ -150,6 +150,24 @@ export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
+		paused: ({ action, part, playingPart }) => {
+			// Only show the playing state while OUR part is playing
+			if (action.part.id !== part.id) return null
+
+			const label = action0.part.name
+			return {
+				attentionLevel: AttentionLevel.INFO,
+				area: triggersAreaToArea(triggerArea, false),
+
+				header: {
+					long: `Play ${label}`,
+					short: `▶${label}`,
+				},
+				info: {
+					long: `#duration(${playingPart.duration})`,
+				},
+			}
+		},
 		playing: (data) => {
 			// Only show the playing state while OUR part is playing
 			if (data.action.part.id !== data.part.id) return null
@@ -225,6 +243,24 @@ export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea |
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
+		paused: ({ action, part, playingPart }) => {
+			// Only show the playing state while OUR part is playing
+			if (action.part.id !== part.id) return null
+
+			const label = action0.part.name
+			return {
+				attentionLevel: AttentionLevel.INFO,
+				area: triggersAreaToArea(triggerArea, false),
+
+				header: {
+					long: `Play ${label}`,
+					short: `▶${label}`,
+				},
+				info: {
+					long: `#duration(${playingPart.duration})`,
+				},
+			}
+		},
 		playing: (data) => {
 			// Only show the playing state while OUR part is playing
 			if (data.action.part.id !== data.part.id) return null
@@ -283,7 +319,18 @@ export function _getKeyDisplay(
 	actions: Action[],
 	labels: {
 		idle: KeyDisplay
-		playing: (data: { group: Group; part: Part; action: Action }) => KeyDisplay | null
+		paused?: (data: {
+			group: Group
+			part: Part
+			action: Action
+			playingPart: GroupPreparedPlayDataPart
+		}) => KeyDisplay | null
+		playing: (data: {
+			group: Group
+			part: Part
+			action: Action
+			playingPart: GroupPreparedPlayDataPart
+		}) => KeyDisplay | null
 	}
 ): KeyDisplayTimeline {
 	if (actions.length === 0) throw new Error('Actions array is empty')
@@ -310,11 +357,24 @@ export function _getKeyDisplay(
 				const part: Part = playingPart.part
 				// if (action.part.id !== part.id) return []
 
-				const content = labels.playing({
-					group: action.group,
-					part: part,
-					action: action,
-				})
+				let content: KeyDisplay | null = null
+				if (playingPart.pauseTime !== undefined) {
+					// The part is paused
+					content =
+						labels.paused?.({
+							group: action.group,
+							part: part,
+							action: action,
+							playingPart,
+						}) ?? labels.idle
+				} else {
+					content = labels.playing({
+						group: action.group,
+						part: part,
+						action: action,
+						playingPart,
+					})
+				}
 
 				if (!content) return []
 

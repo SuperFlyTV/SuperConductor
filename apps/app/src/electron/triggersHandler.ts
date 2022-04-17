@@ -199,7 +199,16 @@ export class TriggersHandler {
 						const myPlayhead = playData.playheads[action.part.id]
 
 						// const isPlaying = action.group.oneAtATime ? playData.groupIsPlaying : myPlayhead
-						const isPlaying = Boolean(myPlayhead)
+						let isPlaying: boolean
+						if (!myPlayhead) {
+							// The part is not playing
+							isPlaying = false
+						} else if (myPlayhead.partPauseTime !== undefined) {
+							// The part is paused, so we need to resume it:
+							isPlaying = false
+						} else {
+							isPlaying = true
+						}
 
 						if (isPlaying) {
 							this.ipcServer

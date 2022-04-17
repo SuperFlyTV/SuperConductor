@@ -172,6 +172,9 @@ function fixString(text: string, instance: TimelineObjectInstance, changedAnythi
 			if (time) {
 				text = text.replace(regex, formatTime(Math.max(0, Math.ceil((time - Date.now()) / 1000))))
 				changedAnything.change = true
+			} else if (time === null) {
+				text = text.replace(regex, '')
+				changedAnything.change = true
 			}
 		}
 	}
