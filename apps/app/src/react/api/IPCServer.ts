@@ -178,6 +178,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	updatePeripheralArea(...args: ServerArgs<'updatePeripheralArea'>) {
 		return this.invokeServerMethod('updatePeripheralArea', ...args)
 	}
+	assignAreaToGroup(...args: ServerArgs<'assignAreaToGroup'>) {
+		return this.invokeServerMethod('assignAreaToGroup', ...args)
+	}
 	startDefiningArea(...args: ServerArgs<'startDefiningArea'>) {
 		return this.invokeServerMethod('startDefiningArea', ...args)
 	}

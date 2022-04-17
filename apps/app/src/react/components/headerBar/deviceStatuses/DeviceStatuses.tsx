@@ -17,7 +17,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	const [submenuPopover, setSubmenuPopover] = React.useState<{
 		anchorEl: HTMLAnchorElement
 		bridgeId: string
-		peripheralId: string
+		deviceId: string
 	} | null>(null)
 	const closeSubMenu = useCallback(() => {
 		setSubmenuPopover(null)
@@ -75,14 +75,17 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 							label={peripheral.info.name}
 							tooltip={peripheral.status.connected ? 'Disconnected' : ''}
 							ok={bridgeIsConnected && peripheral.status.connected}
-							open={submenuPopover?.peripheralId === peripheralId}
+							open={
+								submenuPopover?.bridgeId === peripheral.bridgeId &&
+								submenuPopover?.deviceId === peripheral.id
+							}
 							onClick={(event) => {
 								event.preventDefault()
 
 								setSubmenuPopover({
 									anchorEl: event.currentTarget,
 									bridgeId: peripheral.bridgeId,
-									peripheralId,
+									deviceId: peripheral.id,
 								})
 							}}
 						/>
@@ -102,8 +105,8 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 				{submenuPopover ? (
 					<PeripheralSettings
 						bridgeId={submenuPopover.bridgeId}
-						peripheralId={submenuPopover.peripheralId}
-						peripheral={appStore.peripherals[submenuPopover.peripheralId]}
+						deviceId={submenuPopover.deviceId}
+						peripheral={appStore.peripherals[`${submenuPopover.bridgeId}-${submenuPopover.deviceId}`]}
 					/>
 				) : null}
 			</Popover>

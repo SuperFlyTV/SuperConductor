@@ -1,33 +1,124 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
-import { assertNever } from '@shared/lib'
+import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
 import { Action } from './action'
 import { Part } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../../electron/timeline'
 import { Group } from '../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
+import { PeripheralArea } from '../../models/project/Peripheral'
+import { Project } from '../../models/project/Project'
+import { ActiveTrigger } from 'src/models/rundown/Trigger'
+
+export type TriggersAreaMap = Map<string, TriggerArea>
+export interface TriggerArea {
+	areaId: string
+	area: PeripheralArea
+	keyRank: number
+	areaColor: string
+}
+export interface DefiningArea {
+	bridgeId: string
+	deviceId: string
+	areaId: string
+}
+
+export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
+	const triggersAreaMap = new Map<
+		string,
+		{
+			areaId: string
+			area: PeripheralArea
+			keyRank: number
+			areaColor: string
+		}
+	>()
+	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
+		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+			let iArea = 0
+			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+				iArea++
+
+				// Generate a color, using the golden ratio to make the colors as distinct as possible:
+				const phi = 2.61803398875
+				const notRandom0 = iArea / phi
+				const notRandom1 = (iArea + 1) / phi
+				const notRandom2 = (iArea + 2) / phi
+				const areaColor = RGBToString(
+					HSVtoRGB({
+						h: notRandom0 % 1, // 0..1
+						s: 0.75 + (notRandom1 % 1) * 0.25, // 0.75..1
+						v: 0.5 + (notRandom2 % 1) * 0.5, // 0.5..1
+					})
+				)
+
+				for (let i = 0; i < area.identifiers.length; i++) {
+					const identifier = area.identifiers[i]
+
+					const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
+
+					triggersAreaMap.set(fullIdentifier, {
+						areaId,
+						area,
+						keyRank: i,
+						areaColor,
+					})
+				}
+			}
+		}
+	}
+	return triggersAreaMap
+}
 
 /** Return a KeyDisplay for a button */
-export function getKeyDisplayForButtonActions(actionsOnButton: Action[] | undefined): KeyDisplayTimeline | KeyDisplay {
-	if (actionsOnButton && actionsOnButton.length) {
-		const firstAction = actionsOnButton[0]
+export function getKeyDisplayForButtonActions(
+	trigger: ActiveTrigger,
+	triggersAreaMap: TriggersAreaMap,
+	definingArea: DefiningArea | null,
+	actionsOnButton: Action[] | undefined
+): KeyDisplayTimeline | KeyDisplay {
+	const triggerArea = triggersAreaMap.get(trigger.fullIdentifier)
+	if (definingArea && definingArea.bridgeId === trigger.bridgeId && definingArea.deviceId === trigger.deviceId) {
+		// An area is being defined on this peripheral.
 
-		if (firstAction.trigger.action === 'play') {
-			return playKeyDisplay(actionsOnButton)
-		} else if (firstAction.trigger.action === 'stop') {
-			return stopKeyDisplay(actionsOnButton)
-		} else if (firstAction.trigger.action === 'playStop') {
-			return playStopKeyDisplay(actionsOnButton)
+		if (triggerArea) {
+			// This key is in an area
+
+			return {
+				attentionLevel: AttentionLevel.NEUTRAL,
+				intercept: 'areaDefine',
+
+				area: triggersAreaToArea(triggerArea, definingArea.areaId === triggerArea.areaId),
+			}
 		} else {
-			assertNever(firstAction.trigger.action)
-			return []
+			return {
+				attentionLevel: AttentionLevel.NEUTRAL,
+				intercept: 'areaDefine',
+			}
 		}
 	} else {
-		// is not used anywhere
-		return idleKeyDisplay()
+		if (actionsOnButton && actionsOnButton.length) {
+			// There is at least one action on this key
+
+			const firstAction = actionsOnButton[0]
+
+			if (firstAction.trigger.action === 'play') {
+				return playKeyDisplay(actionsOnButton, triggerArea)
+			} else if (firstAction.trigger.action === 'stop') {
+				return stopKeyDisplay(actionsOnButton, triggerArea)
+			} else if (firstAction.trigger.action === 'playStop') {
+				return playStopKeyDisplay(actionsOnButton, triggerArea)
+			} else {
+				assertNever(firstAction.trigger.action)
+				return []
+			}
+		} else {
+			// This key has no actions
+			return idleKeyDisplay(triggerArea)
+		}
 	}
 }
 
-export function idleKeyDisplay(): KeyDisplayTimeline {
+export function idleKeyDisplay(triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	return [
 		{
 			id: 'idle_not_assigned',
@@ -35,30 +126,25 @@ export function idleKeyDisplay(): KeyDisplayTimeline {
 			enable: { while: 1 },
 			content: {
 				attentionLevel: AttentionLevel.IGNORE,
+				area: triggersAreaToArea(triggerArea, false),
 			},
 		},
 	]
 }
 
-function getLongestActionDuration(actions: Action[]): number | null {
-	if (actions.length === 0) throw new Error('Actions array is empty')
-	return actions.reduce((max: number | null, action) => {
-		if (action.part.resolved.duration === null || max === null) return null
-		return Math.max(max, action.part.resolved.duration)
-	}, 0)
-}
-
-export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
+	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
 		idle: {
 			attentionLevel: AttentionLevel.NEUTRAL,
+			area: triggersAreaToArea(triggerArea, false),
 
 			header: {
 				long: `Play ${action0.part.name}`,
-				short: `▶${action0.part.name.slice(-7)}`,
+				short: `▶${action0.part.name}`,
 			},
 			info: {
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
@@ -71,10 +157,11 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 			const label = action0.part.name
 			return {
 				attentionLevel: AttentionLevel.INFO,
+				area: triggersAreaToArea(triggerArea, false),
 
 				header: {
 					long: `Play ${label}`,
-					short: `▶${label.slice(-7)}`,
+					short: `▶${label}`,
 				},
 				info: {
 					long: longestDuration === null ? '-' : `#timeToEnd`,
@@ -83,18 +170,19 @@ export function playKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 		},
 	})
 }
-
-export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+export function stopKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
+	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
 	return _getKeyDisplay(actions, {
 		idle: {
 			attentionLevel: AttentionLevel.NEUTRAL,
+			area: triggersAreaToArea(triggerArea, false),
 
 			header: {
 				long: `Stop ${getLabel(actions, action0.part)}`,
-				short: `⏹${getLabel(actions, action0.part).slice(-7)}`,
+				short: `⏹${getLabel(actions, action0.part)}`,
 			},
 			info: {
 				long: longestDuration === null ? 'Infinite' : `#duration(${longestDuration})`,
@@ -106,19 +194,20 @@ export function stopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 			const label = getLabel(actions, data.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
+				area: triggersAreaToArea(triggerArea, false),
 
 				header: {
 					long: `Stop ${label}`,
-					short: `⏹${label.slice(-7)}`,
+					short: `⏹${label}`,
 				},
 				info: {
-					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
+					long: `${data.part.name}` + (longestDuration === null ? '' : '\n#timeToEnd'),
 				},
 			}
 		},
 	})
 }
-export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
+export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
@@ -126,32 +215,45 @@ export function playStopKeyDisplay(actions: Action[]): KeyDisplayTimeline {
 	return _getKeyDisplay(actions, {
 		idle: {
 			attentionLevel: AttentionLevel.NEUTRAL,
+			area: triggersAreaToArea(triggerArea, false),
 
 			header: {
 				long: `Play ${action0.part.name}`,
-				short: `▶${action0.part.name.slice(-7)}`,
+				short: `▶${action0.part.name}`,
 			},
 			info: {
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
 			},
 		},
 		playing: (data) => {
+			// Only show the playing state while OUR part is playing
+			if (data.action.part.id !== data.part.id) return null
+
 			// Only show the playing state while OUR part is playing:
-			if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null
+			// if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null
 			const label = getLabel(actions, data.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
+				area: triggersAreaToArea(triggerArea, false),
 
 				header: {
 					long: `Stop ${label}`,
-					short: `⏹${label.slice(-7)}`,
+					short: `⏹${label}`,
 				},
 				info: {
-					long: `${data.part.name}` + longestDuration === null ? '' : '\n#timeToEnd',
+					long: `${data.part.name}` + (longestDuration === null ? '' : '\n#timeToEnd'),
 				},
 			}
 		},
 	})
+}
+
+function getLongestActionDuration(actions: Action[]): number | null {
+	if (actions.length === 0) throw new Error('Actions array is empty')
+	return actions.reduce((max: number | null, action) => {
+		if (action.part.resolved.duration === null || max === null) return null
+		return Math.max(max, action.part.resolved.duration)
+	}, 0)
 }
 
 function getLabel(actions: Action[], part: Part) {
@@ -257,4 +359,13 @@ export function _getKeyDisplay(
 	})
 
 	return keyTimeline
+}
+function triggersAreaToArea(triggerArea: TriggerArea | undefined, areaInDefinition: boolean): KeyDisplay['area'] {
+	if (!triggerArea) return undefined
+	return {
+		areaInDefinition,
+		keyLabel: `${triggerArea.keyRank + 1}`,
+		areaLabel: triggerArea.area.name,
+		color: triggerArea.areaColor,
+	}
 }

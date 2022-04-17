@@ -12,7 +12,7 @@ export const TimelineDisplay: React.FC<{
 	useEffect(() => {
 		if (Array.isArray(keyDisplayTimeline)) {
 			// It is a timeline, which means that we should resolve it and track it.
-			tracker.current = new TimelineTracker(keyDisplayTimeline, (keyDisplay) => {
+			tracker.current = new TimelineTracker(keyDisplayTimeline, (keyDisplay: KeyDisplay) => {
 				setKeyDisplay(keyDisplay)
 			})
 		} else {

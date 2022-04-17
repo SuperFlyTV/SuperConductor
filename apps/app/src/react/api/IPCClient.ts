@@ -6,6 +6,7 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
+import { DefiningArea } from '../../lib/triggers/keyDisplay'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -21,6 +22,7 @@ export class IPCClient implements IPCClientMethods {
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
+			updateDefiningArea?: (definingArea: DefiningArea | null) => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -62,6 +64,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	displayAboutDialog(): void {
 		this.callbacks.displayAboutDialog?.()
+	}
+	updateDefiningArea(definingArea: DefiningArea | null): void {
+		this.callbacks.updateDefiningArea?.(definingArea)
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

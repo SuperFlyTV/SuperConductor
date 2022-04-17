@@ -1,4 +1,5 @@
 export * from './bytesToSize'
+export * from './color'
 export * from './lib'
 export * from './msToTime'
 export * from './Resources'

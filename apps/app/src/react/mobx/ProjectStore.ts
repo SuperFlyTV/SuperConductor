@@ -2,41 +2,58 @@ import { makeAutoObservable } from 'mobx'
 import { Bridge } from '../../models/project/Bridge'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Project, Settings } from '../../models/project/Project'
+import { PeripheralArea } from '../../models/project/Peripheral'
 
 /**
  * Information about currently opened project.
  * Updates regularly from electron backend.
  */
 export class ProjectStore {
-	id: string
-	name: string
-
-	mappings: Mappings
-	bridges: {
-		[bridgeId: string]: Bridge
+	project: Project = {
+		id: '',
+		name: '',
+		mappings: {},
+		bridges: {},
+		settings: {
+			enableInternalBridge: false,
+		},
 	}
 
-	settings: Settings
+	public assignedAreas: {
+		assignedToGroupId: string
+		bridgeId: string
+		deviceId: string
+		areaId: string
+		area: PeripheralArea
+	}[] = []
 
-	constructor(init: Project) {
+	constructor() {
 		makeAutoObservable(this)
-
-		this.id = init.id
-		this.name = init.name
-		this.mappings = init.mappings
-		this.bridges = init.bridges
-		this.settings = init.settings
 	}
 
-	update(data: Project) {
-		this.id = data.id
-		this.name = data.name
-		this.mappings = data.mappings
-		this.bridges = data.bridges
-		this.settings = data.settings
+	update(project: Project) {
+		this.project = project
+
+		this._updateAssignedAreas()
 	}
 
-	toPlain(): Project {
-		return { id: this.id, name: this.name, mappings: this.mappings, bridges: this.bridges, settings: this.settings }
+	private _updateAssignedAreas() {
+		this.assignedAreas = []
+
+		for (const [bridgeId, bridge] of Object.entries(this.project.bridges)) {
+			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+					if (area.assignedToGroupId) {
+						this.assignedAreas.push({
+							assignedToGroupId: area.assignedToGroupId,
+							bridgeId,
+							deviceId,
+							areaId,
+							area,
+						})
+					}
+				}
+			}
+		}
 	}
 }

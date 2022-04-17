@@ -1,53 +1,51 @@
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { Button } from '@mui/material'
+import { observer } from 'mobx-react-lite'
+import { DefiningArea } from '../../../../../lib/triggers/keyDisplay'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { ProjectContext } from '../../../../contexts/Project'
+import { store } from '../../../../mobx/store'
+import { useMemoComputedObject } from '../../../../mobx/lib'
 import { StreamdeckSettings } from './streamdeck'
 
 export const PeripheralSettings: React.FC<{
 	bridgeId: string
-	peripheralId: string
+	deviceId: string
 	peripheral: PeripheralStatus
-}> = ({ bridgeId, peripheralId, peripheral }) => {
+}> = observer(function PeripheralSettings({ bridgeId, deviceId, peripheral }) {
 	const { handleError } = useContext(ErrorHandlerContext)
 	const serverAPI = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 
-	const createNewArea = useCallback(() => {
-		serverAPI.addPeripheralArea({ bridgeId, peripheralId }).catch(handleError)
-	}, [serverAPI, handleError, bridgeId, peripheralId])
+	const definingArea = useMemoComputedObject(() => {
+		return store.guiStore.definingArea
+	}, [store.guiStore.definingArea])
 
-	const [isDefiningArea, setIsDefiningArea] = useState<string | undefined>(undefined)
+	const createNewArea = useCallback(() => {
+		serverAPI.addPeripheralArea({ bridgeId, deviceId }).catch(handleError)
+	}, [serverAPI, handleError, bridgeId, deviceId])
+
 	const startDefiningArea = useCallback(
 		(areaId: string) => {
-			serverAPI
-				.startDefiningArea({
-					bridgeId,
-					peripheralId,
-					areaId,
-				})
-				.catch(handleError)
-			setIsDefiningArea(areaId)
+			const defArea: DefiningArea = {
+				bridgeId,
+				deviceId,
+				areaId,
+			}
+			serverAPI.startDefiningArea(defArea).catch(handleError)
 		},
-		[bridgeId, peripheralId]
+		[bridgeId, deviceId]
 	)
 	const finishDefiningArea = useCallback(() => {
-		serverAPI
-			.finishDefiningArea({
-				bridgeId,
-				peripheralId,
-			})
-			.catch(handleError)
-
-		setIsDefiningArea(undefined)
+		serverAPI.finishDefiningArea({}).catch(handleError)
 	}, [])
 
 	const bridge = project.bridges[bridgeId]
 	if (!bridge) return null
 
-	const peripheralSettings = bridge.peripheralSettings[peripheralId]
+	const peripheralSettings = bridge.peripheralSettings[deviceId]
 
 	return (
 		<div className="peripheral-settings">
@@ -55,12 +53,17 @@ export const PeripheralSettings: React.FC<{
 
 			<div className="peripheral-settings__popover__settings">
 				{peripheral.info.gui.type === 'streamdeck' && (
-					<StreamdeckSettings peripheralId={peripheralId} peripheral={peripheral} />
+					<StreamdeckSettings
+						bridgeId={bridgeId}
+						deviceId={deviceId}
+						peripheral={peripheral}
+						definingArea={definingArea}
+					/>
 				)}
 				{/* {peripheral.info.gui.type === 'xkeys' && <div>To be implemented </div>} */}
 			</div>
 			<div className="peripheral-settings__areas">
-				<div>{isDefiningArea && 'Press the'}</div>
+				<div>{definingArea && 'Press the buttons in order, to add them to the Button Area'}</div>
 				<table>
 					<tbody>
 						{Object.entries(peripheralSettings?.areas || []).map(([areaId, area]) => {
@@ -69,7 +72,7 @@ export const PeripheralSettings: React.FC<{
 									<td>{area.name}</td>
 									<td>{area.identifiers.length} buttons</td>
 									<td>
-										{isDefiningArea ? (
+										{definingArea?.areaId === areaId ? (
 											<Button
 												className="btn"
 												variant="contained"
@@ -81,6 +84,7 @@ export const PeripheralSettings: React.FC<{
 											<Button
 												className="btn"
 												variant="contained"
+												disabled={!!definingArea}
 												onClick={() => startDefiningArea(areaId)}
 											>
 												{area.identifiers.length > 0
@@ -102,4 +106,4 @@ export const PeripheralSettings: React.FC<{
 			</div>
 		</div>
 	)
-}
+})

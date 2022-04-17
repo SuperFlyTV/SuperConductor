@@ -16,6 +16,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { DefiningArea } from 'src/lib/triggers/keyDisplay'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -59,6 +60,10 @@ export class TimedPlayerThingy {
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
 			this.ipcClient?.updatePeripheralTriggers(activeTriggers)
+		})
+		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
+			this.triggers?.updateDefiningArea(definingArea)
+			this.ipcClient?.updateDefiningArea(definingArea)
 		})
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
@@ -131,7 +136,7 @@ export class TimedPlayerThingy {
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
 			},
-			updatePeripherals: (_group: Group): void => {
+			updatePeripherals: (): void => {
 				this.triggers?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {

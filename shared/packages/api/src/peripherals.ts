@@ -3,8 +3,22 @@ import { XKeysInfo } from 'xkeys'
 
 /** This is a generic data structure which is used to display  */
 export interface KeyDisplay {
-	/** How much the keye should strive for the user's attention */
+	/** How much the key should strive for the user's attention */
 	attentionLevel: AttentionLevel
+
+	/** Special case, is set when normal key-operations are intercepted (disabled) */
+	intercept?: 'areaDefine'
+
+	area?: {
+		/** If the area is currently being defined */
+		areaInDefinition: boolean
+		/** Color of the area */
+		color: string
+		/** Label/Name of the area */
+		areaLabel: string
+		/** Label of this key in the area */
+		keyLabel: string
+	}
 
 	/** The most important text */
 	header?: {
@@ -28,9 +42,9 @@ export enum AttentionLevel {
 	IGNORE = -1,
 	/** Neutral */
 	NEUTRAL = 0,
-	/** User should notify me easilly, if looking for me */
+	/** User should notice me, if looking for me */
 	INFO = 1,
-	/** User should notify me, even if not looking */
+	/** User should notice me easilly, even if not looking */
 	NOTIFY = 2,
 	/** User should notice me immediately */
 	ALERT = 3,

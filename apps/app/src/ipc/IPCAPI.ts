@@ -45,6 +45,7 @@ export const enum ActionDescription {
 	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
 	CreateMissingMapping = 'create missing layer',
 	AddPeripheralArea = 'Add button area',
+	AssignAreaToGroup = 'Assign Area to Group',
 }
 
 /** Methods that can be called on the server, by the client */
@@ -166,17 +167,23 @@ export interface IPCServerMethods {
 
 	createMissingMapping: (arg: { rundownId: string; mappingId: string }) => void
 
-	addPeripheralArea: (arg: { bridgeId: string; peripheralId: string }) => void
-	removePeripheralArea: (arg: { bridgeId: string; peripheralId: string; areaId: string }) => void
+	addPeripheralArea: (arg: { bridgeId: string; deviceId: string }) => void
+	removePeripheralArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
 	updatePeripheralArea: (arg: {
 		bridgeId: string
-		peripheralId: string
+		deviceId: string
 		areaId: string
 		update: Partial<PeripheralArea>
 	}) => void
+	assignAreaToGroup: (arg: {
+		groupId: string | undefined
+		areaId: string
+		bridgeId: string
+		deviceId: string
+	}) => void
 
-	startDefiningArea: (arg: { bridgeId: string; peripheralId: string; areaId: string }) => void
-	finishDefiningArea: (arg: { bridgeId: string; peripheralId: string }) => void
+	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
+	finishDefiningArea: (arg: {}) => void
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

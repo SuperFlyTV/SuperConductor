@@ -1,13 +1,15 @@
-import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import { AttentionLevel, KeyDisplay, KeyDisplayTimeline } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playhead'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { Bridge } from '../models/project/Bridge'
 import { BridgeHandler } from './bridgeHandler'
+import { IPCClient } from './IPCClient'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
-import { getKeyDisplayForButtonActions } from '../lib/triggers/keyDisplay'
+import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -24,6 +26,7 @@ export class TriggersHandler {
 	private updatePeripheralsTimeout: NodeJS.Timeout | null = null
 
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
+	private definingArea: DefiningArea | null = null
 
 	constructor(private storage: StorageHandler, private ipcServer: IPCServer, private bridgeHandler: BridgeHandler) {}
 
@@ -57,8 +60,12 @@ export class TriggersHandler {
 			this.updatePeripherals()
 		}, 20)
 	}
+	updateDefiningArea(definingArea: DefiningArea | null): void {
+		this.definingArea = definingArea
+	}
 	private updatePeripherals(): void {
 		const actions = this.getActions()
+		const project = this.storage.getProject()
 
 		const usedTriggers: {
 			[fullIdentifier: string]: {
@@ -80,10 +87,17 @@ export class TriggersHandler {
 			}
 		}
 
+		const triggersAreaMap = prepareTriggersAreaMap(project)
+
 		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
 			const used = usedTriggers[fullIdentifier]
 
-			const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForButtonActions(used?.actions)
+			const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForButtonActions(
+				trigger,
+				triggersAreaMap,
+				this.definingArea,
+				used?.actions
+			)
 
 			if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 				this.sentkeyDisplays[fullIdentifier] = keyDisplay
@@ -93,7 +107,7 @@ export class TriggersHandler {
 	}
 	/** Returns all Actions in all Rundowns */
 	private getActions(): Action[] {
-		return getAllActionsInRundowns(this.storage.getAllRundowns())
+		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject())
 	}
 
 	private handleUpdate() {
@@ -112,66 +126,59 @@ export class TriggersHandler {
 				newlyActiveTriggers[activeTrigger.fullIdentifier] = true
 			}
 		}
+		let intercepted = false
+		let updatePeripherals = false
 
-		// Go through the actions
-		for (const action of actions) {
-			// This a little bit unintuitive, but our first step here is to filter out actions
-			// that correspone only to _newly active_ triggers.
+		if (this.definingArea) {
+			// We're currently defining a new area.
 
-			let allMatching = false
-			let matchingNewlyPressed = false
-			const matchingTriggers: ActiveTriggers = []
-			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				if (newlyActiveTriggers[fullIdentifier]) {
-					matchingNewlyPressed = true
-				}
+			// Intercept keys on that peripheral device:
+			for (const fullIdentifier of Object.keys(newlyActiveTriggers)) {
+				const activeTrigger = allActiveTriggers.find((t) => t.fullIdentifier === fullIdentifier)
+				if (!activeTrigger) continue
 
-				// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
-				if (activeTriggersMap[fullIdentifier]) {
-					allMatching = true
-					matchingTriggers.push(activeTriggersMap[fullIdentifier])
-				} else {
-					// The trigger is not pressed, so we can stop looking
-					allMatching = false
-					break
+				if (
+					this.definingArea.bridgeId === activeTrigger.bridgeId &&
+					this.definingArea.deviceId === activeTrigger.deviceId
+				) {
+					intercepted = true
+					this.addTriggerToArea(this.definingArea, activeTrigger)
+					updatePeripherals = true
 				}
 			}
+		}
 
-			if (matchingNewlyPressed && allMatching) {
-				// We've found a match!
+		if (!intercepted) {
+			// Go through the actions
+			for (const action of actions) {
+				// This a little bit unintuitive, but our first step here is to filter out actions
+				// that correspone only to _newly active_ triggers.
 
-				// Execute the action:
-				if (action.trigger.action === 'play') {
-					this.ipcServer
-						.playPart({
-							rundownId: action.rundownId,
-							groupId: action.group.id,
-							partId: action.part.id,
-						})
-						.catch(console.error)
-				} else if (action.trigger.action === 'stop') {
-					this.ipcServer
-						.stopPart({
-							rundownId: action.rundownId,
-							groupId: action.group.id,
-							partId: action.part.id,
-						})
-						.catch(console.error)
-				} else if (action.trigger.action === 'playStop') {
-					const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
-					const myPlayhead = playData.playheads[action.part.id]
+				let allMatching = false
+				/** If the action has a newly pressed */
+				let matchingNewlyPressed = false
+				const matchingTriggers: ActiveTriggers = []
+				for (const fullIdentifier of action.trigger.fullIdentifiers) {
+					if (newlyActiveTriggers[fullIdentifier]) {
+						matchingNewlyPressed = true
+					}
 
-					const isPlaying = action.group.oneAtATime ? playData.groupIsPlaying : myPlayhead
-
-					if (isPlaying) {
-						this.ipcServer
-							.stopPart({
-								rundownId: action.rundownId,
-								groupId: action.group.id,
-								partId: action.part.id,
-							})
-							.catch(console.error)
+					// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
+					if (activeTriggersMap[fullIdentifier]) {
+						allMatching = true
+						matchingTriggers.push(activeTriggersMap[fullIdentifier])
 					} else {
+						// The trigger is not pressed, so we can stop looking
+						allMatching = false
+						break
+					}
+				}
+
+				if (matchingNewlyPressed && allMatching) {
+					// We've found a match!
+
+					// Execute the action:
+					if (action.trigger.action === 'play') {
 						this.ipcServer
 							.playPart({
 								rundownId: action.rundownId,
@@ -179,15 +186,79 @@ export class TriggersHandler {
 								partId: action.part.id,
 							})
 							.catch(console.error)
+					} else if (action.trigger.action === 'stop') {
+						this.ipcServer
+							.stopPart({
+								rundownId: action.rundownId,
+								groupId: action.group.id,
+								partId: action.part.id,
+							})
+							.catch(console.error)
+					} else if (action.trigger.action === 'playStop') {
+						const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
+						const myPlayhead = playData.playheads[action.part.id]
+
+						// const isPlaying = action.group.oneAtATime ? playData.groupIsPlaying : myPlayhead
+						const isPlaying = Boolean(myPlayhead)
+
+						if (isPlaying) {
+							this.ipcServer
+								.stopPart({
+									rundownId: action.rundownId,
+									groupId: action.group.id,
+									partId: action.part.id,
+								})
+								.catch(console.error)
+						} else {
+							this.ipcServer
+								.playPart({
+									rundownId: action.rundownId,
+									groupId: action.group.id,
+									partId: action.part.id,
+								})
+								.catch(console.error)
+						}
+					} else {
+						assertNever(action.trigger.action)
 					}
-				} else {
-					assertNever(action.trigger.action)
 				}
 			}
 		}
 
 		// Store the new state for next time:
 		this.prevTriggersMap = activeTriggersMap
+
+		if (updatePeripherals) {
+			this.updatePeripherals()
+		}
+	}
+	private addTriggerToArea(definingArea: DefiningArea, activeTrigger: ActiveTrigger) {
+		const project = this.storage.getProject()
+
+		const bridge = project.bridges[definingArea.bridgeId]
+		if (!bridge) return
+		// Check if the trigger is already in another
+
+		let found = false
+		for (const peripheralSettings of Object.values(bridge.peripheralSettings)) {
+			if (found) break
+			for (const area of Object.values(peripheralSettings.areas)) {
+				if (found) break
+				if (area.identifiers.includes(activeTrigger.identifier)) {
+					found = true
+				}
+			}
+		}
+
+		if (!found) {
+			// Add the trigger to the area:
+			const peripheralSettings = bridge.peripheralSettings[definingArea.deviceId]
+			if (!peripheralSettings) return
+			const area = peripheralSettings.areas[definingArea.areaId]
+			if (!area) return
+			area.identifiers.push(activeTrigger.identifier)
+			this.storage.updateProject(project)
+		}
 	}
 }
 

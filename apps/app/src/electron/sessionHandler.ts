@@ -5,6 +5,7 @@ import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { PeripheralInfo } from '@shared/api'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -23,6 +24,9 @@ export class SessionHandler extends EventEmitter {
 	/** Contains a collection of the currently active (pressed) triggers/keys/buttons on all Panels */
 	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private activeTriggersHasChanged = false
+
+	private definingArea: DefiningArea | null = null
+	private definingAreaHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
@@ -45,6 +49,14 @@ export class SessionHandler extends EventEmitter {
 			if (resource.deviceId === deviceId) ids.push(id)
 		}
 		return ids
+	}
+	getDefiningArea(): DefiningArea | null {
+		return this.definingArea
+	}
+	updateDefiningArea(definingArea: DefiningArea | null): void {
+		this.definingArea = definingArea
+		this.definingAreaHasChanged = true
+		this.triggerUpdate()
 	}
 	updateResource(id: string, resource: ResourceAny | null) {
 		if (resource) {
@@ -174,6 +186,7 @@ export class SessionHandler extends EventEmitter {
 				this.peripheralsHasChanged[peripheralId] = true
 			}
 			this.activeTriggersHasChanged = true
+			this.definingAreaHasChanged = true
 
 			this.emitEverything = false
 		}
@@ -198,6 +211,10 @@ export class SessionHandler extends EventEmitter {
 			const activeTriggers: ActiveTriggers = Object.values(this.activeTriggers)
 			this.emit('activeTriggers', activeTriggers)
 			this.activeTriggersHasChanged = false
+		}
+		if (this.definingAreaHasChanged) {
+			this.emit('definingArea', this.definingArea)
+			this.definingAreaHasChanged = false
 		}
 	}
 }

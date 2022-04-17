@@ -29,6 +29,7 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
+import { DefiningArea } from 'src/lib/triggers/keyDisplay'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -65,12 +66,16 @@ export const App = observer(function App() {
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
+				store.projectStore.update(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			displayAboutDialog: () => {
 				setSplashScreenOpen(true)
+			},
+			updateDefiningArea: (definingArea: DefiningArea | null) => {
+				store.guiStore.updateDefiningArea(definingArea)
 			},
 		})
 

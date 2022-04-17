@@ -97,7 +97,7 @@ export class IPCServer
 		private callbacks: {
 			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
-			updatePeripherals: (group: Group) => void
+			updatePeripherals: () => void
 			refreshResources: () => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 		}
@@ -377,7 +377,7 @@ export class IPCServer
 		}
 
 		this.storage.updateRundown(arg.rundownId, rundown)
-		this.callbacks.updatePeripherals(group)
+		this.callbacks.updatePeripherals()
 		return {
 			undo: () => {
 				const { rundown, part } = this.getPart(arg)
@@ -750,6 +750,7 @@ export class IPCServer
 		}
 
 		this.storage.updateRundown(arg.rundownId, rundown)
+		this.callbacks.updatePeripherals()
 
 		return {
 			undo: () => {
@@ -768,6 +769,7 @@ export class IPCServer
 				}
 
 				this.storage.updateRundown(arg.rundownId, rundown)
+				this.callbacks.updatePeripherals()
 			},
 			description: ActionDescription.DeletePart,
 		}
@@ -1336,6 +1338,7 @@ export class IPCServer
 
 		this._updatePart(part)
 		this.storage.updateRundown(arg.rundownId, rundown)
+		this.callbacks.updatePeripherals()
 
 		return {
 			undo: () => {
@@ -1705,14 +1708,14 @@ export class IPCServer
 		}
 	}
 
-	async addPeripheralArea(data: { bridgeId: string; peripheralId: string }): Promise<UndoableResult<void>> {
+	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		let peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
 		if (!peripheralSettings) {
-			bridge.peripheralSettings[data.peripheralId] = peripheralSettings = {
+			bridge.peripheralSettings[data.deviceId] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -1721,9 +1724,10 @@ export class IPCServer
 		const newArea: PeripheralArea = {
 			name: `Area ${Object.keys(peripheralSettings.areas).length + 1}`,
 			identifiers: [],
+			assignedToGroupId: undefined,
+			action: 'playStop',
 		}
 		peripheralSettings.areas[newAreaId] = newArea
-
 		this.storage.updateProject(project)
 
 		return {
@@ -1732,7 +1736,7 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
 						| PeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -1746,7 +1750,7 @@ export class IPCServer
 	}
 	async removePeripheralArea(data: {
 		bridgeId: string
-		peripheralId: string
+		deviceId: string
 		areaId: string
 	}): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
@@ -1755,12 +1759,13 @@ export class IPCServer
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
 		if (peripheralSettings) {
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
 
 			this.storage.updateProject(project)
+			this.callbacks.updatePeripherals()
 		}
 
 		return {
@@ -1769,7 +1774,7 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
 						| PeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -1777,6 +1782,7 @@ export class IPCServer
 					peripheralSettings.areas[data.areaId] = removedArea
 
 					this.storage.updateProject(project)
+					this.callbacks.updatePeripherals()
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
@@ -1784,7 +1790,7 @@ export class IPCServer
 	}
 	async updatePeripheralArea(data: {
 		bridgeId: string
-		peripheralId: string
+		deviceId: string
 		areaId: string
 		update: Partial<PeripheralArea>
 	}): Promise<UndoableResult<void>> {
@@ -1794,7 +1800,7 @@ export class IPCServer
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
 		if (peripheralSettings) {
 			orgArea = deepClone(peripheralSettings.areas[data.areaId])
 
@@ -1804,6 +1810,7 @@ export class IPCServer
 			}
 
 			this.storage.updateProject(project)
+			this.callbacks.updatePeripherals()
 		}
 
 		return {
@@ -1812,7 +1819,7 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.peripheralId] as
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
 						| PeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -1820,16 +1827,73 @@ export class IPCServer
 					peripheralSettings.areas[data.areaId] = orgArea
 
 					this.storage.updateProject(project)
+					this.callbacks.updatePeripherals()
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
 		}
 	}
-	async startDefiningArea(_arg: { bridgeId: string; peripheralId: string; areaId: string }): Promise<void> {
-		// TBD
+	async assignAreaToGroup(arg: {
+		groupId: string | undefined
+		areaId: string
+		bridgeId: string
+		deviceId: string
+	}): Promise<UndoableResult<void> | undefined> {
+		const project = this.getProject()
+
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) return
+		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		if (!peripheralSettings) return
+		const area = peripheralSettings.areas[arg.areaId]
+		if (!area) return
+
+		const orgAssignedToGroupId = area.assignedToGroupId
+		area.assignedToGroupId = arg.groupId
+		this.storage.updateProject(project)
+		this.callbacks.updatePeripherals()
+
+		return {
+			undo: async () => {
+				const project = this.storage.getProject()
+
+				const bridge = project.bridges[arg.bridgeId]
+				if (!bridge) return
+				const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+				if (!peripheralSettings) return
+				const area = peripheralSettings.areas[arg.areaId]
+				if (!area) return
+
+				area.assignedToGroupId = orgAssignedToGroupId
+				this.storage.updateProject(project)
+				this.callbacks.updatePeripherals()
+			},
+			description: ActionDescription.AssignAreaToGroup,
+		}
 	}
-	async finishDefiningArea(_arg: { bridgeId: string; peripheralId: string }): Promise<void> {
-		// TBD
+	async startDefiningArea(arg: { bridgeId: string; deviceId: string; areaId: string }): Promise<void> {
+		const project = this.getProject()
+
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) return
+		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		if (!peripheralSettings) return
+		const area = peripheralSettings.areas[arg.areaId]
+		if (!area) return
+		area.identifiers = []
+		this.storage.updateProject(project)
+
+		this.session.updateDefiningArea({
+			bridgeId: arg.bridgeId,
+			deviceId: arg.deviceId,
+			areaId: arg.areaId,
+		})
+		this.callbacks.updatePeripherals()
+	}
+	async finishDefiningArea(arg: {}): Promise<void> {
+		this.session.updateDefiningArea(null)
+
+		this.callbacks.updatePeripherals()
 	}
 
 	private _updatePart(part: Part) {
@@ -1861,7 +1925,7 @@ export class IPCServer
 	}
 	private _updateTimeline(group: Group) {
 		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
-		this.callbacks.updatePeripherals(group)
+		this.callbacks.updatePeripherals()
 	}
 	private _findBestOrCreateLayer(arg: {
 		rundownId: string

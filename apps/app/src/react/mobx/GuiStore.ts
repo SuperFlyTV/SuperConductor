@@ -1,4 +1,5 @@
 import { makeAutoObservable } from 'mobx'
+import { DefiningArea } from '../../lib/triggers/keyDisplay'
 
 /**
  * Store contains only information about user interface
@@ -44,6 +45,8 @@ export class GuiStore {
 	selectedPartId?: string
 	selectedTimelineObjIds: string[] = []
 
+	definingArea: DefiningArea | null = null
+
 	private _activeTabId = 'home'
 	get activeTabId() {
 		return this._activeTabId
@@ -84,6 +87,11 @@ export class GuiStore {
 			...this.timelineObjMove,
 			...data,
 		}
+	}
+
+	updateDefiningArea(definingArea: DefiningArea | null) {
+		// console.log('updateDefiningArea')
+		this.definingArea = definingArea
 	}
 
 	constructor() {
