@@ -38,6 +38,7 @@ import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
 import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 type UndoableResult<T> = T extends void
 	? { undo: UndoFunction; description: ActionDescription }
@@ -228,8 +229,7 @@ export class IPCServer
 
 		this._playPart(group, part, now)
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	private async playParts(rundownId: string, groupId: string, partIds: string[]): Promise<void> {
 		const now = Date.now()
@@ -243,9 +243,7 @@ export class IPCServer
 			this._playPart(group, part, now)
 		}
 
-		this._updateTimeline(group)
-
-		this.storage.updateRundown(rundownId, rundown)
+		this._saveUpdates({ rundownId, rundown, group })
 	}
 	private _playPart(group: Group, part: Part, now: number): void {
 		if (part.disabled) {
@@ -269,8 +267,7 @@ export class IPCServer
 		updateGroupPlayingParts(group)
 		this._pausePart(group, part, arg.time, now)
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async pauseParts(rundownId: string, groupId: string, partIds: string[], time?: number): Promise<void> {
 		const now = Date.now()
@@ -287,8 +284,7 @@ export class IPCServer
 			// group.preparedPlayData
 		}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(rundownId, rundown)
+		this._saveUpdates({ rundownId, rundown, group })
 	}
 	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
 		if (part.disabled) {
@@ -342,8 +338,7 @@ export class IPCServer
 			delete group.playout.playingParts[arg.partId]
 		}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async setPartTrigger(arg: {
 		rundownId: string
@@ -376,14 +371,12 @@ export class IPCServer
 				}
 			}
 		}
-
-		this.storage.updateRundown(arg.rundownId, rundown)
-		this.callbacks.updatePeripherals()
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 		return {
 			undo: () => {
 				const { rundown, part } = this.getPart(arg)
 				part.triggers = originalTriggers
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.SetPartTrigger,
 		}
@@ -404,9 +397,7 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		part.loop = arg.value
-		this._updateTimeline(group)
-
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -414,9 +405,7 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				part.loop = originalValue
-				this._updateTimeline(group)
-
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.TogglePartLoop,
 		}
@@ -437,9 +426,7 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		part.disabled = arg.value
-		this._updateTimeline(group)
-
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -447,9 +434,7 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				part.disabled = originalValue
-				this._updateTimeline(group)
-
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.TogglePartDisable,
 		}
@@ -465,7 +450,7 @@ export class IPCServer
 
 		part.locked = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -473,7 +458,7 @@ export class IPCServer
 
 				part.locked = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.TogglePartLock,
 		}
@@ -484,8 +469,7 @@ export class IPCServer
 		// Stop the group:
 		group.playout.playingParts = {}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { group } = this.getGroup(arg)
@@ -623,16 +607,14 @@ export class IPCServer
 			transparentGroupId = newGroup.id
 			rundown.groups.push(newGroup)
 		}
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		const result: { partId: string; groupId?: string } = {
 			partId: newPart.id,
 		}
-
 		if (transparentGroupId) {
 			result.groupId = transparentGroupId
 		}
-
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
@@ -644,7 +626,7 @@ export class IPCServer
 					const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
 					group.parts = group.parts.filter((p) => p.id !== newPart.id)
 				}
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewPart,
 			result,
@@ -665,8 +647,8 @@ export class IPCServer
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
-		this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -674,8 +656,8 @@ export class IPCServer
 
 				Object.assign(part, partPreChange)
 
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
 		}
@@ -689,13 +671,13 @@ export class IPCServer
 		const { rundown } = this.getRundown(arg)
 
 		rundown.groups.push(newGroup)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
 				rundown.groups = rundown.groups.filter((g) => g.id !== newGroup.id)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
@@ -715,7 +697,7 @@ export class IPCServer
 		const groupPreChange = deepClone(group)
 		Object.assign(group, arg.group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -724,7 +706,7 @@ export class IPCServer
 				// @TODO: Don't overwrite playout-related properties?
 				Object.assign(group, groupPreChange)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateGroup,
 		}
@@ -750,8 +732,7 @@ export class IPCServer
 			deletedTransparentGroup = deleteGroup(rundown, group.id)
 		}
 
-		this.storage.updateRundown(arg.rundownId, rundown)
-		this.callbacks.updatePeripherals()
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -769,8 +750,7 @@ export class IPCServer
 					group.parts.splice(deletedPartIndex, 0, deletedPart)
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
-				this.callbacks.updatePeripherals()
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeletePart,
 		}
@@ -787,10 +767,10 @@ export class IPCServer
 			playingParts: {},
 		}
 
-		this._updateTimeline(group)
+		this._saveUpdates({ group })
 		const deletedGroupIndex = rundown.groups.findIndex((g) => g.id === group.id)
 		const deletedGroup = deleteGroup(rundown, group.id)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -800,7 +780,7 @@ export class IPCServer
 
 				const { rundown } = this.getRundown(arg)
 				rundown.groups.splice(deletedGroupIndex, 0, deletedGroup)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: deletedGroup })
 			},
 			description: ActionDescription.DeleteGroup,
 		}
@@ -888,10 +868,11 @@ export class IPCServer
 			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
 		}
 
-		// Update timelines.
+		const groupsToUpdate: Group[] = []
+		// Update timelines:
 		if (!isTransparentGroupMove) {
 			if (fromGroup.id === toGroup.id) {
-				// Intra-group move.
+				// Moving within the same group
 
 				updateGroupPlayingParts(toGroup)
 				if (movedPartIsPlaying && toGroup.oneAtATime) {
@@ -904,9 +885,9 @@ export class IPCServer
 						},
 					}
 				}
-				this._updateTimeline(fromGroup)
+				groupsToUpdate.push(fromGroup)
 			} else {
-				// Inter-group move.
+				// Moving between groups
 				if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
 					// Update the playhead, so that the currently playing
 					// part continues to play as if nothing happened.
@@ -917,15 +898,14 @@ export class IPCServer
 					toGroup.playout.playingParts = fromGroup.playout.playingParts
 					fromGroup.playout.playingParts = {}
 				}
-				this._updateTimeline(fromGroup)
-				this._updateTimeline(toGroup)
+				groupsToUpdate.push(fromGroup, toGroup)
 			}
 		}
 
-		// Commit the changes.
-		this.storage.updateRundown(arg.to.rundownId, toRundown)
+		// Commit the changes:
+		this._saveUpdates({ rundownId: arg.to.rundownId, rundown: toRundown, group: groupsToUpdate })
 		if (fromRundown !== toRundown) {
-			this.storage.updateRundown(arg.from.rundownId, fromRundown)
+			this._saveUpdates({ rundownId: arg.from.rundownId, rundown: fromRundown })
 		}
 
 		return {
@@ -967,8 +947,6 @@ export class IPCServer
 				parts: [copy],
 			}
 
-			this._updateTimeline(newGroup)
-
 			// Add the new group just below the original in the rundown
 			const position = rundown.groups.findIndex((g) => g.id === arg.groupId)
 			rundown.groups.splice(position + 1, 0, newGroup)
@@ -976,11 +954,9 @@ export class IPCServer
 			// Add the copy just below the original in the group
 			const position = group.parts.findIndex((p) => p.id === arg.partId)
 			group.parts.splice(position + 1, 0, copy)
-			this._updateTimeline(group)
 		}
-
-		// Commit the changes.
-		this.storage.updateRundown(arg.rundownId, rundown)
+		// Commit the changes:
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup || group })
 
 		return {
 			undo: async () => {
@@ -992,11 +968,11 @@ export class IPCServer
 				} else {
 					// Remove the part copy we added
 					group.parts = group.parts.filter((p) => p.id !== copy.id)
-					this._updateTimeline(group)
+					this._saveUpdates({ group })
 				}
 
 				// Commit the changes.
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup ? undefined : group })
 			},
 			description: ActionDescription.DuplicatePart,
 		}
@@ -1011,7 +987,7 @@ export class IPCServer
 		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
 		rundown.groups.splice(arg.position, 0, group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: async () => {
@@ -1028,30 +1004,28 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Make a copy of the group and give it and all its children unique IDs.
-		const copy = deepClone(group)
-		copy.id = short.generate()
-		for (const part of copy.parts) {
+		const groupCopy = deepClone(group)
+		groupCopy.id = short.generate()
+		for (const part of groupCopy.parts) {
 			part.id = short.generate()
 			part.timeline = generateNewTimelineObjIds(part.timeline)
 		}
 
 		// Insert the copy just below the original.
 		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
-		rundown.groups.splice(originalPosition + 1, 0, copy)
+		rundown.groups.splice(originalPosition + 1, 0, groupCopy)
 
-		this._updateTimeline(copy)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: [group, groupCopy] })
 
 		return {
 			undo: async () => {
 				// Stop playout.
-				await this.stopGroup({ rundownId: arg.rundownId, groupId: copy.id })
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: groupCopy.id })
 
 				// Delete the copy we made.
-				rundown.groups = rundown.groups.filter((g) => g.id !== copy.id)
+				rundown.groups = rundown.groups.filter((g) => g.id !== groupCopy.id)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DuplicateGroup,
 		}
@@ -1077,9 +1051,8 @@ export class IPCServer
 
 		Object.assign(timelineObj, arg.timelineObj)
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1087,9 +1060,8 @@ export class IPCServer
 
 				// Overwrite the changed timeline object with the pre-change copy we made.
 				part.timeline.splice(timelineObjIndex, 1, timelineObjPreChange)
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
 		}
@@ -1112,8 +1084,8 @@ export class IPCServer
 
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
-		if (modified) this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		if (modified) this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1121,8 +1093,8 @@ export class IPCServer
 
 				// Re-insert the timelineObj in its original position.
 				part.timeline.splice(timelineObjIndex, 0, timelineObj)
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeleteTimelineObj,
 		}
@@ -1144,9 +1116,8 @@ export class IPCServer
 		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
 		part.timeline.push(arg.timelineObj)
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1154,9 +1125,8 @@ export class IPCServer
 
 				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
 
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
 		}
@@ -1190,26 +1160,24 @@ export class IPCServer
 		})
 		timelineObj.obj.layer = result.layerId
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ project: result.updatedProject, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
+				let updatedProject: Project | undefined = undefined
 				if (result.createdNewLayer) {
 					// If a new layer was added, remove it.
-					const project = this.getProject()
-					delete project.mappings[result.layerId]
-					this.storage.updateProject(project)
+					updatedProject = this.getProject()
+					delete updatedProject.mappings[result.layerId]
 				}
 
 				const { rundown, group, part } = this.getPart(arg)
 
 				timelineObj.obj.layer = originalLayer
 
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
 		}
@@ -1239,7 +1207,7 @@ export class IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1257,7 +1225,7 @@ export class IPCServer
 					timelineObj.obj.content.data = JSON.stringify(data)
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewTemplateData,
 		}
@@ -1304,7 +1272,7 @@ export class IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1320,7 +1288,7 @@ export class IPCServer
 					timelineObj.obj.content.data = snapshot
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateTemplateData,
 		}
@@ -1354,7 +1322,7 @@ export class IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1370,7 +1338,7 @@ export class IPCServer
 					timelineObj.obj.content.data = snapshot
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeleteTemplateData,
 		}
@@ -1396,6 +1364,7 @@ export class IPCServer
 
 		let addToLayerId: string
 		let createdNewLayer = false
+		let updatedProject: Project | undefined = undefined
 		if (arg.layerId) {
 			addToLayerId = arg.layerId
 		} else {
@@ -1408,10 +1377,11 @@ export class IPCServer
 			})
 			addToLayerId = result.layerId
 			createdNewLayer = result.createdNewLayer
+			updatedProject = result.updatedProject
 		}
 		obj.layer = addToLayerId
 
-		const project = this.getProject()
+		const project = updatedProject ?? this.getProject()
 		const mapping = project.mappings[obj.layer]
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
@@ -1427,24 +1397,22 @@ export class IPCServer
 		}
 
 		part.timeline.push(timelineObj)
-
-		this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
-		this.callbacks.updatePeripherals()
+		this._postProcessPart(part)
+		this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
-				const project = this.getProject()
+				let updatedProject: Project | undefined = undefined
 				if (createdNewLayer) {
 					// If a new layer was added, remove it.
-					delete project.mappings[addToLayerId]
-					this.storage.updateProject(project)
+					updatedProject = this.getProject()
+					delete updatedProject.mappings[addToLayerId]
 				}
 
 				const { rundown, part } = this.getPart(arg)
 				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.AddResourceToTimeline,
 		}
@@ -1464,9 +1432,8 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		group.loop = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1474,9 +1441,8 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				group.loop = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupLoop,
 		}
@@ -1496,9 +1462,8 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		group.autoPlay = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1506,9 +1471,8 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				group.autoPlay = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupAutoplay,
 		}
@@ -1528,9 +1492,8 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		group.oneAtATime = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1538,9 +1501,8 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				group.oneAtATime = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.toggleGroupOneAtATime,
 		}
@@ -1560,9 +1522,8 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		group.disabled = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1570,9 +1531,8 @@ export class IPCServer
 
 				updateGroupPlayingParts(group)
 				group.disabled = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupDisable,
 		}
@@ -1588,7 +1548,7 @@ export class IPCServer
 
 		group.collapsed = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -1596,7 +1556,7 @@ export class IPCServer
 
 				group.collapsed = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupCollapse,
 		}
@@ -1607,7 +1567,7 @@ export class IPCServer
 
 		group.locked = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -1615,7 +1575,7 @@ export class IPCServer
 
 				group.locked = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupLock,
 		}
@@ -1624,14 +1584,16 @@ export class IPCServer
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		this.storage.updateProject(data.project)
+		this._saveUpdates({ project: data.project })
 	}
 	async newRundown(data: { name: string }): Promise<UndoableResult<void>> {
-		this.storage.newRundown(data.name)
+		const fileName = this.storage.newRundown(data.name)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				await this.storage.deleteRundown(data.name)
+				await this.storage.deleteRundown(fileName)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
 		}
@@ -1645,20 +1607,24 @@ export class IPCServer
 
 		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
+		this._saveUpdates({})
 
 		return {
 			undo: () => {
 				this.storage.restoreRundown(rundown)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.DeleteRundown,
 		}
 	}
 	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		await this.storage.openRundown(data.rundownId)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.closeRundown(data.rundownId)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
 		}
@@ -1675,10 +1641,12 @@ export class IPCServer
 		}
 
 		await this.storage.closeRundown(data.rundownId)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.openRundown(data.rundownId)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
 		}
@@ -1696,10 +1664,12 @@ export class IPCServer
 
 		const originalName = rundown.name
 		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.renameRundown(newRundownId, originalName)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.RenameRundown,
 		}
@@ -1779,7 +1749,7 @@ export class IPCServer
 					...project.mappings,
 					[newLayerId]: newMapping,
 				}
-				this.storage.updateProject(project)
+				this._saveUpdates({ project })
 				break
 			}
 			default:
@@ -1793,7 +1763,7 @@ export class IPCServer
 				if (newLayerId) {
 					const project = this.getProject()
 					delete project.mappings[newLayerId]
-					this.storage.updateProject(project)
+					this._saveUpdates({ project })
 				}
 			},
 			description: ActionDescription.CreateMissingMapping,
@@ -1820,7 +1790,7 @@ export class IPCServer
 			action: 'playStop',
 		}
 		peripheralSettings.areas[newAreaId] = newArea
-		this.storage.updateProject(project)
+		this._saveUpdates({ project })
 
 		return {
 			undo: async () => {
@@ -1834,7 +1804,7 @@ export class IPCServer
 					if (!peripheralSettings) return
 					delete peripheralSettings.areas[newAreaId]
 
-					this.storage.updateProject(project)
+					this._saveUpdates({ project })
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
@@ -1856,8 +1826,7 @@ export class IPCServer
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
 
-			this.storage.updateProject(project)
-			this.callbacks.updatePeripherals()
+			this._saveUpdates({ project })
 		}
 
 		return {
@@ -1873,8 +1842,7 @@ export class IPCServer
 
 					peripheralSettings.areas[data.areaId] = removedArea
 
-					this.storage.updateProject(project)
-					this.callbacks.updatePeripherals()
+					this._saveUpdates({ project })
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
@@ -1901,8 +1869,7 @@ export class IPCServer
 				...data.update,
 			}
 
-			this.storage.updateProject(project)
-			this.callbacks.updatePeripherals()
+			this._saveUpdates({ project })
 		}
 
 		return {
@@ -1918,8 +1885,7 @@ export class IPCServer
 
 					peripheralSettings.areas[data.areaId] = orgArea
 
-					this.storage.updateProject(project)
-					this.callbacks.updatePeripherals()
+					this._saveUpdates({ project })
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
@@ -1942,8 +1908,7 @@ export class IPCServer
 
 		const orgAssignedToGroupId = area.assignedToGroupId
 		area.assignedToGroupId = arg.groupId
-		this.storage.updateProject(project)
-		this.callbacks.updatePeripherals()
+		this._saveUpdates({ project })
 
 		return {
 			undo: async () => {
@@ -1957,8 +1922,7 @@ export class IPCServer
 				if (!area) return
 
 				area.assignedToGroupId = orgAssignedToGroupId
-				this.storage.updateProject(project)
-				this.callbacks.updatePeripherals()
+				this._saveUpdates({ project })
 			},
 			description: ActionDescription.AssignAreaToGroup,
 		}
@@ -1973,22 +1937,21 @@ export class IPCServer
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
 		area.identifiers = []
-		this.storage.updateProject(project)
 
-		this.session.updateDefiningArea({
-			bridgeId: arg.bridgeId,
-			deviceId: arg.deviceId,
-			areaId: arg.areaId,
+		this._saveUpdates({
+			project,
+			definingArea: {
+				bridgeId: arg.bridgeId,
+				deviceId: arg.deviceId,
+				areaId: arg.areaId,
+			},
 		})
-		this.callbacks.updatePeripherals()
 	}
 	async finishDefiningArea(arg: {}): Promise<void> {
-		this.session.updateDefiningArea(null)
-
-		this.callbacks.updatePeripherals()
+		this._saveUpdates({ definingArea: null })
 	}
 
-	private _updatePart(part: Part) {
+	private _postProcessPart(part: Part) {
 		const resolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
@@ -2015,8 +1978,49 @@ export class IPCServer
 			duration: maxDuration,
 		}
 	}
-	private _updateTimeline(group: Group) {
-		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+
+	/** Save updates to various data sets.
+	 * Use this last when there has been any changes to data.
+	 * This will also trigger updates of the playout (timeline), perihperals etc..
+	 */
+	private _saveUpdates(updates: {
+		project?: Project
+
+		rundownId?: string
+		rundown?: Rundown
+
+		group?: Group | Group[]
+
+		definingArea?: DefiningArea | null
+
+		noEffectOnPlayout?: boolean
+	}) {
+		if (updates.project) {
+			this.storage.updateProject(updates.project)
+		}
+
+		if (updates.rundownId && updates.rundown) {
+			this.storage.updateRundown(updates.rundownId, updates.rundown)
+		}
+
+		const groupsToUpdate: Group[] = []
+		if (Array.isArray(updates.group)) {
+			groupsToUpdate.push(...updates.group)
+		} else if (updates.group) {
+			groupsToUpdate.push(updates.group)
+		}
+
+		for (const group of groupsToUpdate) {
+			if (!updates.noEffectOnPlayout) {
+				// Update Timeline:
+				group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+			}
+		}
+
+		if (updates.definingArea !== undefined) {
+			this.session.updateDefiningArea(updates.definingArea)
+		}
+
 		this.callbacks.updatePeripherals()
 	}
 	private _findBestOrCreateLayer(arg: {
@@ -2066,7 +2070,7 @@ export class IPCServer
 		if (bestLayer[0]) {
 			addToLayerId = bestLayer[0]
 		}
-
+		let updatedProject: Project | undefined = undefined
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			const newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
@@ -2078,7 +2082,7 @@ export class IPCServer
 					...project.mappings,
 					[newLayerId]: newMapping,
 				}
-				this.storage.updateProject(project)
+				updatedProject = project
 				addToLayerId = newLayerId
 				createdNewLayer = true
 			}
@@ -2093,6 +2097,6 @@ export class IPCServer
 		// Verify that the layer is OK:
 		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
-		return { layerId: addToLayerId, createdNewLayer }
+		return { layerId: addToLayerId, createdNewLayer, updatedProject }
 	}
 }

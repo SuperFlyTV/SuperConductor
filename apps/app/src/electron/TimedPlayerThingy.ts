@@ -22,7 +22,6 @@ export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient
-	// tptCaspar?: TPTCasparCG
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -145,6 +144,5 @@ export class TimedPlayerThingy {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.storage, this.ipcServer, this.bridgeHandler)
-		// this.tptCaspar = new TPTCasparCG(this.session)
 	}
 }
