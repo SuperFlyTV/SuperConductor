@@ -47,7 +47,7 @@ export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): 
 			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
-					if (group) {
+					if (group && !group.group.disabled) {
 						// Assign the keys in the area to actions in the Parts of the group,
 						// each in order:
 

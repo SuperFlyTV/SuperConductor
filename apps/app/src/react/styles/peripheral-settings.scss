@@ -21,7 +21,6 @@
         .button {
 
             border: 1px solid #999;
-            border-radius: 5px;
             position: relative;
             overflow: hidden;
 
@@ -100,7 +99,41 @@
             }
         }
     }
-    .streamdeck {
+    .streamdeck .button-grid {
+        column-gap: 0.5em;
+        row-gap: 0.5em;
+        .button {
+            border-radius: 5px;
+        }
+    }
+
+    .xkeys .button-grid {
+        column-gap: 0.1em;
+        row-gap: 0.1em;
+        .button {
+            height: 5em;
+            width: 5em;
+
+            .key-bg {
+                @keyframes xkeys-flash {
+                    0%   {opacity: 0;}
+                    40%   {opacity: 0;}
+                    50%  {opacity: 1;}
+                    90%  {opacity: 1;}
+                    100% {opacity: 0;}
+                }
+                &.flash-speed-1 {
+                    animation-name: xkeys-flash;
+                    animation-duration: 0.5s;
+                    animation-iteration-count: infinite;
+                }
+                &.flash-speed-2 {
+                    animation-name: xkeys-flash;
+                    animation-duration: 0.25s;
+                    animation-iteration-count: infinite;
+                }
+            }
+        }
 
     }
 

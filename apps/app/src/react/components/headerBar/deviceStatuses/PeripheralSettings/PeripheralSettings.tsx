@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext } from 'react'
 import { Button } from '@mui/material'
 import { observer } from 'mobx-react-lite'
 import { DefiningArea } from '../../../../../lib/triggers/keyDisplay'
@@ -9,6 +9,7 @@ import { ProjectContext } from '../../../../contexts/Project'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 import { StreamdeckSettings } from './streamdeck'
+import { XKeysSettings } from './xkeys'
 
 export const PeripheralSettings: React.FC<{
 	bridgeId: string
@@ -36,7 +37,7 @@ export const PeripheralSettings: React.FC<{
 			}
 			serverAPI.startDefiningArea(defArea).catch(handleError)
 		},
-		[bridgeId, deviceId]
+		[bridgeId, deviceId, handleError, serverAPI]
 	)
 	const finishDefiningArea = useCallback(() => {
 		serverAPI.finishDefiningArea({}).catch(handleError)
@@ -60,7 +61,14 @@ export const PeripheralSettings: React.FC<{
 						definingArea={definingArea}
 					/>
 				)}
-				{/* {peripheral.info.gui.type === 'xkeys' && <div>To be implemented </div>} */}
+				{peripheral.info.gui.type === 'xkeys' && (
+					<XKeysSettings
+						bridgeId={bridgeId}
+						deviceId={deviceId}
+						peripheral={peripheral}
+						definingArea={definingArea}
+					/>
+				)}
 			</div>
 			<div className="peripheral-settings__areas">
 				<div>{definingArea && 'Press the buttons in order, to add them to the Button Area'}</div>
