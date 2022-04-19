@@ -129,6 +129,9 @@ const createWindow = (): void => {
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
 				])
+
+				tpt.terminate()
+
 				app.quit()
 			})
 			.catch((err) => {

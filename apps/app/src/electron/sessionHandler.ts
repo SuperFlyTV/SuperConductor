@@ -32,6 +32,10 @@ export class SessionHandler extends EventEmitter {
 
 	private emitEverything = false
 
+	terminate() {
+		this.removeAllListeners()
+	}
+
 	triggerEmitAll() {
 		this.emitEverything = true
 		this.triggerUpdate()

@@ -52,6 +52,9 @@ export class StorageHandler extends EventEmitter {
 	init() {
 		// Nothing here yet
 	}
+	terminate() {
+		this.removeAllListeners()
+	}
 
 	/** Returns a list of available projects */
 	listProjects(): { dirName: string; fileName: string }[] {
