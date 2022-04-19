@@ -14,7 +14,7 @@ export class PeripheralXkeys extends Peripheral {
 		let usePolling = false
 		// Check if usb-detection is installed:
 		try {
-			// eslint-disable-next-line node/no-missing-require
+			// eslint-disable-next-line node/no-missing-require, node/no-extraneous-require
 			require.resolve('usb-detection') // require.resolve() throws an error if module is not found
 		} catch (e) {
 			// usb-detection is not installed, fall back to polling:

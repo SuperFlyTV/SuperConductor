@@ -7,7 +7,6 @@ import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Tri
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { Rundown } from '../../../../../models/rundown/Rundown'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
-import { ProjectContext } from '../../../../contexts/Project'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 import { Action, getAllActionsInRundowns } from '../../../../../lib/triggers/action'
@@ -156,7 +155,7 @@ export const StreamdeckSettings: React.FC<{
 
 function renderStreamDeckKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 	if (keyDisplay.intercept) {
-		let textColor: string = '#fff'
+		let textColor = '#fff'
 
 		if (keyDisplay.area) {
 			if (keyDisplay.area.areaInDefinition) {

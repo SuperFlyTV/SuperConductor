@@ -1,7 +1,5 @@
 import { makeAutoObservable } from 'mobx'
-import { Bridge } from '../../models/project/Bridge'
-import { Mappings } from 'timeline-state-resolver-types'
-import { Project, Settings } from '../../models/project/Project'
+import { Project } from '../../models/project/Project'
 import { PeripheralArea } from '../../models/project/Peripheral'
 
 /**

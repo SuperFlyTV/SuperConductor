@@ -44,7 +44,7 @@ export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): 
 
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+			for (const [_areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
 					if (group && !group.group.disabled) {

@@ -1947,7 +1947,7 @@ export class IPCServer
 			},
 		})
 	}
-	async finishDefiningArea(arg: {}): Promise<void> {
+	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
 

@@ -16,7 +16,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow

@@ -200,7 +200,7 @@ export interface IPCServerMethods {
 	}) => void
 
 	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
-	finishDefiningArea: (arg: {}) => void
+	finishDefiningArea: () => void
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

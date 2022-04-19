@@ -7,7 +7,7 @@ import { BrowserWindow } from 'electron'
 import { IPCClientMethods } from '../ipc/IPCAPI'
 import { AppData } from '../models/App/AppData'
 import { ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {

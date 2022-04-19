@@ -7,7 +7,7 @@ import { Group } from '../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../models/project/Peripheral'
 import { Project } from '../../models/project/Project'
-import { ActiveTrigger } from 'src/models/rundown/Trigger'
+import { ActiveTrigger } from '../../models/rundown/Trigger'
 
 export type TriggersAreaMap = Map<string, TriggerArea>
 export interface TriggerArea {

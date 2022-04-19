@@ -455,7 +455,6 @@ export const GroupView: React.FC<{
 
 	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<Element | null>(null)
 	const buttonAreaPopoverOpen = Boolean(partSubmenuPopoverAnchorEl)
-	const closePartSubmenu = useCallback(() => {}, [])
 
 	if (!rundown) {
 		return null
