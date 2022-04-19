@@ -40,7 +40,7 @@ export const PeripheralSettings: React.FC<{
 		[bridgeId, deviceId, handleError, serverAPI]
 	)
 	const finishDefiningArea = useCallback(() => {
-		serverAPI.finishDefiningArea({}).catch(handleError)
+		serverAPI.finishDefiningArea().catch(handleError)
 	}, [])
 
 	const bridge = project.bridges[bridgeId]

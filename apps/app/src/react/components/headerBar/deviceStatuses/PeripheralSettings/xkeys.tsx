@@ -85,16 +85,22 @@ export const XKeysSettings: React.FC<{
 		keyDisplay: KeyDisplay | KeyDisplayTimeline
 	}[] = []
 
+	const ignorePositions = new Set<string>()
+
 	for (const xKeysLayout of gui.layout) {
-		let iKey = 0
+		// This is kind of a hack since the xeys library doesn't expose the data we need,
+		// so instead we hide any buttons in these layouts:
+		const ignorePosition = Boolean(xKeysLayout.name.match(/jog|tbar|shuttle|joy/i))
+
+		let iKey = 1 // First key starts at 1
 		for (let iCol = xKeysLayout.startCol; iCol <= xKeysLayout.endCol; iCol++) {
 			for (let iRow = xKeysLayout.startRow; iRow <= xKeysLayout.endRow; iRow++) {
-				iKey++
-
 				const identifier = `${iKey}`
 				const fullIdentifier = `${peripheralId}-${identifier}`
 				const deviceId = peripheralId.replace(`${bridgeId}-`, '')
 				const buttonActions = allButtonActions.get(fullIdentifier) ?? []
+
+				if (ignorePosition) ignorePositions.add(`${iRow}-${iCol}`)
 
 				const trigger: ActiveTrigger = {
 					fullIdentifier,
@@ -120,14 +126,18 @@ export const XKeysSettings: React.FC<{
 					actions: buttonActions,
 					keyDisplay,
 				})
+
+				iKey++
 			}
 		}
 	}
-
+	const usedIdentifiers = new Set<string>()
 	return (
 		<div className="xkeys">
 			<div className="button-grid">
 				{buttons.map((button) => {
+					if (ignorePositions.has(`${button.iRow}-${button.iCol}`)) return null
+					if (usedIdentifiers.has(button.fullIdentifier)) usedIdentifiers.add(button.fullIdentifier)
 					return (
 						<div
 							key={button.fullIdentifier}
