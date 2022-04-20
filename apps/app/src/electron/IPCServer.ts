@@ -1999,10 +1999,6 @@ export class IPCServer
 			this.storage.updateProject(updates.project)
 		}
 
-		if (updates.rundownId && updates.rundown) {
-			this.storage.updateRundown(updates.rundownId, updates.rundown)
-		}
-
 		const groupsToUpdate: Group[] = []
 		if (Array.isArray(updates.group)) {
 			groupsToUpdate.push(...updates.group)
@@ -2015,6 +2011,10 @@ export class IPCServer
 				// Update Timeline:
 				group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
 			}
+		}
+
+		if (updates.rundownId && updates.rundown) {
+			this.storage.updateRundown(updates.rundownId, updates.rundown)
 		}
 
 		if (updates.definingArea !== undefined) {
