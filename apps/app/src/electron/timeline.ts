@@ -14,7 +14,7 @@ export interface UpdateTimelineCache {
 	mappingsHash?: string
 }
 
-const updateTimelineTimeouts = new Map<string, NodeJS.Timeout>()
+const queuedUpdateTimelines = new Map<string, NodeJS.Timeout>()
 export function updateTimeline(
 	cache: UpdateTimelineCache,
 	storage: StorageHandler,
@@ -24,20 +24,23 @@ export function updateTimeline(
 	const prepared = prepareGroupPlayData(group)
 
 	// Defer update, to allow for multiple updates to be batched together:
-	if (!updateTimelineTimeouts.get(group.id)) {
-		updateTimelineTimeouts.set(
-			group.id,
-			setTimeout(() => {
-				updateTimelineTimeouts.delete(group.id)
+	const existingTimeout = queuedUpdateTimelines.get(group.id)
+	if (existingTimeout) clearTimeout(existingTimeout)
 
-				const timeline = getTimelineForGroup(group, prepared, undefined) as TSRTimeline
-				bridgeHandler.updateTimeline(group.id, timeline)
+	queuedUpdateTimelines.set(
+		group.id,
+		setTimeout(() => {
+			const queued = queuedUpdateTimelines.get(group.id)
+			if (!queued) return
+			queuedUpdateTimelines.delete(group.id)
 
-				const project = storage.getProject()
-				bridgeHandler.updateMappings(project.mappings)
-			}, 1)
-		)
-	}
+			const timeline = getTimelineForGroup(group, prepared, undefined) as TSRTimeline
+			bridgeHandler.updateTimeline(group.id, timeline)
+
+			const project = storage.getProject()
+			bridgeHandler.updateMappings(project.mappings)
+		}, 1)
+	)
 
 	return prepared || null
 }

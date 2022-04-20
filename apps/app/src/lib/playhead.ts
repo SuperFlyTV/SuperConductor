@@ -19,7 +19,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 
 	if (group.oneAtATime) {
 		const playingPartId = Object.keys(group.playout.playingParts)[0]
-		const groupStartTime = playingPartId ? group.playout.playingParts[playingPartId].startTime : null
+		let groupStartTime = playingPartId ? group.playout.playingParts[playingPartId].startTime : null
 		const groupPausedTime = playingPartId ? group.playout.playingParts[playingPartId].pauseTime : undefined
 
 		// Is playing?
@@ -34,10 +34,8 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 			}
 			data.startTime = groupStartTime
 
-			const part = findPart(group, playingPartId)
-			if (!part) {
-				return null
-			}
+			let firstPart = findPart(group, playingPartId)
+			if (!firstPart) return null
 
 			if (groupPausedTime !== undefined) {
 				// Only play the one part, and pause it at groupPausedTime
@@ -47,8 +45,8 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 				const pausedPart: GroupPreparedPlayDataPart = {
 					startTime: groupStartTime,
 					pauseTime: groupPausedTime,
-					duration: part.resolved.duration,
-					part,
+					duration: firstPart.resolved.duration,
+					part: firstPart,
 					endAction: 'infinite',
 				}
 
@@ -66,55 +64,78 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 
 				let nextStartTime: number | null = groupStartTime
 
-				if (!part.disabled) {
+				if (!firstPart.disabled) {
 					// Add the part
 					const loopingPart: GroupPreparedPlayDataPart = {
 						startTime: nextStartTime,
 						pauseTime: undefined,
-						duration: part.resolved.duration,
-						part,
+						duration: firstPart.resolved.duration,
+						part: firstPart,
 						endAction: 'loop',
 					}
 					data.repeating.parts.push(loopingPart)
-					if (part.resolved.duration === null) {
+					if (firstPart.resolved.duration === null) {
 						nextStartTime = null
 						loopingPart.endAction = 'infinite'
-					} else nextStartTime += part.resolved.duration
+					} else nextStartTime += firstPart.resolved.duration
 
-					data.repeating.duration = part.resolved.duration
+					data.repeating.duration = firstPart.resolved.duration
 				}
 			} else {
+				// Add the starting Part:
+				if (firstPart.disabled) {
+					// The currently playing part is disabled.
+
+					if (group.autoPlay) {
+						// Go to next playable part:
+						let restParts = getPlayablePartsAfter(group.parts, firstPart.id)
+						if (restParts.length === 0) {
+							if (group.loop) {
+								restParts = getPlayablePartsAfter(group.parts, null)
+							}
+						}
+						if (restParts.length > 0) {
+							firstPart = restParts[0]
+							groupStartTime = Date.now()
+						} else {
+							firstPart = undefined
+						}
+					} else {
+						// Stop playing:
+						firstPart = undefined
+					}
+				}
+
+				if (!firstPart) return null
+
 				/** The startTime of the next Part. */
 				let nextStartTime: number | null = groupStartTime
 
-				// Add the starting Part:
 				let prevPart: GroupPreparedPlayDataSingle['parts'][0] = {
 					startTime: nextStartTime,
 					pauseTime: undefined,
-					duration: part.resolved.duration,
-					part,
+					duration: firstPart.resolved.duration,
+					part: firstPart,
 					endAction: 'stop', // Changed later
 				}
 				data.parts.push(prevPart)
 
-				if (part.resolved.duration === null) {
+				if (firstPart.resolved.duration === null) {
 					// Infinite
 					nextStartTime = null
 					data.duration = null
 					prevPart.endAction = 'infinite'
 				} else {
-					nextStartTime += part.resolved.duration
+					nextStartTime += firstPart.resolved.duration
 					data.duration = nextStartTime - groupStartTime // Note: This might be overwritten later.
 				}
 
 				if (group.autoPlay) {
 					// Add the rest of the Parts in the group:
-					const currentPartIndex = group.parts.findIndex((r) => r.id === part.id)
-					const restParts = group.parts.slice(currentPartIndex + 1)
+					const restParts = getPlayablePartsAfter(group.parts, firstPart.id)
 
 					for (const part of restParts) {
 						if (nextStartTime === null) break
-						if (part.disabled) continue
 
 						// Change the previous part:
 						prevPart.endAction = 'next'
@@ -292,6 +313,23 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 		}
 	}
 	return null
+}
+
+function getPlayablePartsAfter(allParts: Part[], currentPartId: string | null): Part[] {
+	const restParts: Part[] = []
+
+	let foundCurrentPart = false
+	if (currentPartId === null) foundCurrentPart = true // Return all playable parts
+
+	for (const part of allParts) {
+		if (foundCurrentPart) {
+			if (part.disabled) continue
+			restParts.push(part)
+		} else {
+			if (part.id === currentPartId) foundCurrentPart = true
+		}
+	}
+	return restParts
 }
 
 /**

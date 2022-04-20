@@ -420,8 +420,8 @@ export class IPCServer
 
 		const originalValue = part.disabled
 
-		updateGroupPlayingParts(group)
 		part.disabled = arg.value
+
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -536,11 +536,11 @@ export class IPCServer
 		if (group.disabled || !group.oneAtATime) {
 			return
 		}
-
+		updateGroupPlayingParts(group)
 		const nextPartIndex = getNextPartIndex(group)
 		const nextPart = group.parts[nextPartIndex]
 		if (nextPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(console.error)
+			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id })
 		}
 	}
 	async playPrev(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -549,11 +549,11 @@ export class IPCServer
 		if (group.disabled || !group.oneAtATime) {
 			return
 		}
-
+		updateGroupPlayingParts(group)
 		const prevPartIndex = getPrevPartIndex(group)
 		const prevPart = group.parts[prevPartIndex]
 		if (prevPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
+			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id })
 		}
 	}
 	// async newPart(arg: {
@@ -2006,6 +2006,7 @@ export class IPCServer
 			if (!updates.noEffectOnPlayout) {
 				// Update Timeline:
 				group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+				updateGroupPlayingParts(group)
 			}
 		}
 
