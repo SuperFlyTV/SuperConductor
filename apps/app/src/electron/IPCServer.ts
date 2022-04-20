@@ -1040,6 +1040,8 @@ export class IPCServer
 			return
 		}
 
+		updateGroupPlayingParts(group)
+
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 		const timelineObjPreChange = deepClone(timelineObj)

@@ -83,6 +83,8 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 				}
 			} else {
 				// Add the starting Part:
+
+				// Special case: If the first part is disabled:
 				if (firstPart.disabled) {
 					// The currently playing part is disabled.
 
