@@ -42,9 +42,9 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { TriggerBtn } from '../../inputs/TriggerBtn'
 import { PeripheralArea } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
+import { BsKeyboard, BsKeyboardFill } from 'react-icons/bs'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -58,6 +58,7 @@ export const GroupView: React.FC<{
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const rundown = store.rundownsStore.currentRundown
 	const allAssignedAreas = store.projectStore.assignedAreas
+	const allAvailableAreas = store.projectStore.availableAreas
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
@@ -484,11 +485,10 @@ export const GroupView: React.FC<{
 		) : null
 	} else {
 		const canModifyOneAtATime = !(!group.oneAtATime && anyPartIsPlaying) && !group.locked
-		// (group.oneAtATime && playhead.anyPartIsPlaying) || !group.oneAtATime
-		// || !group.oneAtATime // && !playhead.groupIsPlaying
 
 		const canModifyLoop = group.oneAtATime && !group.locked
 		const canModifyAutoPlay = group.oneAtATime && !group.locked
+		const canAssignAreas = allAvailableAreas.length > 0 && !group.locked
 
 		return (
 			<div
@@ -655,16 +655,25 @@ export const GroupView: React.FC<{
 						>
 							<MdPlaylistPlay size={22} />
 						</ToggleButton>
-						<TriggerBtn
-							disabled={group.locked}
-							onTrigger={(event: React.MouseEvent<Element, MouseEvent>) => {
-								setPartSubmenuPopoverAnchorEl(event.currentTarget)
-							}}
-							active={assignedAreas.length > 0}
+
+						<ToggleButton
 							title={
 								'Assign Button Area' + (group.locked ? ' (disabled due to locked Part or Group)' : '')
 							}
-						/>
+							value="assign-area"
+							selected={assignedAreas.length > 0}
+							size="small"
+							disabled={!canAssignAreas}
+							onChange={(event) => {
+								setPartSubmenuPopoverAnchorEl(event.currentTarget)
+							}}
+						>
+							{assignedAreas.length > 0 ? (
+								<BsKeyboardFill color="white" size={24} />
+							) : (
+								<BsKeyboard color="white" size={24} />
+							)}
+						</ToggleButton>
 						<Popover
 							open={buttonAreaPopoverOpen}
 							anchorEl={partSubmenuPopoverAnchorEl}

@@ -178,7 +178,6 @@ function renderXkeysKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 		if (keyDisplay.area) {
 			if (keyDisplay.area.areaInDefinition) {
 				color = 'red'
-				flashFrequency = FLASH_FAST
 			} else {
 				color = 'blue'
 			}

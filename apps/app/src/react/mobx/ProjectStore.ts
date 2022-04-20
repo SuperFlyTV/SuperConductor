@@ -25,6 +25,13 @@ export class ProjectStore {
 		area: PeripheralArea
 	}[] = []
 
+	public availableAreas: {
+		bridgeId: string
+		deviceId: string
+		areaId: string
+		area: PeripheralArea
+	}[] = []
+
 	constructor() {
 		makeAutoObservable(this)
 	}
@@ -37,10 +44,18 @@ export class ProjectStore {
 
 	private _updateAssignedAreas() {
 		this.assignedAreas = []
+		this.availableAreas = []
 
 		for (const [bridgeId, bridge] of Object.entries(this.project.bridges)) {
 			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
 				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+					this.availableAreas.push({
+						bridgeId,
+						deviceId,
+						areaId,
+						area,
+					})
+
 					if (area.assignedToGroupId) {
 						this.assignedAreas.push({
 							assignedToGroupId: area.assignedToGroupId,

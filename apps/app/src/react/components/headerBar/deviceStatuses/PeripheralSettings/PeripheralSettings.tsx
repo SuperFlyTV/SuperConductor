@@ -10,6 +10,7 @@ import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 import { StreamdeckSettings } from './streamdeck'
 import { XKeysSettings } from './xkeys'
+import { TrashBtn } from '../../../../components/inputs/TrashBtn'
 
 export const PeripheralSettings: React.FC<{
 	bridgeId: string
@@ -27,6 +28,12 @@ export const PeripheralSettings: React.FC<{
 	const createNewArea = useCallback(() => {
 		serverAPI.addPeripheralArea({ bridgeId, deviceId }).catch(handleError)
 	}, [serverAPI, handleError, bridgeId, deviceId])
+	const removeArea = useCallback(
+		(areaId: string) => {
+			serverAPI.removePeripheralArea({ bridgeId, deviceId, areaId }).catch(handleError)
+		},
+		[serverAPI, handleError, bridgeId, deviceId]
+	)
 
 	const startDefiningArea = useCallback(
 		(areaId: string) => {
@@ -41,7 +48,7 @@ export const PeripheralSettings: React.FC<{
 	)
 	const finishDefiningArea = useCallback(() => {
 		serverAPI.finishDefiningArea().catch(handleError)
-	}, [])
+	}, [handleError, serverAPI])
 
 	const bridge = project.bridges[bridgeId]
 	if (!bridge) return null
@@ -100,6 +107,13 @@ export const PeripheralSettings: React.FC<{
 													: 'Define keys'}
 											</Button>
 										)}
+									</td>
+									<td>
+										<TrashBtn
+											className="delete"
+											title={'Delete Area'}
+											onClick={() => removeArea(areaId)}
+										/>
 									</td>
 								</tr>
 							)
