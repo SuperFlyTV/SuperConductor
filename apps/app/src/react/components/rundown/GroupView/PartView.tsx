@@ -750,7 +750,6 @@ export const PartView: React.FC<{
 									: 'Disable/Skip Part during playback.'
 							}
 							value="disabled"
-							disabled={groupLocked}
 							selected={part.disabled}
 							size="small"
 							onChange={toggleDisable}

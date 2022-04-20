@@ -371,12 +371,12 @@ export class IPCServer
 				}
 			}
 		}
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 		return {
 			undo: () => {
 				const { rundown, part } = this.getPart(arg)
 				part.triggers = originalTriggers
-				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetPartTrigger,
 		}
@@ -418,10 +418,6 @@ export class IPCServer
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
-		if (group.locked) {
-			return
-		}
-
 		const originalValue = part.disabled
 
 		updateGroupPlayingParts(group)
@@ -450,7 +446,7 @@ export class IPCServer
 
 		part.locked = arg.value
 
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -458,7 +454,7 @@ export class IPCServer
 
 				part.locked = originalValue
 
-				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.TogglePartLock,
 		}
