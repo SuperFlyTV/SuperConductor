@@ -49,6 +49,20 @@ export const findTimelineObjIndex = (part: Part, timelineObjId: string): number 
 		return timelineObj.obj.id === timelineObjId
 	})
 }
+export const findTimelineObjInRundown = (
+	rundown: Rundown,
+	timelineObjId: string
+): { group: Group; part: Part; timelineObj: TimelineObj } | undefined => {
+	for (const group of rundown.groups) {
+		for (const part of group.parts) {
+			for (const timelineObj of part.timeline) {
+				if (timelineObj.obj.id === timelineObjId) {
+					return { group, part, timelineObj }
+				}
+			}
+		}
+	}
+}
 
 export const deleteGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	let deletedGroup: Group | undefined
