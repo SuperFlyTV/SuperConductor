@@ -1,18 +1,20 @@
 import { prepareGroupPlayData } from '../lib/playhead'
 import { Group } from '../models/rundown/Group'
-import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayData, GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
-import { TimelineObject } from 'superfly-timeline'
+import { TimelineEnable, TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { StorageHandler } from './storageHandler'
 import { BridgeHandler } from './bridgeHandler'
 import { deepClone } from '@shared/lib'
+import { modifyTimelineObjectForPlayout } from '../lib/TimelineObj'
 
 export interface UpdateTimelineCache {
 	groupHashes?: { [groupId: string]: string }
 	mappingsHash?: string
 }
 
+const queuedUpdateTimelines = new Map<string, NodeJS.Timeout>()
 export function updateTimeline(
 	cache: UpdateTimelineCache,
 	storage: StorageHandler,
@@ -20,12 +22,25 @@ export function updateTimeline(
 	group: Group
 ): GroupPreparedPlayData | null {
 	const prepared = prepareGroupPlayData(group)
-	const timeline = getTimelineForGroup(group, prepared, undefined) as TSRTimeline
 
-	bridgeHandler.updateTimeline(group.id, timeline)
+	// Defer update, to allow for multiple updates to be batched together:
+	const existingTimeout = queuedUpdateTimelines.get(group.id)
+	if (existingTimeout) clearTimeout(existingTimeout)
 
-	const project = storage.getProject()
-	bridgeHandler.updateMappings(project.mappings)
+	queuedUpdateTimelines.set(
+		group.id,
+		setTimeout(() => {
+			const queued = queuedUpdateTimelines.get(group.id)
+			if (!queued) return
+			queuedUpdateTimelines.delete(group.id)
+
+			const timeline = getTimelineForGroup(group, prepared, undefined) as TSRTimeline
+			bridgeHandler.updateTimeline(group.id, timeline)
+
+			const project = storage.getProject()
+			bridgeHandler.updateMappings(project.mappings)
+		}, 1)
+	)
 
 	return prepared || null
 }
@@ -75,7 +90,7 @@ export function getTimelineForGroup(
 				// Add the part to the timeline:
 				const obj: TimelineObjEmpty | null = partToTimelineObj(
 					makeUniqueId(playingPart.part.id),
-					playingPart.part,
+					playingPart,
 					playingPart.startTime - groupStartTime,
 					customPartContent
 				)
@@ -85,7 +100,7 @@ export function getTimelineForGroup(
 			}
 
 			// Then add the parts that loop:
-			if (prepared.repeating) {
+			if (prepared.repeating && prepared.duration !== null) {
 				/** Repeating start time, relative to groupStartTime */
 				const repeatingStartTime = prepared.duration
 				/** unit timestamp */
@@ -95,8 +110,8 @@ export function getTimelineForGroup(
 					id: `repeating_${group.id}`,
 					enable: {
 						start: repeatingStartTime,
-						duration: prepared.repeating.duration,
-						repeating: prepared.repeating.duration,
+						duration: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
+						repeating: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
 					},
 					layer: '',
 					content: {
@@ -111,7 +126,7 @@ export function getTimelineForGroup(
 					// Add the part to the timeline:
 					const obj: TimelineObjEmpty | null = partToTimelineObj(
 						makeUniqueId(part.part.id),
-						part.part,
+						part,
 						part.startTime - repeatingStartTimeUnix,
 						customPartContent
 					)
@@ -146,7 +161,7 @@ export function getTimelineForGroup(
 				// Add the part to the timeline:
 				const obj: TimelineObjEmpty | null = partToTimelineObj(
 					makeUniqueId(playingPart.part.id),
-					playingPart.part,
+					playingPart,
 					playingPart.startTime,
 					customPartContent
 				)
@@ -157,7 +172,6 @@ export function getTimelineForGroup(
 
 			timeline.push(timelineGroup)
 		}
-
 		return timeline
 	} else {
 		return null
@@ -165,17 +179,26 @@ export function getTimelineForGroup(
 }
 function partToTimelineObj(
 	objId: string,
-	part: Part,
+	playingPart: GroupPreparedPlayDataPart,
 	startTime: number,
 	customPartContent: CustomPartConent | undefined
 ): TimelineObjEmpty {
+	const part: Part = playingPart.part
+
+	const enable: TimelineEnable = {
+		start: startTime,
+		duration: part.resolved.duration,
+		repeating: part.loop ? part.resolved.duration : undefined,
+	}
+	if (playingPart.pauseTime !== undefined) {
+		// is paused
+		delete enable.duration
+		delete enable.repeating
+	}
+
 	const timelineObj: TimelineObjEmpty = {
 		id: objId,
-		enable: {
-			start: startTime,
-			duration: part.resolved.duration,
-			repeating: part.loop ? part.resolved.duration : undefined,
-		},
+		enable,
 		layer: '',
 		content: {
 			deviceType: DeviceType.ABSTRACT,
@@ -184,7 +207,13 @@ function partToTimelineObj(
 		classes: [],
 		isGroup: true,
 
-		children: customPartContent ? customPartContent(part, objId) : part.timeline.map((o) => deepClone(o.obj)),
+		children: customPartContent
+			? customPartContent(playingPart, objId)
+			: part.timeline.map((o) => {
+					const partTimelineObj = deepClone(o.obj)
+					modifyTimelineObjectForPlayout(partTimelineObj, playingPart, o)
+					return partTimelineObj
+			  }),
 	}
 
 	return timelineObj
@@ -214,4 +243,4 @@ function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObj
 	// }
 }
 
-type CustomPartConent = (part: Part, parentId: string) => TimelineObject[]
+type CustomPartConent = (playingPart: GroupPreparedPlayDataPart, parentId: string) => TimelineObject[]

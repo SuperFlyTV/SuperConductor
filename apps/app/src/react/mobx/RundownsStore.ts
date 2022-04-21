@@ -7,8 +7,9 @@ import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
 import short from 'short-uuid'
-import { allowMovingItemIntoGroup, findPartInRundown } from '../../lib/util'
+import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
+import { deepClone } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -29,6 +30,13 @@ type IObservableObject<T extends object> = {
 }
 
 export class RundownsStore {
+	private _currentRundownId?: string = undefined
+	private _rundowns = new Map<string, Rundown>()
+	/**
+	 * Keeps copies of the rundowns that can't be modified by frontend code.
+	 * Used in Group and Part moves to compare our mutated state to the original state.
+	 */
+	private _rundownsClean = new Map<string, Readonly<Rundown>>()
 	/**
 	 * List of all available rundowns
 	 */
@@ -37,9 +45,8 @@ export class RundownsStore {
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateRundown: (rundownId: string, rundown: Rundown) => {
-			store.guiStore.activeTabId = rundownId
-			this.currentRundownId = rundownId
-			this.currentRundown = rundown
+			this._rundowns.set(rundownId, rundown)
+			this._rundownsClean.set(rundownId, deepClone(rundown))
 		},
 	})
 
@@ -54,23 +61,16 @@ export class RundownsStore {
 	/**
 	 * Id of the currently opened rundown
 	 */
-	private _currentRundownId?: string = undefined
 	get currentRundownId() {
 		return this._currentRundownId
-	}
-	private set currentRundownId(id: string | undefined) {
-		this._currentRundownId = id
 	}
 
 	/**
 	 * Currently opened rundown data
 	 */
-	private _currentRundown?: Rundown = undefined
-	get currentRundown() {
-		return this._currentRundown
-	}
-	private set currentRundown(rd: Rundown | undefined) {
-		this._currentRundown = rd as any
+	get currentRundown(): Rundown | undefined {
+		if (!this._currentRundownId) return undefined
+		return this._rundowns.get(this._currentRundownId)
 	}
 
 	/**
@@ -89,13 +89,18 @@ export class RundownsStore {
 	 */
 	setCurrentRundown(rundownId?: string) {
 		if (rundownId) {
-			this.serverAPI.triggerSendRundown({ rundownId: rundownId }).catch(() => {
+			this._currentRundownId = rundownId
+			store.guiStore.activeTabId = rundownId
+			this.serverAPI.triggerSendRundown({ rundownId }).catch(() => {
 				//TODO
 			})
 		} else {
 			this._currentRundownId = undefined
-			this._currentRundown = undefined
 		}
+	}
+
+	getRundown(rundownId: string): Rundown | undefined {
+		return this._rundowns.get(rundownId)
 	}
 
 	/**
@@ -135,7 +140,7 @@ export class RundownsStore {
 	}
 
 	moveGroupInCurrentRundown(groupId: string, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -162,18 +167,21 @@ export class RundownsStore {
 	}
 
 	commitMoveGroupInCurrentRundown() {
-		if (!this._commitMoveGroupFn) {
-			return
-		}
+		if (!this._commitMoveGroupFn) return
+		if (!this.currentRundownId) return
+		const currentRundownId = this.currentRundownId
 
 		const fn = this._commitMoveGroupFn
 		this._commitMoveGroupFn = undefined
 
-		return fn()
+		return fn().catch((error) => {
+			this._revertRundown(currentRundownId)
+			throw error
+		})
 	}
 
 	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
-		const currentRundown = this._currentRundown as any as IObservableObject<Rundown>
+		const currentRundown = this.currentRundown as any as IObservableObject<Rundown>
 
 		if (currentRundown === undefined) {
 			return
@@ -182,10 +190,13 @@ export class RundownsStore {
 		const result = findPartInRundown(currentRundown, partId)
 
 		if (!result) {
-			return
+			throw new Error(
+				`Move Part failed: Could not find part "${partId}" in the dirty copy of rundown "${currentRundown.id}".`
+			)
 		}
 
-		const { part, group: fromGroup } = result
+		const part = result.part
+		const fromGroup = result.group
 		let toGroup: Group | undefined
 		let madeNewTransparentGroup = false
 		const isTransparentGroupMove = fromGroup.transparent && toGroupId === null
@@ -259,13 +270,25 @@ export class RundownsStore {
 	}
 
 	commitMovePartInCurrentRundown() {
-		if (!this._commitMovePartFn) {
-			return
-		}
+		if (!this._commitMovePartFn) return
+		if (!this.currentRundownId) return
+		const currentRundownId = this.currentRundownId
 
 		const fn = this._commitMovePartFn
 		this._commitMovePartFn = undefined
 
-		return fn()
+		return fn().catch((error) => {
+			this._revertRundown(currentRundownId)
+			throw error
+		})
+	}
+
+	/**
+	 * Reverts _currentRundown to a fresh copy of _currentRundownClean.
+	 */
+	private _revertRundown(rundownId: string) {
+		const reverted = deepClone(this._rundownsClean.get(rundownId))
+		if (reverted) this._rundowns.set(rundownId, reverted)
+		else this._rundowns.delete(rundownId)
 	}
 }

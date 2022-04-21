@@ -1,9 +1,11 @@
 import EventEmitter from 'events'
 import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { PeripheralInfo } from '@shared/api'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -13,17 +15,26 @@ export class SessionHandler extends EventEmitter {
 	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
 
-	private peripherals: { [peripheralId: string]: Peripheral } = {}
+	private peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
 
+	/** Contains a collection of ALL triggers/keys/buttons on all Panels */
 	private allTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private allTriggersHasChanged: { [fullIdentifier: string]: true } = {}
+	/** Contains a collection of the currently active (pressed) triggers/keys/buttons on all Panels */
 	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private activeTriggersHasChanged = false
+
+	private definingArea: DefiningArea | null = null
+	private definingAreaHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
 	private emitEverything = false
+
+	terminate() {
+		this.removeAllListeners()
+	}
 
 	triggerEmitAll() {
 		this.emitEverything = true
@@ -42,6 +53,14 @@ export class SessionHandler extends EventEmitter {
 			if (resource.deviceId === deviceId) ids.push(id)
 		}
 		return ids
+	}
+	getDefiningArea(): DefiningArea | null {
+		return this.definingArea
+	}
+	updateDefiningArea(definingArea: DefiningArea | null): void {
+		this.definingArea = definingArea
+		this.definingAreaHasChanged = true
+		this.triggerUpdate()
 	}
 	updateResource(id: string, resource: ResourceAny | null) {
 		if (resource) {
@@ -74,20 +93,20 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
-	getPeripheralStatus(bridgeId: string, deviceId: string): Peripheral | undefined {
+	getPeripheralStatus(bridgeId: string, deviceId: string): PeripheralStatus | undefined {
 		const peripheralId = `${bridgeId}-${deviceId}`
 
 		return this.peripherals[peripheralId]
 	}
-	updatePeripheralStatus(bridgeId: string, deviceId: string, deviceName: string, connected: boolean) {
+	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean) {
 		const peripheralId = `${bridgeId}-${deviceId}`
 
-		const existing: Peripheral | undefined = this.peripherals[peripheralId]
+		const existing: PeripheralStatus | undefined = this.peripherals[peripheralId]
 
-		const newDevice: Peripheral = {
+		const newDevice: PeripheralStatus = {
 			id: deviceId,
 			bridgeId: bridgeId,
-			name: deviceName,
+			info: info,
 			status: {
 				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
 				connected: connected,
@@ -127,7 +146,7 @@ export class SessionHandler extends EventEmitter {
 			fullIdentifier: fullIdentifier,
 			bridgeId: bridgeId,
 			deviceId: deviceId,
-			deviceName: device?.name ?? '',
+			deviceName: device?.info.name ?? '',
 			identifier: identifier,
 		}
 
@@ -171,6 +190,7 @@ export class SessionHandler extends EventEmitter {
 				this.peripheralsHasChanged[peripheralId] = true
 			}
 			this.activeTriggersHasChanged = true
+			this.definingAreaHasChanged = true
 
 			this.emitEverything = false
 		}
@@ -195,6 +215,10 @@ export class SessionHandler extends EventEmitter {
 			const activeTriggers: ActiveTriggers = Object.values(this.activeTriggers)
 			this.emit('activeTriggers', activeTriggers)
 			this.activeTriggersHasChanged = false
+		}
+		if (this.definingAreaHasChanged) {
+			this.emit('definingArea', this.definingArea)
+			this.definingAreaHasChanged = false
 		}
 	}
 }

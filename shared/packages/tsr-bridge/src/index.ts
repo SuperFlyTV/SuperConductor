@@ -35,11 +35,11 @@ export class BaseBridge {
 	private setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
 		const peripheralsHandler = new PeripheralsHandler(bridgeId)
 
-		peripheralsHandler.on('connected', (deviceId, deviceName) => {
-			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, deviceName, status: 'connected' })
+		peripheralsHandler.on('connected', (deviceId, info) => {
+			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
 		})
-		peripheralsHandler.on('disconnected', (deviceId, deviceName) =>
-			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, deviceName, status: 'disconnected' })
+		peripheralsHandler.on('disconnected', (deviceId, info) =>
+			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'disconnected' })
 		)
 		peripheralsHandler.on('keyDown', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })

@@ -17,7 +17,8 @@ import {
 	MappingVMixType,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
+import shortUUID from 'short-uuid'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -86,15 +87,27 @@ export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean =>
 	return false
 }
 
-export const getResolvedTimelineTotalDuration = (resolvedTimeline: ResolvedTimeline) => {
+export function getResolvedTimelineTotalDuration(resolvedTimeline: ResolvedTimeline, filterInfinites: true): number
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: false
+): number | null
+export function getResolvedTimelineTotalDuration(
+	resolvedTimeline: ResolvedTimeline,
+	filterInfinites: boolean
+): number | null {
 	let maxDuration = 0
+	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.end) {
+			if (instance.end === null) {
+				isInfinite = true
+			} else if (instance.end) {
 				maxDuration = Math.max(maxDuration, instance.end)
 			}
 		})
 	})
+	if (isInfinite && !filterInfinites) return null
 	return maxDuration
 }
 
@@ -133,7 +146,7 @@ export function allowMovingItemIntoGroup(
  * Update Group playing properties, so that they reflect the current playing status
  * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
  */
-export function updateGroupPlaying(group: Group) {
+export function updateGroupPlayingParts(group: Group) {
 	const now = Date.now()
 	const playhead = getGroupPlayData(group.preparedPlayData, now)
 
@@ -141,6 +154,7 @@ export function updateGroupPlaying(group: Group) {
 	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
 		group.playout.playingParts[partId] = {
 			startTime: playingPart.partStartTime,
+			pauseTime: playingPart.partPauseTime,
 		}
 	}
 }
@@ -455,4 +469,101 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 	}
 
 	return mapping.device === resourceDevice.type
+}
+
+/**
+ * Takes a timeline as input and outputs an identical timeline with new IDs for all timelineObjs.
+ * Also updates enable expressions to make them point to the new IDs.
+ * Pure function, does not mutate the input.
+ */
+export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Part['timeline'] {
+	const idMap = new Map<string, string>()
+	const output: Part['timeline'] = []
+
+	// Generate the new IDs and store them in a map.
+	for (const timelineObj of input) {
+		idMap.set(timelineObj.obj.id, shortUUID.generate())
+	}
+
+	// Process each timeline object.
+	for (const timelineObj of input) {
+		const clone = deepClone(timelineObj)
+		const newId = idMap.get(timelineObj.obj.id)
+
+		if (!newId) {
+			throw new Error('Expected to find a new ID')
+		}
+
+		// Give our clone its new ID.
+		clone.obj.id = newId
+
+		const enable = clone.obj.enable
+		if (Array.isArray(enable)) continue
+
+		// Edit any expressions so that they point to the new ID from the map.
+		for (const [oldId, newId] of idMap) {
+			const regex = new RegExp(oldId, 'g')
+
+			if ('start' in enable && typeof enable.start === 'string') {
+				enable.start = enable.start.replace(regex, newId)
+			}
+
+			if ('end' in enable && typeof enable.end === 'string') {
+				enable.end = enable.end.replace(regex, newId)
+			}
+
+			if ('while' in enable && typeof enable.while === 'string') {
+				enable.while = enable.while.replace(regex, newId)
+			}
+
+			if ('duration' in enable && typeof enable.duration === 'string') {
+				enable.duration = enable.duration.replace(regex, newId)
+			}
+
+			if ('repeating' in enable && typeof enable.repeating === 'string') {
+				enable.repeating = enable.repeating.replace(regex, newId)
+			}
+		}
+
+		// Save the cloned object.
+		output.push(clone)
+	}
+
+	return output
+}
+/** Usage:
+ * arrayToBeSorted.sort(sortOn((x) => x))
+ * arrayToBeSorted.sort(sortOn((x) => [x.rank, x.id]))
+ */
+export function sortOn<A>(getSortValue: (value: A) => number | string | undefined | (number | string | undefined)[]) {
+	return (a: A, b: A) => {
+		const valA = getSortValue(a)
+		const valB = getSortValue(b)
+
+		if (Array.isArray(valA) && Array.isArray(valB)) {
+			for (let i = 0; i < valA.length; i++) {
+				const iValA = valA[i]
+				const iValB = valB[i]
+
+				if (iValA === undefined || iValB === undefined) {
+					if (iValA && !iValB) return 1
+					if (!iValA && iValB) return -1
+				} else {
+					if (iValA > iValB) return 1
+					if (iValA < iValB) return -1
+				}
+			}
+
+			return 0
+		} else {
+			if (valA === undefined || valB === undefined) {
+				if (valA && !valB) return 1
+				if (!valA && valB) return -1
+			} else {
+				if (valA > valB) return 1
+				if (valA < valB) return -1
+			}
+			return 0
+		}
+	}
 }

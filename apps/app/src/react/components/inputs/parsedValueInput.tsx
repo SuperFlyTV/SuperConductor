@@ -1,5 +1,5 @@
 import { TextField } from '@mui/material'
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
 
 export function ParsedValueInput<V>(
 	currentValue: V,
@@ -8,11 +8,13 @@ export function ParsedValueInput<V>(
 	parse: (str: string) => V | undefined,
 	stringify: (val: V) => string,
 	label?: string,
+	emptyPlaceholder?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
 	fullWidth?: boolean
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
+	const selectorPosition = useRef<number | null>(null)
 	const fieldRef = useRef<HTMLInputElement>(null)
 
 	useEffect(() => {
@@ -22,20 +24,28 @@ export function ParsedValueInput<V>(
 	const onSave = (str: string) => {
 		if (!str) {
 			onChange(defaultValue)
+			setValue(stringify(currentValue))
 		} else {
 			const value = parse(str)
 			if (value !== undefined) onChange(value)
 			else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 		}
 	}
-	const onEventChange = (str: string) => {
-		if (str.length > value.length) {
-			const v = parse(str)
-			if (v !== undefined) {
-				setValue(stringify(v))
-				return
+	const onEventChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+		const str: string = e.target.value
+		const v = parse(str)
+		if (v !== undefined) {
+			if (e.target.selectionStart !== null) {
+				const addedLength = str.length - value.length
+				// Handle a few special cases where we want to move the selector position:
+				if (e.target.selectionStart === 0 || (addedLength === 1 && e.target.selectionStart === 1)) {
+					selectorPosition.current = e.target.selectionStart
+				}
 			}
+			setValue(stringify(v))
+			return
 		}
+		selectorPosition.current = null
 		setValue(str)
 	}
 
@@ -51,6 +61,13 @@ export function ParsedValueInput<V>(
 		}
 	}, [fieldRef, currentValue, parse, onChange])
 
+	useLayoutEffect(() => {
+		// Move the selector position:
+		if (selectorPosition.current !== null)
+			fieldRef.current?.setSelectionRange(selectorPosition.current, selectorPosition.current)
+		selectorPosition.current = null
+	})
+
 	return (
 		<TextField
 			type={inputType}
@@ -59,7 +76,7 @@ export function ParsedValueInput<V>(
 				onSave(e.target.value)
 			}}
 			onChange={(e) => {
-				onEventChange(e.target.value)
+				onEventChange(e)
 			}}
 			onKeyDown={(e) => {
 				const target = e.target as EventTarget & HTMLInputElement
@@ -76,6 +93,7 @@ export function ParsedValueInput<V>(
 			label={label}
 			value={value}
 			disabled={disabled}
+			placeholder={emptyPlaceholder}
 		/>
 	)
 }

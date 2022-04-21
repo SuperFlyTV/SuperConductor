@@ -1,5 +1,6 @@
 import winston from 'winston'
-import { WebsocketConnection, WebsocketServer, BridgeAPI } from '@shared/api'
+import { BridgeAPI } from '@shared/api'
+import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BaseBridge } from '@shared/tsr-bridge'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires

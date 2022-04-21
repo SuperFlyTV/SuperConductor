@@ -52,6 +52,9 @@ export class StorageHandler extends EventEmitter {
 	init() {
 		// Nothing here yet
 	}
+	terminate() {
+		this.removeAllListeners()
+	}
 
 	/** Returns a list of available projects */
 	listProjects(): { dirName: string; fileName: string }[] {
@@ -199,6 +202,7 @@ export class StorageHandler extends EventEmitter {
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
+		return fileName
 	}
 	openRundown(fileName: string) {
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName)
@@ -409,6 +413,7 @@ export class StorageHandler extends EventEmitter {
 		try {
 			const read = fs.readFileSync(projectPath, 'utf8')
 			project = JSON.parse(read)
+			if (project) this.ensureCompatibilityProject(project?.project)
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
@@ -424,6 +429,7 @@ export class StorageHandler extends EventEmitter {
 			try {
 				const read = fs.readFileSync(tmpPath, 'utf8')
 				project = JSON.parse(read)
+				if (project) this.ensureCompatibilityProject(project?.project)
 
 				// If we only have a temporary file, we should write to the real one asap:
 				this.projectNeedsWrite = true
@@ -640,6 +646,11 @@ export class StorageHandler extends EventEmitter {
 		await fsRename(tmpPath, filePath)
 	}
 
+	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
+		for (const bridge of Object.values(project.bridges)) {
+			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
+		}
+	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
 		for (const group of rundown.groups) {
 			if (!group.playout.playingParts) {

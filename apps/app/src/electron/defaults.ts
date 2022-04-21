@@ -69,6 +69,7 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 						},
 					},
 				},
+				peripheralSettings: {},
 			},
 		},
 
@@ -106,6 +107,14 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 										file: 'AMB',
 										deviceType: DeviceType.CASPARCG,
 									},
+								},
+								resolved: {
+									instances: [
+										{
+											start: 0,
+											end: 5000,
+										},
+									],
 								},
 							},
 						],

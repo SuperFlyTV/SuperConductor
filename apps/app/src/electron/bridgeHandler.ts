@@ -1,4 +1,5 @@
-import { KeyDisplay, KeyDisplayTimeline, WebsocketConnection, WebsocketServer } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
+import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
@@ -55,7 +56,7 @@ export class BridgeHandler {
 
 		this.server.on('close', () => {
 			// todo: handle server close?
-			console.log('Server closed')
+			console.error('Server closed')
 		})
 
 		this.storage.on('project', (project: Project) => {
@@ -75,13 +76,11 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				// console.log('Setting up internal bridge')
 				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
 			if (this.internalBridge) {
-				// console.log('Destroying internal bridge')
 				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
 				const bridgeIndex = this.connectedBridges.findIndex(
 					(connectedBridge) => connectedBridge === this.internalBridge
@@ -126,7 +125,6 @@ export class BridgeHandler {
 							// remove bridge:
 							delete this.outgoingBridges[bridge.id]
 						})
-						// console.log('Connecting to bridge', bridge.id, connection.connectionId)
 						this.outgoingBridges[bridge.id] = {
 							bridge,
 							connection,
@@ -331,9 +329,9 @@ abstract class AbstractBridgeConnection {
 		this.callbacks.updatedResources(deviceId, [])
 		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
-	protected _onPeripheralStatus(deviceId: string, deviceName: string, status: 'connected' | 'disconnected') {
+	protected _onPeripheralStatus(deviceId: string, info: PeripheralInfo, status: 'connected' | 'disconnected') {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
-		this.session.updatePeripheralStatus(this.bridgeId, deviceId, deviceName, status === 'connected')
+		this.session.updatePeripheralStatus(this.bridgeId, deviceId, info, status === 'connected')
 	}
 	protected _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
@@ -355,7 +353,7 @@ abstract class AbstractBridgeConnection {
 		} else if (msg.type === 'timelineIds') {
 			this._syncTimelineIds(msg.timelineIds)
 		} else if (msg.type === 'PeripheralStatus') {
-			this._onPeripheralStatus(msg.deviceId, msg.deviceName, msg.status)
+			this._onPeripheralStatus(msg.deviceId, msg.info, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 		} else if (msg.type === 'DeviceRefreshStatus') {
@@ -381,6 +379,7 @@ abstract class AbstractBridgeConnection {
 				settings: {
 					devices: {},
 				},
+				peripheralSettings: {},
 			}
 			this.storage.updateProject(project)
 		}
@@ -431,8 +430,6 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	protected send(msg: BridgeAPI.FromTPT.Any) {
 		if (this.connection.connected) {
 			this.connection.send(msg)
-		} else {
-			// console.log('not sending, because not connected', msg.type)
 		}
 	}
 	protected getConnectionId(): number {

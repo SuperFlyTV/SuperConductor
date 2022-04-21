@@ -13,15 +13,15 @@ import { ResourceAny } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient
-	// tptCaspar?: TPTCasparCG
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -40,6 +40,7 @@ export class TimedPlayerThingy {
 				x: undefined,
 				width: 1200,
 				height: 600,
+				maximized: false,
 			},
 			CURRENT_VERSION
 		)
@@ -52,12 +53,16 @@ export class TimedPlayerThingy {
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
-		this.session.on('peripheral', (peripheralId: string, peripheral: Peripheral | null) => {
+		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
 			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
 			this.ipcClient?.updatePeripheralTriggers(activeTriggers)
+		})
+		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
+			this.triggers?.updateDefiningArea(definingArea)
+			this.ipcClient?.updateDefiningArea(definingArea)
 		})
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
@@ -130,7 +135,7 @@ export class TimedPlayerThingy {
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
 			},
-			updatePeripherals: (_group: Group): void => {
+			updatePeripherals: (): void => {
 				this.triggers?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
@@ -139,6 +144,10 @@ export class TimedPlayerThingy {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.storage, this.ipcServer, this.bridgeHandler)
-		// this.tptCaspar = new TPTCasparCG(this.session)
+	}
+
+	terminate() {
+		this.session.terminate()
+		this.storage.terminate()
 	}
 }

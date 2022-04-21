@@ -42,7 +42,7 @@ import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj {
-	const INFINITE_DURATION = 3600000 // not supporting infinites yet
+	const INFINITE_DURATION = null
 
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 		return {

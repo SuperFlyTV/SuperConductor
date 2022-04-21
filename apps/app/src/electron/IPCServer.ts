@@ -9,16 +9,17 @@ import {
 	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
+	generateNewTimelineObjIds,
 	getNextPartIndex,
 	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
-	updateGroupPlaying,
+	updateGroupPlayingParts,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
-import { Action, ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import short from 'short-uuid'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
@@ -27,7 +28,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
 import { deepClone } from '@shared/lib'
-import { TimelineObj } from '../models/rundown/TimelineObj'
+import { TimelineObj, TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
@@ -36,15 +37,29 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
+import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
+
+type UndoableResult<T> = T extends void
+	? { undo: UndoFunction; description: ActionDescription }
+	: { undo: UndoFunction; description: ActionDescription; result: T }
 
 type UndoLedger = Action[]
 type UndoPointer = number
+type UndoFunction = () => Promise<void> | void
+type UndoableFunction = (...args: any[]) => Promise<UndoableResult<any>>
+interface Action {
+	description: ActionDescription
+	arguments: any[]
+	redo: UndoableFunction
+	undo: UndoFunction
+}
 
 type IPCServerEvents = {
 	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
 }
 
-function isUndoable(result: unknown): result is UndoableResult {
+function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
 		return false
 	}
@@ -60,8 +75,19 @@ function isUndoable(result: unknown): result is UndoableResult {
 	return true
 }
 
+type ConvertToServerSide<T> = {
+	[K in keyof T]: T[K] extends (...args: any[]) => any
+		? (
+				...args: Parameters<T[K]>
+		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
+		: T[K]
+}
+
 /** This class is used server-side, to handle requests from the client */
-export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>) implements IPCServerMethods {
+export class IPCServer
+	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
+	implements ConvertToServerSide<IPCServerMethods>
+{
 	private updateTimelineCache: UpdateTimelineCache = {}
 	private undoLedger: UndoLedger = []
 	private undoPointer: UndoPointer = -1
@@ -73,7 +99,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		private callbacks: {
 			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
-			updatePeripherals: (group: Group) => void
+			updatePeripherals: () => void
 			refreshResources: () => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 		}
@@ -98,7 +124,9 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 							}
 							this.undoPointer = this.undoLedger.length - 1
 							this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
-							return result.result
+
+							// string represents "anything but undefined" here:
+							return (result as UndoableResult<string>).result
 						} else {
 							return result
 						}
@@ -119,20 +147,34 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
-		const group = findGroup(rundown, arg.groupId)
-		if (!group) throw new Error(`Group ${arg.groupId} not found in rundown "${arg.rundownId}" ("${rundown.name}").`)
+		return this.getGroupOfRundown(rundown, arg.groupId)
+	}
+	private getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
+		const group = findGroup(rundown, groupId)
+		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
+
 	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-
-		const part = findPart(group, arg.partId)
-		if (!part) throw new Error(`Part ${arg.partId} not found in group ${arg.groupId} ("${group.name}").`)
+		return this.getPartOfGroup(rundown, group, arg.partId)
+	}
+	private getPartOfGroup(
+		rundown: Rundown,
+		group: Group,
+		partId: string
+	): {
+		rundown: Rundown
+		group: Group
+		part: Part
+	} {
+		const part = findPart(group, partId)
+		if (!part) throw new Error(`Part ${partId} not found in group ${group.id} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
@@ -172,8 +214,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
-	async setKeyboardKeys(activeKeys: ActiveTrigger[]): Promise<void> {
-		this.callbacks.setKeyboardKeys(activeKeys)
+	async setKeyboardKeys(data: { activeKeys: ActiveTrigger[] }): Promise<void> {
+		this.callbacks.setKeyboardKeys(data.activeKeys)
 	}
 
 	async acknowledgeSeenVersion(): Promise<void> {
@@ -182,8 +224,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.storage.updateAppData(appData)
 	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 
+		this._playPart(group, part, now)
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+	}
+	private async playParts(rundownId: string, groupId: string, partIds: string[]): Promise<void> {
+		const now = Date.now()
+		const { rundown, group } = this.getGroup({
+			rundownId,
+			groupId,
+		})
+		for (const partId of partIds) {
+			const { part } = this.getPartOfGroup(rundown, group, partId)
+
+			this._playPart(group, part, now)
+		}
+
+		this._saveUpdates({ rundownId, rundown, group })
+	}
+	private _playPart(group: Group, part: Part, now: number): void {
 		if (part.disabled) {
 			return
 		}
@@ -194,12 +256,76 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 		if (!group.playout.playingParts) group.playout.playingParts = {}
 		// Start playing this Part:
-		group.playout.playingParts[arg.partId] = {
-			startTime: Date.now(),
+		group.playout.playingParts[part.id] = {
+			startTime: now,
+			pauseTime: undefined,
+		}
+	}
+	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
+		const now = Date.now()
+		const { rundown, group, part } = this.getPart(arg)
+		updateGroupPlayingParts(group)
+		this._pausePart(group, part, arg.time, now)
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+	}
+	async pauseParts(rundownId: string, groupId: string, partIds: string[], time?: number): Promise<void> {
+		const now = Date.now()
+		const { rundown, group } = this.getGroup({
+			rundownId,
+			groupId,
+		})
+		updateGroupPlayingParts(group)
+		for (const partId of partIds) {
+			const { part } = this.getPartOfGroup(rundown, group, partId)
+
+			this._pausePart(group, part, time, now)
+
+			// group.preparedPlayData
 		}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId, rundown, group })
+	}
+	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
+		if (part.disabled) {
+			return
+		}
+
+		if (!group.playout.playingParts) group.playout.playingParts = {}
+
+		if (group.oneAtATime) {
+			// If any other parts are playing, they should be stopped:
+			for (const partId of Object.keys(group.playout.playingParts)) {
+				if (partId !== part.id) {
+					delete group.playout.playingParts[partId]
+				}
+			}
+		}
+
+		// Handle this Part:
+		const playingPart = group.playout.playingParts[part.id]
+		if (playingPart) {
+			if (playingPart.pauseTime === undefined) {
+				// The part is playing, so it should be paused:
+
+				playingPart.pauseTime =
+					pauseTime ??
+					// If a specific pauseTime not specified, pause at the current time:
+					now - playingPart.startTime
+			} else {
+				// The part is paused, so it should be resumed:
+
+				// playingPart.startTime = now - playingPart.pauseTime
+				playingPart.startTime = now - playingPart.pauseTime
+				playingPart.pauseTime = undefined
+			}
+		} else {
+			// Part is not playing, cue (pause) it at the time specified:
+			group.playout.playingParts[part.id] = {
+				startTime: Date.now(),
+				pauseTime: pauseTime ?? 0,
+			}
+		}
 	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
@@ -212,8 +338,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			delete group.playout.playingParts[arg.partId]
 		}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async setPartTrigger(arg: {
 		rundownId: string
@@ -221,11 +346,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		trigger: Trigger | null
 		triggerIndex: number | null
-	}): Promise<UndoableResult<string> | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const originalTriggers = deepClone(part.triggers)
@@ -246,17 +371,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				}
 			}
 		}
-
-		this.storage.updateRundown(arg.rundownId, rundown)
-		this.callbacks.updatePeripherals(group)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 		return {
 			undo: () => {
 				const { rundown, part } = this.getPart(arg)
 				part.triggers = originalTriggers
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetPartTrigger,
-			// result: newPart.id,
 		}
 	}
 	async togglePartLoop(arg: {
@@ -264,30 +386,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const originalValue = part.loop
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		part.loop = arg.value
-		this._updateTimeline(group)
-
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group, part } = this.getPart(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				part.loop = originalValue
-				this._updateTimeline(group)
-
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.TogglePartLoop,
 		}
@@ -297,30 +415,22 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
-
-		if (group.locked) {
-			return null
-		}
 
 		const originalValue = part.disabled
 
-		updateGroupPlaying(group)
 		part.disabled = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group, part } = this.getPart(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				part.disabled = originalValue
-				this._updateTimeline(group)
-
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.TogglePartDisable,
 		}
@@ -330,13 +440,13 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		value: boolean
-	}): Promise<UndoableResult> {
+	}): Promise<UndoableResult<void>> {
 		const { rundown, part } = this.getPart(arg)
 		const originalValue = part.locked
 
 		part.locked = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -344,7 +454,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				part.locked = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.TogglePartLock,
 		}
@@ -355,8 +465,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		// Stop the group:
 		group.playout.playingParts = {}
 
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { group } = this.getGroup(arg)
@@ -373,8 +482,51 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
-			for (const part of group.parts) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+			this.playParts(
+				arg.rundownId,
+				arg.groupId,
+				group.parts.map((part) => part.id)
+			).catch(console.error)
+		}
+	}
+	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const { group } = this.getGroup(arg)
+
+		if (group.disabled) {
+			return
+		}
+
+		updateGroupPlayingParts(group)
+
+		if (group.oneAtATime) {
+			let partId: string | undefined
+
+			const playingPartId = Object.keys(group.playout.playingParts)[0] as string | undefined
+			if (playingPartId) {
+				// Cue / Pause / resume the currently playing part
+				partId = playingPartId
+				// Cue / Pause / resume the first non-disabled part
+			} else {
+				const firstPart = group.parts.find((p) => !p.disabled)
+				if (firstPart) partId = firstPart.id
+				else partId = undefined
+			}
+
+			if (partId) {
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(console.error)
+			}
+		} else {
+			const playingPartIds = Object.keys(group.playout.playingParts)
+			if (playingPartIds.length === 0) {
+				// Cue all parts
+				this.pauseParts(
+					arg.rundownId,
+					arg.groupId,
+					group.parts.map((part) => part.id)
+				).catch(console.error)
+			} else {
+				// Pause / resume all parts (disabled parts won't get played)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(console.error)
 			}
 		}
 	}
@@ -384,11 +536,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (group.disabled || !group.oneAtATime) {
 			return
 		}
-
+		updateGroupPlayingParts(group)
 		const nextPartIndex = getNextPartIndex(group)
 		const nextPart = group.parts[nextPartIndex]
 		if (nextPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id }).catch(console.error)
+			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: nextPart.id })
 		}
 	}
 	async playPrev(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -397,19 +549,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (group.disabled || !group.oneAtATime) {
 			return
 		}
-
+		updateGroupPlayingParts(group)
 		const prevPartIndex = getPrevPartIndex(group)
 		const prevPart = group.parts[prevPartIndex]
 		if (prevPart) {
-			this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id }).catch(console.error)
+			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id })
 		}
 	}
+	// async newPart(arg: {
+	// 	rundownId: string
+	// 	/** The group to create the part into. If null; will create a "transparent group" */
+	// 	groupId: string | null
+	// 	name: string
+	// }): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
 		groupId: string | null
+
 		name: string
-	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | null> {
+	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 		const newPart: Part = {
 			id: short.generate(),
 			name: arg.name,
@@ -428,7 +587,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
 
 			if (group.locked) {
-				return null
+				return
 			}
 
 			group.parts.push(newPart)
@@ -444,16 +603,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			transparentGroupId = newGroup.id
 			rundown.groups.push(newGroup)
 		}
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		const result: { partId: string; groupId?: string } = {
 			partId: newPart.id,
 		}
-
 		if (transparentGroupId) {
 			result.groupId = transparentGroupId
 		}
-
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
@@ -465,7 +622,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					const { group } = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
 					group.parts = group.parts.filter((p) => p.id !== newPart.id)
 				}
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewPart,
 			result,
@@ -476,18 +633,18 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		part: Part
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
-		this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -495,8 +652,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				Object.assign(part, partPreChange)
 
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
 		}
@@ -510,29 +667,33 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const { rundown } = this.getRundown(arg)
 
 		rundown.groups.push(newGroup)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
 				const { rundown } = this.getRundown(arg)
 				rundown.groups = rundown.groups.filter((g) => g.id !== newGroup.id)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
 		}
 	}
-	async updateGroup(arg: { rundownId: string; groupId: string; group: Group }): Promise<UndoableResult | null> {
+	async updateGroup(arg: {
+		rundownId: string
+		groupId: string
+		group: Group
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const groupPreChange = deepClone(group)
 		Object.assign(group, arg.group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -541,16 +702,20 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				// @TODO: Don't overwrite playout-related properties?
 				Object.assign(group, groupPreChange)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateGroup,
 		}
 	}
-	async deletePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult | null> {
+	async deletePart(arg: {
+		rundownId: string
+		groupId: string
+		partId: string
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const deletedPartIndex = group.parts.findIndex((p) => p.id === arg.partId)
@@ -563,7 +728,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			deletedTransparentGroup = deleteGroup(rundown, group.id)
 		}
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -581,16 +746,16 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					group.parts.splice(deletedPartIndex, 0, deletedPart)
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeletePart,
 		}
 	}
-	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult | null> {
+	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		// Stop the group (so that the updates are sent to TSR):
@@ -598,10 +763,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			playingParts: {},
 		}
 
-		this._updateTimeline(group)
+		this._saveUpdates({ group })
 		const deletedGroupIndex = rundown.groups.findIndex((g) => g.id === group.id)
 		const deletedGroup = deleteGroup(rundown, group.id)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -611,7 +776,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				const { rundown } = this.getRundown(arg)
 				rundown.groups.splice(deletedGroupIndex, 0, deletedGroup)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: deletedGroup })
 			},
 			description: ActionDescription.DeleteGroup,
 		}
@@ -658,6 +823,10 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			}
 		}
 
+		if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
+			throw new Error('Cannot move a Part into an already-existing Transparent Group.')
+		}
+
 		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
 
 		if (!allow) {
@@ -695,24 +864,26 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
 		}
 
-		// Update timelines.
+		const groupsToUpdate: Group[] = []
+		// Update timelines:
 		if (!isTransparentGroupMove) {
 			if (fromGroup.id === toGroup.id) {
-				// Intra-group move.
+				// Moving within the same group
 
-				updateGroupPlaying(toGroup)
+				updateGroupPlayingParts(toGroup)
 				if (movedPartIsPlaying && toGroup.oneAtATime) {
 					// Update the group's playhead, so that the currently playing
 					// part continues to play as if nothing happened:
 					toGroup.playout.playingParts = {
 						[arg.from.partId]: {
 							startTime: movedPartIsPlaying.partStartTime,
+							pauseTime: movedPartIsPlaying.partPauseTime,
 						},
 					}
 				}
-				this._updateTimeline(fromGroup)
+				groupsToUpdate.push(fromGroup)
 			} else {
-				// Inter-group move.
+				// Moving between groups
 				if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
 					// Update the playhead, so that the currently playing
 					// part continues to play as if nothing happened.
@@ -723,15 +894,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					toGroup.playout.playingParts = fromGroup.playout.playingParts
 					fromGroup.playout.playingParts = {}
 				}
-				this._updateTimeline(fromGroup)
-				this._updateTimeline(toGroup)
+				groupsToUpdate.push(fromGroup, toGroup)
 			}
 		}
 
-		// Commit the changes.
-		this.storage.updateRundown(arg.to.rundownId, toRundown)
+		// Commit the changes:
+		this._saveUpdates({ rundownId: arg.to.rundownId, rundown: toRundown, group: groupsToUpdate })
 		if (fromRundown !== toRundown) {
-			this.storage.updateRundown(arg.from.rundownId, fromRundown)
+			this._saveUpdates({ rundownId: arg.from.rundownId, rundown: fromRundown })
 		}
 
 		return {
@@ -752,7 +922,58 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			result: toGroup,
 		}
 	}
-	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult> {
+	async duplicatePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult<void>> {
+		const { rundown, group, part } = this.getPart(arg)
+
+		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
+		const copy = deepClone(part)
+		copy.id = short.generate()
+		copy.timeline = generateNewTimelineObjIds(copy.timeline)
+
+		let newGroup: Group | undefined = undefined
+		if (group.transparent) {
+			// We can't place the copy into the already-existing transparent group, so let's make a new one
+			newGroup = {
+				...getDefaultGroup(),
+
+				id: short.generate(),
+				name: copy.name,
+				transparent: true,
+
+				parts: [copy],
+			}
+
+			// Add the new group just below the original in the rundown
+			const position = rundown.groups.findIndex((g) => g.id === arg.groupId)
+			rundown.groups.splice(position + 1, 0, newGroup)
+		} else {
+			// Add the copy just below the original in the group
+			const position = group.parts.findIndex((p) => p.id === arg.partId)
+			group.parts.splice(position + 1, 0, copy)
+		}
+		// Commit the changes:
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup || group })
+
+		return {
+			undo: async () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				if (newGroup) {
+					// Remove the group we added
+					rundown.groups = rundown.groups.filter((g) => (newGroup ? g.id !== newGroup.id : true))
+				} else {
+					// Remove the part copy we added
+					group.parts = group.parts.filter((p) => p.id !== copy.id)
+					this._saveUpdates({ group })
+				}
+
+				// Commit the changes.
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup ? undefined : group })
+			},
+			description: ActionDescription.DuplicatePart,
+		}
+	}
+	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 
 		// Save the original position for use in undo.
@@ -762,7 +983,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
 		rundown.groups.splice(arg.position, 0, group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: async () => {
@@ -775,6 +996,36 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			description: ActionDescription.MoveGroup,
 		}
 	}
+	async duplicateGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult<void>> {
+		const { rundown, group } = this.getGroup(arg)
+
+		// Make a copy of the group and give it and all its children unique IDs.
+		const groupCopy = deepClone(group)
+		groupCopy.id = short.generate()
+		for (const part of groupCopy.parts) {
+			part.id = short.generate()
+			part.timeline = generateNewTimelineObjIds(part.timeline)
+		}
+
+		// Insert the copy just below the original.
+		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
+		rundown.groups.splice(originalPosition + 1, 0, groupCopy)
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: [group, groupCopy] })
+
+		return {
+			undo: async () => {
+				// Stop playout.
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: groupCopy.id })
+
+				// Delete the copy we made.
+				rundown.groups = rundown.groups.filter((g) => g.id !== groupCopy.id)
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+			},
+			description: ActionDescription.DuplicateGroup,
+		}
+	}
 
 	async updateTimelineObj(arg: {
 		rundownId: string
@@ -782,12 +1033,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
+
+		updateGroupPlayingParts(group)
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
@@ -796,9 +1049,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		Object.assign(timelineObj, arg.timelineObj)
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -806,9 +1058,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				// Overwrite the changed timeline object with the pre-change copy we made.
 				part.timeline.splice(timelineObjIndex, 1, timelineObjPreChange)
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
 		}
@@ -818,11 +1069,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -831,8 +1082,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
-		if (modified) this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		if (modified) this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -840,8 +1091,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				// Re-insert the timelineObj in its original position.
 				part.timeline.splice(timelineObjIndex, 0, timelineObj)
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeleteTimelineObj,
 		}
@@ -852,20 +1103,19 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: TimelineObj
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
 		part.timeline.push(arg.timelineObj)
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -873,9 +1123,8 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
 
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
 		}
@@ -885,11 +1134,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -909,26 +1158,24 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		})
 		timelineObj.obj.layer = result.layerId
 
-		this._updatePart(part)
-		this._updateTimeline(group)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ project: result.updatedProject, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
+				let updatedProject: Project | undefined = undefined
 				if (result.createdNewLayer) {
 					// If a new layer was added, remove it.
-					const project = this.getProject()
-					delete project.mappings[result.layerId]
-					this.storage.updateProject(project)
+					updatedProject = this.getProject()
+					delete updatedProject.mappings[result.layerId]
 				}
 
 				const { rundown, group, part } = this.getPart(arg)
 
 				timelineObj.obj.layer = originalLayer
 
-				this._updatePart(part)
-				this._updateTimeline(group)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
 		}
@@ -939,11 +1186,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -958,7 +1205,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -976,7 +1223,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					timelineObj.obj.content.data = JSON.stringify(data)
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.NewTemplateData,
 		}
@@ -990,11 +1237,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		key: string
 		changedItemId: string
 		value: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1023,7 +1270,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1039,7 +1286,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					timelineObj.obj.content.data = snapshot
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateTemplateData,
 		}
@@ -1050,11 +1297,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		timelineObjId: string
 		key: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
@@ -1073,7 +1320,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			timelineObj.obj.content.data = JSON.stringify(data)
 		} else throw new Error('Not a template')
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
@@ -1089,7 +1336,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					timelineObj.obj.content.data = snapshot
 				}
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeleteTemplateData,
 		}
@@ -1101,11 +1348,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		partId: string
 		layerId: string | null
 		resourceId: string
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
-			return null
+			return
 		}
 
 		const resource = this.session.getResource(arg.resourceId)
@@ -1115,6 +1362,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		let addToLayerId: string
 		let createdNewLayer = false
+		let updatedProject: Project | undefined = undefined
 		if (arg.layerId) {
 			addToLayerId = arg.layerId
 		} else {
@@ -1127,10 +1375,11 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 			})
 			addToLayerId = result.layerId
 			createdNewLayer = result.createdNewLayer
+			updatedProject = result.updatedProject
 		}
 		obj.layer = addToLayerId
 
-		const project = this.getProject()
+		const project = updatedProject ?? this.getProject()
 		const mapping = project.mappings[obj.layer]
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
@@ -1142,54 +1391,56 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,
 			obj,
+			resolved: { instances: [] }, // set later
 		}
 
 		part.timeline.push(timelineObj)
-
-		this._updatePart(part)
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._postProcessPart(part)
+		this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
-				const project = this.getProject()
+				let updatedProject: Project | undefined = undefined
 				if (createdNewLayer) {
 					// If a new layer was added, remove it.
-					delete project.mappings[addToLayerId]
-					this.storage.updateProject(project)
+					updatedProject = this.getProject()
+					delete updatedProject.mappings[addToLayerId]
 				}
 
 				const { rundown, part } = this.getPart(arg)
 				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
-				this._updatePart(part)
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._postProcessPart(part)
+				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.AddResourceToTimeline,
 		}
 	}
-	async toggleGroupLoop(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult | null> {
+	async toggleGroupLoop(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.loop
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.loop = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.loop = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupLoop,
 		}
@@ -1198,30 +1449,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.autoPlay
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.autoPlay = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.autoPlay = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupAutoplay,
 		}
@@ -1230,30 +1479,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.oneAtATime
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.oneAtATime = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.oneAtATime = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.toggleGroupOneAtATime,
 		}
@@ -1262,30 +1509,28 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.locked) {
-			return null
+			return
 		}
 
 		const originalValue = group.disabled
 
-		updateGroupPlaying(group)
+		updateGroupPlayingParts(group)
 		group.disabled = arg.value
-		this._updateTimeline(group)
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
 				const { rundown, group } = this.getGroup(arg)
 
-				updateGroupPlaying(group)
+				updateGroupPlayingParts(group)
 				group.disabled = originalValue
-				this._updateTimeline(group)
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupDisable,
 		}
@@ -1294,14 +1539,14 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		rundownId: string
 		groupId: string
 		value: boolean
-	}): Promise<UndoableResult | null> {
+	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
 		const originalValue = group.collapsed
 
 		group.collapsed = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -1309,18 +1554,18 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				group.collapsed = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupCollapse,
 		}
 	}
-	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult> {
+	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 		const originalValue = group.locked
 
 		group.locked = arg.value
 
-		this.storage.updateRundown(arg.rundownId, rundown)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 
 		return {
 			undo: () => {
@@ -1328,7 +1573,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 				group.locked = originalValue
 
-				this.storage.updateRundown(arg.rundownId, rundown)
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupLock,
 		}
@@ -1337,19 +1582,21 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		this.callbacks.refreshResources()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		this.storage.updateProject(data.project)
+		this._saveUpdates({ project: data.project })
 	}
-	async newRundown(data: { name: string }): Promise<UndoableResult> {
-		this.storage.newRundown(data.name)
+	async newRundown(data: { name: string }): Promise<UndoableResult<void>> {
+		const fileName = this.storage.newRundown(data.name)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				await this.storage.deleteRundown(data.name)
+				await this.storage.deleteRundown(fileName)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
 		}
 	}
-	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(data)
 
 		for (const group of rundown.groups) {
@@ -1358,25 +1605,29 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
+		this._saveUpdates({})
 
 		return {
 			undo: () => {
 				this.storage.restoreRundown(rundown)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.DeleteRundown,
 		}
 	}
-	async openRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		await this.storage.openRundown(data.rundownId)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.closeRundown(data.rundownId)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
 		}
 	}
-	async closeRundown(data: { rundownId: string }): Promise<UndoableResult> {
+	async closeRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(data)
 		if (!rundown) {
 			throw new Error(`Rundown "${data.rundownId}" not found`)
@@ -1388,10 +1639,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		}
 
 		await this.storage.closeRundown(data.rundownId)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.openRundown(data.rundownId)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
 		}
@@ -1401,7 +1654,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
 		return this.storage.listRundownsInProject(data.projectId)
 	}
-	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult> {
+	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
 		const rundown = this.storage.getRundown(data.rundownId)
 		if (!rundown) {
 			throw new Error(`Rundown "${data.rundownId}" not found`)
@@ -1409,10 +1662,12 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		const originalName = rundown.name
 		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+		this._saveUpdates({})
 
 		return {
 			undo: async () => {
 				await this.storage.renameRundown(newRundownId, originalName)
+				this._saveUpdates({})
 			},
 			description: ActionDescription.RenameRundown,
 		}
@@ -1429,7 +1684,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 
 		return false
 	}
-	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult> {
+	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()
 		const rundown = this.storage.getRundown(data.rundownId)
 		if (!rundown) {
@@ -1492,7 +1747,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					...project.mappings,
 					[newLayerId]: newMapping,
 				}
-				this.storage.updateProject(project)
+				this._saveUpdates({ project })
 				break
 			}
 			default:
@@ -1506,27 +1761,266 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 				if (newLayerId) {
 					const project = this.getProject()
 					delete project.mappings[newLayerId]
-					this.storage.updateProject(project)
+					this._saveUpdates({ project })
 				}
 			},
 			description: ActionDescription.CreateMissingMapping,
 		}
 	}
 
-	private _updatePart(part: Part) {
+	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		let peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		if (!peripheralSettings) {
+			bridge.peripheralSettings[data.deviceId] = peripheralSettings = {
+				areas: {},
+			}
+		}
+
+		const newAreaId = short.generate()
+		const newArea: PeripheralArea = {
+			name: `Area ${Object.keys(peripheralSettings.areas).length + 1}`,
+			identifiers: [],
+			assignedToGroupId: undefined,
+			action: 'playStop',
+		}
+		peripheralSettings.areas[newAreaId] = newArea
+		this._saveUpdates({ project })
+
+		return {
+			undo: async () => {
+				if (newAreaId) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+					delete peripheralSettings.areas[newAreaId]
+
+					this._saveUpdates({ project })
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+	async removePeripheralArea(data: {
+		bridgeId: string
+		deviceId: string
+		areaId: string
+	}): Promise<UndoableResult<void>> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		let removedArea: PeripheralArea | undefined
+
+		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		if (peripheralSettings) {
+			removedArea = peripheralSettings.areas[data.areaId]
+			delete peripheralSettings.areas[data.areaId]
+
+			this._saveUpdates({ project })
+		}
+
+		return {
+			undo: async () => {
+				if (removedArea) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+
+					peripheralSettings.areas[data.areaId] = removedArea
+
+					this._saveUpdates({ project })
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+	async updatePeripheralArea(data: {
+		bridgeId: string
+		deviceId: string
+		areaId: string
+		update: Partial<PeripheralArea>
+	}): Promise<UndoableResult<void>> {
+		const project = this.storage.getProject()
+		const bridge = project.bridges[data.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+
+		let orgArea: PeripheralArea | undefined
+
+		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		if (peripheralSettings) {
+			orgArea = deepClone(peripheralSettings.areas[data.areaId])
+
+			peripheralSettings.areas[data.areaId] = {
+				...peripheralSettings.areas[data.areaId],
+				...data.update,
+			}
+
+			this._saveUpdates({ project })
+		}
+
+		return {
+			undo: async () => {
+				if (orgArea) {
+					const project = this.storage.getProject()
+					const bridge = project.bridges[data.bridgeId]
+					if (!bridge) return
+					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
+						| PeripheralSettings
+						| undefined
+					if (!peripheralSettings) return
+
+					peripheralSettings.areas[data.areaId] = orgArea
+
+					this._saveUpdates({ project })
+				}
+			},
+			description: ActionDescription.AddPeripheralArea,
+		}
+	}
+	async assignAreaToGroup(arg: {
+		groupId: string | undefined
+		areaId: string
+		bridgeId: string
+		deviceId: string
+	}): Promise<UndoableResult<void> | undefined> {
+		const project = this.getProject()
+
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) return
+		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		if (!peripheralSettings) return
+		const area = peripheralSettings.areas[arg.areaId]
+		if (!area) return
+
+		const orgAssignedToGroupId = area.assignedToGroupId
+		area.assignedToGroupId = arg.groupId
+		this._saveUpdates({ project })
+
+		return {
+			undo: async () => {
+				const project = this.storage.getProject()
+
+				const bridge = project.bridges[arg.bridgeId]
+				if (!bridge) return
+				const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+				if (!peripheralSettings) return
+				const area = peripheralSettings.areas[arg.areaId]
+				if (!area) return
+
+				area.assignedToGroupId = orgAssignedToGroupId
+				this._saveUpdates({ project })
+			},
+			description: ActionDescription.AssignAreaToGroup,
+		}
+	}
+	async startDefiningArea(arg: { bridgeId: string; deviceId: string; areaId: string }): Promise<void> {
+		const project = this.getProject()
+
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) return
+		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		if (!peripheralSettings) return
+		const area = peripheralSettings.areas[arg.areaId]
+		if (!area) return
+		area.identifiers = []
+
+		this._saveUpdates({
+			project,
+			definingArea: {
+				bridgeId: arg.bridgeId,
+				deviceId: arg.deviceId,
+				areaId: arg.areaId,
+			},
+		})
+	}
+	async finishDefiningArea(): Promise<void> {
+		this._saveUpdates({ definingArea: null })
+	}
+
+	private _postProcessPart(part: Part) {
 		const resolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+
+		for (const o of part.timeline) {
+			const resolvedObj = resolvedTimeline.objects[o.obj.id]
+			if (resolvedObj) {
+				o.resolved = {
+					instances: resolvedObj.resolved.instances.map<TimelineObjResolvedInstance>((i) => ({
+						start: i.start,
+						end: i.end,
+					})),
+				}
+			} else {
+				o.resolved = {
+					instances: [],
+				}
+			}
+		}
 
 		part.resolved = {
 			duration: maxDuration,
 		}
 	}
-	private _updateTimeline(group: Group) {
-		group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
-		this.callbacks.updatePeripherals(group)
+
+	/** Save updates to various data sets.
+	 * Use this last when there has been any changes to data.
+	 * This will also trigger updates of the playout (timeline), perihperals etc..
+	 */
+	private _saveUpdates(updates: {
+		project?: Project
+
+		rundownId?: string
+		rundown?: Rundown
+
+		group?: Group | Group[]
+
+		definingArea?: DefiningArea | null
+
+		noEffectOnPlayout?: boolean
+	}) {
+		if (updates.project) {
+			this.storage.updateProject(updates.project)
+		}
+
+		const groupsToUpdate: Group[] = []
+		if (Array.isArray(updates.group)) {
+			groupsToUpdate.push(...updates.group)
+		} else if (updates.group) {
+			groupsToUpdate.push(updates.group)
+		}
+
+		for (const group of groupsToUpdate) {
+			if (!updates.noEffectOnPlayout) {
+				// Update Timeline:
+				group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+				updateGroupPlayingParts(group)
+			}
+		}
+
+		if (updates.rundownId && updates.rundown) {
+			this.storage.updateRundown(updates.rundownId, updates.rundown)
+		}
+
+		if (updates.definingArea !== undefined) {
+			this.session.updateDefiningArea(updates.definingArea)
+		}
+
+		this.callbacks.updatePeripherals()
 	}
 	private _findBestOrCreateLayer(arg: {
 		rundownId: string
@@ -1575,7 +2069,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		if (bestLayer[0]) {
 			addToLayerId = bestLayer[0]
 		}
-
+		let updatedProject: Project | undefined = undefined
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			const newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
@@ -1587,7 +2081,7 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 					...project.mappings,
 					[newLayerId]: newMapping,
 				}
-				this.storage.updateProject(project)
+				updatedProject = project
 				addToLayerId = newLayerId
 				createdNewLayer = true
 			}
@@ -1602,6 +2096,6 @@ export class IPCServer extends (EventEmitter as new () => TypedEmitter<IPCServer
 		// Verify that the layer is OK:
 		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
-		return { layerId: addToLayerId, createdNewLayer }
+		return { layerId: addToLayerId, createdNewLayer, updatedProject }
 	}
 }

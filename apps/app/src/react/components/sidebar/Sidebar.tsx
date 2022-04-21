@@ -71,6 +71,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 		}
 
 		setResources([])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [editing])
 
 	if (!rundown) {

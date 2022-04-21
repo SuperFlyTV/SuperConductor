@@ -2,8 +2,8 @@ import { Button } from '@mui/material'
 import { observer } from 'mobx-react-lite'
 import { computed } from 'mobx'
 import React from 'react'
-import { IoPlaySkipBackSharp } from 'react-icons/io5'
-import { MdPlayArrow } from 'react-icons/md'
+
+import { MdPlayArrow, MdReplay } from 'react-icons/md'
 import { Part } from '../../../../models/rundown/Part'
 import { store } from '../../../mobx/store'
 import { useMemoComputedObject } from '../../../mobx/lib'
@@ -25,12 +25,15 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 				groupIsPlaying: false,
 				anyPartIsPlaying: false,
 				partIsPlaying: false,
+				partIsPaused: false,
 			}
 		}
+		const playhead = part && playData.playheads[part?.id]
 		return {
 			groupIsPlaying: playData.groupIsPlaying,
 			anyPartIsPlaying: playData.anyPartIsPlaying,
-			partIsPlaying: Boolean(part && part.id in playData.playheads),
+			partIsPlaying: Boolean(playhead),
+			partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
 		}
 	}, [groupId])
 
@@ -51,22 +54,36 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 		).get() ?? 0
 
 	const groupOrPartDisabled = groupDisabled || part?.disabled
-	let canRestart = false
-	let title = ''
+	let willDo: 'play' | 'restart'
+	let title: string
 	if (part) {
 		// This is a play button for a Part.
-		canRestart = partIsPlaying
-		title = canRestart ? 'Restart Part' : 'Play Part'
+		if (partIsPlaying) {
+			willDo = 'restart'
+			title = 'Restart Part'
+		} else {
+			willDo = 'play'
+			title = 'Play Part'
+		}
 	} else {
 		// This is a play button for a Group.
-		canRestart = groupIsPlaying || anyPartIsPlaying
-		title = groupOneAtATime
-			? canRestart
-				? 'Restart and play first Part'
-				: 'Play first Part'
-			: canRestart
-			? 'Restart and play all Parts in Group'
-			: 'Play all Parts in Group'
+		if (groupOneAtATime) {
+			if (groupIsPlaying) {
+				willDo = 'restart'
+				title = 'Restart and play first Part'
+			} else {
+				willDo = 'play'
+				title = 'Play first Part'
+			}
+		} else {
+			if (anyPartIsPlaying) {
+				willDo = 'restart'
+				title = 'Restart and play all Parts in Group'
+			} else {
+				willDo = 'play'
+				title = 'Play all Parts in Group'
+			}
+		}
 	}
 
 	return (
@@ -78,7 +95,8 @@ export const PlayBtn: React.FC<PlayBtnProps> = observer(function PlayBtn({ group
 			onClick={onClick}
 			title={title}
 		>
-			{canRestart ? <IoPlaySkipBackSharp size={18} /> : <MdPlayArrow size={22} />}
+			{willDo === 'play' && <MdPlayArrow size={22} />}
+			{willDo === 'restart' && <MdReplay size={18} />}
 			{!part && <div className="playcount">{groupOneAtATime ? 1 : numNonDisabledPartsInGroup}</div>}
 		</Button>
 	)
