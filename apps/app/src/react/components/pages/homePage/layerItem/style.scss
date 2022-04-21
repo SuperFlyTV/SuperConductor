@@ -1,0 +1,12 @@
+.layer-item-header {
+	display: flex;
+	align-items: center;
+
+	.device-icon {
+		margin-right: 1rem;
+	}
+
+	.config-description {
+		font-size: 1.2rem;
+	}
+}

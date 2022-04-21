@@ -1,5 +1,18 @@
 @import '../../../../styles/foundation/all';
 
+.dialog-form {
+	.form-control {
+		.MuiFormControl-root {
+			width: 100%;
+		}
+	}
+}
+.form-control {
+	margin-right: 1rem;
+	display: flex;
+	align-items: center;
+}
+
 .project-page-layout {
 	display: flex;
 	min-height: 0;

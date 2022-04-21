@@ -4,12 +4,12 @@ import { RoundedSection } from '../roundedSection/RoundedSection'
 import { DevicesList } from '../deviceItem/DevicesList'
 import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
 import { NewDeviceDialog } from '../../../settings/devices/NewDeviceDialog'
-
-import './style.scss'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { TextField } from '@mui/material'
+
+import './style.scss'
 
 export const BridgeItemContent: React.FC<{
 	id: string
