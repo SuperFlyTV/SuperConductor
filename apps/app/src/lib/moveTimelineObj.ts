@@ -1,8 +1,8 @@
 import { deepClone } from '@shared/lib'
 import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache } from 'superfly-timeline'
-import short from 'short-uuid'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/mobx/GuiStore'
+import { shortID } from './util'
 
 const MIN_DURATION = 1
 
@@ -61,7 +61,7 @@ export function applyMovementToTimeline(
 		for (const timelineObj of modifiedTimeline) {
 			if (selectedTimelineObjIds.includes(timelineObj.obj.id)) {
 				const clone = deepClone(timelineObj)
-				clone.obj.id = short.generate()
+				clone.obj.id = shortID()
 				dupes.push(clone)
 			}
 		}

@@ -1,6 +1,7 @@
 import classNames from 'classnames'
-import React, { useContext } from 'react'
+import React, { useCallback, useContext } from 'react'
 import { HiRefresh } from 'react-icons/hi'
+import { useSnackbar } from 'notistack'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 
 export const SidebarInfoGroup: React.FC<{
@@ -33,12 +34,24 @@ export const SidebarInfoGroup: React.FC<{
 }
 
 export const DataRow = (props: { label: string; value: any }) => {
+	const { handleError } = useContext(ErrorHandlerContext)
+	const { enqueueSnackbar } = useSnackbar()
+
+	const copyValueToClipboard = useCallback(async () => {
+		try {
+			await navigator.clipboard.writeText(props.value)
+			enqueueSnackbar(`Value copied to clipboard.`, { variant: 'success' })
+		} catch (error) {
+			handleError(error)
+		}
+	}, [enqueueSnackbar, handleError, props.value])
+
 	return (
 		<div className="row">
 			<div className="label" title={props.label}>
 				{props.label}
 			</div>
-			<div className="value" title={props.value}>
+			<div className="value" title={`${props.value} (Click to copy)`} onClick={copyValueToClipboard}>
 				{props.value}
 			</div>
 		</div>

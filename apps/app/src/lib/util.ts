@@ -482,7 +482,7 @@ export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Pa
 
 	// Generate the new IDs and store them in a map.
 	for (const timelineObj of input) {
-		idMap.set(timelineObj.obj.id, shortUUID.generate())
+		idMap.set(timelineObj.obj.id, shortID())
 	}
 
 	// Process each timeline object.
@@ -566,4 +566,8 @@ export function sortOn<A>(getSortValue: (value: A) => number | string | undefine
 			return 0
 		}
 	}
+}
+
+export function shortID(): string {
+	return shortUUID.generate().slice(0, 8)
 }

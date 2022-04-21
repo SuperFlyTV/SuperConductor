@@ -6,8 +6,7 @@ import { Group } from '../../models/rundown/Group'
 import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
-import short from 'short-uuid'
-import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds } from '../../lib/util'
+import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds, shortID } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
 import { deepClone } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
@@ -210,7 +209,7 @@ export class RundownsStore {
 				toGroup = {
 					...getDefaultGroup(),
 
-					id: short.generate(),
+					id: shortID(),
 					name: part.name,
 					transparent: true,
 

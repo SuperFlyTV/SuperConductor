@@ -7,12 +7,12 @@ import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { parseMs } from '@shared/lib'
+import { shortID } from '../../../../lib/util'
 
 const HANDLE_WIDTH = 8
 
@@ -158,7 +158,7 @@ export const TimelineObject: React.FC<{
 
 			setHandledMoveStart(true)
 			gui.updateTimelineObjMove({
-				moveId: short.generate(),
+				moveId: shortID(),
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.

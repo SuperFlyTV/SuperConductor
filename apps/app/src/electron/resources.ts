@@ -37,16 +37,16 @@ import {
 	TimelineObjOSCMessage,
 	TimelineContentTypeOSC,
 } from 'timeline-state-resolver-types'
-import short from 'short-uuid'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
+import { shortID } from '../lib/util'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj {
 	const INFINITE_DURATION = null
 
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 		return {
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -60,7 +60,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		}
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 		return {
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -79,7 +79,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
 	} else if (resource.resourceType === ResourceType.ATEM_ME) {
 		return literal<TimelineObjAtemME>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later,
 			enable: {
 				start: 0,
@@ -96,7 +96,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_DSK) {
 		return literal<TimelineObjAtemDSK>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -116,7 +116,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_AUX) {
 		return literal<TimelineObjAtemAUX>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -132,7 +132,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
 		return literal<TimelineObjAtemSsrc>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -197,7 +197,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
 		return literal<TimelineObjAtemSsrcProps>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -217,7 +217,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
 		return literal<TimelineObjAtemMacroPlayer>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -234,7 +234,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
 		return literal<TimelineObjAtemAudioChannel>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -248,7 +248,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 		return literal<TimelineObjAtemMediaPlayer>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -270,7 +270,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 		return literal<TimelineObjOBSCurrentScene>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -284,7 +284,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
 		return literal<TimelineObjOBSCurrentTransition>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -298,7 +298,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
 		return literal<TimelineObjOBSRecording>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -308,7 +308,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
 		return literal<TimelineObjOBSStreaming>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -318,7 +318,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
 		return literal<TimelineObjOBSSourceSettings>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -332,7 +332,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
 		return literal<TimelineObjOBSMute>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -342,7 +342,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
 		return literal<TimelineObjOBSSceneItemRender>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -352,7 +352,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
 		return literal<TimelineObjVMixProgram>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -370,7 +370,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
 		return literal<TimelineObjVMixPreview>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -384,7 +384,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
 		return literal<TimelineObjVMixInput>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -397,7 +397,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
 		return literal<TimelineObjVMixAudio>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -410,7 +410,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
 		return literal<TimelineObjVMixOutput>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -425,7 +425,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
 		return literal<TimelineObjVMixOverlay>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -439,7 +439,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
 		return literal<TimelineObjVMixRecording>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -453,7 +453,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
 		return literal<TimelineObjVMixStreaming>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -467,7 +467,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
 		return literal<TimelineObjVMixExternal>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -481,7 +481,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
 		return literal<TimelineObjVMixFadeToBlack>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -495,7 +495,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_FADER) {
 		return literal<TimelineObjVMixFader>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
@@ -509,7 +509,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		})
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
 		return literal<TimelineObjOSCMessage>({
-			id: short.generate(),
+			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,

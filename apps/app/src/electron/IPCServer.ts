@@ -13,6 +13,7 @@ import {
 	getNextPartIndex,
 	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
+	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
@@ -21,7 +22,6 @@ import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
-import short from 'short-uuid'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
@@ -570,7 +570,7 @@ export class IPCServer
 		name: string
 	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 		const newPart: Part = {
-			id: short.generate(),
+			id: shortID(),
 			name: arg.name,
 			timeline: [],
 			resolved: {
@@ -595,7 +595,7 @@ export class IPCServer
 			// Create a new "transparent group":
 			const newGroup: Group = {
 				...getDefaultGroup(),
-				id: short.generate(),
+				id: shortID(),
 				name: arg.name,
 				transparent: true,
 				parts: [newPart],
@@ -661,7 +661,7 @@ export class IPCServer
 	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
 			...getDefaultGroup(),
-			id: short.generate(),
+			id: shortID(),
 			name: arg.name,
 		}
 		const { rundown } = this.getRundown(arg)
@@ -813,7 +813,7 @@ export class IPCServer
 				toGroup = {
 					...getDefaultGroup(),
 
-					id: short.generate(),
+					id: shortID(),
 					name: part.name,
 					transparent: true,
 
@@ -927,7 +927,7 @@ export class IPCServer
 
 		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
 		const copy = deepClone(part)
-		copy.id = short.generate()
+		copy.id = shortID()
 		copy.timeline = generateNewTimelineObjIds(copy.timeline)
 
 		let newGroup: Group | undefined = undefined
@@ -936,7 +936,7 @@ export class IPCServer
 			newGroup = {
 				...getDefaultGroup(),
 
-				id: short.generate(),
+				id: shortID(),
 				name: copy.name,
 				transparent: true,
 
@@ -1001,9 +1001,9 @@ export class IPCServer
 
 		// Make a copy of the group and give it and all its children unique IDs.
 		const groupCopy = deepClone(group)
-		groupCopy.id = short.generate()
+		groupCopy.id = shortID()
 		for (const part of groupCopy.parts) {
-			part.id = short.generate()
+			part.id = shortID()
 			part.timeline = generateNewTimelineObjIds(part.timeline)
 		}
 
@@ -1780,7 +1780,7 @@ export class IPCServer
 			}
 		}
 
-		const newAreaId = short.generate()
+		const newAreaId = shortID()
 		const newArea: PeripheralArea = {
 			name: `Area ${Object.keys(peripheralSettings.areas).length + 1}`,
 			identifiers: [],
