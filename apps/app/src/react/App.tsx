@@ -33,6 +33,10 @@ import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
+import { useMemoComputedObject } from './mobx/lib'
+import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
+import { Rundown } from '../models/rundown/Rundown'
+import { compact } from '@shared/lib'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -263,6 +267,35 @@ export const App = observer(function App() {
 			sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
+
+	const allButtonActions = useMemoComputedObject(() => {
+		const newButtonActions = new Map<string, Action[]>()
+
+		if (!project) {
+			return newButtonActions
+		}
+
+		const rundowns: Rundown[] = compact(
+			Object.keys(store.rundownsStore.rundowns ?? []).map((rundownId) =>
+				store.rundownsStore.getRundown(rundownId)
+			)
+		)
+		const allActions = getAllActionsInRundowns(rundowns, project)
+		for (const action of allActions) {
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				let newButtonAction = newButtonActions.get(fullIdentifier)
+				if (!newButtonAction) {
+					newButtonAction = []
+					newButtonActions.set(fullIdentifier, newButtonAction)
+				}
+				newButtonAction.push(action)
+			}
+		}
+		return newButtonActions
+	}, [store.rundownsStore.rundowns, project])
+	useEffect(() => {
+		store.rundownsStore.allButtonActions = allButtonActions
+	}, [allButtonActions])
 
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,

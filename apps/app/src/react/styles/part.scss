@@ -6,7 +6,7 @@
 	margin-top: 2px;
 	// overflow: hidden; // Create an alternative
 	display: grid;
-	grid-template-columns: $partTabWidth 18rem minmax(auto, 100px) 1fr 0.9rem;
+	grid-template-columns: $partTabWidth 19.2rem minmax(auto, 100px) 1fr 0.9rem;
 	grid-template-rows: 1.6rem 1fr;
 	gap: 0px 0px;
 	grid-template-areas:
@@ -75,7 +75,6 @@
 		.part__dropdown {
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
-
 	}
 	&.locked {
 		.part__drag-handle {
@@ -107,6 +106,20 @@
 	}
 
 	&__submenu {
+		padding: 1.5rem;
+
+		& .controls {
+			display: flex;
+			justify-content: end;
+			align-self: flex-end;
+
+			& > *:not(:last-child) {
+				margin-right: 0.6rem;
+			}
+		}
+	}
+
+	&__triggers-submenu {
 		padding: 1.5rem;
 
 		& .triggers {
@@ -330,7 +343,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(0,0,0,0.5);
+		background: rgba(0, 0, 0, 0.5);
 		z-index: 1;
 	}
 }

@@ -10,6 +10,7 @@ import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds,
 import { Part } from '../../models/rundown/Part'
 import { deepClone } from '@shared/lib'
 import { ClientSideLogger } from '../api/logger'
+import { Action } from '../../lib/triggers/action'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -310,5 +311,25 @@ export class RundownsStore {
 		const reverted = deepClone(this._rundownsClean.get(rundownId))
 		if (reverted) this._rundowns.set(rundownId, reverted)
 		else this._rundowns.delete(rundownId)
+	}
+
+	private _allButtonActions: Map<string, Action[]> = new Map()
+	get allButtonActions() {
+		return this._allButtonActions as Readonly<typeof this._allButtonActions>
+	}
+	set allButtonActions(newValue: Map<string, Action[]>) {
+		this._allButtonActions = newValue
+	}
+
+	getActionsForPart(partId: string): Action[] {
+		const result = []
+		for (const [_id, actions] of this._allButtonActions) {
+			for (const action of actions) {
+				if (action.part.id === partId) {
+					result.push(action)
+				}
+			}
+		}
+		return result
 	}
 }
