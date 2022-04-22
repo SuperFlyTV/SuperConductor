@@ -1,14 +1,13 @@
 import React, { useCallback, useContext } from 'react'
 import { MappingAtem, MappingAtemType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../contexts/Project'
-import { IntInput } from '../../../inputs/IntInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../../../../contexts/IPCServer'
+import { ProjectContext } from '../../../../../contexts/Project'
+import { IntInput } from '../../../../inputs/IntInput'
+import { SelectEnum } from '../../../../inputs/SelectEnum'
 
 interface IAtemMappingSettingsProps {
 	mapping: MappingAtem
-	mappingId: string
 }
 
 export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mapping }) => {
@@ -34,14 +33,26 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 
 	return (
 		<>
-			<SelectEnum
-				label="Type"
-				currentValue={mapping.mappingType}
-				options={MappingAtemType}
-				onChange={handleMappingTypeChange}
-			/>
+			<div className="form-control">
+				<SelectEnum
+					label="Type"
+					fullWidth
+					currentValue={mapping.mappingType}
+					options={MappingAtemType}
+					onChange={handleMappingTypeChange}
+				/>
+			</div>
 
-			<IntInput label="Index" currentValue={mapping.index} onChange={handleIndexChange} allowUndefined={true} />
+			<div className="form-control">
+				<IntInput
+					label="Index"
+					fullWidth
+					currentValue={mapping.index}
+					onChange={handleIndexChange}
+					allowUndefined={true}
+					width="7rem"
+				/>
+			</div>
 		</>
 	)
 }
