@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { TextField } from '@mui/material'
+import { version } from 'process'
 import React from 'react'
+import { IntInput } from '../../../../inputs/IntInput'
 import { MappingCasparCG } from 'timeline-state-resolver-types'
 
 export const CasparCGMappingSettings: React.FC<{
@@ -10,33 +12,27 @@ export const CasparCGMappingSettings: React.FC<{
 	return (
 		<>
 			<div className="form-control">
-				<TextField
-					margin="normal"
+				<IntInput
 					fullWidth
-					size="small"
 					label="Channel"
-					type="number"
-					value={props.mapping?.channel || 1}
-					InputProps={{ inputProps: { min: 1 } }}
-					sx={{ width: '7rem' }}
-					onChange={(event) => {
-						props.onUpdate({ ...props.mapping, channel: parseInt(event.target.value, 10) })
+					currentValue={props.mapping?.channel || 1}
+					width="7rem"
+					allowUndefined={false}
+					onChange={(v) => {
+						props.onUpdate({ ...props.mapping, channel: v })
 					}}
 				/>
 			</div>
 
 			<div className="form-control">
-				<TextField
-					margin="normal"
+				<IntInput
 					fullWidth
-					size="small"
 					label="Layer"
-					type="number"
-					value={props.mapping?.layer || 1}
-					InputProps={{ inputProps: { min: 1 } }}
-					sx={{ width: '7rem' }}
-					onChange={(event) => {
-						props.onUpdate({ ...props.mapping, layer: parseInt(event.target.value, 10) })
+					currentValue={props.mapping?.layer || 1}
+					width="7rem"
+					allowUndefined={false}
+					onChange={(v) => {
+						props.onUpdate({ ...props.mapping, layer: v })
 					}}
 				/>
 			</div>

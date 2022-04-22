@@ -10,12 +10,12 @@ import {
 	DeviceType,
 	OSCDeviceType,
 } from 'timeline-state-resolver-types'
-import { Bridge } from '../../../../models/project/Bridge'
+import { Bridge } from '../../../../../models/project/Bridge'
 import { literal } from '@shared/lib'
-import { Project } from '../../../../models/project/Project'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { ProjectContext } from '../../../contexts/Project'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { Project } from '../../../../../models/project/Project'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { ProjectContext } from '../../../../contexts/Project'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 
 interface INewDeviceDialogProps {
 	open: boolean

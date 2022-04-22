@@ -1,30 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useContext, useMemo, useState } from 'react'
-import { INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
+import React, { useState } from 'react'
 import { Project } from '../../../../../models/project/Project'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { store } from '../../../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { RoundedSection } from '../roundedSection/RoundedSection'
 import { TextBtn } from '../../../inputs/textBtn/TextBtn'
 import { ScList } from '../scList/ScList'
-import { BridgeItemHeader } from '../bridgeItem/BridgeItemHeader'
-import { BridgeItemContent } from '../bridgeItem/BridgeItemContent'
-import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
-import { NewBridgeDialog } from '../bridgesPage/NewBridgeDialog'
-
-import 'react-toggle/style.css'
-import { MappingList } from '../../../settings/mappings/MappingList'
 import { LayerItemContent } from '../layerItem/LayerItemContent'
 import { LayerItemHeader } from '../layerItem/LayerItemHeader'
-import { PinDropSharp } from '@mui/icons-material'
-import { findDevice, listAvailableDeviceIDs } from '../../../../../lib/util'
 import { NewLayerDialog } from './NewLayerDialog'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
+import { findDevice, listAvailableDeviceIDs } from '../../../../../lib/util'
+import 'react-toggle/style.css'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
-	const ipcServer = useContext(IPCServerContext)
-	const { handleError } = useContext(ErrorHandlerContext)
 	const [newLayerDeviceId, setNewLayerDeviceId] = useState<string>()
 
 	const help = (
@@ -67,7 +54,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 						/>
 						<ScList
 							list={Object.entries(project.mappings)
-								.filter(([mappingId, mapping]) => {
+								.filter(([_mappingId, mapping]) => {
 									return mapping.deviceId === deviceId
 								})
 								.map(([mappingId, mapping]) => {

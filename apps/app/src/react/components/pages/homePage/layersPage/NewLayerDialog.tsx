@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material'
 import { DeviceOptionsAny, Mapping } from 'timeline-state-resolver-types'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -46,6 +46,12 @@ export const NewLayerDialog: React.FC<{
 		setSpecificMappingSettings(mappingUpdate)
 	}
 
+	useEffect(() => {
+		if (!props.open) {
+			setLayerName('')
+		}
+	}, [props.open])
+
 	return (
 		<Dialog
 			open={props.open}
@@ -59,11 +65,11 @@ export const NewLayerDialog: React.FC<{
 				<div className="dialog-form">
 					<div className="form-control">
 						<TextField
+							label="Layer name"
 							size="small"
 							margin="normal"
 							fullWidth
 							autoFocus
-							label="Layer Name"
 							value={layerName}
 							onChange={(event) => {
 								setLayerName(event.target.value)

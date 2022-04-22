@@ -10,3 +10,19 @@
 		font-size: 1.2rem;
 	}
 }
+
+.layer-item-content {
+	display: flex;
+	align-items: flex-start;
+
+	.fields {
+		flex-grow: 1;
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+	}
+
+	.actions {
+		margin-left: 2rem;
+	}
+}

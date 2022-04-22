@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
 import { Project } from '../../../../../models/project/Project'
-import { Bridge } from '../../../settings/Bridge'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { store } from '../../../../mobx/store'
@@ -93,9 +92,29 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 			</RoundedSection>
 
 			<RoundedSection title="Incoming Bridges">
-				{incomingBridges.map((bridge) => (
-					<Bridge key={bridge.id} bridge={bridge} bridgeStatus={bridgeStatuses[bridge.id]} />
-				))}
+				<ScList
+					list={incomingBridges
+						.filter((bridge) => bridgeStatuses[bridge.id])
+						.map((bridge) => {
+							return {
+								id: bridge.id,
+								header: (
+									<BridgeItemHeader
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+								content: (
+									<BridgeItemContent
+										id={bridge.id}
+										bridge={bridge}
+										bridgeStatus={bridgeStatuses[bridge.id]}
+									/>
+								),
+							}
+						})}
+				/>
 				{incomingBridges.length === 0 && <div className="central">There are no incoming bridges.</div>}{' '}
 			</RoundedSection>
 

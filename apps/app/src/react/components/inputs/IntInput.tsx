@@ -9,6 +9,7 @@ export const IntInput: React.FC<
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
+			width?: string
 	  }
 	| {
 			currentValue: number | undefined
@@ -18,6 +19,7 @@ export const IntInput: React.FC<
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
+			width?: string
 	  }
 > = (props) => {
 	const parse = useCallback((str: string) => {
@@ -40,7 +42,8 @@ export const IntInput: React.FC<
 			props.emptyPlaceholder,
 			'text',
 			props.disabled,
-			props.fullWidth
+			props.fullWidth,
+			props.width
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -53,7 +56,8 @@ export const IntInput: React.FC<
 			props.emptyPlaceholder,
 			'text',
 			props.disabled,
-			props.fullWidth
+			props.fullWidth,
+			props.width
 		)
 	}
 }

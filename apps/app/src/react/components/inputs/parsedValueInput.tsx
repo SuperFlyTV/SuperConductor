@@ -11,7 +11,8 @@ export function ParsedValueInput<V>(
 	emptyPlaceholder?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
-	fullWidth?: boolean
+	fullWidth?: boolean,
+	width?: string
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
 	const fieldRef = useRef<HTMLInputElement>(null)
@@ -79,6 +80,7 @@ export function ParsedValueInput<V>(
 			value={value}
 			disabled={disabled}
 			placeholder={emptyPlaceholder}
+			sx={{ width: width }}
 		/>
 	)
 }

@@ -79,54 +79,60 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 
 	return (
 		<>
-			<SelectEnum
-				label="Type"
-				fullWidth
-				currentValue={mapping.mappingType}
-				options={MappingOBSType}
-				onChange={(v) => {
-					handleMappingTypeChange(v)
-				}}
-			/>
-
-			{mapping.mappingType === MappingOBSType.SceneItemRender && (
-				<TextField
-					margin="normal"
+			<div className="form-control">
+				<SelectEnum
+					label="Type"
 					fullWidth
-					size="small"
-					label="Scene Name"
-					value={sceneName}
-					onChange={(event) => {
-						setSceneName(event.target.value)
-					}}
-					onBlur={() => {
-						handleSceneNameChange(sceneName)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleSceneNameChange(sceneName)
+					currentValue={mapping.mappingType}
+					options={MappingOBSType}
+					onChange={(v) => {
+						handleMappingTypeChange(v)
 					}}
 				/>
+			</div>
+
+			{mapping.mappingType === MappingOBSType.SceneItemRender && (
+				<div className="form-control">
+					<TextField
+						margin="normal"
+						fullWidth
+						size="small"
+						label="Scene Name"
+						value={sceneName}
+						onChange={(event) => {
+							setSceneName(event.target.value)
+						}}
+						onBlur={() => {
+							handleSceneNameChange(sceneName)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleSceneNameChange(sceneName)
+						}}
+					/>
+				</div>
 			)}
 
 			{(mapping.mappingType === MappingOBSType.SceneItemRender ||
 				mapping.mappingType === MappingOBSType.SourceSettings ||
 				mapping.mappingType === MappingOBSType.Mute) && (
-				<TextField
-					margin="normal"
-					fullWidth
-					size="small"
-					label="Source"
-					value={source}
-					onChange={(event) => {
-						setSource(event.target.value)
-					}}
-					onBlur={() => {
-						handleSourceChange(source)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleSourceChange(source)
-					}}
-				/>
+				<div className="form-control">
+					<TextField
+						margin="normal"
+						fullWidth
+						size="small"
+						label="Source"
+						value={source}
+						onChange={(event) => {
+							setSource(event.target.value)
+						}}
+						onBlur={() => {
+							handleSourceChange(source)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleSourceChange(source)
+						}}
+					/>
+				</div>
 			)}
 		</>
 	)

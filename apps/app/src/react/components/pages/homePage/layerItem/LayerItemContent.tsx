@@ -1,21 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
-
+import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { Bridge, BridgeStatus } from '../../../../../models/project/Bridge'
-import { RoundedSection } from '../roundedSection/RoundedSection'
-import { DevicesList } from '../deviceItem/DevicesList'
 import { TextBtn } from '../../../inputs/textBtn/TextBtn'
-import { NewDeviceDialog } from '../../../settings/devices/NewDeviceDialog'
-
-import './style.scss'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { DeviceType, Mapping } from 'timeline-state-resolver-types'
-import { EditMapping } from '../../../settings/mappings/EditMapping'
-import { findDeviceOfType, listAvailableDeviceIDs } from '../../../../../lib/util'
+import { Mapping } from 'timeline-state-resolver-types'
 import { DeviceSpecificSettings } from '../layersPage/DeviceSpecificSettings'
+import './style.scss'
 
 export const LayerItemContent: React.FC<{
 	mappingId: string
@@ -53,7 +44,7 @@ export const LayerItemContent: React.FC<{
 	}
 
 	return (
-		<div className="device-item-content">
+		<div className="layer-item-content">
 			<div className="fields">
 				<div className="form-control">
 					<TextField

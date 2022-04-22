@@ -99,6 +99,7 @@ export const VMixMappingSettings: React.FC<{
 					<IntInput
 						label="Index"
 						fullWidth
+						width="7rem"
 						currentValue={props.mapping.index as number}
 						onChange={(v) => {
 							if (
@@ -117,7 +118,6 @@ export const VMixMappingSettings: React.FC<{
 				<div className="form-control">
 					<SelectEnum
 						label="Index"
-						fullWidth
 						currentValue={props.mapping.index}
 						options={VMixOutputIndex}
 						onChange={(v) => {

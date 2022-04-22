@@ -50,6 +50,7 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 					currentValue={mapping.index}
 					onChange={handleIndexChange}
 					allowUndefined={true}
+					width="7rem"
 				/>
 			</div>
 		</>

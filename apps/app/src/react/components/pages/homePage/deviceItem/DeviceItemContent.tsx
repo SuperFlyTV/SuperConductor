@@ -1,4 +1,4 @@
-import { Box, TextField } from '@mui/material'
+import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
 import { AtemOptions, CasparCGOptions, DeviceType, OBSOptions, OSCDeviceType } from 'timeline-state-resolver-types'
@@ -118,55 +118,61 @@ export const DeviceItemContent: React.FC<{
 	return (
 		<div className="device-item-content">
 			<div className="fields">
-				<TextField
-					label="ID"
-					value={editedDeviceId}
-					size="small"
-					margin="dense"
-					onChange={(event) => {
-						setEditedDeviceId(event.target.value)
-					}}
-					onBlur={() => {
-						handleDeviceIdChange(editedDeviceId)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleDeviceIdChange(editedDeviceId)
-					}}
-				/>
-				<TextField
-					label="URL"
-					value={host}
-					size="small"
-					margin="dense"
-					onChange={(event) => {
-						setHost(event.target.value)
-					}}
-					onBlur={() => {
-						handleHostChange(host)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handleHostChange(host)
-					}}
-				/>
-				<TextField
-					label="Port"
-					value={port}
-					size="small"
-					margin="dense"
-					type="number"
-					InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
-					onChange={(event) => {
-						setPort(parseInt(event.target.value, 10))
-					}}
-					onBlur={() => {
-						handlePortChange(port)
-					}}
-					onKeyUp={(e) => {
-						if (e.key === 'Enter') handlePortChange(port)
-					}}
-				/>
+				<div className="form-control">
+					<TextField
+						label="ID"
+						value={editedDeviceId}
+						size="small"
+						margin="dense"
+						onChange={(event) => {
+							setEditedDeviceId(event.target.value)
+						}}
+						onBlur={() => {
+							handleDeviceIdChange(editedDeviceId)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleDeviceIdChange(editedDeviceId)
+						}}
+					/>
+				</div>
+				<div className="form-control">
+					<TextField
+						label="URL"
+						value={host}
+						size="small"
+						margin="dense"
+						onChange={(event) => {
+							setHost(event.target.value)
+						}}
+						onBlur={() => {
+							handleHostChange(host)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handleHostChange(host)
+						}}
+					/>
+				</div>
+				<div className="form-control">
+					<TextField
+						label="Port"
+						value={port}
+						size="small"
+						margin="dense"
+						type="number"
+						InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
+						onChange={(event) => {
+							setPort(parseInt(event.target.value, 10))
+						}}
+						onBlur={() => {
+							handlePortChange(port)
+						}}
+						onKeyUp={(e) => {
+							if (e.key === 'Enter') handlePortChange(port)
+						}}
+					/>
+				</div>
 				{deviceSettings.type === DeviceType.OBS ? (
-					<Box gridColumn="span 1">
+					<div className="form-control">
 						<TextField
 							label="Password"
 							type="password"
@@ -183,9 +189,9 @@ export const DeviceItemContent: React.FC<{
 								if (e.key === 'Enter') handlePasswordChange(password)
 							}}
 						/>
-					</Box>
+					</div>
 				) : deviceSettings.type === DeviceType.OSC && deviceSettings.options ? (
-					<Box gridColumn="span 1">
+					<div className="form-control">
 						<SelectEnum
 							label="Type"
 							currentValue={deviceSettings.options.type}
@@ -197,7 +203,7 @@ export const DeviceItemContent: React.FC<{
 							}}
 							allowUndefined={false}
 						/>
-					</Box>
+					</div>
 				) : (
 					<div />
 				)}
