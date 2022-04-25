@@ -1141,7 +1141,7 @@ export class IPCServer
 		if (!timelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" could not be found.`)
 
 		if (!timelineObj.resourceId) throw new Error(`TimelineObj "${arg.timelineObjId}" lacks a resourceId.`)
-		const resource = this.session.getResource(timelineObj.resourceId)
+		const resource = this.storage.getResource(timelineObj.resourceId)
 		if (!resource) throw new Error(`Resource ${timelineObj.resourceId} not found.`)
 
 		const originalLayer = timelineObj.obj.layer
@@ -1351,7 +1351,7 @@ export class IPCServer
 			return
 		}
 
-		const resource = this.session.getResource(arg.resourceId)
+		const resource = this.storage.getResource(arg.resourceId)
 		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
 
 		const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
@@ -1711,7 +1711,7 @@ export class IPCServer
 							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
 
 						let deviceId: string | undefined
-						const resource = this.session.getResource(timelineObj.resourceId)
+						const resource = this.storage.getResource(timelineObj.resourceId)
 						if (resource) {
 							deviceId = resource.deviceId
 						}

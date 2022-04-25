@@ -1,5 +1,4 @@
 import EventEmitter from 'events'
-import { ResourceAny } from '@shared/models'
 import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
@@ -9,9 +8,6 @@ import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
-	private resources: { [resourceId: string]: ResourceAny } = {}
-	private resourcesHasChanged: { [resourceId: string]: true } = {}
-
 	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
 
@@ -41,36 +37,12 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 
-	getResources() {
-		return this.resources
-	}
-	getResource(id: string): ResourceAny | undefined {
-		return this.resources[id]
-	}
-	getResourceIds(deviceId: string): string[] {
-		const ids: string[] = []
-		for (const [id, resource] of Object.entries(this.resources)) {
-			if (resource.deviceId === deviceId) ids.push(id)
-		}
-		return ids
-	}
 	getDefiningArea(): DefiningArea | null {
 		return this.definingArea
 	}
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 		this.definingAreaHasChanged = true
-		this.triggerUpdate()
-	}
-	updateResource(id: string, resource: ResourceAny | null) {
-		if (resource) {
-			this.resources[id] = resource
-			this.resourcesHasChanged[id] = true
-		} else {
-			delete this.resources[id]
-			this.resourcesHasChanged[id] = true
-		}
-
 		this.triggerUpdate()
 	}
 
@@ -180,9 +152,6 @@ export class SessionHandler extends EventEmitter {
 	}
 	private emitChanges() {
 		if (this.emitEverything) {
-			for (const resourceId of Object.keys(this.resources)) {
-				this.resourcesHasChanged[resourceId] = true
-			}
 			for (const bridgeId of Object.keys(this.bridgeStatuses)) {
 				this.bridgeStatusesHasChanged[bridgeId] = true
 			}
@@ -195,10 +164,6 @@ export class SessionHandler extends EventEmitter {
 			this.emitEverything = false
 		}
 
-		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
-			this.emit('resource', resourceId, this.resources[resourceId] ?? null)
-			delete this.resourcesHasChanged[resourceId]
-		}
 		for (const bridgeId of Object.keys(this.bridgeStatusesHasChanged)) {
 			this.emit('bridgeStatus', bridgeId, this.bridgeStatuses[bridgeId] ?? null)
 			delete this.bridgeStatusesHasChanged[bridgeId]

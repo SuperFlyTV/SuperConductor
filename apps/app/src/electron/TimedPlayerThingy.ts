@@ -46,11 +46,6 @@ export class TimedPlayerThingy {
 			CURRENT_VERSION
 		)
 
-		this.session.on('resource', (id: string, resource: ResourceAny | null) => {
-			// Add the resource to the list of resources to send to the client in batches later:
-			this.resourceUpdatesToSend.push({ id, resource })
-			this._triggerBatchSendResources()
-		})
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
@@ -77,6 +72,11 @@ export class TimedPlayerThingy {
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
 			this.ipcClient?.updateRundown(fileName, rundown)
 		})
+		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
+			// Add the resource to the list of resources to send to the client in batches later:
+			this.resourceUpdatesToSend.push({ id, resource })
+			this._triggerBatchSendResources()
+		})
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
@@ -101,13 +101,13 @@ export class TimedPlayerThingy {
 				const newResouceIds = new Set<string>()
 				for (const resource of resources) {
 					newResouceIds.add(resource.id)
-					if (!_.isEqual(this.session.getResource(resource.id), resource)) {
-						this.session.updateResource(resource.id, resource)
+					if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
+						this.storage.updateResource(resource.id, resource)
 					}
 				}
 				// Removed:
-				for (const id of this.session.getResourceIds(deviceId)) {
-					if (!newResouceIds.has(id)) this.session.updateResource(id, null)
+				for (const id of this.storage.getResourceIds(deviceId)) {
+					if (!newResouceIds.has(id)) this.storage.updateResource(id, null)
 				}
 			},
 			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {

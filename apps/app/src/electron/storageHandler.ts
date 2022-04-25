@@ -7,6 +7,7 @@ import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
 import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
+import { ResourceAny } from '@shared/models'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -36,6 +37,10 @@ export class StorageHandler extends EventEmitter {
 	private rundownsHasChanged: { [fileName: string]: true } = {}
 	private rundownsNeedsWrite: { [fileName: string]: true } = {}
 
+	private resources: { [resourceId: string]: ResourceAny } = {}
+	private resourcesHasChanged: { [resourceId: string]: true } = {}
+	private resourcesNeedsWrite = false
+
 	private emitEverything = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
@@ -47,6 +52,7 @@ export class StorageHandler extends EventEmitter {
 
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
+		this.resources = this.loadResources()
 	}
 
 	init() {
@@ -321,6 +327,31 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
+	getResources() {
+		return this.resources
+	}
+	getResource(id: string): ResourceAny | undefined {
+		return this.resources[id]
+	}
+	getResourceIds(deviceId: string): string[] {
+		const ids: string[] = []
+		for (const [id, resource] of Object.entries(this.resources)) {
+			if (resource.deviceId === deviceId) ids.push(id)
+		}
+		return ids
+	}
+	updateResource(id: string, resource: ResourceAny | null) {
+		if (resource) {
+			this.resources[id] = resource
+			this.resourcesHasChanged[id] = true
+		} else {
+			delete this.resources[id]
+			this.resourcesHasChanged[id] = true
+		}
+
+		this.triggerUpdate({ resources: { [id]: true } })
+	}
+
 	convertToFilename(str: string): string {
 		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
@@ -331,6 +362,7 @@ export class StorageHandler extends EventEmitter {
 		project?: true
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
+		resources?: { [resourceId: string]: true }
 	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
@@ -344,6 +376,12 @@ export class StorageHandler extends EventEmitter {
 			for (const rundownId of Object.keys(updates.rundowns)) {
 				this.rundownsHasChanged[rundownId] = true
 				this.rundownsNeedsWrite[rundownId] = true
+			}
+		}
+		if (updates.resources) {
+			for (const resourceId of Object.keys(updates.resources)) {
+				this.resourcesHasChanged[resourceId] = true
+				this.resourcesNeedsWrite = true
 			}
 		}
 
@@ -543,6 +581,45 @@ export class StorageHandler extends EventEmitter {
 
 		return rundown
 	}
+	private loadResources(): { [resourceId: string]: ResourceAny } {
+		let resources: { [resourceId: string]: ResourceAny } | undefined = {}
+		const resourcesPath = this.resourcesPath(this._projectId)
+		try {
+			const read = fs.readFileSync(resourcesPath, 'utf8')
+			resources = JSON.parse(read)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// not found
+				resources = {}
+			} else {
+				throw new Error(`Unable to read Resources file "${resourcesPath}": ${error}`)
+			}
+		}
+
+		if (!resources) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(resourcesPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				resources = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.resourcesNeedsWrite = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+
+		if (!resources) {
+			resources = {}
+		}
+
+		return resources
+	}
 
 	private getDefaultAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
 		return {
@@ -582,6 +659,9 @@ export class StorageHandler extends EventEmitter {
 			for (const fileName of Object.keys(this.rundowns)) {
 				this.rundownsHasChanged[fileName] = true
 			}
+			for (const resourceId of Object.keys(this.resources)) {
+				this.resourcesHasChanged[resourceId] = true
+			}
 			this.emitEverything = false
 		}
 
@@ -597,6 +677,10 @@ export class StorageHandler extends EventEmitter {
 		for (const fileName of Object.keys(this.rundownsHasChanged)) {
 			this.emit('rundown', fileName, this.getRundown(fileName))
 			delete this.rundownsHasChanged[fileName]
+		}
+		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
+			this.emit('resource', resourceId, this.resources[resourceId] ?? null)
+			delete this.resourcesHasChanged[resourceId]
 		}
 	}
 	private async writeChanges() {
@@ -633,6 +717,11 @@ export class StorageHandler extends EventEmitter {
 			)
 
 			delete this.rundownsNeedsWrite[fileName]
+		}
+		// Store Resources:
+		if (this.resourcesNeedsWrite) {
+			await this.writeFileSafe(this.resourcesPath(this._projectId), JSON.stringify(this.resources))
+			this.projectNeedsWrite = false
 		}
 	}
 	private getTmpFilePath(filePath: string): string {
@@ -682,6 +771,9 @@ export class StorageHandler extends EventEmitter {
 	}
 	private projectPath(projectId: string): string {
 		return path.join(this.projectDir(projectId), 'project.json')
+	}
+	private resourcesPath(projectId: string): string {
+		return path.join(this.projectDir(projectId), 'resources.json')
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
