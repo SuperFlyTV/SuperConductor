@@ -405,6 +405,11 @@ export class StorageHandler extends EventEmitter {
 				appData.appData.version = defaultAppData.appData.version
 			}
 		}
+		// Update the currentVersion to the apps' version:
+		if (appData.appData.version.currentVersion !== appVersion) {
+			appData.appData.version.currentVersion = appVersion
+			this.appDataNeedsWrite = true
+		}
 		return appData
 	}
 	private loadProject(newName?: string): FileProject {
