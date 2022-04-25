@@ -1,4 +1,4 @@
-import winston from 'winston'
+import { Logger } from 'winston'
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
 import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
 import {
@@ -23,7 +23,7 @@ export class VMixSideload implements SideLoadDevice {
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: winston.Logger) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: Logger) {
 		this.vmix = new VMix()
 
 		this.vmix.on('connected', () => {

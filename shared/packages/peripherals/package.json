@@ -42,7 +42,8 @@
 		]
 	},
 	"devDependencies": {
-		"@types/sharp": "^0.29.5"
+		"@types/sharp": "^0.29.5",
+		"winston": "^3.6.0"
 	},
 	"dependencies": {
 		"@elgato-stream-deck/node": "^5.2.0",

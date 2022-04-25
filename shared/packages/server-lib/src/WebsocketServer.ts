@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
 // eslint-disable-next-line node/no-extraneous-import
-import winston from 'winston'
+import { Logger } from 'winston'
 
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
@@ -23,11 +23,7 @@ export class WebsocketServer extends EventEmitter {
 
 	private connections: WebsocketConnection[] = []
 
-	constructor(
-		private log: winston.Logger,
-		port: number,
-		private onConnection: (connection: WebsocketConnection) => void
-	) {
+	constructor(private log: Logger, port: number, private onConnection: (connection: WebsocketConnection) => void) {
 		super()
 		this.wss = new WebSocket.Server({ port })
 
@@ -83,7 +79,7 @@ export class WebsocketConnection extends EventEmitter {
 	private url: string | null
 
 	constructor(
-		private log: winston.Logger,
+		private log: Logger,
 		/** On a server, this'll be a websocket connection. A client gets a url */
 		connection: WebSocket | string
 	) {

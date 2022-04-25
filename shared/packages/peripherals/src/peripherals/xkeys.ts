@@ -3,7 +3,7 @@ import _ from 'lodash'
 import { XKeysWatcher, XKeys } from 'xkeys'
 import { Peripheral } from './peripheral'
 // eslint-disable-next-line node/no-extraneous-import
-import winston from 'winston'
+import { Logger } from 'winston'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
@@ -12,7 +12,7 @@ const FLASH_NORMAL = 30
 
 export class PeripheralXkeys extends Peripheral {
 	private connectedToParent = false
-	static Watch(log: winston.Logger, onDevice: (peripheral: PeripheralXkeys) => void) {
+	static Watch(log: Logger, onDevice: (peripheral: PeripheralXkeys) => void) {
 		let usePolling = false
 		// Check if usb-detection is installed:
 		try {
@@ -58,7 +58,7 @@ export class PeripheralXkeys extends Peripheral {
 	} = {}
 	private ignoreKeys = new Set<number>()
 
-	constructor(log: winston.Logger, id: string, private xkeysPanel: XKeys) {
+	constructor(log: Logger, id: string, private xkeysPanel: XKeys) {
 		super(log, id)
 	}
 

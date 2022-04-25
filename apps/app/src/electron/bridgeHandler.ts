@@ -10,7 +10,7 @@ import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import winston from 'winston'
+import { Logger } from 'winston'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -36,7 +36,7 @@ export class BridgeHandler {
 	private closed = false
 
 	constructor(
-		private log: winston.Logger,
+		private log: Logger,
 		private session: SessionHandler,
 		private storage: StorageHandler,
 		private callbacks: BridgeConnectionCallbacks
@@ -208,7 +208,7 @@ abstract class AbstractBridgeConnection {
 	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
-		protected log: winston.Logger,
+		protected log: Logger,
 		protected session: SessionHandler,
 		protected storage: StorageHandler,
 		protected callbacks: BridgeConnectionCallbacks
@@ -411,7 +411,7 @@ abstract class AbstractBridgeConnection {
 
 export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	constructor(
-		log: winston.Logger,
+		log: Logger,
 		session: SessionHandler,
 		storage: StorageHandler,
 		private connection: WebsocketConnection,
@@ -451,12 +451,7 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	private baseBridge: BaseBridge
 	private connectionId: number = Date.now() + Math.random()
 
-	constructor(
-		log: winston.Logger,
-		session: SessionHandler,
-		storage: StorageHandler,
-		callbacks: BridgeConnectionCallbacks
-	) {
+	constructor(log: Logger, session: SessionHandler, storage: StorageHandler, callbacks: BridgeConnectionCallbacks) {
 		super(log, session, storage, callbacks)
 		this.bridgeId = INTERNAL_BRIDGE_ID
 		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), this.log)

@@ -8,7 +8,7 @@ import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
 import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
-import winston from 'winston'
+import { Logger } from 'winston'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -28,7 +28,7 @@ export class TriggersHandler {
 	private definingArea: DefiningArea | null = null
 
 	constructor(
-		private log: winston.Logger,
+		private log: Logger,
 		private storage: StorageHandler,
 		private ipcServer: IPCServer,
 		private bridgeHandler: BridgeHandler

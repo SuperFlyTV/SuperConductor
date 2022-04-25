@@ -1,11 +1,11 @@
-import winston from 'winston'
+import { format, createLogger } from 'winston'
 // @ts-expect-error This is a hack to ensure that electron-builder includes this file.
 import consoleTransport from 'winston/dist/winston/transports/console'
 import { utilFormatter } from './util-formatter'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { LogLevel } from './log-levels'
 
-const myFormat = winston.format.printf(({ level, message, label, timestamp }) => {
+const myFormat = format.printf(({ level, message, label, timestamp }) => {
 	return `${timestamp} [${label}] ${level}: ${message}`
 })
 
@@ -21,25 +21,25 @@ export const createLoggers = (dirname: string) => {
 		}),
 	]
 
-	const electronLogger = winston.createLogger({
+	const electronLogger = createLogger({
 		level: LogLevel.Silly,
-		format: winston.format.combine(
-			winston.format.label({ label: 'electron' }),
-			winston.format.timestamp(),
+		format: format.combine(
+			format.label({ label: 'electron' }),
+			format.timestamp(),
 			utilFormatter(),
-			winston.format.simple(),
+			format.simple(),
 			myFormat
 		),
 		transports,
 	})
 
-	const rendererLogger = winston.createLogger({
+	const rendererLogger = createLogger({
 		level: LogLevel.Silly,
-		format: winston.format.combine(
-			winston.format.label({ label: 'renderer' }),
-			winston.format.timestamp(),
+		format: format.combine(
+			format.label({ label: 'renderer' }),
+			format.timestamp(),
 			utilFormatter(),
-			winston.format.simple(),
+			format.simple(),
 			myFormat
 		),
 		transports,

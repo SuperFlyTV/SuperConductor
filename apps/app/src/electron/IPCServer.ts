@@ -1,4 +1,4 @@
-import winston from 'winston'
+import { Logger } from 'winston'
 import {
 	allowAddingResourceToLayer,
 	allowMovingItemIntoGroup,
@@ -21,7 +21,7 @@ import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
-import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH } from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
@@ -38,6 +38,8 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
+import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
+import { DefiningArea } from '..//lib/triggers/keyDisplay'
 import { LogLevel } from '../lib/logging'
 
 type UndoLedger = Action[]
@@ -90,8 +92,8 @@ export class IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
-		private _log: winston.Logger,
-		private _renderLog: winston.Logger,
+		private _log: Logger,
+		private _renderLog: Logger,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {

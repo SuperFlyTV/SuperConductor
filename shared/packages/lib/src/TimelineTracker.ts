@@ -1,4 +1,4 @@
-import winston from 'winston'
+import type { Logger } from 'winston'
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import {
 	ResolvedStates,
@@ -25,7 +25,7 @@ export class TimelineTracker {
 	private RESOLVE_LIMIT_COUNT = 20
 
 	constructor(
-		private log: winston.Logger,
+		private log: Logger,
 		keyDisplayTimeline: KeyDisplayTimeline,
 		private callback: (keyDisplay: KeyDisplay) => void
 	) {

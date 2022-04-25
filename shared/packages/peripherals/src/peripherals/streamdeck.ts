@@ -7,10 +7,10 @@ import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 // eslint-disable-next-line node/no-extraneous-import
-import winston from 'winston'
+import { Logger } from 'winston'
 
 export class PeripheralStreamDeck extends Peripheral {
-	static Watch(log: winston.Logger, onDevice: (peripheral: PeripheralStreamDeck) => void) {
+	static Watch(log: Logger, onDevice: (peripheral: PeripheralStreamDeck) => void) {
 		const seenDevices = new Map<string, PeripheralStreamDeck>()
 
 		const interval = setInterval(() => {
@@ -58,7 +58,7 @@ export class PeripheralStreamDeck extends Peripheral {
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
 	private keys: { [identifier: string]: boolean } = {}
-	constructor(log: winston.Logger, id: string, private path: string) {
+	constructor(log: Logger, id: string, private path: string) {
 		super(log, id)
 	}
 

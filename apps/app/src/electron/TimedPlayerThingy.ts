@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import winston from 'winston'
+import { Logger } from 'winston'
 import { Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -32,7 +32,7 @@ export class TimedPlayerThingy {
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: winston.Logger, private renderLog: winston.Logger) {
+	constructor(private log: Logger, private renderLog: Logger) {
 		this.session = new SessionHandler()
 		this.storage = new StorageHandler(
 			log,

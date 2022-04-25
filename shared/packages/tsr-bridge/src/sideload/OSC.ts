@@ -1,10 +1,10 @@
-import winston from 'winston'
+import { Logger } from 'winston'
 import { DeviceOptionsOSC } from 'timeline-state-resolver'
 import { ResourceAny, ResourceType, OSCMessage } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 
 export class OSCSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: winston.Logger) {}
+	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: Logger) {}
 	refreshResources() {
 		return this._refreshResources()
 	}

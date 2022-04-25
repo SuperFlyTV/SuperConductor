@@ -4,7 +4,7 @@ import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 // eslint-disable-next-line node/no-extraneous-import
-import winston from 'winston'
+import { Logger } from 'winston'
 
 export interface PeripheralsHandlerEvents {
 	connected: (deviceId: string, peripheralInfo: PeripheralInfo) => void
@@ -29,7 +29,7 @@ export class PeripheralsHandler extends EventEmitter {
 	private watchers: { stop: () => void }[] = []
 	/** Whether we're connected to SuperConductor or not*/
 	private connectedToParent = false
-	constructor(private log: winston.Logger, public readonly id: string) {
+	constructor(private log: Logger, public readonly id: string) {
 		super()
 	}
 	init() {

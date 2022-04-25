@@ -195,16 +195,10 @@ export function applyMovementToTimeline(
 	changedObjects = { ...changedObjects, ...o.changed }
 	let resolvedTimeline: ResolvedTimeline
 
-	try {
-		resolvedTimeline = Resolver.resolveTimeline(
-			draggedTimeline.map((o) => o.obj),
-			{ time: 0, cache: cache }
-		)
-	} catch (e) {
-		console.error(dragDelta)
-		console.error(o)
-		throw e
-	}
+	resolvedTimeline = Resolver.resolveTimeline(
+		draggedTimeline.map((o) => o.obj),
+		{ time: 0, cache: cache }
+	)
 
 	// Go through all objects, making sure that none of them starts before 0
 	let deltaTimeAdjust = 0
@@ -239,16 +233,11 @@ export function applyMovementToTimeline(
 		const draggedTimeline2 = o.all
 		changedObjects = { ...changedObjects, ...o.changed }
 		// Resolve it again...
-		try {
-			resolvedTimeline = Resolver.resolveTimeline(
-				draggedTimeline2.map((o) => o.obj),
-				{ time: 0, cache: cache }
-			)
-		} catch (e) {
-			console.error(dragDelta)
-			console.error(o)
-			throw e
-		}
+
+		resolvedTimeline = Resolver.resolveTimeline(
+			draggedTimeline2.map((o) => o.obj),
+			{ time: 0, cache: cache }
+		)
 	}
 	return {
 		modifiedTimeline,

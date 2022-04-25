@@ -7,7 +7,7 @@ import { AppData, WindowPosition } from '../models/App/AppData'
 import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 import { baseFolder } from '../lib/baseFolder'
-import winston from 'winston'
+import { Logger } from 'winston'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -42,7 +42,7 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: winston.Logger, defaultWindowPosition: WindowPosition, appVersion: string) {
+	constructor(private log: Logger, defaultWindowPosition: WindowPosition, appVersion: string) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 

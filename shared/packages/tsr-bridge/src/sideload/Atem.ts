@@ -1,4 +1,4 @@
-import winston from 'winston'
+import { Logger } from 'winston'
 import { DeviceOptionsAtem } from 'timeline-state-resolver'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
 import {
@@ -20,7 +20,7 @@ export class AtemSideload implements SideLoadDevice {
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: winston.Logger) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: Logger) {
 		this.atem = new Atem()
 
 		this.atem.on('connected', () => {

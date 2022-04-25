@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import winston from 'winston'
+import { Logger } from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { ResourceAny } from '@shared/models'
 import { BridgeAPI } from '@shared/api'
@@ -22,7 +22,7 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor(private log: winston.Logger) {
+	constructor(private log: Logger) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,

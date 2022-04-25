@@ -49,5 +49,8 @@
 		"parse-ms": "2.1.0",
 		"pretty-ms": "^7.0.1",
 		"superfly-timeline": "^8.2.5"
+	},
+	"devDependencies": {
+		"winston": "^3.6.0"
 	}
 }

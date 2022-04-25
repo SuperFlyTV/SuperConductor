@@ -20,6 +20,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
 	}
 
+	log(...args: ServerArgs<'log'>) {
+		return this.invokeServerMethod('log', ...args)
+	}
 	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
@@ -192,13 +195,5 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
-	}
-	log(method: LogLevel, ...args: any[]): void {
-		// eslint-disable-next-line no-console
-		this.invokeServerMethod('log', method, ...args).catch(console.error)
-	}
-	log(method: LogLevel, ...args: any[]): void {
-		// eslint-disable-next-line no-console
-		this.invokeServerMethod('log', method, ...args).catch(console.error)
 	}
 }

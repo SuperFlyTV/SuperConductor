@@ -1,4 +1,4 @@
-import winston from 'winston'
+import type { Logger } from 'winston'
 import { EventEmitter } from 'events'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
@@ -17,7 +17,7 @@ export declare interface Peripheral {
 export abstract class Peripheral extends EventEmitter {
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
-		protected log: winston.Logger,
+		protected log: Logger,
 		/** Locally unique id */
 		public readonly id: string
 	) {
