@@ -15,7 +15,7 @@ export const CasparCGMappingSettings: React.FC<{
 				<IntInput
 					fullWidth
 					label="Channel"
-					currentValue={props.mapping?.channel || 1}
+					currentValue={props.mapping?.channel}
 					width="7rem"
 					allowUndefined={false}
 					onChange={(v) => {
@@ -28,7 +28,7 @@ export const CasparCGMappingSettings: React.FC<{
 				<IntInput
 					fullWidth
 					label="Layer"
-					currentValue={props.mapping?.layer || 1}
+					currentValue={props.mapping?.layer}
 					width="7rem"
 					allowUndefined={false}
 					onChange={(v) => {
