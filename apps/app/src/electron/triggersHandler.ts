@@ -246,12 +246,15 @@ export class TriggersHandler {
 		// Check if the trigger is already in another
 
 		let found = false
-		for (const peripheralSettings of Object.values(bridge.peripheralSettings)) {
+		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
 			if (found) break
-			for (const area of Object.values(peripheralSettings.areas)) {
-				if (found) break
-				if (area.identifiers.includes(activeTrigger.identifier)) {
-					found = true
+
+			if (peripheralId === definingArea.deviceId) {
+				for (const area of Object.values(peripheralSettings.areas)) {
+					if (found) break
+					if (area.identifiers.includes(activeTrigger.identifier)) {
+						found = true
+					}
 				}
 			}
 		}
