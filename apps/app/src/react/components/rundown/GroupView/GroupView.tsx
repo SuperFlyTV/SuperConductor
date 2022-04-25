@@ -45,6 +45,7 @@ import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { PeripheralArea } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { BsKeyboard, BsKeyboardFill } from 'react-icons/bs'
+import { Part } from '../../../../models/rundown/Part'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -470,7 +471,7 @@ export const GroupView: React.FC<{
 			)
 		}
 
-		const firstPart = group.parts[0]
+		const firstPart = group.parts[0] as Part | undefined
 		return firstPart ? (
 			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
 				<PartView
