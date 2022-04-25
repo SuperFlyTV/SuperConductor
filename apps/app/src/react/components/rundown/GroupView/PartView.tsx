@@ -2,7 +2,13 @@ import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffec
 import _ from 'lodash'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
+import {
+	ResolvedTimeline,
+	ResolvedTimelineObject,
+	Resolver,
+	ResolverCache,
+	TimelineObjectInstance,
+} from 'superfly-timeline'
 import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
@@ -99,18 +105,47 @@ export const PartView: React.FC<{
 		setEditingPartName(false)
 	}, [editedName, handleError, ipcServer, parentGroupId, part, rundownId])
 
-	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
-		const orgResolvedTimeline = Resolver.resolveTimeline(
-			part.timeline.map((o) => o.obj),
-			{ time: 0, cache: cache.current }
-		)
-		/** Max duration for display. Infinite objects are counted to this */
-		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
-		const msPerPixel = orgMaxDuration / trackWidth
-		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
-
-		return { orgResolvedTimeline, orgMaxDuration, msPerPixel, snapDistanceInMilliseconds }
-	}, [part.timeline, trackWidth])
+	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds, resolverErrorMessage } =
+		useMemo(() => {
+			let errorMessage = ''
+			let orgResolvedTimeline: ResolvedTimeline
+			try {
+				orgResolvedTimeline = Resolver.resolveTimeline(
+					part.timeline.map((o) => o.obj),
+					{ time: 0, cache: cache.current }
+				)
+				/** Max duration for display. Infinite objects are counted to this */
+			} catch (e) {
+				orgResolvedTimeline = {
+					options: {
+						time: Date.now(),
+					},
+					objects: {},
+					classes: {},
+					layers: {},
+					statistics: {
+						unresolvedCount: 0,
+						resolvedCount: 0,
+						resolvedInstanceCount: 0,
+						resolvedObjectCount: 0,
+						resolvedGroupCount: 0,
+						resolvedKeyframeCount: 0,
+						resolvingCount: 0,
+					},
+				}
+				errorMessage = `Fatal error in timeline: ${e}`
+			}
+			const orgMaxDuration = orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0
+			const msPerPixel = orgMaxDuration / trackWidth
+			const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
+			return {
+				orgResolvedTimeline,
+				orgMaxDuration,
+				msPerPixel,
+				snapDistanceInMilliseconds,
+				resolverErrorMessage: errorMessage,
+			}
+		}, [part.timeline, trackWidth])
 
 	const snapPoints = useMemo(() => {
 		const snapPoints: Array<SnapPoint> = []
@@ -789,6 +824,7 @@ export const PartView: React.FC<{
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>
+
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
@@ -836,6 +872,7 @@ export const PartView: React.FC<{
 					<CountdownHeads groupId={parentGroupId} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
+					{resolverErrorMessage && <div className="part__error-overlay">{resolverErrorMessage}</div>}
 					<PlayHead part={part} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
 					<div
 						className={classNames('layers', {
