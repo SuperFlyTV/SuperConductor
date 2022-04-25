@@ -1959,6 +1959,17 @@ export class IPCServer
 		for (const o of part.timeline) {
 			const resolvedObj = resolvedTimeline.objects[o.obj.id]
 			if (resolvedObj) {
+				if (resolvedObj.resolved.instances.length === 0) {
+					// If the timeline object has no instances, this might be because there's something wrong with the timelineObject.
+					if (!Array.isArray(o.obj.enable)) {
+						if (o.obj.enable.while === undefined) {
+							if (typeof o.obj.enable.start === 'string') o.obj.enable.start = 0 // Fall back to a default value
+							if (typeof o.obj.enable.duration === 'string') o.obj.enable.duration = 1000 // Fall back to a default value
+							if (typeof o.obj.enable.end === 'string') o.obj.enable.end = 1000 // Fall back to a default value
+						}
+					}
+				}
+
 				o.resolved = {
 					instances: resolvedObj.resolved.instances.map<TimelineObjResolvedInstance>((i) => ({
 						start: i.start,
