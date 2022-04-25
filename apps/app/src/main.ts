@@ -118,20 +118,32 @@ const createWindow = (): void => {
 
 	app.on('window-all-closed', () => {
 		Promise.resolve()
+			.then(() => {
+				tpt.isShuttingDown()
+			})
 			.then(async () => {
 				await Promise.race([
 					Promise.all([
 						// Write any changes to disk:
 						tpt.storage.writeChangesNow(),
+					]),
+					// Add a timeout, in case the above doesn't finish:
+					new Promise((resolve) => setTimeout(resolve, 1000)),
+				])
+			})
+
+			.then(async () => {
+				await Promise.race([
+					Promise.all([
 						// Gracefully shut down the internal TSR-Bridge:
 						tpt.bridgeHandler?.onClose(),
 					]),
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
 				])
-
+			})
+			.then(() => {
 				tpt.terminate()
-
 				app.quit()
 			})
 			.catch((err) => {

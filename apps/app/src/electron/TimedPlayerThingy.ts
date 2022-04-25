@@ -28,6 +28,7 @@ export class TimedPlayerThingy {
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
+	private shuttingDown = false
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
@@ -95,6 +96,7 @@ export class TimedPlayerThingy {
 
 		const bridgeHandler = new BridgeHandler(this.session, this.storage, {
 			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
+				if (this.shuttingDown) return
 				// Added/Updated:
 				const newResouceIds = new Set<string>()
 				for (const resource of resources) {
@@ -121,6 +123,7 @@ export class TimedPlayerThingy {
 					.catch(console.error)
 			},
 			onDeviceRefreshStatus: (deviceId, refreshing) => {
+				if (this.shuttingDown) return
 				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
 			},
 		})
@@ -146,8 +149,19 @@ export class TimedPlayerThingy {
 		this.triggers = new TriggersHandler(this.storage, this.ipcServer, this.bridgeHandler)
 	}
 
-	terminate() {
+	/**
+	 * Is called when the app is starting to shut down.
+	 * After this has been called, the client window has closed.
+	 */
+	isShuttingDown() {
+		this.shuttingDown = true
 		this.session.terminate()
+	}
+	/**
+	 * Is called when the app is shutting down.
+	 * Shut down everything
+	 */
+	terminate() {
 		this.storage.terminate()
 	}
 }
