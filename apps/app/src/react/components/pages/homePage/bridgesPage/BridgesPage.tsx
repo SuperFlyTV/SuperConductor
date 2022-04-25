@@ -45,6 +45,8 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [handleError, ipcServer, project])
 
+	const thereIsOnlyOneBridge = (internalBridge ? 1 : 0) + incomingBridges.length + outgoingBridges.length === 1
+
 	return (
 		<ProjectPageLayout
 			title="Bridges"
@@ -85,6 +87,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 								),
 							},
 						]}
+						openByDefault={thereIsOnlyOneBridge ? ['internalBridge'] : undefined}
 					/>
 				) : (
 					<div className="central">Internal bridge is off.</div>
