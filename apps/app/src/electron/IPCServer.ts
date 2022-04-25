@@ -1949,23 +1949,32 @@ export class IPCServer
 		this._saveUpdates({ definingArea: null })
 	}
 
-	private _postProcessPart(part: Part) {
+	private _postProcessPart(part: Part, noModify?: boolean) {
 		const resolvedTimeline = Resolver.resolveTimeline(
 			part.timeline.map((o) => o.obj),
 			{ time: 0 }
 		)
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+		let modified = false
 
 		for (const o of part.timeline) {
 			const resolvedObj = resolvedTimeline.objects[o.obj.id]
 			if (resolvedObj) {
-				if (resolvedObj.resolved.instances.length === 0) {
+				if (resolvedObj.resolved.instances.length === 0 && !noModify) {
 					// If the timeline object has no instances, this might be because there's something wrong with the timelineObject.
 					if (!Array.isArray(o.obj.enable)) {
 						if (o.obj.enable.while === undefined) {
-							if (typeof o.obj.enable.start === 'string') o.obj.enable.start = 0 // Fall back to a default value
-							if (typeof o.obj.enable.duration === 'string') o.obj.enable.duration = 1000 // Fall back to a default value
-							if (typeof o.obj.enable.end === 'string') o.obj.enable.end = 1000 // Fall back to a default value
+							if (typeof o.obj.enable.start === 'string') {
+								o.obj.enable.start = 0 // Fall back to a default value
+								modified = true
+							}
+							if (typeof o.obj.enable.duration === 'string') {
+								o.obj.enable.duration = 1000 // Fall back to a default value
+								modified = true
+							}
+							if (typeof o.obj.enable.end === 'string') {
+								o.obj.enable.end = 1000 // Fall back to a default value
+								modified = true
+							}
 						}
 					}
 				}
@@ -1982,9 +1991,15 @@ export class IPCServer
 				}
 			}
 		}
+		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
 
 		part.resolved = {
 			duration: maxDuration,
+		}
+
+		// If it was modified, run again to properly calculate artifacts:
+		if (modified && !noModify) {
+			this._postProcessPart(part, true)
 		}
 	}
 
