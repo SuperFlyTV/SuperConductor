@@ -115,6 +115,18 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 				/>
 
+				<Button
+					variant="contained"
+					size="small"
+					title={'Edit Part Name' + (locked ? ' (disabled due to locked Part or Group)' : '')}
+					disabled={locked}
+					onClick={() => {
+						setPartPropertiesDialogOpen(true)
+					}}
+				>
+					<MdOutlineEditNote size={18} />
+				</Button>
+
 				<TrashBtn
 					disabled={locked}
 					title={'Delete Part' + (locked ? ' (disabled due to locked Part or Group)' : '')}
@@ -128,18 +140,6 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 						}
 					}}
 				/>
-
-				<Button
-					variant="contained"
-					size="small"
-					title={'Edit Description' + (locked ? ' (disabled due to locked Part or Group)' : '')}
-					disabled={locked}
-					onClick={() => {
-						setPartPropertiesDialogOpen(true)
-					}}
-				>
-					<MdOutlineEditNote size={18} />
-				</Button>
 			</div>
 
 			<ConfirmationDialog
