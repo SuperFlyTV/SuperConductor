@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { findGroup, findPart, findTimelineObj } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
-// import { RundownContext } from '../../contexts/Rundown'
-// import { GUIContext } from '../../contexts/GUI'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
@@ -71,6 +69,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 		}
 
 		setResources([])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [editing])
 
 	if (!rundown) {

@@ -1,4 +1,5 @@
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
+import { PeripheralSettings } from './Peripheral'
 
 export interface Bridge {
 	id: string
@@ -12,6 +13,10 @@ export interface Bridge {
 		devices: {
 			[deviceId: string]: DeviceOptionsAny
 		}
+	}
+
+	peripheralSettings: {
+		[peripheralId: string]: PeripheralSettings
 	}
 }
 

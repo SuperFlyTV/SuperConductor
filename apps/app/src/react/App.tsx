@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
@@ -29,6 +29,8 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
+import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -39,7 +41,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 const ENABLE_WHY_DID_YOU_RENDER = false
 
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
-	console.log('Why-did-you-render-endabled')
+	console.log('Why-did-you-render-enabled')
 	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
 	whyDidYouRender(React, {
@@ -65,12 +67,16 @@ export const App = observer(function App() {
 			},
 			updateProject: (project: Project) => {
 				setProject(project)
+				store.projectStore.update(project)
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			displayAboutDialog: () => {
 				setSplashScreenOpen(true)
+			},
+			updateDefiningArea: (definingArea: DefiningArea | null) => {
+				store.guiStore.updateDefiningArea(definingArea)
 			},
 		})
 
@@ -131,7 +137,7 @@ export const App = observer(function App() {
 			// send the keys to the backend and unexpectedly trigger the action.
 			if (!triggers.isAnyoneListening()) {
 				// Send the currently pressed keys to backend, so that the server can execute triggers:
-				serverAPI.setKeyboardKeys(activeKeys).catch(handleError)
+				serverAPI.setKeyboardKeys({ activeKeys }).catch(handleError)
 			}
 		}
 		document.addEventListener('keydown', (e) => handleKey(e))
@@ -186,6 +192,71 @@ export const App = observer(function App() {
 		}
 	}
 
+	// Handle using the Delete key to delete timeline objs
+	const currentRundownId = store.rundownsStore.currentRundownId
+	const [showDeleteTimelineObjConfirmationDialog, setShowDeleteTimelineObjConfirmationDialog] = useState(false)
+	const deleteSelectedTimelineObjs = useCallback(() => {
+		if (!currentRundownId) {
+			return
+		}
+
+		const promises: Promise<void>[] = []
+		for (const id of gui.selectedTimelineObjIds) {
+			const promise = serverAPI.deleteTimelineObj({
+				rundownId: currentRundownId,
+				timelineObjId: id,
+			})
+			promises.push(promise)
+		}
+
+		Promise.all(promises).catch(handleError)
+	}, [currentRundownId, gui.selectedTimelineObjIds, handleError, serverAPI])
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		const onKey = async () => {
+			try {
+				if (!currentRundownId) {
+					return
+				}
+
+				const pressed = sorensen.getPressedKeys()
+				if (pressed.includes('Delete')) {
+					console.log('pressed, currentRundownId:', currentRundownId)
+					const selectedAndPlayingTimelineObjIds = await gui.getSelectedAndPlayingTimelineObjIds(
+						currentRundownId
+					)
+					if (selectedAndPlayingTimelineObjIds.size > 0) {
+						setShowDeleteTimelineObjConfirmationDialog(true)
+					} else {
+						deleteSelectedTimelineObjs()
+					}
+				}
+			} catch (error) {
+				handleError(error)
+			}
+		}
+		onKey().catch(handleError)
+
+		sorensen.bind('Delete', onKey, {
+			up: false,
+			global: true,
+		})
+		sorensen.bind('Delete', onKey, {
+			up: true,
+			global: true,
+		})
+
+		sorensen.addEventListener('keycancel', onKey)
+
+		return () => {
+			sorensen.unbind('Delete', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
+		}
+	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
+
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
 		triggers,
@@ -225,6 +296,20 @@ export const App = observer(function App() {
 									</div>
 								</>
 							)}
+
+							<ConfirmationDialog
+								open={showDeleteTimelineObjConfirmationDialog}
+								title="Delete Timeline Object(s)"
+								body="Some of the selected timeline objects are currently being used in playout. Are you sure you wish to delete them?"
+								acceptLabel="Delete"
+								onDiscarded={() => {
+									setShowDeleteTimelineObjConfirmationDialog(false)
+								}}
+								onAccepted={() => {
+									deleteSelectedTimelineObjs()
+									setShowDeleteTimelineObjConfirmationDialog(false)
+								}}
+							/>
 						</div>
 					</ErrorHandlerContext.Provider>
 				</ProjectContext.Provider>

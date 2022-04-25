@@ -1,10 +1,12 @@
+$line-width: 0.2rem;
+
 .playHead {
 	position: absolute;
 	top: 0;
 	left: 0;
 	z-index: 5;
 	height: 100%;
-	width: 100%;
+	right: $line-width;
 	pointer-events: none;
 
 	.head {
@@ -18,7 +20,7 @@
 
 	.line {
 		height: 100%;
-		width: 0.2rem;
+		width: $line-width;
 		background-color: $redColor;
 		position: absolute;
 	}
@@ -26,8 +28,8 @@
 	.shade {
 		position: absolute;
 		top: 0;
-		left: 0;
+		width: 33%;
 		height: 100%;
-		background: rgba(0, 0, 0, 0.3);
+		background: linear-gradient(to left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 100%);
 	}
 }

@@ -1,6 +1,6 @@
 import { ResourceAny } from '@shared/models'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { KeyDisplay, KeyDisplayTimeline } from './peripherals'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
@@ -55,7 +55,7 @@ export namespace BridgeAPI {
 		export interface PeripheralStatus extends MessageBase {
 			type: 'PeripheralStatus'
 			deviceId: string
-			deviceName: string
+			info: PeripheralInfo
 			status: 'connected' | 'disconnected'
 		}
 		export interface PeripheralTrigger extends MessageBase {

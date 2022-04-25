@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { MouseEventHandler } from 'react'
 import classNames from 'classnames'
 
 export const ConnectionStatus: React.FC<{
@@ -6,17 +6,23 @@ export const ConnectionStatus: React.FC<{
 	tooltip?: string
 	label?: string
 	children?: React.ReactNode
+	onClick?: MouseEventHandler<HTMLAnchorElement>
+	open?: boolean
 }> = (props) => {
 	return (
-		<div
+		<a
 			className={classNames('connection-status', {
 				ok: props.ok,
+				clickable: Boolean(props.onClick),
+				open: props.open,
 			})}
 			title={props.tooltip}
+			href={props.onClick ? '#' : undefined}
+			onClick={props.onClick}
 		>
 			{props.label}
 
 			<div className="connection-status__dot"></div>
-		</div>
+		</a>
 	)
 }

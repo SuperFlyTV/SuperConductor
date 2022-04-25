@@ -1,8 +1,8 @@
 import { deepClone } from '@shared/lib'
-import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache } from 'superfly-timeline'
-import short from 'short-uuid'
+import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/mobx/GuiStore'
+import { shortID } from './util'
 
 const MIN_DURATION = 1
 
@@ -61,7 +61,7 @@ export function applyMovementToTimeline(
 		for (const timelineObj of modifiedTimeline) {
 			if (selectedTimelineObjIds.includes(timelineObj.obj.id)) {
 				const clone = deepClone(timelineObj)
-				clone.obj.id = short.generate()
+				clone.obj.id = shortID()
 				dupes.push(clone)
 			}
 		}
@@ -74,7 +74,7 @@ export function applyMovementToTimeline(
 
 	const orgLeaderObj = orgResolvedTimeline.objects[leaderTimelineObjId]
 	if (!orgLeaderObj) throw new Error(`Leader obj "${leaderTimelineObjId}" not found`)
-	const orgLeaderInstance = orgLeaderObj.resolved.instances[0]
+	const orgLeaderInstance = orgLeaderObj.resolved.instances[0] as TimelineObjectInstance | undefined
 	if (!orgLeaderInstance) throw new Error(`No instance of leader obj "${leaderTimelineObjId}"`)
 
 	// Moving a timelineObj to another layer:
@@ -85,14 +85,9 @@ export function applyMovementToTimeline(
 	}
 
 	const orgStartTime = Math.max(0, orgLeaderInstance.start)
-	// const orgDuration = orgLeaderInstance.end ? orgLeaderInstance.end - orgLeaderInstance.start : null
-	// const orgEndTime = orgDuration ? orgStartTime + orgDuration : null
 
 	/** [ms] */
 	const movedStartTime = Math.max(0, orgStartTime + dragDelta)
-	/** [ms] */
-	// const movedDuration = orgDuration
-	// const movedEndTime = movedDuration ? movedStartTime + movedDuration : null
 
 	let dragSnap: DragSnap | null = null
 
@@ -277,7 +272,8 @@ function applyDragDelta(
 		if (selectedTimelineObjIds.includes(obj.obj.id)) {
 			const enable = obj.obj.enable as TimelineEnable
 			const orgResolvedObj = orgResolvedTimeline.objects[obj.obj.id]
-			const orgInstance = orgResolvedObj.resolved.instances[0]
+			const orgInstance = orgResolvedObj.resolved.instances[0] as TimelineObjectInstance | undefined
+			if (!orgInstance) continue
 
 			if (moveType === 'whole') {
 				if (

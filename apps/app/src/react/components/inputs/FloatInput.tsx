@@ -5,6 +5,7 @@ export const FloatInput: React.FC<
 			currentValue: number
 			onChange: (newValue: number) => void
 			allowUndefined: false
+			emptyPlaceholder?: string
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
@@ -13,6 +14,7 @@ export const FloatInput: React.FC<
 			currentValue: number | undefined
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
+			emptyPlaceholder?: string
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
@@ -35,6 +37,7 @@ export const FloatInput: React.FC<
 			parse,
 			stringify,
 			props.label,
+			props.emptyPlaceholder,
 			'text',
 			props.disabled,
 			props.fullWidth
@@ -47,6 +50,7 @@ export const FloatInput: React.FC<
 			parse,
 			stringify,
 			props.label,
+			props.emptyPlaceholder,
 			'text',
 			props.disabled,
 			props.fullWidth

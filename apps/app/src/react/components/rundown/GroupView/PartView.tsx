@@ -2,12 +2,17 @@ import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffec
 import _ from 'lodash'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
-import { ResolvedTimeline, ResolvedTimelineObject, Resolver, ResolverCache } from 'superfly-timeline'
+import {
+	ResolvedTimeline,
+	ResolvedTimelineObject,
+	Resolver,
+	ResolverCache,
+	TimelineObjectInstance,
+} from 'superfly-timeline'
 import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import classNames from 'classnames'
-// import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
@@ -33,6 +38,7 @@ import { CurrentTime } from './part/CurrentTime/CurrentTime'
 import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
+import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 
 /**
@@ -98,17 +104,47 @@ export const PartView: React.FC<{
 		setEditingPartName(false)
 	}, [editedName, handleError, ipcServer, parentGroupId, part, rundownId])
 
-	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds } = useMemo(() => {
-		const orgResolvedTimeline = Resolver.resolveTimeline(
-			part.timeline.map((o) => o.obj),
-			{ time: 0, cache: cache.current }
-		)
-		const orgMaxDuration = getResolvedTimelineTotalDuration(orgResolvedTimeline)
-		const msPerPixel = orgMaxDuration / trackWidth
-		const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
-
-		return { orgResolvedTimeline, orgMaxDuration, msPerPixel, snapDistanceInMilliseconds }
-	}, [part.timeline, trackWidth])
+	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds, resolverErrorMessage } =
+		useMemo(() => {
+			let errorMessage = ''
+			let orgResolvedTimeline: ResolvedTimeline
+			try {
+				orgResolvedTimeline = Resolver.resolveTimeline(
+					part.timeline.map((o) => o.obj),
+					{ time: 0, cache: cache.current }
+				)
+				/** Max duration for display. Infinite objects are counted to this */
+			} catch (e) {
+				orgResolvedTimeline = {
+					options: {
+						time: Date.now(),
+					},
+					objects: {},
+					classes: {},
+					layers: {},
+					statistics: {
+						unresolvedCount: 0,
+						resolvedCount: 0,
+						resolvedInstanceCount: 0,
+						resolvedObjectCount: 0,
+						resolvedGroupCount: 0,
+						resolvedKeyframeCount: 0,
+						resolvingCount: 0,
+					},
+				}
+				errorMessage = `Fatal error in timeline: ${e}`
+			}
+			const orgMaxDuration = orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0
+			const msPerPixel = orgMaxDuration / trackWidth
+			const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
+			return {
+				orgResolvedTimeline,
+				orgMaxDuration,
+				msPerPixel,
+				snapDistanceInMilliseconds,
+				resolverErrorMessage: errorMessage,
+			}
+		}, [part.timeline, trackWidth])
 
 	const snapPoints = useMemo(() => {
 		const snapPoints: Array<SnapPoint> = []
@@ -117,7 +153,8 @@ export const PartView: React.FC<{
 			if (Array.isArray(timelineObj.enable)) {
 				return
 			}
-			const instance = timelineObj.resolved.instances[0]
+			const instance = timelineObj.resolved.instances[0] as TimelineObjectInstance | undefined
+			if (!instance) continue
 
 			const referring: string = [...instance.references, ...timelineObj.resolved.directReferences].join(',')
 
@@ -279,7 +316,7 @@ export const PartView: React.FC<{
 				resolvedTimeline = orgResolvedTimeline
 			}
 
-			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline)
+			const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
 
 			return {
 				maxDuration,
@@ -430,12 +467,12 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	// const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
-	// const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
-
 	// Play button:
 	const handleStart = useCallback(() => {
 		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
+	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
+	const handlePause = useCallback(() => {
+		ipcServer.pausePart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
 
 	// Stop button:
@@ -660,7 +697,7 @@ export const PartView: React.FC<{
 	const sortedLayers = useMemo(() => {
 		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
 	}, [mappings, resolvedTimeline.layers])
-	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0][1][0])
+	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0]?.[1]?.[0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
 	if (typeof firstTimelineObjType === 'string') {
@@ -745,7 +782,6 @@ export const PartView: React.FC<{
 									: 'Disable/Skip Part during playback.'
 							}
 							value="disabled"
-							disabled={groupLocked}
 							selected={part.disabled}
 							size="small"
 							onChange={toggleDisable}
@@ -780,9 +816,11 @@ export const PartView: React.FC<{
 				<div className="part__meta__right">
 					<StopBtn className="part__stop" groupId={parentGroupId} part={part} onClick={handleStop} />
 					<PlayBtn className="part__play" groupId={parentGroupId} part={part} onClick={handleStart} />
+					<PauseBtn className="part__pause" groupId={parentGroupId} part={part} onClick={handlePause} />
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>
+
 			<div className="part__layer-names">
 				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
 					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
@@ -830,7 +868,8 @@ export const PartView: React.FC<{
 					<CountdownHeads groupId={parentGroupId} partId={part.id} />
 				</div>
 				<div className="layers-wrapper">
-					<PlayHead part={part} groupId={parentGroupId} />
+					{resolverErrorMessage && <div className="part__error-overlay">{resolverErrorMessage}</div>}
+					<PlayHead part={part} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,

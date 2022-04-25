@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import sharp from 'sharp'
-import { AttentionLevel, KeyDisplay } from '@shared/api'
+import { AttentionLevel, KeyDisplay, PeripheralInfo } from '@shared/api'
+import { stringToRGB, RGBToString } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
@@ -50,6 +51,7 @@ export class PeripheralStreamDeck extends Peripheral {
 	/** True if connected to the StreamDeck */
 	public connected = false
 	private streamDeck?: StreamDeck
+	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
@@ -67,7 +69,17 @@ export class PeripheralStreamDeck extends Peripheral {
 			let name = 'Stream Deck'
 			if (this.streamDeck.MODEL === DeviceModelId.MINI) name += ' Mini'
 			else if (this.streamDeck.MODEL === DeviceModelId.XL) name += ' XL'
-			this._name = name
+
+			this._info = {
+				name: name,
+				gui: {
+					type: 'streamdeck',
+					layout: {
+						height: this.streamDeck.KEY_ROWS,
+						width: this.streamDeck.KEY_COLUMNS,
+					},
+				},
+			}
 
 			this.connected = true
 
@@ -102,6 +114,10 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.initializing = false
 			throw e
 		}
+	}
+	get info(): PeripheralInfo {
+		if (!this._info) throw new Error('Peripheral not initialized')
+		return this._info
 	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		if (!this.streamDeck) return
@@ -200,182 +216,231 @@ export class PeripheralStreamDeck extends Peripheral {
 		keyDisplay: KeyDisplay,
 		darkBG = false
 	) {
-		const SIZE = streamDeck.ICON_SIZE
-
-		const fontsize = SIZE >= 96 ? 20 : 16 // XL vs original
-		const padding = 5
-
-		const maxTextWidth = SIZE - padding // note
-
-		const dampen = keyDisplay.attentionLevel === AttentionLevel.IGNORE
-		const dampenBackground = dampen || keyDisplay.attentionLevel === AttentionLevel.ALERT
-
-		let bgColor = '#000'
-		let backgroundIsDark = true
-
-		let x = 0
-		let y = 0
-
-		x = padding
-		y = padding + fontsize
+		let img: sharp.Sharp | null = null
 		let svg = ''
 		const inputs: sharp.OverlayOptions[] = []
 
-		// Background:
-		let img: sharp.Sharp | null = null
-		let hasBackground = false
-		if (keyDisplay.thumbnail) {
-			const uri = keyDisplay.thumbnail.split(';base64,').pop()
+		const SIZE = streamDeck.ICON_SIZE
+		const fontsize = SIZE >= 96 ? 20 : 16 // XL vs original
+		const padding = 5
+		let bgColor = '#000'
 
-			if (uri) {
-				try {
-					const imgBuffer = Buffer.from(uri, 'base64')
-					img = sharp(imgBuffer).trim().flatten().resize(SIZE, SIZE)
-					// .modulate({
-					// 	brightness: 0.5,
-					// })
-					// .blur()
+		if (keyDisplay.intercept) {
+			// Normal functionality is intercepted / disabled
 
-					if (dampenBackground || darkBG) img.modulate({ brightness: 0.5 })
+			let textColor = '#fff'
 
-					img.blur()
-					hasBackground = true
-				} catch (e) {
-					console.error('Error when processing thumbnail')
-					console.error(e)
-					img = null
+			if (keyDisplay.area) {
+				bgColor = keyDisplay.area.color
+
+				if (keyDisplay.area.areaInDefinition) {
+					textColor = '#fff'
+				} else {
+					textColor = '#bbb'
 				}
+				// Area label:
+				svg += `<text
+			font-family="Arial, Helvetica, sans-serif"
+			font-size="${fontsize}px"
+			x="0"
+			y="${fontsize}"
+			fill="${textColor}"
+			text-anchor="start"
+			>${keyDisplay.area.areaLabel}</text>`
+				// Key label:
+				svg += `<text
+			font-family="Arial, Helvetica, sans-serif"
+			font-size="${Math.floor(SIZE / 2)}px"
+			x="${Math.floor(SIZE / 2)}"
+			y="${fontsize + Math.floor(SIZE / 2)}"
+			fill="${textColor}"
+			text-anchor="middle"
+			>${keyDisplay.area.keyLabel}</text>`
+			} else {
+				bgColor = '#000'
 			}
-		}
-		// Calculate background brightness
-		if (img) {
-			const averagePixel = await img.clone().resize(1, 1).raw().toBuffer()
-
-			const backgroundColor = {
-				r: Number(averagePixel[0]),
-				g: Number(averagePixel[1]),
-				b: Number(averagePixel[1]),
-			}
-			/** 0 - 255 */
-			const brightness = (backgroundColor.r * 299 + backgroundColor.g * 587 + backgroundColor.b * 114) / 1000
-
-			backgroundIsDark = brightness < 127
-		}
-
-		// Border:
-		{
-			let borderWidth = 0
-			let borderColor = '#000'
-
-			if (keyDisplay.attentionLevel === AttentionLevel.IGNORE) {
-				borderWidth = 0
-				borderColor = '#000'
-			} else if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
-				borderWidth = 3
-				borderColor = '#333'
-			} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
-				borderWidth = 3
-				borderColor = '#bbb'
-			} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
-				borderColor = '#ff0'
-				borderWidth = 4
-			} else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) {
-				borderWidth = 10
-				borderColor = '#f00'
-				if (!hasBackground) {
-					bgColor = '#ff3'
-					backgroundIsDark = false
-				}
-			}
-
-			if (borderWidth) {
-				borderWidth += 3
-				if (hasBackground) borderWidth += 3
-
-				svg += `<rect
-					x="0"
-					y="0"
-					width="${SIZE}"
-					height="${SIZE}"
-					rx="10"
-					stroke="${borderColor}"
-					stroke-width="${borderWidth}"
-					fill="none"
-				/>`
-			}
-		}
-
-		let textColor: string
-
-		if (backgroundIsDark) {
-			textColor = dampen ? '#999' : '#fff'
 		} else {
-			textColor = dampen ? '#333' : '#000'
-		}
+			const maxTextWidth = SIZE - padding // note
 
-		if (keyDisplay.header) {
-			const text = keyDisplay.header.short || limitTextWidth(keyDisplay.header.long, fontsize, maxTextWidth)
+			const dampenText = keyDisplay.attentionLevel === AttentionLevel.IGNORE
+			const dampenBackgroundImage = dampenText || keyDisplay.attentionLevel === AttentionLevel.ALERT
 
-			const textFontSize = Math.floor(fontsize * (text.length > 7 ? 0.8 : 1))
-			svg += `<text
+			let x = 0
+			let y = 0
+
+			x = padding
+			y = padding + fontsize
+
+			// Background:
+
+			let hasBackgroundImage = false
+			if (keyDisplay.thumbnail) {
+				const uri = keyDisplay.thumbnail.split(';base64,').pop()
+
+				if (uri) {
+					try {
+						const imgBuffer = Buffer.from(uri, 'base64')
+						img = sharp(imgBuffer).trim().flatten().resize(SIZE, SIZE)
+						// .modulate({
+						// 	brightness: 0.5,
+						// })
+						// .blur()
+
+						if (dampenBackgroundImage || darkBG) img.modulate({ brightness: 0.5 })
+
+						img.blur()
+						hasBackgroundImage = true
+					} catch (e) {
+						console.error('Error when processing thumbnail')
+						console.error(e)
+						img = null
+					}
+				}
+			}
+			if (!hasBackgroundImage) {
+				if (keyDisplay.area) {
+					// Darken the color:
+					const rgb = stringToRGB(keyDisplay.area.color)
+					bgColor = RGBToString({
+						r: rgb.r * 0.5,
+						g: rgb.g * 0.5,
+						b: rgb.b * 0.5,
+					})
+				}
+			}
+			let averageBackgroundColor: { r: number; g: number; b: number } | undefined
+			// Calculate background brightness
+			if (img) {
+				const averagePixel = await img.clone().resize(1, 1).raw().toBuffer()
+
+				averageBackgroundColor = {
+					r: Number(averagePixel[0]),
+					g: Number(averagePixel[1]),
+					b: Number(averagePixel[1]),
+				}
+			}
+
+			// Border:
+			{
+				let borderWidth = 0
+				let borderColor = '#000'
+
+				if (keyDisplay.attentionLevel === AttentionLevel.IGNORE) {
+					borderWidth = 0
+					borderColor = '#000'
+				} else if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
+					borderWidth = 3
+					borderColor = '#333'
+				} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
+					borderWidth = 3
+					borderColor = '#bbb'
+				} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
+					borderColor = '#ff0'
+					borderWidth = 4
+				} else if (keyDisplay.attentionLevel === AttentionLevel.ALERT) {
+					borderWidth = 10
+					borderColor = '#f00'
+					if (!hasBackgroundImage) {
+						bgColor = '#ff3'
+					}
+				}
+
+				if (borderWidth) {
+					borderWidth += 3
+					if (hasBackgroundImage) borderWidth += 3
+
+					svg += `<rect
+						x="0"
+						y="0"
+						width="${SIZE}"
+						height="${SIZE}"
+						rx="10"
+						stroke="${borderColor}"
+						stroke-width="${borderWidth}"
+						fill="none"
+					/>`
+				}
+			}
+			// Calculate background brightness:
+			if (!averageBackgroundColor) averageBackgroundColor = stringToRGB(bgColor)
+			/** 0 - 255 */
+			const brightness =
+				(averageBackgroundColor.r * 299 + averageBackgroundColor.g * 587 + averageBackgroundColor.b * 114) /
+				1000
+			const backgroundIsDark = brightness < 127
+
+			// Determine text color:
+			let textColor: string
+			if (backgroundIsDark) {
+				textColor = dampenText ? '#999' : '#fff'
+			} else {
+				textColor = dampenText ? '#333' : '#000'
+			}
+
+			if (keyDisplay.header) {
+				const text = keyDisplay.header.short || limitTextWidth(keyDisplay.header.long, fontsize, maxTextWidth)
+
+				const textFontSize = Math.floor(fontsize * (text.length > 7 ? 0.8 : 1))
+				svg += `<text
+							font-family="Arial, Helvetica, sans-serif"
+							font-size="${textFontSize}px"
+							x="${x}"
+							y="${y}"
+							fill="${textColor}"
+							text-anchor="start"
+							>${text}</text>`
+				y += Math.max(textFontSize, fontsize)
+			}
+			if (keyDisplay.info) {
+				const textFontSize = Math.floor(fontsize * 0.8)
+				if (keyDisplay.info.short) {
+					svg += `<text
 						font-family="Arial, Helvetica, sans-serif"
 						font-size="${textFontSize}px"
 						x="${x}"
 						y="${y}"
 						fill="${textColor}"
 						text-anchor="start"
-						>${text}</text>`
-			y += Math.max(textFontSize, fontsize)
-		}
-		if (keyDisplay.info) {
-			const textFontSize = Math.floor(fontsize * 0.8)
-			if (keyDisplay.info.short) {
-				svg += `<text
-					font-family="Arial, Helvetica, sans-serif"
-					font-size="${textFontSize}px"
-					x="${x}"
-					y="${y}"
-					fill="${textColor}"
-					text-anchor="start"
-					>${keyDisplay.info.short}</text>`
-				y += textFontSize
-			} else if (keyDisplay.info.long) {
-				let text = keyDisplay.info.long
+						>${keyDisplay.info.short}</text>`
+					y += textFontSize
+				} else if (keyDisplay.info.long) {
+					let text = keyDisplay.info.long
 
-				if (text.includes('\n')) {
-					const lines = text.split('\n')
-					for (const line of lines) {
-						if (line) {
-							svg += `<text
-								font-family="Arial, Helvetica, sans-serif"
-								font-size="${textFontSize}px"
-								x="${x}"
-								y="${y}"
-								fill="${textColor}"
-								text-anchor="start"
-								>${line}</text>`
-							y += textFontSize
-						} else {
-							break
+					if (text.includes('\n')) {
+						const lines = text.split('\n')
+						for (const line of lines) {
+							if (line) {
+								svg += `<text
+									font-family="Arial, Helvetica, sans-serif"
+									font-size="${textFontSize}px"
+									x="${x}"
+									y="${y}"
+									fill="${textColor}"
+									text-anchor="start"
+									>${line}</text>`
+								y += textFontSize
+							} else {
+								break
+							}
 						}
-					}
-				} else {
-					let line = ''
-					for (let i = 0; i < 3; i++) {
-						line = limitTextWidth(text, fontsize, maxTextWidth)
-						text = text.slice(line.length)
-						if (line) {
-							svg += `<text
-								font-family="Arial, Helvetica, sans-serif"
-								font-size="${textFontSize}px"
-								x="${x}"
-								y="${y}"
-								fill="${textColor}"
-								text-anchor="start"
-								>${line}</text>`
-							y += textFontSize
-						} else {
-							break
+					} else {
+						let line = ''
+						for (let i = 0; i < 3; i++) {
+							line = limitTextWidth(text, fontsize, maxTextWidth)
+							text = text.slice(line.length)
+							if (line) {
+								svg += `<text
+									font-family="Arial, Helvetica, sans-serif"
+									font-size="${textFontSize}px"
+									x="${x}"
+									y="${y}"
+									fill="${textColor}"
+									text-anchor="start"
+									>${line}</text>`
+								y += textFontSize
+							} else {
+								break
+							}
 						}
 					}
 				}
@@ -435,7 +500,12 @@ export class PeripheralStreamDeck extends Peripheral {
 				if (keyGotAnyContent) {
 					await streamDeck.fillKeyBuffer(keyIndex, tmpImg, { format: 'rgba' })
 				} else {
-					await streamDeck.clearKey(keyIndex)
+					const bgRGB = stringToRGB(bgColor)
+					if (bgRGB.r + bgRGB.g + bgRGB.b === 0) {
+						await streamDeck.clearKey(keyIndex)
+					} else {
+						await streamDeck.fillKeyColor(keyIndex, bgRGB.r, bgRGB.g, bgRGB.b)
+					}
 				}
 			})
 		} catch (e) {

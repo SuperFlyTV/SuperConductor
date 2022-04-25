@@ -20,10 +20,9 @@
 
 	.fields {
 		flex-grow: 1;
-
-		div {
-			margin-right: 1rem;
-		}
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
 	}
 
 	.actions {

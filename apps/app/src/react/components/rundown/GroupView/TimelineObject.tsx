@@ -1,17 +1,17 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-// import { GUIContext } from '../../../contexts/GUI'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { ResolvedTimelineObject } from 'superfly-timeline'
+import { ResolvedTimelineObject, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import short from 'short-uuid'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
+import { parseMs } from '@shared/lib'
+import { shortID } from '../../../../lib/util'
 
 const HANDLE_WIDTH = 8
 
@@ -36,8 +36,6 @@ export const TimelineObject: React.FC<{
 	locked,
 	warnings,
 }) {
-	// const { gui, updateGUI } = useContext(GUIContext)
-
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove
 
@@ -56,7 +54,15 @@ export const TimelineObject: React.FC<{
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 
 	const obj: TSRTimelineObj = timelineObj.obj
-	const instance = resolved.instances[0]
+	let instance = resolved.instances[0] as TimelineObjectInstance | undefined
+	if (!instance) {
+		instance = {
+			id: 'N/A',
+			start: 0,
+			end: 0,
+			references: [],
+		}
+	}
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
@@ -157,7 +163,7 @@ export const TimelineObject: React.FC<{
 
 			setHandledMoveStart(true)
 			gui.updateTimelineObjMove({
-				moveId: short.generate(),
+				moveId: shortID(),
 			})
 		} else if (!isMoved && handledMoveStart) {
 			// A move has completed.
@@ -179,9 +185,6 @@ export const TimelineObject: React.FC<{
 			if (allowMultiSelection) {
 				// Deselect this timelineObj.
 				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
-				// updateGUI({
-				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-				// })
 			}
 
 			return
@@ -191,51 +194,20 @@ export const TimelineObject: React.FC<{
 			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
 				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
 					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
-					// updateGUI({
-					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-					// })
 				}
 			} else {
 				store.guiStore.selectedGroupId = groupId
 				store.guiStore.selectedPartId = partId
 				store.guiStore.selectedTimelineObjIds = [obj.id]
-				// updateGUI({
-				// 	selectedGroupId: groupId,
-				// 	selectedPartId: partId,
-				// 	selectedTimelineObjIds: [obj.id],
-				// })
 			}
 		} else {
 			store.guiStore.selectedGroupId = groupId
 			store.guiStore.selectedPartId = partId
 			store.guiStore.selectedTimelineObjIds = [obj.id]
-			// updateGUI({
-			// 	selectedGroupId: groupId,
-			// 	selectedPartId: partId,
-			// 	selectedTimelineObjIds: [obj.id],
-			// })
 		}
 	}
 
-	const { days, hours, minutes, seconds, milliseconds } = description.parsedDuration || {}
-	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
-	let durationTitle = ''
-	if (days) {
-		durationTitle += days + 'd'
-	}
-	if (hours) {
-		durationTitle += hours + 'h'
-	}
-	if (minutes) {
-		durationTitle += minutes + 'm'
-	}
-	if (seconds) {
-		if (secondTenths) {
-			durationTitle += seconds + '.' + secondTenths + 's'
-		} else {
-			durationTitle += seconds
-		}
-	}
+	const durationTitle = timelineObjectDurationString(description.parsedDuration)
 
 	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
 	useEffect(() => {
@@ -295,41 +267,7 @@ export const TimelineObject: React.FC<{
 					</div>
 				)}
 				<div className="title">{description.label}</div>
-				<div className="duration">
-					{days ? (
-						<>
-							<span>{days}</span>
-							<span style={{ fontWeight: 300 }}>d</span>
-						</>
-					) : null}
-					{hours ? (
-						<>
-							<span>{hours}</span>
-							<span style={{ fontWeight: 300 }}>h</span>
-						</>
-					) : null}
-					{minutes ? (
-						<>
-							<span>{minutes}</span>
-							<span style={{ fontWeight: 300 }}>m</span>
-						</>
-					) : null}
-					{seconds ? (
-						secondTenths ? (
-							<>
-								<span>{seconds}</span>
-								<span style={{ fontWeight: 300 }}>.</span>
-								<span>{secondTenths}</span>
-								<span style={{ fontWeight: 300 }}>s</span>
-							</>
-						) : (
-							<>
-								<span>{seconds}</span>
-								<span style={{ fontWeight: 300 }}>s</span>
-							</>
-						)
-					) : null}
-				</div>
+				<TimelineObjectDuration parsedDuration={description.parsedDuration} />
 			</div>
 			<div
 				className="handle handle--right"
@@ -347,3 +285,71 @@ export const TimelineObject: React.FC<{
 		</div>
 	)
 })
+
+function timelineObjectDurationString(parsedDuration: ReturnType<typeof parseMs> | null) {
+	if (parsedDuration === null) return '∞'
+	const { days, hours, minutes, seconds, milliseconds } = parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+
+	let durationTitle = ''
+	if (days) {
+		durationTitle += days + 'd'
+	}
+	if (hours) {
+		durationTitle += hours + 'h'
+	}
+	if (minutes) {
+		durationTitle += minutes + 'm'
+	}
+	if (seconds) {
+		if (secondTenths) {
+			durationTitle += seconds + '.' + secondTenths + 's'
+		} else {
+			durationTitle += seconds + 's'
+		}
+	}
+
+	return durationTitle
+}
+function TimelineObjectDuration(props: { parsedDuration: ReturnType<typeof parseMs> | null }) {
+	if (props.parsedDuration === null) return <div className="duration">∞</div>
+	const { days, hours, minutes, seconds, milliseconds } = props.parsedDuration || {}
+	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+	return (
+		<div className="duration">
+			{days ? (
+				<>
+					<span>{days}</span>
+					<span style={{ fontWeight: 300 }}>d</span>
+				</>
+			) : null}
+			{hours ? (
+				<>
+					<span>{hours}</span>
+					<span style={{ fontWeight: 300 }}>h</span>
+				</>
+			) : null}
+			{minutes ? (
+				<>
+					<span>{minutes}</span>
+					<span style={{ fontWeight: 300 }}>m</span>
+				</>
+			) : null}
+			{seconds ? (
+				secondTenths ? (
+					<>
+						<span>{seconds}</span>
+						<span style={{ fontWeight: 300 }}>.</span>
+						<span>{secondTenths}</span>
+						<span style={{ fontWeight: 300 }}>s</span>
+					</>
+				) : (
+					<>
+						<span>{seconds}</span>
+						<span style={{ fontWeight: 300 }}>s</span>
+					</>
+				)
+			) : null}
+		</div>
+	)
+}

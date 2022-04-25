@@ -1,12 +1,12 @@
 import EventEmitter from 'events'
-import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 
 export interface PeripheralsHandlerEvents {
-	connected: (deviceId: string, deviceName: string) => void
-	disconnected: (deviceId: string, deviceName: string) => void
+	connected: (deviceId: string, peripheralInfo: PeripheralInfo) => void
+	disconnected: (deviceId: string, peripheralInfo: PeripheralInfo) => void
 
 	keyDown: (deviceId: string, identifier: string) => void
 	keyUp: (deviceId: string, identifier: string) => void
@@ -17,7 +17,13 @@ export interface PeripheralsHandler {
 }
 export class PeripheralsHandler extends EventEmitter {
 	private devices = new Map<string, Peripheral>()
-	private devicesConnected = new Map<string, boolean>()
+	private deviceStatuses = new Map<
+		string,
+		{
+			connected: boolean
+			info: PeripheralInfo
+		}
+	>()
 	private watchers: { stop: () => void }[] = []
 	/** Whether we're connected to SuperConductor or not*/
 	private connectedToParent = false
@@ -55,13 +61,13 @@ export class PeripheralsHandler extends EventEmitter {
 	private emitDeviceConnectedStatuses() {
 		if (!this.connectedToParent) return
 
-		for (const [deviceId, connected] of Array.from(this.devicesConnected.entries())) {
+		for (const [deviceId, info] of Array.from(this.deviceStatuses.entries())) {
 			const device = this.devices.get(deviceId)
 			if (device) {
-				if (connected) {
-					this.emit('connected', device.id, device.name)
+				if (info.connected) {
+					this.emit('connected', device.id, info.info)
 				} else {
-					this.emit('disconnected', device.id, device.name)
+					this.emit('disconnected', device.id, info.info)
 				}
 			}
 		}
@@ -72,18 +78,27 @@ export class PeripheralsHandler extends EventEmitter {
 
 		this.devices.set(device.id, device)
 		// We know at this point that the device is connected:
-		this.devicesConnected.set(device.id, true)
+		this.deviceStatuses.set(device.id, {
+			connected: true,
+			info: device.info,
+		})
 
 		device.on('connected', () => {
 			// This is emitted when the device is reconnected
-			this.devicesConnected.set(device.id, true)
+			this.deviceStatuses.set(device.id, {
+				connected: true,
+				info: device.info,
+			})
 			device.setConnectedToParent(this.connectedToParent).catch(console.error)
 
-			if (this.connectedToParent) this.emit('connected', device.id, device.name)
+			if (this.connectedToParent) this.emit('connected', device.id, device.info)
 		})
 		device.on('disconnected', () => {
-			this.devicesConnected.set(device.id, false)
-			if (this.connectedToParent) this.emit('disconnected', device.id, device.name)
+			this.deviceStatuses.set(device.id, {
+				connected: false,
+				info: device.info,
+			})
+			if (this.connectedToParent) this.emit('disconnected', device.id, device.info)
 		})
 		device.on('keyDown', (identifier) => {
 			if (this.connectedToParent) this.emit('keyDown', device.id, identifier)
@@ -95,6 +110,6 @@ export class PeripheralsHandler extends EventEmitter {
 		device.setConnectedToParent(this.connectedToParent).catch(console.error)
 
 		// Initial emit:
-		if (this.connectedToParent) this.emit('connected', device.id, device.name)
+		if (this.connectedToParent) this.emit('connected', device.id, device.info)
 	}
 }

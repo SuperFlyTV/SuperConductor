@@ -32,6 +32,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 			store.rundownsStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
 			store.rundownsStore.setCurrentRundown(undefined)
+			guiStore.goToHome()
 		}
 	}
 

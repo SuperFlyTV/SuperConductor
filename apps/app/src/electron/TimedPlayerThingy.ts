@@ -13,21 +13,22 @@ import { ResourceAny } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Peripheral } from '../models/project/Peripheral'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient
-	// tptCaspar?: TPTCasparCG
 
 	session: SessionHandler
 	storage: StorageHandler
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
+	private shuttingDown = false
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
@@ -40,6 +41,7 @@ export class TimedPlayerThingy {
 				x: undefined,
 				width: 1200,
 				height: 600,
+				maximized: false,
 			},
 			CURRENT_VERSION
 		)
@@ -52,12 +54,16 @@ export class TimedPlayerThingy {
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
-		this.session.on('peripheral', (peripheralId: string, peripheral: Peripheral | null) => {
+		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
 			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
 			this.ipcClient?.updatePeripheralTriggers(activeTriggers)
+		})
+		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
+			this.triggers?.updateDefiningArea(definingArea)
+			this.ipcClient?.updateDefiningArea(definingArea)
 		})
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
@@ -90,6 +96,7 @@ export class TimedPlayerThingy {
 
 		const bridgeHandler = new BridgeHandler(this.session, this.storage, {
 			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
+				if (this.shuttingDown) return
 				// Added/Updated:
 				const newResouceIds = new Set<string>()
 				for (const resource of resources) {
@@ -116,6 +123,7 @@ export class TimedPlayerThingy {
 					.catch(console.error)
 			},
 			onDeviceRefreshStatus: (deviceId, refreshing) => {
+				if (this.shuttingDown) return
 				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
 			},
 		})
@@ -130,7 +138,7 @@ export class TimedPlayerThingy {
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
 				return updateTimeline(cache, this.storage, bridgeHandler, group)
 			},
-			updatePeripherals: (_group: Group): void => {
+			updatePeripherals: (): void => {
 				this.triggers?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
@@ -139,6 +147,21 @@ export class TimedPlayerThingy {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.storage, this.ipcServer, this.bridgeHandler)
-		// this.tptCaspar = new TPTCasparCG(this.session)
+	}
+
+	/**
+	 * Is called when the app is starting to shut down.
+	 * After this has been called, the client window has closed.
+	 */
+	isShuttingDown() {
+		this.shuttingDown = true
+		this.session.terminate()
+	}
+	/**
+	 * Is called when the app is shutting down.
+	 * Shut down everything
+	 */
+	terminate() {
+		this.storage.terminate()
 	}
 }

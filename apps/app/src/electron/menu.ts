@@ -26,7 +26,6 @@ export function generateMenu({
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
 	if (isMac) {
-		// { role: 'appMenu' }
 		menuTemplate.push({
 			label: app.name,
 			submenu: [
@@ -43,13 +42,11 @@ export function generateMenu({
 		})
 	}
 
-	// { role: 'fileMenu' }
 	menuTemplate.push({
 		label: 'File',
 		submenu: [{ role: isMac ? 'close' : 'quit' }],
 	})
 
-	// { role: 'editMenu' }
 	menuTemplate.push({
 		label: 'Edit',
 		submenu: [
@@ -84,7 +81,6 @@ export function generateMenu({
 		],
 	})
 
-	// { role: 'viewMenu' }
 	menuTemplate.push({
 		label: 'View',
 		submenu: [
@@ -100,7 +96,6 @@ export function generateMenu({
 		],
 	})
 
-	// { role: 'windowMenu' }
 	menuTemplate.push({
 		label: 'Window',
 		submenu: [

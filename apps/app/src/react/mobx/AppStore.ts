@@ -3,7 +3,7 @@ import { BridgeStatus } from '../../models/project/Bridge'
 import { AppData, WindowPosition } from '../../models/App/AppData'
 import { IPCServer } from '../api/IPCServer'
 import { IPCClient } from '../api/IPCClient'
-import { Peripheral } from '../../models/project/Peripheral'
+import { PeripheralStatus } from '../../models/project/Peripheral'
 const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
@@ -15,13 +15,13 @@ export class AppStore {
 	} = undefined
 
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
-	peripherals: { [peripheralId: string]: Peripheral } = {}
+	peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 
 	serverAPI = new IPCServer(ipcRenderer)
 	ipcClient = new IPCClient(ipcRenderer, {
 		updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) =>
 			this.updateBridgeStatus(bridgeId, status),
-		updatePeripheral: (peripheralId: string, peripheral: Peripheral | null) =>
+		updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) =>
 			this.updatePeripheral(peripheralId, peripheral),
 	})
 
@@ -48,7 +48,7 @@ export class AppStore {
 		this.bridgeStatuses = newStatuses
 	}
 
-	updatePeripheral(peripheralId: string, peripheral: Peripheral | null) {
+	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null) {
 		const newPeripherals = { ...this.peripherals }
 		if (peripheral) {
 			newPeripherals[peripheralId] = peripheral

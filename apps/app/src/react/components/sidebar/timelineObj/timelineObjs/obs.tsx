@@ -221,7 +221,7 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 						</div>
 						<div className="setting">
 							<BooleanInput
-								label="Looping"
+								label="Looping content"
 								currentValue={obj.content.sourceSettings.looping}
 								onChange={(v) => {
 									if (!obj.content.sourceSettings) {

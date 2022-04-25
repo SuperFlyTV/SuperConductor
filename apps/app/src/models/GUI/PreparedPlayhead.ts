@@ -14,13 +14,15 @@ export interface GroupPreparedPlayDataSingle extends GroupPreparedPlayDataBase {
 	type: 'single'
 	/** Timestamp, starting time of the first part-to-be-played (unit timestamp) [ms] */
 	startTime: number
-	/** Total duration of the parts in .parts. [ms] */
-	duration: number
+	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+	pauseTime: number | undefined
+	/** Total duration of the parts in .parts. null = infinite [ms] */
+	duration: number | null
 	parts: GroupPreparedPlayDataPart[]
 
 	repeating: {
-		/** Total duration of the repeating.parts */
-		duration: number
+		/** Total duration of the repeating.parts, null means infinite [ms] */
+		duration: number | null
 		parts: GroupPreparedPlayDataPart[]
 	} | null
 }
@@ -36,10 +38,12 @@ export interface GroupPreparedPlayDataPart {
 	/**
 	 * The point in time the part starts to play. (unix timestamp) [ms] */
 	startTime: number
-	/** Duration of the part [ms] */
-	duration: number
+	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+	pauseTime: number | undefined
+	/** Duration of the part, null = infinite [ms] */
+	duration: number | null
 	part: Part
 
 	/** What the playhead should do when it reaches the end of the part */
-	endAction: 'stop' | 'next' | 'loop'
+	endAction: 'stop' | 'next' | 'loop' | 'infinite'
 }

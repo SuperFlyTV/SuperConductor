@@ -26,7 +26,12 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
 
 	const handleReopen = (rundownId: string) => {
-		serverAPI.openRundown({ rundownId }).catch(handleError)
+		serverAPI
+			.openRundown({ rundownId })
+			.then(() => {
+				store.rundownsStore.setCurrentRundown(rundownId)
+			})
+			.catch(handleError)
 		guiStore.activeTabId = rundownId
 	}
 

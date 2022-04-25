@@ -70,9 +70,13 @@
 				}
 			}
 
-			.delete {
+			.duplicate {
 				flex-shrink: 0;
 				margin-left: auto;
+			}
+
+			.delete {
+				flex-shrink: 0;
 			}
 		}
 	}

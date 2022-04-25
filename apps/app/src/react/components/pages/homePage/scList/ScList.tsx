@@ -1,23 +1,38 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import classNames from 'classnames'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { MdKeyboardArrowDown } from 'react-icons/md'
 import './style.scss'
 
-export const ScList: React.FC<{ list: { id: string; header: React.ReactNode; content?: React.ReactNode }[] }> = (
-	props
-) => {
+export const ScList: React.FC<{
+	list: { id: string; header: React.ReactNode; content?: React.ReactNode }[]
+	/** List of IDs that should be open by default */
+	openByDefault?: string[]
+}> = (props) => {
 	return (
 		<ul className="sc-list">
 			{props.list.map((item) => {
-				return <ScListItem key={item.id} id={item.id} header={item.header} content={item.content} />
+				return (
+					<ScListItem
+						key={item.id}
+						id={item.id}
+						header={item.header}
+						content={item.content}
+						openByDefault={props.openByDefault?.includes(item.id)}
+					/>
+				)
 			})}
 		</ul>
 	)
 }
 
-export const ScListItem: React.FC<{ id: string; header: React.ReactNode; content?: React.ReactNode }> = (props) => {
-	const [isOpen, setOpen] = useState(false)
+export const ScListItem: React.FC<{
+	id: string
+	header: React.ReactNode
+	content?: React.ReactNode
+	openByDefault?: boolean
+}> = (props) => {
+	const [isOpen, setOpen] = useState<boolean>(props.openByDefault ?? false)
 
 	return (
 		<li className={classNames('sc-list-item', { open: isOpen, openable: !!props.content })}>
