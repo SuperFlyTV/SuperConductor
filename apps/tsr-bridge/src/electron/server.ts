@@ -1,5 +1,4 @@
-import { Logger } from 'winston'
-import { BridgeAPI } from '@shared/api'
+import { BridgeAPI, LoggerLike } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BaseBridge } from '@shared/tsr-bridge'
 
@@ -8,7 +7,7 @@ export const { version: CURRENT_VERSION }: { version: string } = require('../../
 const SERVER_PORT = 5401
 const baseBridges = new Set<BaseBridge>()
 
-export const init = (log: Logger): void => {
+export const init = (log: LoggerLike): void => {
 	log.info('TSR-Bridge current version:', CURRENT_VERSION)
 
 	const _server = new WebsocketServer(log, SERVER_PORT, (connection: WebsocketConnection) => {

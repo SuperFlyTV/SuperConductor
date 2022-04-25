@@ -1,6 +1,5 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
-import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
@@ -10,7 +9,6 @@ import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { Logger } from 'winston'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -36,7 +34,7 @@ export class BridgeHandler {
 	private closed = false
 
 	constructor(
-		private log: Logger,
+		private log: LoggerLike,
 		private session: SessionHandler,
 		private storage: StorageHandler,
 		private callbacks: BridgeConnectionCallbacks
@@ -208,7 +206,7 @@ abstract class AbstractBridgeConnection {
 	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
-		protected log: Logger,
+		protected log: LoggerLike,
 		protected session: SessionHandler,
 		protected storage: StorageHandler,
 		protected callbacks: BridgeConnectionCallbacks
@@ -411,7 +409,7 @@ abstract class AbstractBridgeConnection {
 
 export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	constructor(
-		log: Logger,
+		log: LoggerLike,
 		session: SessionHandler,
 		storage: StorageHandler,
 		private connection: WebsocketConnection,
@@ -451,7 +449,12 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	private baseBridge: BaseBridge
 	private connectionId: number = Date.now() + Math.random()
 
-	constructor(log: Logger, session: SessionHandler, storage: StorageHandler, callbacks: BridgeConnectionCallbacks) {
+	constructor(
+		log: LoggerLike,
+		session: SessionHandler,
+		storage: StorageHandler,
+		callbacks: BridgeConnectionCallbacks
+	) {
 		super(log, session, storage, callbacks)
 		this.bridgeId = INTERNAL_BRIDGE_ID
 		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), this.log)

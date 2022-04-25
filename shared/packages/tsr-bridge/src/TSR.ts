@@ -1,8 +1,7 @@
 import _ from 'lodash'
-import { Logger } from 'winston'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
 import { ResourceAny } from '@shared/models'
-import { BridgeAPI } from '@shared/api'
+import { BridgeAPI, LoggerLike } from '@shared/api'
 import { CasparCGSideload } from './sideload/CasparCG'
 import { AtemSideload } from './sideload/Atem'
 import { OBSSideload } from './sideload/OBS'
@@ -22,7 +21,7 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
 
-	constructor(private log: Logger) {
+	constructor(private log: LoggerLike) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
 			initializeAsClear: true,

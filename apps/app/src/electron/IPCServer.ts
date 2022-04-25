@@ -1,4 +1,3 @@
-import { Logger } from 'winston'
 import {
 	allowAddingResourceToLayer,
 	allowMovingItemIntoGroup,
@@ -40,7 +39,7 @@ import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
-import { LogLevel } from '../lib/logging'
+import { LoggerLike, LogLevel } from '@shared/api'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -92,8 +91,8 @@ export class IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
-		private _log: Logger,
-		private _renderLog: Logger,
+		private _log: LoggerLike,
+		private _renderLog: LoggerLike,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {

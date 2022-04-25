@@ -30,8 +30,8 @@ import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
 import { DefiningArea } from 'src/lib/triggers/keyDisplay'
-import { LogLevel } from '../lib/logging/log-levels'
 import { LoggerContext } from './contexts/Logger'
+import { LogLevel } from '@shared/api'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -96,31 +96,31 @@ export const App = observer(function App() {
 			/* eslint-disable no-console */
 			error: (...args: any[]) => {
 				console.error(...args)
-				return serverAPI.log(LogLevel.Error, ...args)
+				serverAPI.log(LogLevel.Error, ...args).catch(console.error)
 			},
 			warn: (...args: any[]) => {
 				console.warn(...args)
-				return serverAPI.log(LogLevel.Warn, ...args)
+				serverAPI.log(LogLevel.Warn, ...args).catch(console.error)
 			},
 			info: (...args: any[]) => {
 				console.info(...args)
-				return serverAPI.log(LogLevel.Info, ...args)
+				serverAPI.log(LogLevel.Info, ...args).catch(console.error)
 			},
-			HTTP: (...args: any[]) => {
+			http: (...args: any[]) => {
 				console.debug(...args)
-				return serverAPI.log(LogLevel.HTTP, ...args)
+				serverAPI.log(LogLevel.HTTP, ...args).catch(console.error)
 			},
 			verbose: (...args: any[]) => {
 				console.debug(...args)
-				return serverAPI.log(LogLevel.Verbose, ...args)
+				serverAPI.log(LogLevel.Verbose, ...args).catch(console.error)
 			},
 			debug: (...args: any[]) => {
 				console.debug(...args)
-				return serverAPI.log(LogLevel.Debug, ...args)
+				serverAPI.log(LogLevel.Debug, ...args).catch(console.error)
 			},
 			silly: (...args: any[]) => {
 				console.debug(...args)
-				return serverAPI.log(LogLevel.Silly, ...args)
+				serverAPI.log(LogLevel.Silly, ...args).catch(console.error)
 			},
 			/* eslint-enable no-console */
 		}
@@ -205,10 +205,8 @@ export const App = observer(function App() {
 			.then(() => {
 				setSorensenInitialized(true)
 			})
-			.catch((error) => {
-				serverAPI.log(LogLevel.Error, error)
-			})
-	}, [serverAPI])
+			.catch(log.error)
+	}, [log.error, serverAPI])
 
 	// Handle splash screen:
 	const appStore = store.appStore
@@ -228,9 +226,7 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
-			appStore.serverAPI.acknowledgeSeenVersion().catch((error) => {
-				serverAPI.log(LogLevel.Error, error)
-			})
+			appStore.serverAPI.acknowledgeSeenVersion().catch(log.error)
 		}
 	}
 

@@ -1,5 +1,4 @@
-import type { Logger } from 'winston'
-import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, LoggerLike } from '@shared/api'
 import {
 	ResolvedStates,
 	ResolvedTimelineObjectInstance,
@@ -25,7 +24,7 @@ export class TimelineTracker {
 	private RESOLVE_LIMIT_COUNT = 20
 
 	constructor(
-		private log: Logger,
+		private log: LoggerLike,
 		keyDisplayTimeline: KeyDisplayTimeline,
 		private callback: (keyDisplay: KeyDisplay) => void
 	) {

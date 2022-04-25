@@ -1,4 +1,4 @@
-import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playhead'
@@ -8,7 +8,6 @@ import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
 import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
-import { Logger } from 'winston'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -28,7 +27,7 @@ export class TriggersHandler {
 	private definingArea: DefiningArea | null = null
 
 	constructor(
-		private log: Logger,
+		private log: LoggerLike,
 		private storage: StorageHandler,
 		private ipcServer: IPCServer,
 		private bridgeHandler: BridgeHandler

@@ -1,15 +1,15 @@
-import { Logger } from 'winston'
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
 import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
 import { SideLoadDevice } from './sideload'
+import { LoggerLike } from '@shared/api'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: Logger) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
 		this.ccg = new CasparCG({
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,

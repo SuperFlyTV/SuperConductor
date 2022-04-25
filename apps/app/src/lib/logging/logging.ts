@@ -3,7 +3,7 @@ import { format, createLogger } from 'winston'
 import consoleTransport from 'winston/dist/winston/transports/console'
 import { utilFormatter } from './util-formatter'
 import DailyRotateFile from 'winston-daily-rotate-file'
-import { LogLevel } from './log-levels'
+import { LogLevel } from '@shared/api'
 
 const myFormat = format.printf(({ level, message, label, timestamp }) => {
 	return `${timestamp} [${label}] ${level}: ${message}`

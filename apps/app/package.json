@@ -101,7 +101,7 @@
 		"superfly-timeline": "^8.2.1",
 		"timeline-state-resolver-types": "^6.2.0-release37.4",
 		"utf-8-validate": "^5.0.2",
-		"winston": "^3.6.0",
+		"winston": "^3.7.2",
 		"winston-daily-rotate-file": "^4.6.1",
 		"winston-transport": "^4.5.0",
 		"yup": "1.0.0-beta.2"

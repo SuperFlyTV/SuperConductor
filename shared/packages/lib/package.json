@@ -51,6 +51,6 @@
 		"superfly-timeline": "^8.2.5"
 	},
 	"devDependencies": {
-		"winston": "^3.6.0"
+		"winston": "^3.7.2"
 	}
 }

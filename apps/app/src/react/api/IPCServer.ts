@@ -1,5 +1,4 @@
 import { IPCServerMethods } from '../../ipc/IPCAPI'
-import { LogLevel } from '../../lib/logging'
 
 type Promisify<T> = {
 	[K in keyof T]: T[K] extends (...arg: any[]) => any

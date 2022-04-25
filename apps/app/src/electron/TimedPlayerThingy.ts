@@ -1,5 +1,4 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { Logger } from 'winston'
 import { Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -18,6 +17,7 @@ import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { LoggerLike } from '@shared/api'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -32,7 +32,7 @@ export class TimedPlayerThingy {
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: Logger, private renderLog: Logger) {
+	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
 		this.storage = new StorageHandler(
 			log,

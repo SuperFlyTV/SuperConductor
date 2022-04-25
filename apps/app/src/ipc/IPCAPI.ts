@@ -8,7 +8,7 @@ import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
-import { LogLevel } from '../lib/logging'
+import { LogLevel } from '@shared/api'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
