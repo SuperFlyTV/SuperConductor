@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { Project } from '../../../../../models/project/Project'
 import { observer } from 'mobx-react-lite'
 import { RoundedSection } from '../roundedSection/RoundedSection'
@@ -6,13 +6,18 @@ import { TextBtn } from '../../../inputs/textBtn/TextBtn'
 import { ScList } from '../scList/ScList'
 import { LayerItemContent } from '../layerItem/LayerItemContent'
 import { LayerItemHeader } from '../layerItem/LayerItemHeader'
-import { NewLayerDialog } from './NewLayerDialog'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
-import { findDevice, listAvailableDeviceIDs } from '../../../../../lib/util'
+import { findDevice, listAvailableDeviceIDs, shortID } from '../../../../../lib/util'
 import 'react-toggle/style.css'
+import { getDefaultMappingForDeviceType } from '../../../../../lib/TSRMappings'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
-	const [newLayerDeviceId, setNewLayerDeviceId] = useState<string>()
+	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const [newlyCreatedId, setNewlyCreatedId] = useState<string | undefined>()
 
 	const help = (
 		<>
@@ -23,14 +28,8 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 		</>
 	)
 
-	const handleCloseDialog = () => {
-		setNewLayerDeviceId(undefined)
-	}
-
 	return (
 		<ProjectPageLayout title="Layers" help={help}>
-			{/* <MappingList mappings={project.mappings} bridges={project.bridges} /> */}
-
 			{listAvailableDeviceIDs(project.bridges).map((deviceId) => {
 				const device = findDevice(project.bridges, deviceId)
 
@@ -40,18 +39,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 				}
 
 				return (
-					<RoundedSection
-						key={deviceId}
-						title={`${deviceId} layers`}
-						controls={<TextBtn label="Add" onClick={() => setNewLayerDeviceId(deviceId)} />}
-					>
-						<NewLayerDialog
-							deviceId={deviceId}
-							device={device}
-							open={newLayerDeviceId === deviceId}
-							bridges={project.bridges}
-							onClose={handleCloseDialog}
-						/>
+					<RoundedSection key={deviceId} title={`${deviceId} layers`}>
 						<ScList
 							list={Object.entries(project.mappings)
 								.filter(([_mappingId, mapping]) => {
@@ -62,12 +50,34 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 										id: mappingId,
 										header: <LayerItemHeader id={mappingId} mapping={mapping} />,
 										content: <LayerItemContent mappingId={mappingId} mapping={mapping} />,
+										openByDefault: mappingId === newlyCreatedId,
 									}
 								})}
+							openByDefault={newlyCreatedId ? [newlyCreatedId] : undefined}
 						/>
+						<div className="bottom-controls">
+							<TextBtn
+								label="Add new layer"
+								onClick={() => {
+									const defaultMapping = getDefaultMappingForDeviceType(
+										device.type,
+										deviceId,
+										project.mappings
+									)
+
+									const mappingId = shortID()
+									project.mappings[mappingId] = defaultMapping
+
+									setNewlyCreatedId(mappingId)
+
+									ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+								}}
+							/>
+						</div>
 					</RoundedSection>
 				)
 			})}
+			<div className="note">To add more devices, go to Bridges settings page.</div>
 		</ProjectPageLayout>
 	)
 })

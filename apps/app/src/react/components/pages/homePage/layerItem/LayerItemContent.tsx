@@ -61,6 +61,7 @@ export const LayerItemContent: React.FC<{
 						onKeyUp={(e) => {
 							if (e.key === 'Enter') handleNameChange(name)
 						}}
+						autoFocus={!name}
 					/>
 				</div>
 				<DeviceSpecificSettings
