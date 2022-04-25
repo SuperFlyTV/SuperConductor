@@ -1,5 +1,7 @@
 import { makeAutoObservable } from 'mobx'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import { IPCServer } from '../api/IPCServer'
+const { ipcRenderer } = window.require('electron')
 
 /**
  * Store contains only information about user interface
@@ -41,6 +43,8 @@ export interface TimelineObjectMove {
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
+	serverAPI = new IPCServer(ipcRenderer)
+
 	selectedGroupId?: string
 	selectedPartId?: string
 	selectedTimelineObjIds: string[] = []
@@ -91,6 +95,26 @@ export class GuiStore {
 
 	updateDefiningArea(definingArea: DefiningArea | null) {
 		this.definingArea = definingArea
+	}
+
+	async getSelectedAndPlayingTimelineObjIds(rundownId: string): Promise<Set<string>> {
+		const playingIds = new Set<string>()
+		const promises: Array<Promise<void>> = []
+		for (const timelineObjId of this.selectedTimelineObjIds) {
+			const promise = this.serverAPI
+				.isTimelineObjPlaying({
+					rundownId,
+					timelineObjId,
+				})
+				.then((isPlaying) => {
+					if (isPlaying) playingIds.add(timelineObjId)
+				})
+			promises.push(promise)
+		}
+
+		await Promise.all(promises)
+
+		return playingIds
 	}
 
 	constructor() {

@@ -9,6 +9,7 @@ import {
 	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
+	findTimelineObjInRundown,
 	generateNewTimelineObjIds,
 	getNextPartIndex,
 	getPrevPartIndex,
@@ -1059,33 +1060,35 @@ export class IPCServer
 	}
 	async deleteTimelineObj(arg: {
 		rundownId: string
-		groupId: string
-		partId: string
 		timelineObjId: string
 	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group, part } = this.getPart(arg)
+		const { rundown } = this.getRundown(arg)
+
+		const result = findTimelineObjInRundown(rundown, arg.timelineObjId)
+		if (!result) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
+		const { group, part, timelineObj } = result
+		const groupId = group.id
+		const partId = part.id
 
 		if (group.locked || part.locked) {
 			return
 		}
 
-		const timelineObj = findTimelineObj(part, arg.timelineObjId)
-		if (!timelineObj) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
-
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
 		if (modified) this._postProcessPart(part)
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		if (part.timeline.length <= 0) this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(console.error)
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
-				const { rundown, part } = this.getPart(arg)
+				const { rundown, group, part } = this.getPart({ rundownId: arg.rundownId, groupId, partId })
 
 				// Re-insert the timelineObj in its original position.
 				part.timeline.splice(timelineObjIndex, 0, timelineObj)
 				this._postProcessPart(part)
-				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.DeleteTimelineObj,
 		}
@@ -1676,6 +1679,19 @@ export class IPCServer
 		}
 
 		return false
+	}
+	async isTimelineObjPlaying(data: { rundownId: string; timelineObjId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(data)
+		const findResult = findTimelineObjInRundown(rundown, data.timelineObjId)
+
+		if (!findResult) {
+			return false
+		}
+
+		const { group, part } = findResult
+
+		const playData = getGroupPlayData(group.preparedPlayData)
+		return Boolean(playData.playheads[part.id])
 	}
 	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()

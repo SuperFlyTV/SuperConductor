@@ -174,6 +174,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	createMissingMapping(...args: ServerArgs<'createMissingMapping'>) {
 		return this.invokeServerMethod('createMissingMapping', ...args)
 	}
+	isTimelineObjPlaying(...args: ServerArgs<'isTimelineObjPlaying'>) {
+		return this.invokeServerMethod('isTimelineObjPlaying', ...args)
+	}
 	addPeripheralArea(...args: ServerArgs<'addPeripheralArea'>) {
 		return this.invokeServerMethod('addPeripheralArea', ...args)
 	}

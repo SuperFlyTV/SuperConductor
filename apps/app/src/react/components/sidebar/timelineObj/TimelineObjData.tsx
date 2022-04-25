@@ -31,15 +31,13 @@ export const TimelineObjData: React.FC<{
 		ipcServer
 			.deleteTimelineObj({
 				rundownId: props.rundownId,
-				groupId: props.groupId,
-				partId: props.partId,
 				timelineObjId: props.timelineObj.obj.id,
 			})
 			.then(() => {
 				gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== props.timelineObj.obj.id)
 			})
 			.catch(handleError)
-	}, [gui, handleError, ipcServer, props.groupId, props.partId, props.rundownId, props.timelineObj.obj.id])
+	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id])
 
 	return (
 		<SidebarInfoGroup title="Timeline object">

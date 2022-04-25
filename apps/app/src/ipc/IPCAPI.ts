@@ -115,7 +115,7 @@ export interface IPCServerMethods {
 		timelineObjId: string
 		timelineObj: TimelineObj
 	}) => void
-	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
+	deleteTimelineObj: (arg: { rundownId: string; timelineObjId: string }) => void
 	addTimelineObj: (arg: {
 		rundownId: string
 		groupId: string
@@ -181,6 +181,7 @@ export interface IPCServerMethods {
 	listRundowns: (arg: { projectId: string }) => { fileName: string; version: number; name: string; open: boolean }[]
 	renameRundown: (arg: { rundownId: string; newName: string }) => void
 	isRundownPlaying: (arg: { rundownId: string }) => boolean
+	isTimelineObjPlaying: (arg: { rundownId: string; timelineObjId: string }) => boolean
 
 	createMissingMapping: (arg: { rundownId: string; mappingId: string }) => void
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
@@ -30,6 +30,7 @@ import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
 import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -191,6 +192,71 @@ export const App = observer(function App() {
 		}
 	}
 
+	// Handle using the Delete key to delete timeline objs
+	const currentRundownId = store.rundownsStore.currentRundownId
+	const [showDeleteTimelineObjConfirmationDialog, setShowDeleteTimelineObjConfirmationDialog] = useState(false)
+	const deleteSelectedTimelineObjs = useCallback(() => {
+		if (!currentRundownId) {
+			return
+		}
+
+		const promises: Promise<void>[] = []
+		for (const id of gui.selectedTimelineObjIds) {
+			const promise = serverAPI.deleteTimelineObj({
+				rundownId: currentRundownId,
+				timelineObjId: id,
+			})
+			promises.push(promise)
+		}
+
+		Promise.all(promises).catch(handleError)
+	}, [currentRundownId, gui.selectedTimelineObjIds, handleError, serverAPI])
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		const onKey = async () => {
+			try {
+				if (!currentRundownId) {
+					return
+				}
+
+				const pressed = sorensen.getPressedKeys()
+				if (pressed.includes('Delete')) {
+					console.log('pressed, currentRundownId:', currentRundownId)
+					const selectedAndPlayingTimelineObjIds = await gui.getSelectedAndPlayingTimelineObjIds(
+						currentRundownId
+					)
+					if (selectedAndPlayingTimelineObjIds.size > 0) {
+						setShowDeleteTimelineObjConfirmationDialog(true)
+					} else {
+						deleteSelectedTimelineObjs()
+					}
+				}
+			} catch (error) {
+				handleError(error)
+			}
+		}
+		onKey().catch(handleError)
+
+		sorensen.bind('Delete', onKey, {
+			up: false,
+			global: true,
+		})
+		sorensen.bind('Delete', onKey, {
+			up: true,
+			global: true,
+		})
+
+		sorensen.addEventListener('keycancel', onKey)
+
+		return () => {
+			sorensen.unbind('Delete', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
+		}
+	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
+
 	const hotkeyContext: IHotkeyContext = {
 		sorensen,
 		triggers,
@@ -230,6 +296,20 @@ export const App = observer(function App() {
 									</div>
 								</>
 							)}
+
+							<ConfirmationDialog
+								open={showDeleteTimelineObjConfirmationDialog}
+								title="Delete Timeline Object(s)"
+								body="Some of the selected timeline objects are currently being used in playout. Are you sure you wish to delete them?"
+								acceptLabel="Delete"
+								onDiscarded={() => {
+									setShowDeleteTimelineObjConfirmationDialog(false)
+								}}
+								onAccepted={() => {
+									deleteSelectedTimelineObjs()
+									setShowDeleteTimelineObjConfirmationDialog(false)
+								}}
+							/>
 						</div>
 					</ErrorHandlerContext.Provider>
 				</ProjectContext.Provider>
