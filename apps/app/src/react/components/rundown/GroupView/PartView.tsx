@@ -734,7 +734,7 @@ export const PartView: React.FC<{
 			</div>
 			<div className="part__meta">
 				<div className="part__meta__left">
-					{!editingPartName && (
+					{!editingPartName && part.name.length > 0 && (
 						<div
 							title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
 							className="title"

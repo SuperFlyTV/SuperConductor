@@ -1,4 +1,6 @@
+import { Button } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { MdOutlineEditNote } from 'react-icons/md'
 import { Part } from '../../../../models/rundown/Part'
 import { ActiveTriggers, Trigger, activeTriggersToString } from '../../../../models/rundown/Trigger'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -9,6 +11,7 @@ import { EditTrigger } from '../../inputs/EditTrigger'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { TriggerBtn } from '../../inputs/TriggerBtn'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
 
 interface IPartSubmenuProps {
 	rundownId: string
@@ -23,6 +26,7 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const [triggerActive, setTriggerActive] = useState<boolean>(false)
+	const [partPropertiesDialogOpen, setPartPropertiesDialogOpen] = useState(false)
 	const prevTriggerLength = useRef(0)
 	const handleTrigger = useCallback(
 		(triggers: ActiveTriggers) => {
@@ -122,6 +126,18 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 				/>
 
+				<Button
+					variant="contained"
+					size="small"
+					title={'Edit Part Name' + (locked ? ' (disabled due to locked Part or Group)' : '')}
+					disabled={locked}
+					onClick={() => {
+						setPartPropertiesDialogOpen(true)
+					}}
+				>
+					<MdOutlineEditNote size={18} />
+				</Button>
+
 				<DuplicateBtn title="Duplicate Part" onClick={handleDuplicateBtn} />
 
 				<TrashBtn
@@ -150,6 +166,30 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 				}}
 				onDiscarded={() => {
 					setDeleteConfirmationOpen(false)
+				}}
+			/>
+
+			<PartPropertiesDialog
+				open={partPropertiesDialogOpen}
+				title="Edit Part"
+				acceptLabel="Save"
+				initial={{ name: part.name }}
+				onAccepted={({ name }) => {
+					ipcServer
+						.updatePart({
+							rundownId,
+							groupId,
+							partId: part.id,
+							part: {
+								...part,
+								name,
+							},
+						})
+						.catch(handleError)
+					setPartPropertiesDialogOpen(false)
+				}}
+				onDiscarded={() => {
+					setPartPropertiesDialogOpen(false)
 				}}
 			/>
 		</div>
