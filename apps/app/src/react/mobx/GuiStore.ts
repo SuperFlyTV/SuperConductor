@@ -90,7 +90,6 @@ export class GuiStore {
 	}
 
 	updateDefiningArea(definingArea: DefiningArea | null) {
-		// console.log('updateDefiningArea')
 		this.definingArea = definingArea
 	}
 

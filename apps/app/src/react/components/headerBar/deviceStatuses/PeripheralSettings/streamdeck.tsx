@@ -24,8 +24,6 @@ export const StreamdeckSettings: React.FC<{
 	definingArea: DefiningArea | null
 }> = observer(function StreamdeckSettings({ bridgeId, deviceId, peripheral, definingArea }) {
 	const hotkeyContext = useContext(HotkeyContext)
-	// const project = useContext(ProjectContext)
-	// const ipcServer = useContext(IPCServerContext)
 	if (peripheral.info.gui.type !== 'streamdeck') throw new Error('Wrong type, expected "streamdeck"')
 	const gui: PeripheralInfo_StreamDeck = peripheral.info.gui
 	const project = store.projectStore.project

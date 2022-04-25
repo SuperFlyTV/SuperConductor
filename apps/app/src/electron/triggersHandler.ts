@@ -196,7 +196,6 @@ export class TriggersHandler {
 						const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
 						const myPlayhead = playData.playheads[action.part.id]
 
-						// const isPlaying = action.group.oneAtATime ? playData.groupIsPlaying : myPlayhead
 						let isPlaying: boolean
 						if (!myPlayhead) {
 							// The part is not playing

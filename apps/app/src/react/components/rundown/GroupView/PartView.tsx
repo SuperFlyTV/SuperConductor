@@ -7,7 +7,6 @@ import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTot
 import { Group } from '../../../../models/rundown/Group'
 import { Part } from '../../../../models/rundown/Part'
 import classNames from 'classnames'
-// import { CountDownHead } from '../CountdownHead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
@@ -431,9 +430,6 @@ export const PartView: React.FC<{
 			sorensen.unbind('Shift', onKey)
 		}
 	}, [hotkeyContext])
-
-	// const timesUntilStart = (playhead.anyPartIsPlaying && playhead.countdowns[part.id]) || null
-	// const isActive: 'active' | 'queued' | null = partIsPlaying ? 'active' : timesUntilStart !== null ? 'queued' : null
 
 	// Play button:
 	const handleStart = useCallback(() => {

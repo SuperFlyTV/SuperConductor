@@ -85,14 +85,9 @@ export function applyMovementToTimeline(
 	}
 
 	const orgStartTime = Math.max(0, orgLeaderInstance.start)
-	// const orgDuration = orgLeaderInstance.end ? orgLeaderInstance.end - orgLeaderInstance.start : null
-	// const orgEndTime = orgDuration ? orgStartTime + orgDuration : null
 
 	/** [ms] */
 	const movedStartTime = Math.max(0, orgStartTime + dragDelta)
-	/** [ms] */
-	// const movedDuration = orgDuration
-	// const movedEndTime = movedDuration ? movedStartTime + movedDuration : null
 
 	let dragSnap: DragSnap | null = null
 

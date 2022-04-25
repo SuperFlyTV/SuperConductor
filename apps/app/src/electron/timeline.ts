@@ -139,9 +139,6 @@ export function getTimelineForGroup(
 
 			timeline.push(timelineGroup)
 		} else if (prepared.type === 'multi') {
-			/** (unix timestamp) */
-			// const groupStartTime = prepared.startTime
-
 			const timelineGroup: TimelineObjEmpty = {
 				id: `group_${group.id}`,
 				enable: {

@@ -44,7 +44,7 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 	if (mapping.device !== obj.content.deviceType) return false
 
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
-		// const abstractMapping = mapping as MappingAbstract
+		// MappingAbstract
 		return true
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		const atemMapping = mapping as MappingAtem
@@ -71,13 +71,13 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
-		// const casparMapping = mapping as MappingCasparCG
+		// MappingCasparCG
 		return true
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
-		// const httpMapping = mapping as MappingHTTPSend
+		// MappingHTTPSend
 		return true
 	} else if (obj.content.deviceType === DeviceType.TCPSEND) {
-		// const tcpMapping = mapping as MappingTCPSend
+		// MappingTCPSend
 		return true
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
 		const hyperdeckMapping = mapping as MappingHyperdeck
@@ -128,10 +128,10 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
-		// const oscMapping = mapping as MappingOSC
+		// MappingOSC
 		return true
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
-		// const pharosMapping = mapping as MappingPharos
+		// MappingPharos
 		return true
 	} else if (obj.content.deviceType === DeviceType.PANASONIC_PTZ) {
 		const panasonicPtzMapping = mapping as MappingPanasonicPtz
@@ -150,10 +150,10 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.QUANTEL) {
-		// const quantelMapping = mapping as MappingQuantel
+		// MappingQuantel
 		return true
 	} else if (obj.content.deviceType === DeviceType.SHOTOKU) {
-		// const shotokuMapping = mapping as MappingShotoku
+		// MappingShotoku
 		return true
 	} else if (obj.content.deviceType === DeviceType.SISYFOS) {
 		const sisyfosMapping = mapping as MappingSisyfos
@@ -173,7 +173,7 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.SINGULAR_LIVE) {
-		// const singularLiveMapping = mapping as MappingSingularLive
+		// MappingSingularLive
 		return true
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
 		const vmixMapping = mapping as MappingVMix
@@ -206,7 +206,7 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.VIZMSE) {
-		// const vizmseMapping = mapping as MappingVizMSE
+		// MappingVizMSE
 		return true
 	} else {
 		assertNever(obj.content)
@@ -222,7 +222,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 			layerName: 'Abstract',
 		})
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
-		// const atemMapping = mapping as MappingAtem
+		// MappingAtem
 
 		switch (obj.content.type) {
 			case TimelineContentTypeAtem.ME:
@@ -301,7 +301,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
-		// const casparMapping = mapping as MappingCasparCG
+		// MappingCasparCG
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceId,
@@ -310,21 +310,21 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 			layer: 10,
 		})
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
-		// const httpMapping = mapping as MappingHTTPSend
+		// MappingHTTPSend
 		return literal<MappingHTTPSend>({
 			device: DeviceType.HTTPSEND,
 			deviceId: deviceId,
 			layerName: 'HTTP Send',
 		})
 	} else if (obj.content.deviceType === DeviceType.TCPSEND) {
-		// const tcpMapping = mapping as MappingTCPSend
+		// MappingTCPSend
 		return literal<MappingTCPSend>({
 			device: DeviceType.TCPSEND,
 			deviceId: deviceId,
 			layerName: 'TCP Send',
 		})
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
-		// const hyperdeckMapping = mapping as MappingHyperdeck
+		// MappingHyperdeck
 
 		switch (obj.content.type) {
 			case TimelineContentTypeHyperdeck.TRANSPORT:
@@ -339,7 +339,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.LAWO) {
-		// const lawoMapping = mapping as MappingLawo
+		// MappingLawo
 
 		switch (obj.content.type) {
 			case TimelineContentTypeLawo.SOURCE:
@@ -368,7 +368,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.OBS) {
-		// const obsMapping = mapping as MappingOBS
+		// MappingOBS
 
 		switch (obj.content.type) {
 			case TimelineContentTypeOBS.CURRENT_TRANSITION:
@@ -424,21 +424,21 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
-		// const oscMapping = mapping as MappingOSC
+		// MappingOSC
 		return literal<MappingOSC>({
 			device: DeviceType.OSC,
 			deviceId: deviceId,
 			layerName: 'OSC',
 		})
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
-		// const pharosMapping = mapping as MappingPharos
+		// MappingPharos
 		return literal<MappingPharos>({
 			device: DeviceType.PHAROS,
 			deviceId: deviceId,
 			layerName: 'Pharos',
 		})
 	} else if (obj.content.deviceType === DeviceType.PANASONIC_PTZ) {
-		// const panasonicPtzMapping = mapping as MappingPanasonicPtz
+		// MappingPanasonicPtz
 
 		switch (obj.content.type) {
 			case TimelineContentTypePanasonicPtz.SPEED:
@@ -473,7 +473,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.QUANTEL) {
-		// const quantelMapping = mapping as MappingQuantel
+		// MappingQuantel
 		return literal<MappingQuantel>({
 			device: DeviceType.QUANTEL,
 			deviceId: deviceId,
@@ -482,14 +482,14 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 			portId: 'port-id',
 		})
 	} else if (obj.content.deviceType === DeviceType.SHOTOKU) {
-		// const shotokuMapping = mapping as MappingShotoku
+		// MappingShotoku
 		return literal<MappingShotoku>({
 			device: DeviceType.SHOTOKU,
 			deviceId: deviceId,
 			layerName: 'Shotoku',
 		})
 	} else if (obj.content.deviceType === DeviceType.SISYFOS) {
-		// const sisyfosMapping = mapping as MappingSisyfos
+		// MappingSisyfos
 
 		switch (obj.content.type) {
 			case TimelineContentTypeSisyfos.CHANNEL:
@@ -514,7 +514,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.SINGULAR_LIVE) {
-		// const singularLiveMapping = mapping as MappingSingularLive
+		// MappingSingularLive
 		return literal<MappingSingularLive>({
 			device: DeviceType.SINGULAR_LIVE,
 			deviceId: deviceId,
@@ -522,7 +522,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 			compositionName: 'composition-name',
 		})
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
-		// const vmixMapping = mapping as MappingVMix
+		// MappingVMix
 
 		switch (obj.content.type) {
 			case TimelineContentTypeVMix.PROGRAM:
@@ -612,7 +612,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.VIZMSE) {
-		// const vizmseMapping = mapping as MappingVizMSE
+		// MappingVizMSE
 		return literal<MappingVizMSE>({
 			device: DeviceType.VIZMSE,
 			deviceId: deviceId,

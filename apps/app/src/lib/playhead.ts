@@ -390,8 +390,6 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 				const nowInRepeating = (now - repeatingStartTime) % (prepared.repeating.duration ?? Infinity)
 				/** When the current iteration of the repeating started (unix timestamp) */
 				const currentRepeatingStartTime = now - nowInRepeating
-				/** When the next iteration of the repeating wll start (unix timestamp) */
-				// const nextRepeatingStartTime = currentRepeatingStartTime + prepared.repeating.duration
 				/** How much to add to times to get the times in the current repetition [ms] */
 				const repeatAddition = Math.max(0, currentRepeatingStartTime - repeatingStartTime)
 

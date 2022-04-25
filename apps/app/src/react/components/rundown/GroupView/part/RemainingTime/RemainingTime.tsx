@@ -16,7 +16,6 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 
 		if (playhead.partDuration === null) return null
 
-		// const countDownTime = playhead.partEndTime - playhead.partStartTime - playhead.playheadTime
 		const countDownTime = playhead.partDuration - playhead.playheadTime
 		if (!countDownTime) return null
 		return msToTime(countDownTime)

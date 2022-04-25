@@ -97,7 +97,6 @@ export class IPCServer
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
-			// updateViewRef: () => void
 			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
 			updatePeripherals: () => void
 			refreshResources: () => void
@@ -556,12 +555,6 @@ export class IPCServer
 			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id })
 		}
 	}
-	// async newPart(arg: {
-	// 	rundownId: string
-	// 	/** The group to create the part into. If null; will create a "transparent group" */
-	// 	groupId: string | null
-	// 	name: string
-	// }): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */

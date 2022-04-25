@@ -1,6 +1,5 @@
 import path from 'path'
 import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
-// import { autoUpdater } from 'electron-updater'
 import isDev from 'electron-is-dev'
 import { createLogger } from './logging'
 import * as server from './electron/server'

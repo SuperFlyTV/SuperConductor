@@ -78,7 +78,6 @@ export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ gr
 	} else {
 		// This is a pause button for a Group.
 
-		//groupIsPlaying || anyPartIsPlaying
 		if (groupOneAtATime) {
 			countAffectedParts = 1
 			if (anyPartIsPlaying) {
@@ -90,11 +89,6 @@ export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ gr
 					title = 'Pause current Part'
 				}
 			} else {
-				// if (allPartsArePaused) {
-				// 	willDo = 'resume'
-				// 	title = 'Resume playing'
-				// } else {
-				// }
 				willDo = 'cue'
 				title = 'Cue first part'
 			}

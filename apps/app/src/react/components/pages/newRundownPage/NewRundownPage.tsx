@@ -15,14 +15,12 @@ import './newRundownPage.scss'
 export const NewRundownPage = () => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	// const guiStore = store.guiStore
 	const rundownsStore = store.rundownsStore
 
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
 	const handleCreateNewRundown = (rundownName: string) => {
 		serverAPI.newRundown({ name: rundownName }).catch(handleError)
-		// guiStore.currentlyActiveTabSection = 'rundown'
 	}
 
 	const handleCloseCreateNewRundown = () => setNewRundownOpen(false)

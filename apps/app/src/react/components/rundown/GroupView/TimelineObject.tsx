@@ -1,7 +1,6 @@
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-// import { GUIContext } from '../../../contexts/GUI'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
@@ -37,8 +36,6 @@ export const TimelineObject: React.FC<{
 	locked,
 	warnings,
 }) {
-	// const { gui, updateGUI } = useContext(GUIContext)
-
 	const gui = store.guiStore
 	const timelineObjMove = gui.timelineObjMove
 
@@ -180,9 +177,6 @@ export const TimelineObject: React.FC<{
 			if (allowMultiSelection) {
 				// Deselect this timelineObj.
 				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
-				// updateGUI({
-				// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds.filter((id) => id !== obj.id)],
-				// })
 			}
 
 			return
@@ -192,29 +186,16 @@ export const TimelineObject: React.FC<{
 			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
 				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
 					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
-					// updateGUI({
-					// 	selectedTimelineObjIds: [...gui.selectedTimelineObjIds, obj.id],
-					// })
 				}
 			} else {
 				store.guiStore.selectedGroupId = groupId
 				store.guiStore.selectedPartId = partId
 				store.guiStore.selectedTimelineObjIds = [obj.id]
-				// updateGUI({
-				// 	selectedGroupId: groupId,
-				// 	selectedPartId: partId,
-				// 	selectedTimelineObjIds: [obj.id],
-				// })
 			}
 		} else {
 			store.guiStore.selectedGroupId = groupId
 			store.guiStore.selectedPartId = partId
 			store.guiStore.selectedTimelineObjIds = [obj.id]
-			// updateGUI({
-			// 	selectedGroupId: groupId,
-			// 	selectedPartId: partId,
-			// 	selectedTimelineObjIds: [obj.id],
-			// })
 		}
 	}
 
