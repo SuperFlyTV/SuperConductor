@@ -1,5 +1,5 @@
 import { deepClone } from '@shared/lib'
-import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache } from 'superfly-timeline'
+import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/mobx/GuiStore'
 import { shortID } from './util'
@@ -74,7 +74,7 @@ export function applyMovementToTimeline(
 
 	const orgLeaderObj = orgResolvedTimeline.objects[leaderTimelineObjId]
 	if (!orgLeaderObj) throw new Error(`Leader obj "${leaderTimelineObjId}" not found`)
-	const orgLeaderInstance = orgLeaderObj.resolved.instances[0]
+	const orgLeaderInstance = orgLeaderObj.resolved.instances[0] as TimelineObjectInstance | undefined
 	if (!orgLeaderInstance) throw new Error(`No instance of leader obj "${leaderTimelineObjId}"`)
 
 	// Moving a timelineObj to another layer:
@@ -272,7 +272,8 @@ function applyDragDelta(
 		if (selectedTimelineObjIds.includes(obj.obj.id)) {
 			const enable = obj.obj.enable as TimelineEnable
 			const orgResolvedObj = orgResolvedTimeline.objects[obj.obj.id]
-			const orgInstance = orgResolvedObj.resolved.instances[0]
+			const orgInstance = orgResolvedObj.resolved.instances[0] as TimelineObjectInstance | undefined
+			if (!orgInstance) continue
 
 			if (moveType === 'whole') {
 				if (

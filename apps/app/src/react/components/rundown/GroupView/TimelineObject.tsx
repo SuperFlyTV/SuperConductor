@@ -4,7 +4,7 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { ResolvedTimelineObject } from 'superfly-timeline'
+import { ResolvedTimelineObject, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
@@ -54,7 +54,15 @@ export const TimelineObject: React.FC<{
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 
 	const obj: TSRTimelineObj = timelineObj.obj
-	const instance = resolved.instances[0]
+	let instance = resolved.instances[0] as TimelineObjectInstance | undefined
+	if (!instance) {
+		instance = {
+			id: 'N/A',
+			start: 0,
+			end: 0,
+			references: [],
+		}
+	}
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)

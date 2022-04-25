@@ -118,7 +118,8 @@ export const PartView: React.FC<{
 			if (Array.isArray(timelineObj.enable)) {
 				return
 			}
-			const instance = timelineObj.resolved.instances[0]
+			const instance = timelineObj.resolved.instances[0] as TimelineObjectInstance | undefined
+			if (!instance) continue
 
 			const referring: string = [...instance.references, ...timelineObj.resolved.directReferences].join(',')
 
@@ -661,7 +662,7 @@ export const PartView: React.FC<{
 	const sortedLayers = useMemo(() => {
 		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
 	}, [mappings, resolvedTimeline.layers])
-	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0][1][0])
+	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0]?.[1]?.[0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
 	if (typeof firstTimelineObjType === 'string') {
