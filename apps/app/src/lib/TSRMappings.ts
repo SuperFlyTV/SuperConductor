@@ -20,6 +20,7 @@ import {
 	MappingPanasonicPtzType,
 	MappingPharos,
 	MappingQuantel,
+	Mappings,
 	MappingShotoku,
 	MappingSingularLive,
 	MappingSisyfos,
@@ -28,6 +29,7 @@ import {
 	MappingVizMSE,
 	MappingVMix,
 	MappingVMixAny,
+	MappingVMixProgram,
 	MappingVMixType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeHyperdeck,
@@ -789,4 +791,71 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			assertNever(mapping.device)
 			return ''
 	}
+}
+
+export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId: string, mappings: Mappings) {
+	if (deviceType === DeviceType.CASPARCG) {
+		const lastChannel = getLastBiggestValue<MappingCasparCG>(mappings, deviceType, 'channel')
+		const lastLayer = getLastBiggestValue<MappingCasparCG>(mappings, deviceType, 'layer')
+		return literal<MappingCasparCG>({
+			channel: lastChannel ? lastChannel : 1,
+			layer: lastLayer ? lastLayer + 10 : 10,
+			device: deviceType,
+			deviceId,
+		})
+	}
+
+	if (deviceType === DeviceType.ATEM) {
+		const lastIndex = getLastBiggestValue<MappingAtem>(mappings, deviceType, 'index')
+		return literal<MappingAtem>({
+			index: lastIndex ? lastIndex + 1 : 1,
+			device: deviceType,
+			deviceId,
+			mappingType: MappingAtemType.MixEffect,
+		})
+	}
+
+	if (deviceType === DeviceType.VMIX) {
+		return literal<MappingVMixProgram>({
+			index: 1,
+			device: deviceType,
+			deviceId,
+			mappingType: MappingVMixType.Program,
+		})
+	}
+
+	if (deviceType === DeviceType.OBS) {
+		return literal<MappingOBS>({
+			device: deviceType,
+			deviceId,
+			mappingType: MappingOBSType.CurrentScene,
+		})
+	}
+
+	if (deviceType === DeviceType.OSC) {
+		return literal<MappingOSC>({
+			device: deviceType,
+			deviceId,
+		})
+	}
+
+	return literal<Mapping>({
+		device: deviceType,
+		deviceId: deviceId,
+	})
+}
+
+function getLastBiggestValue<T extends Mapping>(mappings: Mappings, deviceType: DeviceType, property: keyof T) {
+	let lastBiggest: number | undefined = undefined
+	Object.entries(mappings).forEach(([_mappingId, mapping]) => {
+		const existingPropVal = (mapping as any)[property] as number
+		if (mapping.device === deviceType) {
+			if (lastBiggest === undefined) {
+				lastBiggest = existingPropVal
+			} else if (existingPropVal > lastBiggest) {
+				lastBiggest = existingPropVal
+			}
+		}
+	})
+	return lastBiggest
 }

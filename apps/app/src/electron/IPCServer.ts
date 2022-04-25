@@ -2076,7 +2076,7 @@ export class IPCServer
 
 			if (newMapping && newMapping.layerName) {
 				// Add the new layer to the project
-				const newLayerId = this.storage.convertToFilename(newMapping.layerName)
+				const newLayerId = shortID()
 				project.mappings = {
 					...project.mappings,
 					[newLayerId]: newMapping,
