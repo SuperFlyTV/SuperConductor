@@ -2,12 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import EventEmitter from 'events'
 import { LoggerLike } from '@shared/api'
-import { omit } from '@shared/lib'
+import { assertNever, omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
 import { getDefaultProject, getDefaultRundown } from './defaults'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceType } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 
 const fsWriteFile = fs.promises.writeFile
@@ -343,6 +343,49 @@ export class StorageHandler extends EventEmitter {
 	}
 	updateResource(id: string, resource: ResourceAny | null) {
 		if (resource) {
+			// Set added and modified timestamps
+			resource.added = Date.now()
+			switch (resource.resourceType) {
+				case ResourceType.CASPARCG_MEDIA:
+				case ResourceType.CASPARCG_TEMPLATE:
+					// The "changed" prop comes from casparcg-connection and is already a Unix timestamp in milliseconds.
+					// https://github.com/SuperFlyTV/casparcg-connection/blob/9d4c0896f28bbcc93c8f3115cd504d45d4f5feb8/src/lib/ResponseParsers.ts#L304-L315
+					resource.modified = resource.changed
+					break
+				case ResourceType.ATEM_AUDIO_CHANNEL:
+				case ResourceType.ATEM_AUX:
+				case ResourceType.ATEM_DSK:
+				case ResourceType.ATEM_MACRO_PLAYER:
+				case ResourceType.ATEM_ME:
+				case ResourceType.ATEM_MEDIA_PLAYER:
+				case ResourceType.ATEM_SSRC:
+				case ResourceType.ATEM_SSRC_PROPS:
+				case ResourceType.CASPARCG_SERVER:
+				case ResourceType.OBS_MUTE:
+				case ResourceType.OBS_RECORDING:
+				case ResourceType.OBS_RENDER:
+				case ResourceType.OBS_SCENE:
+				case ResourceType.OBS_SOURCE_SETTINGS:
+				case ResourceType.OBS_STREAMING:
+				case ResourceType.OBS_TRANSITION:
+				case ResourceType.OSC_MESSAGE:
+				case ResourceType.VMIX_AUDIO_SETTINGS:
+				case ResourceType.VMIX_EXTERNAL:
+				case ResourceType.VMIX_FADER:
+				case ResourceType.VMIX_FADE_TO_BLACK:
+				case ResourceType.VMIX_INPUT:
+				case ResourceType.VMIX_INPUT_SETTINGS:
+				case ResourceType.VMIX_OUTPUT_SETTINGS:
+				case ResourceType.VMIX_OVERLAY_SETTINGS:
+				case ResourceType.VMIX_PREVIEW:
+				case ResourceType.VMIX_RECORDING:
+				case ResourceType.VMIX_STREAMING:
+					resource.modified = Date.now()
+					break
+				default:
+					assertNever(resource)
+			}
+
 			this.resources[id] = resource
 			this.resourcesHasChanged[id] = true
 		} else {
