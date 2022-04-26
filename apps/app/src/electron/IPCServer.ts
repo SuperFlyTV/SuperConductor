@@ -109,25 +109,30 @@ export class IPCServer
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
 					ipcMain.handle(methodName, async (event, ...args) => {
-						const result = await fcn(...args)
-						if (isUndoable(result)) {
-							this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
-							this.undoLedger.push({
-								description: result.description,
-								arguments: args,
-								undo: result.undo,
-								redo: fcn,
-							})
-							if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
-								this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
-							}
-							this.undoPointer = this.undoLedger.length - 1
-							this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+						try {
+							const result = await fcn(...args)
+							if (isUndoable(result)) {
+								this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
+								this.undoLedger.push({
+									description: result.description,
+									arguments: args,
+									undo: result.undo,
+									redo: fcn,
+								})
+								if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
+									this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
+								}
+								this.undoPointer = this.undoLedger.length - 1
+								this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 
-							// string represents "anything but undefined" here:
-							return (result as UndoableResult<string>).result
-						} else {
-							return result
+								// string represents "anything but undefined" here:
+								return (result as UndoableResult<string>).result
+							} else {
+								return result
+							}
+						} catch (error) {
+							this._log.error(`Error when calling ${methodName}:`, error)
+							throw error
 						}
 					})
 				}

@@ -28,3 +28,36 @@ export function deepClone<T>(data: T): T {
 export function literal<T>(o: T) {
 	return o
 }
+/** Make a string out of an error (or other equivalents), including any additional data such as stack trace if available */
+export function stringifyError(error: unknown, noStack = false): string {
+	let str: string | undefined = undefined
+
+	if (error && typeof error === 'object') {
+		if ((error as Error).message) {
+			// Is an Error
+			str = `${(error as Error).message}`
+		} else if ((error as any).reason) {
+			// Is a Meteor.Error
+			str = `${(error as any).reason}`
+		} else if ((error as any).details) {
+			str = `${(error as any).details}`
+		} else {
+			try {
+				// Try to stringify the object:
+				str = JSON.stringify(error)
+			} catch (e) {
+				str = `${error} (stringifyError: ${e})`
+			}
+		}
+	} else {
+		str = `${error}`
+	}
+
+	if (!noStack) {
+		if (error && typeof error === 'object' && (error as any).stack) {
+			str += ', ' + (error as any).stack
+		}
+	}
+
+	return str
+}
