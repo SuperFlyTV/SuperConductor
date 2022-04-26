@@ -40,6 +40,7 @@ import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { LoggerContext } from '../../../contexts/Logger'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -70,6 +71,7 @@ export const PartView: React.FC<{
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
+	const log = useContext(LoggerContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
 		[objectId: string]: TimelineObj
@@ -300,8 +302,8 @@ export const PartView: React.FC<{
 					// If there was an error applying the movement (for example a circular dependency),
 					// reset the movement to the original state:
 
-					console.error('Error when resolving the moved timeline, reverting to original state.')
-					console.error(e)
+					log.error('Error when resolving the moved timeline, reverting to original state.')
+					log.error(e)
 
 					handleError('There was an error when trying to move')
 
@@ -337,6 +339,7 @@ export const PartView: React.FC<{
 			snapPoints,
 			snapDistanceInMilliseconds,
 			gui.selectedTimelineObjIds,
+			log,
 		])
 
 	useEffect(() => {

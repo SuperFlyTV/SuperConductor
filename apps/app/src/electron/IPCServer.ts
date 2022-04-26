@@ -21,7 +21,7 @@ import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
-import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH } from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { UpdateTimelineCache } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
@@ -38,12 +38,9 @@ import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from './resources'
-import { PeripheralArea, PeripheralSettings } from '../models/project/Peripheral'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
-
-type UndoableResult<T> = T extends void
-	? { undo: UndoFunction; description: ActionDescription }
-	: { undo: UndoFunction; description: ActionDescription; result: T }
+import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
+import { DefiningArea } from '..//lib/triggers/keyDisplay'
+import { LoggerLike, LogLevel } from '@shared/api'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -95,6 +92,8 @@ export class IPCServer
 
 	constructor(
 		ipcMain: Electron.IpcMain,
+		private _log: LoggerLike,
+		private _renderLog: LoggerLike,
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
@@ -184,7 +183,7 @@ export class IPCServer
 			await action.undo()
 			this.undoPointer--
 		} catch (error) {
-			console.error('Error when undoing:', error)
+			this._log.error('Error when undoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
@@ -199,13 +198,17 @@ export class IPCServer
 			action.undo = redoResult.undo
 			this.undoPointer++
 		} catch (error) {
-			console.error('Error when redoing:', error)
+			this._log.error('Error when redoing:', error)
 
 			// Clear
 			this.undoLedger.splice(0, this.undoLedger.length)
 			this.undoPointer = -1
 		}
 		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	}
+
+	async log(method: LogLevel, ...args: any[]): Promise<void> {
+		this._renderLog[method](args[0], ...args.slice(1))
 	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
@@ -478,7 +481,9 @@ export class IPCServer
 			// Play the first non-disabled part
 			const part = group.parts.find((p) => !p.disabled)
 			if (part) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(console.error)
+				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(
+					this._log.error
+				)
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
@@ -486,7 +491,7 @@ export class IPCServer
 				arg.rundownId,
 				arg.groupId,
 				group.parts.map((part) => part.id)
-			).catch(console.error)
+			).catch(this._log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -513,7 +518,9 @@ export class IPCServer
 			}
 
 			if (partId) {
-				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(console.error)
+				this.pausePart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: partId }).catch(
+					this._log.error
+				)
 			}
 		} else {
 			const playingPartIds = Object.keys(group.playout.playingParts)
@@ -523,10 +530,10 @@ export class IPCServer
 					arg.rundownId,
 					arg.groupId,
 					group.parts.map((part) => part.id)
-				).catch(console.error)
+				).catch(this._log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(console.error)
+				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this._log.error)
 			}
 		}
 	}

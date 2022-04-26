@@ -1,9 +1,8 @@
-import { BridgeAPI } from '@shared/api'
+import { BridgeAPI, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { ResourceAny } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import winston from 'winston'
 import { TSR } from './TSR'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -20,7 +19,7 @@ export class BaseBridge {
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
-	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: winston.Logger | Console) {
+	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: LoggerLike) {
 		this.tsr = new TSR(log)
 		this.sendAndCatch = (msg: BridgeAPI.FromBridge.Any) => {
 			try {
@@ -33,7 +32,7 @@ export class BaseBridge {
 	}
 
 	private setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
-		const peripheralsHandler = new PeripheralsHandler(bridgeId)
+		const peripheralsHandler = new PeripheralsHandler(this.log, bridgeId)
 
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })

@@ -1,4 +1,4 @@
-import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, LoggerLike } from '@shared/api'
 import {
 	ResolvedStates,
 	ResolvedTimelineObjectInstance,
@@ -23,7 +23,11 @@ export class TimelineTracker {
 	private RESOLVE_LIMIT_TIME = 10 * 60 * 1000
 	private RESOLVE_LIMIT_COUNT = 20
 
-	constructor(keyDisplayTimeline: KeyDisplayTimeline, private callback: (keyDisplay: KeyDisplay) => void) {
+	constructor(
+		private log: LoggerLike,
+		keyDisplayTimeline: KeyDisplayTimeline,
+		private callback: (keyDisplay: KeyDisplay) => void
+	) {
 		this.timeline = keyDisplayTimeline.map((obj) => {
 			return {
 				// layer: this.LAYER,
@@ -78,7 +82,7 @@ export class TimelineTracker {
 			try {
 				this.callback(currentState as any as KeyDisplay)
 			} catch (e) {
-				console.error(e)
+				this.log.error(e)
 				this.callbackErrorCount++
 			}
 		}

@@ -31,6 +31,8 @@ import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage
 import { SplashScreen } from './components/SplashScreen'
 import { DefiningArea } from 'src/lib/triggers/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
+import { LoggerContext } from './contexts/Logger'
+import { LogLevel } from '@shared/api'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -41,6 +43,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 const ENABLE_WHY_DID_YOU_RENDER = false
 
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
+	// eslint-disable-next-line no-console
 	console.log('Why-did-you-render-enabled')
 	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
@@ -85,9 +88,48 @@ export const App = observer(function App() {
 		}
 	}, [triggers])
 
+	const serverAPI = useMemo<IPCServer>(() => {
+		return new IPCServer(ipcRenderer)
+	}, [])
+
+	const log = useMemo(() => {
+		return {
+			/* eslint-disable no-console */
+			error: (...args: any[]) => {
+				console.error(...args)
+				serverAPI.log(LogLevel.Error, ...args).catch(console.error)
+			},
+			warn: (...args: any[]) => {
+				console.warn(...args)
+				serverAPI.log(LogLevel.Warn, ...args).catch(console.error)
+			},
+			info: (...args: any[]) => {
+				console.info(...args)
+				serverAPI.log(LogLevel.Info, ...args).catch(console.error)
+			},
+			http: (...args: any[]) => {
+				console.debug(...args)
+				serverAPI.log(LogLevel.HTTP, ...args).catch(console.error)
+			},
+			verbose: (...args: any[]) => {
+				console.debug(...args)
+				serverAPI.log(LogLevel.Verbose, ...args).catch(console.error)
+			},
+			debug: (...args: any[]) => {
+				console.debug(...args)
+				serverAPI.log(LogLevel.Debug, ...args).catch(console.error)
+			},
+			silly: (...args: any[]) => {
+				console.debug(...args)
+				serverAPI.log(LogLevel.Silly, ...args).catch(console.error)
+			},
+			/* eslint-enable no-console */
+		}
+	}, [serverAPI])
+
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
-			console.error(error)
+			log.error(error)
 			if (typeof error === 'object' && error !== null && 'message' in error) {
 				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 			} else if (typeof error === 'string') {
@@ -96,7 +138,7 @@ export const App = observer(function App() {
 				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
 			}
 		}
-	}, [enqueueSnackbar])
+	}, [enqueueSnackbar, log])
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -104,9 +146,6 @@ export const App = observer(function App() {
 		}
 	}, [handleError])
 
-	const serverAPI = useMemo<IPCServer>(() => {
-		return new IPCServer(ipcRenderer)
-	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(handleError)
@@ -167,8 +206,8 @@ export const App = observer(function App() {
 			.then(() => {
 				setSorensenInitialized(true)
 			})
-			.catch(console.error)
-	}, [])
+			.catch(log.error)
+	}, [log.error, serverAPI])
 
 	// Handle splash screen:
 	const appStore = store.appStore
@@ -188,7 +227,7 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
-			appStore.serverAPI.acknowledgeSeenVersion().catch(console.error)
+			appStore.serverAPI.acknowledgeSeenVersion().catch(log.error)
 		}
 	}
 
@@ -268,52 +307,54 @@ export const App = observer(function App() {
 
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
-			<IPCServerContext.Provider value={serverAPI}>
-				<ProjectContext.Provider value={project}>
-					<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-						<div className="app" onPointerDown={handlePointerDownAnywhere}>
-							<HeaderBar />
+			<LoggerContext.Provider value={log}>
+				<IPCServerContext.Provider value={serverAPI}>
+					<ProjectContext.Provider value={project}>
+						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+								<HeaderBar />
 
-							{splashScreenOpen && (
-								<SplashScreen
-									seenVersion={appStore.version?.seenVersion}
-									currentVersion={appStore.version?.currentVersion}
-									onClose={onSplashScreenClose}
+								{splashScreenOpen && (
+									<SplashScreen
+										seenVersion={appStore.version?.seenVersion}
+										currentVersion={appStore.version?.currentVersion}
+										onClose={onSplashScreenClose}
+									/>
+								)}
+
+								{store.guiStore.isNewRundownSelected() ? (
+									<NewRundownPage />
+								) : store.guiStore.isHomeSelected() ? (
+									<HomePage project={project} />
+								) : (
+									<>
+										<div className="main-area">
+											<RundownView mappings={project.mappings} />
+										</div>
+										<div className="side-bar">
+											<Sidebar mappings={project.mappings} />
+										</div>
+									</>
+								)}
+
+								<ConfirmationDialog
+									open={showDeleteTimelineObjConfirmationDialog}
+									title="Delete Timeline Object(s)"
+									body="Some of the selected timeline objects are currently being used in playout. Are you sure you wish to delete them?"
+									acceptLabel="Delete"
+									onDiscarded={() => {
+										setShowDeleteTimelineObjConfirmationDialog(false)
+									}}
+									onAccepted={() => {
+										deleteSelectedTimelineObjs()
+										setShowDeleteTimelineObjConfirmationDialog(false)
+									}}
 								/>
-							)}
-
-							{store.guiStore.isNewRundownSelected() ? (
-								<NewRundownPage />
-							) : store.guiStore.isHomeSelected() ? (
-								<HomePage project={project} />
-							) : (
-								<>
-									<div className="main-area">
-										<RundownView mappings={project.mappings} />
-									</div>
-									<div className="side-bar">
-										<Sidebar mappings={project.mappings} />
-									</div>
-								</>
-							)}
-
-							<ConfirmationDialog
-								open={showDeleteTimelineObjConfirmationDialog}
-								title="Delete Timeline Object(s)"
-								body="Some of the selected timeline objects are currently being used in playout. Are you sure you wish to delete them?"
-								acceptLabel="Delete"
-								onDiscarded={() => {
-									setShowDeleteTimelineObjConfirmationDialog(false)
-								}}
-								onAccepted={() => {
-									deleteSelectedTimelineObjs()
-									setShowDeleteTimelineObjConfirmationDialog(false)
-								}}
-							/>
-						</div>
-					</ErrorHandlerContext.Provider>
-				</ProjectContext.Provider>
-			</IPCServerContext.Provider>
+							</div>
+						</ErrorHandlerContext.Provider>
+					</ProjectContext.Provider>
+				</IPCServerContext.Provider>
+			</LoggerContext.Provider>
 		</HotkeyContext.Provider>
 	)
 })

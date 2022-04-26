@@ -1,13 +1,14 @@
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
 import EventEmitter from 'events'
+import { LoggerLike } from '@shared/api'
+import { omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
-import { omit } from '@shared/lib'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 import { ResourceAny } from '@shared/models'
+import { baseFolder } from '../lib/baseFolder'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -46,7 +47,7 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(defaultWindowPosition: WindowPosition, appVersion: string) {
+	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition, appVersion: string) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 
@@ -395,7 +396,7 @@ export class StorageHandler extends EventEmitter {
 		if (!this.writeTimeout) {
 			this.writeTimeout = setTimeout(() => {
 				this.writeTimeout = null
-				this.writeChanges().catch(console.error)
+				this.writeChanges().catch(this.log.error)
 			}, 500)
 		}
 	}
@@ -782,14 +783,13 @@ export class StorageHandler extends EventEmitter {
 		return path.join(this._baseFolder, 'Projects')
 	}
 	private get _baseFolder() {
-		const homeDirPath = os.homedir()
-		if (os.type() === 'Linux') {
-			return path.join(homeDirPath, '.superconductor')
-		}
-		return path.join(homeDirPath, 'Documents', 'SuperConductor')
+		return baseFolder()
 	}
 	private get _projectId() {
 		return this.appData.appData.project.id
+	}
+	get logPath(): string {
+		return path.join(this._baseFolder, 'Logs')
 	}
 }
 

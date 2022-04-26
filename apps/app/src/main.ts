@@ -5,9 +5,14 @@ import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
 import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
+import { createLoggers } from './lib/logging'
+import { baseFolder } from './lib/baseFolder'
+import path from 'path'
 
 const createWindow = (): void => {
-	const tpt = new TimedPlayerThingy()
+	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
+
+	const tpt = new TimedPlayerThingy(log, rendererLogger)
 
 	const appData = tpt.storage.getAppData()
 
@@ -47,16 +52,16 @@ const createWindow = (): void => {
 	if (isDev) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
 		// installExtension(REACT_DEVELOPER_TOOLS)
-		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then((name) => log.info(`Added Extension:  ${name}`))
 		// 	.then(() => installExtension(MOBX_DEVTOOLS))
-		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then((name) => log.info(`Added Extension:  ${name}`))
 		// 	.then(() => win.webContents.openDevTools())
-		// 	.catch((err) => console.log('An error occurred: ', err))
+		// 	.catch((err) => log.info('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
-	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
+	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
 
-	autoUpdater.checkForUpdatesAndNotify().catch(console.error)
+	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
 
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',
@@ -64,10 +69,10 @@ const createWindow = (): void => {
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return tpt.ipcServer?.undo().catch(console.error)
+			return tpt.ipcServer?.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return tpt.ipcServer?.redo().catch(console.error)
+			return tpt.ipcServer?.redo().catch(log.error)
 		},
 		onAboutClick: () => {
 			tpt.ipcClient?.displayAboutDialog()
@@ -97,7 +102,7 @@ const createWindow = (): void => {
 					})
 				}
 			} catch (error) {
-				console.error(error)
+				log.error(error)
 			}
 		},
 	})
@@ -146,7 +151,7 @@ const createWindow = (): void => {
 				app.quit()
 			})
 			.catch((err) => {
-				console.error(err)
+				log.error(err)
 				app.quit()
 			})
 	})
@@ -192,7 +197,7 @@ const createWindow = (): void => {
 		// if (url.startsWith('https://superfly.tv/')) return { action: 'allow' }
 
 		// open url in a browser and prevent default
-		shell.openExternal(url).catch(console.error)
+		shell.openExternal(url).catch(log.error)
 
 		return { action: 'deny' } // preventDefault
 	})

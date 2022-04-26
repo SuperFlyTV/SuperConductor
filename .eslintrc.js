@@ -12,7 +12,7 @@ module.exports = {
 	},
 	ignorePatterns: ['**/dist/**/*'],
 	rules: {
-		'no-console': 'off',
+		'no-console': 'warn',
 		'node/no-unpublished-import': [
 			'error',
 			{
