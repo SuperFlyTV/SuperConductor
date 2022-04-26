@@ -27,7 +27,7 @@ export const TimelineDisplay: React.FC<{
 				tracker.current = undefined
 			}
 		}
-	}, [keyDisplayTimeline])
+	}, [keyDisplayTimeline, log])
 
 	return keyDisplay ? render(keyDisplay) : null
 }

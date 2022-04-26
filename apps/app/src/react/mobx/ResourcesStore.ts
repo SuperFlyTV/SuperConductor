@@ -4,6 +4,7 @@ const { ipcRenderer } = window.require('electron')
 import { IPCClient } from '../api/IPCClient'
 import { ResourceAny } from '@shared/models'
 import _ from 'lodash'
+import { ClientSideLogger } from '../api/logger'
 
 export interface Resources {
 	[resourceId: string]: ResourceAny
@@ -17,12 +18,17 @@ export class ResourcesStore {
 	resources: Resources = {}
 	refreshStatuses: RefreshStatuses = {}
 
-	serverAPI = new IPCServer(ipcRenderer)
-	ipcClient = new IPCClient(ipcRenderer, {
-		updateResources: (resources) => this.updateResources(resources),
-		updateDeviceRefreshStatus: (deviceId, refreshing) => this.updateDeviceRefreshStatus(deviceId, refreshing),
-	})
+	serverAPI: IPCServer
+	logger: ClientSideLogger
+	ipcClient: IPCClient
+
 	constructor(init?: Resources) {
+		this.serverAPI = new IPCServer(ipcRenderer)
+		this.logger = new ClientSideLogger(this.serverAPI)
+		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+			updateResources: (resources) => this.updateResources(resources),
+			updateDeviceRefreshStatus: (deviceId, refreshing) => this.updateDeviceRefreshStatus(deviceId, refreshing),
+		})
 		makeAutoObservable(this)
 
 		if (init) {

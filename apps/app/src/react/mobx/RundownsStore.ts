@@ -9,6 +9,7 @@ import { store } from './store'
 import { allowMovingItemIntoGroup, findPartInRundown, generateNewTimelineObjIds, shortID } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
 import { deepClone } from '@shared/lib'
+import { ClientSideLogger } from '../api/logger'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -41,15 +42,19 @@ export class RundownsStore {
 	 */
 	rundowns?: IRundownsItems = undefined
 
-	serverAPI = new IPCServer(ipcRenderer)
-	ipcClient = new IPCClient(ipcRenderer, {
-		updateRundown: (rundownId: string, rundown: Rundown) => {
-			this._rundowns.set(rundownId, rundown)
-			this._rundownsClean.set(rundownId, deepClone(rundown))
-		},
-	})
+	serverAPI: IPCServer
+	logger: ClientSideLogger
+	ipcClient: IPCClient
 
 	constructor() {
+		this.serverAPI = new IPCServer(ipcRenderer)
+		this.logger = new ClientSideLogger(this.serverAPI)
+		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+			updateRundown: (rundownId: string, rundown: Rundown) => {
+				this._rundowns.set(rundownId, rundown)
+				this._rundownsClean.set(rundownId, deepClone(rundown))
+			},
+		})
 		makeAutoObservable(this)
 	}
 

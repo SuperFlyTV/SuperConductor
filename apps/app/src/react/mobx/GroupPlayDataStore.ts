@@ -3,20 +3,27 @@ import { makeAutoObservable } from 'mobx'
 import _ from 'lodash'
 import { IPCClient } from '../api/IPCClient'
 import { Rundown } from '../../models/rundown/Rundown'
+import { IPCServer } from '../api/IPCServer'
+import { ClientSideLogger } from '../api/logger'
 const { ipcRenderer } = window.require('electron')
 
 export class GroupPlayDataStore {
 	groups: Map<string, GroupPlayData> = new Map()
 
-	ipcClient = new IPCClient(ipcRenderer, {
-		updateRundown: (_rundownId: string, rundown: Rundown) => {
-			this.rundown = rundown
-		},
-	})
+	serverAPI: IPCServer
+	logger: ClientSideLogger
+	ipcClient: IPCClient
 
 	private rundown: Rundown | undefined = undefined
 
 	constructor() {
+		this.serverAPI = new IPCServer(ipcRenderer)
+		this.logger = new ClientSideLogger(this.serverAPI)
+		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+			updateRundown: (_rundownId: string, rundown: Rundown) => {
+				this.rundown = rundown
+			},
+		})
 		makeAutoObservable(this)
 
 		window.requestAnimationFrame(() => {

@@ -7,10 +7,12 @@ import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import { ClientSideLogger } from './logger'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
 	constructor(
+		private logger: ClientSideLogger,
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
 			updateAppData?: (appData: AppData) => void
@@ -32,7 +34,7 @@ export class IPCClient implements IPCClientMethods {
 	private handleCallMethod(_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void {
 		const fcn = (this as any)[methodname]
 		if (!fcn) {
-			console.error(`IPCClient: method ${methodname} not found`)
+			this.logger.error(`IPCClient: method ${methodname} not found`)
 		} else {
 			fcn.apply(this, args)
 		}

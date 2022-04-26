@@ -12,6 +12,8 @@ import path from 'path'
 const createWindow = (): void => {
 	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
 
+	log.info('Starting up...')
+
 	const tpt = new TimedPlayerThingy(log, rendererLogger)
 
 	const appData = tpt.storage.getAppData()
@@ -121,6 +123,7 @@ const createWindow = (): void => {
 	})
 
 	app.on('window-all-closed', () => {
+		log.info('Shutting down...')
 		Promise.resolve()
 			.then(() => {
 				tpt.isShuttingDown()
@@ -148,11 +151,23 @@ const createWindow = (): void => {
 			})
 			.then(() => {
 				tpt.terminate()
-				app.quit()
+				log.info('Shut down successfully.')
 			})
 			.catch((err) => {
 				log.error(err)
-				app.quit()
+			})
+			.finally(() => {
+				// Wait for the logger to finish writing logs:
+
+				log.on('error', (_err) => {
+					// Supress error
+					// eslint-disable-next-line no-console
+					console.error(_err)
+				})
+				log.on('finish', () => {
+					app.quit()
+				})
+				log.end()
 			})
 	})
 

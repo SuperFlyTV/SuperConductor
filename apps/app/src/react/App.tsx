@@ -29,10 +29,10 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
-import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
-import { LogLevel } from '@shared/api'
+import { ClientSideLogger } from './api/logger'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -57,13 +57,21 @@ export const App = observer(function App() {
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
+	const serverAPI = useMemo<IPCServer>(() => {
+		return new IPCServer(ipcRenderer)
+	}, [])
+
+	const logger = useMemo(() => {
+		return new ClientSideLogger(serverAPI)
+	}, [serverAPI])
+
 	const triggers = useMemo(() => {
 		return new TriggersEmitter()
 	}, [])
 
 	// Handle IPC-messages from server
 	useEffect(() => {
-		const ipcClient = new IPCClient(ipcRenderer, {
+		const ipcClient = new IPCClient(logger, ipcRenderer, {
 			updateAppData: (appData: AppData) => {
 				store.appStore.update(appData)
 				store.rundownsStore.update(appData.rundowns)
@@ -86,50 +94,11 @@ export const App = observer(function App() {
 		return () => {
 			ipcClient.destroy()
 		}
-	}, [triggers])
-
-	const serverAPI = useMemo<IPCServer>(() => {
-		return new IPCServer(ipcRenderer)
-	}, [])
-
-	const log = useMemo(() => {
-		return {
-			/* eslint-disable no-console */
-			error: (...args: any[]) => {
-				console.error(...args)
-				serverAPI.log(LogLevel.Error, ...args).catch(console.error)
-			},
-			warn: (...args: any[]) => {
-				console.warn(...args)
-				serverAPI.log(LogLevel.Warn, ...args).catch(console.error)
-			},
-			info: (...args: any[]) => {
-				console.info(...args)
-				serverAPI.log(LogLevel.Info, ...args).catch(console.error)
-			},
-			http: (...args: any[]) => {
-				console.debug(...args)
-				serverAPI.log(LogLevel.HTTP, ...args).catch(console.error)
-			},
-			verbose: (...args: any[]) => {
-				console.debug(...args)
-				serverAPI.log(LogLevel.Verbose, ...args).catch(console.error)
-			},
-			debug: (...args: any[]) => {
-				console.debug(...args)
-				serverAPI.log(LogLevel.Debug, ...args).catch(console.error)
-			},
-			silly: (...args: any[]) => {
-				console.debug(...args)
-				serverAPI.log(LogLevel.Silly, ...args).catch(console.error)
-			},
-			/* eslint-enable no-console */
-		}
-	}, [serverAPI])
+	}, [triggers, logger])
 
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
-			log.error(error)
+			logger.error(error)
 			if (typeof error === 'object' && error !== null && 'message' in error) {
 				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 			} else if (typeof error === 'string') {
@@ -138,7 +107,7 @@ export const App = observer(function App() {
 				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
 			}
 		}
-	}, [enqueueSnackbar, log])
+	}, [enqueueSnackbar, logger])
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -206,8 +175,8 @@ export const App = observer(function App() {
 			.then(() => {
 				setSorensenInitialized(true)
 			})
-			.catch(log.error)
-	}, [log.error, serverAPI])
+			.catch(logger.error)
+	}, [logger.error, serverAPI])
 
 	// Handle splash screen:
 	const appStore = store.appStore
@@ -227,7 +196,7 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
-			appStore.serverAPI.acknowledgeSeenVersion().catch(log.error)
+			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
 	}
 
@@ -263,7 +232,6 @@ export const App = observer(function App() {
 
 				const pressed = sorensen.getPressedKeys()
 				if (pressed.includes('Delete')) {
-					console.log('pressed, currentRundownId:', currentRundownId)
 					const selectedAndPlayingTimelineObjIds = await gui.getSelectedAndPlayingTimelineObjIds(
 						currentRundownId
 					)
@@ -307,7 +275,7 @@ export const App = observer(function App() {
 
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
-			<LoggerContext.Provider value={log}>
+			<LoggerContext.Provider value={logger}>
 				<IPCServerContext.Provider value={serverAPI}>
 					<ProjectContext.Provider value={project}>
 						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>

@@ -4,6 +4,7 @@ import { AppData, WindowPosition } from '../../models/App/AppData'
 import { IPCServer } from '../api/IPCServer'
 import { IPCClient } from '../api/IPCClient'
 import { PeripheralStatus } from '../../models/project/Peripheral'
+import { ClientSideLogger } from '../api/logger'
 const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
@@ -17,15 +18,20 @@ export class AppStore {
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 
-	serverAPI = new IPCServer(ipcRenderer)
-	ipcClient = new IPCClient(ipcRenderer, {
-		updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) =>
-			this.updateBridgeStatus(bridgeId, status),
-		updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) =>
-			this.updatePeripheral(peripheralId, peripheral),
-	})
+	serverAPI: IPCServer
+	logger: ClientSideLogger
+	ipcClient: IPCClient
 
 	constructor(init?: AppData) {
+		this.serverAPI = new IPCServer(ipcRenderer)
+		this.logger = new ClientSideLogger(this.serverAPI)
+		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) =>
+				this.updateBridgeStatus(bridgeId, status),
+			updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) =>
+				this.updatePeripheral(peripheralId, peripheral),
+		})
+
 		makeAutoObservable(this)
 
 		if (init) {

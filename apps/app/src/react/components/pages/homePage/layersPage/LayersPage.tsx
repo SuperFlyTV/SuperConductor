@@ -12,10 +12,12 @@ import 'react-toggle/style.css'
 import { getDefaultMappingForDeviceType } from '../../../../../lib/TSRMappings'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+import { LoggerContext } from '../../../../contexts/Logger'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const log = useContext(LoggerContext)
 
 	const [newlyCreatedId, setNewlyCreatedId] = useState<string | undefined>()
 
@@ -34,7 +36,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 				const device = findDevice(project.bridges, deviceId)
 
 				if (!device) {
-					console.error(`Device ${deviceId} not found.`)
+					log.error(`Device ${deviceId} not found.`)
 					return null
 				}
 

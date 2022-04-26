@@ -1085,7 +1085,8 @@ export class IPCServer
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
 		if (modified) this._postProcessPart(part)
-		if (part.timeline.length <= 0) this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(console.error)
+		if (part.timeline.length <= 0)
+			this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(this._log.error)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {

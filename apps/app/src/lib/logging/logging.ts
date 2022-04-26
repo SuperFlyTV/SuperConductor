@@ -1,6 +1,4 @@
-import { format, createLogger } from 'winston'
-// @ts-expect-error This is a hack to ensure that electron-builder includes this file.
-import consoleTransport from 'winston/dist/winston/transports/console'
+import { format, createLogger, transports } from 'winston'
 import { utilFormatter } from './util-formatter'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { LogLevel } from '@shared/api'
@@ -10,8 +8,8 @@ const myFormat = format.printf(({ level, message, label, timestamp }) => {
 })
 
 export const createLoggers = (dirname: string) => {
-	const transports = [
-		new consoleTransport(),
+	const myTransports = [
+		new transports.Console(),
 		new DailyRotateFile({
 			dirname,
 			filename: 'SuperConductor-%DATE%.log',
@@ -30,7 +28,7 @@ export const createLoggers = (dirname: string) => {
 			format.simple(),
 			myFormat
 		),
-		transports,
+		transports: myTransports,
 	})
 
 	const rendererLogger = createLogger({
@@ -42,7 +40,7 @@ export const createLoggers = (dirname: string) => {
 			format.simple(),
 			myFormat
 		),
-		transports,
+		transports: myTransports,
 	})
 
 	return { electronLogger, rendererLogger }
