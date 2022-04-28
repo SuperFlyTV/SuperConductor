@@ -32,7 +32,11 @@
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge",
 		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge",
-		"license-validate": "node scripts/license-check.js"
+		"license-validate": "node scripts/license-check.js",
+		"release:release": "lerna version --force-publish",
+		"release:pre-release": "lerna version --force-publish",
+		"release": "yarn lint && yarn release:release",
+		"pre-release": "yarn lint && yarn release:pre-release"
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",
