@@ -1155,7 +1155,6 @@ export class IPCServer
 
 		if (!timelineObj.resourceId) throw new Error(`TimelineObj "${arg.timelineObjId}" lacks a resourceId.`)
 		const resource = this.storage.getResource(timelineObj.resourceId)
-		if (!resource) throw new Error(`Resource ${timelineObj.resourceId} not found.`)
 
 		const originalLayer = timelineObj.obj.layer
 		const result = this._findBestOrCreateLayer({
@@ -1164,6 +1163,7 @@ export class IPCServer
 			partId: arg.partId,
 			obj: timelineObj.obj,
 			resource: resource,
+			originalLayerId: originalLayer,
 		})
 		timelineObj.obj.layer = result.layerId
 
@@ -1381,6 +1381,7 @@ export class IPCServer
 				partId: arg.partId,
 				obj,
 				resource,
+				originalLayerId: undefined,
 			})
 			addToLayerId = result.layerId
 			createdNewLayer = result.createdNewLayer
@@ -2075,7 +2076,8 @@ export class IPCServer
 		groupId: string
 		partId: string
 		obj: TSRTimelineObj
-		resource: ResourceAny
+		resource: ResourceAny | undefined
+		originalLayerId: string | number | undefined
 	}) {
 		const project = this.getProject()
 		const { rundown, part } = this.getPart(arg)
@@ -2120,7 +2122,18 @@ export class IPCServer
 		let updatedProject: Project | undefined = undefined
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
-			const newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
+			let newMapping: Mapping | undefined = undefined
+			if (arg.resource) {
+				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
+			} else if (arg.originalLayerId !== undefined) {
+				const originalLayer = project.mappings[arg.originalLayerId] as Mapping | undefined
+				if (originalLayer) {
+					// TODO: modify the layer to create the "next" layer:
+					newMapping = {
+						...deepClone(originalLayer),
+					}
+				}
+			}
 
 			if (newMapping && newMapping.layerName) {
 				// Add the new layer to the project
