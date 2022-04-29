@@ -31,6 +31,8 @@ type IObservableObject<T extends object> = {
 
 export class RundownsStore {
 	private _currentRundownId?: string = undefined
+	/** Set to true before first update comes in */
+	private initializing = true
 	private _rundowns = new Map<string, Rundown>()
 	/**
 	 * Keeps copies of the rundowns that can't be modified by frontend code.
@@ -60,6 +62,20 @@ export class RundownsStore {
 
 	update(rundowns: IRundownsItems | undefined) {
 		this.rundowns = rundowns
+
+		if (this.initializing) {
+			this.initializing = false
+
+			// Set the first rundown as the current one:
+			const firstRundown = this.openRundowns[0] as
+				| {
+						rundownId: string
+						name: string
+				  }
+				| undefined
+
+			if (firstRundown) this.setCurrentRundown(firstRundown.rundownId)
+		}
 	}
 
 	/**
