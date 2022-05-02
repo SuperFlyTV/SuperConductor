@@ -10,6 +10,8 @@ export interface Project {
 		[bridgeId: string]: Bridge
 	}
 
+	deviceNames?: { [deviceId: string]: string }
+
 	settings: Settings
 }
 

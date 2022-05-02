@@ -10,6 +10,7 @@ export const DeviceItemHeader: React.FC<{
 	bridge: Bridge
 	deviceId: string
 	device: BridgeDevice
+	deviceName?: string
 }> = (props) => {
 	const deviceSettings = props.bridge.settings.devices[props.deviceId]
 
@@ -25,7 +26,7 @@ export const DeviceItemHeader: React.FC<{
 	return (
 		<div className="device-item-header openable">
 			<DeviceShortcut device={props.device} type={deviceSettings.type} />
-			<ScListItemLabel title={props.deviceId} subtitle={deviceAddress} />
+			<ScListItemLabel title={props.deviceName || 'Untitled'} subtitle={deviceAddress} />
 			<div className="status">
 				{props.device.ok ? 'Connected' : props.device.message ? props.device.message : 'Not Connected'}
 			</div>

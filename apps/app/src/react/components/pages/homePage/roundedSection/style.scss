@@ -95,6 +95,12 @@ $borderColor: rgba(176, 176, 176, 0.5);
 			font-size: 1.4rem;
 			font-weight: 700;
 			color: rgba(255, 255, 255, 0.8);
+			display: flex;
+			align-items: center;
+
+			img {
+				margin-right: 0.7rem;
+			}
 		}
 
 		> .controls {

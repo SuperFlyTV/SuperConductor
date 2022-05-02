@@ -16,10 +16,11 @@ import { Project } from '../../../../../models/project/Project'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+import { shortID } from '../../../../../lib/util'
 
 interface INewDeviceDialogProps {
 	open: boolean
-	onAccepted: ({ deviceType }: { deviceType: number }) => void
+	onAccepted: (deviceId: string) => void
 	onDiscarded: () => void
 	bridge: Bridge
 }
@@ -33,7 +34,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 	const onNewDeviceAccepted = useCallback(
 		(newDeviceType: number) => {
 			let newDevice: DeviceOptionsAny
-			let newDeviceId: string
 
 			switch (newDeviceType) {
 				case DeviceType.CASPARCG: {
@@ -44,11 +44,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 5250,
 						},
 					})
-
-					const numCasparCGDevices = Object.values(bridge.settings.devices).filter(
-						(device) => device.type === DeviceType.CASPARCG
-					).length
-					newDeviceId = `casparcg${numCasparCGDevices}`
 
 					break
 				}
@@ -62,11 +57,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 						},
 					})
 
-					const numATEMDevices = Object.values(bridge.settings.devices).filter(
-						(device) => device.type === DeviceType.ATEM
-					).length
-					newDeviceId = `atem${numATEMDevices}`
-
 					break
 				}
 
@@ -79,11 +69,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 						},
 					})
 
-					const numOBSDevices = Object.values(bridge.settings.devices).filter(
-						(device) => device.type === DeviceType.OBS
-					).length
-					newDeviceId = `obs${numOBSDevices}`
-
 					break
 				}
 
@@ -95,11 +80,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 8088,
 						},
 					})
-
-					const numVMixDevices = Object.values(bridge.settings.devices).filter(
-						(device) => device.type === DeviceType.VMIX
-					).length
-					newDeviceId = `vmix${numVMixDevices}`
 
 					break
 				}
@@ -114,11 +94,6 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 						},
 					})
 
-					const numOSCDevices = Object.values(bridge.settings.devices).filter(
-						(device) => device.type === DeviceType.OSC
-					).length
-					newDeviceId = `osc${numOSCDevices}`
-
 					break
 				}
 
@@ -129,6 +104,8 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					// assertNever(deviceType)
 					return
 			}
+
+			const newDeviceId = shortID()
 
 			const editedDevices = {
 				...bridge.settings.devices,
@@ -151,7 +128,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 
 			ipcServer.updateProject({ id: editedProject.id, project: editedProject }).catch(handleError)
 
-			onAccepted({ deviceType: newDeviceType })
+			onAccepted(newDeviceId)
 		},
 		[bridge, handleError, ipcServer, project, onAccepted]
 	)

@@ -7,12 +7,13 @@ import { ScList } from '../scList/ScList'
 import { LayerItemContent } from '../layerItem/LayerItemContent'
 import { LayerItemHeader } from '../layerItem/LayerItemHeader'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
-import { findDevice, listAvailableDeviceIDs, shortID } from '../../../../../lib/util'
+import { findDevice, getDeviceName, listAvailableDeviceIDs, shortID } from '../../../../../lib/util'
 import 'react-toggle/style.css'
 import { getDefaultMappingForDeviceType } from '../../../../../lib/TSRMappings'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { LoggerContext } from '../../../../contexts/Logger'
+import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
@@ -34,14 +35,25 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 		<ProjectPageLayout title="Layers" help={help}>
 			{listAvailableDeviceIDs(project.bridges).map((deviceId) => {
 				const device = findDevice(project.bridges, deviceId)
+				const deviceName = getDeviceName(project, deviceId)
 
 				if (!device) {
 					log.error(`Device ${deviceId} not found.`)
 					return null
 				}
 
+				const nameToShow = deviceName ? deviceName : 'Untitled device'
+
 				return (
-					<RoundedSection key={deviceId} title={`${deviceId} layers`}>
+					<RoundedSection
+						key={deviceId}
+						title={
+							<>
+								<DeviceIcon type={device.type} />
+								{`${nameToShow} layers`}
+							</>
+						}
+					>
 						<ScList
 							list={Object.entries(project.mappings)
 								.filter(([_mappingId, mapping]) => {
