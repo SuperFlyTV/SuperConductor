@@ -22,6 +22,7 @@ export const BridgeItemContent: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const [addDeviceOpen, setAddDeviceOpen] = useState(false)
+	const [newlyCreatedDeviceId, setNewlyCreatedDeviceId] = useState<string | undefined>()
 
 	const [name, setName] = useState(props.bridge.name)
 	const [url, setUrl] = useState(props.bridge.url)
@@ -104,7 +105,12 @@ export const BridgeItemContent: React.FC<{
 
 			<RoundedSection title="Devices" controls={<TextBtn label="Add" onClick={() => setAddDeviceOpen(true)} />}>
 				{Object.entries(props.bridgeStatus.devices).length > 0 ? (
-					<DevicesList bridge={props.bridge} devices={props.bridgeStatus ? props.bridgeStatus.devices : {}} />
+					<DevicesList
+						project={project}
+						bridge={props.bridge}
+						devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
+						newlyCreatedDeviceId={newlyCreatedDeviceId}
+					/>
 				) : (
 					<div className="central">There are no devices.</div>
 				)}
@@ -113,7 +119,10 @@ export const BridgeItemContent: React.FC<{
 			<NewDeviceDialog
 				bridge={props.bridge}
 				open={addDeviceOpen}
-				onAccepted={() => setAddDeviceOpen(false)}
+				onAccepted={(deviceId) => {
+					setNewlyCreatedDeviceId(deviceId)
+					setAddDeviceOpen(false)
+				}}
 				onDiscarded={() => {
 					setAddDeviceOpen(false)
 				}}

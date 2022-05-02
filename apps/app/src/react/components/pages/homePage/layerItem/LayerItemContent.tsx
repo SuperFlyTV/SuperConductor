@@ -59,7 +59,10 @@ export const LayerItemContent: React.FC<{
 							handleNameChange(name)
 						}}
 						onKeyUp={(e) => {
-							if (e.key === 'Enter') handleNameChange(name)
+							if (e.key === 'Enter') {
+								;(document.activeElement as HTMLInputElement).blur()
+								handleNameChange(name)
+							}
 						}}
 						autoFocus={!name}
 					/>

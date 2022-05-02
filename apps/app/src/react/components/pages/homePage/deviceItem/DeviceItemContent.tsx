@@ -14,34 +14,34 @@ const MAX_PORT = 65535
 export const DeviceItemContent: React.FC<{
 	bridge: Bridge
 	deviceId: string
+	deviceName: string
 	device: BridgeDevice
-}> = ({ bridge, deviceId }) => {
+}> = ({ bridge, deviceId, deviceName }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const [editedDeviceId, setEditedDeviceId] = useState(deviceId)
+	const [editedDeviceName, setEditedDeviceName] = useState(deviceName)
 	const [host, setHost] = useState('')
 	const [port, setPort] = useState(MIN_PORT)
 	const [password, setPassword] = useState('')
 	const deviceSettings = bridge.settings.devices[deviceId]
 
-	const handleDeviceIdChange = useCallback(
-		(newId: string) => {
-			if (newId.trim().length <= 0) {
+	const handleDeviceNameChange = useCallback(
+		(newName: string) => {
+			if (newName.trim().length <= 0) {
 				return
 			}
 
-			if (newId === deviceId) {
-				return
+			if (project.deviceNames) {
+				// Ensure compatibility with old project versions
+				project.deviceNames[deviceId] = newName
+			} else {
+				project.deviceNames = { [deviceId]: newName }
 			}
-
-			const device = project.bridges[bridge.id].settings.devices[deviceId]
-			delete project.bridges[bridge.id].settings.devices[deviceId]
-			project.bridges[bridge.id].settings.devices[newId] = device
 
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[bridge, deviceId, handleError, ipcServer, project]
+		[bridge, deviceName, handleError, ipcServer, project]
 	)
 
 	const handleHostChange = useCallback(
@@ -89,8 +89,8 @@ export const DeviceItemContent: React.FC<{
 	}, [bridge.settings.devices, deviceId, handleError, ipcServer, project])
 
 	useEffect(() => {
-		setEditedDeviceId(deviceId)
-	}, [deviceId])
+		setEditedDeviceName(deviceName)
+	}, [deviceName])
 
 	useEffect(() => {
 		const deviceOptions = deviceSettings?.options as CasparCGOptions | AtemOptions
@@ -120,19 +120,23 @@ export const DeviceItemContent: React.FC<{
 			<div className="fields">
 				<div className="form-control">
 					<TextField
-						label="ID"
-						value={editedDeviceId}
+						label="Name"
+						value={editedDeviceName}
 						size="small"
 						margin="dense"
 						onChange={(event) => {
-							setEditedDeviceId(event.target.value)
+							setEditedDeviceName(event.target.value)
 						}}
 						onBlur={() => {
-							handleDeviceIdChange(editedDeviceId)
+							handleDeviceNameChange(editedDeviceName)
 						}}
 						onKeyUp={(e) => {
-							if (e.key === 'Enter') handleDeviceIdChange(editedDeviceId)
+							if (e.key === 'Enter') {
+								handleDeviceNameChange(editedDeviceName)
+								;(document.activeElement as HTMLInputElement).blur()
+							}
 						}}
+						autoFocus={!editedDeviceName}
 					/>
 				</div>
 				<div className="form-control">
@@ -148,7 +152,10 @@ export const DeviceItemContent: React.FC<{
 							handleHostChange(host)
 						}}
 						onKeyUp={(e) => {
-							if (e.key === 'Enter') handleHostChange(host)
+							if (e.key === 'Enter') {
+								handleHostChange(host)
+								;(document.activeElement as HTMLInputElement).blur()
+							}
 						}}
 					/>
 				</div>
@@ -167,7 +174,10 @@ export const DeviceItemContent: React.FC<{
 							handlePortChange(port)
 						}}
 						onKeyUp={(e) => {
-							if (e.key === 'Enter') handlePortChange(port)
+							if (e.key === 'Enter') {
+								handlePortChange(port)
+								;(document.activeElement as HTMLInputElement).blur()
+							}
 						}}
 					/>
 				</div>
@@ -186,7 +196,10 @@ export const DeviceItemContent: React.FC<{
 								handlePasswordChange(password)
 							}}
 							onKeyUp={(e) => {
-								if (e.key === 'Enter') handlePasswordChange(password)
+								if (e.key === 'Enter') {
+									handlePasswordChange(password)
+									;(document.activeElement as HTMLInputElement).blur()
+								}
 							}}
 						/>
 					</div>

@@ -15,6 +15,7 @@ export class ProjectStore {
 		settings: {
 			enableInternalBridge: false,
 		},
+		deviceNames: {},
 	}
 
 	public assignedAreas: {

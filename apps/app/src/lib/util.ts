@@ -585,3 +585,10 @@ export function sortOn<A>(getSortValue: (value: A) => number | string | undefine
 export function shortID(): string {
 	return shortUUID.generate().slice(0, 8)
 }
+
+export function getDeviceName(project: Project, deviceId: string) {
+	if (!project.deviceNames) {
+		return
+	}
+	return project.deviceNames[deviceId]
+}
