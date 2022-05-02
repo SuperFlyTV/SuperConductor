@@ -27,6 +27,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
 		case DeviceType.OSC:
 			iconElement = <span>OSC</span>
 			break
+		case DeviceType.HTTPSEND:
+			iconElement = <span>HTTP</span>
+			break
 		default:
 			iconElement = <span>{props.type}</span>
 			break

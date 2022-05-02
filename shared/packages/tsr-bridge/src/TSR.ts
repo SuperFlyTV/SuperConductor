@@ -7,6 +7,7 @@ import { AtemSideload } from './sideload/Atem'
 import { OBSSideload } from './sideload/OBS'
 import { VMixSideload } from './sideload/VMix'
 import { OSCSideload } from './sideload/OSC'
+import { HTTPSendSideload } from './sideload/HTTPSend'
 import { SideLoadDevice } from './sideload/sideload'
 
 export class TSR {
@@ -182,6 +183,8 @@ export class TSR {
 			this.sideLoadedDevices[deviceId] = new VMixSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.OSC) {
 			this.sideLoadedDevices[deviceId] = new OSCSideload(deviceId, deviceOptions, this.log)
+		} else if (deviceOptions.type === DeviceType.HTTPSEND) {
+			this.sideLoadedDevices[deviceId] = new HTTPSendSideload(deviceId, deviceOptions, this.log)
 		}
 	}
 	private onDeviceStatus(deviceId: string, status: DeviceStatus) {

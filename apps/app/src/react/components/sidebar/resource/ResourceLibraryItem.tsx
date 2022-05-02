@@ -90,7 +90,8 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.ATEM_AUX ||
 			resource.resourceType === ResourceType.ATEM_DSK ||
 			resource.resourceType === ResourceType.ATEM_ME ||
-			resource.resourceType === ResourceType.CASPARCG_TEMPLATE
+			resource.resourceType === ResourceType.CASPARCG_TEMPLATE ||
+			resource.resourceType === ResourceType.HTTP_REQUEST
 		) {
 			return (
 				<>

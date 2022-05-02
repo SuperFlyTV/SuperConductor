@@ -105,6 +105,8 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
 		label = obj.content.path
+	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
+		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)

@@ -36,6 +36,8 @@ import {
 	TimelineObjVMixPreview,
 	TimelineObjOSCMessage,
 	TimelineContentTypeOSC,
+	TimelineObjHTTPRequest,
+	TimelineContentTypeHTTP,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -520,6 +522,21 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				type: TimelineContentTypeOSC.OSC,
 				path: '/',
 				values: [],
+			},
+		})
+	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
+		return literal<TimelineObjHTTPRequest>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: 1 * 1000,
+			},
+			content: {
+				deviceType: DeviceType.HTTPSEND,
+				type: TimelineContentTypeHTTP.POST,
+				url: 'http://127.0.0.1:80',
+				params: {},
 			},
 		})
 	} else {

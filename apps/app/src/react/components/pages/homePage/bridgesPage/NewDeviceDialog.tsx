@@ -4,6 +4,7 @@ import {
 	DeviceOptionsAny,
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
+	DeviceOptionsHTTPSend,
 	DeviceOptionsOBS,
 	DeviceOptionsOSC,
 	DeviceOptionsVMix,
@@ -97,6 +98,15 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					break
 				}
 
+				case DeviceType.HTTPSEND: {
+					newDevice = literal<DeviceOptionsHTTPSend>({
+						type: DeviceType.HTTPSEND,
+						options: {},
+					})
+
+					break
+				}
+
 				// @TODO: Add more device types
 
 				default:
@@ -163,6 +173,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					<MenuItem value={DeviceType.OBS}>OBS</MenuItem>
 					<MenuItem value={DeviceType.VMIX}>vMix</MenuItem>
 					<MenuItem value={DeviceType.OSC}>OSC</MenuItem>
+					<MenuItem value={DeviceType.HTTPSEND}>HTTP Send</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 			</DialogContent>

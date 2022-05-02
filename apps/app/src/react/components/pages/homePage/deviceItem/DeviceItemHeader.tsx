@@ -1,6 +1,6 @@
 import React from 'react'
 import { Bridge, BridgeDevice } from '../../../../../models/project/Bridge'
-import { AtemOptions, CasparCGOptions } from 'timeline-state-resolver-types'
+import { AtemOptions, CasparCGOptions, DeviceType } from 'timeline-state-resolver-types'
 
 import './style.scss'
 import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
@@ -21,7 +21,10 @@ export const DeviceItemHeader: React.FC<{
 	if (!deviceOptions) {
 		return null
 	}
-	const deviceAddress = `${deviceOptions.host}:${deviceOptions.port}`
+	let deviceAddress = `${deviceOptions.host}:${deviceOptions.port}`
+	if (deviceSettings.type === DeviceType.HTTPSEND) {
+		deviceAddress = ''
+	}
 
 	return (
 		<div className="device-item-header openable">
