@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite'
 import { ConnectionStatus } from './ConnectionStatus'
 import { Popover } from '@mui/material'
 import { PeripheralSettings } from './PeripheralSettings/PeripheralSettings'
-import { sortOn } from '../../../../lib/util'
+import { getDeviceName, sortOn } from '../../../../lib/util'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
@@ -55,10 +55,12 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 		<>
 			<div className="device-statuses">
 				{allDevices.map(({ bridgeId, bridgeStatus, deviceId, deviceStatus }) => {
+					const deviceName = getDeviceName(project, deviceId)
+
 					return (
 						<ConnectionStatus
 							key={`${bridgeId}_${deviceId}`}
-							label={deviceId}
+							label={deviceName || 'Untitled device'}
 							tooltip={bridgeStatus.connected ? deviceStatus.message : 'Bridge is disconnected'}
 							ok={bridgeStatus.connected && deviceStatus.ok}
 						/>
