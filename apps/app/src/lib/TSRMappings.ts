@@ -625,7 +625,7 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 	}
 }
 
-export function getDeviceName(deviceType: DeviceType): string {
+export function getDefaultDeviceName(deviceType: DeviceType): string {
 	switch (deviceType) {
 		case DeviceType.ABSTRACT:
 			return 'Abstract'

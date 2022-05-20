@@ -26,7 +26,7 @@ export const DeviceItemHeader: React.FC<{
 	return (
 		<div className="device-item-header openable">
 			<DeviceShortcut device={props.device} type={deviceSettings.type} />
-			<ScListItemLabel title={props.deviceName || 'Untitled'} subtitle={deviceAddress} />
+			<ScListItemLabel title={props.deviceName || props.deviceId} subtitle={deviceAddress} />
 			<div className="status">
 				{props.device.ok ? 'Connected' : props.device.message ? props.device.message : 'Not Connected'}
 			</div>

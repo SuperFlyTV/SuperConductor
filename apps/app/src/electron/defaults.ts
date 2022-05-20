@@ -7,7 +7,6 @@ import { literal } from '@shared/lib'
 import { shortID } from '../lib/util'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
-	const deviceNames = {}
 	return {
 		name: newName,
 
@@ -74,7 +73,9 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 			},
 		},
 
-		deviceNames,
+		deviceNames: {
+			casparcg0: 'CasparCG',
+		},
 
 		settings: {
 			enableInternalBridge: true,

@@ -587,8 +587,5 @@ export function shortID(): string {
 }
 
 export function getDeviceName(project: Project, deviceId: string) {
-	if (!project.deviceNames) {
-		return
-	}
-	return project.deviceNames[deviceId]
+	return project.deviceNames?.[deviceId] || deviceId
 }

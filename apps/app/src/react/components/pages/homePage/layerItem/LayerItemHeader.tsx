@@ -1,7 +1,7 @@
 import React from 'react'
 import { Mapping } from 'timeline-state-resolver-types'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
-import { describeMappingConfiguration, getDeviceName } from '../../../../../lib/TSRMappings'
+import { describeMappingConfiguration, getDefaultDeviceName } from '../../../../../lib/TSRMappings'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 import './style.scss'
 
@@ -14,7 +14,10 @@ export const LayerItemHeader: React.FC<{
 		<div className="layer-item-header">
 			<ScListItemLabel title={props.mapping.layerName || 'Untitled'} />
 			<DeviceIcon type={props.mapping.device} />
-			<ScListItemLabel title={getDeviceName(props.mapping.device) || ''} subtitle={`${props.mapping.deviceId}`} />
+			<ScListItemLabel
+				title={getDefaultDeviceName(props.mapping.device) || ''}
+				subtitle={`${props.mapping.deviceId}`}
+			/>
 			{mappingDescription && <div className="config-description">{mappingDescription}</div>}
 		</div>
 	)
