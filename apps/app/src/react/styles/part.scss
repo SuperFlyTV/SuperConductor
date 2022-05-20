@@ -349,17 +349,12 @@
 }
 
 .trigger {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+
 	&:not(:last-child) {
 		margin-bottom: 0.1rem;
-	}
-
-	&:not(.trigger--locked) {
-		.label {
-			&:hover {
-				text-decoration: underline;
-				cursor: pointer;
-			}
-		}
 	}
 
 	.label {
@@ -369,6 +364,8 @@
 		font-weight: 600;
 		font-size: 12px;
 		// line-height: 12px;
+
+		margin-left: 0.5em;
 
 		&__key {
 			color: black;

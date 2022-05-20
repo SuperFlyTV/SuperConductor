@@ -3,6 +3,7 @@ import { Group } from '../../models/rundown/Group'
 import { Part } from '../../models/rundown/Part'
 import { ActiveTrigger, activeTriggersToString, Trigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
+import { PeripheralStatus } from '../../models/project/Peripheral'
 
 export interface Action {
 	trigger: Trigger
@@ -11,7 +12,11 @@ export interface Action {
 	part: Part
 }
 
-export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): Action[] {
+export function getAllActionsInRundowns(
+	rundowns: Rundown[],
+	project: Project,
+	peripherals: { [peripheralId: string]: PeripheralStatus } | undefined
+): Action[] {
 	const actions: Action[] = []
 	// Collect all actions from the rundowns:
 	const groups = new Map<
@@ -44,6 +49,8 @@ export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): 
 
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+			const peripheralStatus = peripherals?.[`${bridgeId}-${deviceId}`] as PeripheralStatus | undefined
+
 			for (const [_areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
@@ -62,7 +69,7 @@ export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): 
 									fullIdentifier: fullIdentifier,
 									bridgeId,
 									deviceId,
-									deviceName: '',
+									deviceName: peripheralStatus?.info.name ?? '',
 									identifier,
 								}
 								const trigger: Trigger = {

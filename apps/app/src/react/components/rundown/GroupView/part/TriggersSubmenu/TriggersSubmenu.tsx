@@ -1,24 +1,38 @@
 import { Button } from '@mui/material'
+import _ from 'lodash'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
+import { Action } from '../../../../../../lib/triggers/action'
 import { Part } from '../../../../../../models/rundown/Part'
 import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../../../models/rundown/Trigger'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { HotkeyContext } from '../../../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { EditTrigger } from '../../../../inputs/EditTrigger'
+import { EditTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger'
 
 interface ITriggersSubmenuProps {
 	rundownId: string
 	groupId: string
 	part: Part
 	locked?: boolean
+	allActionsForPart: Action[]
 }
 
-export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, groupId, part, locked }) => {
+export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({
+	rundownId,
+	groupId,
+	part,
+	locked,
+	allActionsForPart,
+}) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
+
+	const otherActions: Action[] = allActionsForPart.filter(
+		(action) => !part.triggers.find((t) => _.isEqual(t.fullIdentifiers, action.trigger.fullIdentifiers))
+	)
+	const actionCount = part.triggers.length + otherActions.length
 
 	const onEditTrigger = useCallback(
 		(index: number, trigger: Trigger | null) => {
@@ -37,7 +51,7 @@ export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, gr
 
 	// Trigger button:
 	const [triggerActive, setTriggerActive] = useState<boolean>(false)
-	const prevTriggerLength = useRef(0)
+	const prevTriggers = useRef<ActiveTriggers>([])
 	const handleTriggerBtn = useCallback(() => {
 		setTriggerActive((oldActive) => !oldActive)
 	}, [])
@@ -45,12 +59,14 @@ export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, gr
 		(triggers: ActiveTriggers) => {
 			// was something pressed?
 			const triggerLength = Object.keys(triggers).length
-			if (triggerLength > prevTriggerLength.current) {
+			if (triggerLength > prevTriggers.current.length) {
 				// The length is longer; ie a button was pressed.
+			} else if (triggerLength < prevTriggers.current.length) {
+				// The length is shorter; ie a button was released.
 
 				const trigger: Trigger = {
-					label: activeTriggersToString(triggers),
-					fullIdentifiers: triggers.map((t) => t.fullIdentifier),
+					label: activeTriggersToString(prevTriggers.current),
+					fullIdentifiers: prevTriggers.current.map((t) => t.fullIdentifier),
 					action: 'playStop',
 				}
 
@@ -63,12 +79,11 @@ export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, gr
 						triggerIndex: 9999, // Add a trigger
 					})
 					.catch(handleError)
-			} else if (triggerLength < prevTriggerLength.current) {
-				// The length is shorter; ie a button was released.
+
 				// Stop listening for triggers:
 				setTriggerActive(false)
 			}
-			prevTriggerLength.current = triggerLength
+			prevTriggers.current = triggers
 		},
 		[handleError, ipcServer, groupId, part.id, rundownId]
 	)
@@ -77,16 +92,27 @@ export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, gr
 			hotkeyContext.triggers.on('trigger', handleTrigger)
 		} else {
 			hotkeyContext.triggers.off('trigger', handleTrigger)
-			prevTriggerLength.current = 0
+			prevTriggers.current = []
 		}
 		return () => {
 			hotkeyContext.triggers.off('trigger', handleTrigger)
 		}
 	}, [hotkeyContext, triggerActive, handleTrigger])
 
+	useEffect(() => {
+		if (actionCount === 0 && !locked) {
+			// There are no triggers, start listening for triggers right away:
+			setTriggerActive(true)
+		}
+	}, [actionCount, locked])
+
+	useEffect(() => {
+		if (triggerActive && locked) setTriggerActive(false)
+	}, [locked, triggerActive])
+
 	return (
 		<div className="part__triggers-submenu">
-			{part.triggers.length > 0 && (
+			{actionCount > 0 && (
 				<div className="triggers">
 					{part.triggers.map((trigger, index) => (
 						<EditTrigger
@@ -97,20 +123,27 @@ export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({ rundownId, gr
 							locked={locked}
 						/>
 					))}
+					{otherActions.map((action, index) => (
+						<NoEditTrigger key={index} trigger={action.trigger} />
+					))}
 				</div>
 			)}
 
-			<div className="controls">
-				<Button
-					variant="contained"
-					size="small"
-					title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
-					disabled={locked}
-					onClick={handleTriggerBtn}
-				>
-					{triggerActive ? <IoAddCircle size={18} /> : <IoAddCircleOutline size={18} />}
-				</Button>
-			</div>
+			{actionCount > 0 && (
+				<div className="controls">
+					<Button
+						variant="contained"
+						size="small"
+						title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
+						disabled={locked}
+						onClick={handleTriggerBtn}
+					>
+						{triggerActive ? <IoAddCircle size={18} /> : <IoAddCircleOutline size={18} />}
+					</Button>
+				</div>
+			)}
+
+			<div>{triggerActive && `Click any button to assign it!`}</div>
 		</div>
 	)
 }

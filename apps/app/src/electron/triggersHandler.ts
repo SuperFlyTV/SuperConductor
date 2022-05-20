@@ -110,7 +110,7 @@ export class TriggersHandler {
 	}
 	/** Returns all Actions in all Rundowns */
 	private getActions(): Action[] {
-		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject())
+		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject(), undefined)
 	}
 
 	private handleUpdate() {

@@ -713,7 +713,7 @@ export const PartView: React.FC<{
 		computed(
 			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)?.locked
 		).get() || false
-	const groupOrPartLocked = groupLocked || part.locked
+	const groupOrPartLocked = groupLocked || part.locked || false
 	const sortedLayers = useMemo(() => {
 		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
 	}, [mappings, resolvedTimeline.layers])
@@ -836,9 +836,9 @@ export const PartView: React.FC<{
 						</ToggleButton>
 						<TriggerBtn
 							onTrigger={handleTriggerBtn}
-							active={false}
 							title="Open Triggers Submenu"
-							numTriggers={allActionsForPart.length}
+							locked={groupOrPartLocked}
+							triggerCount={allActionsForPart.length}
 						/>
 					</div>
 				</div>
@@ -969,7 +969,13 @@ export const PartView: React.FC<{
 					horizontal: 'left',
 				}}
 			>
-				<TriggersSubmenu rundownId={rundownId} groupId={parentGroupId} part={part} locked={groupOrPartLocked} />
+				<TriggersSubmenu
+					rundownId={rundownId}
+					groupId={parentGroupId}
+					part={part}
+					locked={groupOrPartLocked}
+					allActionsForPart={allActionsForPart}
+				/>
 			</Popover>
 		</div>
 	)

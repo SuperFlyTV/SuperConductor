@@ -42,7 +42,7 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { PeripheralArea } from '../../../../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { BsKeyboard, BsKeyboardFill } from 'react-icons/bs'
 import { Part } from '../../../../models/rundown/Part'
@@ -836,6 +836,7 @@ const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function Gro
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = store.projectStore.project
+	const appStore = store.appStore
 
 	const allAreas = useMemoComputedObject(() => {
 		const allAreas: {
@@ -843,14 +844,26 @@ const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function Gro
 			deviceId: string
 			areaId: string
 			area: PeripheralArea
+			peripheralStatus: PeripheralStatus | undefined
 		}[] = []
 		for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
 				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
-					allAreas.push({ area, areaId, bridgeId, deviceId })
+					const peripheralId = `${bridgeId}-${deviceId}`
+					const peripheralStatus = appStore.peripherals[peripheralId] as PeripheralStatus | undefined
+
+					allAreas.push({ area, areaId, bridgeId, deviceId, peripheralStatus })
 				}
 			}
 		}
+
+		allAreas.sort((a, b) => {
+			if (a.peripheralStatus && !b.peripheralStatus) return -1
+			if (!a.peripheralStatus && b.peripheralStatus) return 1
+
+			return 0
+		})
+
 		return allAreas
 	}, [project])
 
@@ -858,11 +871,24 @@ const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function Gro
 		<>
 			<div>
 				Assign a Button Area to this Group:
-				<table>
+				<table className="table">
 					<tbody>
-						{allAreas.map(({ area, areaId, bridgeId, deviceId }) => {
+						<tr>
+							<th>Device</th>
+							<th>Area</th>
+							<th>Buttons</th>
+							<th></th>
+						</tr>
+						{allAreas.map(({ area, areaId, bridgeId, deviceId, peripheralStatus }) => {
+							const deviceName = peripheralStatus ? (
+								peripheralStatus.info.name
+							) : (
+								<i>(Device-not-connected)</i>
+							)
+
 							return (
 								<tr key={areaId}>
+									<td>{deviceName}</td>
 									<td>{area.name}</td>
 									<td>{area.identifiers.length} buttons</td>
 									<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>

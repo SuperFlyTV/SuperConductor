@@ -280,7 +280,8 @@ export const App = observer(function App() {
 				store.rundownsStore.getRundown(rundownId)
 			)
 		)
-		const allActions = getAllActionsInRundowns(rundowns, project)
+
+		const allActions = getAllActionsInRundowns(rundowns, project, store.appStore.peripherals)
 		for (const action of allActions) {
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
 				let newButtonAction = newButtonActions.get(fullIdentifier)
@@ -292,7 +293,7 @@ export const App = observer(function App() {
 			}
 		}
 		return newButtonActions
-	}, [store.rundownsStore.rundowns, project])
+	}, [store.rundownsStore.rundowns, project, store.appStore.peripherals])
 	useEffect(() => {
 		store.rundownsStore.allButtonActions = allButtonActions
 	}, [allButtonActions])
