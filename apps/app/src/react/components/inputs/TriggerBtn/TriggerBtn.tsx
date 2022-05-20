@@ -1,6 +1,7 @@
 import { Button } from '@mui/material'
 import React from 'react'
 import { BsKeyboardFill, BsKeyboard } from 'react-icons/bs'
+import './style.scss'
 
 export const TriggerBtn: React.FC<{
 	className?: string
@@ -8,6 +9,7 @@ export const TriggerBtn: React.FC<{
 	active: boolean
 	title: string
 	disabled?: boolean
+	numTriggers?: number
 }> = (props) => {
 	const handleOnClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		props.onTrigger(e)
@@ -23,6 +25,9 @@ export const TriggerBtn: React.FC<{
 			disabled={props.disabled}
 		>
 			{props.active ? <BsKeyboardFill color="white" size={24} /> : <BsKeyboard color="white" size={24} />}
+			{typeof props.numTriggers === 'number' && props.numTriggers > 0 && (
+				<div className="triggercount">{props.numTriggers}</div>
+			)}
 		</Button>
 	)
 }

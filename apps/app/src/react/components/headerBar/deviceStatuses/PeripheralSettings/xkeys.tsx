@@ -2,14 +2,12 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import classNames from 'classnames'
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, PeripheralInfo_XKeys } from '@shared/api'
-import { compact } from '@shared/lib'
 import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
-import { Rundown } from '../../../../../models/rundown/Rundown'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
-import { Action, getAllActionsInRundowns } from '../../../../../lib/triggers/action'
+import { Action } from '../../../../../lib/triggers/action'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
@@ -29,27 +27,6 @@ export const XKeysSettings: React.FC<{
 	const project = store.projectStore.project
 
 	const peripheralId = `${bridgeId}-${deviceId}`
-
-	const allButtonActions = useMemoComputedObject(() => {
-		const newButtonActions = new Map<string, Action[]>()
-		const rundowns: Rundown[] = compact(
-			Object.keys(store.rundownsStore.rundowns ?? []).map((rundownId) =>
-				store.rundownsStore.getRundown(rundownId)
-			)
-		)
-		const allActions = getAllActionsInRundowns(rundowns, project)
-		for (const action of allActions) {
-			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				let newButtonAction = newButtonActions.get(fullIdentifier)
-				if (!newButtonAction) {
-					newButtonAction = []
-					newButtonActions.set(fullIdentifier, newButtonAction)
-				}
-				newButtonAction.push(action)
-			}
-		}
-		return newButtonActions
-	}, [store.rundownsStore.rundowns, project])
 
 	const [pressedKeys, setPressedKeys] = useState<{ [fullIdentifier: string]: true }>({})
 	const handleTrigger = useCallback(
@@ -98,7 +75,7 @@ export const XKeysSettings: React.FC<{
 				const identifier = `${iKey}`
 				const fullIdentifier = `${peripheralId}-${identifier}`
 				const deviceId = peripheralId.replace(`${bridgeId}-`, '')
-				const buttonActions = allButtonActions.get(fullIdentifier) ?? []
+				const buttonActions = store.rundownsStore.allButtonActions.get(fullIdentifier) ?? []
 
 				if (ignorePosition) ignorePositions.add(`${iRow}-${iCol}`)
 

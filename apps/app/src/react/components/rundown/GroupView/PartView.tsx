@@ -41,6 +41,9 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { LoggerContext } from '../../../contexts/Logger'
+import { useMemoComputedObject } from '../../../mobx/lib'
+import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
+import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -519,6 +522,11 @@ export const PartView: React.FC<{
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, part.loop, rundownId])
 
+	// Trigger button:
+	const handleTriggerBtn = useCallback((event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+		setTriggersSubmenuPopoverAnchorEl(event.currentTarget)
+	}, [])
+
 	// Drag n' Drop re-ordering:
 	// Adapted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
 	const dragRef = useRef<HTMLDivElement>(null)
@@ -681,11 +689,20 @@ export const PartView: React.FC<{
 		drop(preview(previewRef))
 	}, [drop, preview])
 
+	// Part Submenu
 	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<SVGElement | null>(null)
 	const closePartSubmenu = useCallback(() => {
 		setPartSubmenuPopoverAnchorEl(null)
 	}, [])
 	const partSubmenuOpen = Boolean(partSubmenuPopoverAnchorEl)
+
+	// Triggers Submenu
+	const [triggersSubmenuPopoverAnchorEl, setTriggersSubmenuPopoverAnchorEl] =
+		React.useState<HTMLButtonElement | null>(null)
+	const closeTriggersSubmenu = useCallback(() => {
+		setTriggersSubmenuPopoverAnchorEl(null)
+	}, [])
+	const triggersSubmenuOpen = Boolean(triggersSubmenuPopoverAnchorEl)
 
 	const groupDisabled =
 		computed(
@@ -706,6 +723,10 @@ export const PartView: React.FC<{
 	if (typeof firstTimelineObjType === 'string') {
 		tabAdditionalClassNames[firstTimelineObjType] = true
 	}
+
+	const allActionsForPart = useMemoComputedObject(() => {
+		return store.rundownsStore.getActionsForPart(part.id)
+	}, [store.rundownsStore.allButtonActions])
 
 	return (
 		<div
@@ -813,6 +834,12 @@ export const PartView: React.FC<{
 						>
 							<MdRepeatOne size={18} />
 						</ToggleButton>
+						<TriggerBtn
+							onTrigger={handleTriggerBtn}
+							active={false}
+							title="Open Triggers Submenu"
+							numTriggers={allActionsForPart.length}
+						/>
 					</div>
 				</div>
 
@@ -931,6 +958,18 @@ export const PartView: React.FC<{
 				}}
 			>
 				<PartSubmenu rundownId={rundownId} groupId={parentGroupId} part={part} locked={groupOrPartLocked} />
+			</Popover>
+
+			<Popover
+				open={triggersSubmenuOpen}
+				anchorEl={triggersSubmenuPopoverAnchorEl}
+				onClose={closeTriggersSubmenu}
+				anchorOrigin={{
+					vertical: 'bottom',
+					horizontal: 'left',
+				}}
+			>
+				<TriggersSubmenu rundownId={rundownId} groupId={parentGroupId} part={part} locked={groupOrPartLocked} />
 			</Popover>
 		</div>
 	)
