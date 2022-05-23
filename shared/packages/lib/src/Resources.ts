@@ -26,6 +26,7 @@ enum GeneralResourceType {
 	FADER = 'FADER',
 	PREVIEW = 'PREVIEW',
 	OSC = 'osc',
+	HTTP_REQUEST = 'http_request',
 	UNKNOWN = 'unknown',
 }
 
@@ -91,6 +92,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.PREVIEW
 		case ResourceType.OSC_MESSAGE:
 			return GeneralResourceType.OSC
+		case ResourceType.HTTP_REQUEST:
+			return GeneralResourceType.HTTP_REQUEST
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

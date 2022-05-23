@@ -1,10 +1,11 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
+import { HTTPSendAny } from './HTTPSend'
 import { OBSAny } from './OBS'
 import { OSCAny } from './OSC'
 import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -59,4 +60,6 @@ export enum ResourceType {
 	VMIX_FADER = 'VMIX_FADER',
 
 	OSC_MESSAGE = 'OSC_MESSAGE',
+
+	HTTP_REQUEST = 'HTTP_REQUEST',
 }

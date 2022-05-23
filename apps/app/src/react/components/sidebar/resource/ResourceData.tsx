@@ -149,6 +149,8 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <SidebarInfoGroup title="vMix Preview">{universalRows}</SidebarInfoGroup>
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
 		return <SidebarInfoGroup title="OSC Message">{universalRows}</SidebarInfoGroup>
+	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
+		return <SidebarInfoGroup title="HTTP Request">{universalRows}</SidebarInfoGroup>
 	} else {
 		assertNever(resource)
 		return null

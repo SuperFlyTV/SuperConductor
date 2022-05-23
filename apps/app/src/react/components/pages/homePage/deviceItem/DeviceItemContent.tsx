@@ -139,48 +139,52 @@ export const DeviceItemContent: React.FC<{
 						autoFocus={!editedDeviceName}
 					/>
 				</div>
-				<div className="form-control">
-					<TextField
-						label="URL"
-						value={host}
-						size="small"
-						margin="dense"
-						onChange={(event) => {
-							setHost(event.target.value)
-						}}
-						onBlur={() => {
-							handleHostChange(host)
-						}}
-						onKeyUp={(e) => {
-							if (e.key === 'Enter') {
-								handleHostChange(host)
-								;(document.activeElement as HTMLInputElement).blur()
-							}
-						}}
-					/>
-				</div>
-				<div className="form-control">
-					<TextField
-						label="Port"
-						value={port}
-						size="small"
-						margin="dense"
-						type="number"
-						InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
-						onChange={(event) => {
-							setPort(parseInt(event.target.value, 10))
-						}}
-						onBlur={() => {
-							handlePortChange(port)
-						}}
-						onKeyUp={(e) => {
-							if (e.key === 'Enter') {
-								handlePortChange(port)
-								;(document.activeElement as HTMLInputElement).blur()
-							}
-						}}
-					/>
-				</div>
+				{deviceSettings.type !== DeviceType.HTTPSEND && (
+					<>
+						<div className="form-control">
+							<TextField
+								label="URL"
+								value={host}
+								size="small"
+								margin="dense"
+								onChange={(event) => {
+									setHost(event.target.value)
+								}}
+								onBlur={() => {
+									handleHostChange(host)
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Enter') {
+										handleHostChange(host)
+										;(document.activeElement as HTMLInputElement).blur()
+									}
+								}}
+							/>
+						</div>
+						<div className="form-control">
+							<TextField
+								label="Port"
+								value={port}
+								size="small"
+								margin="dense"
+								type="number"
+								InputProps={{ inputProps: { min: MIN_PORT, max: MAX_PORT } }}
+								onChange={(event) => {
+									setPort(parseInt(event.target.value, 10))
+								}}
+								onBlur={() => {
+									handlePortChange(port)
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Enter') {
+										handlePortChange(port)
+										;(document.activeElement as HTMLInputElement).blur()
+									}
+								}}
+							/>
+						</div>
+					</>
+				)}
 				{deviceSettings.type === DeviceType.OBS ? (
 					<div className="form-control">
 						<TextField

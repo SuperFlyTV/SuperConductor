@@ -395,8 +395,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			resource.resourceType === ResourceType.CASPARCG_TEMPLATE
 		)
 	} else if (mapping.device === DeviceType.HTTPSEND) {
-		// @TODO
-		return false
+		return resource.resourceType === ResourceType.HTTP_REQUEST
 	} else if (mapping.device === DeviceType.HTTPWATCHER) {
 		// @TODO
 		return false
