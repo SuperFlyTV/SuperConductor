@@ -16,6 +16,12 @@ export interface ResourceBase {
 
 	/** Required because it is used to search/filter resources in the sidebar. Does not need to be unique. */
 	displayName: string
+
+	/** When the Resource was added to the Library [unix timestamp, ms] */
+	added?: number
+
+	/** When the Resource was last modified [unix timestamp, ms] */
+	modified?: number
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',

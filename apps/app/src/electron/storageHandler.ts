@@ -9,6 +9,7 @@ import { AppData, WindowPosition } from '../models/App/AppData'
 import { getDefaultProject, getDefaultRundown } from './defaults'
 import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
+import * as _ from 'lodash'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -38,7 +39,7 @@ export class StorageHandler extends EventEmitter {
 	private rundownsHasChanged: { [fileName: string]: true } = {}
 	private rundownsNeedsWrite: { [fileName: string]: true } = {}
 
-	private resources: { [resourceId: string]: ResourceAny } = {}
+	private resources: { [resourceId: string]: FileResource } = {}
 	private resourcesHasChanged: { [resourceId: string]: true } = {}
 	private resourcesNeedsWrite = false
 
@@ -54,6 +55,8 @@ export class StorageHandler extends EventEmitter {
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
 		this.resources = this.loadResources()
+
+		this.cleanUpData()
 	}
 
 	init() {
@@ -328,32 +331,70 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
-	getResources() {
-		return this.resources
+	getResources(): { [id: string]: ResourceAny } {
+		const resources: { [id: string]: ResourceAny } = {}
+		for (const [id, resource] of Object.entries(this.resources)) {
+			if (resource.deleted) continue
+			resources[id] = resource.resource
+		}
+		return resources
 	}
 	getResource(id: string): ResourceAny | undefined {
-		return this.resources[id]
+		const resource = this.resources[id] as FileResource | undefined
+		if (resource?.deleted) return undefined
+		else return resource?.resource
 	}
 	getResourceIds(deviceId: string): string[] {
 		const ids: string[] = []
 		for (const [id, resource] of Object.entries(this.resources)) {
-			if (resource.deviceId === deviceId) ids.push(id)
+			if (resource.deleted) continue
+			if (resource.resource.deviceId === deviceId) ids.push(id)
 		}
 		return ids
 	}
 	updateResource(id: string, resource: ResourceAny | null) {
 		if (resource) {
-			this.resources[id] = resource
-			this.resourcesHasChanged[id] = true
-		} else {
-			delete this.resources[id]
-			this.resourcesHasChanged[id] = true
-		}
+			// Set added and modified timestamps
+			let existing = this.resources[id] as FileResource | undefined
 
-		this.triggerUpdate({ resources: { [id]: true } })
+			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
+				// It has been deleted for some time
+				existing = undefined
+			}
+
+			let hasChanged: boolean
+
+			if (existing) {
+				resource.added = existing.resource.added
+
+				if (_.isEqual(_.omit(existing.resource, 'added', 'modified'), _.omit(resource, 'added', 'modified'))) {
+					// No change
+					hasChanged = false
+				} else {
+					resource.modified = Date.now()
+					hasChanged = true
+				}
+			} else {
+				resource.added = Date.now()
+				resource.modified = Date.now()
+				hasChanged = true
+			}
+
+			if (hasChanged) {
+				this.resources[id] = {
+					version: CURRENT_VERSION,
+					id,
+					resource,
+				}
+				this.triggerUpdate({ resources: { [id]: true } })
+			}
+		} else {
+			this.resources[id].deleted = Date.now()
+			this.triggerUpdate({ resources: { [id]: true } })
+		}
 	}
 
-	convertToFilename(str: string): string {
+	private convertToFilename(str: string): string {
 		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
 	}
 
@@ -582,8 +623,8 @@ export class StorageHandler extends EventEmitter {
 
 		return rundown
 	}
-	private loadResources(): { [resourceId: string]: ResourceAny } {
-		let resources: { [resourceId: string]: ResourceAny } | undefined = {}
+	private loadResources(): { [resourceId: string]: FileResource } {
+		let resources: { [resourceId: string]: FileResource } | undefined = {}
 		const resourcesPath = this.resourcesPath(this._projectId)
 		try {
 			const read = fs.readFileSync(resourcesPath, 'utf8')
@@ -611,6 +652,22 @@ export class StorageHandler extends EventEmitter {
 					// not found
 				} else {
 					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+		if (resources) {
+			// Compatibility fix:
+			for (const [id, oldResource] of Object.entries<any>(resources)) {
+				if (
+					typeof oldResource === 'object' &&
+					(oldResource.version === undefined || oldResource.resource === undefined)
+				) {
+					const newResource: FileResource = {
+						version: CURRENT_VERSION,
+						id: id,
+						resource: oldResource,
+					}
+					resources[id] = newResource
 				}
 			}
 		}
@@ -680,11 +737,15 @@ export class StorageHandler extends EventEmitter {
 			delete this.rundownsHasChanged[fileName]
 		}
 		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
-			this.emit('resource', resourceId, this.resources[resourceId] ?? null)
+			let resource = this.resources[resourceId] as FileResource | undefined
+			if (resource && resource.deleted) resource = undefined
+			this.emit('resource', resourceId, resource?.resource ?? null)
 			delete this.resourcesHasChanged[resourceId]
 		}
 	}
 	private async writeChanges() {
+		this.cleanUpData()
+
 		// Create dir if not exists:
 		if (!fs.existsSync(this._baseFolder)) {
 			fs.mkdirSync(this._baseFolder)
@@ -760,6 +821,15 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 	}
+	private cleanUpData() {
+		const GRACE_PERIOD = 1000 * 60 // 1 minute
+		// Remove deleted resources:
+		for (const [resourceId, resource] of Object.entries(this.resources)) {
+			if (resource.deleted && Date.now() - resource.deleted > GRACE_PERIOD) {
+				delete this.resources[resourceId]
+			}
+		}
+	}
 
 	private rundownsDir(projectId: string): string {
 		return path.join(this.projectDir(projectId), 'rundowns')
@@ -806,6 +876,16 @@ interface FileRundown {
 	version: number
 	id: string
 	rundown: Omit<Rundown, 'id'>
+}
+interface FileResource {
+	version: number
+	id: string
+
+	/**
+	 * Is set when the resource is deleted. [timestamp]
+	 * Used to keep the resource around for some time, in case there is a "blip" where a resource is temporary removed (like on startups). */
+	deleted?: number
+	resource: ResourceAny
 }
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_VERSION = 0

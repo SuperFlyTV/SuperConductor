@@ -26,4 +26,6 @@ export interface CasparCGTemplate extends ResourceBase {
 	resourceType: ResourceType.CASPARCG_TEMPLATE
 
 	name: string
+	size: number
+	changed: number
 }

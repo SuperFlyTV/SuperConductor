@@ -93,6 +93,8 @@ export class CasparCGSideload implements SideLoadDevice {
 			const templatesList = res.response.data as {
 				type: 'template'
 				name: string
+				size: number
+				changed: number
 			}[]
 			for (const template of templatesList) {
 				const resource: CasparCGTemplate = {

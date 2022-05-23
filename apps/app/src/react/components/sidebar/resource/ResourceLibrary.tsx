@@ -64,29 +64,39 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
-	const resourcesFilteredByDevice = useMemo(() => {
-		if (deviceFilterValue.length <= 0) {
-			return Object.values(resourcesStore.resources)
-		}
+	const sortedResources = useMemo(() => {
+		return Object.values(resourcesStore.resources).sort((a, b) => {
+			if (a.deviceId > b.deviceId) return 1
+			if (a.deviceId < b.deviceId) return -1
 
-		return Object.values(resourcesStore.resources).filter((resource) => {
+			if (a.resourceType > b.resourceType) return 1
+			if (a.resourceType < b.resourceType) return -1
+
+			if (a.displayName > b.displayName) return 1
+			if (a.displayName < b.displayName) return -1
+
+			if (a.id > b.id) return 1
+			if (a.id < b.id) return -1
+
+			return 0
+		})
+	}, [resourcesStore.resources])
+	const resourcesFilteredByDevice = useMemo(() => {
+		if (deviceFilterValue.length <= 0) return sortedResources // fast path
+		return sortedResources.filter((resource) => {
 			return deviceFilterValue.includes(resource.deviceId)
 		})
-	}, [deviceFilterValue, resourcesStore.resources])
+	}, [deviceFilterValue, sortedResources])
 
 	const resourcesFilteredByDeviceAndName = useMemo(() => {
-		if (debouncedNameFilterValue.trim().length === 0) {
-			return resourcesFilteredByDevice
-		}
-
+		if (debouncedNameFilterValue.trim().length === 0) return resourcesFilteredByDevice // fast path
 		return resourcesFilteredByDevice.filter((resource) => {
-			const name = resource.displayName
-			return name.toLowerCase().includes(debouncedNameFilterValue.toLowerCase())
+			return resource.displayName.toLowerCase().includes(debouncedNameFilterValue.toLowerCase())
 		})
 	}, [debouncedNameFilterValue, resourcesFilteredByDevice])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
-		const ret: { [key: string]: ResourceAny[] } = {}
+		const ret: { [deviceId: string]: ResourceAny[] } = {}
 
 		for (const resource of resourcesFilteredByDeviceAndName) {
 			if (!(resource.deviceId in ret)) {
