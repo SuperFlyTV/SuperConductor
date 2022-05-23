@@ -7,7 +7,7 @@ import { ResourceData } from './ResourceData'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
 import { Part } from '../../../../models/rundown/Part'
 import { Field, Form, Formik } from 'formik'
-import { findPartInRundown } from '../../../../lib/util'
+import { findPartInRundown, getDeviceName } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
 import {
@@ -198,7 +198,7 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 					return (
 						<React.Fragment key={deviceId}>
 							<Stack direction="row" justifyContent="space-between">
-								<Typography variant="body2">{deviceId}</Typography>
+								<Typography variant="body2">{getDeviceName(project, deviceId)}</Typography>
 								{resourcesStore.refreshStatuses[deviceId] && (
 									<div className="refresh active" style={{ opacity: '0.6' }}>
 										<HiRefresh size={15} color="white" />

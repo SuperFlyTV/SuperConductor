@@ -18,6 +18,7 @@ import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { shortID } from '../../../../../lib/util'
+import { getDefaultDeviceName } from '../../../../../lib/TSRMappings'
 
 interface INewDeviceDialogProps {
 	open: boolean
@@ -133,6 +134,10 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 				bridges: {
 					...project.bridges,
 					[editedBridge.id]: editedBridge,
+				},
+				deviceNames: {
+					...project.deviceNames,
+					[newDeviceId]: getDefaultDeviceName(newDeviceType),
 				},
 			}
 

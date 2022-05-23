@@ -62,7 +62,9 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 								.map(([mappingId, mapping]) => {
 									return {
 										id: mappingId,
-										header: <LayerItemHeader id={mappingId} mapping={mapping} />,
+										header: (
+											<LayerItemHeader id={mappingId} mapping={mapping} deviceId={deviceId} />
+										),
 										content: <LayerItemContent mappingId={mappingId} mapping={mapping} />,
 										openByDefault: mappingId === newlyCreatedId,
 									}
