@@ -41,7 +41,7 @@ export const DeviceItemContent: React.FC<{
 
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
-		[bridge, deviceName, handleError, ipcServer, project]
+		[bridge, deviceId, deviceName, handleError, ipcServer, project]
 	)
 
 	const handleHostChange = useCallback(

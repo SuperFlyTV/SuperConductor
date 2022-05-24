@@ -16,5 +16,9 @@
 		> * {
 			margin-right: 1rem;
 		}
+
+		&.last-in-rundown {
+			height: calc(100vh - 20rem);
+		}
 	}
 }

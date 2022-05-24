@@ -205,7 +205,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 
 	return (
 		<>
-			<div className="group-list__control-row">
+			<div className="group-list__control-row last-in-rundown">
 				<DropZone
 					isOver={partDropIsOver}
 					ref={newPartRef}
