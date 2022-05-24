@@ -7,6 +7,7 @@ import {
 	MappingAtemType,
 	MappingCasparCG,
 	MappingHTTPSend,
+	MappingHTTPWatcher,
 	MappingHyperdeck,
 	MappingHyperdeckType,
 	MappingLawo,
@@ -793,67 +794,190 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 	}
 }
 
-export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId: string, mappings: Mappings) {
-	if (deviceType === DeviceType.CASPARCG) {
-		const lastChannel = getLastBiggestValue<MappingCasparCG>(mappings, deviceType, 'channel')
-		const lastLayer = getLastBiggestValue<MappingCasparCG>(mappings, deviceType, 'layer')
-		return literal<MappingCasparCG>({
-			channel: lastChannel ? lastChannel : 1,
-			layer: lastLayer ? lastLayer + 10 : 10,
-			device: deviceType,
-			deviceId,
-		})
+export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId: string, allMappings: Mappings) {
+	// Filter mapping for deviceId:
+	const mappings: Mappings = {}
+	for (const [id, mapping] of Object.entries(allMappings)) {
+		if (mapping.deviceId === deviceId) mappings[id] = mapping
 	}
 
-	if (deviceType === DeviceType.ATEM) {
-		const lastIndex = getLastBiggestValue<MappingAtem>(mappings, deviceType, 'index')
+	if (deviceType === DeviceType.ABSTRACT) {
+		return literal<MappingAbstract>({
+			device: deviceType,
+			deviceId,
+			layerName: `Abstract`,
+		})
+	} else if (deviceType === DeviceType.CASPARCG) {
+		const channel = getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channel) ?? 1
+		const layer = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.layer) ?? 0) + 10
+
+		return literal<MappingCasparCG>({
+			channel,
+			layer,
+			device: deviceType,
+			deviceId,
+			layerName: `CasparCG ${channel}-${layer}`,
+		})
+	} else if (deviceType === DeviceType.ATEM) {
+		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? 0) + 1
 		return literal<MappingAtem>({
-			index: lastIndex ? lastIndex + 1 : 1,
+			index,
 			device: deviceType,
 			deviceId,
 			mappingType: MappingAtemType.MixEffect,
+			layerName: `Atem ME ${index}`,
 		})
-	}
+	} else if (deviceType === DeviceType.LAWO) {
+		return literal<MappingLawo>({
+			device: deviceType,
+			deviceId,
+			mappingType: MappingLawoType.SOURCE,
+			layerName: `Lawo source`,
+		})
+	} else if (deviceType === DeviceType.HTTPSEND) {
+		return literal<MappingHTTPSend>({
+			device: deviceType,
+			deviceId,
+			layerName: `HTTP Send`,
+		})
+	} else if (deviceType === DeviceType.PANASONIC_PTZ) {
+		return literal<MappingPanasonicPtz>({
+			device: DeviceType.PANASONIC_PTZ,
+			deviceId: deviceId,
+			layerName: 'PTZ Preset',
+			mappingType: MappingPanasonicPtzType.PRESET,
+		})
+	} else if (deviceType === DeviceType.TCPSEND) {
+		return literal<MappingTCPSend>({
+			device: deviceType,
+			deviceId,
+			layerName: `TCP Send`,
+		})
+	} else if (deviceType === DeviceType.HYPERDECK) {
+		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? -1) + 1
+		return literal<MappingHyperdeck>({
+			device: deviceType,
+			deviceId,
+			mappingType: MappingHyperdeckType.TRANSPORT,
+			index,
+			layerName: `Hyperdeck ${index + 1}`,
+		})
+	} else if (deviceType === DeviceType.PHAROS) {
+		return literal<MappingPharos>({
+			device: deviceType,
+			deviceId,
+			layerName: `Pharos`,
+		})
+	} else if (deviceType === DeviceType.OSC) {
+		return literal<MappingOSC>({
+			device: deviceType,
+			deviceId,
+			layerName: `OSC`,
+		})
+	} else if (deviceType === DeviceType.HTTPWATCHER) {
+		return literal<MappingHTTPWatcher>({
+			device: deviceType,
+			deviceId,
+			layerName: `HTTP watcher`,
+		})
+	} else if (deviceType === DeviceType.SISYFOS) {
+		const channel =
+			(getLastBiggestValue(
+				mappings,
+				(m) => m.device === deviceType && m.mappingType === MappingSisyfosType.CHANNEL && m.channel
+			) ?? -1) + 1
+		return literal<MappingSisyfos>({
+			device: deviceType,
+			deviceId: deviceId,
+			mappingType: MappingSisyfosType.CHANNEL,
+			channel,
+			layerName: `Channel ${channel + 1}`,
+			setLabelToLayerName: true,
+		})
+	} else if (deviceType === DeviceType.QUANTEL) {
+		const channelId = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channelId) ?? 0) + 1
 
-	if (deviceType === DeviceType.VMIX) {
+		return literal<MappingQuantel>({
+			device: deviceType,
+			deviceId: deviceId,
+			channelId,
+			layerName: `Quantel ${channelId}`,
+			portId: 'port-id',
+		})
+	} else if (deviceType === DeviceType.VIZMSE) {
+		return literal<MappingVizMSE>({
+			device: deviceType,
+			deviceId: deviceId,
+			layerName: 'VizMSE',
+		})
+	} else if (deviceType === DeviceType.SINGULAR_LIVE) {
+		return literal<MappingSingularLive>({
+			device: deviceType,
+			deviceId: deviceId,
+			layerName: 'Singular Live',
+			compositionName: 'composition-name',
+		})
+	} else if (deviceType === DeviceType.SHOTOKU) {
+		return literal<MappingShotoku>({
+			device: deviceType,
+			deviceId: deviceId,
+			layerName: 'Shotoku',
+		})
+	} else if (deviceType === DeviceType.VMIX) {
 		return literal<MappingVMixProgram>({
 			index: 1,
 			device: deviceType,
 			deviceId,
 			mappingType: MappingVMixType.Program,
+			layerName: `VMix PGM`,
 		})
-	}
-
-	if (deviceType === DeviceType.OBS) {
+	} else if (deviceType === DeviceType.OBS) {
 		return literal<MappingOBS>({
 			device: deviceType,
 			deviceId,
 			mappingType: MappingOBSType.CurrentScene,
+			layerName: `OBS Scene`,
 		})
-	}
-
-	if (deviceType === DeviceType.OSC) {
-		return literal<MappingOSC>({
+	} else {
+		assertNever(deviceType)
+		return literal<Mapping>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceId,
 		})
 	}
-
-	return literal<Mapping>({
-		device: deviceType,
-		deviceId: deviceId,
-	})
 }
 
-function getLastBiggestValue<T extends Mapping>(mappings: Mappings, deviceType: DeviceType, property: keyof T) {
+type AnyMapping =
+	| MappingAbstract
+	| MappingAtem
+	| MappingCasparCG
+	| MappingHTTPSend
+	| MappingHTTPWatcher
+	| MappingHyperdeck
+	| MappingLawo
+	| MappingOBS
+	| MappingOBSAny
+	| MappingOSC
+	| MappingPanasonicPtz
+	| MappingPharos
+	| MappingQuantel
+	| MappingShotoku
+	| MappingSingularLive
+	| MappingSisyfos
+	| MappingTCPSend
+	| MappingVizMSE
+	| MappingVMixAny
+
+function getLastBiggestValue(
+	mappings: Mappings,
+	filterFunction: (mapping: AnyMapping) => number | false | undefined
+): number | undefined {
 	let lastBiggest: number | undefined = undefined
-	Object.entries(mappings).forEach(([_mappingId, mapping]) => {
-		const existingPropVal = (mapping as any)[property] as number
-		if (mapping.device === deviceType) {
-			if (lastBiggest === undefined) {
-				lastBiggest = existingPropVal
-			} else if (existingPropVal > lastBiggest) {
-				lastBiggest = existingPropVal
+	Object.values(mappings).forEach((mapping) => {
+		const value = filterFunction(mapping as any)
+		if (value !== undefined && value !== false) {
+			if (lastBiggest === undefined || value > lastBiggest) {
+				lastBiggest = value
 			}
 		}
 	})
