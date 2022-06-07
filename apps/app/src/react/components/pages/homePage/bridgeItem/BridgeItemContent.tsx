@@ -104,16 +104,12 @@ export const BridgeItemContent: React.FC<{
 			)}
 
 			<RoundedSection title="Devices" controls={<TextBtn label="Add" onClick={() => setAddDeviceOpen(true)} />}>
-				{Object.entries(props.bridgeStatus.devices).length > 0 ? (
-					<DevicesList
-						project={project}
-						bridge={props.bridge}
-						devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
-						newlyCreatedDeviceId={newlyCreatedDeviceId}
-					/>
-				) : (
-					<div className="central">There are no devices.</div>
-				)}
+				<DevicesList
+					project={project}
+					bridge={props.bridge}
+					devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
+					newlyCreatedDeviceId={newlyCreatedDeviceId}
+				/>
 			</RoundedSection>
 
 			<NewDeviceDialog

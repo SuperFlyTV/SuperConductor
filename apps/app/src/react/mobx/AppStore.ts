@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx'
-import { BridgeStatus } from '../../models/project/Bridge'
+import { BridgeDevice, BridgeStatus } from '../../models/project/Bridge'
 import { AppData, WindowPosition } from '../../models/App/AppData'
 import { IPCServer } from '../api/IPCServer'
 import { IPCClient } from '../api/IPCClient'
@@ -21,6 +21,8 @@ export class AppStore {
 	serverAPI: IPCServer
 	logger: ClientSideLogger
 	ipcClient: IPCClient
+
+	allDeviceStatuses: { [deviceId: string]: BridgeDevice } = {}
 
 	constructor(init?: AppData) {
 		this.serverAPI = new IPCServer(ipcRenderer)
@@ -52,6 +54,8 @@ export class AppStore {
 			delete newStatuses[bridgeId]
 		}
 		this.bridgeStatuses = newStatuses
+
+		this._updateAllDeviceStatuses()
 	}
 
 	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null) {
@@ -62,5 +66,15 @@ export class AppStore {
 			delete newPeripherals[peripheralId]
 		}
 		this.peripherals = newPeripherals
+	}
+
+	private _updateAllDeviceStatuses() {
+		const allDeviceStatuses: { [deviceId: string]: BridgeDevice } = {}
+		for (const bridgeStatus of Object.values(this.bridgeStatuses)) {
+			for (const [deviceId, deviceStatus] of Object.entries(bridgeStatus.devices)) {
+				allDeviceStatuses[deviceId] = deviceStatus
+			}
+		}
+		this.allDeviceStatuses = allDeviceStatuses
 	}
 }

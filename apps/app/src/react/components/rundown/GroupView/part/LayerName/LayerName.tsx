@@ -2,14 +2,15 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mapping, Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
-import { TimelineObj } from 'src/models/rundown/TimelineObj'
+import { TimelineObj } from '../../../../../../models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { filterMapping } from '../../../../../../lib/TSRMappings'
 import './style.scss'
+import { BridgeDevice } from '../../../../../../models/project/Bridge'
 
 export const LayerName: React.FC<{
 	/**
@@ -31,11 +32,18 @@ export const LayerName: React.FC<{
 }> = observer(function LayerName(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const { enqueueSnackbar } = useSnackbar()
-	const mappingExists = props.layerId in props.mappings
-	const name = props.mappings[props.layerId]?.layerName ?? props.layerId
+	const appStore = store.appStore
 
-	const selectedItem: DropdownItem = { id: props.layerId, label: name }
+	const { enqueueSnackbar } = useSnackbar()
+	const mapping = props.mappings[props.layerId] as Mapping | undefined
+	const name = mapping?.layerName ?? props.layerId
+
+	let selectedDeviceStatus: BridgeDevice | undefined = undefined
+	if (mapping) {
+		selectedDeviceStatus = appStore.allDeviceStatuses[mapping.deviceId]
+	}
+
+	const selectedItem: DropdownItem = { id: props.layerId, label: name, deviceStatus: selectedDeviceStatus }
 
 	const otherItems: DropdownItem[] = Object.entries(props.mappings)
 		.filter(([mappingId, mapping]) => {
@@ -55,17 +63,21 @@ export const LayerName: React.FC<{
 			return true
 		})
 		// Map to a simple readable format
-		.map(([mappingId, mappingValue]) => ({ id: mappingId, label: mappingValue.layerName ?? 'Unknown' }))
+		.map(([layerId, mapping]) => {
+			const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
 
-	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings' })
+			return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
+		})
+
+	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings', deviceStatus: null })
 
 	return (
-		<div className={classNames('layer-name', { warning: !mappingExists })}>
+		<div className={classNames('layer-name', { warning: !mapping })}>
 			{
 				<LayerNamesDropdown
 					selectedItem={selectedItem}
 					otherItems={otherItems}
-					exists={mappingExists}
+					exists={!!mapping}
 					onSelect={(id: string) => {
 						if (id === 'editMappings') {
 							store.guiStore.goToHome('mappingsSettings')
@@ -98,6 +110,7 @@ interface DropdownItem {
 	id: string
 	label: string
 	className?: string
+	deviceStatus: BridgeDevice | undefined | null
 }
 
 const LayerNamesDropdown: React.FC<{
@@ -132,6 +145,13 @@ const LayerNamesDropdown: React.FC<{
 						</div>
 					)}
 					<div className="item-label">{props.selectedItem.label}</div>
+
+					{props.selectedItem.deviceStatus === undefined && (
+						<div className="connection-status__dot" title="Device not found"></div>
+					)}
+					{props.selectedItem.deviceStatus?.ok === false && (
+						<div className="connection-status__dot" title="There is an issue with the device"></div>
+					)}
 				</div>
 			</div>
 			<DropdownOtherItems
