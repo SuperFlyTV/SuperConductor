@@ -8,21 +8,22 @@ A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&n
 
 ### Windows
 
-Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .exe file.
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-Windows-Installer.exe).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-Windows-Installer.exe).
 
 ### Linux (Ubuntu)
 
-1. Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download the installer .AppImage file.
-2. Execute the following before running the file:
-   ```bash
-   # Replace X.Y.Z with the actual version number.
-   chmod +x Downloads/SuperConductor-X.Y.Z-Linux-Executable.AppImage
-   ```
+- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-Linux-Executable.AppImage).<br/>
+  Execute the following before running the file:<br/>
+  `chmod +x Downloads/SuperConductor-0.7.2-Linux-Executable.AppImage`
+- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-Linux-Executable.AppImage).<br/>
+  Execute the following before running the file:<br/>
+  `chmod +x Downloads/TSR-Bridge-0.7.2-Linux-Executable.AppImage`
 
 ### macOS
 
-Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .dmg file.
-
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-macOS-Installer.dmg).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-macOS-Installer.dmg).
 
 ## Features
 
@@ -42,7 +43,7 @@ Drag objects onto the timeline, edit them and play them out instantly.
 
 Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
-![Stream&nbsp;Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream&nbsp;Deck](/doc/img/streamdeck.gif)
+![Stream Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream Deck](/doc/img/streamdeck.gif)
 
 ### Supported Devices
 

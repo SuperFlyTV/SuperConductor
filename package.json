@@ -18,6 +18,7 @@
 	],
 	"scripts": {
 		"setup": "lerna bootstrap",
+		"postversion": "node scripts/postversion.js",
 		"prepare": "husky install",
 		"lerna": "lerna",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
