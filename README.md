@@ -64,6 +64,14 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
 - (GUI not implemented yet) Arbitrary TCP-socket compatible devices
 
+## TSR Bridge
+
+The TSR-bridge is the application which handles the actual playout and control of the connected devices. By default, an instance of TSR-bridge runs internally in SuperConductor, so devices can be controlled directly from the application.
+
+In some instances, you might want to run the TSR-Bridge on another computer, for example if you don't have direct network access to the devices you want to control.
+
+TSR-Bridge can either connect to the SuperConductor ("incoming bridge"), or the SuperConductor can connect to the TSR-Bridge(outgoing bridge). Pick the one that works best for you, depending on your network setup, firewalls etc..
+
 ## Problems and Issues
 
 Problems and Issues can be reported here: [Issues](https://github.com/SuperFlyTV/SuperConductor/issues)
