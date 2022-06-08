@@ -4,6 +4,7 @@ import {
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
+	findDevice,
 	findGroup,
 	findPart,
 	findPartInRundown,
@@ -11,9 +12,11 @@ import {
 	findTimelineObjIndex,
 	findTimelineObjInRundown,
 	generateNewTimelineObjIds,
+	getMappingName,
 	getNextPartIndex,
 	getPrevPartIndex,
 	getResolvedTimelineTotalDuration,
+	listAvailableDeviceIDs,
 	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
@@ -33,7 +36,7 @@ import { TimelineObj, TimelineObjResolvedInstance } from '../models/rundown/Time
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
-import { filterMapping, getMappingFromTimelineObject } from '../lib/TSRMappings'
+import { filterMapping, getMappingFromTimelineObject, sortMappings } from '../lib/TSRMappings'
 import { getDefaultGroup } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
@@ -1394,7 +1397,9 @@ export class IPCServer
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
 			throw new Error(
-				`Prevented addition of resource "${resource.id}" to layer "${mapping.layerName}" because it is of an incompatible type.`
+				`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
+					obj.layer
+				}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
 			)
 		}
 
@@ -2084,16 +2089,25 @@ export class IPCServer
 		let addToLayerId: string | null = null
 		let createdNewLayer = false
 
+		const allDeviceIds = listAvailableDeviceIDs(project.bridges)
+
 		// First, try to pick next free layer:
 		const possibleLayers: { [layerId: string]: number } = {}
-		for (const [checkLayerId, checkLayer] of Object.entries(project.mappings)) {
+		for (const { layerId, mapping } of sortMappings(project.mappings)) {
+			// Is the layer on the same device as the resource?
+			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
+
+			// Does the layer have a device?
+			if (!allDeviceIds.has(mapping.deviceId)) continue
+
 			// Is the layer compatible?
-			if (filterMapping(checkLayer, arg.obj)) {
-				// Is the layer free?
-				if (!part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === checkLayerId)) {
-					possibleLayers[checkLayerId] = 1
-				}
-			}
+			if (!filterMapping(mapping, arg.obj)) continue
+
+			// Is the layer free?
+			if (part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+
+			// Okay then:
+			possibleLayers[layerId] = 1
 		}
 		// Pick the best layer, ie check which layer contains the most similar objects in other parts:
 		for (const group of rundown.groups) {

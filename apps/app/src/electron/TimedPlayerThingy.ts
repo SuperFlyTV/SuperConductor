@@ -18,6 +18,7 @@ import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { LoggerLike } from '@shared/api'
+import { listAvailableDeviceIDs } from '../lib/util'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -133,8 +134,15 @@ export class TimedPlayerThingy {
 
 		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
 			refreshResources: () => {
-				// this.tptCaspar?.fetchAndSetMedia()
-				// this.tptCaspar?.fetchAndSetTemplates()
+				// Remove resources of devices we don't have anymore:
+				const project = this.storage.getProject()
+				const deviceIds = listAvailableDeviceIDs(project.bridges)
+				for (const [id, resource] of Object.entries(this.storage.getResources())) {
+					if (!deviceIds.has(resource.deviceId)) {
+						this.storage.updateResource(id, null)
+					}
+				}
+
 				bridgeHandler.refreshResources()
 			},
 			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {

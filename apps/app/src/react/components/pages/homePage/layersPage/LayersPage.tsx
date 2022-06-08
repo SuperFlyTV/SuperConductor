@@ -33,7 +33,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 
 	return (
 		<ProjectPageLayout title="Layers" help={help}>
-			{listAvailableDeviceIDs(project.bridges).map((deviceId) => {
+			{Array.from(listAvailableDeviceIDs(project.bridges)).map((deviceId) => {
 				const device = findDevice(project.bridges, deviceId)
 				const deviceName = getDeviceName(project, deviceId)
 

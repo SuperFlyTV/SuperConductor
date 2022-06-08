@@ -235,7 +235,7 @@ export function findDevice(bridges: Project['bridges'], deviceId: string): Devic
 	}
 }
 
-export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): string[] {
+export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<string> {
 	const deviceIds = new Set<string>()
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
@@ -248,7 +248,7 @@ export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?:
 			}
 		}
 	}
-	return Array.from(deviceIds)
+	return deviceIds
 }
 
 /**
