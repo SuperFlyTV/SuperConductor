@@ -588,6 +588,9 @@ export function shortID(): string {
 export function getDeviceName(project: Project, deviceId: string) {
 	return project.deviceNames?.[deviceId] || deviceId
 }
+export function getMappingName(mapping: Mapping, layerId: string): string {
+	return mapping.layerName ?? layerId
+}
 /** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman" */
 export function scatterMatchString(source: string, search: string): null | number {
 	search = search.toLowerCase()
