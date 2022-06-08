@@ -25,7 +25,7 @@ import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimeline
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
-import { filterMapping } from '../../../../lib/TSRMappings'
+import { filterMapping, sortMappings } from '../../../../lib/TSRMappings'
 import { Popover, TextField, ToggleButton } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -715,9 +715,9 @@ export const PartView: React.FC<{
 		).get() || false
 	const groupOrPartLocked = groupLocked || part.locked || false
 	const sortedLayers = useMemo(() => {
-		return sortLayers(Object.entries(resolvedTimeline.layers), mappings)
+		return sortLayers(resolvedTimeline.layers, mappings)
 	}, [mappings, resolvedTimeline.layers])
-	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0]?.[1]?.[0])
+	const firstTimelineObj = modifiedTimeline.find((obj) => obj.obj.id === sortedLayers[0]?.objectIds[0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
 	if (typeof firstTimelineObjType === 'string') {
@@ -852,7 +852,7 @@ export const PartView: React.FC<{
 			<div className="part__dropdown">{/** TODO **/}</div>
 
 			<div className="part__layer-names">
-				{sortLayers(Object.entries(resolvedTimeline.layers), mappings).map(([layerId]) => {
+				{sortLayers(resolvedTimeline.layers, mappings).map(({ layerId }) => {
 					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
 
 					return (
@@ -906,7 +906,7 @@ export const PartView: React.FC<{
 						})}
 						ref={layersDivRef}
 					>
-						{sortedLayers.map(([layerId, objectIds]) => {
+						{sortedLayers.map(({ layerId, objectIds }) => {
 							const objectsOnLayer: {
 								resolved: ResolvedTimelineObject['resolved']
 								timelineObj: TimelineObj
@@ -981,29 +981,18 @@ export const PartView: React.FC<{
 	)
 })
 
-type TEntries = [string, string[]][]
+function sortLayers(
+	layers: ResolvedTimeline['layers'],
+	mappings: Mappings
+): { layerId: string; objectIds: string[] }[] {
+	const usedMappings: Mappings = {}
 
-const sortLayers = (entries: TEntries, mappings: Mappings) => {
-	return entries.sort((a, b) => {
-		const aLayerId = a[0]
-		const bLayerId = b[0]
+	for (const layerId of Object.keys(layers)) {
+		const mapping = mappings[layerId]
+		if (mapping) usedMappings[layerId] = mapping
+	}
 
-		const aMappingInfo = mappings[aLayerId]
-		const bMappingInfo = mappings[bLayerId]
-
-		const aLayer = aMappingInfo?.layerName ?? ''
-		const bLayer = bMappingInfo?.layerName ?? ''
-
-		if (aLayer > bLayer) {
-			return 1
-		}
-
-		if (aLayer < bLayer) {
-			return -1
-		}
-
-		return 0
-	})
+	return sortMappings(usedMappings).map(({ layerId }) => ({ layerId, objectIds: layers[layerId] }))
 }
 
 const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {

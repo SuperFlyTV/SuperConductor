@@ -9,7 +9,7 @@ import { LayerItemHeader } from '../layerItem/LayerItemHeader'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 import { findDevice, getDeviceName, listAvailableDeviceIDs, shortID } from '../../../../../lib/util'
 import 'react-toggle/style.css'
-import { getDefaultMappingForDeviceType } from '../../../../../lib/TSRMappings'
+import { getDefaultMappingForDeviceType, sortMappings } from '../../../../../lib/TSRMappings'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { LoggerContext } from '../../../../contexts/Logger'
@@ -55,18 +55,16 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 						}
 					>
 						<ScList
-							list={Object.entries(project.mappings)
-								.filter(([_mappingId, mapping]) => {
+							list={sortMappings(project.mappings)
+								.filter(({ mapping }) => {
 									return mapping.deviceId === deviceId
 								})
-								.map(([mappingId, mapping]) => {
+								.map(({ layerId, mapping }) => {
 									return {
-										id: mappingId,
-										header: (
-											<LayerItemHeader id={mappingId} mapping={mapping} deviceId={deviceId} />
-										),
-										content: <LayerItemContent mappingId={mappingId} mapping={mapping} />,
-										openByDefault: mappingId === newlyCreatedId,
+										id: layerId,
+										header: <LayerItemHeader id={layerId} mapping={mapping} deviceId={deviceId} />,
+										content: <LayerItemContent mappingId={layerId} mapping={mapping} />,
+										openByDefault: layerId === newlyCreatedId,
 									}
 								})}
 							openByDefault={newlyCreatedId ? [newlyCreatedId] : undefined}

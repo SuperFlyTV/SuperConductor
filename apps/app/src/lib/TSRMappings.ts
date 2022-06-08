@@ -983,3 +983,104 @@ function getLastBiggestValue(
 	})
 	return lastBiggest
 }
+
+export function sortMappings(mappings: Mappings): { layerId: string; mapping: Mapping }[] {
+	return Object.entries(mappings)
+		.map(([layerId, mapping]) => ({
+			layerId,
+			mapping,
+		}))
+		.sort((a, b) => {
+			if (a.mapping.deviceId > b.mapping.deviceId) return 1
+			if (a.mapping.deviceId < b.mapping.deviceId) return -1
+
+			if (a.mapping.device > b.mapping.device) return 1
+			if (a.mapping.device < b.mapping.device) return -1
+
+			const device = a.mapping.device
+			if (device === DeviceType.ABSTRACT) {
+				// Nothing
+			} else if (device === DeviceType.CASPARCG) {
+				const _a = a.mapping as MappingCasparCG
+				const _b = b.mapping as MappingCasparCG
+				if (_a.channel > _b.channel) return 1
+				if (_a.channel < _b.channel) return -1
+				if (_a.layer > _b.layer) return 1
+				if (_a.layer < _b.layer) return -1
+			} else if (device === DeviceType.ATEM) {
+				const _a = a.mapping as MappingAtem
+				const _b = b.mapping as MappingAtem
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				if ((_a.index || 0) > (_b.index || 0)) return 1
+				if ((_a.index || 0) < (_b.index || 0)) return -1
+			} else if (device === DeviceType.LAWO) {
+				const _a = a.mapping as MappingLawo
+				const _b = b.mapping as MappingLawo
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				if ((_a.identifier || '') > (_b.identifier || '')) return 1
+				if ((_a.identifier || '') < (_b.identifier || '')) return -1
+			} else if (device === DeviceType.HTTPSEND) {
+				// Nothing
+			} else if (device === DeviceType.PANASONIC_PTZ) {
+				const _a = a.mapping as MappingPanasonicPtz
+				const _b = b.mapping as MappingPanasonicPtz
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+			} else if (device === DeviceType.TCPSEND) {
+				// Nothing
+			} else if (device === DeviceType.HYPERDECK) {
+				const _a = a.mapping as MappingHyperdeck
+				const _b = b.mapping as MappingHyperdeck
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				if ((_a.index || 0) > (_b.index || 0)) return 1
+				if ((_a.index || 0) < (_b.index || 0)) return -1
+			} else if (device === DeviceType.PHAROS) {
+				// Nothing
+			} else if (device === DeviceType.OSC) {
+				// Nothing
+			} else if (device === DeviceType.HTTPWATCHER) {
+				// Nothing
+			} else if (device === DeviceType.SISYFOS) {
+				const _a = a.mapping as MappingSisyfos
+				const _b = b.mapping as MappingSisyfos
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+			} else if (device === DeviceType.QUANTEL) {
+				const _a = a.mapping as MappingQuantel
+				const _b = b.mapping as MappingQuantel
+				if (_a.portId > _b.portId) return 1
+				if (_a.portId < _b.portId) return -1
+				if (_a.channelId > _b.channelId) return 1
+				if (_a.channelId < _b.channelId) return -1
+			} else if (device === DeviceType.VIZMSE) {
+				// Nothing
+			} else if (device === DeviceType.SINGULAR_LIVE) {
+				const _a = a.mapping as MappingSingularLive
+				const _b = b.mapping as MappingSingularLive
+				if (_a.compositionName > _b.compositionName) return 1
+				if (_a.compositionName < _b.compositionName) return -1
+			} else if (device === DeviceType.SHOTOKU) {
+				// Nothing
+			} else if (device === DeviceType.VMIX) {
+				const _a = a.mapping as MappingVMixProgram
+				const _b = b.mapping as MappingVMixProgram
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				if ((_a.index || 0) > (_b.index || 0)) return 1
+				if ((_a.index || 0) < (_b.index || 0)) return -1
+			} else if (device === DeviceType.OBS) {
+				const _a = a.mapping as MappingOBSAny
+				const _b = b.mapping as MappingOBSAny
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+			} else {
+				assertNever(device)
+			}
+			if (a.layerId > a.layerId) return 1
+			if (a.layerId < a.layerId) return -1
+			return 0
+		})
+}

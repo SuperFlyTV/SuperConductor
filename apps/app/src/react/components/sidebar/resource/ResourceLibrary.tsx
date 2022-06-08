@@ -32,6 +32,7 @@ import { store } from '../../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
 import { useDebounce } from '../../../../lib/useDebounce'
+import { sortMappings } from '../../../../lib/TSRMappings'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -293,7 +294,7 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 														name="layerId"
 														label="Layer"
 													>
-														{Object.entries(project.mappings).map(([layerId, mapping]) => (
+														{sortMappings(project.mappings).map(({ layerId, mapping }) => (
 															<MenuItem key={layerId} value={layerId}>
 																{mapping.layerName || layerId}
 															</MenuItem>
