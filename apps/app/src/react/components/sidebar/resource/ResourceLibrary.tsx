@@ -170,13 +170,15 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 						value={deviceFilterValue}
 						onChange={handleDeviceFilterChange}
 						input={<OutlinedInput label="Filter Resources by Device" />}
-						renderValue={(selected) => selected.join(', ')}
+						renderValue={(selectedDeviceIds) =>
+							selectedDeviceIds.map((deviceId) => getDeviceName(project, deviceId)).join(', ')
+						}
 						MenuProps={MenuProps}
 					>
 						{deviceIds.map((deviceId) => (
 							<MenuItem key={deviceId} value={deviceId}>
 								<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
-								<ListItemText primary={deviceId} />
+								<ListItemText primary={getDeviceName(project, deviceId)} />
 							</MenuItem>
 						))}
 					</Select>

@@ -56,6 +56,8 @@ export const BridgeItemContent: React.FC<{
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
 
+	const outgoingBridge: boolean = props.bridge.outgoing
+
 	return (
 		<div className="content">
 			{!props.isInternal && (
@@ -79,22 +81,24 @@ export const BridgeItemContent: React.FC<{
 							}}
 						/>
 
-						<TextField
-							margin="normal"
-							size="small"
-							type="text"
-							label="URL"
-							value={url}
-							onChange={(event) => {
-								setUrl(event.target.value)
-							}}
-							onBlur={() => {
-								handleUrlChange(url)
-							}}
-							onKeyUp={(e) => {
-								if (e.key === 'Enter') handleUrlChange(url)
-							}}
-						/>
+						{outgoingBridge && (
+							<TextField
+								margin="normal"
+								size="small"
+								type="text"
+								label="URL"
+								value={url}
+								onChange={(event) => {
+									setUrl(event.target.value)
+								}}
+								onBlur={() => {
+									handleUrlChange(url)
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Enter') handleUrlChange(url)
+								}}
+							/>
+						)}
 					</div>
 
 					<div className="actions">

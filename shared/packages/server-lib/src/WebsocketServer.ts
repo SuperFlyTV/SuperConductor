@@ -21,6 +21,7 @@ export class WebsocketServer extends EventEmitter {
 	private wss: WebSocket.Server
 
 	private connections: WebsocketConnection[] = []
+	private isClosed = false
 
 	constructor(
 		private log: LoggerLike,
@@ -31,14 +32,8 @@ export class WebsocketServer extends EventEmitter {
 		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
-			// The websocekt server is closed.
-			this.connections.forEach((client) => {
-				// this.clients = []
-				client.terminate()
-			})
-			this.connections = []
-
-			this.emit('close')
+			// The websocket server is closed.
+			this._onServerClose()
 		})
 		this.wss.on('error', (err: any) => {
 			this.log.error('Error in WebSocket server')
@@ -62,6 +57,22 @@ export class WebsocketServer extends EventEmitter {
 			this.onConnection(bridge)
 		})
 		return bridge
+	}
+	close() {
+		this.wss.close()
+		this._onServerClose() // Call this in case of the wss close event not firing.
+	}
+	private _onServerClose() {
+		// Close the connections:
+		this.connections.forEach((client) => {
+			client.terminate()
+		})
+		this.connections = []
+
+		if (!this.isClosed) {
+			this.emit('close')
+			this.isClosed = true
+		}
 	}
 }
 
@@ -149,8 +160,13 @@ export class WebsocketConnection extends EventEmitter {
 			this._onDisconnected()
 		})
 		ws.on('error', (err) => {
-			this.log.error('Error in WebSocket connection')
-			this.log.error(err)
+			if (!this.connected && `${err}`.match(/ECONNREFUSED/)) {
+				// Yeah, we already know we are not connected..
+				// Ignore.
+			} else {
+				this.log.error('Error in WebSocket connection')
+				this.log.error(err)
+			}
 		})
 		ws.on('ping', () => {
 			this.lastPingReceived = Date.now()

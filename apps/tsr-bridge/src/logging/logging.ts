@@ -18,7 +18,7 @@ export enum LogLevel {
 	Silly = 'silly',
 }
 
-export const createLogger = (ipcClient: IPCClient) => {
+export const createLogger = () => {
 	const log = Winston.createLogger({
 		level: LogLevel.Silly,
 		format: utilFormatter(),
@@ -26,9 +26,11 @@ export const createLogger = (ipcClient: IPCClient) => {
 			new consoleTransport({
 				format: Winston.format.simple(),
 			}),
-			new IPCTransport(ipcClient),
 		],
 	})
 
 	return log
+}
+export function addLoggerTransport(log: Winston.Logger, ipcClient: IPCClient) {
+	log.add(new IPCTransport(ipcClient))
 }

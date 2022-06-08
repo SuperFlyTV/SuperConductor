@@ -26,6 +26,8 @@ export namespace BridgeAPI {
 			type: 'init'
 			id: string
 			version: string
+			/** Set to true if the bridge is the one connecting to SuperConector (incoming bridge)  */
+			incoming: boolean
 		}
 		export interface Status extends MessageBase {
 			type: 'status'

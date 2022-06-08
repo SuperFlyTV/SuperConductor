@@ -96,27 +96,25 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 
 			<RoundedSection title="Incoming Bridges">
 				<ScList
-					list={incomingBridges
-						.filter((bridge) => bridgeStatuses[bridge.id])
-						.map((bridge) => {
-							return {
-								id: bridge.id,
-								header: (
-									<BridgeItemHeader
-										id={bridge.id}
-										bridge={bridge}
-										bridgeStatus={bridgeStatuses[bridge.id]}
-									/>
-								),
-								content: (
-									<BridgeItemContent
-										id={bridge.id}
-										bridge={bridge}
-										bridgeStatus={bridgeStatuses[bridge.id]}
-									/>
-								),
-							}
-						})}
+					list={incomingBridges.map((bridge) => {
+						return {
+							id: bridge.id,
+							header: (
+								<BridgeItemHeader
+									id={bridge.id}
+									bridge={bridge}
+									bridgeStatus={bridgeStatuses[bridge.id]}
+								/>
+							),
+							content: (
+								<BridgeItemContent
+									id={bridge.id}
+									bridge={bridge}
+									bridgeStatus={bridgeStatuses[bridge.id]}
+								/>
+							),
+						}
+					})}
 				/>
 				{incomingBridges.length === 0 && <div className="central">There are no incoming bridges.</div>}{' '}
 			</RoundedSection>
@@ -127,27 +125,25 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 				controls={<TextBtn label="Add" onClick={() => setNewBridgeDialogOpen(true)} />}
 			>
 				<ScList
-					list={outgoingBridges
-						.filter((bridge) => bridgeStatuses[bridge.id])
-						.map((bridge) => {
-							return {
-								id: bridge.id,
-								header: (
-									<BridgeItemHeader
-										id={bridge.id}
-										bridge={bridge}
-										bridgeStatus={bridgeStatuses[bridge.id]}
-									/>
-								),
-								content: (
-									<BridgeItemContent
-										id={bridge.id}
-										bridge={bridge}
-										bridgeStatus={bridgeStatuses[bridge.id]}
-									/>
-								),
-							}
-						})}
+					list={outgoingBridges.map((bridge) => {
+						return {
+							id: bridge.id,
+							header: (
+								<BridgeItemHeader
+									id={bridge.id}
+									bridge={bridge}
+									bridgeStatus={bridgeStatuses[bridge.id]}
+								/>
+							),
+							content: (
+								<BridgeItemContent
+									id={bridge.id}
+									bridge={bridge}
+									bridgeStatus={bridgeStatuses[bridge.id]}
+								/>
+							),
+						}
+					})}
 				/>
 
 				{outgoingBridges.filter((bridge) => bridgeStatuses[bridge.id]).length === 0 && (

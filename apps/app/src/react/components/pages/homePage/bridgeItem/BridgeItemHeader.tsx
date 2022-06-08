@@ -15,19 +15,23 @@ export const BridgeItemHeader: React.FC<{
 	/**
 	 * Status of the bridge and all devices
 	 */
-	bridgeStatus: BridgeStatus
+	bridgeStatus: BridgeStatus | undefined
 }> = (props) => {
+	const bridgeStatus: BridgeStatus = props.bridgeStatus || {
+		connected: false,
+		devices: {},
+	}
 	return (
 		<div className="bridge-item-header">
-			<StatusCircle status={props.bridgeStatus.connected ? 'connected' : 'disconnected'} />
+			<StatusCircle status={bridgeStatus.connected ? 'connected' : 'disconnected'} />
 			<ScListItemLabel title={props.bridge.name} subtitle={props.bridge.url} />
 
-			{Object.entries(props.bridgeStatus?.devices).filter(([id]) => {
+			{Object.entries(bridgeStatus?.devices).filter(([id]) => {
 				return props.bridge.settings.devices[id]
 			}).length > 0 && (
 				<div className="device-statuses">
 					<div className="label">Device statuses:</div>
-					{Object.entries(props.bridgeStatus?.devices)
+					{Object.entries(bridgeStatus?.devices)
 						/**
 						 * Temporary fix - just like in DevicesList.tsx.
 						 * TODO - fix this bug on the backend side.

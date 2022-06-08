@@ -23,7 +23,8 @@ export class BridgeHandler {
 	private outgoingBridges: {
 		[bridgeId: string]: {
 			bridge: Bridge
-			connection: WebsocketConnection
+			lastTry: number
+			connection?: WebsocketConnection
 		}
 	} = {}
 	private internalBridge: LocalBridgeConnection | null = null
@@ -32,6 +33,7 @@ export class BridgeHandler {
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
 	private closed = false
+	reconnectToBridgesInterval: NodeJS.Timer
 
 	constructor(
 		private log: LoggerLike,
@@ -52,7 +54,7 @@ export class BridgeHandler {
 
 			// Lookup and set the bridgeId, if it is an outgoing
 			for (const [bridgeId, outgoing] of Object.entries(this.outgoingBridges)) {
-				if (outgoing.connection.connectionId === connection.connectionId) {
+				if (outgoing.connection?.connectionId === connection.connectionId) {
 					bridge.bridgeId = bridgeId
 				}
 			}
@@ -68,6 +70,10 @@ export class BridgeHandler {
 		this.storage.on('project', (project: Project) => {
 			this.onUpdatedProject(project)
 		})
+
+		this.reconnectToBridgesInterval = setInterval(() => {
+			this.reconnectToBridges()
+		}, 1000)
 	}
 	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
@@ -77,6 +83,8 @@ export class BridgeHandler {
 			await this.internalBridge.destroy()
 		}
 		this.closed = true
+
+		if (this.reconnectToBridgesInterval) clearInterval(this.reconnectToBridgesInterval)
 	}
 	onUpdatedProject(project: Project) {
 		if (this.closed) return
@@ -111,7 +119,7 @@ export class BridgeHandler {
 				} else if (existing.bridge.url !== bridge.url) {
 					// Updated
 
-					existing.connection.terminate()
+					existing.connection?.terminate()
 					addNew = true
 				}
 
@@ -122,22 +130,12 @@ export class BridgeHandler {
 						devices: {},
 					})
 
-					// Guard against invalid addresses entered by the user
-					try {
-						const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
-						// connection.id = bridge.id
-						connection.on('close', () => {
-							// 'close' means that it's really gone.
-							// remove bridge:
-							delete this.outgoingBridges[bridge.id]
-						})
-						this.outgoingBridges[bridge.id] = {
-							bridge,
-							connection,
-						}
-					} catch (error) {
-						this.log.error(`Failed to create a websocket connection to "${bridge.url}"`)
+					this.outgoingBridges[bridge.id] = {
+						bridge,
+						lastTry: Date.now(),
 					}
+
+					this.tryConnectToBridge(bridge.id)
 				}
 			}
 
@@ -149,7 +147,33 @@ export class BridgeHandler {
 
 			if (existing && !project.bridges[bridgeId]) {
 				// removed:
-				existing.connection.terminate()
+				existing.connection?.terminate()
+				delete this.outgoingBridges[bridgeId]
+			}
+		}
+	}
+	private reconnectToBridges() {
+		for (const [bridgeId, bridge] of Object.entries(this.outgoingBridges)) {
+			if (!bridge.connection && Date.now() - bridge.lastTry > 10 * 1000) {
+				this.tryConnectToBridge(bridgeId)
+			}
+		}
+	}
+	private tryConnectToBridge(bridgeId: string) {
+		const bridge = this.outgoingBridges[bridgeId]
+		if (bridge) {
+			bridge.lastTry = Date.now()
+			try {
+				const connection: WebsocketConnection = this.server.connectToServer(bridge.bridge.url)
+
+				bridge.connection = connection
+				connection.on('close', () => {
+					// 'close' means that it's really gone.
+					// remove bridge:
+					delete bridge.connection
+				})
+			} catch (error) {
+				// this.log.warn(`Failed to create a websocket connection to "${bridge.bridge.url}"`)
 			}
 		}
 	}
@@ -214,7 +238,7 @@ abstract class AbstractBridgeConnection {
 
 	setSettings(settings: Bridge['settings'], force = false) {
 		if (force || !_.isEqual(this.sentSettings, settings)) {
-			this.sentSettings = settings
+			this.sentSettings = _.cloneDeep(settings)
 			this.send({ type: 'setSettings', ...settings })
 		}
 	}
@@ -260,7 +284,7 @@ abstract class AbstractBridgeConnection {
 			}
 		}
 	}
-	protected onInit(id: string, version: string) {
+	protected onInit(id: string, version: string, incoming: boolean) {
 		if (!this.bridgeId) {
 			this.bridgeId = id
 		} else if (this.bridgeId !== id) {
@@ -269,6 +293,10 @@ abstract class AbstractBridgeConnection {
 
 		if (version !== CURRENT_VERSION) {
 			this.callbacks.onVersionMismatch(id, version, CURRENT_VERSION)
+		}
+
+		if (incoming && this.bridgeId) {
+			this.createBridgeInProjectIfNotExists()
 		}
 
 		// Send initial commands:
@@ -348,7 +376,7 @@ abstract class AbstractBridgeConnection {
 		if (msg.type === 'initRequestId') {
 			if (this.onInitRequestId) this.onInitRequestId()
 		} else if (msg.type === 'init') {
-			this.onInit(msg.id, msg.version)
+			this.onInit(msg.id, msg.version, msg.incoming)
 		} else if (msg.type === 'status') {
 			// todo
 		} else if (msg.type === 'deviceStatus') {
@@ -429,6 +457,12 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 				const status = this.session.getBridgeStatus(this.bridgeId)
 				if (status) {
 					status.connected = false
+					for (const device of Object.values(status.devices)) {
+						device.ok = false
+						device.connectionId = 0
+						device.message = 'Bridge not connected'
+					}
+
 					this.session.updateBridgeStatus(this.bridgeId, status)
 				}
 			}
