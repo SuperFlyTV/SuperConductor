@@ -7,7 +7,7 @@ import { ResourceData } from './ResourceData'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
 import { Part } from '../../../../models/rundown/Part'
 import { Field, Form, Formik } from 'formik'
-import { findPartInRundown, getDeviceName } from '../../../../lib/util'
+import { findPartInRundown, getDeviceName, scatterMatchString } from '../../../../lib/util'
 import { Rundown } from '../../../../models/rundown/Rundown'
 import { Group } from '../../../../models/rundown/Group'
 import {
@@ -91,7 +91,9 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const resourcesFilteredByDeviceAndName = useMemo(() => {
 		if (debouncedNameFilterValue.trim().length === 0) return resourcesFilteredByDevice // fast path
 		return resourcesFilteredByDevice.filter((resource) => {
-			return resource.displayName.toLowerCase().includes(debouncedNameFilterValue.toLowerCase())
+			return (
+				scatterMatchString(resource.displayName.toLowerCase(), debouncedNameFilterValue.toLowerCase()) !== null
+			)
 		})
 	}, [debouncedNameFilterValue, resourcesFilteredByDevice])
 

@@ -588,3 +588,23 @@ export function shortID(): string {
 export function getDeviceName(project: Project, deviceId: string) {
 	return project.deviceNames?.[deviceId] || deviceId
 }
+/** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman" */
+export function scatterMatchString(source: string, search: string): null | number {
+	search = search.toLowerCase()
+	source = source.toLowerCase()
+
+	let j = 0
+	for (let i = 0; i < search.length; i++) {
+		const char = search[i]
+
+		const foundIndex = source.indexOf(char, j)
+
+		if (foundIndex === -1) {
+			// no match
+			return null
+		} else {
+			j = foundIndex + 1
+		}
+	}
+	return j
+}
