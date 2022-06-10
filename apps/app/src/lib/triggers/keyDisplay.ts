@@ -426,6 +426,7 @@ function triggersAreaToArea(triggerArea: TriggerArea | undefined, areaInDefiniti
 		areaInDefinition,
 		keyLabel: `${triggerArea.keyRank + 1}`,
 		areaLabel: triggerArea.area.name,
+		areaId: triggerArea.areaId,
 		color: triggerArea.areaColor,
 	}
 }

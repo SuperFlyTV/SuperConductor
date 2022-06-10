@@ -18,6 +18,8 @@ export interface KeyDisplay {
 		areaLabel: string
 		/** Label of this key in the area */
 		keyLabel: string
+		/** A unique id for this area */
+		areaId: string
 	}
 
 	/** The most important text */

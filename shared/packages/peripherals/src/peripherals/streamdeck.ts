@@ -124,7 +124,8 @@ export class PeripheralStreamDeck extends Peripheral {
 
 		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
 
-		if (force || !_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
+		const oldKeyDisplay = this.sentKeyDisplay[identifier] as KeyDisplay | undefined
+		if (force || !_.isEqual(oldKeyDisplay, keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
 			if (!this.connectedToParent) {
@@ -145,6 +146,17 @@ export class PeripheralStreamDeck extends Peripheral {
 			}
 
 			await this.drawKeyDisplay(this.streamDeck, this.queue, identifierToKeyIndex(identifier), keyDisplay)
+
+			if (oldKeyDisplay?.area?.areaId !== keyDisplay.area?.areaId) {
+				const adjacentButtons = this.getAdjacentKeys(identifierToKeyIndex(identifier))
+
+				for (const keyIndex of Object.values(adjacentButtons)) {
+					if (keyIndex !== null) {
+						const identifier = keyIndexToIdentifier(keyIndex)
+						await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+					}
+				}
+			}
 		}
 	}
 	async _updateAllKeys(specialMessage?: string): Promise<void> {
@@ -224,6 +236,12 @@ export class PeripheralStreamDeck extends Peripheral {
 		const fontsize = SIZE >= 96 ? 20 : 16 // XL vs original
 		const padding = 5
 		let bgColor = '#000'
+		const borders = {
+			top: true,
+			bottom: true,
+			left: true,
+			right: true,
+		}
 
 		if (keyDisplay.intercept) {
 			// Normal functionality is intercepted / disabled
@@ -327,10 +345,10 @@ export class PeripheralStreamDeck extends Peripheral {
 
 				if (keyDisplay.attentionLevel === AttentionLevel.IGNORE) {
 					borderWidth = 0
-					borderColor = '#000'
+					borderColor = '#666'
 				} else if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
 					borderWidth = 3
-					borderColor = '#333'
+					borderColor = '#666'
 				} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
 					borderWidth = 3
 					borderColor = '#bbb'
@@ -345,16 +363,71 @@ export class PeripheralStreamDeck extends Peripheral {
 					}
 				}
 
+				if (keyDisplay.area) {
+					bgColor = keyDisplay.area.color
+
+					if (keyDisplay.attentionLevel <= AttentionLevel.NEUTRAL) {
+						borderWidth = 5
+
+						// Remove borders to adjacent buttons with the same area:
+						const adjacentKeys = this.getAdjacentKeys(keyIndex)
+						borders.top = !(
+							adjacentKeys.top !== null &&
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.top)]?.area?.areaId ===
+								keyDisplay.area.areaId
+						)
+						borders.bottom = !(
+							adjacentKeys.bottom !== null &&
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.bottom)]?.area?.areaId ===
+								keyDisplay.area.areaId
+						)
+						borders.left = !(
+							adjacentKeys.left !== null &&
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.left)]?.area?.areaId ===
+								keyDisplay.area.areaId
+						)
+						borders.right = !(
+							adjacentKeys.right !== null &&
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.right)]?.area?.areaId ===
+								keyDisplay.area.areaId
+						)
+					}
+				}
+
 				if (borderWidth) {
 					borderWidth += 3
 					if (hasBackgroundImage) borderWidth += 3
 
+					const radius = 10
+
+					let x = 0
+					let y = 0
+					let width = SIZE
+					let height = SIZE
+
+					// It's a hack, but it works..
+					// Hide borders by drawing ourside:
+					if (!borders.top) {
+						y -= radius
+						height += radius
+					}
+					if (!borders.bottom) {
+						height += radius
+					}
+					if (!borders.left) {
+						x -= radius
+						width += radius
+					}
+					if (!borders.right) {
+						width += radius
+					}
+
 					svg += `<rect
-						x="0"
-						y="0"
-						width="${SIZE}"
-						height="${SIZE}"
-						rx="10"
+						x="${x}"
+						y="${y}"
+						width="${width}"
+						height="${height}"
+						rx="${radius}"
 						stroke="${borderColor}"
 						stroke-width="${borderWidth}"
 						fill="none"
@@ -512,6 +585,43 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.log.error(keyDisplay)
 			throw e
 		}
+	}
+	private getAdjacentKeys(keyIndex: number) {
+		if (!this.streamDeck) throw new Error('No streamdeck connected')
+
+		const center = this.keyIndexToRowColumn(keyIndex)
+
+		const rowcolumns = {
+			top: { row: center.row - 1, column: center.column }, // Above
+			bottom: { row: center.row + 1, column: center.column }, // Below
+			left: { row: center.row, column: center.column - 1 }, // Left
+			right: { row: center.row, column: center.column + 1 }, // Right
+		}
+
+		return {
+			top: rowcolumns.top.row >= 0 ? this.rowColumnToKeyIndex(rowcolumns.top) : null,
+			bottom:
+				rowcolumns.bottom.row < this.streamDeck.KEY_ROWS ? this.rowColumnToKeyIndex(rowcolumns.bottom) : null,
+			left: rowcolumns.left.column >= 0 ? this.rowColumnToKeyIndex(rowcolumns.left) : null,
+			right:
+				rowcolumns.right.column < this.streamDeck.KEY_COLUMNS
+					? this.rowColumnToKeyIndex(rowcolumns.right)
+					: null,
+		}
+	}
+	private keyIndexToRowColumn(keyIndex: number): { row: number; column: number } {
+		if (!this.streamDeck) throw new Error('No streamdeck connected')
+
+		const columns = this.streamDeck.KEY_COLUMNS
+
+		const row = Math.floor(keyIndex / columns)
+		const column = keyIndex % columns
+		return { row, column }
+	}
+	private rowColumnToKeyIndex(rowColumn: { row: number; column: number }): number {
+		if (!this.streamDeck) throw new Error('No streamdeck connected')
+		const columns = this.streamDeck.KEY_COLUMNS
+		return rowColumn.row * columns + rowColumn.column
 	}
 }
 function keyIndexToIdentifier(keyIndex: number): string {
