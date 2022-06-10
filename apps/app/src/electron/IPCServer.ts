@@ -1852,7 +1852,7 @@ export class IPCServer
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
 
-			this._saveUpdates({ project })
+			this._saveUpdates({ project, definingArea: null })
 		}
 
 		return {
