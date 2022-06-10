@@ -34,20 +34,17 @@ export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 	>()
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-			let iArea = 0
+			let iArea = -1
 			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				iArea++
 
-				// Generate a color, using the golden ratio to make the colors as distinct as possible:
-				const phi = 2.61803398875
-				const notRandom0 = iArea / phi
-				const notRandom1 = (iArea + 1) / phi
-				const notRandom2 = (iArea + 2) / phi
+				const notRandom0 = iArea / 6
+				const notRandom2 = Math.floor(iArea / 6) * 0.25
 				const areaColor = RGBToString(
 					HSVtoRGB({
 						h: notRandom0 % 1, // 0..1
-						s: 0.75 + (notRandom1 % 1) * 0.25, // 0.75..1
-						v: 0.5 + (notRandom2 % 1) * 0.5, // 0.5..1
+						s: 1,
+						v: 0.25 + (notRandom2 % 1) * 0.5, // 0..0.75
 					})
 				)
 
