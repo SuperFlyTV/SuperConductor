@@ -228,43 +228,35 @@ export const App = observer(function App() {
 			return
 		}
 
-		const onKey = async () => {
+		const onDeleteKey = (e: KeyboardEvent) => {
 			try {
-				if (!currentRundownId) {
-					return
-				}
+				if (!currentRundownId) return
+				if (document.activeElement?.tagName === 'INPUT') return
 
-				const pressed = sorensen.getPressedKeys()
-				if (pressed.includes('Delete')) {
-					const selectedAndPlayingTimelineObjIds = await gui.getSelectedAndPlayingTimelineObjIds(
-						currentRundownId
-					)
-					if (selectedAndPlayingTimelineObjIds.size > 0) {
-						setShowDeleteTimelineObjConfirmationDialog(true)
-					} else {
-						deleteSelectedTimelineObjs()
-					}
-				}
+				e.preventDefault()
+				gui.getSelectedAndPlayingTimelineObjIds(currentRundownId)
+					.then((selectedAndPlayingTimelineObjIds) => {
+						if (selectedAndPlayingTimelineObjIds.size > 0) {
+							setShowDeleteTimelineObjConfirmationDialog(true)
+						} else {
+							deleteSelectedTimelineObjs()
+						}
+					})
+					.catch(handleError)
 			} catch (error) {
 				handleError(error)
 			}
 		}
-		onKey().catch(handleError)
 
-		sorensen.bind('Delete', onKey, {
+		sorensen.bind('Delete', onDeleteKey, {
 			up: false,
 			global: true,
+			exclusive: true,
+			preventDefaultPartials: false,
 		})
-		sorensen.bind('Delete', onKey, {
-			up: true,
-			global: true,
-		})
-
-		sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			sorensen.unbind('Delete', onKey)
-			sorensen.removeEventListener('keycancel', onKey)
+			sorensen.unbind('Delete', onDeleteKey)
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
 
