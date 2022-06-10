@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { makeAutoObservable, IObservableArray } from 'mobx'
+import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
 import { getDefaultGroup } from '../../electron/defaults'
 import { Rundown } from '../../models/rundown/Rundown'
 import { Group } from '../../models/rundown/Group'
@@ -54,8 +54,10 @@ export class RundownsStore {
 		this.logger = new ClientSideLogger(this.serverAPI)
 		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
 			updateRundown: (rundownId: string, rundown: Rundown) => {
-				this._rundowns.set(rundownId, rundown)
-				this._rundownsClean.set(rundownId, deepClone(rundown))
+				runInAction(() => {
+					this._rundowns.set(rundownId, rundown)
+					this._rundownsClean.set(rundownId, deepClone(rundown))
+				})
 			},
 		})
 		makeAutoObservable(this)

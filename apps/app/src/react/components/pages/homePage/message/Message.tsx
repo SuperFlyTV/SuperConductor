@@ -4,7 +4,7 @@ import { IoClose } from 'react-icons/io5'
 
 import './style.scss'
 
-export const Message: React.FC<{ content: React.ReactNode; type: 'help' | 'warning'; onClose: () => void }> = (
+export const Message: React.FC<{ content?: React.ReactNode; type: 'help' | 'warning'; onClose?: () => void }> = (
 	props
 ) => {
 	return (
@@ -12,10 +12,12 @@ export const Message: React.FC<{ content: React.ReactNode; type: 'help' | 'warni
 			<div className="icon">
 				<IoIosHelpCircleOutline />
 			</div>
-			<div className="content">{props.content}</div>
-			<button className="close" onClick={props.onClose}>
-				<IoClose />
-			</button>
+			<div className="content">{props.content || props.children}</div>
+			{props.onClose && (
+				<button className="close" onClick={props.onClose}>
+					<IoClose />
+				</button>
+			)}
 		</div>
 	)
 }

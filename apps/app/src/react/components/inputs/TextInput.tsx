@@ -10,6 +10,7 @@ export const TextInput: React.FC<
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			changeOnKey?: boolean
 	  }
 	| {
 			currentValue: string | undefined
@@ -20,6 +21,7 @@ export const TextInput: React.FC<
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			changeOnKey?: boolean
 	  }
 > = (props) => {
 	const parse = useCallback((v: string) => v, [])
@@ -38,7 +40,8 @@ export const TextInput: React.FC<
 			'text',
 			props.disabled,
 			props.fullWidth,
-			props.width
+			props.width,
+			props.changeOnKey
 		)
 	} else {
 		return ParsedValueInput<string>(
@@ -52,7 +55,8 @@ export const TextInput: React.FC<
 			'text',
 			props.disabled,
 			props.fullWidth,
-			props.width
+			props.width,
+			props.changeOnKey
 		)
 	}
 }

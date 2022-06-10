@@ -12,7 +12,8 @@ export function ParsedValueInput<V>(
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
 	fullWidth?: boolean,
-	width?: string
+	width?: string,
+	changeOnKey?: boolean
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
@@ -78,6 +79,9 @@ export function ParsedValueInput<V>(
 			}}
 			onChange={(e) => {
 				onEventChange(e)
+				if (changeOnKey) {
+					onSave(e.target.value)
+				}
 			}}
 			onKeyDown={(e) => {
 				const target = e.target as EventTarget & HTMLInputElement

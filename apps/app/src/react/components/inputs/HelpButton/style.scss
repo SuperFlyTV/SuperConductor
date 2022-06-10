@@ -1,0 +1,24 @@
+.help-button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.7;
+    margin-bottom: 0.4rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+
+    &.open {
+        opacity: 1;
+    }
+
+    &:hover {
+        opacity: 1;
+    }
+
+    svg {
+        fill: #8f929f;
+        width: 2rem;
+        height: 2rem;
+    }
+}

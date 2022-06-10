@@ -72,10 +72,6 @@ export class TimelineTracker {
 					changedAnything: { changedAnything: false },
 			  }
 
-		// console.log('state', genericState.layers[this.LAYER].instance)
-
-		// console.log('currentState', currentState)
-
 		if (!_.isEqual(currentState, this.currentState)) {
 			this.currentState = currentState
 
@@ -104,7 +100,6 @@ export class TimelineTracker {
 		}
 
 		const timeUntilNextTime = nextResolveTime - Date.now()
-		// console.log('timeUntilNextTime', timeUntilNextTime)
 
 		this.timeout = setTimeout(() => {
 			this._update(nextResolveTime + 1)

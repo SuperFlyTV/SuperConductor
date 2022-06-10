@@ -671,6 +671,7 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 	return 'Unknown'
 }
 
+/** Returns a short textual description of the Mapping */
 export function describeMappingConfiguration(mapping: Mapping): string {
 	switch (mapping.device) {
 		case DeviceType.ABSTRACT:

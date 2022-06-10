@@ -14,6 +14,9 @@ export type Group = {
 	disabled?: boolean
 	locked?: boolean
 
+	/** Contains info for the Auto-Fill feature */
+	autoFill: AutoFillSettings
+
 	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
 	collapsed?: boolean
 
@@ -35,4 +38,31 @@ export type Group = {
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+}
+
+export interface AutoFillSettings {
+	/** True when Auto-fill is enabled */
+	enable: boolean
+
+	/** Which layers to put resources on, in that order */
+	layerIds: string[]
+	/**  */
+	filter: string
+
+	mode: AutoFillMode
+	sortMode: AutoFillSortMode
+}
+export enum AutoFillMode {
+	/** Replace existing content in the group with new (the order of exiting Parts can change) */
+	REPLACE = 'replace',
+	/** Only add new content to the group (the order of exiting Parts is kept), no parts are removed */
+	APPEND = 'append',
+}
+export enum AutoFillSortMode {
+	NAME_ASC = 'name_asc',
+	NAME_DESC = 'name_desc',
+	ADDED_ASC = 'added_asc',
+	ADDED_DESC = 'added_desc',
+	MODIFIED_ASC = 'modified_asc',
+	MODIFIED_DESC = 'modified_desc',
 }

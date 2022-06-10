@@ -1,10 +1,11 @@
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
-import { Group } from '../models/rundown/Group'
+import { AutoFillMode, AutoFillSortMode, Group } from '../models/rundown/Group'
 import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { shortID } from '../lib/util'
+import { Part } from '../models/rundown/Part'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {
@@ -144,5 +145,21 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 			playingParts: {},
 		},
 		preparedPlayData: null,
+		autoFill: {
+			enable: false,
+			filter: '',
+			layerIds: [],
+			mode: AutoFillMode.APPEND,
+			sortMode: AutoFillSortMode.ADDED_ASC,
+		},
+	}
+}
+export function getDefaultPart(): Omit<Part, 'id' | 'name'> {
+	return {
+		timeline: [],
+		resolved: {
+			duration: 0,
+		},
+		triggers: [],
 	}
 }

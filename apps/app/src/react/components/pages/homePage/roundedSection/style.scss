@@ -113,23 +113,7 @@ $borderColor: rgba(176, 176, 176, 0.5);
 			background: $borderColor;
 		}
 
-		> button.help {
-			padding: 0;
-			background: transparent;
-			color: $borderColor;
-			border: 0;
-			margin-top: 0.4rem;
 
-			&:hover,
-			&.open {
-				color: #a5a5a5;
-			}
-
-			svg {
-				width: 1.6rem;
-				height: 1.6rem;
-			}
-		}
 	}
 
 	> .border-cropper {

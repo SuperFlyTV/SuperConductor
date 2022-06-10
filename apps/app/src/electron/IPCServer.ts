@@ -14,35 +14,33 @@ import {
 	getMappingName,
 	getNextPartIndex,
 	getPrevPartIndex,
-	getResolvedTimelineTotalDuration,
 	listAvailableDeviceIDs,
 	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { Resolver } from 'superfly-timeline'
 import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
-import { UpdateTimelineCache } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
 import { deepClone } from '@shared/lib'
-import { TimelineObj, TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import { filterMapping, getMappingFromTimelineObject, sortMappings } from '../lib/TSRMappings'
-import { getDefaultGroup } from './defaults'
+import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
-import { TSRTimelineObjFromResource } from './resources'
+import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
+import { postProcessPart } from './rundown'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -88,7 +86,6 @@ export class IPCServer
 	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
 	implements ConvertToServerSide<IPCServerMethods>
 {
-	private updateTimelineCache: UpdateTimelineCache = {}
 	private undoLedger: UndoLedger = []
 	private undoPointer: UndoPointer = -1
 
@@ -99,10 +96,11 @@ export class IPCServer
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
-			updateTimeline: (cache: UpdateTimelineCache, group: Group) => GroupPreparedPlayData | null
+			updateTimeline: (group: Group) => GroupPreparedPlayData | null
 			updatePeripherals: () => void
 			refreshResources: () => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
+			triggerHandleAutoFill: () => void
 		}
 	) {
 		super()
@@ -578,13 +576,9 @@ export class IPCServer
 		name: string
 	}): Promise<UndoableResult<{ partId: string; groupId?: string }> | undefined> {
 		const newPart: Part = {
+			...getDefaultPart(),
 			id: shortID(),
 			name: arg.name,
-			timeline: [],
-			resolved: {
-				duration: 0,
-			},
-			triggers: [],
 		}
 
 		const { rundown } = this.getRundown(arg)
@@ -651,7 +645,7 @@ export class IPCServer
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
-		this._postProcessPart(part)
+		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
@@ -660,7 +654,7 @@ export class IPCServer
 
 				Object.assign(part, partPreChange)
 
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
@@ -1057,7 +1051,7 @@ export class IPCServer
 
 		Object.assign(timelineObj, arg.timelineObj)
 
-		this._postProcessPart(part)
+		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -1066,7 +1060,7 @@ export class IPCServer
 
 				// Overwrite the changed timeline object with the pre-change copy we made.
 				part.timeline.splice(timelineObjIndex, 1, timelineObjPreChange)
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
@@ -1091,7 +1085,7 @@ export class IPCServer
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
-		if (modified) this._postProcessPart(part)
+		if (modified) postProcessPart(part)
 		if (part.timeline.length <= 0)
 			this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(this._log.error)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
@@ -1102,7 +1096,7 @@ export class IPCServer
 
 				// Re-insert the timelineObj in its original position.
 				part.timeline.splice(timelineObjIndex, 0, timelineObj)
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.DeleteTimelineObj,
@@ -1125,7 +1119,7 @@ export class IPCServer
 		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
 		part.timeline.push(arg.timelineObj)
 
-		this._postProcessPart(part)
+		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -1134,7 +1128,7 @@ export class IPCServer
 
 				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
 
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
@@ -1169,7 +1163,7 @@ export class IPCServer
 		})
 		timelineObj.obj.layer = result.layerId
 
-		this._postProcessPart(part)
+		postProcessPart(part)
 		this._saveUpdates({ project: result.updatedProject, rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -1185,7 +1179,7 @@ export class IPCServer
 
 				timelineObj.obj.layer = originalLayer
 
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
@@ -1409,7 +1403,7 @@ export class IPCServer
 		}
 
 		part.timeline.push(timelineObj)
-		this._postProcessPart(part)
+		postProcessPart(part)
 		this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 
 		return {
@@ -1423,7 +1417,7 @@ export class IPCServer
 
 				const { rundown, part } = this.getPart(arg)
 				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
-				this._postProcessPart(part)
+				postProcessPart(part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.AddResourceToTimeline,
@@ -1594,6 +1588,9 @@ export class IPCServer
 	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
+	}
+	async triggerHandleAutoFill(): Promise<void> {
+		this.callbacks.triggerHandleAutoFill()
 	}
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		this._saveUpdates({ project: data.project })
@@ -1974,60 +1971,6 @@ export class IPCServer
 	}
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
-	}
-
-	private _postProcessPart(part: Part, noModify?: boolean) {
-		const resolvedTimeline = Resolver.resolveTimeline(
-			part.timeline.map((o) => o.obj),
-			{ time: 0 }
-		)
-		let modified = false
-
-		for (const o of part.timeline) {
-			const resolvedObj = resolvedTimeline.objects[o.obj.id]
-			if (resolvedObj) {
-				if (resolvedObj.resolved.instances.length === 0 && !noModify) {
-					// If the timeline object has no instances, this might be because there's something wrong with the timelineObject.
-					if (!Array.isArray(o.obj.enable)) {
-						if (o.obj.enable.while === undefined) {
-							if (typeof o.obj.enable.start === 'string') {
-								o.obj.enable.start = 0 // Fall back to a default value
-								modified = true
-							}
-							if (typeof o.obj.enable.duration === 'string') {
-								o.obj.enable.duration = 1000 // Fall back to a default value
-								modified = true
-							}
-							if (typeof o.obj.enable.end === 'string') {
-								o.obj.enable.end = 1000 // Fall back to a default value
-								modified = true
-							}
-						}
-					}
-				}
-
-				o.resolved = {
-					instances: resolvedObj.resolved.instances.map<TimelineObjResolvedInstance>((i) => ({
-						start: i.start,
-						end: i.end,
-					})),
-				}
-			} else {
-				o.resolved = {
-					instances: [],
-				}
-			}
-		}
-		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
-
-		part.resolved = {
-			duration: maxDuration,
-		}
-
-		// If it was modified, run again to properly calculate artifacts:
-		if (modified && !noModify) {
-			this._postProcessPart(part, true)
-		}
 	}
 
 	/** Save updates to various data sets.

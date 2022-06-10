@@ -10,7 +10,8 @@ export const SelectEnum: React.FC<{
 	defaultValue?: any
 	fullWidth?: boolean
 	width?: string
-}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label, fullWidth, width }) => {
+	disabled?: boolean
+}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label, fullWidth, width, disabled }) => {
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -69,6 +70,7 @@ export const SelectEnum: React.FC<{
 				}
 			}}
 			sx={{ width: width }}
+			disabled={disabled}
 		>
 			{Object.entries(allOptions).map(([key, value]) => {
 				return (

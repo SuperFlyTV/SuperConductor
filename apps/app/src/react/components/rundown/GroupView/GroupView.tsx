@@ -42,10 +42,11 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
-import { BsKeyboard, BsKeyboardFill } from 'react-icons/bs'
+import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
 import { Part } from '../../../../models/rundown/Part'
+import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
+import { GroupAutoFillPopover } from './GroupAutoFillPopover'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -455,8 +456,11 @@ export const GroupView: React.FC<{
 		return allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
 	}, [allAssignedAreas, group.id])
 
-	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<Element | null>(null)
-	const buttonAreaPopoverOpen = Boolean(partSubmenuPopoverAnchorEl)
+	const [partButtonAreaPopoverAnchorEl, setPartButtonAreaPopoverAnchorEl] = React.useState<Element | null>(null)
+	const buttonAreaPopoverOpen = Boolean(partButtonAreaPopoverAnchorEl)
+
+	const [partAutoFillPopoverAnchorEl, setPartAutoFillPopoverAnchorEl] = React.useState<Element | null>(null)
+	const autoFillPopoverOpen = Boolean(partAutoFillPopoverAnchorEl)
 
 	if (!rundown) {
 		return null
@@ -490,6 +494,7 @@ export const GroupView: React.FC<{
 		const canModifyLoop = group.oneAtATime && !group.locked
 		const canModifyAutoPlay = group.oneAtATime && !group.locked
 		const canAssignAreas = allAvailableAreas.length > 0 && !group.locked
+		const canSetAutoFill = !group.locked
 
 		return (
 			<div
@@ -666,7 +671,7 @@ export const GroupView: React.FC<{
 							size="small"
 							disabled={!canAssignAreas}
 							onChange={(event) => {
-								setPartSubmenuPopoverAnchorEl(event.currentTarget)
+								setPartButtonAreaPopoverAnchorEl(event.currentTarget)
 							}}
 						>
 							{assignedAreas.length > 0 ? (
@@ -677,9 +682,9 @@ export const GroupView: React.FC<{
 						</ToggleButton>
 						<Popover
 							open={buttonAreaPopoverOpen}
-							anchorEl={partSubmenuPopoverAnchorEl}
+							anchorEl={partButtonAreaPopoverAnchorEl}
 							onClose={() => {
-								setPartSubmenuPopoverAnchorEl(null)
+								setPartButtonAreaPopoverAnchorEl(null)
 							}}
 							anchorOrigin={{
 								vertical: 'bottom',
@@ -687,6 +692,36 @@ export const GroupView: React.FC<{
 							}}
 						>
 							<GroupButtonAreaPopover group={group} />
+						</Popover>
+
+						<ToggleButton
+							title={'Auto-fill'}
+							value="auto-fill"
+							selected={group.autoFill.enable}
+							size="small"
+							disabled={!canSetAutoFill}
+							onChange={(event) => {
+								setPartAutoFillPopoverAnchorEl(event.currentTarget)
+							}}
+						>
+							{group.autoFill.enable ? (
+								<BsLightningFill color="white" size={24} />
+							) : (
+								<BsLightning color="white" size={24} />
+							)}
+						</ToggleButton>
+						<Popover
+							open={autoFillPopoverOpen}
+							anchorEl={partAutoFillPopoverAnchorEl}
+							onClose={() => {
+								setPartAutoFillPopoverAnchorEl(null)
+							}}
+							anchorOrigin={{
+								vertical: 'bottom',
+								horizontal: 'left',
+							}}
+						>
+							<GroupAutoFillPopover rundownId={rundownId} group={group} />
 						</Popover>
 
 						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
@@ -831,108 +866,3 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 		</>
 	)
 }
-
-const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function GroupButtonAreaPopover({ group }) {
-	const ipcServer = useContext(IPCServerContext)
-	const { handleError } = useContext(ErrorHandlerContext)
-	const project = store.projectStore.project
-	const appStore = store.appStore
-
-	const allAreas = useMemoComputedObject(() => {
-		const allAreas: {
-			bridgeId: string
-			deviceId: string
-			areaId: string
-			area: PeripheralArea
-			peripheralStatus: PeripheralStatus | undefined
-		}[] = []
-		for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
-					const peripheralId = `${bridgeId}-${deviceId}`
-					const peripheralStatus = appStore.peripherals[peripheralId] as PeripheralStatus | undefined
-
-					allAreas.push({ area, areaId, bridgeId, deviceId, peripheralStatus })
-				}
-			}
-		}
-
-		allAreas.sort((a, b) => {
-			if (a.peripheralStatus && !b.peripheralStatus) return -1
-			if (!a.peripheralStatus && b.peripheralStatus) return 1
-
-			return 0
-		})
-
-		return allAreas
-	}, [project])
-
-	return (
-		<>
-			<div>
-				Assign a Button Area to this Group:
-				<table className="table">
-					<tbody>
-						<tr>
-							<th>Device</th>
-							<th>Area</th>
-							<th>Buttons</th>
-							<th></th>
-						</tr>
-						{allAreas.map(({ area, areaId, bridgeId, deviceId, peripheralStatus }) => {
-							const deviceName = peripheralStatus ? (
-								peripheralStatus.info.name
-							) : (
-								<i>(Device-not-connected)</i>
-							)
-
-							return (
-								<tr key={areaId}>
-									<td>{deviceName}</td>
-									<td>{area.name}</td>
-									<td>{area.identifiers.length} buttons</td>
-									<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>
-									<td>
-										{area.assignedToGroupId === group.id ? (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: undefined,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Remove
-											</Button>
-										) : (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: group.id,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Assign
-											</Button>
-										)}
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-			</div>
-		</>
-	)
-})

@@ -1,8 +1,8 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { Group } from '../models/rundown/Group'
+import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
-import { updateTimeline, UpdateTimelineCache } from './timeline'
+import { updateTimeline } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { AppData } from '../models/App/AppData'
@@ -18,7 +18,13 @@ import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { LoggerLike } from '@shared/api'
-import { listAvailableDeviceIDs } from '../lib/util'
+import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
+import { findAutoFillResources } from '../lib/autoFill'
+import { Part } from '../models/rundown/Part'
+import { getDefaultPart } from './defaults'
+import { TimelineObj } from '../models/rundown/TimelineObj'
+import { postProcessPart } from './rundown'
+import { assertNever } from '@shared/lib'
 
 export class TimedPlayerThingy {
 	mainWindow?: BrowserWindow
@@ -79,6 +85,7 @@ export class TimedPlayerThingy {
 			// Add the resource to the list of resources to send to the client in batches later:
 			this.resourceUpdatesToSend.push({ id, resource })
 			this._triggerBatchSendResources()
+			this.triggerHandleAutoFill()
 		})
 	}
 	private _triggerBatchSendResources() {
@@ -91,6 +98,145 @@ export class TimedPlayerThingy {
 				this.ipcClient?.updateResources(this.resourceUpdatesToSend)
 				this.resourceUpdatesToSend = []
 			}, 100)
+		}
+	}
+	private triggerHandleAutoFill = rateLimitIgnore(() => this.handleAutoFill(), 100)
+	private handleAutoFill() {
+		const project = this.storage.getProject()
+		let added = 0
+		let removed = 0
+
+		for (const rundown of this.storage.getAllRundowns()) {
+			let rundownHasChanged = false
+			for (const group of rundown.groups) {
+				let groupHasChanged = false
+				if (group.autoFill.enable) {
+					const resources = findAutoFillResources(project, group.autoFill, this.storage.getResources())
+
+					if (group.autoFill.mode === AutoFillMode.REPLACE) {
+						const removedParts: Part[] = []
+						let j = -1
+						for (const r of resources) {
+							const partId = `${group.id}_af_${hash(r.resource.id)}`
+
+							// Try to find a matching part
+							let foundPart: Part | undefined = undefined
+							while (j < group.parts.length) {
+								j++
+								const part = group.parts[j]
+								if (!part) break
+
+								if (part.id === partId) {
+									foundPart = part
+									break
+								} else if (part.autoFilled) {
+									// huh, it's an autofilled part, but not ours.
+									// Remove it:
+
+									removedParts.push(...group.parts.splice(j, 1))
+									removed++
+									j--
+									groupHasChanged = true
+								} else {
+									// Not our part, leave it be
+								}
+							}
+
+							if (!foundPart) {
+								let newPart: Part
+
+								// See if the part was recently removed:
+								const reInsertPart = removedParts.find((p) => p.id === partId)
+								if (reInsertPart) {
+									// Re-use the part:
+									newPart = reInsertPart
+								} else {
+									// Add a new part to the group:
+									newPart = {
+										...getDefaultPart(),
+										id: partId,
+										name: r.resource.displayName,
+										autoFilled: true,
+									}
+
+									const timelineObj: TimelineObj = {
+										resourceId: r.resource.id,
+										obj: r.obj,
+										resolved: { instances: [] }, // set later
+									}
+									timelineObj.obj.layer = r.layerId
+									newPart.timeline.push(timelineObj)
+									postProcessPart(newPart)
+								}
+
+								group.parts.push(newPart)
+								added++
+								groupHasChanged = true
+								j++
+							}
+						}
+
+						// Remove residual auto-filled parts:
+						while (j < group.parts.length) {
+							j++
+							const part = group.parts[j]
+							if (!part) break
+
+							if (part.autoFilled) {
+								// it's an autofilled part, but not ours.
+								// Remove it:
+								removedParts.push(...group.parts.splice(j, 1))
+								removed++
+								j--
+								groupHasChanged = true
+							}
+						}
+					} else if (group.autoFill.mode === AutoFillMode.APPEND) {
+						for (const r of resources) {
+							const partId = `${group.id}_af_${hash(r.resource.id)}`
+
+							const foundPart = group.parts.find((p) => p.id === partId)
+							if (!foundPart) {
+								// Add a new part to the group:
+								const newPart: Part = {
+									...getDefaultPart(),
+									id: partId,
+									name: r.resource.displayName,
+									autoFilled: true,
+								}
+
+								const timelineObj: TimelineObj = {
+									resourceId: r.resource.id,
+									obj: r.obj,
+									resolved: { instances: [] }, // set later
+								}
+								timelineObj.obj.layer = r.layerId
+
+								newPart.timeline.push(timelineObj)
+								postProcessPart(newPart)
+
+								group.parts.push(newPart)
+								added++
+								groupHasChanged = true
+							}
+						}
+					} else {
+						assertNever(group.autoFill.mode)
+					}
+				}
+				if (groupHasChanged) {
+					rundownHasChanged = true
+					// Update Timeline:
+					group.preparedPlayData = this.updateTimeline(group)
+					updateGroupPlayingParts(group)
+				}
+			}
+			if (rundownHasChanged) {
+				this.storage.updateRundown(rundown.id, rundown)
+			}
+		}
+		if (added || removed) {
+			this.triggers?.triggerUpdatePeripherals()
 		}
 	}
 
@@ -145,14 +291,17 @@ export class TimedPlayerThingy {
 
 				bridgeHandler.refreshResources()
 			},
-			updateTimeline: (cache: UpdateTimelineCache, group: Group): GroupPreparedPlayData | null => {
-				return updateTimeline(cache, this.storage, bridgeHandler, group)
+			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
+				return this.updateTimeline(group)
 			},
 			updatePeripherals: (): void => {
 				this.triggers?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
 				this.triggers?.setKeyboardKeys(activeKeys)
+			},
+			triggerHandleAutoFill: () => {
+				this.triggerHandleAutoFill()
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
@@ -173,5 +322,6 @@ export class TimedPlayerThingy {
 	 */
 	terminate() {
 		this.storage.terminate()
+		this.triggerHandleAutoFill.clear()
 	}
 }

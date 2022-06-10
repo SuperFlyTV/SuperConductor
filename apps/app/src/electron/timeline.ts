@@ -9,14 +9,9 @@ import { BridgeHandler } from './bridgeHandler'
 import { deepClone } from '@shared/lib'
 import { modifyTimelineObjectForPlayout } from '../lib/TimelineObj'
 
-export interface UpdateTimelineCache {
-	groupHashes?: { [groupId: string]: string }
-	mappingsHash?: string
-}
-
 const queuedUpdateTimelines = new Map<string, NodeJS.Timeout>()
+
 export function updateTimeline(
-	cache: UpdateTimelineCache,
 	storage: StorageHandler,
 	bridgeHandler: BridgeHandler,
 	group: Group

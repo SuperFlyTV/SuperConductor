@@ -41,7 +41,7 @@ import {
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
-import { shortID } from '../lib/util'
+import { shortID } from './util'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj {
 	const INFINITE_DURATION = null
@@ -52,7 +52,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			layer: '', // set later
 			enable: {
 				start: 0,
-				duration: (resource.duration || 60) * 1000,
+				duration: resource.duration * 1000 || undefined,
 			},
 			content: {
 				deviceType: DeviceType.CASPARCG,

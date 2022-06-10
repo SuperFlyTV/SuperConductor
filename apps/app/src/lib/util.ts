@@ -221,7 +221,7 @@ function hashCode(str: string): number {
 		hash = (hash << 5) - hash + char
 		hash = hash & hash // Convert to 32bit integer
 	}
-	return hash
+	return Math.abs(hash)
 }
 
 export const EMPTY_LAYER_ID_PREFIX = '__empty'
@@ -591,7 +591,7 @@ export function getDeviceName(project: Project, deviceId: string) {
 export function getMappingName(mapping: Mapping, layerId: string): string {
 	return mapping.layerName ?? layerId
 }
-/** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman" */
+/** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman", or null if it's not found */
 export function scatterMatchString(source: string, search: string): null | number {
 	search = search.toLowerCase()
 	source = source.toLowerCase()
@@ -610,4 +610,59 @@ export function scatterMatchString(source: string, search: string): null | numbe
 		}
 	}
 	return j
+}
+/** Wrap a function to create a "trigger"-function, to rate limit and ignore multiple calls within the rate limit time */
+export function rateLimitIgnore(fcn: () => void | Promise<void>, delay: number): RateLimitIgnoreFcn {
+	let timeout: NodeJS.Timeout | null = null
+	let isRunning = false
+	let runAgain = false
+
+	const triggerFcn = (asap?: boolean) => {
+		if (isRunning) {
+			runAgain = true
+		}
+		if (asap && timeout) {
+			clearTimeout(timeout)
+			timeout = null
+		}
+		if (!timeout)
+			timeout = setTimeout(
+				() => {
+					timeout = null
+
+					runAgain = false
+					isRunning = true
+					try {
+						Promise.resolve(fcn())
+							// eslint-disable-next-line no-console
+							.catch(console.error)
+							.finally(() => {
+								isRunning = false
+								if (runAgain) triggerFcn(true)
+							})
+					} catch (err) {
+						// eslint-disable-next-line no-console
+						console.error(err)
+						isRunning = false
+						if (runAgain) triggerFcn(true)
+					}
+				},
+				asap ? 1 : delay
+			)
+	}
+	triggerFcn.clear = () => {
+		if (timeout) {
+			clearTimeout(timeout)
+			timeout = null
+		}
+	}
+	return triggerFcn
+}
+type RateLimitIgnoreFcn = {
+	(
+		/** Set to true to trigger the function instantly, and not wait for  */
+		asap?: boolean
+	): void
+	/** Clear any cheduled function executions */
+	clear: () => void
 }

@@ -6,7 +6,7 @@ import { omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
-import { getDefaultProject, getDefaultRundown } from './defaults'
+import { getDefaultGroup, getDefaultProject, getDefaultRundown } from './defaults'
 import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
@@ -814,6 +814,9 @@ export class StorageHandler extends EventEmitter {
 				group.playout = {
 					playingParts: {},
 				}
+			}
+			if (!group.autoFill) {
+				group.autoFill = getDefaultGroup().autoFill
 			}
 			for (const part of group.parts) {
 				if (!part.triggers) {

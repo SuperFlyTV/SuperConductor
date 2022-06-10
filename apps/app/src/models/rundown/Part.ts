@@ -16,4 +16,6 @@ export type Part = {
 	resolved: {
 		duration: number | null // null means infinite
 	}
+	/** If this part was created from the AutoFill */
+	autoFilled?: boolean
 }
