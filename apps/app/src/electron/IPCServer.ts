@@ -99,6 +99,7 @@ export class IPCServer
 			updateTimeline: (group: Group) => GroupPreparedPlayData | null
 			updatePeripherals: () => void
 			refreshResources: () => void
+			refreshResourcesSetAuto: (interval: number) => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 			triggerHandleAutoFill: () => void
 		}
@@ -1589,6 +1590,9 @@ export class IPCServer
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}
+	async refreshResourcesSetAuto(interval: number): Promise<void> {
+		this.callbacks.refreshResourcesSetAuto(interval)
+	}
 	async triggerHandleAutoFill(): Promise<void> {
 		this.callbacks.triggerHandleAutoFill()
 	}
@@ -2003,7 +2007,7 @@ export class IPCServer
 		for (const group of groupsToUpdate) {
 			if (!updates.noEffectOnPlayout) {
 				// Update Timeline:
-				group.preparedPlayData = this.callbacks.updateTimeline(this.updateTimelineCache, group)
+				group.preparedPlayData = this.callbacks.updateTimeline(group)
 				updateGroupPlayingParts(group)
 			}
 		}

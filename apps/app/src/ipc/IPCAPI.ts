@@ -173,6 +173,7 @@ export interface IPCServerMethods {
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupCollapse: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	refreshResources: () => void
+	refreshResourcesSetAuto: (interval: number) => void
 	triggerHandleAutoFill: () => void
 
 	updateProject: (arg: { id: string; project: Project }) => void

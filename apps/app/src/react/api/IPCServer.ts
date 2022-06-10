@@ -150,6 +150,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	refreshResources(...args: ServerArgs<'refreshResources'>) {
 		return this.invokeServerMethod('refreshResources', ...args)
 	}
+	refreshResourcesSetAuto(...args: ServerArgs<'refreshResourcesSetAuto'>) {
+		return this.invokeServerMethod('refreshResourcesSetAuto', ...args)
+	}
 	triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>) {
 		return this.invokeServerMethod('triggerHandleAutoFill', ...args)
 	}

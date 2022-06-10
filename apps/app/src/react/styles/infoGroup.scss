@@ -43,6 +43,33 @@
 			}
 		}
 	}
+
+	.refresh-resources {
+		min-height: 32px;
+		>button {
+			border: 0;
+			// background: transparent;
+			padding: 0.25em;
+			margin: 0;
+			text-transform: none;
+			cursor: pointer;
+
+			&.on-hover {
+				// visibility: hidden;
+				display: none;
+			}
+			&.selected {
+				visibility: inherit;
+				display: inherit;
+			}
+		}
+		&:hover {
+			>button.on-hover {
+				// visibility: visible;
+				display: inherit;
+			}
+		}
+	}
 }
 
 .row {

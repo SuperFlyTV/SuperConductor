@@ -39,6 +39,11 @@ export class TimedPlayerThingy {
 	private shuttingDown = false
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
+	private autoRefreshInterval: {
+		interval: number
+		timer: NodeJS.Timer
+	} | null = null
+	private refreshStatus: { [deviceId: string]: number } = {}
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -77,6 +82,7 @@ export class TimedPlayerThingy {
 		})
 		this.storage.on('project', (project: Project) => {
 			this.ipcClient?.updateProject(project)
+			this.handleAutoRefresh()
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
 			this.ipcClient?.updateRundown(fileName, rundown)
@@ -98,6 +104,40 @@ export class TimedPlayerThingy {
 				this.ipcClient?.updateResources(this.resourceUpdatesToSend)
 				this.resourceUpdatesToSend = []
 			}, 100)
+		}
+	}
+	private handleAutoRefresh() {
+		const project = this.storage.getProject()
+		const interval = project.autoRefreshInterval
+
+		if (this.autoRefreshInterval && this.autoRefreshInterval.interval !== interval) {
+			clearInterval(this.autoRefreshInterval.timer)
+			this.autoRefreshInterval = null
+		}
+
+		if (interval && !this.autoRefreshInterval) {
+			this.autoRefreshInterval = {
+				interval,
+				timer: setInterval(() => {
+					if (this.autoRefreshInterval && this.shuttingDown) {
+						clearInterval(this.autoRefreshInterval?.timer)
+						this.autoRefreshInterval = null
+					} else {
+						let anyRefreshing = false
+						for (const refreshTime of Object.values(this.refreshStatus)) {
+							if (Date.now() - refreshTime < 10000) {
+								anyRefreshing = true
+								break
+							}
+						}
+						if (!anyRefreshing) {
+							this.refreshResources()
+						} else {
+							// Wait for refresh to finish, do nothing..
+						}
+					}
+				}, project.autoRefreshInterval),
+			}
 		}
 	}
 	private triggerHandleAutoFill = rateLimitIgnore(() => this.handleAutoFill(), 100)
@@ -273,6 +313,11 @@ export class TimedPlayerThingy {
 			},
 			onDeviceRefreshStatus: (deviceId, refreshing) => {
 				if (this.shuttingDown) return
+				if (refreshing) {
+					this.refreshStatus[deviceId] = Date.now()
+				} else {
+					delete this.refreshStatus[deviceId]
+				}
 				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
 			},
 		})
@@ -280,16 +325,12 @@ export class TimedPlayerThingy {
 
 		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
 			refreshResources: () => {
-				// Remove resources of devices we don't have anymore:
+				this.refreshResources()
+			},
+			refreshResourcesSetAuto: (interval: number) => {
 				const project = this.storage.getProject()
-				const deviceIds = listAvailableDeviceIDs(project.bridges)
-				for (const [id, resource] of Object.entries(this.storage.getResources())) {
-					if (!deviceIds.has(resource.deviceId)) {
-						this.storage.updateResource(id, null)
-					}
-				}
-
-				bridgeHandler.refreshResources()
+				project.autoRefreshInterval = interval
+				this.storage.updateProject(project)
 			},
 			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 				return this.updateTimeline(group)
@@ -306,6 +347,24 @@ export class TimedPlayerThingy {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
+	}
+	private refreshResources(): void {
+		// Remove resources of devices we don't have anymore:
+		const project = this.storage.getProject()
+		const deviceIds = listAvailableDeviceIDs(project.bridges)
+		for (const [id, resource] of Object.entries(this.storage.getResources())) {
+			if (!deviceIds.has(resource.deviceId)) {
+				this.storage.updateResource(id, null)
+			}
+		}
+
+		this.bridgeHandler?.refreshResources()
+	}
+
+	private updateTimeline(group: Group): GroupPreparedPlayData | null {
+		if (!this.bridgeHandler) throw new Error('Internal Error: No bridgeHandler set')
+
+		return updateTimeline(this.storage, this.bridgeHandler, group)
 	}
 
 	/**

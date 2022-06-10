@@ -13,6 +13,8 @@ export interface Project {
 	deviceNames: { [deviceId: string]: string }
 
 	settings: Settings
+
+	autoRefreshInterval?: number
 }
 
 export interface Settings {

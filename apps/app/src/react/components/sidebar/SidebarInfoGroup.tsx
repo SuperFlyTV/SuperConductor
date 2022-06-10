@@ -3,6 +3,7 @@ import React, { useCallback, useContext } from 'react'
 import { HiRefresh } from 'react-icons/hi'
 import { useSnackbar } from 'notistack'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { Button, ButtonGroup } from '@mui/material'
 
 export const SidebarInfoGroup: React.FC<{
 	title: string
@@ -10,6 +11,8 @@ export const SidebarInfoGroup: React.FC<{
 	enableRefresh?: boolean
 	refreshActive?: boolean
 	onRefreshClick?: () => Promise<void>
+	refreshAutoInterval?: number
+	onRefreshAutoClick?: (interval: number) => void
 }> = (props) => {
 	const { handleError } = useContext(ErrorHandlerContext)
 
@@ -18,14 +21,38 @@ export const SidebarInfoGroup: React.FC<{
 			<div className="title">
 				<span>{props.title}</span>
 				{props.enableRefresh && (
-					<button
-						className={classNames({ refresh: true, active: props.refreshActive })}
-						onClick={() => {
-							if (props.onRefreshClick) props.onRefreshClick().catch(handleError)
-						}}
-					>
-						<HiRefresh size={15} color="white" />
-					</button>
+					<ButtonGroup className="refresh-resources">
+						<Button className={classNames('on-hover')} onClick={() => props.onRefreshAutoClick?.(0)}>
+							Auto: Off
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: props.refreshAutoInterval === 1000 })}
+							onClick={() => props.onRefreshAutoClick?.(1000)}
+						>
+							1s
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: props.refreshAutoInterval === 10000 })}
+							onClick={() => props.onRefreshAutoClick?.(10000)}
+						>
+							10s
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: props.refreshAutoInterval === 60000 })}
+							onClick={() => props.onRefreshAutoClick?.(60000)}
+						>
+							1m
+						</Button>
+
+						<Button
+							className={classNames('refresh', { active: props.refreshActive })}
+							onClick={() => {
+								if (props.onRefreshClick) props.onRefreshClick().catch(handleError)
+							}}
+						>
+							<HiRefresh size={15} color="white" />
+						</Button>
+					</ButtonGroup>
 				)}
 			</div>
 			<div className="content">{props.children}</div>

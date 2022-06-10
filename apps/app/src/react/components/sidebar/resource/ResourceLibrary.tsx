@@ -149,6 +149,12 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 			handleError(err)
 		}
 	}, [ipcServer, handleError])
+	const handleRefreshAuto = useCallback(
+		(interval: number) => {
+			ipcServer.refreshResourcesSetAuto(interval).catch(handleError)
+		},
+		[ipcServer, handleError]
+	)
 
 	if (!rundown) {
 		return null
@@ -161,6 +167,8 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 				enableRefresh={true}
 				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
 				onRefreshClick={handleRefresh}
+				refreshAutoInterval={project.autoRefreshInterval}
+				onRefreshAutoClick={handleRefreshAuto}
 			>
 				<FormControl margin="dense" size="small" fullWidth>
 					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
@@ -205,8 +213,11 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 							<Stack direction="row" justifyContent="space-between">
 								<Typography variant="body2">{getDeviceName(project, deviceId)}</Typography>
 								{resourcesStore.refreshStatuses[deviceId] && (
-									<div className="refresh active" style={{ opacity: '0.6' }}>
-										<HiRefresh size={15} color="white" />
+									<div
+										className="refresh-icon refresh active"
+										style={{ opacity: '0.6', height: '14px' }}
+									>
+										<HiRefresh size={12} color="white" />
 									</div>
 								)}
 							</Stack>
