@@ -2,6 +2,8 @@ export function parseDuration(str: string): number | null | undefined {
 	if (str === '') return null
 	if (!str) return undefined
 
+	str = str.replace(/,/g, '.')
+
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d{1,3})$/) // hh:mm:ss.xxx
 		if (m)
@@ -16,6 +18,10 @@ export function parseDuration(str: string): number | null | undefined {
 	{
 		const m = str.match(/^(\d{1,2})\.(\d{1,3})$/) // ss.xxx
 		if (m) return parseInt(m[1]) * 1000 + parseMilliseconds(m[2])
+	}
+	{
+		const m = str.match(/^\.(\d{1,3})$/) // .xxx
+		if (m) return parseMilliseconds(m[1])
 	}
 
 	{
@@ -162,6 +168,7 @@ assert(parseDuration('1'), 1000)
 assert(parseDuration('12'), 12000)
 assert(parseDuration('123'), 1 * 60000 + 23 * 1000)
 assert(parseDuration('1234'), 12 * 60000 + 34 * 1000)
+assert(parseDuration('1234,5'), 12 * 60000 + 34 * 1000 + 500)
 assert(parseDuration('12345'), 1 * 3600000 + 23 * 60000 + 45 * 1000)
 assert(parseDuration('123456'), 12 * 3600000 + 34 * 60000 + 56 * 1000)
 assert(parseDuration('0:23'), 23000)
@@ -174,6 +181,10 @@ assert(parseDuration('123.5'), 83500)
 assert(parseDuration('1:00:01'), 3601000)
 assert(parseDuration('1:01:01'), 3661000)
 assert(parseDuration('10101'), 3661000)
+assert(parseDuration('0.5'), 500)
+assert(parseDuration('0,12'), 120)
+assert(parseDuration('0.5'), 500)
+assert(parseDuration(',12'), 120)
 
 // Special cases that happen when user adds numbers at the end while typing:
 assert(parseDuration('1:234'), 12 * 60000 + 34 * 1000) // 12:34
