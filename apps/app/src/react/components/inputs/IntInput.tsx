@@ -10,6 +10,9 @@ export const IntInput: React.FC<
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			changeOnKey?: boolean
+			/** min, max */
+			caps?: [number, number]
 	  }
 	| {
 			currentValue: number | undefined
@@ -20,17 +23,36 @@ export const IntInput: React.FC<
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			changeOnKey?: boolean
+			/** min, max */
+			caps?: [number, number]
 	  }
 > = (props) => {
-	const parse = useCallback((str: string) => {
-		const parsedValue = parseInt(`${str}`.replace(/[\D]/g, ''))
-		if (isNaN(parsedValue)) return undefined
-		else return parsedValue
-	}, [])
+	const parse = useCallback(
+		(str: string) => {
+			let value: number | undefined = undefined
+
+			const parsedValue = parseInt(`${str}`.replace(/[\D]/g, ''))
+			if (!isNaN(parsedValue)) value = parsedValue
+
+			if (value !== undefined && props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))
+			return value
+		},
+		[props.caps]
+	)
 	const stringify = useCallback((value: number | undefined) => {
 		if (value === undefined) return ''
 		else return `${value}`
 	}, [])
+	const onIncrement = useCallback(
+		(value: number | undefined, inc: number) => {
+			value = Math.round((value ?? 0) + inc)
+
+			if (props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))
+			return value
+		},
+		[props.caps]
+	)
 	if (props.allowUndefined) {
 		return ParsedValueInput<number | undefined>(
 			props.currentValue,
@@ -43,7 +65,9 @@ export const IntInput: React.FC<
 			'text',
 			props.disabled,
 			props.fullWidth,
-			props.width
+			props.width,
+			props.changeOnKey,
+			onIncrement
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -57,7 +81,9 @@ export const IntInput: React.FC<
 			'text',
 			props.disabled,
 			props.fullWidth,
-			props.width
+			props.width,
+			props.changeOnKey,
+			onIncrement
 		)
 	}
 }

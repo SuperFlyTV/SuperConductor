@@ -13,7 +13,8 @@ export function ParsedValueInput<V>(
 	disabled?: boolean,
 	fullWidth?: boolean,
 	width?: string,
-	changeOnKey?: boolean
+	changeOnKey?: boolean,
+	onIncrement?: (value: V, increment: number) => V
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
@@ -32,6 +33,10 @@ export function ParsedValueInput<V>(
 			if (value !== undefined) onChange(value)
 			else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 		}
+	}
+	const onChangeValue = (value: V) => {
+		setValue(stringify(value))
+		onChange(value)
 	}
 	const onEventChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		const str: string = e.target.value
@@ -91,6 +96,20 @@ export function ParsedValueInput<V>(
 				} else if (e.key === 'Escape') {
 					// revert to previous value:
 					setValue(stringify(currentValue))
+				} else if (e.key === 'ArrowUp') {
+					if (onIncrement) {
+						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, 100))
+						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, 10))
+						else if (e.altKey) onChangeValue(onIncrement(currentValue, 0.1))
+						else onChangeValue(onIncrement(currentValue, 1))
+					}
+				} else if (e.key === 'ArrowDown') {
+					if (onIncrement) {
+						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, -100))
+						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, -10))
+						else if (e.altKey) onChangeValue(onIncrement(currentValue, -0.1))
+						else onChangeValue(onIncrement(currentValue, -1))
+					}
 				}
 			}}
 			size="small"
