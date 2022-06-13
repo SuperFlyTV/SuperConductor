@@ -21,6 +21,7 @@ export const CasparCGMappingSettings: React.FC<{
 					onChange={(v) => {
 						props.onUpdate({ ...props.mapping, channel: v })
 					}}
+					caps={[0, 999]}
 				/>
 			</div>
 
@@ -34,6 +35,7 @@ export const CasparCGMappingSettings: React.FC<{
 					onChange={(v) => {
 						props.onUpdate({ ...props.mapping, layer: v })
 					}}
+					caps={[0, 999]}
 				/>
 			</div>
 		</>

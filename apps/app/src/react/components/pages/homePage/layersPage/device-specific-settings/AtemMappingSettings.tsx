@@ -51,6 +51,7 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 					onChange={handleIndexChange}
 					allowUndefined={true}
 					width="7rem"
+					caps={[0, Number.POSITIVE_INFINITY]}
 				/>
 			</div>
 		</>

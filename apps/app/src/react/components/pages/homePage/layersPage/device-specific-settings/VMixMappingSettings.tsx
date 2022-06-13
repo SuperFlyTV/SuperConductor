@@ -110,6 +110,7 @@ export const VMixMappingSettings: React.FC<{
 							}
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 			)}

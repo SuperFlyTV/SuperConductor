@@ -254,6 +254,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, 99]}
 					/>
 				</div>
 				<div className="setting">
@@ -387,6 +388,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 999]}
 							/>
 						</div>
 						<div className="setting">
@@ -399,6 +401,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 999]}
 							/>
 						</div>
 					</>
