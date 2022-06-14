@@ -9,6 +9,7 @@ import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
+import { useMemoObject } from '../../../mobx/lib'
 import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
 
@@ -53,20 +54,29 @@ export const Layer: React.FC<{
 		[]
 	)
 
+	// Optimization:
+	const objectsOnLayer2 = useMemoObject(() => {
+		return objectsOnLayer.map((objectOnLayer) => {
+			const warnings = []
+
+			if (typeof mapping !== 'undefined' && !filterMapping(mapping, objectOnLayer.timelineObj.obj)) {
+				warnings.push('This object is not allowed on this layer type.')
+			}
+
+			if (typeof mapping === 'undefined') {
+				warnings.push(`The layer "${layerId}" could not be found.`)
+			}
+			return {
+				objectOnLayer,
+				warnings,
+			}
+		})
+	}, [objectsOnLayer])
+
 	return (
 		<DropZone ref={drop} className="layer" isOver={isOver} data-layer-id={layerId}>
 			<div className="layer__content">
-				{objectsOnLayer.map((objectOnLayer) => {
-					const warnings = []
-
-					if (typeof mapping !== 'undefined' && !filterMapping(mapping, objectOnLayer.timelineObj.obj)) {
-						warnings.push('This object is not allowed on this layer type.')
-					}
-
-					if (typeof mapping === 'undefined') {
-						warnings.push(`The layer "${layerId}" could not be found.`)
-					}
-
+				{objectsOnLayer2.map(({ objectOnLayer, warnings }) => {
 					return (
 						<TimelineObject
 							key={objectOnLayer.timelineObj.obj.id}

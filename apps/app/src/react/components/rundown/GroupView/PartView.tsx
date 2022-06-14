@@ -41,7 +41,7 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { LoggerContext } from '../../../contexts/Logger'
-import { useMemoComputedObject } from '../../../mobx/lib'
+import { useMemoComputedObject, useMemoObject } from '../../../mobx/lib'
 import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
 import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 
@@ -728,6 +728,41 @@ export const PartView: React.FC<{
 		return store.rundownsStore.getActionsForPart(part.id)
 	}, [store.rundownsStore.allButtonActions])
 
+	// Optimization:
+	const layersAndObjects = useMemoObject(() => {
+		return sortedLayers.map(({ layerId }) => {
+			return {
+				layerId,
+				objectsOnThisLayer: modifiedTimeline.filter((obj) => obj.obj.layer === layerId),
+			}
+		})
+	}, [resolvedTimeline, mappings, modifiedTimeline, sortedLayers])
+	// Optimization:
+	const timelineLayerObjects = useMemoObject(() => {
+		return sortedLayers.map(({ layerId, objectIds }) => {
+			const objectsOnLayer: {
+				resolved: ResolvedTimelineObject['resolved']
+				timelineObj: TimelineObj
+			}[] = compact(
+				objectIds.map((objectId) => {
+					const resolvedObj = resolvedTimeline.objects[objectId]
+					const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
+
+					if (resolvedObj && timelineObj) {
+						return {
+							resolved: resolvedObj.resolved,
+							timelineObj: timelineObj,
+						}
+					}
+				})
+			)
+			return {
+				layerId,
+				objectsOnLayer,
+			}
+		})
+	}, [sortedLayers, resolvedTimeline, modifiedTimeline])
+
 	return (
 		<div
 			data-drop-handler-id={handlerId}
@@ -852,29 +887,16 @@ export const PartView: React.FC<{
 			<div className="part__dropdown">{/** TODO **/}</div>
 
 			<div className="part__layer-names">
-				{sortLayers(resolvedTimeline.layers, mappings).map(({ layerId }) => {
-					const objectsOnThisLayer = modifiedTimeline.filter((obj) => obj.obj.layer === layerId)
-
+				{layersAndObjects.map(({ layerId, objectsOnThisLayer }) => {
 					return (
 						<LayerName
 							key={layerId}
+							rundownId={rundownId}
+							groupId={parentGroupId}
+							partId={part.id}
 							layerId={layerId}
 							mappings={mappings}
 							objectsOnThisLayer={objectsOnThisLayer}
-							onSelect={(selectedLayerId) => {
-								objectsOnThisLayer.forEach((objectOnThisLayer) => {
-									objectOnThisLayer.obj.layer = selectedLayerId
-									ipcServer
-										.updateTimelineObj({
-											rundownId,
-											groupId: parentGroupId,
-											partId: part.id,
-											timelineObj: objectOnThisLayer,
-											timelineObjId: objectOnThisLayer.obj.id,
-										})
-										.catch(handleError)
-								})
-							}}
 						/>
 					)
 				})}
@@ -906,24 +928,7 @@ export const PartView: React.FC<{
 						})}
 						ref={layersDivRef}
 					>
-						{sortedLayers.map(({ layerId, objectIds }) => {
-							const objectsOnLayer: {
-								resolved: ResolvedTimelineObject['resolved']
-								timelineObj: TimelineObj
-							}[] = compact(
-								objectIds.map((objectId) => {
-									const resolvedObj = resolvedTimeline.objects[objectId]
-									const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
-
-									if (resolvedObj && timelineObj) {
-										return {
-											resolved: resolvedObj.resolved,
-											timelineObj: timelineObj,
-										}
-									}
-								})
-							)
-
+						{timelineLayerObjects.map(({ layerId, objectsOnLayer }) => {
 							return (
 								<Layer
 									key={layerId}

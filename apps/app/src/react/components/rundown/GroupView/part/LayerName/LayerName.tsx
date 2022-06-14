@@ -13,6 +13,9 @@ import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
 
 export const LayerName: React.FC<{
+	rundownId: string
+	groupId: string
+	partId: string
 	/**
 	 * ID of the selected layer
 	 */
@@ -21,10 +24,6 @@ export const LayerName: React.FC<{
 	 * Project mappings, used for generating dropdown list of available options
 	 */
 	mappings: Mappings
-	/**
-	 * Executes when dropdown item (layerId) is selected - not fired if "Edit Mappings" is selected
-	 */
-	onSelect: (id: string) => void
 	/**
 	 * timelineObj objects used in this layer, required for filtering out available mappings
 	 */
@@ -37,6 +36,22 @@ export const LayerName: React.FC<{
 	const { enqueueSnackbar } = useSnackbar()
 	const mapping = props.mappings[props.layerId] as Mapping | undefined
 	const name = mapping?.layerName ?? props.layerId
+
+	const onSelect = (selectedLayerId: string) => {
+		for (const objectOnThisLayer of props.objectsOnThisLayer) {
+			objectOnThisLayer.obj.layer = selectedLayerId
+
+			serverAPI
+				.updateTimelineObj({
+					rundownId: props.rundownId,
+					groupId: props.groupId,
+					partId: props.partId,
+					timelineObj: objectOnThisLayer,
+					timelineObjId: objectOnThisLayer.obj.id,
+				})
+				.catch(handleError)
+		}
+	}
 
 	let selectedDeviceStatus: BridgeDevice | undefined = undefined
 	if (mapping) {
@@ -82,7 +97,7 @@ export const LayerName: React.FC<{
 						if (id === 'editMappings') {
 							store.guiStore.goToHome('mappingsSettings')
 						} else {
-							props.onSelect(id)
+							onSelect(id)
 						}
 					}}
 					onCreateMissingMapping={(id: string) => {
