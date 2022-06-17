@@ -1,8 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { findGroup, findPart, findTimelineObj } from '../../../lib/util'
-import { Group } from '../../../models/rundown/Group'
-import { Part } from '../../../models/rundown/Part'
-import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ResourceData } from './resource/ResourceData'
@@ -13,52 +9,63 @@ import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { Project } from '../../../models/project/Project'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
+import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
+import { compact } from '@shared/lib'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
-	const rundown = store.rundownsStore.currentRundown
-
-	const resourcesStore = store.resourcesStore
-	const gui2 = store.guiStore
-
-	const [editing, setEditing] = useState<{
-		group: Group
-		part: Part
-		timelineObjs: TimelineObj[]
-	} | null>(null)
 	const [resources, setResources] = useState<Array<ResourceAny | undefined>>([])
 
-	useEffect(() => {
-		if (!rundown) {
-			return
-		}
+	const storeResources = useMemoComputedObject(() => store.resourcesStore.resources, [])
 
-		if (gui2.selectedGroupId && gui2.selectedPartId && gui2.selectedTimelineObjIds.length > 0) {
-			const group = findGroup(rundown, gui2.selectedGroupId)
-			if (group) {
-				const part = findPart(group, gui2.selectedPartId)
-				if (part) {
-					const timelineObjs = gui2.selectedTimelineObjIds
-						.map((objId) => findTimelineObj(part, objId))
-						.filter((obj): obj is TimelineObj => {
-							return Boolean(obj)
-						})
-					if (timelineObjs.length > 0) {
-						setEditing({ group, part, timelineObjs })
-						return
-					}
+	const currentRundownId = useMemoComputedValue(() => {
+		return store.rundownsStore.currentRundownId
+	}, [])
+
+	const editing = useMemoComputedObject(
+		() => {
+			const group =
+				(currentRundownId &&
+					store.guiStore.selectedGroupId &&
+					store.rundownsStore.hasGroup(store.guiStore.selectedGroupId) &&
+					store.rundownsStore.getGroup(store.guiStore.selectedGroupId)) ||
+				null
+			const part =
+				(currentRundownId &&
+					store.guiStore.selectedGroupId &&
+					store.guiStore.selectedPartId &&
+					store.rundownsStore.hasPart(store.guiStore.selectedPartId) &&
+					store.rundownsStore.getPart(store.guiStore.selectedPartId)) ||
+				null
+			const timelineObjs =
+				(currentRundownId &&
+					store.guiStore.selectedGroupId &&
+					store.guiStore.selectedPartId &&
+					compact(
+						store.guiStore.selectedTimelineObjIds.map(
+							(objId) =>
+								store.rundownsStore.hasTimelineObj(objId) && store.rundownsStore.getTimelineObj(objId)
+						)
+					)) ||
+				[]
+
+			if (group && part) {
+				return {
+					group,
+					part,
+					timelineObjs,
 				}
-			}
-		}
-		// else:
-		setEditing(null)
-	}, [rundown, gui2.selectedGroupId, gui2.selectedPartId, gui2.selectedTimelineObjIds])
+			} else return null
+		},
+		[currentRundownId],
+		true
+	)
 
 	useEffect(() => {
 		if (editing) {
 			if (editing.timelineObjs.length > 0) {
 				const newResources = editing.timelineObjs.map((obj) => {
 					if (obj.resourceId) {
-						return resourcesStore.resources[obj.resourceId]
+						return storeResources[obj.resourceId]
 					}
 				})
 				if (newResources.length > 0) {
@@ -70,9 +77,9 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 		setResources([])
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [editing])
+	}, [editing, storeResources])
 
-	if (!rundown) {
+	if (!currentRundownId) {
 		return null
 	}
 
@@ -90,7 +97,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
 
 							<TimelineObjData
-								rundownId={rundown.id}
+								rundownId={currentRundownId}
 								groupId={editing.group.id}
 								partId={editing.part.id}
 								timelineObj={obj}
@@ -100,7 +107,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 							{(obj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
 								<TemplateData
-									rundownId={rundown.id}
+									rundownId={currentRundownId}
 									groupId={editing.group.id}
 									partId={editing.part.id}
 									timelineObjId={obj.obj.id}

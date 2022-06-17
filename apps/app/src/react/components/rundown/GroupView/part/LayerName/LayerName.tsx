@@ -4,13 +4,13 @@ import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
 import { Mapping, Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
-import { TimelineObj } from '../../../../../../models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { filterMapping } from '../../../../../../lib/TSRMappings'
 import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
+import { useMemoComputedObject } from '../../../../../mobx/lib'
 
 export const LayerName: React.FC<{
 	rundownId: string
@@ -24,30 +24,34 @@ export const LayerName: React.FC<{
 	 * Project mappings, used for generating dropdown list of available options
 	 */
 	mappings: Mappings
-	/**
-	 * timelineObj objects used in this layer, required for filtering out available mappings
-	 */
-	objectsOnThisLayer: TimelineObj[]
-}> = observer(function LayerName(props) {
+}> = observer(function LayerName({ rundownId, groupId, partId, layerId, mappings }) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const appStore = store.appStore
 
 	const { enqueueSnackbar } = useSnackbar()
-	const mapping = props.mappings[props.layerId] as Mapping | undefined
-	const name = mapping?.layerName ?? props.layerId
+	const mapping = mappings[layerId] as Mapping | undefined
+	const name = mapping?.layerName ?? layerId
 
 	const onSelect = (selectedLayerId: string) => {
-		for (const objectOnThisLayer of props.objectsOnThisLayer) {
-			objectOnThisLayer.obj.layer = selectedLayerId
+		const partTimeline = store.rundownsStore.getPartTimeline(partId)
+		const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
+
+		// Move all object on this layer to the new layer:
+		for (const objOrg of objectsOnThisLayer) {
+			// Set new layer:
 
 			serverAPI
 				.updateTimelineObj({
-					rundownId: props.rundownId,
-					groupId: props.groupId,
-					partId: props.partId,
-					timelineObj: objectOnThisLayer,
-					timelineObjId: objectOnThisLayer.obj.id,
+					rundownId: rundownId,
+					groupId: groupId,
+					partId: partId,
+					timelineObj: {
+						obj: {
+							layer: selectedLayerId,
+						},
+					},
+					timelineObjId: objOrg.obj.id,
 				})
 				.catch(handleError)
 		}
@@ -58,33 +62,48 @@ export const LayerName: React.FC<{
 		selectedDeviceStatus = appStore.allDeviceStatuses[mapping.deviceId]
 	}
 
-	const selectedItem: DropdownItem = { id: props.layerId, label: name, deviceStatus: selectedDeviceStatus }
+	const selectedItem: DropdownItem = { id: layerId, label: name, deviceStatus: selectedDeviceStatus }
 
-	const otherItems: DropdownItem[] = Object.entries(props.mappings)
-		.filter(([mappingId, mapping]) => {
-			// Remove used layer from the dropdown list
-			const isUsedLayer = mappingId === props.layerId
-			if (isUsedLayer) {
-				return false
-			}
+	const otherItems = useMemoComputedObject(
+		() => {
+			const partTimeline = store.rundownsStore.getPartTimeline(partId)
+			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			// If uncompatible mapping-timelineObj is found, remove mapping
-			for (const timelineObj of props.objectsOnThisLayer) {
-				if (!filterMapping(mapping, timelineObj.obj)) {
-					return false
-				}
-			}
+			const otherItems0: DropdownItem[] = Object.entries(mappings)
+				.filter(([mappingId, mapping]) => {
+					// Remove used layer from the dropdown list
+					const isUsedLayer = mappingId === layerId
+					if (isUsedLayer) {
+						return false
+					}
 
-			return true
-		})
-		// Map to a simple readable format
-		.map(([layerId, mapping]) => {
-			const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
+					// If uncompatible mapping-timelineObj is found, remove mapping
+					for (const timelineObj of objectsOnThisLayer) {
+						if (!filterMapping(mapping, timelineObj.obj)) {
+							return false
+						}
+					}
 
-			return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
-		})
+					return true
+				})
+				// Map to a simple readable format
+				.map(([layerId, mapping]) => {
+					const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
 
-	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings', deviceStatus: null })
+					return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
+				})
+
+			otherItems0.push({
+				id: 'editMappings',
+				label: 'Edit Mappings',
+				className: 'editMappings',
+				deviceStatus: null,
+			})
+			return otherItems0
+		},
+		[partId, mappings],
+		true
+	)
 
 	return (
 		<div className={classNames('layer-name', { warning: !mapping })}>

@@ -1,6 +1,6 @@
-import { ToggleButton } from '@mui/material'
 import React from 'react'
 import { BsKeyboardFill, BsKeyboard } from 'react-icons/bs'
+import { ToggleBtn } from '../ToggleBtn/ToggleBtn'
 import './style.scss'
 
 export const TriggerBtn: React.FC<{
@@ -18,9 +18,8 @@ export const TriggerBtn: React.FC<{
 	if (props.locked && props.triggerCount === 0) return null
 
 	return (
-		<ToggleButton
+		<ToggleBtn
 			title={'Assign triggers'}
-			value="triggers"
 			disabled={false}
 			selected={props.triggerCount > 0}
 			size="small"
@@ -34,6 +33,6 @@ export const TriggerBtn: React.FC<{
 			) : (
 				<BsKeyboard color="white" size={24} />
 			)}
-		</ToggleButton>
+		</ToggleBtn>
 	)
 }

@@ -28,9 +28,9 @@ export interface TimelineObjectMove {
 	/** The corresponding layer ID of the layer element that the user's mouse is hovering over. null = not over a valid layer */
 	hoveredLayerId: null | string
 	/** The current client X position of the pointer [pixels] */
-	pointerX?: number
+	// pointerX?: number
 	/** The current client Y position of the pointer [pixels] */
-	pointerY?: number
+	// pointerY?: number
 	/** The origin client X position of the pointer when the move began [pixels] */
 	originX?: number
 	/** The origin client Y position of the pointer when the move began [pixels] */
@@ -39,14 +39,16 @@ export interface TimelineObjectMove {
 	duplicate?: boolean
 	/** A unique identifier for each move transaction */
 	moveId: null | string
+	/** Set to true when a move has completed and is being saved */
+	saving?: boolean
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
 
-	selectedGroupId?: string
-	selectedPartId?: string
+	selectedGroupId?: string = ''
+	selectedPartId?: string = ''
 	selectedTimelineObjIds: string[] = []
 
 	definingArea: DefiningArea | null = null

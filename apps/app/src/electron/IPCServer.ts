@@ -635,7 +635,7 @@ export class IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		part: Part
+		part: Partial<Part>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -685,7 +685,7 @@ export class IPCServer
 	async updateGroup(arg: {
 		rundownId: string
 		groupId: string
-		group: Group
+		group: Partial<Group>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -1035,7 +1035,10 @@ export class IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: TimelineObj
+		timelineObj: {
+			resourceId?: TimelineObj['resourceId']
+			obj: Partial<TimelineObj['obj']>
+		}
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1050,7 +1053,8 @@ export class IPCServer
 		const timelineObjPreChange = deepClone(timelineObj)
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
-		Object.assign(timelineObj, arg.timelineObj)
+		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
+		if (arg.timelineObj.obj !== undefined) Object.assign(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })

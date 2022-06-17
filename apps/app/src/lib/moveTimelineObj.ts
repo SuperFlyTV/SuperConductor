@@ -84,19 +84,29 @@ export function applyMovementToTimeline(
 		changedObjects[modifiedLeaderObj.obj.id] = modifiedLeaderObj
 	}
 
+	let dragSnap: DragSnap | null = null
+
 	const orgStartTime = Math.max(0, orgLeaderInstance.start)
+	const orgEndTime = orgLeaderInstance.end && Math.max(0, orgLeaderInstance.end)
 
 	/** [ms] */
 	const movedStartTime = Math.max(0, orgStartTime + dragDelta)
+	const movedEndTime = orgEndTime && Math.max(0, orgEndTime + dragDelta)
 
-	let dragSnap: DragSnap | null = null
-
-	const closestSnapPoints: {
-		distanceToSnapPoint: number
-		resultingDragDelta: number
-		expression: string
-		type: 'start' | 'end'
-	}[] = []
+	const closestSnapPoints: (
+		| {
+				distanceToSnapPoint: number
+				resultingDragDelta: number
+				expression: string
+				type: 'start' | 'end'
+		  }
+		| {
+				distanceToSnapPoint: number
+				resultingDragDelta: number
+				expression: number
+				type: 'duration'
+		  }
+	)[] = []
 
 	const validSnapPoints = snapPoints.filter((sp) => {
 		// Ignore own snap points.
@@ -117,7 +127,7 @@ export function applyMovementToTimeline(
 		return true
 	})
 	validSnapPoints.forEach((sp) => {
-		{
+		if (moveType !== 'duration') {
 			const distance = Math.abs(sp.time - movedStartTime)
 			if (distance <= snapDistanceInMilliseconds) {
 				closestSnapPoints.push({
@@ -127,8 +137,23 @@ export function applyMovementToTimeline(
 					type: 'start',
 				})
 			}
+		} else if (moveType == 'duration') {
+			// Because SuperTimeline doesn't support support setting the end duration,
+			// we don't really support proper snapping to expressions,
+			// we just snap to the time instead.
+
+			if (orgEndTime && movedEndTime) {
+				const distance = Math.abs(sp.time - movedEndTime)
+				if (distance <= snapDistanceInMilliseconds) {
+					closestSnapPoints.push({
+						distanceToSnapPoint: distance,
+						resultingDragDelta: sp.time - orgEndTime,
+						expression: sp.time,
+						type: 'duration',
+					})
+				}
+			}
 		}
-		// Because SuperTimeline doesn't support support setting the end+duration, this case is not supported.
 		// {
 		// 	if (orgEndTime && movedEndTime) {
 		// 		const distance = Math.abs(sp.time - movedEndTime)
@@ -161,10 +186,12 @@ export function applyMovementToTimeline(
 	if (closestSnapPoint.distanceToSnapPoint < Infinity) {
 		dragDelta = closestSnapPoint.resultingDragDelta
 
-		dragSnap = {
-			timelineObjId: leaderTimelineObjId,
-			expression: closestSnapPoint.expression,
-			type: closestSnapPoint.type,
+		if (closestSnapPoint.type !== 'duration') {
+			dragSnap = {
+				timelineObjId: leaderTimelineObjId,
+				expression: closestSnapPoint.expression,
+				type: closestSnapPoint.type,
+			}
 		}
 	}
 	if (Math.round(dragDelta) === 0 && !leaderTimelineObjNewLayer) {

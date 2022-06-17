@@ -1,7 +1,7 @@
 import { GroupPreparedPlayData } from '../GUI/PreparedPlayhead'
 import { Part } from './Part'
 
-export type Group = {
+export interface GroupBase {
 	id: string
 	name: string
 
@@ -20,8 +20,6 @@ export type Group = {
 	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
 	collapsed?: boolean
 
-	parts: Part[]
-
 	/** Data related to the playout of the group */
 	playout: {
 		/** Map of the part(s) currently playing */
@@ -38,6 +36,19 @@ export type Group = {
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+}
+
+export interface Group extends GroupBase {
+	parts: Part[]
+}
+export interface GroupGUI extends GroupBase {
+	partIds: string[]
+}
+export function isGroup(group: GroupBase): group is Group {
+	return !!(group as any as Group).parts
+}
+export function isGroupGUI(group: GroupBase): group is GroupGUI {
+	return !!(group as any as GroupGUI).partIds
 }
 
 export interface AutoFillSettings {

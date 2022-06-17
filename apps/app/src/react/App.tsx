@@ -33,10 +33,9 @@ import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
-import { useMemoComputedObject } from './mobx/lib'
-import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
-import { Rundown } from '../models/rundown/Rundown'
-import { compact } from '@shared/lib'
+import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
+import { Action, getAllActionsInParts } from '../lib/triggers/action'
+import { PartWithRef } from '../lib/util'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -164,7 +163,7 @@ export const App = observer(function App() {
 		const isOnSidebar = tarEl.closest('.side-bar')
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.partId) {
+		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.moveType) {
 			if (gui.selectedTimelineObjIds.length > 0) {
 				gui.selectedTimelineObjIds = []
 				gui.selectedGroupId = undefined
@@ -205,7 +204,9 @@ export const App = observer(function App() {
 	}
 
 	// Handle using the Delete key to delete timeline objs
-	const currentRundownId = store.rundownsStore.currentRundownId
+	const currentRundownId = useMemoComputedValue(() => {
+		return store.rundownsStore.currentRundownId
+	}, [])
 	const [showDeleteTimelineObjConfirmationDialog, setShowDeleteTimelineObjConfirmationDialog] = useState(false)
 	const deleteSelectedTimelineObjs = useCallback(() => {
 		if (!currentRundownId) {
@@ -267,13 +268,26 @@ export const App = observer(function App() {
 			return newButtonActions
 		}
 
-		const rundowns: Rundown[] = compact(
-			Object.keys(store.rundownsStore.rundowns ?? []).map((rundownId) =>
-				store.rundownsStore.getRundown(rundownId)
-			)
-		)
+		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
 
-		const allActions = getAllActionsInRundowns(rundowns, project, store.appStore.peripherals)
+		/** All Parts in all open rundowns */
+		const allParts: PartWithRef[] = []
+		for (const rundownId of allRundownIds) {
+			if (!store.rundownsStore.hasRundown(rundownId)) continue
+			const rundown = store.rundownsStore.getRundown(rundownId)
+			for (const groupId of rundown.groupIds) {
+				const group = store.rundownsStore.getGroupWithParts(groupId)
+				for (const part of group.parts) {
+					allParts.push({
+						rundown,
+						group,
+						part,
+					})
+				}
+			}
+		}
+
+		const allActions = getAllActionsInParts(allParts, project, store.appStore.peripherals)
 		for (const action of allActions) {
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
 				let newButtonAction = newButtonActions.get(fullIdentifier)
@@ -290,10 +304,11 @@ export const App = observer(function App() {
 		store.rundownsStore.allButtonActions = allButtonActions
 	}, [allButtonActions])
 
-	const hotkeyContext: IHotkeyContext = {
-		sorensen,
-		triggers,
-	}
+	const hotkeyContext: IHotkeyContext = useMemo(() => {
+		return {
+			triggers,
+		}
+	}, [triggers])
 
 	if (!project || !sorensenInitialized) {
 		return <div>Loading...</div>

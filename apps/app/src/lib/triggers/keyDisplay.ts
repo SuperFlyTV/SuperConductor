@@ -1,9 +1,9 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
 import { Action } from './action'
-import { Part } from '../../models/rundown/Part'
+import { PartBase } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../../electron/timeline'
-import { Group } from '../../models/rundown/Group'
+import { GroupBase } from '../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../models/project/Peripheral'
 import { Project } from '../../models/project/Project'
@@ -289,7 +289,7 @@ function getLongestActionDuration(actions: Action[]): number | null {
 	}, 0)
 }
 
-function getLabel(actions: Action[], part: Part) {
+function getLabel(actions: Action[], part: PartBase) {
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
@@ -317,14 +317,14 @@ export function _getKeyDisplay(
 	labels: {
 		idle: KeyDisplay
 		paused?: (data: {
-			group: Group
-			part: Part
+			group: GroupBase
+			part: PartBase
 			action: Action
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
 		playing: (data: {
-			group: Group
-			part: Part
+			group: GroupBase
+			part: PartBase
 			action: Action
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
@@ -351,7 +351,7 @@ export function _getKeyDisplay(
 			(playingPart: GroupPreparedPlayDataPart, parentId: string) => {
 				// return content for the part
 
-				const part: Part = playingPart.part
+				const part: PartBase = playingPart.part
 				// if (action.part.id !== part.id) return []
 
 				let content: KeyDisplay | null = null

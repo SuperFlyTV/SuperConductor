@@ -2,34 +2,26 @@ import { Button } from '@mui/material'
 import _ from 'lodash'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
-import { Action } from '../../../../../../lib/triggers/action'
-import { Part } from '../../../../../../models/rundown/Part'
+import { ActionLight } from '../../../../../../lib/triggers/action'
+import { PartGUI } from '../../../../../../models/rundown/Part'
 import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../../../models/rundown/Trigger'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { HotkeyContext } from '../../../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { EditTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger'
 
-interface ITriggersSubmenuProps {
+export const TriggersSubmenu: React.FC<{
 	rundownId: string
 	groupId: string
-	part: Part
+	part: PartGUI
 	locked?: boolean
-	allActionsForPart: Action[]
-}
-
-export const TriggersSubmenu: React.FC<ITriggersSubmenuProps> = ({
-	rundownId,
-	groupId,
-	part,
-	locked,
-	allActionsForPart,
-}) => {
+	allActionsForPart: ActionLight[]
+}> = ({ rundownId, groupId, part, locked, allActionsForPart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
 
-	const otherActions: Action[] = allActionsForPart.filter(
+	const otherActions: ActionLight[] = allActionsForPart.filter(
 		(action) => !part.triggers.find((t) => _.isEqual(t.fullIdentifiers, action.trigger.fullIdentifiers))
 	)
 	const actionCount = part.triggers.length + otherActions.length

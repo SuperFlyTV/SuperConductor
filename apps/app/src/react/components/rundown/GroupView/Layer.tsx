@@ -9,7 +9,7 @@ import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
-import { useMemoObject } from '../../../mobx/lib'
+import { useMemoArray } from '../../../mobx/lib'
 import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
 
@@ -55,7 +55,7 @@ export const Layer: React.FC<{
 	)
 
 	// Optimization:
-	const objectsOnLayer2 = useMemoObject(() => {
+	const objectsOnLayerWithWarnings = useMemoArray(() => {
 		return objectsOnLayer.map((objectOnLayer) => {
 			const warnings = []
 
@@ -76,7 +76,7 @@ export const Layer: React.FC<{
 	return (
 		<DropZone ref={drop} className="layer" isOver={isOver} data-layer-id={layerId}>
 			<div className="layer__content">
-				{objectsOnLayer2.map(({ objectOnLayer, warnings }) => {
+				{objectsOnLayerWithWarnings.map(({ objectOnLayer, warnings }) => {
 					return (
 						<TimelineObject
 							key={objectOnLayer.timelineObj.obj.id}
