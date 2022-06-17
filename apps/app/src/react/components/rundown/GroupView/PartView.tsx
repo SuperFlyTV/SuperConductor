@@ -46,7 +46,6 @@ import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
 import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
-import { ActionLight } from '../../../../lib/triggers/action'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -94,6 +93,27 @@ export const PartView: React.FC<{
 
 	const [editingPartName, setEditingPartName] = useState(false)
 	const [editedName, setEditedName] = useState(part.name)
+
+	const timelineObjMove = useMemoComputedObject<TimelineObjectMove>(
+		() => {
+			const objMove = store.guiStore.timelineObjMove
+
+			if (objMove.partId === part.id) {
+				return objMove
+			} else {
+				return {
+					moveType: null,
+					wasMoved: null,
+					partId: null,
+					moveId: null,
+					hoveredLayerId: null,
+				}
+			}
+		},
+		[part.id],
+		true
+	)
+
 	useEffect(() => {
 		setEditedName(part.name)
 	}, [part.name])
@@ -104,7 +124,6 @@ export const PartView: React.FC<{
 				groupId: parentGroupId,
 				partId: part.id,
 				part: {
-					...part,
 					name: editedName,
 				},
 			})
@@ -112,47 +131,48 @@ export const PartView: React.FC<{
 		setEditingPartName(false)
 	}, [editedName, handleError, ipcServer, parentGroupId, part, rundownId])
 
-	const { orgMaxDuration, orgResolvedTimeline, msPerPixel, snapDistanceInMilliseconds, resolverErrorMessage } =
-		useMemo(() => {
-			let errorMessage = ''
-			let orgResolvedTimeline: ResolvedTimeline
-			try {
-				orgResolvedTimeline = Resolver.resolveTimeline(
-					part.timeline.map((o) => o.obj),
-					{ time: 0, cache: cache.current }
-				)
-				/** Max duration for display. Infinite objects are counted to this */
-			} catch (e) {
-				orgResolvedTimeline = {
-					options: {
-						time: Date.now(),
-					},
-					objects: {},
-					classes: {},
-					layers: {},
-					statistics: {
-						unresolvedCount: 0,
-						resolvedCount: 0,
-						resolvedInstanceCount: 0,
-						resolvedObjectCount: 0,
-						resolvedGroupCount: 0,
-						resolvedKeyframeCount: 0,
-						resolvingCount: 0,
-					},
-				}
-				errorMessage = `Fatal error in timeline: ${e}`
+	const { orgMaxDuration, orgResolvedTimeline, resolverErrorMessage } = useMemoComputedObject(() => {
+		let errorMessage = ''
+
+		const partTimeline = store.rundownsStore.getPartTimeline(partId)
+		let orgResolvedTimeline: ResolvedTimeline
+		try {
+			orgResolvedTimeline = Resolver.resolveTimeline(
+				partTimeline.map((o) => o.obj),
+				{ time: 0, cache: cache.current }
+			)
+			/** Max duration for display. Infinite objects are counted to this */
+		} catch (e) {
+			orgResolvedTimeline = {
+				options: {
+					time: Date.now(),
+				},
+				objects: {},
+				classes: {},
+				layers: {},
+				statistics: {
+					unresolvedCount: 0,
+					resolvedCount: 0,
+					resolvedInstanceCount: 0,
+					resolvedObjectCount: 0,
+					resolvedGroupCount: 0,
+					resolvedKeyframeCount: 0,
+					resolvingCount: 0,
+				},
 			}
-			const orgMaxDuration = orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0
-			const msPerPixel = orgMaxDuration / trackWidth
-			const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
-			return {
-				orgResolvedTimeline,
-				orgMaxDuration,
-				msPerPixel,
-				snapDistanceInMilliseconds,
-				resolverErrorMessage: errorMessage,
-			}
-		}, [part.timeline, trackWidth])
+			errorMessage = `Fatal error in timeline: ${e}`
+		}
+
+		return {
+			orgResolvedTimeline,
+			orgMaxDuration: orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0,
+			resolverErrorMessage: errorMessage,
+		}
+		// }, [part.timeline, trackWidth])
+	}, [partId])
+
+	const msPerPixel = orgMaxDuration / trackWidth
+	const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
 
 	const snapPoints = useMemo(() => {
 		const snapPoints: Array<SnapPoint> = []
@@ -182,6 +202,7 @@ export const PartView: React.FC<{
 			}
 		}
 		snapPoints.sort(sortSnapPoints)
+
 		return snapPoints
 	}, [orgResolvedTimeline])
 
@@ -229,28 +250,30 @@ export const PartView: React.FC<{
 	}, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
 
 	const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects, newObjectsToMoveToNewLayer } =
-		useMemo(() => {
+		useMemoComputedObject(() => {
 			let modifiedTimeline: TimelineObj[]
 			let resolvedTimeline: ResolvedTimeline
 			let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
 			let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
 			let newObjectsToMoveToNewLayer: string[] | null = null
 
+			const partTimeline = store.rundownsStore.getPartTimeline(partId)
+
 			const dragDelta = timelineObjMove.dragDelta || 0
-			const leaderObj = part.timeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
+			const leaderObj = partTimeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
 			const leaderObjOriginalLayerId = leaderObj?.obj.layer
 			const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
-
 			if (
-				gui.selectedTimelineObjIds.length === 1 &&
+				store.guiStore.selectedTimelineObjIds.length === 1 &&
 				leaderObj &&
+				timelineObjMove.moveType === 'whole' &&
 				timelineObjMove.hoveredLayerId &&
 				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)
 			) {
 				// Handle moving a timelineObj to the "new layer" area
 				// This type of move is only allowed when a single timelineObj is selected.
 
-				modifiedTimeline = part.timeline
+				modifiedTimeline = partTimeline
 				resolvedTimeline = orgResolvedTimeline
 				newObjectsToMoveToNewLayer = [leaderObj.obj.id]
 			} else if (
@@ -265,7 +288,7 @@ export const PartView: React.FC<{
 
 				// Check the the layer movement is legal:
 				let moveToLayerId = timelineObjMove.hoveredLayerId
-				if (moveToLayerId) {
+				if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
 					const newLayerMapping = project.mappings[moveToLayerId]
 					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
@@ -275,7 +298,7 @@ export const PartView: React.FC<{
 
 				try {
 					const o = applyMovementToTimeline(
-						part.timeline,
+						partTimeline,
 						orgResolvedTimeline,
 						bypassSnapping ? [] : snapPoints || [],
 						snapDistanceInMilliseconds,
@@ -284,7 +307,7 @@ export const PartView: React.FC<{
 						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
 						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
 						timelineObjMove.leaderTimelineObjId,
-						gui.selectedTimelineObjIds,
+						store.guiStore.selectedTimelineObjIds,
 						cache.current,
 						moveToLayerId,
 						Boolean(timelineObjMove.duplicate)
@@ -312,14 +335,14 @@ export const PartView: React.FC<{
 
 					handleError('There was an error when trying to move')
 
-					modifiedTimeline = part.timeline
+					modifiedTimeline = partTimeline
 					resolvedTimeline = orgResolvedTimeline
 					newChangedObjects = null
 					newDuplicatedObjects = null
 					newObjectsToMoveToNewLayer = null
 				}
 			} else {
-				modifiedTimeline = part.timeline
+				modifiedTimeline = partTimeline
 				resolvedTimeline = orgResolvedTimeline
 			}
 
@@ -362,10 +385,6 @@ export const PartView: React.FC<{
 	}, [newDuplicatedObjects, newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
-		objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
-	}, [newObjectsToMoveToNewLayer])
-
-	useEffect(() => {
 		// Handle when we stop moving:
 		if (
 			timelineObjMove.partId === part.id &&
@@ -375,8 +394,11 @@ export const PartView: React.FC<{
 			!waitingForBackendUpdate &&
 			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
 		) {
-			setWaitingForBackendUpdate(true)
 			HANDLED_MOVE_IDS.unshift(timelineObjMove.moveId)
+			setWaitingForBackendUpdate(true)
+			store.guiStore.updateTimelineObjMove({
+				saving: true,
+			})
 
 			// Prevent the list of handled move IDs from growing infinitely:
 			if (HANDLED_MOVE_IDS.length > MAX_HANDLED_MOVE_IDS) {
@@ -411,6 +433,7 @@ export const PartView: React.FC<{
 				}
 				duplicatedObjects.current = null
 			}
+
 			if (objectsToMoveToNewLayer.current) {
 				for (const objId of objectsToMoveToNewLayer.current) {
 					const promise = ipcServer.moveTimelineObjToNewLayer({
@@ -423,34 +446,49 @@ export const PartView: React.FC<{
 				}
 				objectsToMoveToNewLayer.current = null
 			}
-
 			Promise.allSettled(promises)
-				.then((results) => {
-					let foundNonError = false
-					for (const result of results) {
-						if (result.status === 'rejected') {
-							handleError(result.reason)
-						} else if (result.status === 'fulfilled') {
-							foundNonError = true
-						}
-					}
+				.then((_results) => {
+					// let anyFulfilled = false
+					// for (const result of results) {
+					// 	if (result.status === 'rejected') {
+					// 		handleError(result.reason)
+					// 	} else if (result.status === 'fulfilled') {
+					// 		anyFulfilled = true
+					// 	}
+					// }
 
-					// If every single promise errored, then we need to manually set
-					// waitingForBackendUpdate to false here because we won't get any
-					// updates from the backend.
-					if (!foundNonError) {
-						setWaitingForBackendUpdate(false)
-					}
+					// // If every single promise errored, then we need to manually set
+					// // waitingForBackendUpdate to false here because we won't get any
+					// // updates from the backend.
+					// if (!anyFulfilled) {
+					// 	setWaitingForBackendUpdate(false)
+					// }
+					setWaitingForBackendUpdate(false)
 				})
 				.catch((error) => {
 					handleError(error)
 					setWaitingForBackendUpdate(false)
 				})
 		}
-	}, [part.id, snapDistanceInMilliseconds, ipcServer, rundownId, parentGroupId, waitingForBackendUpdate, handleError, timelineObjMove.partId, timelineObjMove.moveType, timelineObjMove.wasMoved, timelineObjMove.moveId])
+	}, [
+		//
+		part.id,
+		snapDistanceInMilliseconds,
+		ipcServer,
+		rundownId,
+		parentGroupId,
+		waitingForBackendUpdate,
+		handleError,
+		timelineObjMove.partId,
+		timelineObjMove.moveType,
+		timelineObjMove.wasMoved,
+		timelineObjMove.moveId,
+	])
+	useEffect(() => {
+		objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
+	}, [newObjectsToMoveToNewLayer])
 
 	useEffect(() => {
-		const sorensen = hotkeyContext.sorensen
 		const onKey = () => {
 			const pressed = sorensen.getPressedKeys()
 			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
@@ -537,7 +575,11 @@ export const PartView: React.FC<{
 					return false
 				}
 
-				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)
+				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)) {
+					return false
+				}
+
+				return true
 			},
 			hover(movedItem, monitor: DropTargetMonitor) {
 				if (!isPartDragItem(movedItem)) {

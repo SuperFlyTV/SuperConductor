@@ -91,10 +91,13 @@ export function ParsedValueInput<V>(
 			onKeyDown={(e) => {
 				const target = e.target as EventTarget & HTMLInputElement
 				if (e.key === 'Enter') {
-					;(document.activeElement as HTMLInputElement).blur()
+					// Select all text
+					;(document.activeElement as HTMLInputElement).setSelectionRange(0, target.value.length)
+
 					onSave(target.value)
 				} else if (e.key === 'Escape') {
 					// revert to previous value:
+					;(document.activeElement as HTMLInputElement).blur()
 					setValue(stringify(currentValue))
 				} else if (e.key === 'ArrowUp') {
 					if (onIncrement) {

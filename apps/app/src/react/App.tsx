@@ -163,7 +163,7 @@ export const App = observer(function App() {
 		const isOnSidebar = tarEl.closest('.side-bar')
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.partId) {
+		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.moveType) {
 			if (gui.selectedTimelineObjIds.length > 0) {
 				gui.selectedTimelineObjIds = []
 				gui.selectedGroupId = undefined
@@ -308,7 +308,7 @@ export const App = observer(function App() {
 		return {
 			triggers,
 		}
-	}, [])
+	}, [triggers])
 
 	if (!project || !sorensenInitialized) {
 		return <div>Loading...</div>
