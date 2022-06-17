@@ -1,25 +1,22 @@
 import { Button } from '@mui/material'
 import React, { useCallback, useContext, useState } from 'react'
 import { MdOutlineEditNote } from 'react-icons/md'
-import { Part } from '../../../../models/rundown/Part'
+import { PartGUI } from '../../../../models/rundown/Part'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { HotkeyContext } from '../../../contexts/Hotkey'
+import sorensen from '@sofie-automation/sorensen'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 
-interface IPartSubmenuProps {
+export const PartSubmenu: React.FC<{
 	rundownId: string
 	groupId: string
-	part: Part
+	part: PartGUI
 	locked?: boolean
-}
-
-export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, part, locked }) => {
+}> = ({ rundownId, groupId, part, locked }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 	const [partPropertiesDialogOpen, setPartPropertiesDialogOpen] = useState(false)
@@ -59,7 +56,7 @@ export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, p
 					disabled={locked}
 					title={'Delete Part' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 					onClick={() => {
-						const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+						const pressedKeys = sorensen.getPressedKeys()
 						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 							// Delete immediately with no confirmation dialog.
 							handleDelete()

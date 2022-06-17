@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useContext, useCallback, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
+import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { Group } from '../../../../models/rundown/Group'
+import { GroupGUI } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -19,8 +20,7 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
-import { HotkeyContext } from '../../../contexts/Hotkey'
-import { Rundown } from '../../../../models/rundown/Rundown'
+
 import { DropZone } from '../../util/DropZone'
 import {
 	MdChevronRight,
@@ -40,30 +40,30 @@ import { store } from '../../../mobx/store'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
-import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { useMemoComputedObject } from '../../../mobx/lib'
+import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
 import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
-import { Part } from '../../../../models/rundown/Part'
 import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
 import { GroupAutoFillPopover } from './GroupAutoFillPopover'
 
 export const GroupView: React.FC<{
 	rundownId: string
-	group: Group
+	groupId: string
 	groupIndex: number
 	mappings: Mappings
-}> = observer(function GroupView({ group, groupIndex, rundownId, mappings }) {
+}> = observer(function GroupView({ groupId, groupIndex, rundownId, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const hotkeyContext = useContext(HotkeyContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-	const rundown = store.rundownsStore.currentRundown
+
+	const group = store.rundownsStore.getGroup(groupId)
 	const allAssignedAreas = store.projectStore.assignedAreas
 	const allAvailableAreas = store.projectStore.availableAreas
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
+
 	useEffect(() => {
 		setEditedName(group.name)
 	}, [group.name])
@@ -71,15 +71,14 @@ export const GroupView: React.FC<{
 		ipcServer
 			.updateGroup({
 				rundownId,
-				groupId: group.id,
+				groupId,
 				group: {
-					...group,
 					name: editedName,
 				},
 			})
 			.catch(handleError)
 		setEditingGroupName(false)
-	}, [editedName, group, handleError, ipcServer, rundownId])
+	}, [handleError, ipcServer, rundownId, groupId, editedName])
 
 	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -188,6 +187,7 @@ export const GroupView: React.FC<{
 			},
 			hover(movedItem, monitor) {
 				if (isGroupDragItem(movedItem)) {
+					// Is dragging a Group
 					if (!wrapperRef.current) {
 						return
 					}
@@ -233,6 +233,7 @@ export const GroupView: React.FC<{
 					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex)
 					movedItem.position = hoverIndex
 				} else if (isPartDragItem(movedItem)) {
+					// Is dragging a Part
 					if (!monitor.isOver({ shallow: true })) {
 						return
 					}
@@ -266,7 +267,7 @@ export const GroupView: React.FC<{
 					/**
 					 * An array of this Group's Parts, minus the Part currently being dragged.
 					 */
-					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
+					const groupPartsWithoutMovedPart = group.partIds.filter((partId) => partId !== movedItem.partId)
 
 					if (groupPartsWithoutMovedPart.length <= 0) {
 						// If the group is empty, and if the user's cursor is hovering within midBand
@@ -347,46 +348,40 @@ export const GroupView: React.FC<{
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 	const handleDeleteClick = useCallback(() => {
-		const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+		const pressedKeys = sorensen.getPressedKeys()
 		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 			// Delete immediately with no confirmation dialog.
 			handleDelete()
 		} else {
 			setDeleteConfirmationOpen(true)
 		}
-	}, [handleDelete, hotkeyContext.sorensen])
+	}, [handleDelete])
 
 	// Duplicate button:
 	const handleDuplicate = useCallback(() => {
 		ipcServer.duplicateGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
-	// Stop button:
-	const handleStop = useCallback(() => {
-		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
-	// Play button:
-	const handlePlay = useCallback(() => {
-		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
-	// Pause button
-	const handlePause = useCallback(() => {
-		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
 	// Step down button:
-	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
-	const nextPartExists = nextPartIndex in group.parts
+	const { nextPartExists, prevPartExists } = useMemoComputedObject(() => {
+		const groupWithParts = store.rundownsStore.getGroupWithParts(groupId)
+
+		const nextPartIndex = getNextPartIndex(groupWithParts)
+		const prevPartIndex = getPrevPartIndex(groupWithParts)
+
+		return {
+			nextPartExists: nextPartIndex in groupWithParts.parts,
+			prevPartExists: prevPartIndex in groupWithParts.parts,
+		}
+	}, [groupId])
+
 	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
 	const handleStepDown = useCallback(() => {
 		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down up:
-	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
-	const prevPartExists = prevPartIndex in group.parts
+
 	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
 	const handleStepUp = useCallback(() => {
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
@@ -452,9 +447,9 @@ export const GroupView: React.FC<{
 			.catch(handleError)
 	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
 
-	const assignedAreas = useMemoComputedObject(() => {
-		return allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
-	}, [allAssignedAreas, group.id])
+	const assignedAreas = computed(() =>
+		allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
+	)
 
 	const [partButtonAreaPopoverAnchorEl, setPartButtonAreaPopoverAnchorEl] = React.useState<Element | null>(null)
 	const buttonAreaPopoverOpen = Boolean(partButtonAreaPopoverAnchorEl)
@@ -462,25 +457,23 @@ export const GroupView: React.FC<{
 	const [partAutoFillPopoverAnchorEl, setPartAutoFillPopoverAnchorEl] = React.useState<Element | null>(null)
 	const autoFillPopoverOpen = Boolean(partAutoFillPopoverAnchorEl)
 
-	if (!rundown) {
-		return null
-	}
+	// Optimize, so that PartView isn't re-rendered on every part group change
 
 	if (group.transparent) {
-		if (group.parts.length > 1) {
+		if (group.partIds.length > 1) {
 			return (
 				<div>
-					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.parts.length}) Parts.
+					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.partIds.length}) Parts.
 				</div>
 			)
 		}
 
-		const firstPart = group.parts[0] as Part | undefined
-		return firstPart ? (
+		const firstPartId = group.partIds[0] as string | undefined
+		return firstPartId ? (
 			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
 				<PartView
 					rundownId={rundownId}
-					part={firstPart}
+					partId={firstPartId}
 					parentGroupId={group.id}
 					parentGroupIndex={groupIndex}
 					partIndex={0}
@@ -565,9 +558,7 @@ export const GroupView: React.FC<{
 
 					<div className="controls">
 						<div className="playback">
-							<StopBtn className="part__stop" groupId={group.id} onClick={handleStop} />
-							<PlayBtn groupId={group.id} onClick={handlePlay} />
-							<PauseBtn groupId={group.id} onClick={handlePause} />
+							<ControlButtons rundownId={rundownId} group={group} />
 							<Button
 								variant="contained"
 								size="small"
@@ -667,14 +658,14 @@ export const GroupView: React.FC<{
 								'Assign Button Area' + (group.locked ? ' (disabled due to locked Part or Group)' : '')
 							}
 							value="assign-area"
-							selected={assignedAreas.length > 0}
+							selected={assignedAreas.get().length > 0}
 							size="small"
 							disabled={!canAssignAreas}
 							onChange={(event) => {
 								setPartButtonAreaPopoverAnchorEl(event.currentTarget)
 							}}
 						>
-							{assignedAreas.length > 0 ? (
+							{assignedAreas.get().length > 0 ? (
 								<BsKeyboardFill color="white" size={24} />
 							) : (
 								<BsKeyboard color="white" size={24} />
@@ -737,11 +728,11 @@ export const GroupView: React.FC<{
 				{!group.collapsed && (
 					<div className="group__content">
 						<div className="group__content__parts">
-							{group.parts.map((part, index) => (
+							{group.partIds.map((partId, index) => (
 								<PartView
-									key={part.id}
+									key={partId}
 									rundownId={rundownId}
-									part={part}
+									partId={partId}
 									parentGroupId={group.id}
 									parentGroupIndex={groupIndex}
 									partIndex={index}
@@ -750,7 +741,7 @@ export const GroupView: React.FC<{
 							))}
 						</div>
 
-						{!group.locked && <GroupOptions rundown={rundown} group={group} />}
+						{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
 					</div>
 				)}
 
@@ -772,16 +763,10 @@ export const GroupView: React.FC<{
 	}
 })
 
-const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
+const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
-
-	const numParts = useMemo(() => {
-		return rundown.groups.reduce((prev, current) => {
-			return prev + current.parts.length
-		}, 0)
-	}, [rundown])
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -804,7 +789,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					}
 
 					const { partId } = await ipcServer.newPart({
-						rundownId: rundown.id,
+						rundownId: rundownId,
 						groupId: group.id,
 						name:
 							'name' in droppedItem.resource
@@ -813,7 +798,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					})
 
 					await ipcServer.addResourceToTimeline({
-						rundownId: rundown.id,
+						rundownId: rundownId,
 						groupId: group.id,
 						partId,
 						layerId: null,
@@ -824,7 +809,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				}
 			},
 		},
-		[rundown.id, group.id]
+		[rundownId, group.id]
 	)
 
 	useEffect(() => {
@@ -848,11 +833,11 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				open={newPartOpen}
 				title="New Part"
 				acceptLabel="Create"
-				initial={{ name: `Part ${numParts + 1}` }}
+				initial={{ name: `Part ${group.partIds.length + 1}` }}
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
-							rundownId: rundown.id,
+							rundownId: rundownId,
 							name: newPart.name,
 							groupId: group.id,
 						})
@@ -866,3 +851,78 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 		</>
 	)
 }
+
+const ControlButtons: React.FC<{
+	rundownId: string
+	group: GroupGUI
+}> = observer(function ControlButtons({ rundownId, group }) {
+	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	// Stop button:
+	const handleStop = useCallback(() => {
+		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	// Play button:
+	const handlePlay = useCallback(() => {
+		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	// Pause button
+	const handlePause = useCallback(() => {
+		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
+		useMemoComputedObject(() => {
+			const playData = store.groupPlayDataStore.groups.get(group.id)
+
+			if (!playData) {
+				return {
+					groupIsPlaying: false,
+					anyPartIsPlaying: false,
+					allPartsArePaused: false,
+					playheadCount: 0,
+					partIsPlaying: false,
+					partIsPaused: false,
+				}
+			}
+			return {
+				groupIsPlaying: playData.groupIsPlaying,
+				anyPartIsPlaying: playData.anyPartIsPlaying,
+				allPartsArePaused: playData.allPartsArePaused,
+				playheadCount: Object.keys(playData.playheads).length,
+				partIsPlaying: false,
+				partIsPaused: false,
+			}
+		}, [group.id])
+
+	const groupDisabled = group.disabled || false
+	const groupOneAtATime = group.oneAtATime || false
+	const countPlayablePartsInGroup = useMemoComputedValue(() => {
+		const groupWithParts = store.rundownsStore.getGroupWithParts(group.id)
+		return groupWithParts.parts.filter((p) => !p.disabled).length
+	}, [group.id])
+
+	const data: PlayButtonData = {
+		groupDisabled,
+		groupOneAtATime,
+		countPlayablePartsInGroup,
+
+		groupIsPlaying,
+		anyPartIsPlaying,
+		allPartsArePaused,
+		partIsPlaying,
+		partIsPaused,
+		playheadCount,
+	}
+
+	return (
+		<>
+			<StopBtn className="part__stop" groupId={group.id} data={data} onClick={handleStop} />
+			<PlayBtn groupId={group.id} data={data} onClick={handlePlay} />
+			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
+		</>
+	)
+})

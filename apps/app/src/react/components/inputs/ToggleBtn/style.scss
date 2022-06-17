@@ -1,0 +1,35 @@
+.toggle-btn {
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	-webkit-box-pack: center;
+	justify-content: center;
+	position: relative;
+	box-sizing: border-box;
+	outline: 0;
+	margin: 0;
+
+	font-family: Barlow, sans-serif;
+	font-weight: 500;
+	font-size: 1.3rem;
+	line-height: 1.75;
+	text-transform: uppercase;
+	border-radius: 4px;
+
+	color: #fff;
+	padding: 0;
+	width: 22px;
+	height: 22px;
+	border: none;
+	background: none;
+	opacity: 0.3;
+
+	&.selected {
+		opacity: 1;
+	}
+
+	:hover {
+		text-decoration: none;
+		background-color: rgba(255, 255, 255, 0.08);
+	}
+}

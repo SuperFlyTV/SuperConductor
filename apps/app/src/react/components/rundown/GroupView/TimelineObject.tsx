@@ -1,9 +1,10 @@
+import sorensen from '@sofie-automation/sorensen'
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
 import { useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
@@ -12,6 +13,7 @@ import { MdWarningAmber } from 'react-icons/md'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { parseMs } from '@shared/lib'
 import { shortID } from '../../../../lib/util'
+import { computed } from 'mobx'
 
 const HANDLE_WIDTH = 8
 
@@ -71,37 +73,36 @@ export const TimelineObject: React.FC<{
 	const description = describeTimelineObject(obj, typeof duration === 'number' ? duration : undefined)
 
 	useEffect(() => {
-		const keyTracker = hotkeyContext.sorensen
 		const onKey = () => {
-			const pressed = keyTracker.getPressedKeys()
+			const pressed = sorensen.getPressedKeys()
 			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 		}
 		onKey()
 
-		keyTracker.bind('Shift', onKey, {
+		sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		keyTracker.bind('Shift', onKey, {
+		sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
-		keyTracker.bind('Alt', onKey, {
+		sorensen.bind('Alt', onKey, {
 			up: false,
 			global: true,
 		})
-		keyTracker.bind('Alt', onKey, {
+		sorensen.bind('Alt', onKey, {
 			up: true,
 			global: true,
 		})
 
-		keyTracker.addEventListener('keycancel', onKey)
+		sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			keyTracker.unbind('Shift', onKey)
-			keyTracker.unbind('Alt', onKey)
+			sorensen.unbind('Shift', onKey)
+			sorensen.unbind('Alt', onKey)
 		}
 	}, [hotkeyContext])
 
@@ -177,33 +178,39 @@ export const TimelineObject: React.FC<{
 	}, [gui, handledMoveStart, isMoved, locked, timelineObjMove.moveType])
 
 	const updateSelection = () => {
-		if (
-			gui.selectedGroupId === groupId &&
-			gui.selectedPartId === partId &&
-			gui.selectedTimelineObjIds.includes(obj.id)
-		) {
-			if (allowMultiSelection) {
-				// Deselect this timelineObj.
-				store.guiStore.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== obj.id)
-			}
-
-			return
-		}
-
 		if (allowMultiSelection) {
-			if (gui.selectedGroupId === groupId && gui.selectedPartId === partId) {
-				if (!gui.selectedTimelineObjIds.includes(obj.id)) {
-					store.guiStore.selectedTimelineObjIds = [...gui.selectedTimelineObjIds, obj.id]
+			if (
+				store.guiStore.selectedGroupId === groupId &&
+				store.guiStore.selectedPartId === partId &&
+				store.guiStore.selectedTimelineObjIds.includes(obj.id)
+			) {
+				// Deselect this timelineObj:
+				store.guiStore.selectedTimelineObjIds = store.guiStore.selectedTimelineObjIds.filter(
+					(id) => id !== obj.id
+				)
+			} else {
+				if (store.guiStore.selectedGroupId === groupId && store.guiStore.selectedPartId === partId) {
+					if (!store.guiStore.selectedTimelineObjIds.includes(obj.id)) {
+						store.guiStore.selectedTimelineObjIds = [...store.guiStore.selectedTimelineObjIds, obj.id]
+					}
+				} else {
+					store.guiStore.selectedGroupId = groupId
+					store.guiStore.selectedPartId = partId
+					store.guiStore.selectedTimelineObjIds = [obj.id]
 				}
+			}
+		} else {
+			if (
+				store.guiStore.selectedGroupId === groupId &&
+				store.guiStore.selectedPartId === partId &&
+				store.guiStore.selectedTimelineObjIds.includes(obj.id)
+			) {
+				// do nothing
 			} else {
 				store.guiStore.selectedGroupId = groupId
 				store.guiStore.selectedPartId = partId
 				store.guiStore.selectedTimelineObjIds = [obj.id]
 			}
-		} else {
-			store.guiStore.selectedGroupId = groupId
-			store.guiStore.selectedPartId = partId
-			store.guiStore.selectedTimelineObjIds = [obj.id]
 		}
 	}
 
@@ -229,11 +236,13 @@ export const TimelineObject: React.FC<{
 		}
 	}, [])
 
+	const selectedTimelineObjIds = computed(() => store.guiStore.selectedTimelineObjIds).get()
+
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
-				selected: gui.selectedTimelineObjIds?.includes(obj.id),
+				selected: selectedTimelineObjIds?.includes(obj.id),
 				isAtMinWidth,
 				locked,
 				warning: warnings && warnings.length > 0,

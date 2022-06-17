@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { Group } from '../../../../models/rundown/Group'
+import { GroupGUI } from '../../../../models/rundown/Group'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { Button } from '@mui/material'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -8,7 +8,9 @@ import { store } from '../../../mobx/store'
 import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
 
-export const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function GroupButtonAreaPopover({ group }) {
+export const GroupButtonAreaPopover: React.FC<{ group: GroupGUI }> = observer(function GroupButtonAreaPopover({
+	group,
+}) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = store.projectStore.project

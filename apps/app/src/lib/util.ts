@@ -1,7 +1,7 @@
-import { Group } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
+import { Group, GroupBase, GroupGUI } from '../models/rundown/Group'
+import { Part, PartBase } from '../models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
-import { Rundown } from '../models/rundown/Rundown'
+import { Rundown, RundownBase } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { getGroupPlayData, GroupPlayData } from './playhead'
 import { Project } from '../models/project/Project'
@@ -127,8 +127,8 @@ export function getResolvedTimelineTotalDuration(
 
 export function allowMovingItemIntoGroup(
 	movedPartId: string,
-	fromGroup: Group,
-	toGroup: Group
+	fromGroup: GroupBase,
+	toGroup: GroupBase
 ): {
 	now: number
 	fromPlayhead: GroupPlayData
@@ -266,7 +266,16 @@ export function findDeviceOfType(bridges: Project['bridges'], deviceType: Device
 	}
 }
 
-export function getCurrentlyPlayingPartIndex(group: Group): number {
+export type RundownWithShallowGroups = Omit<Rundown, 'groups'> & { groups: GroupGUI[] }
+export type GroupWithShallowParts = Omit<Group, 'parts'> & { parts: PartBase[] }
+
+export type PartWithRef = {
+	rundown: RundownBase
+	group: GroupWithShallowParts
+	part: PartBase
+}
+
+export function getCurrentlyPlayingPartIndex(group: GroupWithShallowParts): number {
 	let currentlyPlayingPartIndex = -1
 	const currentlyPlayingPartId = Object.keys(group.playout.playingParts)[0]
 	if (currentlyPlayingPartId) {
@@ -278,7 +287,7 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 /**
  * @returns The index of the part which will be played next. Skips disabled parts. Accounts for looping. Returns -1 if there is no next part to play.
  */
-export function getNextPartIndex(group: Group): number {
+export function getNextPartIndex(group: GroupWithShallowParts): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
 	/**
@@ -319,7 +328,7 @@ export function getNextPartIndex(group: Group): number {
 /**
  * @returns The index of the part which will was previously played. Skips disabled parts. Accounts for looping. Returns -1 if there is no previous part.
  */
-export function getPrevPartIndex(group: Group): number {
+export function getPrevPartIndex(group: GroupWithShallowParts): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
 	/**

@@ -1,5 +1,6 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import _ from 'lodash'
+import sorensen from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead'
 import { Layer } from './Layer'
 import {
@@ -11,7 +12,6 @@ import {
 } from 'superfly-timeline'
 import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
-import { Part } from '../../../../models/rundown/Part'
 import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
@@ -26,7 +26,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { ProjectContext } from '../../../contexts/Project'
 import { filterMapping, sortMappings } from '../../../../lib/TSRMappings'
-import { Popover, TextField, ToggleButton } from '@mui/material'
+import { Popover, TextField } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { store } from '../../../mobx/store'
@@ -39,11 +39,14 @@ import { RemainingTime } from './part/RemainingTime/RemainingTime'
 import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
-import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { LoggerContext } from '../../../contexts/Logger'
-import { useMemoComputedObject, useMemoObject } from '../../../mobx/lib'
+import { useMemoComputedObject } from '../../../mobx/lib'
 import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
 import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
+import { TimelineObjectMove } from '../../../mobx/GuiStore'
+import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
+import { ActionLight } from '../../../../lib/triggers/action'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -64,13 +67,13 @@ export const PartView: React.FC<{
 	rundownId: string
 	parentGroupId: string
 	parentGroupIndex: number
-	part: Part
+	partId: string
 	partIndex: number
 	mappings: Mappings
-}> = observer(function PartView({ rundownId, parentGroupId, parentGroupIndex, part, partIndex, mappings }) {
+}> = observer(function PartView({ rundownId, parentGroupId, parentGroupIndex, partId, partIndex, mappings }) {
+	const part = store.rundownsStore.getPart(partId)
 	const ipcServer = useContext(IPCServerContext)
-	const gui = store.guiStore
-	const timelineObjMove = gui.timelineObjMove
+
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
@@ -199,15 +202,14 @@ export const PartView: React.FC<{
 				// timelineObjs with a drag delta applied.
 				//
 				// This is where a move operation has truly completed, including the backend response.
-
 				setWaitingForBackendUpdate(false)
-				gui.updateTimelineObjMove({
+				store.guiStore.updateTimelineObjMove({
 					partId: null,
 					moveId: undefined,
 				})
 			}
 		}
-	}, [waitingForBackendUpdate, part, gui])
+	}, [waitingForBackendUpdate, part])
 
 	// Initialize trackWidth.
 	useLayoutEffect(() => {
@@ -333,7 +335,6 @@ export const PartView: React.FC<{
 			}
 		}, [
 			timelineObjMove,
-			part.timeline,
 			part.id,
 			project.mappings,
 			handleError,
@@ -341,7 +342,6 @@ export const PartView: React.FC<{
 			bypassSnapping,
 			snapPoints,
 			snapDistanceInMilliseconds,
-			gui.selectedTimelineObjIds,
 			log,
 		])
 
@@ -473,19 +473,6 @@ export const PartView: React.FC<{
 		}
 	}, [hotkeyContext])
 
-	// Play button:
-	const handleStart = useCallback(() => {
-		ipcServer.playPart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
-	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
-	const handlePause = useCallback(() => {
-		ipcServer.pausePart({ rundownId: rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
-	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
-
-	// Stop button:
-	const handleStop = useCallback(() => {
-		ipcServer.stopPart({ rundownId, groupId: parentGroupId, partId: part.id }).catch(handleError)
-	}, [handleError, ipcServer, parentGroupId, part.id, rundownId])
-
 	// Disable button:
 	const toggleDisable = useCallback(() => {
 		ipcServer
@@ -544,8 +531,7 @@ export const PartView: React.FC<{
 					return false
 				}
 
-				const parentGroup =
-					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId) || null
+				const parentGroup = store.rundownsStore.getGroupInCurrentRundown(parentGroupId) || null
 
 				if (!parentGroup) {
 					return false
@@ -563,8 +549,7 @@ export const PartView: React.FC<{
 				}
 
 				let hoverIndex = partIndex
-				const parentGroup =
-					store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId) || null
+				const parentGroup = store.rundownsStore.getGroupInCurrentRundown(parentGroupId) || null
 				let hoverGroup: Group | null = parentGroup
 				const hoverPartId = part.id
 				const hoverGroupIndex = parentGroupIndex
@@ -650,9 +635,7 @@ export const PartView: React.FC<{
 		{
 			type: DragItemTypes.PART_ITEM,
 			item: (): PartDragItem | null => {
-				const parentGroup = store.rundownsStore.currentRundown?.groups.find(
-					(group) => group.id === parentGroupId
-				)
+				const parentGroup = store.rundownsStore.getGroupInCurrentRundown(parentGroupId)
 
 				if (!parentGroup) {
 					return null
@@ -705,14 +688,11 @@ export const PartView: React.FC<{
 	const triggersSubmenuOpen = Boolean(triggersSubmenuPopoverAnchorEl)
 
 	const groupDisabled =
-		computed(
-			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)?.disabled
-		).get() || false
-	const groupOrPartDisabled = groupDisabled || part.disabled
+		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.disabled).get() || false
 	const groupLocked =
-		computed(
-			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === parentGroupId)?.locked
-		).get() || false
+		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.locked).get() || false
+	const groupOrPartDisabled = groupDisabled || part.disabled
+
 	const groupOrPartLocked = groupLocked || part.locked || false
 	const sortedLayers = useMemo(() => {
 		return sortLayers(resolvedTimeline.layers, mappings)
@@ -724,44 +704,30 @@ export const PartView: React.FC<{
 		tabAdditionalClassNames[firstTimelineObjType] = true
 	}
 
-	const allActionsForPart = useMemoComputedObject(() => {
-		return store.rundownsStore.getActionsForPart(part.id)
-	}, [store.rundownsStore.allButtonActions])
+	const allActionsForPart = store.rundownsStore.getActionsForPart(partId)
 
-	// Optimization:
-	const layersAndObjects = useMemoObject(() => {
-		return sortedLayers.map(({ layerId }) => {
-			return {
-				layerId,
-				objectsOnThisLayer: modifiedTimeline.filter((obj) => obj.obj.layer === layerId),
-			}
-		})
-	}, [resolvedTimeline, mappings, modifiedTimeline, sortedLayers])
-	// Optimization:
-	const timelineLayerObjects = useMemoObject(() => {
-		return sortedLayers.map(({ layerId, objectIds }) => {
-			const objectsOnLayer: {
-				resolved: ResolvedTimelineObject['resolved']
-				timelineObj: TimelineObj
-			}[] = compact(
-				objectIds.map((objectId) => {
-					const resolvedObj = resolvedTimeline.objects[objectId]
-					const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
+	const timelineLayerObjects = sortedLayers.map(({ layerId, objectIds }) => {
+		const objectsOnLayer: {
+			resolved: ResolvedTimelineObject['resolved']
+			timelineObj: TimelineObj
+		}[] = compact(
+			objectIds.map((objectId) => {
+				const resolvedObj = resolvedTimeline.objects[objectId]
+				const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
 
-					if (resolvedObj && timelineObj) {
-						return {
-							resolved: resolvedObj.resolved,
-							timelineObj: timelineObj,
-						}
+				if (resolvedObj && timelineObj) {
+					return {
+						resolved: resolvedObj.resolved,
+						timelineObj: timelineObj,
 					}
-				})
-			)
-			return {
-				layerId,
-				objectsOnLayer,
-			}
-		})
-	}, [sortedLayers, resolvedTimeline, modifiedTimeline])
+				}
+			})
+		)
+		return {
+			layerId,
+			objectsOnLayer,
+		}
+	})
 
 	return (
 		<div
@@ -834,41 +800,38 @@ export const PartView: React.FC<{
 					)}
 
 					<div className="controls">
-						<ToggleButton
+						<ToggleBtn
 							title={
 								part.disabled
 									? 'Disabledn\n\nClick to enable Part.'
 									: 'Disable/Skip Part during playback.'
 							}
-							value="disabled"
 							selected={part.disabled}
 							size="small"
 							onChange={toggleDisable}
 						>
 							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-						</ToggleButton>
-						<ToggleButton
+						</ToggleBtn>
+						<ToggleBtn
 							title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
-							value="locked"
 							disabled={groupLocked}
 							selected={part.locked}
 							size="small"
 							onChange={toggleLock}
 						>
 							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-						</ToggleButton>
-						<ToggleButton
+						</ToggleBtn>
+						<ToggleBtn
 							title={
 								part.loop ? 'Looping.\n\nDisable Looping.' : 'Enable Looping of Part during playout.'
 							}
-							value="loop"
 							disabled={groupOrPartLocked}
 							selected={part.loop}
 							size="small"
 							onChange={toggleLoop}
 						>
 							<MdRepeatOne size={18} />
-						</ToggleButton>
+						</ToggleBtn>
 						<TriggerBtn
 							onTrigger={handleTriggerBtn}
 							title="Open Triggers Submenu"
@@ -879,15 +842,18 @@ export const PartView: React.FC<{
 				</div>
 
 				<div className="part__meta__right">
-					<StopBtn className="part__stop" groupId={parentGroupId} part={part} onClick={handleStop} />
-					<PlayBtn className="part__play" groupId={parentGroupId} part={part} onClick={handleStart} />
-					<PauseBtn className="part__pause" groupId={parentGroupId} part={part} onClick={handlePause} />
+					<ControlButtons
+						rundownId={rundownId}
+						groupId={parentGroupId}
+						partId={part.id}
+						disabled={part.disabled}
+					/>
 				</div>
 			</div>
 			<div className="part__dropdown">{/** TODO **/}</div>
 
 			<div className="part__layer-names">
-				{layersAndObjects.map(({ layerId, objectsOnThisLayer }) => {
+				{sortedLayers.map(({ layerId }) => {
 					return (
 						<LayerName
 							key={layerId}
@@ -896,7 +862,6 @@ export const PartView: React.FC<{
 							partId={part.id}
 							layerId={layerId}
 							mappings={mappings}
-							objectsOnThisLayer={objectsOnThisLayer}
 						/>
 					)
 				})}
@@ -921,7 +886,7 @@ export const PartView: React.FC<{
 				</div>
 				<div className="layers-wrapper">
 					{resolverErrorMessage && <div className="part__error-overlay">{resolverErrorMessage}</div>}
-					<PlayHead part={part} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
+					<PlayHead partId={part.id} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
 					<div
 						className={classNames('layers', {
 							moving: timelineObjMove.moveType !== null,
@@ -983,6 +948,103 @@ export const PartView: React.FC<{
 				/>
 			</Popover>
 		</div>
+	)
+})
+
+const ControlButtons: React.FC<{
+	rundownId: string
+	groupId: string
+	partId: string
+	disabled?: boolean
+}> = observer(function ControlButtons({ rundownId, groupId, partId, disabled }) {
+	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const handleStart = useCallback(() => {
+		ipcServer.playPart({ rundownId, groupId, partId }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, groupId, partId])
+	const handlePause = useCallback(() => {
+		ipcServer.pausePart({ rundownId, groupId, partId }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, groupId, partId])
+	const handleStop = useCallback(() => {
+		ipcServer.stopPart({ rundownId, groupId, partId }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, groupId, partId])
+
+	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
+		useMemoComputedObject(() => {
+			const playData = store.groupPlayDataStore.groups.get(groupId)
+
+			if (!playData) {
+				return {
+					groupIsPlaying: false,
+					anyPartIsPlaying: false,
+					allPartsArePaused: false,
+					playheadCount: 0,
+					partIsPlaying: false,
+					partIsPaused: false,
+				}
+			}
+			const playhead = partId && playData.playheads[partId]
+			return {
+				groupIsPlaying: playData.groupIsPlaying,
+				anyPartIsPlaying: playData.anyPartIsPlaying,
+				allPartsArePaused: playData.allPartsArePaused,
+				playheadCount: Object.keys(playData.playheads).length,
+				partIsPlaying: Boolean(partId && partId in playData.playheads), // partIsPlaying: Boolean(playhead),
+				partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
+			}
+		}, [groupId])
+
+	const { groupDisabled, groupOneAtATime, countPlayablePartsInGroup } = useMemoComputedObject(() => {
+		const group = store.rundownsStore.getGroupWithParts(groupId)
+
+		return {
+			groupDisabled: group?.disabled || false,
+			groupOneAtATime: group?.oneAtATime || false,
+			countPlayablePartsInGroup: group ? group.parts.filter((p) => !p.disabled).length : 0,
+		}
+	}, [groupId])
+
+	const data: PlayButtonData = {
+		groupDisabled,
+		groupOneAtATime,
+		countPlayablePartsInGroup,
+
+		groupIsPlaying,
+		anyPartIsPlaying,
+		allPartsArePaused,
+		partIsPlaying,
+		partIsPaused,
+		playheadCount,
+	}
+
+	return (
+		<>
+			<StopBtn
+				className="part__stop"
+				groupId={groupId}
+				partId={partId}
+				disabled={disabled}
+				data={data}
+				onClick={handleStop}
+			/>
+			<PlayBtn
+				className="part__play"
+				groupId={groupId}
+				partId={partId}
+				disabled={disabled}
+				data={data}
+				onClick={handleStart}
+			/>
+			<PauseBtn
+				className="part__pause"
+				groupId={groupId}
+				partId={partId}
+				disabled={disabled}
+				data={data}
+				onClick={handlePause}
+			/>
+		</>
 	)
 })
 

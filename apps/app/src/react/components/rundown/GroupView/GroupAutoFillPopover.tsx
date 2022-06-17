@@ -1,5 +1,5 @@
 import React, { useContext, useMemo, useState } from 'react'
-import { AutoFillMode, AutoFillSettings, AutoFillSortMode, Group } from '../../../../models/rundown/Group'
+import { AutoFillMode, AutoFillSettings, AutoFillSortMode, GroupGUI } from '../../../../models/rundown/Group'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { observer } from 'mobx-react-lite'
@@ -15,7 +15,7 @@ import { findAutoFillResources } from '../../../../lib/autoFill'
 import { Message } from '../../pages/homePage/message/Message'
 import { HelpButton } from '../../inputs/HelpButton/HelpButton'
 
-export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: Group }> = observer(
+export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI }> = observer(
 	function GroupButtonAreaPopover({ rundownId, group }) {
 		const ipcServer = useContext(IPCServerContext)
 		const { handleError } = useContext(ErrorHandlerContext)

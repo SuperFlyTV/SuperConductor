@@ -97,9 +97,9 @@ export interface IPCServerMethods {
 
 		name: string
 	}) => { partId: string; groupId?: string }
-	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Part }) => void
+	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Partial<Part> }) => void
 	newGroup: (arg: { rundownId: string; name: string }) => string
-	updateGroup: (arg: { rundownId: string; groupId: string; group: Group }) => void
+	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
 	movePart: (arg: {
@@ -115,7 +115,10 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: TimelineObj
+		timelineObj: {
+			resourceId?: TimelineObj['resourceId']
+			obj: Partial<TimelineObj['obj']>
+		}
 	}) => void
 	deleteTimelineObj: (arg: { rundownId: string; timelineObjId: string }) => void
 	addTimelineObj: (arg: {

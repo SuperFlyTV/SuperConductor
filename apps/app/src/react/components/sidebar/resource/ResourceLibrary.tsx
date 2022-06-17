@@ -3,13 +3,12 @@ import { SidebarInfoGroup } from '../SidebarInfoGroup'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { ProjectContext } from '../../../contexts/Project'
 import { ResourceAny } from '@shared/models'
+import { flatten } from '@shared/lib'
 import { ResourceData } from './ResourceData'
 import { ResourceLibraryItem } from './ResourceLibraryItem'
-import { Part } from '../../../../models/rundown/Part'
 import { Field, Form, Formik } from 'formik'
-import { findPartInRundown, getDeviceName, scatterMatchString } from '../../../../lib/util'
-import { Rundown } from '../../../../models/rundown/Rundown'
-import { Group } from '../../../../models/rundown/Group'
+import { getDeviceName, scatterMatchString } from '../../../../lib/util'
+
 import {
 	Button,
 	Divider,
@@ -33,6 +32,7 @@ import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
 import { useDebounce } from '../../../../lib/useDebounce'
 import { sortMappings } from '../../../../lib/TSRMappings'
+import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -49,24 +49,43 @@ const NAME_FILTER_DEBOUNCE = 100
 
 export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 	const ipcServer = useContext(IPCServerContext)
-	const rundown = store.rundownsStore.currentRundown
+
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
-	const resourcesStore = store.resourcesStore
+	let currentRundownId: string | undefined = store.rundownsStore.currentRundownId
+	if (currentRundownId && !store.rundownsStore.hasRundown(currentRundownId)) {
+		currentRundownId = undefined
+	}
 
-	const defaultPart = rundown?.groups[0]?.parts[0] as Part | undefined
+	const defaultPart = useMemoComputedObject(() => {
+		if (!currentRundownId) return undefined
+
+		const firstGroup = store.rundownsStore.getRundownGroups(currentRundownId)[0]
+		if (!firstGroup) return undefined
+		const firstPartId = firstGroup.partIds[0]
+		if (!firstPartId) return undefined
+		return {
+			rundownId: currentRundownId,
+			groupId: firstGroup.id,
+			partId: firstPartId,
+		}
+	}, [currentRundownId])
 	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
 
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
-	const selectedResource = selectedResourceId ? resourcesStore.resources[selectedResourceId] : undefined
+	const selectedResource = useMemoComputedObject(
+		() => (selectedResourceId ? store.resourcesStore.resources[selectedResourceId] : undefined),
+		[selectedResourceId]
+	)
+	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
 
 	const [nameFilterValue, setNameFilterValue] = React.useState('')
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
-	const sortedResources = useMemo(() => {
-		return Object.values(resourcesStore.resources).sort((a, b) => {
+	const sortedResources = useMemoComputedArray(() => {
+		return Object.values(store.resourcesStore.resources).sort((a, b) => {
 			if (a.deviceId > b.deviceId) return 1
 			if (a.deviceId < b.deviceId) return -1
 
@@ -81,7 +100,7 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 
 			return 0
 		})
-	}, [resourcesStore.resources])
+	}, [])
 	const resourcesFilteredByDevice = useMemo(() => {
 		if (deviceFilterValue.length <= 0) return sortedResources // fast path
 		return sortedResources.filter((resource) => {
@@ -155,8 +174,27 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 		},
 		[ipcServer, handleError]
 	)
+	const isAnyDeviceRefreshing = useMemoComputedValue(() => store.resourcesStore.isAnyDeviceRefreshing(), [])
 
-	if (!rundown) {
+	const allPartsInRundown = useMemoComputedArray(() => {
+		if (!currentRundownId) return []
+
+		return flatten(
+			store.rundownsStore.getRundownGroups(currentRundownId).map((group) => {
+				const parts = store.rundownsStore.getGroupParts(group.id)
+
+				return parts.map((part) => ({
+					partId: part.id,
+					partName: part.name,
+					groupId: group.id,
+					groupName: group.name,
+					groupTransparent: group.transparent,
+				}))
+			})
+		)
+	}, [currentRundownId])
+
+	if (!currentRundownId) {
 		return null
 	}
 
@@ -165,7 +203,7 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 			<SidebarInfoGroup
 				title="Available Resources"
 				enableRefresh={true}
-				refreshActive={resourcesStore.isAnyDeviceRefreshing()}
+				refreshActive={isAnyDeviceRefreshing}
 				onRefreshClick={handleRefresh}
 				refreshAutoInterval={project.autoRefreshInterval}
 				onRefreshAutoClick={handleRefreshAuto}
@@ -212,7 +250,7 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 						<React.Fragment key={deviceId}>
 							<Stack direction="row" justifyContent="space-between">
 								<Typography variant="body2">{getDeviceName(project, deviceId)}</Typography>
-								{resourcesStore.refreshStatuses[deviceId] && (
+								{refreshStatuses[deviceId] && (
 									<div
 										className="refresh-icon refresh active"
 										style={{ opacity: '0.6', height: '14px' }}
@@ -243,14 +281,19 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 					{defaultPart && defaultLayer && (
 						<div className="add-to-timeline">
 							<Formik
-								initialValues={{ partId: defaultPart.id, layerId: defaultLayer }}
+								initialValues={{
+									rundownId: defaultPart.rundownId,
+									groupId: defaultPart.groupId,
+									partId: defaultPart.partId,
+									layerId: defaultLayer,
+								}}
 								onSubmit={(values, actions) => {
-									if (!values.partId || !values.layerId) {
+									if (!values.rundownId || !values.groupId || !values.partId || !values.layerId) {
 										actions.setSubmitting(false)
 										return
 									}
 
-									const part = findPartInRundown(rundown, values.partId)
+									const part = store.rundownsStore.getPart(values.partId)
 									if (!part) {
 										actions.setSubmitting(false)
 										return
@@ -258,9 +301,9 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 
 									ipcServer
 										.addResourceToTimeline({
-											rundownId: rundown.id,
-											groupId: part.group.id,
-											partId: part.part.id,
+											rundownId: values.rundownId,
+											groupId: values.groupId,
+											partId: values.partId,
 											layerId: values.layerId,
 											resourceId: selectedResource.id,
 										})
@@ -283,12 +326,12 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 														name="partId"
 														label="Part"
 													>
-														{getAllPartsInRundown(rundown).map((p) => {
+														{allPartsInRundown.map((p) => {
 															return (
-																<MenuItem key={p.part.id} value={p.part.id}>
-																	{p.group.transparent
-																		? p.part.name
-																		: `${p.group.name}: ${p.part.name}`}
+																<MenuItem key={p.partId} value={p.partId}>
+																	{p.groupTransparent
+																		? p.partName
+																		: `${p.groupName}: ${p.partName}`}
 																</MenuItem>
 															)
 														})}
@@ -329,13 +372,3 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 		</div>
 	)
 })
-
-function getAllPartsInRundown(rundown: Rundown): { part: Part; group: Group }[] {
-	const parts: { part: Part; group: Group }[] = []
-	for (const group of rundown.groups) {
-		for (const part of group.parts) {
-			parts.push({ part, group })
-		}
-	}
-	return parts
-}
