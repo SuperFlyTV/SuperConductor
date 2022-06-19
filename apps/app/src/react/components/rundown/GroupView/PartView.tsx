@@ -747,7 +747,13 @@ export const PartView: React.FC<{
 		tabAdditionalClassNames[firstTimelineObjType] = true
 	}
 
-	const allActionsForPart = store.rundownsStore.getActionsForPart(partId)
+	const allActionsForPart = useMemoComputedObject(
+		() => {
+			return store.rundownsStore.getActionsForPart(partId)
+		},
+		[partId],
+		true
+	)
 
 	const timelineLayerObjects = sortedLayers.map(({ layerId, objectIds }) => {
 		const objectsOnLayer: {
