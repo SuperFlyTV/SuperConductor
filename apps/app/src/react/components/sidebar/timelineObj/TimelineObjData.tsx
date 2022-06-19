@@ -34,7 +34,10 @@ export const TimelineObjData: React.FC<{
 				timelineObjId: props.timelineObj.obj.id,
 			})
 			.then(() => {
-				gui.selectedTimelineObjIds = gui.selectedTimelineObjIds.filter((id) => id !== props.timelineObj.obj.id)
+				const selected = gui.selected
+				gui.setSelected({
+					timelineObjIds: selected.timelineObjIds.filter((id) => id !== props.timelineObj.obj.id),
+				})
 			})
 			.catch(handleError)
 	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id])

@@ -42,14 +42,21 @@ export interface TimelineObjectMove {
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
 }
+interface CurrentSelection {
+	groupId?: string
+	partId?: string
+	timelineObjIds: string[]
+}
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
 
-	selectedGroupId?: string = ''
-	selectedPartId?: string = ''
-	selectedTimelineObjIds: string[] = []
+	private _selected: CurrentSelection = {
+		groupId: undefined,
+		partId: undefined,
+		timelineObjIds: [],
+	}
 
 	definingArea: DefiningArea | null = null
 
@@ -59,6 +66,16 @@ export class GuiStore {
 	}
 	set activeTabId(id: string) {
 		this._activeTabId = id
+	}
+
+	get selected(): Readonly<CurrentSelection> {
+		return this._selected
+	}
+	setSelected(selected: Partial<CurrentSelection>) {
+		this._selected = {
+			...this._selected,
+			...selected,
+		}
 	}
 
 	activeHomePageId = 'project'
@@ -102,7 +119,7 @@ export class GuiStore {
 	async getSelectedAndPlayingTimelineObjIds(rundownId: string): Promise<Set<string>> {
 		const playingIds = new Set<string>()
 		const promises: Array<Promise<void>> = []
-		for (const timelineObjId of this.selectedTimelineObjIds) {
+		for (const timelineObjId of this.selected.timelineObjIds) {
 			const promise = this.serverAPI
 				.isTimelineObjPlaying({
 					rundownId,

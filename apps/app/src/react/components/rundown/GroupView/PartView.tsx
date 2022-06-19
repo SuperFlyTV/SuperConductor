@@ -264,16 +264,16 @@ export const PartView: React.FC<{
 			const leaderObjOriginalLayerId = leaderObj?.obj.layer
 			const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
 			if (
-				store.guiStore.selectedTimelineObjIds.length === 1 &&
 				leaderObj &&
 				timelineObjMove.moveType === 'whole' &&
 				timelineObjMove.hoveredLayerId &&
-				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)
+				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX) &&
+				store.guiStore.selected.timelineObjIds.length === 1
 			) {
 				// Handle moving a timelineObj to the "new layer" area
 				// This type of move is only allowed when a single timelineObj is selected.
 
-				modifiedTimeline = partTimeline
+				modifiedTimeline = store.rundownsStore.getPartTimeline(partId)
 				resolvedTimeline = orgResolvedTimeline
 				newObjectsToMoveToNewLayer = [leaderObj.obj.id]
 			} else if (
@@ -307,7 +307,7 @@ export const PartView: React.FC<{
 						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
 						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
 						timelineObjMove.leaderTimelineObjId,
-						store.guiStore.selectedTimelineObjIds,
+						store.guiStore.selected.timelineObjIds,
 						cache.current,
 						moveToLayerId,
 						Boolean(timelineObjMove.duplicate)
@@ -386,6 +386,7 @@ export const PartView: React.FC<{
 
 	useEffect(() => {
 		// Handle when we stop moving:
+
 		if (
 			timelineObjMove.partId === part.id &&
 			timelineObjMove.moveType === null &&

@@ -47,7 +47,7 @@ export const EmptyLayer: React.FC<{
 		return (
 			store.guiStore.timelineObjMove.moveType === 'whole' &&
 			store.guiStore.timelineObjMove.hoveredLayerId === layerId &&
-			store.guiStore.selectedTimelineObjIds.length === 1
+			store.guiStore.selected.timelineObjIds.length === 1
 		)
 	}, [layerId])
 

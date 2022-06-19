@@ -23,25 +23,26 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 	const editing = useMemoComputedObject(
 		() => {
+			const selected = store.guiStore.selected
 			const group =
 				(currentRundownId &&
-					store.guiStore.selectedGroupId &&
-					store.rundownsStore.hasGroup(store.guiStore.selectedGroupId) &&
-					store.rundownsStore.getGroup(store.guiStore.selectedGroupId)) ||
+					selected.groupId &&
+					store.rundownsStore.hasGroup(selected.groupId) &&
+					store.rundownsStore.getGroup(selected.groupId)) ||
 				null
 			const part =
 				(currentRundownId &&
-					store.guiStore.selectedGroupId &&
-					store.guiStore.selectedPartId &&
-					store.rundownsStore.hasPart(store.guiStore.selectedPartId) &&
-					store.rundownsStore.getPart(store.guiStore.selectedPartId)) ||
+					selected.groupId &&
+					selected.partId &&
+					store.rundownsStore.hasPart(selected.partId) &&
+					store.rundownsStore.getPart(selected.partId)) ||
 				null
 			const timelineObjs =
 				(currentRundownId &&
-					store.guiStore.selectedGroupId &&
-					store.guiStore.selectedPartId &&
+					selected.groupId &&
+					selected.partId &&
 					compact(
-						store.guiStore.selectedTimelineObjIds.map(
+						selected.timelineObjIds.map(
 							(objId) =>
 								store.rundownsStore.hasTimelineObj(objId) && store.rundownsStore.getTimelineObj(objId)
 						)

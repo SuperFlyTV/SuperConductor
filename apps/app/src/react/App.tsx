@@ -164,10 +164,12 @@ export const App = observer(function App() {
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 
 		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.moveType) {
-			if (gui.selectedTimelineObjIds.length > 0) {
-				gui.selectedTimelineObjIds = []
-				gui.selectedGroupId = undefined
-				gui.selectedPartId = undefined
+			if (gui.selected.timelineObjIds.length > 0) {
+				gui.setSelected({
+					timelineObjIds: [],
+					groupId: undefined,
+					partId: undefined,
+				})
 			}
 		}
 	}
@@ -214,7 +216,7 @@ export const App = observer(function App() {
 		}
 
 		const promises: Promise<void>[] = []
-		for (const id of gui.selectedTimelineObjIds) {
+		for (const id of gui.selected.timelineObjIds) {
 			const promise = serverAPI.deleteTimelineObj({
 				rundownId: currentRundownId,
 				timelineObjId: id,
@@ -223,7 +225,7 @@ export const App = observer(function App() {
 		}
 
 		Promise.all(promises).catch(handleError)
-	}, [currentRundownId, gui.selectedTimelineObjIds, handleError, serverAPI])
+	}, [currentRundownId, gui.selected.timelineObjIds, handleError, serverAPI])
 	useEffect(() => {
 		if (!sorensenInitialized) {
 			return

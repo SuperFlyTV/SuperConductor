@@ -189,38 +189,46 @@ export const TimelineObject: React.FC<{
 	}, [hotkeyContext])
 
 	const updateSelection = () => {
+		const selected = store.guiStore.selected
 		if (allowMultiSelection) {
 			if (
-				store.guiStore.selectedGroupId === groupId &&
-				store.guiStore.selectedPartId === partId &&
-				store.guiStore.selectedTimelineObjIds.includes(obj.id)
+				selected.groupId === groupId &&
+				selected.partId === partId &&
+				selected.timelineObjIds.includes(obj.id)
 			) {
 				// Deselect this timelineObj:
-				store.guiStore.selectedTimelineObjIds = store.guiStore.selectedTimelineObjIds.filter(
-					(id) => id !== obj.id
-				)
+				store.guiStore.setSelected({
+					timelineObjIds: selected.timelineObjIds.filter((id) => id !== obj.id),
+				})
 			} else {
-				if (store.guiStore.selectedGroupId === groupId && store.guiStore.selectedPartId === partId) {
-					if (!store.guiStore.selectedTimelineObjIds.includes(obj.id)) {
-						store.guiStore.selectedTimelineObjIds = [...store.guiStore.selectedTimelineObjIds, obj.id]
+				if (selected.groupId === groupId && selected.partId === partId) {
+					if (!selected.timelineObjIds.includes(obj.id)) {
+						// Add this to selection:
+						store.guiStore.setSelected({
+							timelineObjIds: [...selected.timelineObjIds, obj.id],
+						})
 					}
 				} else {
-					store.guiStore.selectedGroupId = groupId
-					store.guiStore.selectedPartId = partId
-					store.guiStore.selectedTimelineObjIds = [obj.id]
+					store.guiStore.setSelected({
+						groupId: groupId,
+						partId: partId,
+						timelineObjIds: [obj.id],
+					})
 				}
 			}
 		} else {
 			if (
-				store.guiStore.selectedGroupId === groupId &&
-				store.guiStore.selectedPartId === partId &&
-				store.guiStore.selectedTimelineObjIds.includes(obj.id)
+				selected.groupId === groupId &&
+				selected.partId === partId &&
+				selected.timelineObjIds.includes(obj.id)
 			) {
 				// do nothing
 			} else {
-				store.guiStore.selectedGroupId = groupId
-				store.guiStore.selectedPartId = partId
-				store.guiStore.selectedTimelineObjIds = [obj.id]
+				store.guiStore.setSelected({
+					groupId: groupId,
+					partId: partId,
+					timelineObjIds: [obj.id],
+				})
 			}
 		}
 	}
@@ -247,13 +255,13 @@ export const TimelineObject: React.FC<{
 		}
 	}, [])
 
-	const selectedTimelineObjIds = computed(() => store.guiStore.selectedTimelineObjIds).get()
+	const isSelected = computed(() => store.guiStore.selected.timelineObjIds?.includes(obj.id))
 
 	return (
 		<div
 			ref={ref}
 			className={classNames('object', description.contentTypeClassNames.join(' '), {
-				selected: selectedTimelineObjIds?.includes(obj.id),
+				selected: isSelected.get(),
 				isAtMinWidth,
 				locked,
 				warning: warnings && warnings.length > 0,
