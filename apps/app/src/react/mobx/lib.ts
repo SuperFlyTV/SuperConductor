@@ -2,6 +2,36 @@ import _ from 'lodash'
 import { computed } from 'mobx'
 import { useMemo, useRef } from 'react'
 
+let DEBUG = false
+
+/**
+ * Enable debugging of changed values.
+ *
+ * @returns
+ */
+export function gebugCustomMemos(enable = true) {
+	DEBUG = enable
+
+	const stackPrepare = new Error('')
+	let endWasCalled = false
+	setImmediate(() => {
+		if (!endWasCalled) {
+			// eslint-disable-next-line no-console
+			console.error(
+				`enableDebugging end() was not called! You should call it at the end of your React hook!`,
+				stackPrepare?.stack
+			)
+		}
+	})
+
+	return {
+		end: () => {
+			endWasCalled = true
+			DEBUG = false
+		},
+	}
+}
+
 /** Variant of useMemo, useful when memoizing objects computed from a mobx store */
 export function useMemoComputedObject<T extends object | any[] | string | number | boolean | null | undefined>(
 	fcn: (prev: T | undefined) => T,
@@ -9,9 +39,11 @@ export function useMemoComputedObject<T extends object | any[] | string | number
 	/** true: only update if the value has changed. false: update if identify changed */
 	equalValue?: boolean
 ): T {
+	const debug = DEBUG
 	const errPrepare = new Error(
 		'useMemoComputedObject: new object is identical to the old one! useMemoComputedObject requires a cloned object'
 	)
+	const stackPrepare = debug ? new Error('') : undefined
 	const ref = useRef<T>()
 	return useMemo(() => {
 		return computed<T>(() => {
@@ -23,6 +55,9 @@ export function useMemoComputedObject<T extends object | any[] | string | number
 					throw errPrepare
 				}
 				if (!_.isEqual(value, ref.current)) {
+					// eslint-disable-next-line no-console
+					if (debug) console.error('useMemoComputedObject update', stackLine(stackPrepare, 2))
+
 					ref.current = value
 				}
 				return ref.current as T
@@ -37,15 +72,23 @@ export function useMemoComputedValue<T extends string | number | boolean | null 
 	fcn: () => T,
 	deps: React.DependencyList
 ): T {
-	return useMemo(() => {
+	const debug = DEBUG
+	const stackPrepare = debug ? new Error('') : undefined
+	const value = useMemo(() => {
 		return computed<T>(fcn, {})
 	}, deps).get()
+	// eslint-disable-next-line no-console
+	if (debug) console.error('useMemoComputedValue update', stackLine(stackPrepare, 2))
+
+	return value
 }
 /** Variant of useMemo, useful when memoizing arrays computed from a mobx store */
 export function useMemoComputedArray<T>(fcn: () => T[], deps: React.DependencyList): T[] {
+	const debug = DEBUG
 	const errPrepare = new Error(
 		'useMemoArray: new array is identical to the old one! useMemoArray requires a cloned object'
 	)
+	const stackPrepare = debug ? new Error('') : undefined
 	const ref = useRef<T[]>([])
 	return useMemo(() => {
 		return computed<T[]>(() => {
@@ -71,6 +114,8 @@ export function useMemoComputedArray<T>(fcn: () => T[], deps: React.DependencyLi
 				}
 			}
 			if (!isTheSame) {
+				// eslint-disable-next-line no-console
+				if (debug) console.error('useMemoComputedArray update', stackLine(stackPrepare, 2))
 				ref.current = resultArray
 			}
 
@@ -87,9 +132,11 @@ export function useMemoObject<T extends object | any[] | string | number | boole
 	deps: React.DependencyList,
 	equalValue?: boolean
 ): T {
+	const debug = DEBUG
 	const errPrepare = new Error(
 		'useMemoObject: new object is identical to the old one! useMemoObject requires a cloned object'
 	)
+	const stackPrepare = debug ? new Error('') : undefined
 	const ref = useRef<T>()
 	return useMemo(() => {
 		const value: T = fcn()
@@ -97,6 +144,8 @@ export function useMemoObject<T extends object | any[] | string | number | boole
 		if (equalValue) {
 			if (value === ref.current && typeof value === 'object' && value !== null) throw errPrepare
 			if (!_.isEqual(value, ref.current)) {
+				// eslint-disable-next-line no-console
+				if (debug) console.error('useMemoObject update', stackLine(stackPrepare, 2))
 				ref.current = value
 			}
 			return ref.current as T
@@ -272,3 +321,11 @@ type AssignOperation<T> =
 			incoming: T
 			op: 'move' | 'equal'
 	  }
+
+function stackLine(err: Error | undefined, lineIndex: number): string | undefined {
+	if (!err) return undefined
+	const stack = err.stack
+	if (!stack) return undefined
+	const lines = stack.split('\n')
+	return lines[lineIndex]
+}
