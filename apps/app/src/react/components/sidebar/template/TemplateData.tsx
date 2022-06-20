@@ -1,7 +1,7 @@
 import { Column, useTable } from 'react-table'
 import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
-import { SidebarInfoGroup } from '../SidebarInfoGroup'
+import { SidebarContent } from '../SidebarContent'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { Button } from '@mui/material'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
@@ -142,50 +142,48 @@ export const TemplateData: React.FC<{
 	})
 
 	return (
-		<SidebarInfoGroup title="Template data">
-			<div className="template-data">
-				<table {...getTableProps()} className="editable template-data">
-					<thead>
-						{headerGroups.map((headerGroup) => (
-							// eslint-disable-next-line react/jsx-key
-							<tr {...headerGroup.getHeaderGroupProps()}>
-								{headerGroup.headers.map((column) => (
-									// eslint-disable-next-line react/jsx-key
-									<th {...column.getHeaderProps()}>{column.render('Header')}</th>
-								))}
-							</tr>
-						))}
-					</thead>
-					<tbody {...getTableBodyProps()}>
-						{rows.map((row) => {
-							prepareRow(row)
-							return (
+		<div className="template-data">
+			<table {...getTableProps()} className="editable template-data">
+				<thead>
+					{headerGroups.map((headerGroup) => (
+						// eslint-disable-next-line react/jsx-key
+						<tr {...headerGroup.getHeaderGroupProps()}>
+							{headerGroup.headers.map((column) => (
 								// eslint-disable-next-line react/jsx-key
-								<tr {...row.getRowProps()}>
-									{row.cells.map((cell) => {
-										return (
-											// eslint-disable-next-line react/jsx-key
-											<td {...cell.getCellProps()}>
-												{cell.render('Cell', {
-													onUpdateData: handleUpdateData,
-													onDelete: handleDelete,
-													disabled: props.disabled,
-												})}
-											</td>
-										)
-									})}
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
+								<th {...column.getHeaderProps()}>{column.render('Header')}</th>
+							))}
+						</tr>
+					))}
+				</thead>
+				<tbody {...getTableBodyProps()}>
+					{rows.map((row) => {
+						prepareRow(row)
+						return (
+							// eslint-disable-next-line react/jsx-key
+							<tr {...row.getRowProps()}>
+								{row.cells.map((cell) => {
+									return (
+										// eslint-disable-next-line react/jsx-key
+										<td {...cell.getCellProps()}>
+											{cell.render('Cell', {
+												onUpdateData: handleUpdateData,
+												onDelete: handleDelete,
+												disabled: props.disabled,
+											})}
+										</td>
+									)
+								})}
+							</tr>
+						)
+					})}
+				</tbody>
+			</table>
 
-				<div className="btn-row-right">
-					<Button variant="contained" onClick={handleAddNew} disabled={props.disabled}>
-						Add
-					</Button>
-				</div>
+			<div className="btn-row-right">
+				<Button variant="contained" onClick={handleAddNew} disabled={props.disabled}>
+					Add
+				</Button>
 			</div>
-		</SidebarInfoGroup>
+		</div>
 	)
 }

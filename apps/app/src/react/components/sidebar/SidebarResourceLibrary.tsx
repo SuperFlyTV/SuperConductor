@@ -1,17 +1,16 @@
-import React, { useCallback, useContext, useMemo, useState } from 'react'
-import { SidebarInfoGroup } from '../SidebarInfoGroup'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { ProjectContext } from '../../../contexts/Project'
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { SidebarContent } from './SidebarContent'
+import { IPCServerContext } from '../../contexts/IPCServer'
+import { ProjectContext } from '../../contexts/Project'
 import { ResourceAny } from '@shared/models'
 import { flatten } from '@shared/lib'
-import { ResourceData } from './ResourceData'
-import { ResourceLibraryItem } from './ResourceLibraryItem'
+import { ResourceData } from './resource/ResourceData'
+import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
 import { Field, Form, Formik } from 'formik'
-import { getDeviceName, scatterMatchString } from '../../../../lib/util'
+import { getDeviceName, scatterMatchString } from '../../../lib/util'
 
 import {
 	Button,
-	Divider,
 	FormControl,
 	Grid,
 	InputLabel,
@@ -24,15 +23,18 @@ import {
 	Select,
 	SelectChangeEvent,
 	Stack,
+	ButtonGroup,
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { store } from '../../../mobx/store'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
-import { useDebounce } from '../../../../lib/useDebounce'
-import { sortMappings } from '../../../../lib/TSRMappings'
-import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
+import { useDebounce } from '../../../lib/useDebounce'
+import { sortMappings } from '../../../lib/TSRMappings'
+import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
+import classNames from 'classnames'
+import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -47,7 +49,7 @@ const MenuProps = {
 
 const NAME_FILTER_DEBOUNCE = 100
 
-export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
+export const SidebarResourceLibrary: React.FC = observer(function SidebarResourceLibrary() {
 	const ipcServer = useContext(IPCServerContext)
 
 	const project = useContext(ProjectContext)
@@ -161,13 +163,6 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 		})
 	}, [])
 
-	const handleRefresh = useCallback(async () => {
-		try {
-			await ipcServer.refreshResources()
-		} catch (err) {
-			handleError(err)
-		}
-	}, [ipcServer, handleError])
 	const handleRefreshAuto = useCallback(
 		(interval: number) => {
 			ipcServer.refreshResourcesSetAuto(interval).catch(handleError)
@@ -194,86 +189,156 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 		)
 	}, [currentRundownId])
 
+	const allListItems: RowItem[] = []
+	for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
+		allListItems.push({
+			type: 'device',
+			key: `__device${deviceId}`,
+			deviceId,
+		})
+		for (const resource of resources) {
+			allListItems.push({
+				type: 'resource',
+				key: resource.id,
+				resource,
+			})
+		}
+	}
+
+	const MIN_LIMIT = 10
+	const [listItemsLimit, setListItemsLimit] = useState(MIN_LIMIT)
+	const listLength = useRef(allListItems.length)
+	useEffect(() => {
+		listLength.current = allListItems.length
+		if (listItemsLimit > allListItems.length) {
+			const newLimit = Math.max(MIN_LIMIT, allListItems.length)
+			setListItemsLimit(newLimit)
+		}
+	}, [allListItems.length, listItemsLimit])
+	const loadMoreItems = useCallback(() => {
+		setListItemsLimit((value) => {
+			const newLimit = Math.max(MIN_LIMIT, Math.min(listLength.current, value + 10))
+			return newLimit
+		})
+	}, [])
+
 	if (!currentRundownId) {
 		return null
 	}
 
-	return (
-		<div className="sidebar media-library-sidebar">
-			<SidebarInfoGroup
-				title="Available Resources"
-				enableRefresh={true}
-				refreshActive={isAnyDeviceRefreshing}
-				onRefreshClick={handleRefresh}
-				refreshAutoInterval={project.autoRefreshInterval}
-				onRefreshAutoClick={handleRefreshAuto}
-			>
-				<FormControl margin="dense" size="small" fullWidth>
-					<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
-					<Select
-						labelId="resource-library-deviceid-filter-label"
-						id="resource-library-deviceid-filter"
-						multiple
-						value={deviceFilterValue}
-						onChange={handleDeviceFilterChange}
-						input={<OutlinedInput label="Filter Resources by Device" />}
-						renderValue={(selectedDeviceIds) =>
-							selectedDeviceIds.map((deviceId) => getDeviceName(project, deviceId)).join(', ')
-						}
-						MenuProps={MenuProps}
+	const header = (
+		<>
+			<div className="title">
+				<span>Available Resources</span>
+
+				<ButtonGroup className="refresh-resources">
+					<Button className="on-hover" onClick={() => handleRefreshAuto(0)}>
+						Auto: Off
+					</Button>
+					<Button
+						className={classNames('on-hover', { selected: project.autoRefreshInterval === 1000 })}
+						onClick={() => handleRefreshAuto(1000)}
 					>
-						{deviceIds.map((deviceId) => (
-							<MenuItem key={deviceId} value={deviceId}>
-								<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
-								<ListItemText primary={getDeviceName(project, deviceId)} />
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl>
+						1s
+					</Button>
+					<Button
+						className={classNames('on-hover', { selected: project.autoRefreshInterval === 10000 })}
+						onClick={() => handleRefreshAuto(10000)}
+					>
+						10s
+					</Button>
+					<Button
+						className={classNames('on-hover', { selected: project.autoRefreshInterval === 60000 })}
+						onClick={() => handleRefreshAuto(60000)}
+					>
+						1m
+					</Button>
 
-				<TextField
-					size="small"
-					margin="normal"
-					fullWidth
-					label="Filter Resources by Name"
-					value={nameFilterValue}
-					InputProps={{
-						type: 'search',
-					}}
-					onChange={(event) => {
-						setNameFilterValue(event.target.value)
-					}}
-				/>
+					<Button
+						className={classNames('refresh', { active: isAnyDeviceRefreshing })}
+						onClick={() => ipcServer.refreshResources().catch(handleError)}
+					>
+						<HiRefresh size={15} color="white" />
+					</Button>
+				</ButtonGroup>
+			</div>
 
-				{Object.entries(filteredResourcesByDeviceId).map(([deviceId, resources]) => {
-					return (
-						<React.Fragment key={deviceId}>
-							<Stack direction="row" justifyContent="space-between">
-								<Typography variant="body2">{getDeviceName(project, deviceId)}</Typography>
-								{refreshStatuses[deviceId] && (
-									<div
-										className="refresh-icon refresh active"
-										style={{ opacity: '0.6', height: '14px' }}
-									>
-										<HiRefresh size={12} color="white" />
-									</div>
-								)}
-							</Stack>
-							<Divider />
-							{resources.map((resource) => {
-								return (
-									<ResourceLibraryItem
-										key={resource.id}
-										resource={resource}
-										selected={resource.id === selectedResourceId}
-										onSelect={handleResourceLibraryItemSelect}
-									/>
-								)
-							})}
-						</React.Fragment>
-					)
-				})}
-			</SidebarInfoGroup>
+			<FormControl margin="dense" size="small" fullWidth>
+				<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
+				<Select
+					labelId="resource-library-deviceid-filter-label"
+					id="resource-library-deviceid-filter"
+					multiple
+					value={deviceFilterValue}
+					onChange={handleDeviceFilterChange}
+					input={<OutlinedInput label="Filter Resources by Device" />}
+					renderValue={(selectedDeviceIds) =>
+						selectedDeviceIds.map((deviceId) => getDeviceName(project, deviceId)).join(', ')
+					}
+					MenuProps={MenuProps}
+				>
+					{deviceIds.map((deviceId) => (
+						<MenuItem key={deviceId} value={deviceId}>
+							<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
+							<ListItemText primary={getDeviceName(project, deviceId)} />
+						</MenuItem>
+					))}
+				</Select>
+			</FormControl>
+
+			<TextField
+				size="small"
+				margin="normal"
+				fullWidth
+				label="Filter Resources by Name"
+				value={nameFilterValue}
+				InputProps={{
+					type: 'search',
+				}}
+				onChange={(event) => {
+					setNameFilterValue(event.target.value)
+				}}
+			/>
+		</>
+	)
+	const displayItems = allListItems.slice(0, listItemsLimit)
+	return (
+		<div>
+			<SidebarContent title={header} className="resource-library">
+				<ScrollWatcher
+					onNearBottom={loadMoreItems}
+					totalCount={allListItems.length}
+					currentCount={displayItems.length}
+					childHeight={40}
+				>
+					{displayItems.map((item) => {
+						if (item.type === 'device') {
+							return (
+								<Stack key={item.deviceId} direction="row" justifyContent="space-between">
+									<Typography variant="body2">{getDeviceName(project, item.deviceId)}</Typography>
+									{refreshStatuses[item.deviceId] && (
+										<div
+											className="refresh-icon refresh active"
+											style={{ opacity: '0.6', height: '14px' }}
+										>
+											<HiRefresh size={12} color="white" />
+										</div>
+									)}
+								</Stack>
+							)
+						} else {
+							return (
+								<ResourceLibraryItem
+									key={item.resource.id}
+									resource={item.resource}
+									selected={item.resource.id === selectedResourceId}
+									onSelect={handleResourceLibraryItemSelect}
+								/>
+							)
+						}
+					})}
+				</ScrollWatcher>
+			</SidebarContent>
 
 			{selectedResource && (
 				<>
@@ -372,3 +437,15 @@ export const ResourceLibrary: React.FC = observer(function ResourceLibrary() {
 		</div>
 	)
 })
+
+type RowItem =
+	| {
+			type: 'device'
+			key: string
+			deviceId: string
+	  }
+	| {
+			type: 'resource'
+			key: string
+			resource: ResourceAny
+	  }

@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react'
 import { ResourceAny } from '@shared/models'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ResourceData } from './resource/ResourceData'
-import { ResourceLibrary } from './resource/ResourceLibrary'
-import { TemplateData } from './template/TemplateData'
-import { TimelineObjData } from './timelineObj/TimelineObjData'
+import { SidebarResourceLibrary } from './SidebarResourceLibrary'
+
+import { SideBarEditTimelineObject } from './SideBarEditTimelineObject'
 import { TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { Project } from '../../../models/project/Project'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
 import { compact } from '@shared/lib'
+import { TimelineObj } from '../../../models/rundown/TimelineObj'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
 	const [resources, setResources] = useState<Array<ResourceAny | undefined>>([])
@@ -83,46 +84,38 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	if (!currentRundownId) {
 		return null
 	}
-
+	let editTimelineObj: TimelineObj | undefined = undefined
 	if (editing) {
-		const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))
+		editTimelineObj = editing.timelineObjs[0]
+	}
+
+	if (editing && editTimelineObj) {
+		// const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))
 		const groupOrPartLocked = editing.group.locked || editing.part.locked
 
 		return (
-			<div className="sidebar timeline-obj-sidebar">
-				{editing.timelineObjs.map((obj, index) => {
-					return (
-						<div key={obj.obj.id}>
-							<div className="title">{descriptions[index].label}</div>
+			<SideBarEditTimelineObject
+				rundownId={currentRundownId}
+				groupId={editing.group.id}
+				partId={editing.part.id}
+				timelineObj={editTimelineObj}
+				mappings={props.mappings}
+				disabled={groupOrPartLocked}
+			/>
 
-							{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
+			// <div className="">
+			// 	{editing.timelineObjs.map((obj, index) => {
+			// 		return (
+			// 			<div key={obj.obj.id}>
+			// 				{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
 
-							<TimelineObjData
-								rundownId={currentRundownId}
-								groupId={editing.group.id}
-								partId={editing.part.id}
-								timelineObj={obj}
-								mappings={props.mappings}
-								disabled={groupOrPartLocked}
-							/>
-
-							{(obj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
-								<TemplateData
-									rundownId={currentRundownId}
-									groupId={editing.group.id}
-									partId={editing.part.id}
-									timelineObjId={obj.obj.id}
-									templateData={JSON.parse((obj.obj.content as any)?.data)}
-									disabled={groupOrPartLocked}
-								/>
-							)}
-						</div>
-					)
-				})}
-			</div>
+			// 			</div>
+			// 		)
+			// 	})}
+			// </div>
 		)
 	} else {
 		// not editing
-		return <ResourceLibrary />
+		return <SidebarResourceLibrary />
 	}
 })

@@ -1,18 +1,19 @@
-import { IPCServerContext } from '../../../contexts/IPCServer'
+import { IPCServerContext } from '../../contexts/IPCServer'
 import React, { useCallback, useContext, useState } from 'react'
-import { Mappings } from 'timeline-state-resolver-types'
-import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { DataRow } from '../SidebarInfoGroup'
-import { SidebarInfoGroup } from '../SidebarInfoGroup'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { Mappings, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { TimelineObj } from '../../../models/rundown/TimelineObj'
+import { TrashBtn } from '../inputs/TrashBtn'
+import { DataRow } from './SidebarContent'
+import { SidebarContent } from './SidebarContent'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
-import { EditTimelineObjContent } from './editTimelineObj'
-import { describeTimelineObject } from '../../../../lib/TimelineObj'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { store } from '../../mobx/store'
+import { EditTimelineObjContent } from './timelineObj/editTimelineObj'
+import { describeTimelineObject } from '../../../lib/TimelineObj'
+import { ConfirmationDialog } from '../util/ConfirmationDialog'
+import { TemplateData } from './template/TemplateData'
 
-export const TimelineObjData: React.FC<{
+export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
 	groupId: string
 	partId: string
@@ -43,7 +44,10 @@ export const TimelineObjData: React.FC<{
 	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id])
 
 	return (
-		<SidebarInfoGroup title="Timeline object">
+		<SidebarContent
+			title={`Edit ${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}
+			className="edit-timeline-obj"
+		>
 			<DataRow label="ID" value={props.timelineObj.obj.id} />
 
 			<EditTimelineObjContent
@@ -86,6 +90,17 @@ export const TimelineObjData: React.FC<{
 					setDeleteConfirmationOpen(false)
 				}}
 			/>
-		</SidebarInfoGroup>
+
+			{(props.timelineObj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
+				<TemplateData
+					rundownId={props.rundownId}
+					groupId={props.groupId}
+					partId={props.partId}
+					timelineObjId={props.timelineObj.obj.id}
+					templateData={JSON.parse((props.timelineObj.obj.content as any)?.data)}
+					disabled={props.disabled}
+				/>
+			)}
+		</SidebarContent>
 	)
 })

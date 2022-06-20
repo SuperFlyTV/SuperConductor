@@ -1,5 +1,5 @@
 import React from 'react'
-import { SidebarInfoGroup, DataRow } from '../SidebarInfoGroup'
+import { DataRow } from '../ResourceData'
 import moment from 'moment'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, bytesToSize } from '@shared/lib'
@@ -19,7 +19,7 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 		return (
-			<SidebarInfoGroup title="CasparCG Media">
+			<ResourceData title="CasparCG Media">
 				<DataRow label="Name" value={resource.name} />
 				{universalRows}
 				<DataRow label="Type" value={resource.type} />
@@ -28,131 +28,144 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				<DataRow label="Frame time" value={resource.frameTime ? resource.frameTime : ''} />
 				<DataRow label="Frame rate" value={resource.frameRate ? resource.frameRate : ''} />
 				<DataRow label="Duration" value={resource.duration ? resource.duration : ''} />
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 		return (
-			<SidebarInfoGroup title="CasparCG Template">
+			<ResourceData title="CasparCG Template">
 				<DataRow label="Name" value={resource.name} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 		return (
-			<SidebarInfoGroup title="CasparCG Server">
+			<ResourceData title="CasparCG Server">
 				<DataRow label="Channels" value={resource.channels} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_ME) {
 		return (
-			<SidebarInfoGroup title="ATEM ME">
+			<ResourceData title="ATEM ME">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_DSK) {
 		return (
-			<SidebarInfoGroup title="ATEM DSK">
+			<ResourceData title="ATEM DSK">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_AUX) {
 		return (
-			<SidebarInfoGroup title="ATEM AUX">
+			<ResourceData title="ATEM AUX">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_SSRC) {
 		return (
-			<SidebarInfoGroup title="ATEM SuperSource">
+			<ResourceData title="ATEM SuperSource">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_SSRC_PROPS) {
 		return (
-			<SidebarInfoGroup title="ATEM SuperSource Props">
+			<ResourceData title="ATEM SuperSource Props">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_MACRO_PLAYER) {
-		return <SidebarInfoGroup title="ATEM Macro Player">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="ATEM Macro Player">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL) {
 		return (
-			<SidebarInfoGroup title="ATEM Audio Channel">
+			<ResourceData title="ATEM Audio Channel">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 		return (
-			<SidebarInfoGroup title="ATEM Media Player">
+			<ResourceData title="ATEM Media Player">
 				<DataRow label="Index" value={resource.index} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 		return (
-			<SidebarInfoGroup title="OBS Scene">
+			<ResourceData title="OBS Scene">
 				<DataRow label="Name" value={resource.name} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.OBS_TRANSITION) {
 		return (
-			<SidebarInfoGroup title="OBS Transition">
+			<ResourceData title="OBS Transition">
 				<DataRow label="Name" value={resource.name} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.OBS_RECORDING) {
-		return <SidebarInfoGroup title="OBS Recording">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OBS Recording">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
-		return <SidebarInfoGroup title="OBS Streaming">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OBS Streaming">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
-		return <SidebarInfoGroup title="OBS Source Settings">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OBS Source Settings">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
-		return <SidebarInfoGroup title="OBS Mute">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OBS Mute">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
-		return <SidebarInfoGroup title="OBS Render">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OBS Render">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
 		return (
-			<SidebarInfoGroup title="vMix Input">
+			<ResourceData title="vMix Input">
 				<DataRow label="Number" value={resource.number} />
 				<DataRow label="Type" value={resource.type} />
 				{universalRows}
-			</SidebarInfoGroup>
+			</ResourceData>
 		)
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS) {
-		return <SidebarInfoGroup title="vMix Input Settings">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Input Settings">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS) {
-		return <SidebarInfoGroup title="vMix Audio Settings">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Audio Settings">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS) {
-		return <SidebarInfoGroup title="vMix Output Settings">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Output Settings">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS) {
-		return <SidebarInfoGroup title="vMix Overlay Settings">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Overlay Settings">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_RECORDING) {
-		return <SidebarInfoGroup title="vMix Recording">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Recording">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_STREAMING) {
-		return <SidebarInfoGroup title="vMix Streaming">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Streaming">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_EXTERNAL) {
-		return <SidebarInfoGroup title="vMix External Output">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix External Output">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK) {
-		return <SidebarInfoGroup title="vMix Fade To Black">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Fade To Black">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_FADER) {
-		return <SidebarInfoGroup title="vMix Fader">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Fader">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
-		return <SidebarInfoGroup title="vMix Preview">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="vMix Preview">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
-		return <SidebarInfoGroup title="OSC Message">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="OSC Message">{universalRows}</ResourceData>
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
-		return <SidebarInfoGroup title="HTTP Request">{universalRows}</SidebarInfoGroup>
+		return <ResourceData title="HTTP Request">{universalRows}</ResourceData>
 	} else {
 		assertNever(resource)
 		return null
 	}
+}
+
+export const ResourceData: React.FC<{
+	title: string
+
+	children: React.ReactNode
+}> = ({ title, children }) => {
+	return (
+		<div>
+			<div>{title}</div>
+			{children}
+		</div>
+	)
 }

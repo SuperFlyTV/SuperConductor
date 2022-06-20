@@ -1,0 +1,64 @@
+/*
+
+.row {
+	display: flex;
+	margin-bottom: 1rem;
+
+	.label {
+		flex-basis: 50%;
+		flex-grow: 0;
+		flex-shrink: 0;
+		opacity: 0.7;
+		font-size: 1.3rem;
+		display: flex;
+		align-items: center;
+	}
+	.value {
+		flex-basis: 50%;
+		flex-grow: 0;
+		flex-shrink: 0;
+		font-size: 1.3rem;
+		box-sizing: border-box;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	*/
+
+	/* We don't need these since we are using MUI */
+	// .label,
+	// label {
+	// 	flex-basis: 50%;
+	// 	flex-grow: 0;
+	// 	flex-shrink: 0;
+	// 	opacity: 0.7;
+	// 	font-size: 1.3rem;
+	// 	display: flex;
+	// 	align-items: center;
+	// }
+	// .value,
+	// input,
+	// select {
+	// 	flex-basis: 50%;
+	// 	flex-grow: 0;
+	// 	flex-shrink: 0;
+	// 	font-size: 1.3rem;
+	// 	box-sizing: border-box;
+	// 	overflow: hidden;
+	// 	text-overflow: ellipsis;
+	// }
+
+	// input {
+	// 	background-color: black;
+	// 	border: 0;
+	// 	color: silver;
+	// 	padding: 0.3rem;
+	// 	overflow: hidden;
+	// }
+
+	// select {
+	// 	background-color: black;
+	// 	color: silver;
+	// 	border: 0;
+	// 	padding: 0.5rem 0;
+	// }
+// }
