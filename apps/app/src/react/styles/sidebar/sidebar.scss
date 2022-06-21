@@ -1,12 +1,11 @@
 .sidebar {
-
 	position: absolute;
 	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
 
-	>.sidebar__header {
+	> .sidebar__header {
 		position: absolute;
 		top: 0;
 		left: 0;
@@ -24,13 +23,10 @@
 			font-weight: bold;
 			display: flex;
 			justify-content: space-between;
-			padding: 0 0.6em;
-
-
+			padding: 0.6em;
 		}
-
 	}
-	>.sidebar__content {
+	> .sidebar__content {
 		position: absolute;
 		bottom: 0;
 		left: 0;
@@ -41,12 +37,33 @@
 
 		overflow-y: auto;
 		overflow-x: hidden;
-		// padding: 0 0.6em;
+
+		padding: 0.6em;
 	}
 
+	.row {
+		display: flex;
+		margin-bottom: 1rem;
 
-
-
+		.label {
+			flex-basis: 50%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			opacity: 0.7;
+			font-size: 1.3rem;
+			display: flex;
+			align-items: center;
+		}
+		.value {
+			flex-basis: 50%;
+			flex-grow: 0;
+			flex-shrink: 0;
+			font-size: 1.3rem;
+			box-sizing: border-box;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
 }
 
 /*
@@ -227,8 +244,6 @@
 	}
 	*/
 
-
 // }
-
 
 @import './resource-library.scss';

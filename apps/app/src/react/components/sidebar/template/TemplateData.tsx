@@ -1,7 +1,6 @@
 import { Column, useTable } from 'react-table'
 import React, { useContext } from 'react'
 import { BsFillTrashFill } from 'react-icons/bs'
-import { SidebarContent } from '../SidebarContent'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { Button } from '@mui/material'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'

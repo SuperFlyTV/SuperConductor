@@ -1,6 +1,6 @@
 .sidebar.resource-library {
-	>.sidebar-content__header {
-        button.refresh {
+	> .sidebar__header {
+		button.refresh {
 			border: 0;
 			background: transparent;
 			padding: 0;
@@ -8,37 +8,49 @@
 			cursor: pointer;
 		}
 
-        .refresh-resources {
-            min-height: 32px;
-            >button {
-                border: 0;
-                // background: transparent;
-                padding: 0.25em;
-                margin: 0;
-                text-transform: none;
-                cursor: pointer;
+		.refresh-resources {
+			position: absolute;
+			right: 0.6em;
+			top: 0.6em;
+			z-index: 1;
+			background: $sidebar-background;
 
-                &.on-hover {
-                    // visibility: hidden;
-                    display: none;
-                }
-                &.selected {
-                    visibility: inherit;
-                    display: inherit;
-                }
-            }
-            &:hover {
-                >button.on-hover {
-                    // visibility: visible;
-                    display: inherit;
-                }
-            }
-        }
+			button {
+				border: 0;
+				padding: 0.25em;
+				margin: 0;
+				text-transform: none;
+				cursor: pointer;
+				height: 32px;
+				white-space: nowrap;
 
-    }
+				&.on-hover {
+					display: none;
+				}
+				&.selected {
+					visibility: inherit;
+					display: inherit;
+				}
+			}
+			&:hover,
+			&.hover {
+				button.on-hover {
+					display: inherit;
+					&.selected {
+						background-color: rgba(255, 255, 255, 0.1);
+					}
+				}
+			}
+		}
+	}
 
+	> .sidebar__content {
+		> div {
+			padding: 0 0.6em;
+		}
+	}
 
-    .refresh.active {
+	.refresh.active {
 		svg {
 			animation: rotating 2s linear infinite;
 
@@ -52,5 +64,4 @@
 			}
 		}
 	}
-
 }

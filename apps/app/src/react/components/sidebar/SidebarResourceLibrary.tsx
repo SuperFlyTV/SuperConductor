@@ -60,21 +60,6 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		currentRundownId = undefined
 	}
 
-	const defaultPart = useMemoComputedObject(() => {
-		if (!currentRundownId) return undefined
-
-		const firstGroup = store.rundownsStore.getRundownGroups(currentRundownId)[0]
-		if (!firstGroup) return undefined
-		const firstPartId = firstGroup.partIds[0]
-		if (!firstPartId) return undefined
-		return {
-			rundownId: currentRundownId,
-			groupId: firstGroup.id,
-			partId: firstPartId,
-		}
-	}, [currentRundownId])
-	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
-
 	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
 	const selectedResource = useMemoComputedObject(
 		() => (selectedResourceId ? store.resourcesStore.resources[selectedResourceId] : undefined),
@@ -171,30 +156,13 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	)
 	const isAnyDeviceRefreshing = useMemoComputedValue(() => store.resourcesStore.isAnyDeviceRefreshing(), [])
 
-	const allPartsInRundown = useMemoComputedArray(() => {
-		if (!currentRundownId) return []
-
-		return flatten(
-			store.rundownsStore.getRundownGroups(currentRundownId).map((group) => {
-				const parts = store.rundownsStore.getGroupParts(group.id)
-
-				return parts.map((part) => ({
-					partId: part.id,
-					partName: part.name,
-					groupId: group.id,
-					groupName: group.name,
-					groupTransparent: group.transparent,
-				}))
-			})
-		)
-	}, [currentRundownId])
-
 	const allListItems: RowItem[] = []
 	for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
 		allListItems.push({
 			type: 'device',
 			key: `__device${deviceId}`,
 			deviceId,
+			resourceCount: resources.length,
 		})
 		for (const resource of resources) {
 			allListItems.push({
@@ -231,36 +199,38 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			<div className="title">
 				<span>Available Resources</span>
 
-				<ButtonGroup className="refresh-resources">
-					<Button className="on-hover" onClick={() => handleRefreshAuto(0)}>
-						Auto: Off
-					</Button>
-					<Button
-						className={classNames('on-hover', { selected: project.autoRefreshInterval === 1000 })}
-						onClick={() => handleRefreshAuto(1000)}
-					>
-						1s
-					</Button>
-					<Button
-						className={classNames('on-hover', { selected: project.autoRefreshInterval === 10000 })}
-						onClick={() => handleRefreshAuto(10000)}
-					>
-						10s
-					</Button>
-					<Button
-						className={classNames('on-hover', { selected: project.autoRefreshInterval === 60000 })}
-						onClick={() => handleRefreshAuto(60000)}
-					>
-						1m
-					</Button>
+				<div className="refresh-resources">
+					<ButtonGroup className="">
+						<Button className="on-hover" onClick={() => handleRefreshAuto(0)}>
+							Auto: Off
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: project.autoRefreshInterval === 1000 })}
+							onClick={() => handleRefreshAuto(1000)}
+						>
+							1s
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: project.autoRefreshInterval === 10000 })}
+							onClick={() => handleRefreshAuto(10000)}
+						>
+							10s
+						</Button>
+						<Button
+							className={classNames('on-hover', { selected: project.autoRefreshInterval === 60000 })}
+							onClick={() => handleRefreshAuto(60000)}
+						>
+							1m
+						</Button>
 
-					<Button
-						className={classNames('refresh', { active: isAnyDeviceRefreshing })}
-						onClick={() => ipcServer.refreshResources().catch(handleError)}
-					>
-						<HiRefresh size={15} color="white" />
-					</Button>
-				</ButtonGroup>
+						<Button
+							className={classNames('refresh', { active: isAnyDeviceRefreshing })}
+							onClick={() => ipcServer.refreshResources().catch(handleError)}
+						>
+							<HiRefresh size={15} color="white" />
+						</Button>
+					</ButtonGroup>
+				</div>
 			</div>
 
 			<FormControl margin="dense" size="small" fullWidth>
@@ -314,126 +284,36 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 					{displayItems.map((item) => {
 						if (item.type === 'device') {
 							return (
-								<Stack key={item.deviceId} direction="row" justifyContent="space-between">
-									<Typography variant="body2">{getDeviceName(project, item.deviceId)}</Typography>
-									{refreshStatuses[item.deviceId] && (
-										<div
-											className="refresh-icon refresh active"
-											style={{ opacity: '0.6', height: '14px' }}
-										>
-											<HiRefresh size={12} color="white" />
-										</div>
-									)}
-								</Stack>
+								<DeviceHeader
+									key={item.deviceId}
+									deviceName={getDeviceName(project, item.deviceId)}
+									isRefreshing={refreshStatuses[item.deviceId]}
+									resourceCount={item.resourceCount}
+								/>
 							)
 						} else {
 							return (
-								<ResourceLibraryItem
-									key={item.resource.id}
-									resource={item.resource}
-									selected={item.resource.id === selectedResourceId}
-									onSelect={handleResourceLibraryItemSelect}
-								/>
+								<React.Fragment key={item.resource.id}>
+									<ResourceLibraryItem
+										resource={item.resource}
+										selected={item.resource.id === selectedResourceId}
+										onSelect={handleResourceLibraryItemSelect}
+									/>
+									{selectedResource && currentRundownId && item.resource.id === selectedResource.id && (
+										<>
+											<ResourceData resource={item.resource} />
+											<AddToTimeline
+												currentRundownId={currentRundownId}
+												resource={item.resource}
+											/>
+										</>
+									)}
+								</React.Fragment>
 							)
 						}
 					})}
 				</ScrollWatcher>
 			</SidebarContent>
-
-			{selectedResource && (
-				<>
-					<ResourceData resource={selectedResource} />
-					{defaultPart && defaultLayer && (
-						<div className="add-to-timeline">
-							<Formik
-								initialValues={{
-									rundownId: defaultPart.rundownId,
-									groupId: defaultPart.groupId,
-									partId: defaultPart.partId,
-									layerId: defaultLayer,
-								}}
-								onSubmit={(values, actions) => {
-									if (!values.rundownId || !values.groupId || !values.partId || !values.layerId) {
-										actions.setSubmitting(false)
-										return
-									}
-
-									const part = store.rundownsStore.getPart(values.partId)
-									if (!part) {
-										actions.setSubmitting(false)
-										return
-									}
-
-									ipcServer
-										.addResourceToTimeline({
-											rundownId: values.rundownId,
-											groupId: values.groupId,
-											partId: values.partId,
-											layerId: values.layerId,
-											resourceId: selectedResource.id,
-										})
-										.catch(handleError)
-									actions.setSubmitting(false)
-								}}
-							>
-								{() => (
-									<Form>
-										<div className="label">Add to timeline</div>
-										<div className="dropdowns">
-											<Grid container spacing={2}>
-												<Grid item xs={6}>
-													<Field
-														component={FormikMuiTextField}
-														select
-														size="small"
-														margin="normal"
-														fullWidth
-														name="partId"
-														label="Part"
-													>
-														{allPartsInRundown.map((p) => {
-															return (
-																<MenuItem key={p.partId} value={p.partId}>
-																	{p.groupTransparent
-																		? p.partName
-																		: `${p.groupName}: ${p.partName}`}
-																</MenuItem>
-															)
-														})}
-													</Field>
-												</Grid>
-
-												<Grid item xs={6}>
-													<Field
-														component={FormikMuiTextField}
-														select
-														size="small"
-														margin="normal"
-														fullWidth
-														name="layerId"
-														label="Layer"
-													>
-														{sortMappings(project.mappings).map(({ layerId, mapping }) => (
-															<MenuItem key={layerId} value={layerId}>
-																{mapping.layerName || layerId}
-															</MenuItem>
-														))}
-													</Field>
-												</Grid>
-											</Grid>
-										</div>
-										<div className="btn-row-right">
-											<Button variant="contained" type="submit">
-												Add
-											</Button>
-										</div>
-									</Form>
-								)}
-							</Formik>
-						</div>
-					)}
-				</>
-			)}
 		</div>
 	)
 })
@@ -443,9 +323,162 @@ type RowItem =
 			type: 'device'
 			key: string
 			deviceId: string
+			resourceCount: number
 	  }
 	| {
 			type: 'resource'
 			key: string
 			resource: ResourceAny
 	  }
+
+export const DeviceHeader: React.FC<{
+	deviceName: string
+	resourceCount: number
+	isRefreshing: boolean
+}> = function DeviceHeader({ deviceName, resourceCount, isRefreshing }) {
+	return (
+		<Stack direction="row" justifyContent="space-between">
+			<Typography variant="body2">{deviceName}</Typography>
+
+			{isRefreshing ? (
+				<div className="refresh-icon refresh active" style={{ opacity: '0.6', height: '14px' }}>
+					<HiRefresh size={12} color="white" />
+				</div>
+			) : (
+				<Typography variant="body2"> ({resourceCount}) </Typography>
+			)}
+		</Stack>
+	)
+}
+export const AddToTimeline: React.FC<{
+	currentRundownId: string
+	resource: ResourceAny
+}> = observer(function AddToTimeline({ currentRundownId, resource }) {
+	const ipcServer = useContext(IPCServerContext)
+
+	const project = useContext(ProjectContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const defaultPart = useMemoComputedObject(() => {
+		if (!currentRundownId) return undefined
+
+		const firstGroup = store.rundownsStore.getRundownGroups(currentRundownId)[0]
+		if (!firstGroup) return undefined
+		const firstPartId = firstGroup.partIds[0]
+		if (!firstPartId) return undefined
+		return {
+			rundownId: currentRundownId,
+			groupId: firstGroup.id,
+			partId: firstPartId,
+		}
+	}, [currentRundownId])
+	const defaultLayer = Object.keys(project.mappings)[0] as string | undefined
+	const allPartsInRundown = useMemoComputedArray(() => {
+		if (!currentRundownId) return []
+
+		return flatten(
+			store.rundownsStore.getRundownGroups(currentRundownId).map((group) => {
+				const parts = store.rundownsStore.getGroupParts(group.id)
+
+				return parts.map((part) => ({
+					partId: part.id,
+					partName: part.name,
+					groupId: group.id,
+					groupName: group.name,
+					groupTransparent: group.transparent,
+				}))
+			})
+		)
+	}, [currentRundownId])
+
+	if (!defaultPart) return null
+	if (!defaultLayer) return null
+
+	return (
+		<div className="add-to-timeline">
+			<Formik
+				initialValues={{
+					rundownId: defaultPart.rundownId,
+					groupId: defaultPart.groupId,
+					partId: defaultPart.partId,
+					layerId: defaultLayer,
+				}}
+				onSubmit={(values, actions) => {
+					if (!values.rundownId || !values.groupId || !values.partId || !values.layerId) {
+						actions.setSubmitting(false)
+						return
+					}
+
+					const part = store.rundownsStore.getPart(values.partId)
+					if (!part) {
+						actions.setSubmitting(false)
+						return
+					}
+
+					ipcServer
+						.addResourceToTimeline({
+							rundownId: values.rundownId,
+							groupId: values.groupId,
+							partId: values.partId,
+							layerId: values.layerId,
+							resourceId: resource.id,
+						})
+						.catch(handleError)
+					actions.setSubmitting(false)
+				}}
+			>
+				{() => (
+					<Form>
+						<div className="label">Add to timeline</div>
+						<div className="dropdowns">
+							<Grid container spacing={2}>
+								<Grid item xs={6}>
+									<Field
+										component={FormikMuiTextField}
+										select
+										size="small"
+										margin="normal"
+										fullWidth
+										name="partId"
+										label="Part"
+									>
+										{allPartsInRundown.map((p) => {
+											return (
+												<MenuItem key={p.partId} value={p.partId}>
+													{p.groupTransparent ? p.partName : `${p.groupName}: ${p.partName}`}
+												</MenuItem>
+											)
+										})}
+									</Field>
+								</Grid>
+
+								<Grid item xs={6}>
+									<Field
+										component={FormikMuiTextField}
+										select
+										size="small"
+										margin="normal"
+										fullWidth
+										name="layerId"
+										label="Layer"
+									>
+										{sortMappings(project.mappings).map(({ layerId, mapping }) => (
+											<MenuItem key={layerId} value={layerId}>
+												{mapping.layerName || layerId}
+											</MenuItem>
+										))}
+									</Field>
+								</Grid>
+							</Grid>
+						</div>
+						<div className="btn-row-right">
+							<Button variant="contained" type="submit">
+								Add
+							</Button>
+						</div>
+					</Form>
+				)}
+			</Formik>
+		</div>
+	)
+})

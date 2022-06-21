@@ -1,0 +1,9 @@
+.row {
+	.copy-to-clipboard {
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+}

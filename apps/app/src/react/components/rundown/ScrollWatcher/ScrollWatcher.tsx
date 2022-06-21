@@ -41,6 +41,7 @@ export const ScrollWatcher: React.FC<{
 				}
 			}
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	useLayoutEffect(() => {
@@ -60,20 +61,22 @@ export const ScrollWatcher: React.FC<{
 		}
 
 		checkIfAtBottom()
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [totalCount, currentCount])
 
 	useEffect(() => {
 		if (containerRef.current) {
-			containerRef.current.addEventListener('scroll', checkIfAtBottom, { passive: true })
-		}
-		return () => {
-			containerRef.current?.removeEventListener('scroll', checkIfAtBottom)
+			const container = containerRef.current
+			container.addEventListener('scroll', checkIfAtBottom, { passive: true })
+			return () => {
+				container.removeEventListener('scroll', checkIfAtBottom)
+			}
 		}
 	})
 
 	return (
 		<>
-			<div className="scrooll-watch-container" ref={containerRef}>
+			<div className="scroll-watch-container" ref={containerRef}>
 				{children}
 
 				<div ref={bottomRef}></div>
