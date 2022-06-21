@@ -32,6 +32,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>) {
 		return this.invokeServerMethod('setKeyboardKeys', ...args)
 	}
+	makeDevData(...args: ServerArgs<'makeDevData'>) {
+		return this.invokeServerMethod('makeDevData', ...args)
+	}
 
 	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
 		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)

@@ -10,6 +10,7 @@ import { getDefaultGroup, getDefaultProject, getDefaultRundown } from './default
 import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
+import { makeDevData } from './makeDevData'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -152,7 +153,7 @@ export class StorageHandler extends EventEmitter {
 			...this.project.project,
 		}
 	}
-	updateProject(project: Project) {
+	updateProject(project: Omit<Project, 'id'>) {
 		this.project.project = project
 		this.triggerUpdate({ project: true })
 	}
@@ -187,7 +188,7 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.id = this.convertToFilename(name)
+		this.appData.appData.project.id = convertToFilename(name)
 		this.project = this.loadProject(name)
 		this.triggerUpdate({ project: true, appData: true })
 	}
@@ -261,7 +262,7 @@ export class StorageHandler extends EventEmitter {
 	 * Used to undo a deleteRundown operation.
 	 */
 	restoreRundown(rundown: Rundown) {
-		const fileName = this.convertToFilename(rundown.id)
+		const fileName = convertToFilename(rundown.id)
 		this.rundowns[fileName] = {
 			version: CURRENT_VERSION,
 			id: rundown.id,
@@ -291,11 +292,11 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	getRundownFilename(rundownId: string): string {
-		return `${this.convertToFilename(rundownId)}.rundown.json`
+		return `${convertToFilename(rundownId)}.rundown.json`
 	}
 
 	async renameRundown(rundownId: string, newName: string): Promise<string> {
-		const newFileName = this.getRundownFilename(this.convertToFilename(newName))
+		const newFileName = this.getRundownFilename(convertToFilename(newName))
 
 		// Rename the file on disk
 		const oldFilePath = this.rundownPath(this._projectId, rundownId)
@@ -393,9 +394,29 @@ export class StorageHandler extends EventEmitter {
 			this.triggerUpdate({ resources: { [id]: true } })
 		}
 	}
+	/**
+	 * This function is intended for developers only.
+	 * When called, it replaces all data with a "large" dataset, which can be used to test the GUI.
+	 */
+	async makeDevData() {
+		for (const fileName of Object.keys(this.rundowns)) {
+			await this.deleteRundown(fileName)
+		}
 
-	private convertToFilename(str: string): string {
-		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
+		const devData = makeDevData()
+
+		this.updateProject(devData.project)
+		for (const rundown of devData.rundowns) {
+			const filename = this.newRundown(rundown.name)
+			rundown.id = filename
+
+			this.openRundown(filename)
+			this.updateRundown(filename, rundown)
+		}
+
+		for (const resource of devData.resources) {
+			this.updateResource(resource.id, resource)
+		}
 	}
 
 	/** Triggered when the stored data has been updated */
@@ -529,7 +550,7 @@ export class StorageHandler extends EventEmitter {
 		if (!project) {
 			// Create a default project instead
 			this.projectNeedsWrite = true
-			return this.getDefaultProject(newName)
+			return StorageHandler.getDefaultProject(newName)
 		}
 
 		return project
@@ -618,7 +639,7 @@ export class StorageHandler extends EventEmitter {
 		if (!rundown) {
 			// Create a default rundown then:
 			this.rundownsNeedsWrite[fileName] = true
-			return this.getDefaultRundown(newName)
+			return StorageHandler.getDefaultRundown(newName)
 		}
 
 		return rundown
@@ -695,17 +716,17 @@ export class StorageHandler extends EventEmitter {
 			},
 		}
 	}
-	private getDefaultProject(newName?: string): FileProject {
+	static getDefaultProject(newName?: string): FileProject {
 		return {
 			version: CURRENT_VERSION,
 			id: 'default',
 			project: getDefaultProject(newName),
 		}
 	}
-	private getDefaultRundown(newName?: string): FileRundown {
+	static getDefaultRundown(newName?: string): FileRundown {
 		return {
 			version: CURRENT_VERSION,
-			id: newName ? this.convertToFilename(newName) : 'default',
+			id: newName ? convertToFilename(newName) : 'default',
 			rundown: getDefaultRundown(newName),
 		}
 	}
@@ -893,3 +914,7 @@ interface FileResource {
 }
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_VERSION = 0
+
+function convertToFilename(str: string): string {
+	return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
+}

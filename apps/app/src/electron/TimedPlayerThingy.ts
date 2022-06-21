@@ -344,6 +344,9 @@ export class TimedPlayerThingy {
 			triggerHandleAutoFill: () => {
 				this.triggerHandleAutoFill()
 			},
+			makeDevData: async () => {
+				await this.storage.makeDevData()
+			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)

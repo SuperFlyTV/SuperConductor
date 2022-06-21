@@ -121,6 +121,11 @@ export const App = observer(function App() {
 	useEffect(() => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(handleError)
+
+		// @ts-expect-error hack:
+		window.makeDevData = () => {
+			serverAPI.makeDevData().catch(handleError)
+		}
 	}, [handleError, serverAPI])
 
 	// Handle hotkeys from keyboard:

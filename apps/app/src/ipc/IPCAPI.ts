@@ -70,6 +70,7 @@ export interface IPCServerMethods {
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
+	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void

@@ -101,6 +101,7 @@ export class IPCServer
 			refreshResources: () => void
 			refreshResourcesSetAuto: (interval: number) => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
+			makeDevData: () => void
 			triggerHandleAutoFill: () => void
 		}
 	) {
@@ -225,6 +226,9 @@ export class IPCServer
 	}
 	async setKeyboardKeys(data: { activeKeys: ActiveTrigger[] }): Promise<void> {
 		this.callbacks.setKeyboardKeys(data.activeKeys)
+	}
+	async makeDevData(): Promise<void> {
+		await this.callbacks.makeDevData()
 	}
 
 	async acknowledgeSeenVersion(): Promise<void> {
@@ -1404,7 +1408,7 @@ export class IPCServer
 		const timelineObj: TimelineObj = {
 			resourceId: resource.id,
 			obj,
-			resolved: { instances: [] }, // set later
+			resolved: { instances: [] }, // set later, in postProcessPart
 		}
 
 		part.timeline.push(timelineObj)
