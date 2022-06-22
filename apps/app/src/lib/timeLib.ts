@@ -1,5 +1,6 @@
 export function parseDuration(str: string): number | null | undefined {
 	if (str === '') return null
+	if (str === '∞') return null
 	if (!str) return undefined
 
 	str = str.replace(/,/g, '.')
@@ -106,27 +107,33 @@ function parseMilliseconds(ms: string): number {
 
 	return Math.floor(parseFloat(`0.${ms}`) * 1000)
 }
-function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: number } {
+export function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: number } {
 	const h = Math.floor(ms / 3600000)
 	ms -= h * 3600000
-	const min = Math.floor(ms / 60000)
-	ms -= min * 60000
 
-	const sec = Math.floor(ms / 1000)
-	ms -= sec * 1000
+	const m = Math.floor(ms / 60000)
+	ms -= m * 60000
 
-	return { h, m: min, s: sec, ms }
+	const s = Math.floor(ms / 1000)
+	ms -= s * 1000
+
+	return { h, m, s, ms }
 }
 
-export function formatDuration(inputMs: number | null | undefined): string {
-	if (inputMs === null) return ''
+export function formatDuration(inputMs: number | null | undefined, decimalCount?: number): string {
+	if (inputMs === null) return '∞'
 	if (inputMs === undefined) return ''
 
 	const { h, m: min, s: sec, ms } = millisecondsToTime(inputMs)
 
-	let msStr = !ms ? '' : ms < 10 ? `.00${ms}` : ms < 100 ? `.0${ms}` : `.${ms}`
+	let msStr = !ms ? '000' : ms < 10 ? `00${ms}` : ms < 100 ? `0${ms}` : `${ms}` // 001 | 012 | 123
 
-	msStr = msStr.replace(/0+$/, '') // trim trailing zeros
+	if (decimalCount !== undefined) {
+		msStr = msStr.slice(0, decimalCount)
+	} else {
+		msStr = msStr.replace(/0+$/, '') // trim trailing zeros
+	}
+	if (msStr) msStr = '.' + msStr
 
 	if (h) return `${h}:${pad(min)}:${pad(sec)}` + msStr
 	if (min) return `${min}:${pad(sec)}` + msStr
@@ -162,6 +169,8 @@ export function formatDurationLabeled(inputMs: number | undefined): string {
 
 // Unit tests:
 assert(parseDuration(''), null)
+assert(parseDuration(''), null)
+assert(parseDuration('∞'), null)
 assert(parseDuration('asdf'), undefined)
 assert(parseDuration('00:00:00.000'), 0)
 assert(parseDuration('1'), 1000)
@@ -228,10 +237,16 @@ assert(formatDuration(1005), '1.005')
 assert(formatDuration(61000), '1:01')
 assert(formatDuration(3661000), '1:01:01')
 assert(formatDuration(3661500), '1:01:01.5')
-assert(formatDuration(null), '')
+assert(formatDuration(null), '∞')
 
 assert(formatDuration(parseDuration('5')), '5')
 assert(formatDuration(parseDuration('10')), '10')
 assert(formatDuration(parseDuration('1:05')), '1:05')
 assert(formatDuration(parseDuration('1:01:05')), '1:01:05')
 assert(formatDuration(parseDuration('1:01:01.5')), '1:01:01.5')
+
+assert(formatDuration(1234), '1.234')
+assert(formatDuration(1234, 0), '1')
+assert(formatDuration(1234, 1), '1.2')
+assert(formatDuration(1234, 2), '1.23')
+assert(formatDuration(1234, 4), '1.234')

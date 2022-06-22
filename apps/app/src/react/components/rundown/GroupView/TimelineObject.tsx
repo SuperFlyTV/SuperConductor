@@ -11,9 +11,9 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
-import { parseMs } from '@shared/lib'
 import { shortID } from '../../../../lib/util'
 import { computed } from 'mobx'
+import { millisecondsToTime } from '../../../../lib/timeLib'
 
 const HANDLE_WIDTH = 8
 
@@ -159,7 +159,7 @@ export const TimelineObject: React.FC<{
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage = startValue * 100 + '%'
 
-	const description = describeTimelineObject(obj, typeof duration === 'number' ? duration : undefined)
+	const description = describeTimelineObject(obj)
 
 	useEffect(() => {
 		const onKey = () => {
@@ -241,7 +241,7 @@ export const TimelineObject: React.FC<{
 		}
 	}
 
-	const durationTitle = timelineObjectDurationString(description.parsedDuration)
+	const durationTitle = timelineObjectDurationString(duration)
 
 	const [isAtMinWidth, setIsAtMinWidth] = useState(false)
 	useEffect(() => {
@@ -308,7 +308,7 @@ export const TimelineObject: React.FC<{
 					</div>
 				)}
 				<div className="title">{description.label}</div>
-				<TimelineObjectDuration parsedDuration={description.parsedDuration} />
+				<TimelineObjectDuration duration={duration} />
 			</div>
 			<div
 				className="handle handle--right"
@@ -329,66 +329,66 @@ export const TimelineObject: React.FC<{
 	)
 })
 
-function timelineObjectDurationString(parsedDuration: ReturnType<typeof parseMs> | null) {
-	if (parsedDuration === null) return '∞'
-	const { days, hours, minutes, seconds, milliseconds } = parsedDuration || {}
-	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+function timelineObjectDurationString(duration: number | null): string {
+	if (duration === null) return '∞'
+	const { h, m, s, ms } = millisecondsToTime(duration)
+	const secondTenths = Math.floor(ms / 100)
 
 	let durationTitle = ''
-	if (days) {
-		durationTitle += days + 'd'
+	// if (days) {
+	// 	durationTitle += days + 'd'
+	// }
+	if (h) {
+		durationTitle += h + 'h'
 	}
-	if (hours) {
-		durationTitle += hours + 'h'
+	if (m) {
+		durationTitle += m + 'm'
 	}
-	if (minutes) {
-		durationTitle += minutes + 'm'
-	}
-	if (seconds) {
+	if (s) {
 		if (secondTenths) {
-			durationTitle += seconds + '.' + secondTenths + 's'
+			durationTitle += s + '.' + secondTenths + 's'
 		} else {
-			durationTitle += seconds + 's'
+			durationTitle += s + 's'
 		}
 	}
 
 	return durationTitle
 }
-function TimelineObjectDuration(props: { parsedDuration: ReturnType<typeof parseMs> | null }) {
-	if (props.parsedDuration === null) return <div className="duration">∞</div>
-	const { days, hours, minutes, seconds, milliseconds } = props.parsedDuration || {}
-	const secondTenths = typeof milliseconds === 'number' ? Math.floor(milliseconds / 100) : 0
+function TimelineObjectDuration(props: { duration: number | null }) {
+	if (props.duration === null) return <div className="duration">∞</div>
+	const { h, m, s, ms } = millisecondsToTime(props.duration)
+	const secondTenths = Math.floor(ms / 100)
 	return (
 		<div className="duration">
-			{days ? (
+			{/* {days ? (
 				<>
 					<span>{days}</span>
 					<span style={{ fontWeight: 300 }}>d</span>
 				</>
-			) : null}
-			{hours ? (
+			) : null} */}
+			{h ? (
 				<>
-					<span>{hours}</span>
+					<span>{h}</span>
 					<span style={{ fontWeight: 300 }}>h</span>
 				</>
 			) : null}
-			{minutes ? (
+			{m ? (
 				<>
-					<span>{minutes}</span>
+					<span>{m}</span>
 					<span style={{ fontWeight: 300 }}>m</span>
 				</>
 			) : null}
-			{seconds ? (
+			{s ? (
 				secondTenths ? (
 					<>
-						<span>{seconds}</span>
+						<span>{s}</span>
 						<span style={{ fontWeight: 300 }}>.</span>
 						<span>{secondTenths}</span>
 						<span style={{ fontWeight: 300 }}>s</span>
 					</>
 				) : (
 					<>
-						<span>{seconds}</span>
+						<span>{s}</span>
 						<span style={{ fontWeight: 300 }}>s</span>
 					</>
 				)

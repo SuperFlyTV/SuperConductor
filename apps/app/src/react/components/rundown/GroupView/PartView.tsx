@@ -18,7 +18,7 @@ import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { compact, msToTime } from '@shared/lib'
+import { compact } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
@@ -46,6 +46,8 @@ import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
 import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
+import { formatDuration } from '../../../../lib/timeLib'
+import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -931,7 +933,10 @@ export const PartView: React.FC<{
 				</div>
 
 				<div className="part__time__duration">
-					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
+					TOTAL{' '}
+					<span style={{ fontWeight: 700 }}>
+						{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
+					</span>
 				</div>
 				{/* <div className="part__time__endcap" /> */}
 			</div>

@@ -8,11 +8,11 @@ import {
 	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { assertNever, parseMs } from '@shared/lib'
+import { assertNever } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 
-export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
+export function describeTimelineObject(obj: TSRTimelineObj) {
 	let label: string = obj.id
 	if (obj.content.deviceType === DeviceType.CASPARCG) {
 		if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
@@ -116,15 +116,9 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	const type: string = obj.content.type
 	const contentTypeClassNames: string[] = [`device-${DeviceType[obj.content.deviceType]}`, type]
 
-	let parsedDuration: ReturnType<typeof parseMs> | null = null
-	if (typeof duration === 'number') {
-		parsedDuration = parseMs(duration)
-	}
-
 	return {
 		label,
 		contentTypeClassNames,
-		parsedDuration,
 	}
 }
 
