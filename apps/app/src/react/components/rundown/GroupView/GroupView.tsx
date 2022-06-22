@@ -46,6 +46,7 @@ import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
 import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
 import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
 import { GroupAutoFillPopover } from './GroupAutoFillPopover'
+import VisibilitySensor from 'react-visibility-sensor'
 
 export const GroupView: React.FC<{
 	rundownId: string
@@ -457,6 +458,20 @@ export const GroupView: React.FC<{
 	const [partAutoFillPopoverAnchorEl, setPartAutoFillPopoverAnchorEl] = React.useState<Element | null>(null)
 	const autoFillPopoverOpen = Boolean(partAutoFillPopoverAnchorEl)
 
+	const contentPartsRef = useRef<HTMLDivElement | null>(null)
+	const [hidePartsHeight, setHidePartsHeight] = useState<number | null>(null)
+	const onChange = useCallback((isVisible: boolean) => {
+		if (isVisible) {
+			setHidePartsHeight(null)
+		} else {
+			setHidePartsHeight(() => {
+				if (contentPartsRef.current) {
+					return contentPartsRef.current.clientHeight
+				} else return null
+			})
+		}
+	}, [])
+
 	// Optimize, so that PartView isn't re-rendered on every part group change
 
 	if (group.transparent) {
@@ -490,276 +505,379 @@ export const GroupView: React.FC<{
 		const canSetAutoFill = !group.locked
 
 		return (
-			<div
-				ref={wrapperRef}
-				className={classNames('group', {
-					disabled: group.disabled,
-					collapsed: group.collapsed,
-					dragging: isDragging,
-				})}
-				data-drop-handler-id={handlerId}
-			>
-				<div className="group__dragArrow" />
-				<div className="group__header">
-					<div
-						ref={dragRef}
-						className="group__drag-handle"
-						style={{ visibility: group.locked ? 'hidden' : 'visible' }}
-					>
-						<MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />
-					</div>
-
-					<div
-						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
-						title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
-					>
-						<MdChevronRight size={22} onClick={handleCollapse} />
-					</div>
-
-					{!editingGroupName && (
+			<VisibilitySensor onChange={onChange} partialVisibility={true}>
+				<div
+					ref={wrapperRef}
+					className={classNames('group', {
+						disabled: group.disabled,
+						collapsed: group.collapsed,
+						dragging: isDragging,
+					})}
+					data-drop-handler-id={handlerId}
+				>
+					<div className="group__dragArrow" />
+					<div className="group__header">
 						<div
-							className="title"
-							title={group.locked ? group.name : 'Click to edit Group name'}
-							onClick={() => {
-								if (group.locked) {
-									return
+							ref={dragRef}
+							className="group__drag-handle"
+							style={{ visibility: group.locked ? 'hidden' : 'visible' }}
+						>
+							<MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />
+						</div>
+
+						<div
+							className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
+							title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
+						>
+							<MdChevronRight size={22} onClick={handleCollapse} />
+						</div>
+
+						{!editingGroupName && (
+							<div
+								className="title"
+								title={group.locked ? group.name : 'Click to edit Group name'}
+								onClick={() => {
+									if (group.locked) {
+										return
+									}
+									setEditingGroupName(true)
+								}}
+							>
+								{group.name}
+							</div>
+						)}
+
+						{editingGroupName && (
+							<TextField
+								size="small"
+								value={editedName}
+								autoFocus
+								variant="standard"
+								className="edit-title"
+								sx={{ marginTop: '0.3rem' }}
+								InputProps={{ style: { fontSize: '1.3rem' } }}
+								onFocus={(event) => {
+									event.target.select()
+								}}
+								onChange={(event) => {
+									setEditedName(event.target.value)
+								}}
+								onBlur={() => {
+									submitNameEdit()
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Escape') setEditingGroupName(false)
+									else if (e.key === 'Enter') submitNameEdit()
+								}}
+							/>
+						)}
+
+						<div className="controls">
+							<div className="playback">
+								<ControlButtons rundownId={rundownId} group={group} />
+								<Button
+									variant="contained"
+									size="small"
+									disabled={!canStepDown}
+									onClick={handleStepDown}
+									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+									title="Play next"
+								>
+									<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+										<AiFillStepForward size={22} />
+									</div>
+								</Button>
+								<Button
+									variant="contained"
+									size="small"
+									disabled={!canStepUp}
+									onClick={handleStepUp}
+									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+									title="Play previous"
+								>
+									<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+										<AiFillStepForward size={22} />
+									</div>
+								</Button>
+							</div>
+
+							<ToggleButton
+								title={
+									group.disabled
+										? 'Playout disabled.\n\nClick to enable playout of Group.'
+										: 'Disable playout of Group.'
 								}
-								setEditingGroupName(true)
-							}}
-						>
-							{group.name}
-						</div>
-					)}
-
-					{editingGroupName && (
-						<TextField
-							size="small"
-							value={editedName}
-							autoFocus
-							variant="standard"
-							className="edit-title"
-							sx={{ marginTop: '0.3rem' }}
-							InputProps={{ style: { fontSize: '1.3rem' } }}
-							onFocus={(event) => {
-								event.target.select()
-							}}
-							onChange={(event) => {
-								setEditedName(event.target.value)
-							}}
-							onBlur={() => {
-								submitNameEdit()
-							}}
-							onKeyUp={(e) => {
-								if (e.key === 'Escape') setEditingGroupName(false)
-								else if (e.key === 'Enter') submitNameEdit()
-							}}
-						/>
-					)}
-
-					<div className="controls">
-						<div className="playback">
-							<ControlButtons rundownId={rundownId} group={group} />
-							<Button
-								variant="contained"
+								value="disabled"
+								selected={group.disabled}
 								size="small"
-								disabled={!canStepDown}
-								onClick={handleStepDown}
-								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-								title="Play next"
+								onChange={toggleDisable}
 							>
-								<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-									<AiFillStepForward size={22} />
-								</div>
-							</Button>
-							<Button
-								variant="contained"
+								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleButton>
+							<ToggleButton
+								title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
+								value="locked"
+								selected={group.locked}
 								size="small"
-								disabled={!canStepUp}
-								onClick={handleStepUp}
-								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-								title="Play previous"
+								onChange={toggleLock}
 							>
-								<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
-									<AiFillStepForward size={22} />
-								</div>
-							</Button>
+								{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.oneAtATime
+										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
+										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
+								}
+								value="one-at-a-time"
+								selected={group.oneAtATime}
+								size="small"
+								disabled={!canModifyOneAtATime}
+								onChange={toggleOneAtATime}
+							>
+								<MdLooksOne size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.loop
+										? 'Playout Loop enabled.\n\nClick to disable.'
+										: 'Click to set Group to Loop playout.'
+								}
+								value="loop"
+								selected={group.oneAtATime && group.loop}
+								size="small"
+								disabled={!canModifyLoop}
+								onChange={toggleLoop}
+							>
+								<MdRepeat size={18} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.autoPlay
+										? 'Auto-step enabled.\n\nClick to disable.'
+										: 'Enable Auto-step (continue to next Part on end, like a playlist).'
+								}
+								value="auto-step"
+								selected={group.oneAtATime && group.autoPlay}
+								size="small"
+								disabled={!canModifyAutoPlay}
+								onChange={toggleAutoPlay}
+							>
+								<MdPlaylistPlay size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.disabled
+										? 'Playout disabled.\n\nClick to enable playout of Group.'
+										: 'Disable playout of Group.'
+								}
+								value="disabled"
+								selected={group.disabled}
+								size="small"
+								disabled={group.locked}
+								onChange={toggleDisable}
+							>
+								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleButton>
+							<ToggleButton
+								title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
+								value="locked"
+								selected={group.locked}
+								size="small"
+								onChange={toggleLock}
+							>
+								{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.oneAtATime
+										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
+										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
+								}
+								value="one-at-a-time"
+								selected={group.oneAtATime}
+								size="small"
+								disabled={!canModifyOneAtATime}
+								onChange={toggleOneAtATime}
+							>
+								<MdLooksOne size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.loop
+										? 'Playout Loop enabled.\n\nClick to disable.'
+										: 'Click to set Group to Loop playout.'
+								}
+								value="loop"
+								selected={group.oneAtATime && group.loop}
+								size="small"
+								disabled={!canModifyLoop}
+								onChange={toggleLoop}
+							>
+								<MdRepeat size={18} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.autoPlay
+										? 'Auto-step enabled.\n\nClick to disable.'
+										: 'Enable Auto-step (continue to next Part on end, like a playlist).'
+								}
+								value="auto-step"
+								selected={group.oneAtATime && group.autoPlay}
+								size="small"
+								disabled={!canModifyAutoPlay}
+								onChange={toggleAutoPlay}
+							>
+								<MdPlaylistPlay size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									'Assign Button Area' +
+									(group.locked ? ' (disabled due to locked Part or Group)' : '')
+								}
+								value="assign-area"
+								selected={assignedAreas.get().length > 0}
+								size="small"
+								disabled={!canAssignAreas}
+								onChange={(event) => {
+									setPartButtonAreaPopoverAnchorEl(event.currentTarget)
+								}}
+							>
+								{assignedAreas.get().length > 0 ? (
+									<BsKeyboardFill color="white" size={24} />
+								) : (
+									<BsKeyboard color="white" size={24} />
+								)}
+							</ToggleButton>
+							<Popover
+								open={buttonAreaPopoverOpen}
+								anchorEl={partButtonAreaPopoverAnchorEl}
+								onClose={() => {
+									setPartButtonAreaPopoverAnchorEl(null)
+								}}
+								anchorOrigin={{
+									vertical: 'bottom',
+									horizontal: 'left',
+								}}
+							>
+								<GroupButtonAreaPopover group={group} />
+							</Popover>
+
+							<ToggleButton
+								title={'Auto-fill'}
+								value="auto-fill"
+								selected={group.autoFill.enable}
+								size="small"
+								disabled={!canSetAutoFill}
+								onChange={(event) => {
+									setPartAutoFillPopoverAnchorEl(event.currentTarget)
+								}}
+							>
+								{group.autoFill.enable ? (
+									<BsLightningFill color="white" size={24} />
+								) : (
+									<BsLightning color="white" size={24} />
+								)}
+							</ToggleButton>
+							<Popover
+								open={autoFillPopoverOpen}
+								anchorEl={partAutoFillPopoverAnchorEl}
+								onClose={() => {
+									setPartAutoFillPopoverAnchorEl(null)
+								}}
+								anchorOrigin={{
+									vertical: 'bottom',
+									horizontal: 'left',
+								}}
+							>
+								<GroupAutoFillPopover rundownId={rundownId} group={group} />
+							</Popover>
+
+							<ToggleButton
+								title={'Auto-fill'}
+								value="auto-fill"
+								selected={group.autoFill.enable}
+								size="small"
+								disabled={!canSetAutoFill}
+								onChange={(event) => {
+									setPartAutoFillPopoverAnchorEl(event.currentTarget)
+								}}
+							>
+								{group.autoFill.enable ? (
+									<BsLightningFill color="white" size={24} />
+								) : (
+									<BsLightning color="white" size={24} />
+								)}
+							</ToggleButton>
+							<Popover
+								open={autoFillPopoverOpen}
+								anchorEl={partAutoFillPopoverAnchorEl}
+								onClose={() => {
+									setPartAutoFillPopoverAnchorEl(null)
+								}}
+								anchorOrigin={{
+									vertical: 'bottom',
+									horizontal: 'left',
+								}}
+							>
+								<GroupAutoFillPopover rundownId={rundownId} group={group} />
+							</Popover>
+
+							<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
+
+							<TrashBtn
+								className="delete"
+								disabled={group.locked}
+								title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
+								onClick={handleDeleteClick}
+							/>
 						</div>
-
-						<ToggleButton
-							title={
-								group.disabled
-									? 'Playout disabled.\n\nClick to enable playout of Group.'
-									: 'Disable playout of Group.'
-							}
-							value="disabled"
-							selected={group.disabled}
-							size="small"
-							disabled={group.locked}
-							onChange={toggleDisable}
-						>
-							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-						</ToggleButton>
-						<ToggleButton
-							title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
-							value="locked"
-							selected={group.locked}
-							size="small"
-							onChange={toggleLock}
-						>
-							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.oneAtATime
-									? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
-									: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
-							}
-							value="one-at-a-time"
-							selected={group.oneAtATime}
-							size="small"
-							disabled={!canModifyOneAtATime}
-							onChange={toggleOneAtATime}
-						>
-							<MdLooksOne size={22} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.loop
-									? 'Playout Loop enabled.\n\nClick to disable.'
-									: 'Click to set Group to Loop playout.'
-							}
-							value="loop"
-							selected={group.oneAtATime && group.loop}
-							size="small"
-							disabled={!canModifyLoop}
-							onChange={toggleLoop}
-						>
-							<MdRepeat size={18} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.autoPlay
-									? 'Auto-step enabled.\n\nClick to disable.'
-									: 'Enable Auto-step (continue to next Part on end, like a playlist).'
-							}
-							value="auto-step"
-							selected={group.oneAtATime && group.autoPlay}
-							size="small"
-							disabled={!canModifyAutoPlay}
-							onChange={toggleAutoPlay}
-						>
-							<MdPlaylistPlay size={22} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								'Assign Button Area' + (group.locked ? ' (disabled due to locked Part or Group)' : '')
-							}
-							value="assign-area"
-							selected={assignedAreas.get().length > 0}
-							size="small"
-							disabled={!canAssignAreas}
-							onChange={(event) => {
-								setPartButtonAreaPopoverAnchorEl(event.currentTarget)
-							}}
-						>
-							{assignedAreas.get().length > 0 ? (
-								<BsKeyboardFill color="white" size={24} />
-							) : (
-								<BsKeyboard color="white" size={24} />
-							)}
-						</ToggleButton>
-						<Popover
-							open={buttonAreaPopoverOpen}
-							anchorEl={partButtonAreaPopoverAnchorEl}
-							onClose={() => {
-								setPartButtonAreaPopoverAnchorEl(null)
-							}}
-							anchorOrigin={{
-								vertical: 'bottom',
-								horizontal: 'left',
-							}}
-						>
-							<GroupButtonAreaPopover group={group} />
-						</Popover>
-
-						<ToggleButton
-							title={'Auto-fill'}
-							value="auto-fill"
-							selected={group.autoFill.enable}
-							size="small"
-							disabled={!canSetAutoFill}
-							onChange={(event) => {
-								setPartAutoFillPopoverAnchorEl(event.currentTarget)
-							}}
-						>
-							{group.autoFill.enable ? (
-								<BsLightningFill color="white" size={24} />
-							) : (
-								<BsLightning color="white" size={24} />
-							)}
-						</ToggleButton>
-						<Popover
-							open={autoFillPopoverOpen}
-							anchorEl={partAutoFillPopoverAnchorEl}
-							onClose={() => {
-								setPartAutoFillPopoverAnchorEl(null)
-							}}
-							anchorOrigin={{
-								vertical: 'bottom',
-								horizontal: 'left',
-							}}
-						>
-							<GroupAutoFillPopover rundownId={rundownId} group={group} />
-						</Popover>
-
-						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
-
-						<TrashBtn
-							className="delete"
-							disabled={group.locked}
-							title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
-							onClick={handleDeleteClick}
-						/>
 					</div>
+					{!group.collapsed && (
+						<div className="group__content">
+							<div className="group__content__parts" ref={contentPartsRef}>
+								{group.partIds.map((partId, index) =>
+									isVisible ? (
+										<PartView
+											key={partId}
+											rundownId={rundownId}
+											partId={partId}
+											parentGroupId={group.id}
+											parentGroupIndex={groupIndex}
+											partIndex={index}
+											mappings={mappings}
+										/>
+									) : null
+								)}
+							</div>
+
+							{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
+						</div>
+					)}
+
+					<ConfirmationDialog
+						open={deleteConfirmationOpen}
+						title="Delete Group"
+						body={`Are you sure you want to delete the group "${group.name}"?`}
+						acceptLabel="Delete"
+						onAccepted={() => {
+							handleDelete()
+							setDeleteConfirmationOpen(false)
+						}}
+						onDiscarded={() => {
+							setDeleteConfirmationOpen(false)
+						}}
+					/>
 				</div>
-				{!group.collapsed && (
-					<div className="group__content">
-						<div className="group__content__parts">
-							{group.partIds.map((partId, index) => (
-								<PartView
-									key={partId}
-									rundownId={rundownId}
-									partId={partId}
-									parentGroupId={group.id}
-									parentGroupIndex={groupIndex}
-									partIndex={index}
-									mappings={mappings}
-								/>
-							))}
-						</div>
-
-						{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
-					</div>
-				)}
-
-				<ConfirmationDialog
-					open={deleteConfirmationOpen}
-					title="Delete Group"
-					body={`Are you sure you want to delete the group "${group.name}"?`}
-					acceptLabel="Delete"
-					onAccepted={() => {
-						handleDelete()
-						setDeleteConfirmationOpen(false)
-					}}
-					onDiscarded={() => {
-						setDeleteConfirmationOpen(false)
-					}}
-				/>
-			</div>
+			</VisibilitySensor>
 		)
 	}
 })

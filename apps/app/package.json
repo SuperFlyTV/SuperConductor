@@ -97,6 +97,7 @@
 		"react-icons": "^4.3.1",
 		"react-table": "^7.7.0",
 		"react-toggle": "^4.1.2",
+		"react-visibility-sensor": "^5.1.1",
 		"short-uuid": "^4.2.0",
 		"superfly-timeline": "^8.2.1",
 		"timeline-state-resolver-types": "^6.2.0-release37.4",
