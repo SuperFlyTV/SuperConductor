@@ -48,6 +48,8 @@ import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
 import { GroupAutoFillPopover } from './GroupAutoFillPopover'
 import VisibilitySensor from 'react-visibility-sensor'
 
+const DEFAULT_PART_HEIGHT = 80
+
 export const GroupView: React.FC<{
 	rundownId: string
 	groupId: string
@@ -458,16 +460,23 @@ export const GroupView: React.FC<{
 	const [partAutoFillPopoverAnchorEl, setPartAutoFillPopoverAnchorEl] = React.useState<Element | null>(null)
 	const autoFillPopoverOpen = Boolean(partAutoFillPopoverAnchorEl)
 
+	// When the Group isn't in view, don't render the parts, but instead render a placeholder of the same height
 	const contentPartsRef = useRef<HTMLDivElement | null>(null)
-	const [hidePartsHeight, setHidePartsHeight] = useState<number | null>(null)
+	const [hidePartsHeight, setHidePartsHeight] = useState<number | null>(DEFAULT_PART_HEIGHT * group.partIds.length)
 	const onChange = useCallback((isVisible: boolean) => {
 		if (isVisible) {
 			setHidePartsHeight(null)
 		} else {
-			setHidePartsHeight(() => {
-				if (contentPartsRef.current) {
-					return contentPartsRef.current.clientHeight
-				} else return null
+			setHidePartsHeight((prevHeight) => {
+				if (prevHeight === null) {
+					if (contentPartsRef.current) {
+						return contentPartsRef.current.clientHeight
+					} else {
+						return DEFAULT_PART_HEIGHT * group.partIds.length
+					}
+				} else {
+					return prevHeight
+				}
 			})
 		}
 	}, [])
@@ -843,9 +852,15 @@ export const GroupView: React.FC<{
 					</div>
 					{!group.collapsed && (
 						<div className="group__content">
-							<div className="group__content__parts" ref={contentPartsRef}>
-								{group.partIds.map((partId, index) =>
-									isVisible ? (
+							<div
+								className="group__content__parts"
+								ref={contentPartsRef}
+								style={{
+									height: hidePartsHeight ? `${hidePartsHeight}px` : undefined,
+								}}
+							>
+								{hidePartsHeight === null &&
+									group.partIds.map((partId, index) => (
 										<PartView
 											key={partId}
 											rundownId={rundownId}
@@ -855,8 +870,7 @@ export const GroupView: React.FC<{
 											partIndex={index}
 											mappings={mappings}
 										/>
-									) : null
-								)}
+									))}
 							</div>
 
 							{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
