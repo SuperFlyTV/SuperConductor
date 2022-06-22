@@ -594,6 +594,7 @@ export const GroupView: React.FC<{
 							value="disabled"
 							selected={group.disabled}
 							size="small"
+							disabled={group.locked}
 							onChange={toggleDisable}
 						>
 							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}

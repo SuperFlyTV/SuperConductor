@@ -76,6 +76,7 @@ export class GuiStore {
 			...this._selected,
 			...selected,
 		}
+		console.log('setSelected', this._selected.timelineObjIds.join(','))
 	}
 
 	activeHomePageId = 'project'

@@ -797,14 +797,16 @@ export const PartView: React.FC<{
 					{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
 				</div>
 
-				<div className="part__submenu-button">
-					<MdMoreHoriz
-						color="rgba(255, 255, 255, 0.5)"
-						onClick={(event) => {
-							setPartSubmenuPopoverAnchorEl(event.currentTarget)
-						}}
-					/>
-				</div>
+				{!groupLocked && (
+					<div className="part__submenu-button">
+						<MdMoreHoriz
+							color="rgba(255, 255, 255, 0.5)"
+							onClick={(event) => {
+								setPartSubmenuPopoverAnchorEl(event.currentTarget)
+							}}
+						/>
+					</div>
+				)}
 			</div>
 			<div className="part__meta">
 				<div className="part__meta__left">
@@ -847,47 +849,50 @@ export const PartView: React.FC<{
 							}}
 						/>
 					)}
-
-					<div className="controls">
-						<ToggleBtn
-							title={
-								part.disabled
-									? 'Disabledn\n\nClick to enable Part.'
-									: 'Disable/Skip Part during playback.'
-							}
-							selected={part.disabled}
-							size="small"
-							onChange={toggleDisable}
-						>
-							{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-						</ToggleBtn>
-						<ToggleBtn
-							title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
-							disabled={groupLocked}
-							selected={part.locked}
-							size="small"
-							onChange={toggleLock}
-						>
-							{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-						</ToggleBtn>
-						<ToggleBtn
-							title={
-								part.loop ? 'Looping.\n\nDisable Looping.' : 'Enable Looping of Part during playout.'
-							}
-							disabled={groupOrPartLocked}
-							selected={part.loop}
-							size="small"
-							onChange={toggleLoop}
-						>
-							<MdRepeatOne size={18} />
-						</ToggleBtn>
-						<TriggerBtn
-							onTrigger={handleTriggerBtn}
-							title="Open Triggers Submenu"
-							locked={groupOrPartLocked}
-							triggerCount={allActionsForPart.length}
-						/>
-					</div>
+					{!groupLocked && (
+						<div className="controls">
+							<ToggleBtn
+								title={
+									part.disabled
+										? 'Disabledn\n\nClick to enable Part.'
+										: 'Disable/Skip Part during playback.'
+								}
+								selected={part.disabled}
+								size="small"
+								onChange={toggleDisable}
+							>
+								{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleBtn>
+							<ToggleBtn
+								title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
+								disabled={groupLocked}
+								selected={part.locked}
+								size="small"
+								onChange={toggleLock}
+							>
+								{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+							</ToggleBtn>
+							<ToggleBtn
+								title={
+									part.loop
+										? 'Looping.\n\nDisable Looping.'
+										: 'Enable Looping of Part during playout.'
+								}
+								disabled={groupOrPartLocked}
+								selected={part.loop}
+								size="small"
+								onChange={toggleLoop}
+							>
+								<MdRepeatOne size={18} />
+							</ToggleBtn>
+							<TriggerBtn
+								onTrigger={handleTriggerBtn}
+								title="Open Triggers Submenu"
+								locked={groupOrPartLocked}
+								triggerCount={allActionsForPart.length}
+							/>
+						</div>
+					)}
 				</div>
 
 				<div className="part__meta__right">
@@ -899,7 +904,7 @@ export const PartView: React.FC<{
 					/>
 				</div>
 			</div>
-			<div className="part__dropdown">{/** TODO **/}</div>
+			{!groupLocked && <div className="part__dropdown">{/** TODO **/}</div>}
 
 			<div className="part__layer-names">
 				{sortedLayers.map(({ layerId }) => {
@@ -911,6 +916,7 @@ export const PartView: React.FC<{
 							partId={part.id}
 							layerId={layerId}
 							mappings={mappings}
+							locked={groupOrPartLocked}
 						/>
 					)
 				})}
@@ -927,7 +933,7 @@ export const PartView: React.FC<{
 				<div className="part__time__duration">
 					TOTAL <span style={{ fontWeight: 700 }}>{msToTime(part.resolved.duration)}</span>
 				</div>
-				<div className="part__time__endcap" />
+				{/* <div className="part__time__endcap" /> */}
 			</div>
 			<div className="part__timeline">
 				<div className="countdown-wrapper">
@@ -976,7 +982,13 @@ export const PartView: React.FC<{
 					horizontal: 'left',
 				}}
 			>
-				<PartSubmenu rundownId={rundownId} groupId={parentGroupId} part={part} locked={groupOrPartLocked} />
+				<PartSubmenu
+					rundownId={rundownId}
+					groupId={parentGroupId}
+					part={part}
+					groupLocked={groupLocked}
+					locked={groupOrPartLocked}
+				/>
 			</Popover>
 
 			<Popover

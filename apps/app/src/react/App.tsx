@@ -159,7 +159,7 @@ export const App = observer(function App() {
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
-		const isOnLayer = tarEl.closest('.object')
+		const isOnLayer = tarEl.closest('.timeline-object')
 		const isOnSidebar = tarEl.closest('.side-bar')
 		const isOnMUI = tarEl.closest('.MuiModal-root')
 

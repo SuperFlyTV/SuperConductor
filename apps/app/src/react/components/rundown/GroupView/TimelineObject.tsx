@@ -46,12 +46,16 @@ export const TimelineObject: React.FC<{
 
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 
+	const selectable = !locked
+	const movable = !locked
+
 	const dragData = useRef({
 		msPerPixel,
 		partId,
 		moveType,
 		timelineObjId: timelineObj.obj.id,
 		allowDuplicate,
+		movable,
 	})
 	useEffect(() => {
 		dragData.current = {
@@ -60,11 +64,14 @@ export const TimelineObject: React.FC<{
 			moveType,
 			timelineObjId: timelineObj.obj.id,
 			allowDuplicate,
+			movable,
 		}
-	}, [msPerPixel, partId, moveType, timelineObj.obj.id, allowDuplicate])
+	}, [msPerPixel, partId, moveType, timelineObj.obj.id, allowDuplicate, selectable, movable])
 	const onDragStart = useCallback((startPosition: { clientX: number; clientY: number }) => {
 		// A move has begun.
 		const dd = dragData.current
+
+		if (!dd.movable) return
 
 		store.guiStore.updateTimelineObjMove({
 			wasMoved: null,
@@ -189,6 +196,7 @@ export const TimelineObject: React.FC<{
 	}, [hotkeyContext])
 
 	const updateSelection = () => {
+		if (!selectable) return
 		const selected = store.guiStore.selected
 		if (allowMultiSelection) {
 			if (
@@ -260,7 +268,9 @@ export const TimelineObject: React.FC<{
 	return (
 		<div
 			ref={ref}
-			className={classNames('object', description.contentTypeClassNames.join(' '), {
+			className={classNames('timeline-object', description.contentTypeClassNames.join(' '), {
+				selectable,
+				movable,
 				selected: isSelected.get(),
 				isAtMinWidth,
 				locked,

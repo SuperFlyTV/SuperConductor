@@ -250,6 +250,8 @@
 		font-family: 'Barlow Semi Condensed';
 		font-weight: 400;
 		font-variant-numeric: tabular-nums;
+		// overflow: hidden;
+		height: 16px;
 
 		&__current-time {
 			margin-left: 3px;
@@ -266,13 +268,20 @@
 
 		&__duration {
 			position: absolute;
-			bottom: -2px;
-			right: 4px;
+			top: 0px;
+			bottom: 0px;
+			right: 0px;
+
+			padding-right: 4px;
+
+			line-height: 1;
 			font-family: 'Barlow Condensed';
 			font-weight: 300;
 			text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
 				0px 0px 3px rgba(0, 0, 0, 0.75);
 			z-index: 1;
+
+			background: linear-gradient(90deg, transparent, black);
 		}
 
 		&__endcap {

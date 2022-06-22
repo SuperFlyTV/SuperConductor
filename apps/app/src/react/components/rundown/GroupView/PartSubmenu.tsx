@@ -14,8 +14,10 @@ export const PartSubmenu: React.FC<{
 	rundownId: string
 	groupId: string
 	part: PartGUI
-	locked?: boolean
-}> = ({ rundownId, groupId, part, locked }) => {
+	groupLocked: boolean
+	/** Part or group locked */
+	locked: boolean
+}> = ({ rundownId, groupId, part, groupLocked, locked }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
@@ -50,7 +52,7 @@ export const PartSubmenu: React.FC<{
 					<MdOutlineEditNote size={18} />
 				</Button>
 
-				<DuplicateBtn title="Duplicate Part" onClick={handleDuplicateBtn} />
+				<DuplicateBtn title="Duplicate Part" disabled={groupLocked} onClick={handleDuplicateBtn} />
 
 				<TrashBtn
 					disabled={locked}

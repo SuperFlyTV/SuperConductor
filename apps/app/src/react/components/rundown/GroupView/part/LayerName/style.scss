@@ -30,6 +30,13 @@
 .layer-names-dropdown {
 	position: relative;
 
+	&.selectable {
+		cursor: pointer;
+		.item:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+	}
+
 	&.open {
 		.selected-item {
 			background-color: rgba(255, 255, 255, 0.1);
@@ -66,10 +73,6 @@
 		align-items: center;
 		justify-content: flex-end;
 		height: $layerHeight;
-
-		&:hover {
-			background-color: rgba(255, 255, 255, 0.1);
-		}
 
 		&.selected {
 			display: block;

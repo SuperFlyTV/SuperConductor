@@ -24,7 +24,8 @@ export const LayerName: React.FC<{
 	 * Project mappings, used for generating dropdown list of available options
 	 */
 	mappings: Mappings
-}> = observer(function LayerName({ rundownId, groupId, partId, layerId, mappings }) {
+	locked: boolean
+}> = observer(function LayerName({ rundownId, groupId, partId, layerId, mappings, locked }) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const appStore = store.appStore
@@ -112,6 +113,7 @@ export const LayerName: React.FC<{
 					selectedItem={selectedItem}
 					otherItems={otherItems}
 					exists={!!mapping}
+					disabled={locked}
 					onSelect={(id: string) => {
 						if (id === 'editMappings') {
 							store.guiStore.goToHome('mappingsSettings')
@@ -153,15 +155,16 @@ const LayerNamesDropdown: React.FC<{
 	exists: boolean
 	onSelect: (id: string) => void
 	onCreateMissingMapping: (id: string) => void
+	disabled: boolean
 }> = (props) => {
 	const [isOpen, setOpen] = useState(false)
 
 	return (
-		<div className={classNames('layer-names-dropdown', { open: isOpen })}>
+		<div className={classNames('layer-names-dropdown', { open: isOpen, selectable: !props.disabled })}>
 			<div
 				className="selected-item"
 				onClick={() => {
-					setOpen(!isOpen)
+					setOpen(props.disabled ? false : !isOpen)
 				}}
 			>
 				<div className="item">
@@ -188,14 +191,16 @@ const LayerNamesDropdown: React.FC<{
 					)}
 				</div>
 			</div>
-			<DropdownOtherItems
-				otherItems={props.otherItems}
-				onSelect={(id: string) => {
-					props.onSelect(id)
-					setOpen(false)
-				}}
-				onClickOutside={() => setOpen(false)}
-			/>
+			{!props.disabled && (
+				<DropdownOtherItems
+					otherItems={props.otherItems}
+					onSelect={(id: string) => {
+						props.onSelect(id)
+						setOpen(false)
+					}}
+					onClickOutside={() => setOpen(false)}
+				/>
+			)}
 		</div>
 	)
 }
