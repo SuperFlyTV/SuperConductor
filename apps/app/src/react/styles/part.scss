@@ -1,6 +1,8 @@
 @use 'sass:color';
 @import './objectTypeStyling.scss';
 
+$part_time_height: 16px;
+
 .part {
 	position: relative;
 	margin-top: 2px;
@@ -189,7 +191,8 @@
 		}
 
 		& .part__play,
-		& .part__stop {
+		& .part__stop,
+		& .part__pause {
 			align-self: flex-start;
 			flex-shrink: 0;
 			margin-left: 0.6rem;
@@ -257,7 +260,7 @@
 		font-weight: 400;
 		font-variant-numeric: tabular-nums;
 		// overflow: hidden;
-		height: 16px;
+		height: $part_time_height;
 
 		&__current-time {
 			margin-left: 3px;
@@ -324,6 +327,35 @@
 	&__endcap {
 		grid-area: endcap;
 		background: black;
+
+		&.group-playing {
+			background: #000000;
+		}
+
+		&.part-play-next {
+			background: linear-gradient(180deg, black $part_time_height, #0f630f $part_time_height);
+		}
+		&.part-playing {
+			background: #aa0000;
+		}
+		&.part-paused {
+			// background: #aaaa00;
+			animation: anim-part-paused 2s infinite;
+		}
+		@keyframes anim-part-paused {
+			0% {
+				background-color: #aa0000;
+			}
+			33% {
+				background-color: #aa0000;
+			}
+			66% {
+				background-color: black;
+			}
+			100% {
+				background-color: #aa0000;
+			}
+		}
 	}
 
 	&__dragArrow {

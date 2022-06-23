@@ -1017,7 +1017,8 @@ export const PartView: React.FC<{
 						</div>
 					</div>
 				</div>
-				<div className="part__endcap"></div>
+				<EndCap groupId={parentGroupId} partId={part.id} />
+
 				{renderEverything && (
 					<>
 						<Popover
@@ -1156,6 +1157,43 @@ const ControlButtons: React.FC<{
 				onClick={handlePause}
 			/>
 		</>
+	)
+})
+const EndCap: React.FC<{
+	groupId: string
+	partId: string
+}> = observer(function EndCap({ groupId, partId }) {
+	const { groupIsPlaying, partIsPlaying, partIsPaused, partIsPlayNext } = useMemoComputedObject(() => {
+		const playData = store.groupPlayDataStore.groups.get(groupId)
+
+		if (!playData) {
+			return {
+				groupIsPlaying: false,
+				partIsPlaying: false,
+				partIsPaused: false,
+				partIsPlayNext: false,
+			}
+		}
+		const playhead = partId && playData.playheads[partId]
+		return {
+			groupIsPlaying: Boolean(playData.groupIsPlaying),
+			partIsPlaying: Boolean(partId && partId in playData.playheads),
+			partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
+			partIsPlayNext: Boolean(
+				playData.anyPartIsPlaying && playData.countdowns[partId] && playData.countdowns[partId].length > 0
+			),
+		}
+	}, [groupId])
+
+	return (
+		<div
+			className={classNames('part__endcap', {
+				'group-playing': groupIsPlaying,
+				'part-playing': partIsPlaying,
+				'part-paused': partIsPaused,
+				'part-play-next': partIsPlayNext,
+			})}
+		></div>
 	)
 })
 
