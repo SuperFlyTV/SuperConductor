@@ -630,74 +630,6 @@ export const GroupView: React.FC<{
 								value="disabled"
 								selected={group.disabled}
 								size="small"
-								onChange={toggleDisable}
-							>
-								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-							</ToggleButton>
-							<ToggleButton
-								title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
-								value="locked"
-								selected={group.locked}
-								size="small"
-								onChange={toggleLock}
-							>
-								{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-							</ToggleButton>
-
-							<ToggleButton
-								title={
-									group.oneAtATime
-										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
-										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
-								}
-								value="one-at-a-time"
-								selected={group.oneAtATime}
-								size="small"
-								disabled={!canModifyOneAtATime}
-								onChange={toggleOneAtATime}
-							>
-								<MdLooksOne size={22} />
-							</ToggleButton>
-
-							<ToggleButton
-								title={
-									group.loop
-										? 'Playout Loop enabled.\n\nClick to disable.'
-										: 'Click to set Group to Loop playout.'
-								}
-								value="loop"
-								selected={group.oneAtATime && group.loop}
-								size="small"
-								disabled={!canModifyLoop}
-								onChange={toggleLoop}
-							>
-								<MdRepeat size={18} />
-							</ToggleButton>
-
-							<ToggleButton
-								title={
-									group.autoPlay
-										? 'Auto-step enabled.\n\nClick to disable.'
-										: 'Enable Auto-step (continue to next Part on end, like a playlist).'
-								}
-								value="auto-step"
-								selected={group.oneAtATime && group.autoPlay}
-								size="small"
-								disabled={!canModifyAutoPlay}
-								onChange={toggleAutoPlay}
-							>
-								<MdPlaylistPlay size={22} />
-							</ToggleButton>
-
-							<ToggleButton
-								title={
-									group.disabled
-										? 'Playout disabled.\n\nClick to enable playout of Group.'
-										: 'Disable playout of Group.'
-								}
-								value="disabled"
-								selected={group.disabled}
-								size="small"
 								disabled={group.locked}
 								onChange={toggleDisable}
 							>
@@ -789,36 +721,6 @@ export const GroupView: React.FC<{
 								}}
 							>
 								<GroupButtonAreaPopover group={group} />
-							</Popover>
-
-							<ToggleButton
-								title={'Auto-fill'}
-								value="auto-fill"
-								selected={group.autoFill.enable}
-								size="small"
-								disabled={!canSetAutoFill}
-								onChange={(event) => {
-									setPartAutoFillPopoverAnchorEl(event.currentTarget)
-								}}
-							>
-								{group.autoFill.enable ? (
-									<BsLightningFill color="white" size={24} />
-								) : (
-									<BsLightning color="white" size={24} />
-								)}
-							</ToggleButton>
-							<Popover
-								open={autoFillPopoverOpen}
-								anchorEl={partAutoFillPopoverAnchorEl}
-								onClose={() => {
-									setPartAutoFillPopoverAnchorEl(null)
-								}}
-								anchorOrigin={{
-									vertical: 'bottom',
-									horizontal: 'left',
-								}}
-							>
-								<GroupAutoFillPopover rundownId={rundownId} group={group} />
 							</Popover>
 
 							<ToggleButton
