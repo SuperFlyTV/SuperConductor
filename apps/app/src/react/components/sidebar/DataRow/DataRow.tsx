@@ -18,7 +18,7 @@ export const DataRow = (props: { label: string; value: any }) => {
 	}, [enqueueSnackbar, handleError, props.value])
 
 	return (
-		<div className="row">
+		<div className="row data-row">
 			<div className="label" title={props.label}>
 				{props.label}
 			</div>

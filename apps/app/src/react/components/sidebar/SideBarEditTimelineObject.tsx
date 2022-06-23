@@ -11,7 +11,6 @@ import { store } from '../../mobx/store'
 import { EditTimelineObjContent } from './timelineObj/editTimelineObj'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ConfirmationDialog } from '../util/ConfirmationDialog'
-import { TemplateData } from './template/TemplateData'
 
 export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
@@ -43,11 +42,24 @@ export const SideBarEditTimelineObject: React.FC<{
 			.catch(handleError)
 	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id])
 
+	const header = (
+		<>
+			<div className="title">
+				<span>{`Edit ${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}</span>
+				<div>
+					<TrashBtn
+						disabled={props.disabled}
+						onClick={() => {
+							setDeleteConfirmationOpen(true)
+						}}
+						title="Delete timeline object"
+					/>
+				</div>
+			</div>
+		</>
+	)
 	return (
-		<SidebarContent
-			title={`Edit ${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}
-			className="edit-timeline-obj"
-		>
+		<SidebarContent title={header} className="edit-timeline-obj">
 			<DataRow label="ID" value={props.timelineObj.obj.id} />
 
 			<EditTimelineObjContent
@@ -69,14 +81,6 @@ export const SideBarEditTimelineObject: React.FC<{
 				}}
 			/>
 
-			<TrashBtn
-				disabled={props.disabled}
-				onClick={() => {
-					setDeleteConfirmationOpen(true)
-				}}
-				title="Delete timeline object"
-			/>
-
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}
 				title="Delete Timeline Object"
@@ -90,17 +94,6 @@ export const SideBarEditTimelineObject: React.FC<{
 					setDeleteConfirmationOpen(false)
 				}}
 			/>
-
-			{(props.timelineObj.obj.content as any)?.type === TimelineContentTypeCasparCg.TEMPLATE && (
-				<TemplateData
-					rundownId={props.rundownId}
-					groupId={props.groupId}
-					partId={props.partId}
-					timelineObjId={props.timelineObj.obj.id}
-					templateData={JSON.parse((props.timelineObj.obj.content as any)?.data)}
-					disabled={props.disabled}
-				/>
-			)}
 		</SidebarContent>
 	)
 })

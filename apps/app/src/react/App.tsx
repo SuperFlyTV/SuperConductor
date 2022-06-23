@@ -164,11 +164,15 @@ export const App = observer(function App() {
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
-		const isOnLayer = tarEl.closest('.timeline-object')
-		const isOnSidebar = tarEl.closest('.side-bar')
-		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.moveType) {
+		if (
+			tarEl.closest('.main-area') &&
+			!tarEl.closest('.timeline-object') &&
+			!tarEl.closest('.side-bar') &&
+			!tarEl.closest('.MuiModal-root') &&
+			!tarEl.closest('button') &&
+			!gui.timelineObjMove.moveType
+		) {
 			if (gui.selected.timelineObjIds.length > 0) {
 				gui.setSelected({
 					timelineObjIds: [],

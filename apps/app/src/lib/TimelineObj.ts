@@ -19,6 +19,23 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 			label = obj.content.file
 		} else if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
 			label = obj.content.name
+
+			if (obj.content.data) {
+				let parsed: { [key: string]: string } = {}
+				if (typeof obj.content.data !== 'object') {
+					try {
+						parsed = JSON.parse(obj.content.data)
+					} catch (_err) {
+						// ignore parse error
+					}
+				} else {
+					parsed = obj.content.data
+				}
+
+				if (parsed) {
+					label += ' ' + Object.values(parsed).join(', ')
+				}
+			}
 		} else {
 			// todo: for later:
 			// assertNever(obj.content)
@@ -163,6 +180,11 @@ export function modifyTimelineObjectForPlayout(
 				obj.content.playing = false
 			}
 		}
+		if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
+			if ((obj.content as any).casparXMLData) {
+				obj.content.data = parametersToCasparXML(obj.content.data)
+			}
+		}
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
 		if (obj.content.type === TimelineContentTypePharos.TIMELINE) {
 			if (isPaused) {
@@ -182,4 +204,23 @@ export function modifyTimelineObjectForPlayout(
 			}
 		}
 	}
+}
+function escapeHtml(unsafe: any) {
+	if (!unsafe) return ''
+
+	return `${unsafe}`
+		.replace(/&quot;/g, '"')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;')
+}
+function parametersToCasparXML(params: { [key: string]: string }): string {
+	let xml = ''
+	for (const key in params) {
+		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(params[key])}" /></componentData>`
+	}
+
+	return `<templateData>${xml}</templateData>`
 }
