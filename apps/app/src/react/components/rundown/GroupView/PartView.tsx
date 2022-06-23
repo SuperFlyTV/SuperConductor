@@ -810,24 +810,22 @@ export const PartView: React.FC<{
 			>
 				<div className="part__dragArrow" />
 				<div className={classNames('part__tab', tabAdditionalClassNames)}>
-					{renderEverything && (
-						<>
-							<div ref={dragRef} className="part__drag-handle">
-								{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
-							</div>
+					<>
+						<div ref={dragRef} className="part__drag-handle">
+							{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
+						</div>
 
-							{!groupLocked && (
-								<div className="part__submenu-button">
-									<MdMoreHoriz
-										color="rgba(255, 255, 255, 0.5)"
-										onClick={(event) => {
-											setPartSubmenuPopoverAnchorEl(event.currentTarget)
-										}}
-									/>
-								</div>
-							)}
-						</>
-					)}
+						{!groupLocked && (
+							<div className="part__submenu-button">
+								<MdMoreHoriz
+									color="rgba(255, 255, 255, 0.5)"
+									onClick={(event) => {
+										setPartSubmenuPopoverAnchorEl(event.currentTarget)
+									}}
+								/>
+							</div>
+						)}
+					</>
 				</div>
 				<div className="part__meta">
 					<div className="part__meta__left">

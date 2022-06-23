@@ -452,7 +452,9 @@ export class RundownsStore {
 			groups: [...currentRundown.groups],
 		}
 		// Remove the group from the groups array and re-insert it at its new position
-		currentRundown.groups = currentRundown.groups.filter((g) => g === group)
+		const oldPosition = currentRundown.groups.findIndex((g) => g.id === group.id)
+		if (oldPosition === -1) return
+		currentRundown.groups.splice(oldPosition, 1)
 		currentRundown.groups.splice(position, 0, group)
 
 		// Temporary update while moving:
