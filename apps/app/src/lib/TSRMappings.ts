@@ -985,6 +985,38 @@ function getLastBiggestValue(
 	return lastBiggest
 }
 
+function getDeviceTypeOrder(deviceType: DeviceType): number {
+	const order: DeviceType[] = [
+		// First devices will be shown first.
+
+		DeviceType.ABSTRACT,
+		DeviceType.CASPARCG,
+		DeviceType.QUANTEL,
+
+		DeviceType.VIZMSE,
+		DeviceType.SINGULAR_LIVE,
+
+		DeviceType.ATEM,
+		DeviceType.VMIX,
+
+		DeviceType.HYPERDECK,
+		DeviceType.HTTPSEND,
+		DeviceType.TCPSEND,
+		DeviceType.OSC,
+
+		DeviceType.OBS,
+		DeviceType.SISYFOS,
+		DeviceType.LAWO,
+		DeviceType.PHAROS,
+
+		DeviceType.SHOTOKU,
+		DeviceType.PANASONIC_PTZ,
+		DeviceType.HTTPWATCHER,
+	]
+	const index = order.indexOf(deviceType)
+	return index === -1 ? 9999 : index
+}
+
 export function sortMappings(mappings: Mappings): { layerId: string; mapping: Mapping }[] {
 	return Object.entries(mappings)
 		.map(([layerId, mapping]) => ({
@@ -992,11 +1024,16 @@ export function sortMappings(mappings: Mappings): { layerId: string; mapping: Ma
 			mapping,
 		}))
 		.sort((a, b) => {
+			if (a.mapping.device !== b.mapping.device) {
+				const aDeviceOrder = getDeviceTypeOrder(a.mapping.device)
+				const bDeviceOrder = getDeviceTypeOrder(b.mapping.device)
+
+				if (aDeviceOrder > bDeviceOrder) return 1
+				if (aDeviceOrder < bDeviceOrder) return -1
+			}
+
 			if (a.mapping.deviceId > b.mapping.deviceId) return 1
 			if (a.mapping.deviceId < b.mapping.deviceId) return -1
-
-			if (a.mapping.device > b.mapping.device) return 1
-			if (a.mapping.device < b.mapping.device) return -1
 
 			const device = a.mapping.device
 			if (device === DeviceType.ABSTRACT) {

@@ -20,7 +20,7 @@ import {
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, DeviceType, TimelineContentTypeCasparCg, Mapping } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, Mapping } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'

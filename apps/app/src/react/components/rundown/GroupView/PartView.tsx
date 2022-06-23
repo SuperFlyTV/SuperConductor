@@ -298,7 +298,6 @@ export const PartView: React.FC<{
 					const newLayerMapping = project.mappings[moveToLayerId]
 					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
-						handleError('Unable to move to that layer (incompatible layer type)')
 					}
 				}
 
