@@ -47,6 +47,7 @@ import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-
 import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
 import { GroupAutoFillPopover } from './GroupAutoFillPopover'
 import VisibilitySensor from 'react-visibility-sensor'
+import { Btn } from '../../inputs/Btn/Btn'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -964,9 +965,9 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 				data-drop-handler-id={handlerId}
 				isOver={isOver}
 			>
-				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
+				<Btn variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</Button>
+				</Btn>
 			</DropZone>
 
 			<PartPropertiesDialog

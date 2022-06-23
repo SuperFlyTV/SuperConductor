@@ -1,6 +1,6 @@
-import { Button } from '@mui/material'
 import React from 'react'
 import { MdStop } from 'react-icons/md'
+import { Btn } from '../Btn/Btn'
 
 export interface PlayButtonData {
 	groupDisabled: boolean
@@ -38,7 +38,7 @@ export const StopBtn: React.FC<{
 	}
 
 	return (
-		<Button
+		<Btn
 			className={props.className}
 			variant="contained"
 			size="small"
@@ -47,6 +47,6 @@ export const StopBtn: React.FC<{
 			title={title}
 		>
 			<MdStop size={22} />
-		</Button>
+		</Btn>
 	)
 }

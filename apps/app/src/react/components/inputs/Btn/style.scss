@@ -8,6 +8,7 @@
 	box-sizing: border-box;
 	outline: 0;
 	margin: 0;
+	vertical-align: middle;
 
 	font-family: Barlow, sans-serif;
 	font-weight: 500;
@@ -17,19 +18,30 @@
 	border-radius: 4px;
 
 	color: #fff;
-	padding: 0;
-	width: 22px;
-	height: 22px;
+	background: #545a78;
+	padding: 6px 16px;
+	// width: 22px;
+	// height: 22px;
 	border: none;
-	background: none;
-	opacity: 0.3;
+	// background: none;
+	// opacity: 0.3;
 
 	// &.selected {
 	// 	opacity: 1;
 	// }
+	transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+		box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+		color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 
-	:hover {
-		text-decoration: none;
-		background-color: rgba(255, 255, 255, 0.08);
+	&:hover {
+		background-color: #3a3e54;
+	}
+
+	&.size-small {
+		padding: 0;
+		:hover {
+			text-decoration: none;
+			background-color: rgba(255, 255, 255, 0.08);
+		}
 	}
 }

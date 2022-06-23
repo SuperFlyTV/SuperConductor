@@ -4,7 +4,6 @@ import { IPCServerContext } from '../../contexts/IPCServer'
 import { useDrop } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes'
 import { Mappings } from 'timeline-state-resolver-types'
-import { Button } from '@mui/material'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
@@ -12,6 +11,7 @@ import { DropZone } from '../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 import { useMemoComputedObject } from '../../mobx/lib'
+import { Btn } from '../inputs/Btn/Btn'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	// Drag n' Drop:
@@ -217,9 +217,9 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 					// style={{ height: '96vh' }}
 					data-drop-handler-id={partDropHandlerId}
 				>
-					<Button variant="contained" onClick={() => setNewPartOpen(true)}>
+					<Btn variant="contained" onClick={() => setNewPartOpen(true)}>
 						New part
-					</Button>
+					</Btn>
 				</DropZone>
 				<DropZone
 					isOver={groupDropIsOver}
@@ -228,9 +228,9 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 					style={{ flexGrow: 1 }}
 					data-drop-handler-id={groupDropHandlerId}
 				>
-					<Button variant="contained" onClick={() => setNewGroupOpen(true)}>
+					<Btn variant="contained" onClick={() => setNewGroupOpen(true)}>
 						New group
-					</Button>
+					</Btn>
 				</DropZone>
 			</div>
 

@@ -1,7 +1,7 @@
-import { Button } from '@mui/material'
 import React from 'react'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { MdPause, MdPlayArrow } from 'react-icons/md'
+import { Btn } from '../Btn/Btn'
 import { PlayButtonData } from '../StopBtn/StopBtn'
 import './style.scss'
 
@@ -72,7 +72,7 @@ export const PauseBtn: React.FC<{
 	}
 
 	return (
-		<Button
+		<Btn
 			className={props.className}
 			variant="contained"
 			size="small"
@@ -85,6 +85,6 @@ export const PauseBtn: React.FC<{
 			{willDo === 'resume' && <MdPlayArrow size={18} />}
 
 			{!props.partId && <div className="playcount">{countAffectedParts}</div>}
-		</Button>
+		</Btn>
 	)
 }

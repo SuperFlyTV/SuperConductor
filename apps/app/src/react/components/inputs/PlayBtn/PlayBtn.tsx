@@ -1,6 +1,6 @@
-import { Button } from '@mui/material'
 import React from 'react'
 import { MdPlayArrow, MdReplay } from 'react-icons/md'
+import { Btn } from '../Btn/Btn'
 import { PlayButtonData } from '../StopBtn/StopBtn'
 
 import './style.scss'
@@ -46,7 +46,7 @@ export const PlayBtn: React.FC<{
 	}
 
 	return (
-		<Button
+		<Btn
 			className={props.className}
 			variant="contained"
 			size="small"
@@ -59,6 +59,6 @@ export const PlayBtn: React.FC<{
 			{!props.partId && (
 				<div className="playcount">{props.data.groupOneAtATime ? 1 : props.data.countPlayablePartsInGroup}</div>
 			)}
-		</Button>
+		</Btn>
 	)
 }
