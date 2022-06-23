@@ -1,6 +1,5 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
-import { BridgeAPI } from '@shared/api'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
@@ -24,7 +23,8 @@ export class BridgeHandler {
 	private outgoingBridges: {
 		[bridgeId: string]: {
 			bridge: Bridge
-			connection: WebsocketConnection
+			lastTry: number
+			connection?: WebsocketConnection
 		}
 	} = {}
 	private internalBridge: LocalBridgeConnection | null = null
@@ -33,20 +33,28 @@ export class BridgeHandler {
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
 	private closed = false
+	reconnectToBridgesInterval: NodeJS.Timer
 
 	constructor(
+		private log: LoggerLike,
 		private session: SessionHandler,
 		private storage: StorageHandler,
 		private callbacks: BridgeConnectionCallbacks
 	) {
-		this.server = new WebsocketServer(SERVER_PORT, (connection: WebsocketConnection) => {
+		this.server = new WebsocketServer(this.log, SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
 
-			const bridge = new WebsocketBridgeConnection(this.session, this.storage, connection, this.callbacks)
+			const bridge = new WebsocketBridgeConnection(
+				this.log,
+				this.session,
+				this.storage,
+				connection,
+				this.callbacks
+			)
 
 			// Lookup and set the bridgeId, if it is an outgoing
 			for (const [bridgeId, outgoing] of Object.entries(this.outgoingBridges)) {
-				if (outgoing.connection.connectionId === connection.connectionId) {
+				if (outgoing.connection?.connectionId === connection.connectionId) {
 					bridge.bridgeId = bridgeId
 				}
 			}
@@ -56,12 +64,16 @@ export class BridgeHandler {
 
 		this.server.on('close', () => {
 			// todo: handle server close?
-			console.error('Server closed')
+			this.log.error('Server closed')
 		})
 
 		this.storage.on('project', (project: Project) => {
 			this.onUpdatedProject(project)
 		})
+
+		this.reconnectToBridgesInterval = setInterval(() => {
+			this.reconnectToBridges()
+		}, 1000)
 	}
 	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
@@ -71,12 +83,14 @@ export class BridgeHandler {
 			await this.internalBridge.destroy()
 		}
 		this.closed = true
+
+		if (this.reconnectToBridgesInterval) clearInterval(this.reconnectToBridgesInterval)
 	}
 	onUpdatedProject(project: Project) {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				this.internalBridge = new LocalBridgeConnection(this.session, this.storage, this.callbacks)
+				this.internalBridge = new LocalBridgeConnection(this.log, this.session, this.storage, this.callbacks)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
@@ -90,7 +104,7 @@ export class BridgeHandler {
 				}
 				const internalBridge = this.internalBridge
 				this.internalBridge = null
-				internalBridge.destroy().catch(console.error)
+				internalBridge.destroy().catch(this.log.error)
 			}
 		}
 
@@ -105,7 +119,7 @@ export class BridgeHandler {
 				} else if (existing.bridge.url !== bridge.url) {
 					// Updated
 
-					existing.connection.terminate()
+					existing.connection?.terminate()
 					addNew = true
 				}
 
@@ -116,22 +130,12 @@ export class BridgeHandler {
 						devices: {},
 					})
 
-					// Guard against invalid addresses entered by the user
-					try {
-						const connection: WebsocketConnection = this.server.connectToServer(bridge.url)
-						// connection.id = bridge.id
-						connection.on('close', () => {
-							// 'close' means that it's really gone.
-							// remove bridge:
-							delete this.outgoingBridges[bridge.id]
-						})
-						this.outgoingBridges[bridge.id] = {
-							bridge,
-							connection,
-						}
-					} catch (error) {
-						console.error(`Failed to create a websocket connection to "${bridge.url}"`)
+					this.outgoingBridges[bridge.id] = {
+						bridge,
+						lastTry: Date.now(),
 					}
+
+					this.tryConnectToBridge(bridge.id)
 				}
 			}
 
@@ -143,7 +147,33 @@ export class BridgeHandler {
 
 			if (existing && !project.bridges[bridgeId]) {
 				// removed:
-				existing.connection.terminate()
+				existing.connection?.terminate()
+				delete this.outgoingBridges[bridgeId]
+			}
+		}
+	}
+	private reconnectToBridges() {
+		for (const [bridgeId, bridge] of Object.entries(this.outgoingBridges)) {
+			if (!bridge.connection && Date.now() - bridge.lastTry > 10 * 1000) {
+				this.tryConnectToBridge(bridgeId)
+			}
+		}
+	}
+	private tryConnectToBridge(bridgeId: string) {
+		const bridge = this.outgoingBridges[bridgeId]
+		if (bridge) {
+			bridge.lastTry = Date.now()
+			try {
+				const connection: WebsocketConnection = this.server.connectToServer(bridge.bridge.url)
+
+				bridge.connection = connection
+				connection.on('close', () => {
+					// 'close' means that it's really gone.
+					// remove bridge:
+					delete bridge.connection
+				})
+			} catch (error) {
+				// this.log.warn(`Failed to create a websocket connection to "${bridge.bridge.url}"`)
 			}
 		}
 	}
@@ -200,6 +230,7 @@ abstract class AbstractBridgeConnection {
 	private sentTimelines: { [timelineId: string]: TSRTimeline } = {}
 
 	constructor(
+		protected log: LoggerLike,
 		protected session: SessionHandler,
 		protected storage: StorageHandler,
 		protected callbacks: BridgeConnectionCallbacks
@@ -207,7 +238,7 @@ abstract class AbstractBridgeConnection {
 
 	setSettings(settings: Bridge['settings'], force = false) {
 		if (force || !_.isEqual(this.sentSettings, settings)) {
-			this.sentSettings = settings
+			this.sentSettings = _.cloneDeep(settings)
 			this.send({ type: 'setSettings', ...settings })
 		}
 	}
@@ -253,7 +284,7 @@ abstract class AbstractBridgeConnection {
 			}
 		}
 	}
-	protected onInit(id: string, version: string) {
+	protected onInit(id: string, version: string, incoming: boolean) {
 		if (!this.bridgeId) {
 			this.bridgeId = id
 		} else if (this.bridgeId !== id) {
@@ -264,13 +295,17 @@ abstract class AbstractBridgeConnection {
 			this.callbacks.onVersionMismatch(id, version, CURRENT_VERSION)
 		}
 
+		if (incoming && this.bridgeId) {
+			this.createBridgeInProjectIfNotExists()
+		}
+
 		// Send initial commands:
 		const project = this.storage.getProject()
 		const bridge = project.bridges[this.bridgeId]
 		if (bridge) {
 			this.setSettings(bridge.settings, true)
 		} else {
-			console.error(`Error: Settings bridge "${this.bridgeId}" not found`)
+			this.log.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
 		if (this.sentMappings) {
 			this.setMappings(this.sentMappings, true)
@@ -341,7 +376,7 @@ abstract class AbstractBridgeConnection {
 		if (msg.type === 'initRequestId') {
 			if (this.onInitRequestId) this.onInitRequestId()
 		} else if (msg.type === 'init') {
-			this.onInit(msg.id, msg.version)
+			this.onInit(msg.id, msg.version, msg.incoming)
 		} else if (msg.type === 'status') {
 			// todo
 		} else if (msg.type === 'deviceStatus') {
@@ -396,18 +431,19 @@ abstract class AbstractBridgeConnection {
 
 		this.session.updateBridgeStatus(this.bridgeId, status)
 	}
-	protected abstract send(msg: BridgeAPI.FromTPT.Any): void
+	protected abstract send(msg: BridgeAPI.FromSuperConductor.Any): void
 	protected abstract getConnectionId(): number
 }
 
 export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	constructor(
+		log: LoggerLike,
 		session: SessionHandler,
 		storage: StorageHandler,
 		private connection: WebsocketConnection,
 		callbacks: BridgeConnectionCallbacks
 	) {
-		super(session, storage, callbacks)
+		super(log, session, storage, callbacks)
 		const setConnected = () => {
 			if (this.bridgeId) {
 				this.createBridgeInProjectIfNotExists()
@@ -421,13 +457,19 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 				const status = this.session.getBridgeStatus(this.bridgeId)
 				if (status) {
 					status.connected = false
+					for (const device of Object.values(status.devices)) {
+						device.ok = false
+						device.connectionId = 0
+						device.message = 'Bridge not connected'
+					}
+
 					this.session.updateBridgeStatus(this.bridgeId, status)
 				}
 			}
 		})
 		this.connection.on('message', this.handleMessage.bind(this))
 	}
-	protected send(msg: BridgeAPI.FromTPT.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (this.connection.connected) {
 			this.connection.send(msg)
 		}
@@ -441,10 +483,15 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	private baseBridge: BaseBridge
 	private connectionId: number = Date.now() + Math.random()
 
-	constructor(session: SessionHandler, storage: StorageHandler, callbacks: BridgeConnectionCallbacks) {
-		super(session, storage, callbacks)
+	constructor(
+		log: LoggerLike,
+		session: SessionHandler,
+		storage: StorageHandler,
+		callbacks: BridgeConnectionCallbacks
+	) {
+		super(log, session, storage, callbacks)
 		this.bridgeId = INTERNAL_BRIDGE_ID
-		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), console)
+		this.baseBridge = new BaseBridge(this.handleMessage.bind(this), this.log)
 		this.createBridgeInProjectIfNotExists()
 		this.send({
 			type: 'setId',
@@ -454,11 +501,11 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	async destroy(): Promise<void> {
 		await this.baseBridge.destroy()
 	}
-	protected send(msg: BridgeAPI.FromTPT.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
 		try {
 			this.baseBridge.handleMessage(msg)
 		} catch (err) {
-			console.error(err)
+			this.log.error(err)
 		}
 	}
 	protected getConnectionId(): number {

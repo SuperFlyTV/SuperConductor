@@ -1,0 +1,1 @@
+export const DISPLAY_DECIMAL_COUNT = 1

@@ -1,5 +1,5 @@
 import { prepareGroupPlayData } from '../lib/playhead'
-import { Group } from '../models/rundown/Group'
+import { Group, GroupBase } from '../models/rundown/Group'
 import { GroupPreparedPlayData, GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
 import { TimelineEnable, TimelineObject } from 'superfly-timeline'
@@ -9,14 +9,9 @@ import { BridgeHandler } from './bridgeHandler'
 import { deepClone } from '@shared/lib'
 import { modifyTimelineObjectForPlayout } from '../lib/TimelineObj'
 
-export interface UpdateTimelineCache {
-	groupHashes?: { [groupId: string]: string }
-	mappingsHash?: string
-}
-
 const queuedUpdateTimelines = new Map<string, NodeJS.Timeout>()
+
 export function updateTimeline(
-	cache: UpdateTimelineCache,
 	storage: StorageHandler,
 	bridgeHandler: BridgeHandler,
 	group: Group
@@ -46,7 +41,7 @@ export function updateTimeline(
 }
 
 export function getTimelineForGroup(
-	group: Group,
+	group: GroupBase,
 	prepared: GroupPreparedPlayData | null,
 	customPartContent: CustomPartConent | undefined
 ): TimelineObject[] | null {
@@ -139,9 +134,6 @@ export function getTimelineForGroup(
 
 			timeline.push(timelineGroup)
 		} else if (prepared.type === 'multi') {
-			/** (unix timestamp) */
-			// const groupStartTime = prepared.startTime
-
 			const timelineGroup: TimelineObjEmpty = {
 				id: `group_${group.id}`,
 				enable: {

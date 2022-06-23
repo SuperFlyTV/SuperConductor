@@ -1,12 +1,14 @@
 @use 'sass:color';
 @import './objectTypeStyling.scss';
 
+$part_time_height: 16px;
+
 .part {
 	position: relative;
 	margin-top: 2px;
 	// overflow: hidden; // Create an alternative
 	display: grid;
-	grid-template-columns: $partTabWidth 18rem minmax(auto, 100px) 1fr 0.9rem;
+	grid-template-columns: $partTabWidth 19.2rem minmax(auto, 100px) 1fr 0.9rem;
 	grid-template-rows: 1.6rem 1fr;
 	gap: 0px 0px;
 	grid-template-areas:
@@ -34,6 +36,7 @@
 	}
 
 	&:hover {
+		.toggle-btn:not(.selected),
 		.MuiToggleButton-sizeSmall:not(.Mui-selected) {
 			opacity: 0.4;
 		}
@@ -75,7 +78,6 @@
 		.part__dropdown {
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
-
 	}
 	&.locked {
 		.part__drag-handle {
@@ -107,6 +109,20 @@
 	}
 
 	&__submenu {
+		padding: 1.5rem;
+
+		& .controls {
+			display: flex;
+			justify-content: end;
+			align-self: flex-end;
+
+			& > *:not(:last-child) {
+				margin-right: 0.6rem;
+			}
+		}
+	}
+
+	&__triggers-submenu {
 		padding: 1.5rem;
 
 		& .triggers {
@@ -166,7 +182,8 @@
 
 		& .controls {
 			display: flex;
-			margin-top: 1rem;
+			margin-top: 0.3rem;
+			height: 2.2rem; // This is needed so that the controls don't collapse on initial render
 
 			& > *:not(:last-child) {
 				margin-right: 0.6rem;
@@ -174,10 +191,16 @@
 		}
 
 		& .part__play,
-		& .part__stop {
+		& .part__stop,
+		& .part__pause {
 			align-self: flex-start;
 			flex-shrink: 0;
 			margin-left: 0.6rem;
+		}
+		.button-placeholder {
+			// Used as a placeholder instead of a button, in initial-render
+			height: 22px;
+			width: 22px;
 		}
 	}
 
@@ -236,6 +259,8 @@
 		font-family: 'Barlow Semi Condensed';
 		font-weight: 400;
 		font-variant-numeric: tabular-nums;
+		// overflow: hidden;
+		height: $part_time_height;
 
 		&__current-time {
 			margin-left: 3px;
@@ -252,22 +277,20 @@
 
 		&__duration {
 			position: absolute;
-			bottom: -2px;
-			right: 4px;
+			top: 0px;
+			bottom: 0px;
+			right: 0px;
+
+			padding-right: 4px;
+
+			line-height: 1;
 			font-family: 'Barlow Condensed';
 			font-weight: 300;
 			text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
 				0px 0px 3px rgba(0, 0, 0, 0.75);
 			z-index: 1;
-		}
 
-		&__endcap {
-			background: black;
-			width: 37px;
-			height: 100%;
-			position: absolute;
-			bottom: 0;
-			right: 0;
+			background: linear-gradient(90deg, transparent, black);
 		}
 	}
 
@@ -304,6 +327,35 @@
 	&__endcap {
 		grid-area: endcap;
 		background: black;
+
+		&.group-playing {
+			background: #000000;
+		}
+
+		&.part-play-next {
+			background: linear-gradient(180deg, black $part_time_height, #0f630f $part_time_height);
+		}
+		&.part-playing {
+			background: #aa0000;
+		}
+		&.part-paused {
+			// background: #aaaa00;
+			animation: anim-part-paused 2s infinite;
+		}
+		@keyframes anim-part-paused {
+			0% {
+				background-color: #aa0000;
+			}
+			33% {
+				background-color: #aa0000;
+			}
+			66% {
+				background-color: black;
+			}
+			100% {
+				background-color: #aa0000;
+			}
+		}
 	}
 
 	&__dragArrow {
@@ -330,23 +382,40 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(0,0,0,0.5);
+		background: rgba(0, 0, 0, 0.5);
 		z-index: 1;
+	}
+
+	.end-cap-hover {
+		position: absolute;
+		top: 0;
+		right: -15px;
+		z-index: 1;
+		opacity: 0;
+		// display: none;
+		transition: opacity 0.2s ease-in-out;
+
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+
+		&:hover {
+			opacity: 1 !important;
+		}
+	}
+	&:hover .end-cap-hover {
+		// display: block;
+		opacity: 0.3;
 	}
 }
 
 .trigger {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+
 	&:not(:last-child) {
 		margin-bottom: 0.1rem;
-	}
-
-	&:not(.trigger--locked) {
-		.label {
-			&:hover {
-				text-decoration: underline;
-				cursor: pointer;
-			}
-		}
 	}
 
 	.label {
@@ -356,6 +425,8 @@
 		font-weight: 600;
 		font-size: 12px;
 		// line-height: 12px;
+
+		margin-left: 0.5em;
 
 		&__key {
 			color: black;

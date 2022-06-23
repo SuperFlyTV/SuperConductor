@@ -19,6 +19,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
 	}
 
+	log(...args: ServerArgs<'log'>) {
+		return this.invokeServerMethod('log', ...args)
+	}
 	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
@@ -28,6 +31,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 
 	setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>) {
 		return this.invokeServerMethod('setKeyboardKeys', ...args)
+	}
+	makeDevData(...args: ServerArgs<'makeDevData'>) {
+		return this.invokeServerMethod('makeDevData', ...args)
 	}
 
 	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
@@ -108,15 +114,6 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	duplicateGroup(...args: ServerArgs<'duplicateGroup'>) {
 		return this.invokeServerMethod('duplicateGroup', ...args)
 	}
-	newTemplateData(...args: ServerArgs<'newTemplateData'>) {
-		return this.invokeServerMethod('newTemplateData', ...args)
-	}
-	updateTemplateData(...args: ServerArgs<'updateTemplateData'>) {
-		return this.invokeServerMethod('updateTemplateData', ...args)
-	}
-	deleteTemplateData(...args: ServerArgs<'deleteTemplateData'>) {
-		return this.invokeServerMethod('deleteTemplateData', ...args)
-	}
 	deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>) {
 		return this.invokeServerMethod('deleteTimelineObj', ...args)
 	}
@@ -141,11 +138,14 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	toggleGroupLock(...args: ServerArgs<'toggleGroupLock'>) {
 		return this.invokeServerMethod('toggleGroupLock', ...args)
 	}
-	toggleGroupCollapse(...args: ServerArgs<'toggleGroupCollapse'>) {
-		return this.invokeServerMethod('toggleGroupCollapse', ...args)
-	}
 	refreshResources(...args: ServerArgs<'refreshResources'>) {
 		return this.invokeServerMethod('refreshResources', ...args)
+	}
+	refreshResourcesSetAuto(...args: ServerArgs<'refreshResourcesSetAuto'>) {
+		return this.invokeServerMethod('refreshResourcesSetAuto', ...args)
+	}
+	triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>) {
+		return this.invokeServerMethod('triggerHandleAutoFill', ...args)
 	}
 	updateProject(...args: ServerArgs<'updateProject'>) {
 		return this.invokeServerMethod('updateProject', ...args)
@@ -173,6 +173,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	createMissingMapping(...args: ServerArgs<'createMissingMapping'>) {
 		return this.invokeServerMethod('createMissingMapping', ...args)
+	}
+	isTimelineObjPlaying(...args: ServerArgs<'isTimelineObjPlaying'>) {
+		return this.invokeServerMethod('isTimelineObjPlaying', ...args)
 	}
 	addPeripheralArea(...args: ServerArgs<'addPeripheralArea'>) {
 		return this.invokeServerMethod('addPeripheralArea', ...args)

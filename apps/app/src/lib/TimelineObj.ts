@@ -8,17 +8,34 @@ import {
 	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { assertNever, parseMs } from '@shared/lib'
+import { assertNever } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 
-export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
+export function describeTimelineObject(obj: TSRTimelineObj) {
 	let label: string = obj.id
 	if (obj.content.deviceType === DeviceType.CASPARCG) {
 		if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
 			label = obj.content.file
 		} else if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
 			label = obj.content.name
+
+			if (obj.content.data) {
+				let parsed: { [key: string]: string } = {}
+				if (typeof obj.content.data !== 'object') {
+					try {
+						parsed = JSON.parse(obj.content.data)
+					} catch (_err) {
+						// ignore parse error
+					}
+				} else {
+					parsed = obj.content.data
+				}
+
+				if (parsed) {
+					label += ' ' + Object.values(parsed).join(', ')
+				}
+			}
 		} else {
 			// todo: for later:
 			// assertNever(obj.content)
@@ -105,6 +122,8 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
 		label = obj.content.path
+	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
+		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)
@@ -114,15 +133,9 @@ export function describeTimelineObject(obj: TSRTimelineObj, duration?: number) {
 	const type: string = obj.content.type
 	const contentTypeClassNames: string[] = [`device-${DeviceType[obj.content.deviceType]}`, type]
 
-	let parsedDuration: ReturnType<typeof parseMs> | null = null
-	if (typeof duration === 'number') {
-		parsedDuration = parseMs(duration)
-	}
-
 	return {
 		label,
 		contentTypeClassNames,
-		parsedDuration,
 	}
 }
 
@@ -167,6 +180,11 @@ export function modifyTimelineObjectForPlayout(
 				obj.content.playing = false
 			}
 		}
+		if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
+			if ((obj.content as any).casparXMLData) {
+				obj.content.data = parametersToCasparXML(obj.content.data)
+			}
+		}
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
 		if (obj.content.type === TimelineContentTypePharos.TIMELINE) {
 			if (isPaused) {
@@ -186,4 +204,23 @@ export function modifyTimelineObjectForPlayout(
 			}
 		}
 	}
+}
+function escapeHtml(unsafe: any) {
+	if (!unsafe) return ''
+
+	return `${unsafe}`
+		.replace(/&quot;/g, '"')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;')
+}
+function parametersToCasparXML(params: { [key: string]: string }): string {
+	let xml = ''
+	for (const key in params) {
+		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(params[key])}" /></componentData>`
+	}
+
+	return `<templateData>${xml}</templateData>`
 }

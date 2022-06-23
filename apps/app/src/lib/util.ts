@@ -1,7 +1,7 @@
-import { Group } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
+import { Group, GroupBase, GroupGUI } from '../models/rundown/Group'
+import { Part, PartBase } from '../models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
-import { Rundown } from '../models/rundown/Rundown'
+import { Rundown, RundownBase } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { getGroupPlayData, GroupPlayData } from './playhead'
 import { Project } from '../models/project/Project'
@@ -48,6 +48,20 @@ export const findTimelineObjIndex = (part: Part, timelineObjId: string): number 
 	return part.timeline.findIndex((timelineObj) => {
 		return timelineObj.obj.id === timelineObjId
 	})
+}
+export const findTimelineObjInRundown = (
+	rundown: Rundown,
+	timelineObjId: string
+): { group: Group; part: Part; timelineObj: TimelineObj } | undefined => {
+	for (const group of rundown.groups) {
+		for (const part of group.parts) {
+			for (const timelineObj of part.timeline) {
+				if (timelineObj.obj.id === timelineObjId) {
+					return { group, part, timelineObj }
+				}
+			}
+		}
+	}
 }
 
 export const deleteGroup = (rundown: Rundown, groupId: string): Group | undefined => {
@@ -113,8 +127,8 @@ export function getResolvedTimelineTotalDuration(
 
 export function allowMovingItemIntoGroup(
 	movedPartId: string,
-	fromGroup: Group,
-	toGroup: Group
+	fromGroup: GroupBase,
+	toGroup: GroupBase
 ): {
 	now: number
 	fromPlayhead: GroupPlayData
@@ -207,7 +221,7 @@ function hashCode(str: string): number {
 		hash = (hash << 5) - hash + char
 		hash = hash & hash // Convert to 32bit integer
 	}
-	return hash
+	return Math.abs(hash)
 }
 
 export const EMPTY_LAYER_ID_PREFIX = '__empty'
@@ -221,7 +235,7 @@ export function findDevice(bridges: Project['bridges'], deviceId: string): Devic
 	}
 }
 
-export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): string[] {
+export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<string> {
 	const deviceIds = new Set<string>()
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
@@ -234,7 +248,7 @@ export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?:
 			}
 		}
 	}
-	return Array.from(deviceIds)
+	return deviceIds
 }
 
 /**
@@ -252,7 +266,16 @@ export function findDeviceOfType(bridges: Project['bridges'], deviceType: Device
 	}
 }
 
-export function getCurrentlyPlayingPartIndex(group: Group): number {
+export type RundownWithShallowGroups = Omit<Rundown, 'groups'> & { groups: GroupGUI[] }
+export type GroupWithShallowParts = Omit<Group, 'parts'> & { parts: PartBase[] }
+
+export type PartWithRef = {
+	rundown: RundownBase
+	group: GroupWithShallowParts
+	part: PartBase
+}
+
+export function getCurrentlyPlayingPartIndex(group: GroupWithShallowParts): number {
 	let currentlyPlayingPartIndex = -1
 	const currentlyPlayingPartId = Object.keys(group.playout.playingParts)[0]
 	if (currentlyPlayingPartId) {
@@ -264,7 +287,7 @@ export function getCurrentlyPlayingPartIndex(group: Group): number {
 /**
  * @returns The index of the part which will be played next. Skips disabled parts. Accounts for looping. Returns -1 if there is no next part to play.
  */
-export function getNextPartIndex(group: Group): number {
+export function getNextPartIndex(group: GroupWithShallowParts): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
 	/**
@@ -305,7 +328,7 @@ export function getNextPartIndex(group: Group): number {
 /**
  * @returns The index of the part which will was previously played. Skips disabled parts. Accounts for looping. Returns -1 if there is no previous part.
  */
-export function getPrevPartIndex(group: Group): number {
+export function getPrevPartIndex(group: GroupWithShallowParts): number {
 	const currentPartIndex = getCurrentlyPlayingPartIndex(group)
 
 	/**
@@ -381,8 +404,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			resource.resourceType === ResourceType.CASPARCG_TEMPLATE
 		)
 	} else if (mapping.device === DeviceType.HTTPSEND) {
-		// @TODO
-		return false
+		return resource.resourceType === ResourceType.HTTP_REQUEST
 	} else if (mapping.device === DeviceType.HTTPWATCHER) {
 		// @TODO
 		return false
@@ -482,7 +504,7 @@ export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Pa
 
 	// Generate the new IDs and store them in a map.
 	for (const timelineObj of input) {
-		idMap.set(timelineObj.obj.id, shortUUID.generate())
+		idMap.set(timelineObj.obj.id, shortID())
 	}
 
 	// Process each timeline object.
@@ -566,4 +588,90 @@ export function sortOn<A>(getSortValue: (value: A) => number | string | undefine
 			return 0
 		}
 	}
+}
+
+export function shortID(): string {
+	return shortUUID.generate().slice(0, 8)
+}
+
+export function getDeviceName(project: Project, deviceId: string) {
+	return project.deviceNames?.[deviceId] || deviceId
+}
+export function getMappingName(mapping: Mapping, layerId: string): string {
+	return mapping.layerName ?? layerId
+}
+/** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman", or null if it's not found */
+export function scatterMatchString(source: string, search: string): null | number {
+	search = search.toLowerCase()
+	source = source.toLowerCase()
+
+	let j = 0
+	for (let i = 0; i < search.length; i++) {
+		const char = search[i]
+
+		const foundIndex = source.indexOf(char, j)
+
+		if (foundIndex === -1) {
+			// no match
+			return null
+		} else {
+			j = foundIndex + 1
+		}
+	}
+	return j
+}
+/** Wrap a function to create a "trigger"-function, to rate limit and ignore multiple calls within the rate limit time */
+export function rateLimitIgnore(fcn: () => void | Promise<void>, delay: number): RateLimitIgnoreFcn {
+	let timeout: NodeJS.Timeout | null = null
+	let isRunning = false
+	let runAgain = false
+
+	const triggerFcn = (asap?: boolean) => {
+		if (isRunning) {
+			runAgain = true
+		}
+		if (asap && timeout) {
+			clearTimeout(timeout)
+			timeout = null
+		}
+		if (!timeout)
+			timeout = setTimeout(
+				() => {
+					timeout = null
+
+					runAgain = false
+					isRunning = true
+					try {
+						Promise.resolve(fcn())
+							// eslint-disable-next-line no-console
+							.catch(console.error)
+							.finally(() => {
+								isRunning = false
+								if (runAgain) triggerFcn(true)
+							})
+					} catch (err) {
+						// eslint-disable-next-line no-console
+						console.error(err)
+						isRunning = false
+						if (runAgain) triggerFcn(true)
+					}
+				},
+				asap ? 1 : delay
+			)
+	}
+	triggerFcn.clear = () => {
+		if (timeout) {
+			clearTimeout(timeout)
+			timeout = null
+		}
+	}
+	return triggerFcn
+}
+type RateLimitIgnoreFcn = {
+	(
+		/** Set to true to trigger the function instantly, and not wait for  */
+		asap?: boolean
+	): void
+	/** Clear any cheduled function executions */
+	clear: () => void
 }

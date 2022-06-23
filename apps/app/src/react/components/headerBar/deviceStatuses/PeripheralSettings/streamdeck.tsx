@@ -2,14 +2,13 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import classNames from 'classnames'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo_StreamDeck, AttentionLevel } from '@shared/api'
-import { compact, stringToRGB, RGBToString } from '@shared/lib'
+import { stringToRGB, RGBToString } from '@shared/lib'
 import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
-import { Rundown } from '../../../../../models/rundown/Rundown'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
-import { Action, getAllActionsInRundowns } from '../../../../../lib/triggers/action'
+import { Action } from '../../../../../lib/triggers/action'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
@@ -24,34 +23,11 @@ export const StreamdeckSettings: React.FC<{
 	definingArea: DefiningArea | null
 }> = observer(function StreamdeckSettings({ bridgeId, deviceId, peripheral, definingArea }) {
 	const hotkeyContext = useContext(HotkeyContext)
-	// const project = useContext(ProjectContext)
-	// const ipcServer = useContext(IPCServerContext)
 	if (peripheral.info.gui.type !== 'streamdeck') throw new Error('Wrong type, expected "streamdeck"')
 	const gui: PeripheralInfo_StreamDeck = peripheral.info.gui
 	const project = store.projectStore.project
 
 	const peripheralId = `${bridgeId}-${deviceId}`
-
-	const allButtonActions = useMemoComputedObject(() => {
-		const newButtonActions = new Map<string, Action[]>()
-		const rundowns: Rundown[] = compact(
-			Object.keys(store.rundownsStore.rundowns ?? []).map((rundownId) =>
-				store.rundownsStore.getRundown(rundownId)
-			)
-		)
-		const allActions = getAllActionsInRundowns(rundowns, project)
-		for (const action of allActions) {
-			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				let newButtonAction = newButtonActions.get(fullIdentifier)
-				if (!newButtonAction) {
-					newButtonAction = []
-					newButtonActions.set(fullIdentifier, newButtonAction)
-				}
-				newButtonAction.push(action)
-			}
-		}
-		return newButtonActions
-	}, [store.rundownsStore.rundowns, project])
 
 	const [pressedKeys, setPressedKeys] = useState<{ [fullIdentifier: string]: true }>({})
 	const handleTrigger = useCallback(
@@ -94,7 +70,7 @@ export const StreamdeckSettings: React.FC<{
 			const identifier = `${iKey}`
 			const fullIdentifier = `${peripheralId}-${identifier}`
 			const deviceId = peripheralId.replace(`${bridgeId}-`, '')
-			const buttonActions = allButtonActions.get(fullIdentifier) ?? []
+			const buttonActions = store.rundownsStore.allButtonActions.get(fullIdentifier) ?? []
 
 			const trigger: ActiveTrigger = {
 				fullIdentifier,

@@ -16,7 +16,7 @@
 	}
 	&.clickable:hover,
 	&.open {
-		background-color: rgba(255,255,255,0.05);
+		background-color: rgba(255, 255, 255, 0.05);
 	}
 
 	&.ok {
@@ -25,5 +25,12 @@
 		.connection-status__dot {
 			background-color: $deviceOnlineColor;
 		}
+	}
+}
+
+.connection-status__dot {
+	background-color: $deviceOfflineColor;
+	&.ok {
+		background-color: $deviceOnlineColor;
 	}
 }

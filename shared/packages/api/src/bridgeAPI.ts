@@ -16,7 +16,7 @@ export namespace BridgeAPI {
 			| PeripheralTrigger
 			| DeviceRefreshStatus
 
-		/** Bridge starts by sending this upon connection (if it is a server). TPT replies with SetId */
+		/** Bridge starts by sending this upon connection (if it is a server). SuperConductor replies with SetId */
 		export interface InitRequestId extends MessageBase {
 			type: 'initRequestId'
 		}
@@ -26,6 +26,8 @@ export namespace BridgeAPI {
 			type: 'init'
 			id: string
 			version: string
+			/** Set to true if the bridge is the one connecting to SuperConector (incoming bridge)  */
+			incoming: boolean
 		}
 		export interface Status extends MessageBase {
 			type: 'status'
@@ -79,7 +81,7 @@ export namespace BridgeAPI {
 		}
 	}
 
-	export namespace FromTPT {
+	export namespace FromSuperConductor {
 		export type Any =
 			| SetId
 			| SetSettings

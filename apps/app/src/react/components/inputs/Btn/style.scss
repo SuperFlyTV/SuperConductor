@@ -1,0 +1,47 @@
+.btn {
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	-webkit-box-pack: center;
+	justify-content: center;
+	position: relative;
+	box-sizing: border-box;
+	outline: 0;
+	margin: 0;
+	vertical-align: middle;
+
+	font-family: Barlow, sans-serif;
+	font-weight: 500;
+	font-size: 1.3rem;
+	line-height: 1.75;
+	text-transform: uppercase;
+	border-radius: 4px;
+
+	color: #fff;
+	background: #545a78;
+	padding: 6px 16px;
+	min-width: 22px;
+	min-height: 22px;
+	border: none;
+	// background: none;
+	// opacity: 0.3;
+
+	// &.selected {
+	// 	opacity: 1;
+	// }
+	transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+		box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
+		color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+
+	&:hover {
+		background-color: #3a3e54;
+	}
+
+	&.size-small {
+		padding: 0;
+		:hover {
+			text-decoration: none;
+			background-color: rgba(255, 255, 255, 0.08);
+		}
+	}
+}

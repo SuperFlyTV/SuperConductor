@@ -2,16 +2,20 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mapping, Mappings } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
-import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { filterMapping } from '../../../../../../lib/TSRMappings'
 import './style.scss'
+import { BridgeDevice } from '../../../../../../models/project/Bridge'
+import { useMemoComputedObject } from '../../../../../mobx/lib'
 
 export const LayerName: React.FC<{
+	rundownId: string
+	groupId: string
+	partId: string
 	/**
 	 * ID of the selected layer
 	 */
@@ -20,57 +24,101 @@ export const LayerName: React.FC<{
 	 * Project mappings, used for generating dropdown list of available options
 	 */
 	mappings: Mappings
-	/**
-	 * Executes when dropdown item (layerId) is selected - not fired if "Edit Mappings" is selected
-	 */
-	onSelect: (id: string) => void
-	/**
-	 * timelineObj objects used in this layer, required for filtering out available mappings
-	 */
-	objectsOnThisLayer: TimelineObj[]
-}> = observer(function LayerName(props) {
+	locked: boolean
+}> = observer(function LayerName({ rundownId, groupId, partId, layerId, mappings, locked }) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+	const appStore = store.appStore
+
 	const { enqueueSnackbar } = useSnackbar()
-	const mappingExists = props.layerId in props.mappings
-	const name = props.mappings[props.layerId]?.layerName ?? props.layerId
+	const mapping = mappings[layerId] as Mapping | undefined
+	const name = mapping?.layerName ?? layerId
 
-	const selectedItem: DropdownItem = { id: props.layerId, label: name }
+	const onSelect = (selectedLayerId: string) => {
+		const partTimeline = store.rundownsStore.getPartTimeline(partId)
+		const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-	const otherItems: DropdownItem[] = Object.entries(props.mappings)
-		.filter(([mappingId, mapping]) => {
-			// Remove used layer from the dropdown list
-			const isUsedLayer = mappingId === props.layerId
-			if (isUsedLayer) {
-				return false
-			}
+		// Move all object on this layer to the new layer:
+		for (const objOrg of objectsOnThisLayer) {
+			// Set new layer:
 
-			// If uncompatible mapping-timelineObj is found, remove mapping
-			for (const timelineObj of props.objectsOnThisLayer) {
-				if (!filterMapping(mapping, timelineObj.obj)) {
-					return false
-				}
-			}
+			serverAPI
+				.updateTimelineObj({
+					rundownId: rundownId,
+					groupId: groupId,
+					partId: partId,
+					timelineObj: {
+						obj: {
+							layer: selectedLayerId,
+						},
+					},
+					timelineObjId: objOrg.obj.id,
+				})
+				.catch(handleError)
+		}
+	}
 
-			return true
-		})
-		// Map to a simple readable format
-		.map(([mappingId, mappingValue]) => ({ id: mappingId, label: mappingValue.layerName ?? 'Unknown' }))
+	let selectedDeviceStatus: BridgeDevice | undefined = undefined
+	if (mapping) {
+		selectedDeviceStatus = appStore.allDeviceStatuses[mapping.deviceId]
+	}
 
-	otherItems.push({ id: 'editMappings', label: 'Edit Mappings', className: 'editMappings' })
+	const selectedItem: DropdownItem = { id: layerId, label: name, deviceStatus: selectedDeviceStatus }
+
+	const otherItems = useMemoComputedObject(
+		() => {
+			const partTimeline = store.rundownsStore.getPartTimeline(partId)
+			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
+
+			const otherItems0: DropdownItem[] = Object.entries(mappings)
+				.filter(([mappingId, mapping]) => {
+					// Remove used layer from the dropdown list
+					const isUsedLayer = mappingId === layerId
+					if (isUsedLayer) {
+						return false
+					}
+
+					// If uncompatible mapping-timelineObj is found, remove mapping
+					for (const timelineObj of objectsOnThisLayer) {
+						if (!filterMapping(mapping, timelineObj.obj)) {
+							return false
+						}
+					}
+
+					return true
+				})
+				// Map to a simple readable format
+				.map(([layerId, mapping]) => {
+					const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
+
+					return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
+				})
+
+			otherItems0.push({
+				id: 'editMappings',
+				label: 'Edit Mappings',
+				className: 'editMappings',
+				deviceStatus: null,
+			})
+			return otherItems0
+		},
+		[partId, mappings],
+		true
+	)
 
 	return (
-		<div className={classNames('layer-name', { warning: !mappingExists })}>
+		<div className={classNames('layer-name', { warning: !mapping })}>
 			{
 				<LayerNamesDropdown
 					selectedItem={selectedItem}
 					otherItems={otherItems}
-					exists={mappingExists}
+					exists={!!mapping}
+					disabled={locked}
 					onSelect={(id: string) => {
 						if (id === 'editMappings') {
 							store.guiStore.goToHome('mappingsSettings')
 						} else {
-							props.onSelect(id)
+							onSelect(id)
 						}
 					}}
 					onCreateMissingMapping={(id: string) => {
@@ -94,10 +142,16 @@ export const LayerName: React.FC<{
 	)
 })
 
+/** Analogue to LayerName, used in initial-renders */
+export function LayerNameEmpty() {
+	return <div className="layer-name" />
+}
+
 interface DropdownItem {
 	id: string
 	label: string
 	className?: string
+	deviceStatus: BridgeDevice | undefined | null
 }
 
 const LayerNamesDropdown: React.FC<{
@@ -106,15 +160,16 @@ const LayerNamesDropdown: React.FC<{
 	exists: boolean
 	onSelect: (id: string) => void
 	onCreateMissingMapping: (id: string) => void
+	disabled: boolean
 }> = (props) => {
 	const [isOpen, setOpen] = useState(false)
 
 	return (
-		<div className={classNames('layer-names-dropdown', { open: isOpen })}>
+		<div className={classNames('layer-names-dropdown', { open: isOpen, selectable: !props.disabled })}>
 			<div
 				className="selected-item"
 				onClick={() => {
-					setOpen(!isOpen)
+					setOpen(props.disabled ? false : !isOpen)
 				}}
 			>
 				<div className="item">
@@ -132,16 +187,25 @@ const LayerNamesDropdown: React.FC<{
 						</div>
 					)}
 					<div className="item-label">{props.selectedItem.label}</div>
+
+					{props.selectedItem.deviceStatus === undefined && (
+						<div className="connection-status__dot" title="Device not found"></div>
+					)}
+					{props.selectedItem.deviceStatus?.ok === false && (
+						<div className="connection-status__dot" title="There is an issue with the device"></div>
+					)}
 				</div>
 			</div>
-			<DropdownOtherItems
-				otherItems={props.otherItems}
-				onSelect={(id: string) => {
-					props.onSelect(id)
-					setOpen(false)
-				}}
-				onClickOutside={() => setOpen(false)}
-			/>
+			{!props.disabled && (
+				<DropdownOtherItems
+					otherItems={props.otherItems}
+					onSelect={(id: string) => {
+						props.onSelect(id)
+						setOpen(false)
+					}}
+					onClickOutside={() => setOpen(false)}
+				/>
+			)}
 		</div>
 	)
 }

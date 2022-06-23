@@ -2,15 +2,21 @@ import { literal } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu, shell, screen } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
-// import installExtension, { REACT_DEVELOPER_TOOLS, MOBX_DEVTOOLS } from 'electron-devtools-installer'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
-import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
+import { SuperConductor } from './electron/SuperConductor'
+import { createLoggers } from './lib/logging'
+import { baseFolder } from './lib/baseFolder'
+import path from 'path'
 
 const createWindow = (): void => {
-	const tpt = new TimedPlayerThingy()
+	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
 
-	const appData = tpt.storage.getAppData()
+	log.info('Starting up...')
+
+	const superConductor = new SuperConductor(log, rendererLogger)
+
+	const appData = superConductor.storage.getAppData()
 
 	const win = new BrowserWindow({
 		y: appData.windowPosition.y,
@@ -43,21 +49,21 @@ const createWindow = (): void => {
 		win.maximize()
 	}
 
-	tpt.initWindow(win)
+	superConductor.initWindow(win)
 
 	if (isDev) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
 		// installExtension(REACT_DEVELOPER_TOOLS)
-		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then((name) => log.info(`Added Extension:  ${name}`))
 		// 	.then(() => installExtension(MOBX_DEVTOOLS))
-		// 	.then((name) => console.log(`Added Extension:  ${name}`))
+		// 	.then((name) => log.info(`Added Extension:  ${name}`))
 		// 	.then(() => win.webContents.openDevTools())
-		// 	.catch((err) => console.log('An error occurred: ', err))
+		// 	.catch((err) => log.info('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
-	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(console.error)
+	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
 
-	autoUpdater.checkForUpdatesAndNotify().catch(console.error)
+	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
 
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',
@@ -65,13 +71,13 @@ const createWindow = (): void => {
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return tpt.ipcServer?.undo().catch(console.error)
+			return superConductor.ipcServer?.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return tpt.ipcServer?.redo().catch(console.error)
+			return superConductor.ipcServer?.redo().catch(log.error)
 		},
 		onAboutClick: () => {
-			tpt.ipcClient?.displayAboutDialog()
+			superConductor.ipcClient?.displayAboutDialog()
 		},
 		onUpdateClick: async () => {
 			try {
@@ -98,14 +104,14 @@ const createWindow = (): void => {
 					})
 				}
 			} catch (error) {
-				console.error(error)
+				log.error(error)
 			}
 		},
 	})
 	const menu = generateMenu(menuOpts)
 	Menu.setApplicationMenu(menu)
 
-	tpt.ipcServer?.on('updatedUndoLedger', (undoLedger, undoPointer) => {
+	superConductor.ipcServer?.on('updatedUndoLedger', (undoLedger, undoPointer) => {
 		const undoAction = undoLedger[undoPointer]
 		const redoAction = undoLedger[undoPointer + 1]
 		menuOpts.undoLabel = undoAction ? `Undo ${undoAction.description}` : 'Undo'
@@ -117,15 +123,16 @@ const createWindow = (): void => {
 	})
 
 	app.on('window-all-closed', () => {
+		log.info('Shutting down...')
 		Promise.resolve()
 			.then(() => {
-				tpt.isShuttingDown()
+				superConductor.isShuttingDown()
 			})
 			.then(async () => {
 				await Promise.race([
 					Promise.all([
 						// Write any changes to disk:
-						tpt.storage.writeChangesNow(),
+						superConductor.storage.writeChangesNow(),
 					]),
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
@@ -136,19 +143,31 @@ const createWindow = (): void => {
 				await Promise.race([
 					Promise.all([
 						// Gracefully shut down the internal TSR-Bridge:
-						tpt.bridgeHandler?.onClose(),
+						superConductor.bridgeHandler?.onClose(),
 					]),
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
 				])
 			})
 			.then(() => {
-				tpt.terminate()
-				app.quit()
+				superConductor.terminate()
+				log.info('Shut down successfully.')
 			})
 			.catch((err) => {
-				console.error(err)
-				app.quit()
+				log.error(err)
+			})
+			.finally(() => {
+				// Wait for the logger to finish writing logs:
+
+				log.on('error', (_err) => {
+					// Supress error
+					// eslint-disable-next-line no-console
+					console.error(_err)
+				})
+				log.on('finish', () => {
+					app.quit()
+				})
+				log.end()
 			})
 	})
 
@@ -156,7 +175,7 @@ const createWindow = (): void => {
 	const updateSizeAndPosition = () => {
 		const newBounds = win.getBounds()
 
-		const appData = tpt.storage.getAppData()
+		const appData = superConductor.storage.getAppData()
 
 		const maximized = win.isMaximized()
 		if (maximized) {
@@ -171,7 +190,7 @@ const createWindow = (): void => {
 			appData.windowPosition.maximized = maximized
 		}
 
-		tpt.storage.updateAppData(appData)
+		superConductor.storage.updateAppData(appData)
 	}
 	win.on('resized', () => {
 		updateSizeAndPosition()
@@ -193,7 +212,7 @@ const createWindow = (): void => {
 		// if (url.startsWith('https://superfly.tv/')) return { action: 'allow' }
 
 		// open url in a browser and prevent default
-		shell.openExternal(url).catch(console.error)
+		shell.openExternal(url).catch(log.error)
 
 		return { action: 'deny' } // preventDefault
 	})

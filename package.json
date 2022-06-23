@@ -18,6 +18,7 @@
 	],
 	"scripts": {
 		"setup": "lerna bootstrap",
+		"postversion": "node scripts/postversion.js",
 		"prepare": "husky install",
 		"lerna": "lerna",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
@@ -27,16 +28,15 @@
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
 		"build:shared:changed": "lerna run build --stream --scope=@shared/* --since head --exclude-dependents --stream",
-		"start:all": "yarn build:shared && lerna run dev --stream",
 		"start": "yarn && yarn build:shared && yarn dev:electron",
+		"start:all": "yarn build:shared && lerna run dev --stream",
+		"start:bridge": "yarn build:shared && lerna run dev:bridge --stream",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
-		"dev:tsr": "lerna run dev --stream --scope=tsr-bridge",
+		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
 		"postinstall": "electron-rebuild --force --version 15.3.5 --module-dir apps/tsr-bridge",
 		"license-validate": "node scripts/license-check.js",
-		"release:release": "lerna version --force-publish",
-		"release:pre-release": "lerna version --force-publish",
-		"release": "yarn lint && yarn release:release",
-		"pre-release": "yarn lint && yarn release:pre-release"
+		"release:release": "lerna version --force-publish --no-push",
+		"release": "yarn lint && yarn release:release"
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",

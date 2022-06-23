@@ -42,6 +42,7 @@
 		]
 	},
 	"dependencies": {
+		"@shared/api": "^0.7.2",
 		"@shared/models": "^0.7.2",
 		"ws": "^8.4.2"
 	},

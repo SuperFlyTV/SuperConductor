@@ -1,4 +1,4 @@
-import winston from 'winston'
+import * as Winston from 'winston'
 // @ts-expect-error This is a hack to ensure that electron-builder includes this file.
 import consoleTransport from 'winston/dist/winston/transports/console'
 import { IPCClient } from '../electron/IPCClient'
@@ -18,17 +18,19 @@ export enum LogLevel {
 	Silly = 'silly',
 }
 
-export const createLogger = (ipcClient: IPCClient) => {
-	const log = winston.createLogger({
+export const createLogger = () => {
+	const log = Winston.createLogger({
 		level: LogLevel.Silly,
 		format: utilFormatter(),
 		transports: [
 			new consoleTransport({
-				format: winston.format.simple(),
+				format: Winston.format.simple(),
 			}),
-			new IPCTransport(ipcClient),
 		],
 	})
 
 	return log
+}
+export function addLoggerTransport(log: Winston.Logger, ipcClient: IPCClient) {
+	log.add(new IPCTransport(ipcClient))
 }

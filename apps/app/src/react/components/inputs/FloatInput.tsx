@@ -9,6 +9,11 @@ export const FloatInput: React.FC<
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
+			width?: string
+			changeOnKey?: boolean
+			percentage?: boolean
+			/** min, max */
+			caps?: [number, number]
 	  }
 	| {
 			currentValue: number | undefined
@@ -18,17 +23,59 @@ export const FloatInput: React.FC<
 			label: string
 			disabled?: boolean
 			fullWidth?: boolean
+			width?: string
+			changeOnKey?: boolean
+			percentage?: boolean
+			/** min, max */
+			caps?: [number, number]
 	  }
 > = (props) => {
-	const parse = useCallback((str: string) => {
-		const parsedValue = parseFloat(`${str}`)
-		if (isNaN(parsedValue)) return undefined
-		else return parsedValue
-	}, [])
-	const stringify = useCallback((value: number | undefined) => {
-		if (value === undefined) return ''
-		else return `${value}`
-	}, [])
+	const parse = useCallback(
+		(str: string) => {
+			str = `${str}`.replace(/,/, '.')
+
+			let value: number | undefined = undefined
+			if (str.match(/^\d+(\.\d+)?$/)) {
+				const parsedValue = parseFloat(str)
+				if (!isNaN(parsedValue)) {
+					value = parsedValue
+					if (props.percentage) value /= 100
+				}
+			} else if (str.match(/^\d+(\.\d+)?%$/)) {
+				const parsedValue = parseFloat(str)
+				if (!isNaN(parsedValue)) value = parsedValue / 100
+			}
+			if (value !== undefined && props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))
+			return value
+		},
+		[props.caps, props.percentage]
+	)
+	const stringify = useCallback(
+		(value: number | undefined) => {
+			if (value === undefined) return ''
+
+			value = Math.round(value * 100000) / 100000 // fix any rounding errors
+
+			if (props.percentage) {
+				return `${value * 100}%`
+			} else {
+				return `${value}`
+			}
+		},
+		[props.percentage]
+	)
+	const onIncrement = useCallback(
+		(value: number | undefined, inc: number) => {
+			if (props.percentage) {
+				value = (value ?? 0) + inc / 100
+			} else {
+				value = (value ?? 0) + inc
+			}
+			if (props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))
+			return value
+		},
+		[props.caps, props.percentage]
+	)
 	if (props.allowUndefined) {
 		return ParsedValueInput<number | undefined>(
 			props.currentValue,
@@ -40,7 +87,10 @@ export const FloatInput: React.FC<
 			props.emptyPlaceholder,
 			'text',
 			props.disabled,
-			props.fullWidth
+			props.fullWidth,
+			props.width,
+			props.changeOnKey,
+			onIncrement
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -53,7 +103,10 @@ export const FloatInput: React.FC<
 			props.emptyPlaceholder,
 			'text',
 			props.disabled,
-			props.fullWidth
+			props.fullWidth,
+			props.width,
+			props.changeOnKey,
+			onIncrement
 		)
 	}
 }

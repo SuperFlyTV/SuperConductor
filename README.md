@@ -8,41 +8,62 @@ A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&n
 
 ### Windows
 
-Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .exe file.
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-Windows-Installer.exe).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-Windows-Installer.exe).
 
 ### Linux (Ubuntu)
 
-1. Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download the installer .AppImage file.
-2. Execute the following before running the file:
-   ```bash
-   # Replace X.Y.Z with the actual version number.
-   chmod +x Downloads/SuperConductor-X.Y.Z-Linux-Executable.AppImage
-   ```
+- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-Linux-Executable.AppImage).<br/>
+  Execute the following before running the file:<br/>
+  `chmod +x Downloads/SuperConductor-0.7.2-Linux-Executable.AppImage`
+- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-Linux-Executable.AppImage).<br/>
+  Execute the following before running the file:<br/>
+  `chmod +x Downloads/TSR-Bridge-0.7.2-Linux-Executable.AppImage`
 
 ### macOS
 
-Go to the [Latest Release](https://github.com/SuperFlyTV/SuperConductor/releases/latest), download and open the .dmg file.
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/SuperConductor-0.7.2-macOS-Installer.dmg).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.7.2/TSR-Bridge-0.7.2-macOS-Installer.dmg).
 
+## Problems and Issues
 
-## Features
+Problems and Issues can be reported here: [Github Issues](https://github.com/SuperFlyTV/SuperConductor/issues)
 
-### Playout
+# Features
 
-Under the hood, _SuperConductor_ is powered by the same playout backend as the [Sofie Automation system](https://www.sofieautomation.com/), with timeline-based control of multiple devices.
-
-![Timeline playout](/doc/img/play.gif)
-
-### Edit Timeline
+## Edit Timeline
 
 Drag objects onto the timeline, edit them and play them out instantly.
 
 ![Edit timeline](/doc/img/edit-timeline.gif)
 
-### Stream&nbsp;Deck and X-keys Support
+## Playout
+
+Under the hood, _SuperConductor_ is powered by the same playout backend as the [Sofie Automation system](https://www.sofieautomation.com/), with timeline-based control of multiple devices.
+
+![Timeline playout](/doc/img/intro0.gif)
+
+### Resources
+
+Resources (such as media files) are kept in the rightmost pane and can be dragged into the rundown to be played out right away.
+
+![Resource pane](/doc/img/resource-pane.gif)
+
+### Playout modes
+
+- **Single item**: Only _one_ item at a time is playing within the group. Used to create playlists, which can auto-next to next item, and loop.
+
+  ![Play mode single](/doc/img/play-mode-single.gif)
+
+- **Multi item**: Several items can play at the same time. Useful for graphics etc.
+
+  ![Play mode multi](/doc/img/play-mode-multi.gif)
+
+## Stream&nbsp;Deck and X-keys Support
 
 Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
-![Stream&nbsp;Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream&nbsp;Deck](/doc/img/streamdeck.gif)
+![Stream Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream Deck](/doc/img/streamdeck.gif)
 
 ### Supported Devices
 
@@ -63,11 +84,15 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
 - (GUI not implemented yet) Arbitrary TCP-socket compatible devices
 
-## Problems and Issues
+## TSR Bridge
 
-Problems and Issues can be reported here: [Issues](https://github.com/SuperFlyTV/SuperConductor/issues)
+The TSR-bridge is the application which handles the actual playout and control of the connected devices. By default, an instance of TSR-bridge runs internally in SuperConductor, so devices can be controlled directly from the application.
 
-## For Developers
+In some instances, you might want to run the TSR-Bridge on another computer, for example if you don't have direct network access to the devices you want to control.
+
+TSR-Bridge can either act as a client which connects to the SuperConductor ("incoming bridge"), or as a server which the SuperConductor can connect to ("outgoing bridge"). Pick the mode that works best for you, depending on your network setup, firewalls etc..
+
+# For Developers
 
 Contributions are very much appreciated!
 

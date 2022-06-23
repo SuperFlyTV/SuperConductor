@@ -1,12 +1,16 @@
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
 import EventEmitter from 'events'
+import { LoggerLike } from '@shared/api'
+import { omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData, WindowPosition } from '../models/App/AppData'
-import { omit } from '@shared/lib'
-import { getDefaultProject, getDefaultRundown } from './defaults'
+import { getDefaultGroup, getDefaultProject, getDefaultRundown } from './defaults'
+import { ResourceAny } from '@shared/models'
+import { baseFolder } from '../lib/baseFolder'
+import * as _ from 'lodash'
+import { makeDevData } from './makeDevData'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -36,17 +40,24 @@ export class StorageHandler extends EventEmitter {
 	private rundownsHasChanged: { [fileName: string]: true } = {}
 	private rundownsNeedsWrite: { [fileName: string]: true } = {}
 
+	private resources: { [resourceId: string]: FileResource } = {}
+	private resourcesHasChanged: { [resourceId: string]: true } = {}
+	private resourcesNeedsWrite = false
+
 	private emitEverything = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(defaultWindowPosition: WindowPosition, appVersion: string) {
+	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition, appVersion: string) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
+		this.resources = this.loadResources()
+
+		this.cleanUpData()
 	}
 
 	init() {
@@ -142,7 +153,7 @@ export class StorageHandler extends EventEmitter {
 			...this.project.project,
 		}
 	}
-	updateProject(project: Project) {
+	updateProject(project: Omit<Project, 'id'>) {
 		this.project.project = project
 		this.triggerUpdate({ project: true })
 	}
@@ -177,7 +188,7 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.id = this.convertToFilename(name)
+		this.appData.appData.project.id = convertToFilename(name)
 		this.project = this.loadProject(name)
 		this.triggerUpdate({ project: true, appData: true })
 	}
@@ -251,7 +262,7 @@ export class StorageHandler extends EventEmitter {
 	 * Used to undo a deleteRundown operation.
 	 */
 	restoreRundown(rundown: Rundown) {
-		const fileName = this.convertToFilename(rundown.id)
+		const fileName = convertToFilename(rundown.id)
 		this.rundowns[fileName] = {
 			version: CURRENT_VERSION,
 			id: rundown.id,
@@ -281,11 +292,11 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	getRundownFilename(rundownId: string): string {
-		return `${this.convertToFilename(rundownId)}.rundown.json`
+		return `${convertToFilename(rundownId)}.rundown.json`
 	}
 
 	async renameRundown(rundownId: string, newName: string): Promise<string> {
-		const newFileName = this.getRundownFilename(this.convertToFilename(newName))
+		const newFileName = this.getRundownFilename(convertToFilename(newName))
 
 		// Rename the file on disk
 		const oldFilePath = this.rundownPath(this._projectId, rundownId)
@@ -321,8 +332,91 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
-	convertToFilename(str: string): string {
-		return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
+	getResources(): { [id: string]: ResourceAny } {
+		const resources: { [id: string]: ResourceAny } = {}
+		for (const [id, resource] of Object.entries(this.resources)) {
+			if (resource.deleted) continue
+			resources[id] = resource.resource
+		}
+		return resources
+	}
+	getResource(id: string): ResourceAny | undefined {
+		const resource = this.resources[id] as FileResource | undefined
+		if (resource?.deleted) return undefined
+		else return resource?.resource
+	}
+	getResourceIds(deviceId: string): string[] {
+		const ids: string[] = []
+		for (const [id, resource] of Object.entries(this.resources)) {
+			if (resource.deleted) continue
+			if (resource.resource.deviceId === deviceId) ids.push(id)
+		}
+		return ids
+	}
+	updateResource(id: string, resource: ResourceAny | null) {
+		if (resource) {
+			// Set added and modified timestamps
+			let existing = this.resources[id] as FileResource | undefined
+
+			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
+				// It has been deleted for some time
+				existing = undefined
+			}
+
+			let hasChanged: boolean
+
+			if (existing) {
+				resource.added = existing.resource.added
+
+				if (_.isEqual(_.omit(existing.resource, 'added', 'modified'), _.omit(resource, 'added', 'modified'))) {
+					// No change
+					hasChanged = false
+				} else {
+					resource.modified = Date.now()
+					hasChanged = true
+				}
+			} else {
+				resource.added = Date.now()
+				resource.modified = Date.now()
+				hasChanged = true
+			}
+
+			if (hasChanged) {
+				this.resources[id] = {
+					version: CURRENT_VERSION,
+					id,
+					resource,
+				}
+				this.triggerUpdate({ resources: { [id]: true } })
+			}
+		} else {
+			this.resources[id].deleted = Date.now()
+			this.triggerUpdate({ resources: { [id]: true } })
+		}
+	}
+	/**
+	 * This function is intended for developers only.
+	 * When called, it replaces all data with a "large" dataset, which can be used to test the GUI.
+	 */
+	async makeDevData() {
+		for (const fileName of Object.keys(this.rundowns)) {
+			await this.deleteRundown(fileName)
+		}
+
+		const devData = makeDevData()
+
+		this.updateProject(devData.project)
+		for (const rundown of devData.rundowns) {
+			const filename = this.newRundown(rundown.name)
+			rundown.id = filename
+
+			this.openRundown(filename)
+			this.updateRundown(filename, rundown)
+		}
+
+		for (const resource of devData.resources) {
+			this.updateResource(resource.id, resource)
+		}
 	}
 
 	/** Triggered when the stored data has been updated */
@@ -331,6 +425,7 @@ export class StorageHandler extends EventEmitter {
 		project?: true
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
+		resources?: { [resourceId: string]: true }
 	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
@@ -346,6 +441,12 @@ export class StorageHandler extends EventEmitter {
 				this.rundownsNeedsWrite[rundownId] = true
 			}
 		}
+		if (updates.resources) {
+			for (const resourceId of Object.keys(updates.resources)) {
+				this.resourcesHasChanged[resourceId] = true
+				this.resourcesNeedsWrite = true
+			}
+		}
 
 		if (!this.emitTimeout) {
 			this.emitTimeout = setTimeout(() => {
@@ -357,7 +458,7 @@ export class StorageHandler extends EventEmitter {
 		if (!this.writeTimeout) {
 			this.writeTimeout = setTimeout(() => {
 				this.writeTimeout = null
-				this.writeChanges().catch(console.error)
+				this.writeChanges().catch(this.log.error)
 			}, 500)
 		}
 	}
@@ -449,7 +550,7 @@ export class StorageHandler extends EventEmitter {
 		if (!project) {
 			// Create a default project instead
 			this.projectNeedsWrite = true
-			return this.getDefaultProject(newName)
+			return StorageHandler.getDefaultProject(newName)
 		}
 
 		return project
@@ -538,10 +639,65 @@ export class StorageHandler extends EventEmitter {
 		if (!rundown) {
 			// Create a default rundown then:
 			this.rundownsNeedsWrite[fileName] = true
-			return this.getDefaultRundown(newName)
+			return StorageHandler.getDefaultRundown(newName)
 		}
 
 		return rundown
+	}
+	private loadResources(): { [resourceId: string]: FileResource } {
+		let resources: { [resourceId: string]: FileResource } | undefined = {}
+		const resourcesPath = this.resourcesPath(this._projectId)
+		try {
+			const read = fs.readFileSync(resourcesPath, 'utf8')
+			resources = JSON.parse(read)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// not found
+				resources = {}
+			} else {
+				throw new Error(`Unable to read Resources file "${resourcesPath}": ${error}`)
+			}
+		}
+
+		if (!resources) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(resourcesPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				resources = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.resourcesNeedsWrite = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+		if (resources) {
+			// Compatibility fix:
+			for (const [id, oldResource] of Object.entries<any>(resources)) {
+				if (
+					typeof oldResource === 'object' &&
+					(oldResource.version === undefined || oldResource.resource === undefined)
+				) {
+					const newResource: FileResource = {
+						version: CURRENT_VERSION,
+						id: id,
+						resource: oldResource,
+					}
+					resources[id] = newResource
+				}
+			}
+		}
+
+		if (!resources) {
+			resources = {}
+		}
+
+		return resources
 	}
 
 	private getDefaultAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
@@ -560,17 +716,17 @@ export class StorageHandler extends EventEmitter {
 			},
 		}
 	}
-	private getDefaultProject(newName?: string): FileProject {
+	static getDefaultProject(newName?: string): FileProject {
 		return {
 			version: CURRENT_VERSION,
 			id: 'default',
 			project: getDefaultProject(newName),
 		}
 	}
-	private getDefaultRundown(newName?: string): FileRundown {
+	static getDefaultRundown(newName?: string): FileRundown {
 		return {
 			version: CURRENT_VERSION,
-			id: newName ? this.convertToFilename(newName) : 'default',
+			id: newName ? convertToFilename(newName) : 'default',
 			rundown: getDefaultRundown(newName),
 		}
 	}
@@ -581,6 +737,9 @@ export class StorageHandler extends EventEmitter {
 			this.projectHasChanged = true
 			for (const fileName of Object.keys(this.rundowns)) {
 				this.rundownsHasChanged[fileName] = true
+			}
+			for (const resourceId of Object.keys(this.resources)) {
+				this.resourcesHasChanged[resourceId] = true
 			}
 			this.emitEverything = false
 		}
@@ -598,8 +757,16 @@ export class StorageHandler extends EventEmitter {
 			this.emit('rundown', fileName, this.getRundown(fileName))
 			delete this.rundownsHasChanged[fileName]
 		}
+		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
+			let resource = this.resources[resourceId] as FileResource | undefined
+			if (resource && resource.deleted) resource = undefined
+			this.emit('resource', resourceId, resource?.resource ?? null)
+			delete this.resourcesHasChanged[resourceId]
+		}
 	}
 	private async writeChanges() {
+		this.cleanUpData()
+
 		// Create dir if not exists:
 		if (!fs.existsSync(this._baseFolder)) {
 			fs.mkdirSync(this._baseFolder)
@@ -634,6 +801,11 @@ export class StorageHandler extends EventEmitter {
 
 			delete this.rundownsNeedsWrite[fileName]
 		}
+		// Store Resources:
+		if (this.resourcesNeedsWrite) {
+			await this.writeFileSafe(this.resourcesPath(this._projectId), JSON.stringify(this.resources))
+			this.projectNeedsWrite = false
+		}
 	}
 	private getTmpFilePath(filePath: string): string {
 		return `${filePath}.tmp`
@@ -655,6 +827,7 @@ export class StorageHandler extends EventEmitter {
 		for (const bridge of Object.values(project.bridges)) {
 			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
 		}
+		if (!project.deviceNames) project.deviceNames = {}
 	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
 		for (const group of rundown.groups) {
@@ -663,10 +836,22 @@ export class StorageHandler extends EventEmitter {
 					playingParts: {},
 				}
 			}
+			if (!group.autoFill) {
+				group.autoFill = getDefaultGroup().autoFill
+			}
 			for (const part of group.parts) {
 				if (!part.triggers) {
 					part.triggers = []
 				}
+			}
+		}
+	}
+	private cleanUpData() {
+		const GRACE_PERIOD = 1000 * 60 // 1 minute
+		// Remove deleted resources:
+		for (const [resourceId, resource] of Object.entries(this.resources)) {
+			if (resource.deleted && Date.now() - resource.deleted > GRACE_PERIOD) {
+				delete this.resources[resourceId]
 			}
 		}
 	}
@@ -683,6 +868,9 @@ export class StorageHandler extends EventEmitter {
 	private projectPath(projectId: string): string {
 		return path.join(this.projectDir(projectId), 'project.json')
 	}
+	private resourcesPath(projectId: string): string {
+		return path.join(this.projectDir(projectId), 'resources.json')
+	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
 	}
@@ -690,14 +878,13 @@ export class StorageHandler extends EventEmitter {
 		return path.join(this._baseFolder, 'Projects')
 	}
 	private get _baseFolder() {
-		const homeDirPath = os.homedir()
-		if (os.type() === 'Linux') {
-			return path.join(homeDirPath, '.superconductor')
-		}
-		return path.join(homeDirPath, 'Documents', 'SuperConductor')
+		return baseFolder()
 	}
 	private get _projectId() {
 		return this.appData.appData.project.id
+	}
+	get logPath(): string {
+		return path.join(this._baseFolder, 'Logs')
 	}
 }
 
@@ -715,5 +902,19 @@ interface FileRundown {
 	id: string
 	rundown: Omit<Rundown, 'id'>
 }
+interface FileResource {
+	version: number
+	id: string
+
+	/**
+	 * Is set when the resource is deleted. [timestamp]
+	 * Used to keep the resource around for some time, in case there is a "blip" where a resource is temporary removed (like on startups). */
+	deleted?: number
+	resource: ResourceAny
+}
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_VERSION = 0
+
+function convertToFilename(str: string): string {
+	return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
+}

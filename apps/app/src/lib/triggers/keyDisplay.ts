@@ -1,9 +1,9 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
 import { Action } from './action'
-import { Part } from '../../models/rundown/Part'
+import { PartBase } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../../electron/timeline'
-import { Group } from '../../models/rundown/Group'
+import { GroupBase } from '../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../models/project/Peripheral'
 import { Project } from '../../models/project/Project'
@@ -34,20 +34,17 @@ export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 	>()
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-			let iArea = 0
+			let iArea = -1
 			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				iArea++
 
-				// Generate a color, using the golden ratio to make the colors as distinct as possible:
-				const phi = 2.61803398875
-				const notRandom0 = iArea / phi
-				const notRandom1 = (iArea + 1) / phi
-				const notRandom2 = (iArea + 2) / phi
+				const notRandom0 = iArea / 6
+				const notRandom2 = Math.floor(iArea / 6) * 0.25
 				const areaColor = RGBToString(
 					HSVtoRGB({
 						h: notRandom0 % 1, // 0..1
-						s: 0.75 + (notRandom1 % 1) * 0.25, // 0.75..1
-						v: 0.5 + (notRandom2 % 1) * 0.5, // 0.5..1
+						s: 1,
+						v: 0.25 + (notRandom2 % 1) * 0.5, // 0..0.75
 					})
 				)
 
@@ -292,7 +289,7 @@ function getLongestActionDuration(actions: Action[]): number | null {
 	}, 0)
 }
 
-function getLabel(actions: Action[], part: Part) {
+function getLabel(actions: Action[], part: PartBase) {
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
@@ -320,14 +317,14 @@ export function _getKeyDisplay(
 	labels: {
 		idle: KeyDisplay
 		paused?: (data: {
-			group: Group
-			part: Part
+			group: GroupBase
+			part: PartBase
 			action: Action
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
 		playing: (data: {
-			group: Group
-			part: Part
+			group: GroupBase
+			part: PartBase
 			action: Action
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
@@ -354,7 +351,7 @@ export function _getKeyDisplay(
 			(playingPart: GroupPreparedPlayDataPart, parentId: string) => {
 				// return content for the part
 
-				const part: Part = playingPart.part
+				const part: PartBase = playingPart.part
 				// if (action.part.id !== part.id) return []
 
 				let content: KeyDisplay | null = null
@@ -426,6 +423,7 @@ function triggersAreaToArea(triggerArea: TriggerArea | undefined, areaInDefiniti
 		areaInDefinition,
 		keyLabel: `${triggerArea.keyRank + 1}`,
 		areaLabel: triggerArea.area.name,
+		areaId: triggerArea.areaId,
 		color: triggerArea.areaColor,
 	}
 }

@@ -1,70 +1,28 @@
-import { Button } from '@mui/material'
-import { observer } from 'mobx-react-lite'
-import { computed } from 'mobx'
 import React from 'react'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { MdPause, MdPlayArrow } from 'react-icons/md'
-import { Part } from '../../../../models/rundown/Part'
-import { store } from '../../../mobx/store'
-import { useMemoComputedObject } from '../../../mobx/lib'
+import { Btn } from '../Btn/Btn'
+import { PlayButtonData } from '../StopBtn/StopBtn'
 import './style.scss'
 
-type PauseBtnProps = {
+export const PauseBtn: React.FC<{
 	groupId: string
-	part?: Part
+	partId?: string
+	disabled?: boolean
 	className?: string
 	onClick?: () => void
-}
-
-export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ groupId, part, className, onClick }) {
-	const { anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
-		useMemoComputedObject(() => {
-			const playData = store.groupPlayDataStore.groups.get(groupId)
-
-			if (!playData) {
-				return {
-					anyPartIsPlaying: false,
-					allPartsArePaused: false,
-					partIsPlaying: false,
-					partIsPaused: false,
-					playheadCount: 0,
-				}
-			}
-			const playhead = part && playData.playheads[part?.id]
-			return {
-				anyPartIsPlaying: playData.anyPartIsPlaying,
-				allPartsArePaused: playData.allPartsArePaused,
-				partIsPlaying: Boolean(playhead),
-				partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
-				playheadCount: Object.keys(playData.playheads).length,
-			}
-		}, [groupId])
-
-	const groupDisabled =
-		computed(
-			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === groupId)?.disabled
-		).get() || false
-	const groupOneAtATime =
-		computed(
-			() => store.rundownsStore.currentRundown?.groups.find((group) => group.id === groupId)?.oneAtATime
-		).get() || false
-	const countPlayablePartsInGroup =
-		computed(() => {
-			const group = store.rundownsStore.currentRundown?.groups.find((group) => group.id === groupId)
-			if (!group) return 0
-			return group.parts.filter((p) => !p.disabled).length
-		}).get() ?? 0
-
-	const groupOrPartDisabled = groupDisabled || part?.disabled
+	data: PlayButtonData
+}> = function PauseBtn(props) {
+	const groupOrdisabled = props.data.groupDisabled || props.disabled
 	let willDo: 'cue' | 'pause' | 'resume'
 	let title: string
 	let countAffectedParts: number
-	if (part) {
+	if (props.partId) {
 		// This is a pause button for a Part.
 
 		countAffectedParts = 1
-		if (partIsPlaying) {
-			if (partIsPaused) {
+		if (props.data.partIsPlaying) {
+			if (props.data.partIsPaused) {
 				willDo = 'resume'
 				title = 'Resume Part'
 			} else {
@@ -78,11 +36,10 @@ export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ gr
 	} else {
 		// This is a pause button for a Group.
 
-		//groupIsPlaying || anyPartIsPlaying
-		if (groupOneAtATime) {
+		if (props.data.groupOneAtATime) {
 			countAffectedParts = 1
-			if (anyPartIsPlaying) {
-				if (allPartsArePaused) {
+			if (props.data.anyPartIsPlaying) {
+				if (props.data.allPartsArePaused) {
 					willDo = 'resume'
 					title = 'Resume playing'
 				} else {
@@ -90,18 +47,13 @@ export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ gr
 					title = 'Pause current Part'
 				}
 			} else {
-				// if (allPartsArePaused) {
-				// 	willDo = 'resume'
-				// 	title = 'Resume playing'
-				// } else {
-				// }
 				willDo = 'cue'
 				title = 'Cue first part'
 			}
 		} else {
-			if (anyPartIsPlaying) {
-				countAffectedParts = playheadCount
-				if (allPartsArePaused) {
+			if (props.data.anyPartIsPlaying) {
+				countAffectedParts = props.data.playheadCount
+				if (props.data.allPartsArePaused) {
 					willDo = 'resume'
 					title = 'Resume all paused Parts'
 				} else {
@@ -109,30 +61,30 @@ export const PauseBtn: React.FC<PauseBtnProps> = observer(function PauseBtn({ gr
 					title = 'Pause all playing Parts'
 				}
 			} else {
-				countAffectedParts = countPlayablePartsInGroup
+				countAffectedParts = props.data.countPlayablePartsInGroup
 				willDo = 'cue'
 				title = 'Cue all parts'
 			}
 		}
 	}
-	if (groupOrPartDisabled) {
+	if (groupOrdisabled) {
 		title += ' (disabled)'
 	}
 
 	return (
-		<Button
-			className={className}
+		<Btn
+			className={props.className}
 			variant="contained"
 			size="small"
-			disabled={groupOrPartDisabled}
-			onClick={onClick}
+			disabled={groupOrdisabled}
+			onClick={props.onClick}
 			title={title}
 		>
 			{willDo === 'cue' && <IoPlaySkipBackSharp size={18} />}
 			{willDo === 'pause' && <MdPause size={22} />}
 			{willDo === 'resume' && <MdPlayArrow size={18} />}
 
-			{!part && <div className="playcount">{countAffectedParts}</div>}
-		</Button>
+			{!props.partId && <div className="playcount">{countAffectedParts}</div>}
+		</Btn>
 	)
-})
+}

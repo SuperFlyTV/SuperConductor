@@ -32,6 +32,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 			store.rundownsStore.setCurrentRundown(nextRundown.rundownId)
 		} else {
 			store.rundownsStore.setCurrentRundown(undefined)
+			guiStore.goToHome()
 		}
 	}
 
@@ -104,10 +105,14 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 				}}
 				acceptLabel="Close"
 				title="Close Rundown"
-				body={`Are you sure you wish to close the rundown ${
-					rundownToClose ? `"${rundownToClose.name}"` : 'this rundown'
-				}? Anything currently playing in this rundown will be stopped!`}
-			/>
+			>
+				<p>
+					Are you sure you wish to close{' '}
+					{rundownToClose ? `the rundown "${rundownToClose.name}"` : 'this rundown'}?
+					<br />
+					Anything currently playing in this rundown will be stopped!
+				</p>
+			</ConfirmationDialog>
 		</div>
 	)
 })

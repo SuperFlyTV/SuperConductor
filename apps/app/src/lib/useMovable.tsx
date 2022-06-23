@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 
-type HTMLElementEventHandler<T> = (this: HTMLElement, ev: T) => any
-
-type StartingValues = {
-	dragging: boolean
-	pointerX: number
-	pointerY: number
-	originX: number
-	originY: number
+interface DeltaPosition {
+	x: number
+	y: number
+}
+interface Position {
+	clientX: number
+	clientY: number
 }
 
 /**
@@ -16,95 +15,136 @@ type StartingValues = {
 const MIN_DRAG_DISTANCE = 1
 
 export function useMovable(
-	el: HTMLElement | null,
-	startingValues: StartingValues = {
-		dragging: false,
-		pointerX: 0,
-		pointerY: 0,
-		originX: 0,
-		originY: 0,
+	moveElement: React.RefObject<HTMLDivElement | null>,
+
+	callbacks: {
+		/** Called upon drag start move */
+		onDragStart: (position: Position) => void
+		/** Called upon drag move */
+		onDragMove: (delta: DeltaPosition, position: Position) => void
+		/** Called upon drag end */
+		onDragEnd: (delta: DeltaPosition, position: Position) => void
 	}
-): [boolean, number, number, number, number, number, number] {
-	const [isDragging, setIsDragging] = useState(startingValues.dragging)
-	const [isPointerDown, setIsPointerDown] = useState(startingValues.dragging)
-	const [pointerPosition, setPointerPosition] = useState({
-		clientX: startingValues.pointerX,
-		clientY: startingValues.pointerY,
-	})
-	const [originPointerPosition, setOriginPointerPosition] = useState({
-		clientX: startingValues.originX,
-		clientY: startingValues.originY,
-	})
-	const onPointerMove = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
-		setPointerPosition({
-			clientX: ev.clientX,
-			clientY: ev.clientY,
-		})
-	}, [])
-	const onPointerUp = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
-		setIsPointerDown(false)
-		ev.preventDefault()
-	}, [])
-	const onPointerDown = useCallback<HTMLElementEventHandler<PointerEvent>>((ev) => {
-		if (ev.pointerType === 'mouse' && ev.buttons !== 0b0001) {
-			return
-		}
+) {
+	const originPointerPosition = useRef<{ clientX: number; clientY: number } | undefined>(undefined)
+	const isDragging = useRef<boolean>(false)
+	const delta = useRef<DeltaPosition>({ x: 0, y: 0 })
+	const position = useRef<Position>({ clientX: 0, clientY: 0 })
+	const onPointerMoveIsSet = useRef<boolean>(false)
+	const moveId = useRef<number>(0)
 
-		// These are order-sensitive.
-		setOriginPointerPosition({
-			clientX: ev.clientX,
-			clientY: ev.clientY,
-		})
-		setPointerPosition({
-			clientX: ev.clientX,
-			clientY: ev.clientY,
-		})
-		setIsPointerDown(true)
-
-		ev.preventDefault()
-	}, [])
-
-	useEffect(() => {
-		const horizontalMoveMeetsThreshold =
-			Math.abs(pointerPosition.clientX - originPointerPosition.clientX) >= MIN_DRAG_DISTANCE
-		const verticalMoveMeetsThreshold =
-			Math.abs(pointerPosition.clientY - originPointerPosition.clientY) >= MIN_DRAG_DISTANCE
-		if (isPointerDown && (horizontalMoveMeetsThreshold || verticalMoveMeetsThreshold)) {
-			setIsDragging(true)
-		} else {
-			setIsDragging(false)
-		}
-	}, [isPointerDown, pointerPosition, originPointerPosition])
-
-	useEffect(() => {
+	useLayoutEffect(() => {
+		const el = moveElement.current
 		if (!el) return
 
 		el.addEventListener('pointerdown', onPointerDown)
-
+		document.body.addEventListener('pointerup', onPointerUp)
 		return () => {
-			if (!el) return
-
 			el.removeEventListener('pointerdown', onPointerDown)
+			document.body.removeEventListener('pointerup', onPointerUp)
 		}
-	}, [el, onPointerDown])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	const onPointerDown = useCallback((event: PointerEvent) => {
+		originPointerPosition.current = {
+			clientX: event.clientX,
+			clientY: event.clientY,
+		}
+		// Do nothing else here, the consumer will call onStartMoving if we are to start moving
+	}, [])
+
+	// Called by consumer when a movement starts
+	const onStartMoving = useCallback((takeOver?: { clientX: number; clientY: number }) => {
+		moveId.current++
+
+		if (takeOver) {
+			if (!originPointerPosition.current) {
+				originPointerPosition.current = takeOver
+			} else {
+				// eslint-disable-next-line no-console
+				console.error(
+					'Warning: onStartMoving: takeOver is set, but originPointerPosition.current is already set'
+				)
+			}
+		}
+
+		if (!originPointerPosition.current) {
+			// eslint-disable-next-line no-console
+			console.error('Warning: onStartMoving: originPointerPosition.current was not set')
+		}
+
+		if (!onPointerMoveIsSet.current) {
+			onPointerMoveIsSet.current = true
+			document.body.addEventListener('pointermove', onPointerMove)
+		} else {
+			// eslint-disable-next-line no-console
+			console.error('Warning: onStartMoving: onPointerMoveIsSet.current was already set')
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	const onPointerMove = useCallback((event: PointerEvent) => {
+		position.current = {
+			clientX: event.clientX,
+			clientY: event.clientY,
+		}
+		if (!originPointerPosition.current) {
+			// Dirty fix:
+			originPointerPosition.current = position.current
+		}
+
+		delta.current = {
+			x: position.current.clientX - originPointerPosition.current.clientX,
+			y: position.current.clientY - originPointerPosition.current.clientY,
+		}
+
+		if (Math.abs(delta.current.x) >= MIN_DRAG_DISTANCE || Math.abs(delta.current.y) >= MIN_DRAG_DISTANCE) {
+			if (!isDragging.current) {
+				isDragging.current = true
+				callbacks.onDragStart(position.current)
+			}
+		}
+
+		if (isDragging.current) {
+			callbacks.onDragMove(delta.current, position.current)
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	const onPointerUp = useCallback((_event: PointerEvent) => {
+		if (isDragging.current) {
+			try {
+				callbacks.onDragEnd(delta.current, position.current)
+			} catch (err) {
+				// eslint-disable-next-line no-console
+				console.error(err)
+			}
+		}
+		cleanupMove()
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+	const cleanupMove = useCallback(() => {
+		// Cleanup:
+		isDragging.current = false
+
+		if (onPointerMoveIsSet.current) {
+			document.body.removeEventListener('pointermove', onPointerMove)
+			onPointerMoveIsSet.current = false
+		}
+		originPointerPosition.current = undefined
+		delta.current = { x: 0, y: 0 }
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 
 	useEffect(() => {
-		document.body.addEventListener('pointerup', onPointerUp)
-		document.body.addEventListener('pointermove', onPointerMove)
-
 		return () => {
-			document.body.removeEventListener('pointerup', onPointerUp)
-			document.body.removeEventListener('pointermove', onPointerMove)
+			cleanupMove()
 		}
-	}, [onPointerMove, onPointerUp])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 
-	return [
-		isDragging,
-		pointerPosition.clientX - originPointerPosition.clientX,
-		pointerPosition.clientY - originPointerPosition.clientY,
-		pointerPosition.clientX,
-		pointerPosition.clientY,
-		originPointerPosition.clientX,
-		originPointerPosition.clientY,
-	]
+	return {
+		onStartMoving,
+	}
 }

@@ -1,8 +1,9 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { msToTime } from '@shared/lib'
 import { store } from '../../../../../mobx/store'
 import { useMemoComputedValue } from '../../../../../mobx/lib'
+import { formatDuration } from '../../../../../../lib/timeLib'
+import { DISPLAY_DECIMAL_COUNT } from '../../../../../constants'
 
 type PropsType = {
 	groupId: string
@@ -19,7 +20,7 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 		if (!playhead) return null
 
 		const playheadTime = playhead.playheadTime
-		return typeof playheadTime === 'number' ? msToTime(playheadTime) : null
+		return typeof playheadTime === 'number' ? formatDuration(playheadTime, DISPLAY_DECIMAL_COUNT) : null
 	}, [props.groupId, props.partId])
 	return <>{playheadTimeString}</>
 })

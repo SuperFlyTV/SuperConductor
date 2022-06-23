@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState, useContext, useCallback, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
+import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { Group } from '../../../../models/rundown/Group'
+import { GroupGUI } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -19,8 +20,7 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
-import { HotkeyContext } from '../../../contexts/Hotkey'
-import { Rundown } from '../../../../models/rundown/Rundown'
+
 import { DropZone } from '../../util/DropZone'
 import {
 	MdChevronRight,
@@ -40,29 +40,34 @@ import { store } from '../../../mobx/store'
 import { computed } from 'mobx'
 import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
-import { StopBtn } from '../../inputs/StopBtn/StopBtn'
+import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { PeripheralArea } from '../../../../models/project/Peripheral'
-import { useMemoComputedObject } from '../../../mobx/lib'
-import { BsKeyboard, BsKeyboardFill } from 'react-icons/bs'
-import { Part } from '../../../../models/rundown/Part'
+import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
+import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
+import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
+import { GroupAutoFillPopover } from './GroupAutoFillPopover'
+import VisibilitySensor from 'react-visibility-sensor'
+import { Btn } from '../../inputs/Btn/Btn'
+
+const DEFAULT_PART_HEIGHT = 80
 
 export const GroupView: React.FC<{
 	rundownId: string
-	group: Group
+	groupId: string
 	groupIndex: number
 	mappings: Mappings
-}> = observer(function GroupView({ group, groupIndex, rundownId, mappings }) {
+}> = observer(function GroupView({ groupId, groupIndex, rundownId, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const hotkeyContext = useContext(HotkeyContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-	const rundown = store.rundownsStore.currentRundown
+
+	const group = store.rundownsStore.getGroup(groupId)
 	const allAssignedAreas = store.projectStore.assignedAreas
 	const allAvailableAreas = store.projectStore.availableAreas
 
 	const [editingGroupName, setEditingGroupName] = useState(false)
 	const [editedName, setEditedName] = useState(group.name)
+
 	useEffect(() => {
 		setEditedName(group.name)
 	}, [group.name])
@@ -70,15 +75,14 @@ export const GroupView: React.FC<{
 		ipcServer
 			.updateGroup({
 				rundownId,
-				groupId: group.id,
+				groupId,
 				group: {
-					...group,
 					name: editedName,
 				},
 			})
 			.catch(handleError)
 		setEditingGroupName(false)
-	}, [editedName, group, handleError, ipcServer, rundownId])
+	}, [handleError, ipcServer, rundownId, groupId, editedName])
 
 	const playheadData = useRef<GroupPreparedPlayData | null>(null)
 	const [_activeParts, setActiveParts] = useState<{ [partId: string]: true }>({})
@@ -110,9 +114,16 @@ export const GroupView: React.FC<{
 		setActiveParts(activeParts0)
 	}, [group])
 
+	const guiSettings = computed(() => store.guiStore.getGroupSettings(groupId))
+
+	const groupCollapsed = guiSettings.get().collapsed
+
 	const groupIsPlaying = computed(() => store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false).get()
 	const anyPartIsPlaying = computed(
 		() => store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
+	).get()
+	const playingPartCount = computed(
+		() => Object.keys(store.groupPlayDataStore.groups.get(group.id)?.playheads || {}).length
 	).get()
 
 	/** Whether we're allowed to stop playing */
@@ -187,6 +198,7 @@ export const GroupView: React.FC<{
 			},
 			hover(movedItem, monitor) {
 				if (isGroupDragItem(movedItem)) {
+					// Is dragging a Group
 					if (!wrapperRef.current) {
 						return
 					}
@@ -232,6 +244,7 @@ export const GroupView: React.FC<{
 					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex)
 					movedItem.position = hoverIndex
 				} else if (isPartDragItem(movedItem)) {
+					// Is dragging a Part
 					if (!monitor.isOver({ shallow: true })) {
 						return
 					}
@@ -265,7 +278,7 @@ export const GroupView: React.FC<{
 					/**
 					 * An array of this Group's Parts, minus the Part currently being dragged.
 					 */
-					const groupPartsWithoutMovedPart = group.parts.filter((p) => p.id !== movedItem.partId)
+					const groupPartsWithoutMovedPart = group.partIds.filter((partId) => partId !== movedItem.partId)
 
 					if (groupPartsWithoutMovedPart.length <= 0) {
 						// If the group is empty, and if the user's cursor is hovering within midBand
@@ -346,46 +359,40 @@ export const GroupView: React.FC<{
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 	const handleDeleteClick = useCallback(() => {
-		const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
+		const pressedKeys = sorensen.getPressedKeys()
 		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 			// Delete immediately with no confirmation dialog.
 			handleDelete()
 		} else {
 			setDeleteConfirmationOpen(true)
 		}
-	}, [handleDelete, hotkeyContext.sorensen])
+	}, [handleDelete])
 
 	// Duplicate button:
 	const handleDuplicate = useCallback(() => {
 		ipcServer.duplicateGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
-	// Stop button:
-	const handleStop = useCallback(() => {
-		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
-	// Play button:
-	const handlePlay = useCallback(() => {
-		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
-	// Pause button
-	const handlePause = useCallback(() => {
-		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
 	// Step down button:
-	const nextPartIndex = useMemo(() => getNextPartIndex(group), [group])
-	const nextPartExists = nextPartIndex in group.parts
+	const { nextPartExists, prevPartExists } = useMemoComputedObject(() => {
+		const groupWithParts = store.rundownsStore.getGroupWithParts(groupId)
+
+		const nextPartIndex = getNextPartIndex(groupWithParts)
+		const prevPartIndex = getPrevPartIndex(groupWithParts)
+
+		return {
+			nextPartExists: nextPartIndex in groupWithParts.parts,
+			prevPartExists: prevPartIndex in groupWithParts.parts,
+		}
+	}, [groupId])
+
 	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
 	const handleStepDown = useCallback(() => {
 		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
 	// Step down up:
-	const prevPartIndex = useMemo(() => getPrevPartIndex(group), [group])
-	const prevPartExists = prevPartIndex in group.parts
+
 	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
 	const handleStepUp = useCallback(() => {
 		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
@@ -393,8 +400,11 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
-	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
+		const settings = store.guiStore.getGroupSettings(groupId)
+		store.guiStore.setGroupSettings(groupId, {
+			collapsed: !settings.collapsed,
+		})
+	}, [groupId])
 
 	// Disable button:
 	const toggleDisable = useCallback(() => {
@@ -451,32 +461,57 @@ export const GroupView: React.FC<{
 			.catch(handleError)
 	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
 
-	const assignedAreas = useMemoComputedObject(() => {
-		return allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
-	}, [allAssignedAreas, group.id])
+	const assignedAreas = computed(() =>
+		allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
+	)
 
-	const [partSubmenuPopoverAnchorEl, setPartSubmenuPopoverAnchorEl] = React.useState<Element | null>(null)
-	const buttonAreaPopoverOpen = Boolean(partSubmenuPopoverAnchorEl)
+	const [partButtonAreaPopoverAnchorEl, setPartButtonAreaPopoverAnchorEl] = React.useState<Element | null>(null)
+	const buttonAreaPopoverOpen = Boolean(partButtonAreaPopoverAnchorEl)
 
-	if (!rundown) {
-		return null
-	}
+	const [partAutoFillPopoverAnchorEl, setPartAutoFillPopoverAnchorEl] = React.useState<Element | null>(null)
+	const autoFillPopoverOpen = Boolean(partAutoFillPopoverAnchorEl)
+
+	// When the Group isn't in view, don't render the parts, but instead render a placeholder of the same height
+	const contentPartsRef = useRef<HTMLDivElement | null>(null)
+	const [hidePartsHeight, setHidePartsHeight] = useState<number | null>(DEFAULT_PART_HEIGHT * group.partIds.length)
+	const onChange = useCallback(
+		(isVisible: boolean) => {
+			if (isVisible) {
+				setHidePartsHeight(null)
+			} else {
+				setHidePartsHeight((prevHeight) => {
+					if (prevHeight === null) {
+						if (contentPartsRef.current) {
+							return contentPartsRef.current.clientHeight
+						} else {
+							return DEFAULT_PART_HEIGHT * group.partIds.length
+						}
+					} else {
+						return prevHeight
+					}
+				})
+			}
+		},
+		[group.partIds.length]
+	)
+
+	// Optimize, so that PartView isn't re-rendered on every part group change
 
 	if (group.transparent) {
-		if (group.parts.length > 1) {
+		if (group.partIds.length > 1) {
 			return (
 				<div>
-					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.parts.length}) Parts.
+					ERROR: Transparent Group &quot;{group.id}&quot; has more than 1 ({group.partIds.length}) Parts.
 				</div>
 			)
 		}
 
-		const firstPart = group.parts[0] as Part | undefined
-		return firstPart ? (
+		const firstPartId = group.partIds[0] as string | undefined
+		return firstPartId ? (
 			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
 				<PartView
 					rundownId={rundownId}
-					part={firstPart}
+					partId={firstPartId}
 					parentGroupId={group.id}
 					parentGroupIndex={groupIndex}
 					partIndex={0}
@@ -485,268 +520,303 @@ export const GroupView: React.FC<{
 			</div>
 		) : null
 	} else {
-		const canModifyOneAtATime = !(!group.oneAtATime && anyPartIsPlaying) && !group.locked
+		const canModifyOneAtATime = (group.oneAtATime ? true : playingPartCount <= 1) && !group.locked
 
 		const canModifyLoop = group.oneAtATime && !group.locked
 		const canModifyAutoPlay = group.oneAtATime && !group.locked
 		const canAssignAreas = allAvailableAreas.length > 0 && !group.locked
+		const canSetAutoFill = !group.locked
 
 		return (
-			<div
-				ref={wrapperRef}
-				className={classNames('group', {
-					disabled: group.disabled,
-					collapsed: group.collapsed,
-					dragging: isDragging,
-				})}
-				data-drop-handler-id={handlerId}
-			>
-				<div className="group__dragArrow" />
-				<div className="group__header">
-					<div
-						ref={dragRef}
-						className="group__drag-handle"
-						style={{ visibility: group.locked ? 'hidden' : 'visible' }}
-					>
-						<MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />
-					</div>
-
-					<div
-						className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
-						title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
-					>
-						<MdChevronRight size={22} onClick={handleCollapse} />
-					</div>
-
-					{!editingGroupName && (
+			<VisibilitySensor onChange={onChange} partialVisibility={true}>
+				<div
+					ref={wrapperRef}
+					className={classNames('group', {
+						disabled: group.disabled,
+						collapsed: groupCollapsed,
+						dragging: isDragging,
+					})}
+					data-drop-handler-id={handlerId}
+				>
+					<div className="group__dragArrow" />
+					<div className="group__header">
 						<div
-							className="title"
-							title={group.locked ? group.name : 'Click to edit Group name'}
-							onClick={() => {
-								if (group.locked) {
-									return
+							ref={dragRef}
+							className="group__drag-handle"
+							style={{ visibility: group.locked ? 'hidden' : 'visible' }}
+						>
+							<MdOutlineDragIndicator color="rgba(255, 255, 255, 0.5)" />
+						</div>
+
+						<div
+							className={classNames('collapse', { 'collapse--collapsed': groupCollapsed })}
+							title={groupCollapsed ? 'Expand Group' : 'Collapse Group'}
+						>
+							<MdChevronRight size={22} onClick={handleCollapse} />
+						</div>
+
+						{!editingGroupName && (
+							<div
+								className="title"
+								title={group.locked ? group.name : 'Click to edit Group name'}
+								onClick={() => {
+									if (group.locked) {
+										return
+									}
+									setEditingGroupName(true)
+								}}
+							>
+								{group.name}
+							</div>
+						)}
+
+						{editingGroupName && (
+							<TextField
+								size="small"
+								value={editedName}
+								autoFocus
+								variant="standard"
+								className="edit-title"
+								sx={{ marginTop: '0.3rem' }}
+								InputProps={{ style: { fontSize: '1.3rem' } }}
+								onFocus={(event) => {
+									event.target.select()
+								}}
+								onChange={(event) => {
+									setEditedName(event.target.value)
+								}}
+								onBlur={() => {
+									submitNameEdit()
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Escape') setEditingGroupName(false)
+									else if (e.key === 'Enter') submitNameEdit()
+								}}
+							/>
+						)}
+
+						<div className="controls">
+							<div className="playback">
+								<ControlButtons rundownId={rundownId} group={group} />
+								<Button
+									variant="contained"
+									size="small"
+									disabled={!canStepDown}
+									onClick={handleStepDown}
+									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+									title="Play next"
+								>
+									<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+										<AiFillStepForward size={22} />
+									</div>
+								</Button>
+								<Button
+									variant="contained"
+									size="small"
+									disabled={!canStepUp}
+									onClick={handleStepUp}
+									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+									title="Play previous"
+								>
+									<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+										<AiFillStepForward size={22} />
+									</div>
+								</Button>
+							</div>
+
+							<ToggleButton
+								title={
+									group.disabled
+										? 'Playout disabled.\n\nClick to enable playout of Group.'
+										: 'Disable playout of Group.'
 								}
-								setEditingGroupName(true)
-							}}
-						>
-							{group.name}
-						</div>
-					)}
-
-					{editingGroupName && (
-						<TextField
-							size="small"
-							value={editedName}
-							autoFocus
-							variant="standard"
-							className="edit-title"
-							sx={{ marginTop: '0.3rem' }}
-							InputProps={{ style: { fontSize: '1.3rem' } }}
-							onFocus={(event) => {
-								event.target.select()
-							}}
-							onChange={(event) => {
-								setEditedName(event.target.value)
-							}}
-							onBlur={() => {
-								submitNameEdit()
-							}}
-							onKeyUp={(e) => {
-								if (e.key === 'Escape') setEditingGroupName(false)
-								else if (e.key === 'Enter') submitNameEdit()
-							}}
-						/>
-					)}
-
-					<div className="controls">
-						<div className="playback">
-							<StopBtn className="part__stop" groupId={group.id} onClick={handleStop} />
-							<PlayBtn groupId={group.id} onClick={handlePlay} />
-							<PauseBtn groupId={group.id} onClick={handlePause} />
-							<Button
-								variant="contained"
+								value="disabled"
+								selected={group.disabled}
 								size="small"
-								disabled={!canStepDown}
-								onClick={handleStepDown}
-								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-								title="Play next"
+								disabled={group.locked}
+								onChange={toggleDisable}
 							>
-								<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-									<AiFillStepForward size={22} />
-								</div>
-							</Button>
-							<Button
-								variant="contained"
+								{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+							</ToggleButton>
+							<ToggleButton
+								title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
+								value="locked"
+								selected={group.locked}
 								size="small"
-								disabled={!canStepUp}
-								onClick={handleStepUp}
-								sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-								title="Play previous"
+								onChange={toggleLock}
 							>
-								<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
-									<AiFillStepForward size={22} />
-								</div>
-							</Button>
+								{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.oneAtATime
+										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
+										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
+								}
+								value="one-at-a-time"
+								selected={group.oneAtATime}
+								size="small"
+								disabled={!canModifyOneAtATime}
+								onChange={toggleOneAtATime}
+							>
+								<MdLooksOne size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.loop
+										? 'Playout Loop enabled.\n\nClick to disable.'
+										: 'Click to set Group to Loop playout.'
+								}
+								value="loop"
+								selected={group.oneAtATime && group.loop}
+								size="small"
+								disabled={!canModifyLoop}
+								onChange={toggleLoop}
+							>
+								<MdRepeat size={18} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									group.autoPlay
+										? 'Auto-step enabled.\n\nClick to disable.'
+										: 'Enable Auto-step (continue to next Part on end, like a playlist).'
+								}
+								value="auto-step"
+								selected={group.oneAtATime && group.autoPlay}
+								size="small"
+								disabled={!canModifyAutoPlay}
+								onChange={toggleAutoPlay}
+							>
+								<MdPlaylistPlay size={22} />
+							</ToggleButton>
+
+							<ToggleButton
+								title={
+									'Assign Button Area' +
+									(group.locked ? ' (disabled due to locked Part or Group)' : '')
+								}
+								value="assign-area"
+								selected={assignedAreas.get().length > 0}
+								size="small"
+								disabled={!canAssignAreas}
+								onChange={(event) => {
+									setPartButtonAreaPopoverAnchorEl(event.currentTarget)
+								}}
+							>
+								{assignedAreas.get().length > 0 ? (
+									<BsKeyboardFill color="white" size={24} />
+								) : (
+									<BsKeyboard color="white" size={24} />
+								)}
+							</ToggleButton>
+							<Popover
+								open={buttonAreaPopoverOpen}
+								anchorEl={partButtonAreaPopoverAnchorEl}
+								onClose={() => {
+									setPartButtonAreaPopoverAnchorEl(null)
+								}}
+								anchorOrigin={{
+									vertical: 'bottom',
+									horizontal: 'left',
+								}}
+							>
+								<GroupButtonAreaPopover group={group} />
+							</Popover>
+
+							<ToggleButton
+								title={'Auto-fill'}
+								value="auto-fill"
+								selected={group.autoFill.enable}
+								size="small"
+								disabled={!canSetAutoFill}
+								onChange={(event) => {
+									setPartAutoFillPopoverAnchorEl(event.currentTarget)
+								}}
+							>
+								{group.autoFill.enable ? (
+									<BsLightningFill color="white" size={24} />
+								) : (
+									<BsLightning color="white" size={24} />
+								)}
+							</ToggleButton>
+							<Popover
+								open={autoFillPopoverOpen}
+								anchorEl={partAutoFillPopoverAnchorEl}
+								onClose={() => {
+									setPartAutoFillPopoverAnchorEl(null)
+								}}
+								anchorOrigin={{
+									vertical: 'bottom',
+									horizontal: 'left',
+								}}
+							>
+								<GroupAutoFillPopover rundownId={rundownId} group={group} />
+							</Popover>
+
+							<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
+
+							<TrashBtn
+								className="delete"
+								disabled={group.locked}
+								title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
+								onClick={handleDeleteClick}
+							/>
 						</div>
-
-						<ToggleButton
-							title={
-								group.disabled
-									? 'Playout disabled.\n\nClick to enable playout of Group.'
-									: 'Disable playout of Group.'
-							}
-							value="disabled"
-							selected={group.disabled}
-							size="small"
-							onChange={toggleDisable}
-						>
-							{group.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-						</ToggleButton>
-						<ToggleButton
-							title={group.locked ? 'Locked.\n\n Click to unlock.' : 'Lock Group for editing.'}
-							value="locked"
-							selected={group.locked}
-							size="small"
-							onChange={toggleLock}
-						>
-							{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.oneAtATime
-									? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
-									: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
-							}
-							value="one-at-a-time"
-							selected={group.oneAtATime}
-							size="small"
-							disabled={!canModifyOneAtATime}
-							onChange={toggleOneAtATime}
-						>
-							<MdLooksOne size={22} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.loop
-									? 'Playout Loop enabled.\n\nClick to disable.'
-									: 'Click to set Group to Loop playout.'
-							}
-							value="loop"
-							selected={group.oneAtATime && group.loop}
-							size="small"
-							disabled={!canModifyLoop}
-							onChange={toggleLoop}
-						>
-							<MdRepeat size={18} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								group.autoPlay
-									? 'Auto-step enabled.\n\nClick to disable.'
-									: 'Enable Auto-step (continue to next Part on end, like a playlist).'
-							}
-							value="auto-step"
-							selected={group.oneAtATime && group.autoPlay}
-							size="small"
-							disabled={!canModifyAutoPlay}
-							onChange={toggleAutoPlay}
-						>
-							<MdPlaylistPlay size={22} />
-						</ToggleButton>
-
-						<ToggleButton
-							title={
-								'Assign Button Area' + (group.locked ? ' (disabled due to locked Part or Group)' : '')
-							}
-							value="assign-area"
-							selected={assignedAreas.length > 0}
-							size="small"
-							disabled={!canAssignAreas}
-							onChange={(event) => {
-								setPartSubmenuPopoverAnchorEl(event.currentTarget)
-							}}
-						>
-							{assignedAreas.length > 0 ? (
-								<BsKeyboardFill color="white" size={24} />
-							) : (
-								<BsKeyboard color="white" size={24} />
-							)}
-						</ToggleButton>
-						<Popover
-							open={buttonAreaPopoverOpen}
-							anchorEl={partSubmenuPopoverAnchorEl}
-							onClose={() => {
-								setPartSubmenuPopoverAnchorEl(null)
-							}}
-							anchorOrigin={{
-								vertical: 'bottom',
-								horizontal: 'left',
-							}}
-						>
-							<GroupButtonAreaPopover group={group} />
-						</Popover>
-
-						<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
-
-						<TrashBtn
-							className="delete"
-							disabled={group.locked}
-							title={'Delete Group' + (group.locked ? ' (disabled due to locked Group)' : '')}
-							onClick={handleDeleteClick}
-						/>
 					</div>
+					{!groupCollapsed && (
+						<div className="group__content">
+							<div
+								className="group__content__parts"
+								ref={contentPartsRef}
+								style={{
+									height: hidePartsHeight ? `${hidePartsHeight}px` : undefined,
+								}}
+							>
+								{hidePartsHeight === null &&
+									group.partIds.map((partId, index) => (
+										<PartView
+											key={partId}
+											rundownId={rundownId}
+											partId={partId}
+											parentGroupId={group.id}
+											parentGroupIndex={groupIndex}
+											partIndex={index}
+											mappings={mappings}
+										/>
+									))}
+							</div>
+
+							{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
+						</div>
+					)}
+
+					<ConfirmationDialog
+						open={deleteConfirmationOpen}
+						title="Delete Group"
+						acceptLabel="Delete"
+						onAccepted={() => {
+							handleDelete()
+							setDeleteConfirmationOpen(false)
+						}}
+						onDiscarded={() => {
+							setDeleteConfirmationOpen(false)
+						}}
+					>
+						<p>Are you sure you want to delete the group &quot;{group.name}&quot;?</p>
+					</ConfirmationDialog>
 				</div>
-				{!group.collapsed && (
-					<div className="group__content">
-						<div className="group__content__parts">
-							{group.parts.map((part, index) => (
-								<PartView
-									key={part.id}
-									rundownId={rundownId}
-									part={part}
-									parentGroupId={group.id}
-									parentGroupIndex={groupIndex}
-									partIndex={index}
-									mappings={mappings}
-								/>
-							))}
-						</div>
-
-						{!group.locked && <GroupOptions rundown={rundown} group={group} />}
-					</div>
-				)}
-
-				<ConfirmationDialog
-					open={deleteConfirmationOpen}
-					title="Delete Group"
-					body={`Are you sure you want to delete the group "${group.name}"?`}
-					acceptLabel="Delete"
-					onAccepted={() => {
-						handleDelete()
-						setDeleteConfirmationOpen(false)
-					}}
-					onDiscarded={() => {
-						setDeleteConfirmationOpen(false)
-					}}
-				/>
-			</div>
+			</VisibilitySensor>
 		)
 	}
 })
 
-const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, group }) => {
+const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)
-
-	const numParts = useMemo(() => {
-		return rundown.groups.reduce((prev, current) => {
-			return prev + current.parts.length
-		}, 0)
-	}, [rundown])
 
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -769,7 +839,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					}
 
 					const { partId } = await ipcServer.newPart({
-						rundownId: rundown.id,
+						rundownId: rundownId,
 						groupId: group.id,
 						name:
 							'name' in droppedItem.resource
@@ -778,7 +848,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 					})
 
 					await ipcServer.addResourceToTimeline({
-						rundownId: rundown.id,
+						rundownId: rundownId,
 						groupId: group.id,
 						partId,
 						layerId: null,
@@ -789,7 +859,7 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				}
 			},
 		},
-		[rundown.id, group.id]
+		[rundownId, group.id]
 	)
 
 	useEffect(() => {
@@ -804,20 +874,20 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 				data-drop-handler-id={handlerId}
 				isOver={isOver}
 			>
-				<Button className="btn" variant="contained" onClick={() => setNewPartOpen(true)}>
+				<Btn variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
-				</Button>
+				</Btn>
 			</DropZone>
 
 			<PartPropertiesDialog
 				open={newPartOpen}
 				title="New Part"
 				acceptLabel="Create"
-				initial={{ name: `Part ${numParts + 1}` }}
+				initial={{ name: `Part ${group.partIds.length + 1}` }}
 				onAccepted={(newPart) => {
 					ipcServer
 						.newPart({
-							rundownId: rundown.id,
+							rundownId: rundownId,
 							name: newPart.name,
 							groupId: group.id,
 						})
@@ -832,81 +902,77 @@ const GroupOptions: React.FC<{ rundown: Rundown; group: Group }> = ({ rundown, g
 	)
 }
 
-const GroupButtonAreaPopover: React.FC<{ group: Group }> = observer(function GroupButtonAreaPopover({ group }) {
+const ControlButtons: React.FC<{
+	rundownId: string
+	group: GroupGUI
+}> = observer(function ControlButtons({ rundownId, group }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const project = store.projectStore.project
 
-	const allAreas = useMemoComputedObject(() => {
-		const allAreas: {
-			bridgeId: string
-			deviceId: string
-			areaId: string
-			area: PeripheralArea
-		}[] = []
-		for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
-					allAreas.push({ area, areaId, bridgeId, deviceId })
+	// Stop button:
+	const handleStop = useCallback(() => {
+		ipcServer.stopGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	// Play button:
+	const handlePlay = useCallback(() => {
+		ipcServer.playGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	// Pause button
+	const handlePause = useCallback(() => {
+		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
+	}, [handleError, ipcServer, rundownId, group.id])
+
+	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
+		useMemoComputedObject(() => {
+			const playData = store.groupPlayDataStore.groups.get(group.id)
+
+			if (!playData) {
+				return {
+					groupIsPlaying: false,
+					anyPartIsPlaying: false,
+					allPartsArePaused: false,
+					playheadCount: 0,
+					partIsPlaying: false,
+					partIsPaused: false,
 				}
 			}
-		}
-		return allAreas
-	}, [project])
+			return {
+				groupIsPlaying: playData.groupIsPlaying,
+				anyPartIsPlaying: playData.anyPartIsPlaying,
+				allPartsArePaused: playData.allPartsArePaused,
+				playheadCount: Object.keys(playData.playheads).length,
+				partIsPlaying: false,
+				partIsPaused: false,
+			}
+		}, [group.id])
+
+	const groupDisabled = group.disabled || false
+	const groupOneAtATime = group.oneAtATime || false
+	const countPlayablePartsInGroup = useMemoComputedValue(() => {
+		const groupWithParts = store.rundownsStore.getGroupWithParts(group.id)
+		return groupWithParts.parts.filter((p) => !p.disabled).length
+	}, [group.id])
+
+	const data: PlayButtonData = {
+		groupDisabled,
+		groupOneAtATime,
+		countPlayablePartsInGroup,
+
+		groupIsPlaying,
+		anyPartIsPlaying,
+		allPartsArePaused,
+		partIsPlaying,
+		partIsPaused,
+		playheadCount,
+	}
 
 	return (
 		<>
-			<div>
-				Assign a Button Area to this Group:
-				<table>
-					<tbody>
-						{allAreas.map(({ area, areaId, bridgeId, deviceId }) => {
-							return (
-								<tr key={areaId}>
-									<td>{area.name}</td>
-									<td>{area.identifiers.length} buttons</td>
-									<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>
-									<td>
-										{area.assignedToGroupId === group.id ? (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: undefined,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Remove
-											</Button>
-										) : (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: group.id,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Assign
-											</Button>
-										)}
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-			</div>
+			<StopBtn className="part__stop" groupId={group.id} data={data} onClick={handleStop} />
+			<PlayBtn groupId={group.id} data={data} onClick={handlePlay} />
+			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
 		</>
 	)
 })

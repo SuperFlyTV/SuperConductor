@@ -1,8 +1,9 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { msToTime } from '@shared/lib'
 import { store } from '../../../../../mobx/store'
 import { useMemoComputedValue } from '../../../../../mobx/lib'
+import { formatDuration } from '../../../../../../lib/timeLib'
+import { DISPLAY_DECIMAL_COUNT } from '../../../../../constants'
 
 type PropsType = {
 	groupId: string
@@ -16,10 +17,9 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 
 		if (playhead.partDuration === null) return null
 
-		// const countDownTime = playhead.partEndTime - playhead.partStartTime - playhead.playheadTime
 		const countDownTime = playhead.partDuration - playhead.playheadTime
 		if (!countDownTime) return null
-		return msToTime(countDownTime)
+		return formatDuration(countDownTime, DISPLAY_DECIMAL_COUNT)
 	}, [props.groupId, props.partId])
 
 	if (!countDownTimeString) return null

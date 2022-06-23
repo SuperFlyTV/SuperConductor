@@ -1,4 +1,3 @@
-import winston from 'winston'
 import { DeviceOptionsOBS } from 'timeline-state-resolver'
 import OBSWebsocket from 'obs-websocket-js'
 import {
@@ -13,6 +12,7 @@ import {
 	OBSMute,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
+import { LoggerLike } from '@shared/api'
 
 export class OBSSideload implements SideLoadDevice {
 	private obs: OBSWebsocket
@@ -21,11 +21,7 @@ export class OBSSideload implements SideLoadDevice {
 	private obsConnected = false
 	private obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
 
-	constructor(
-		private deviceId: string,
-		private deviceOptions: DeviceOptionsOBS,
-		private log: winston.Logger | Console
-	) {
+	constructor(private deviceId: string, private deviceOptions: DeviceOptionsOBS, private log: LoggerLike) {
 		this.obs = new OBSWebsocket()
 
 		this.obs.on('ConnectionOpened', () => {

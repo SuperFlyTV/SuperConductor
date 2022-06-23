@@ -1,9 +1,8 @@
-import { BridgeAPI } from '@shared/api'
+import { BridgeAPI, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { ResourceAny } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import winston from 'winston'
 import { TSR } from './TSR'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -20,7 +19,7 @@ export class BaseBridge {
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
-	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: winston.Logger | Console) {
+	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: LoggerLike) {
 		this.tsr = new TSR(log)
 		this.sendAndCatch = (msg: BridgeAPI.FromBridge.Any) => {
 			try {
@@ -33,7 +32,7 @@ export class BaseBridge {
 	}
 
 	private setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
-		const peripheralsHandler = new PeripheralsHandler(bridgeId)
+		const peripheralsHandler = new PeripheralsHandler(this.log, bridgeId)
 
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
@@ -87,40 +86,40 @@ export class BaseBridge {
 		this.mappings = newMappings
 		this.updateTSR(currentTime)
 	}
+	/** To be called when our bridgeId has been determined. This is basivally the initialize function */
+	async onReceivedBridgeId(bridgeId: string) {
+		if (this.myBridgeId !== bridgeId) {
+			this.myBridgeId = bridgeId
 
-	handleMessage(msg: BridgeAPI.FromTPT.Any) {
+			if (this.peripheralsHandler) {
+				try {
+					await this.peripheralsHandler.close()
+				} catch (e) {
+					this.log?.error(e)
+				}
+				this.peripheralsHandler = null
+			}
+		}
+		try {
+			if (!this.peripheralsHandler) {
+				this.peripheralsHandler = this.setupPeripheralsHandler(this.myBridgeId)
+			}
+
+			this.peripheralsHandlerSend = this.sendAndCatch
+			await this.peripheralsHandler.setConnectedToParent(true)
+
+			this.tsr.reportAllStatuses()
+		} catch (e) {
+			this.log?.error(e)
+		}
+	}
+
+	handleMessage(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (msg.type === 'setId') {
 			// Reply to SuperConductor with our id:
-			this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION })
+			this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false })
 
-			Promise.resolve()
-				.then(async () => {
-					if (this.myBridgeId !== msg.id) {
-						this.myBridgeId = msg.id
-
-						if (this.peripheralsHandler) {
-							try {
-								await this.peripheralsHandler.close()
-							} catch (e) {
-								this.log?.error(e)
-							}
-							this.peripheralsHandler = null
-						}
-					}
-					try {
-						if (!this.peripheralsHandler) {
-							this.peripheralsHandler = this.setupPeripheralsHandler(this.myBridgeId)
-						}
-
-						this.peripheralsHandlerSend = this.sendAndCatch
-						await this.peripheralsHandler.setConnectedToParent(true)
-
-						this.tsr.reportAllStatuses()
-					} catch (e) {
-						this.log?.error(e)
-					}
-				})
-				.catch((e) => this.log?.error(e))
+			this.onReceivedBridgeId(msg.id).catch((e) => this.log?.error(e))
 		} else if (msg.type === 'addTimeline') {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {

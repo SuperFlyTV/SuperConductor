@@ -59,6 +59,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={true}
+						caps={[0, 99]}
 					/>
 				</div>
 				<div className="setting">
@@ -89,6 +90,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								onSave(obj)
 							}}
 							allowUndefined={false}
+							caps={[0, Number.POSITIVE_INFINITY]}
 						/>
 					</div>
 				) : obj.content.me.transition !== AtemTransitionStyle.CUT && obj.content.me.transition !== undefined ? (
@@ -146,6 +148,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 
@@ -164,6 +167,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 
@@ -184,6 +188,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 			</>
@@ -225,6 +230,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, Number.POSITIVE_INFINITY]}
 							/>
 						</div>
 						<div className="setting">
@@ -237,6 +243,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[-4800, 4800]}
 							/>
 						</div>
 						<div className="setting">
@@ -249,6 +256,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[-2700, 2700]}
 							/>
 						</div>
 						<div className="setting">
@@ -261,6 +269,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[70, 1000]}
 							/>
 						</div>
 						<div className="setting">
@@ -283,6 +292,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 18000]}
 							/>
 						</div>
 						<div className="setting">
@@ -295,6 +305,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 18000]}
 							/>
 						</div>
 						<div className="setting">
@@ -307,6 +318,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 32000]}
 							/>
 						</div>
 						<div className="setting">
@@ -319,6 +331,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 32000]}
 							/>
 						</div>
 					</React.Fragment>
@@ -349,6 +362,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">
@@ -361,6 +375,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">
@@ -400,6 +415,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1000]}
 							/>
 						</div>
 						<div className="setting">
@@ -415,6 +431,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1000]}
 							/>
 						</div>
 						<div className="setting">
@@ -473,6 +490,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1600]}
 							/>
 						</div>
 						<div className="setting">
@@ -488,6 +506,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1600]}
 							/>
 						</div>
 						<div className="setting">
@@ -503,6 +522,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 100]}
 							/>
 						</div>
 						<div className="setting">
@@ -518,6 +538,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 100]}
 							/>
 						</div>
 						<div className="setting">
@@ -533,6 +554,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 100]}
 							/>
 						</div>
 						<div className="setting">
@@ -548,6 +570,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 100]}
 							/>
 						</div>
 						<div className="setting">
@@ -563,6 +586,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 3599]}
 							/>
 						</div>
 						<div className="setting">
@@ -578,6 +602,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1000]}
 							/>
 						</div>
 						<div className="setting">
@@ -593,6 +618,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 1000]}
 							/>
 						</div>
 						<div className="setting">
@@ -608,6 +634,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[0, 3590]}
 							/>
 						</div>
 						<div className="setting">
@@ -623,6 +650,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 									onSave(obj)
 								}}
 								allowUndefined={false}
+								caps={[10, 100]}
 							/>
 						</div>
 					</>
@@ -656,6 +684,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">
@@ -668,6 +697,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">
@@ -710,6 +740,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 			</>
@@ -728,6 +759,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">
@@ -766,6 +798,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={true}
+						caps={[0, 65381]}
 					/>
 				</div>
 				<div className="setting">
@@ -778,6 +811,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={true}
+						caps={[-10000, 10000]}
 					/>
 				</div>
 				<div className="setting">

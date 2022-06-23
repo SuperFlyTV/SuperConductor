@@ -1,5 +1,6 @@
 import WebSocket from 'ws'
 import EventEmitter from 'events'
+import { LoggerLike } from '@shared/api'
 
 const PING_INTERVAL = 5000
 const RECONNECT_INTERVAL = 5000
@@ -7,7 +8,7 @@ const RECONNECT_INTERVAL = 5000
 
 Notes:
 
-* Both the Bridge or the TPT can be the one initializing a connection.
+* Both the Bridge or the SuperConductor can be the one initializing a connection.
 * The "Client" is the one who initialized the connection (to the "Server")
 
 * The client pings the bridge every 5 seconds to keep the connection alive and allow for monitoring status.
@@ -20,30 +21,29 @@ export class WebsocketServer extends EventEmitter {
 	private wss: WebSocket.Server
 
 	private connections: WebsocketConnection[] = []
+	private isClosed = false
 
-	constructor(port: number, private onConnection: (connection: WebsocketConnection) => void) {
+	constructor(
+		private log: LoggerLike,
+		port: number,
+		private onConnection: (connection: WebsocketConnection) => void
+	) {
 		super()
 		this.wss = new WebSocket.Server({ port })
 
 		this.wss.on('close', () => {
-			// The websocekt server is closed.
-			this.connections.forEach((client) => {
-				// this.clients = []
-				client.terminate()
-			})
-			this.connections = []
-
-			this.emit('close')
+			// The websocket server is closed.
+			this._onServerClose()
 		})
 		this.wss.on('error', (err: any) => {
-			console.error('Error in WebSocket server')
-			console.error(err)
+			this.log.error('Error in WebSocket server')
+			this.log.error(err)
 		})
 
 		this.wss.on('connection', (ws) => {
 			// A new client has connected
 
-			const bridge = new WebsocketConnection(ws)
+			const bridge = new WebsocketConnection(this.log, ws)
 			this.connections.push(bridge)
 
 			this.onConnection(bridge)
@@ -51,12 +51,28 @@ export class WebsocketServer extends EventEmitter {
 	}
 
 	connectToServer(url: string): WebsocketConnection {
-		const bridge = new WebsocketConnection(url)
+		const bridge = new WebsocketConnection(this.log, url)
 		this.connections.push(bridge)
 		setImmediate(() => {
 			this.onConnection(bridge)
 		})
 		return bridge
+	}
+	close() {
+		this.wss.close()
+		this._onServerClose() // Call this in case of the wss close event not firing.
+	}
+	private _onServerClose() {
+		// Close the connections:
+		this.connections.forEach((client) => {
+			client.terminate()
+		})
+		this.connections = []
+
+		if (!this.isClosed) {
+			this.emit('close')
+			this.isClosed = true
+		}
 	}
 }
 
@@ -77,6 +93,7 @@ export class WebsocketConnection extends EventEmitter {
 	private url: string | null
 
 	constructor(
+		private log: LoggerLike,
 		/** On a server, this'll be a websocket connection. A client gets a url */
 		connection: WebSocket | string
 	) {
@@ -127,7 +144,7 @@ export class WebsocketConnection extends EventEmitter {
 		try {
 			this.emit('message', msg)
 		} catch (e) {
-			console.error(e)
+			this.log.error(e)
 		}
 	}
 
@@ -143,8 +160,13 @@ export class WebsocketConnection extends EventEmitter {
 			this._onDisconnected()
 		})
 		ws.on('error', (err) => {
-			console.error('Error in WebSocket connection')
-			console.error(err)
+			if (!this.connected && `${err}`.match(/ECONNREFUSED/)) {
+				// Yeah, we already know we are not connected..
+				// Ignore.
+			} else {
+				this.log.error('Error in WebSocket connection')
+				this.log.error(err)
+			}
 		})
 		ws.on('ping', () => {
 			this.lastPingReceived = Date.now()

@@ -46,8 +46,9 @@
 		"@shared/models": "^0.7.2",
 		"fast-copy": "^2.1.1",
 		"lodash": "^4.17.21",
-		"parse-ms": "2.1.0",
-		"pretty-ms": "^7.0.1",
 		"superfly-timeline": "^8.2.5"
+	},
+	"devDependencies": {
+		"winston": "^3.7.2"
 	}
 }

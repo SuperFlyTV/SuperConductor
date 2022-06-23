@@ -63,6 +63,13 @@ export const ContextWrapper: React.FC = () => {
 								backgroundColor: '#3a3e54',
 							},
 						},
+						colorInherit: {
+							color: '#ccc',
+							backgroundColor: '#666',
+							'&:hover': {
+								backgroundColor: '#999',
+							},
+						},
 					},
 				},
 				MuiButtonGroup: {

@@ -7,6 +7,11 @@
 	color: #cdcdcd;
 	font-size: 1.4rem;
 	line-height: 1.4;
+	cursor: pointer;
+
+	&:hover {
+		opacity: 0.8;
+	}
 
 	&:not(:last-child) {
 		margin-bottom: 0.5rem;

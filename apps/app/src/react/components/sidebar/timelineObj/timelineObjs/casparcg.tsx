@@ -1,5 +1,5 @@
 import React from 'react'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
 import {
 	ChannelFormat,
 	TimelineContentTypeCasparCg,
@@ -19,6 +19,11 @@ import { SelectEnum } from '../../../inputs/SelectEnum'
 import { IntInput } from '../../../inputs/IntInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { Link } from '@mui/material'
+import { Btn } from '../../../inputs/Btn/Btn'
+import { TrashBtn } from '../../../inputs/TrashBtn'
+import { AddBtn } from '../../../inputs/AddBtn'
+
+import './casparcg.scss'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -254,6 +259,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						caps={[0, 99]}
 					/>
 				</div>
 				<div className="setting">
@@ -316,18 +322,6 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 				<div className="setting">
-					<TextInput
-						label="Data"
-						fullWidth
-						currentValue={obj.content.data}
-						onChange={(v) => {
-							obj.content.data = v
-							onSave(obj)
-						}}
-						allowUndefined={true}
-					/>
-				</div>
-				<div className="setting">
 					<BooleanInput
 						label="Send stop() on stop"
 						currentValue={obj.content.useStopCommand}
@@ -337,6 +331,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 					/>
 				</div>
+
+				<CasparEditTemplateData obj={obj} onSave={onSave} />
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeCasparCg.HTMLPAGE) {
@@ -387,6 +383,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 999]}
 							/>
 						</div>
 						<div className="setting">
@@ -399,6 +396,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 									onSave(obj)
 								}}
 								allowUndefined={true}
+								caps={[0, 999]}
 							/>
 						</div>
 					</>
@@ -478,5 +476,151 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 			{commonSettings}
 			{settings}
 		</EditWrapper>
+	)
+}
+
+const CasparEditTemplateData: React.FC<{
+	obj: TimelineObjCCGTemplate
+	onSave: OnSave
+}> = ({ obj, onSave }) => {
+	let parsed: { [id: string]: string } = {}
+	try {
+		if (typeof obj.content.data === 'string') {
+			parsed = JSON.parse(obj.content.data)
+		} else {
+			parsed = obj.content.data
+		}
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.error(err)
+	}
+
+	const handleUpdateValue = (key: string, newValue: string) => {
+		const newData = deepClone(parsed)
+		const newObj = deepClone(obj)
+		newObj.content.data = newData
+		newData[key] = newValue
+		onSave(newObj)
+	}
+	const handleUpdateKey = (oldKey: string, newKey: string) => {
+		const newData = deepClone(parsed)
+		const newObj = deepClone(obj)
+		newObj.content.data = newData
+		newData[newKey] = newData[oldKey]
+		delete newData[oldKey]
+		onSave(newObj)
+	}
+
+	const handleAddNew = () => {
+		const newData = deepClone(parsed)
+		const newObj = deepClone(obj)
+		newObj.content.data = newData
+
+		for (let i = 0; i < 100; i++) {
+			const key = `f${i}`
+			if (newData[key] === undefined) {
+				newData[key] = ''
+				break
+			}
+		}
+		onSave(newObj)
+	}
+
+	const handleDelete = (key: string) => {
+		const newData = deepClone(parsed)
+		const newObj = deepClone(obj)
+		newObj.content.data = newData
+		delete newData[key]
+		onSave(newObj)
+	}
+
+	const data: Array<any> = []
+	Object.keys(parsed).forEach((key) => {
+		data.push({
+			key: key,
+			value: parsed[key],
+		})
+	})
+
+	return (
+		<>
+			<div className="setting">
+				<BooleanInput
+					label="Classic CasparCG XML Data"
+					currentValue={(obj.content as any).casparXMLData}
+					onChange={(v) => {
+						;(obj.content as any).casparXMLData = v
+						onSave(obj)
+					}}
+				/>
+			</div>
+			<div className="casparcg-template-data">
+				<table className="table">
+					<thead>
+						<tr>
+							<th>Key</th>
+							<th>Value</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td colSpan={3}></td>
+						</tr>
+						{Object.entries(parsed).map(([key, value]) => {
+							return (
+								<tr key={key}>
+									<td className="key">
+										<TextInput
+											label="Key"
+											currentValue={key}
+											onChange={(v) => {
+												handleUpdateKey(key, v)
+											}}
+											allowUndefined={false}
+										/>
+									</td>
+									<td>
+										<TextInput
+											label="Value"
+											currentValue={value}
+											onChange={(v) => {
+												handleUpdateValue(key, v)
+											}}
+											allowUndefined={false}
+										/>
+									</td>
+									<td>
+										<TrashBtn
+											className="delete"
+											title={'Delete'}
+											onClick={() => {
+												handleDelete(key)
+											}}
+										/>
+									</td>
+								</tr>
+							)
+						})}
+
+						<tr>
+							<td colSpan={3}>
+								<AddBtn
+									title="Add"
+									onClick={() => {
+										handleAddNew()
+									}}
+								/>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div className="btn-row-right">
+					<Btn variant="contained" onClick={handleAddNew}>
+						Add
+					</Btn>
+				</div>
+			</div>
+		</>
 	)
 }

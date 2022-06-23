@@ -1,155 +1,60 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { Part } from '../../../../models/rundown/Part'
-import { ActiveTriggers, Trigger, activeTriggersToString } from '../../../../models/rundown/Trigger'
+import { Button } from '@mui/material'
+import React, { useContext, useState } from 'react'
+import { MdOutlineEditNote } from 'react-icons/md'
+import { PartGUI } from '../../../../models/rundown/Part'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { HotkeyContext } from '../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { EditTrigger } from '../../inputs/EditTrigger'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { TriggerBtn } from '../../inputs/TriggerBtn'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { PartPropertiesDialog } from '../PartPropertiesDialog'
 
-interface IPartSubmenuProps {
+export const PartSubmenu: React.FC<{
 	rundownId: string
 	groupId: string
-	part: Part
-	locked?: boolean
-}
-
-export const PartSubmenu: React.FC<IPartSubmenuProps> = ({ rundownId, groupId, part, locked }) => {
+	part: PartGUI
+	/** Part or group locked */
+	locked: boolean
+}> = ({ rundownId, groupId, part, locked }) => {
 	const ipcServer = useContext(IPCServerContext)
-	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-	const [triggerActive, setTriggerActive] = useState<boolean>(false)
-	const prevTriggerLength = useRef(0)
-	const handleTrigger = useCallback(
-		(triggers: ActiveTriggers) => {
-			// was something pressed?
-			const triggerLength = Object.keys(triggers).length
-			if (triggerLength > prevTriggerLength.current) {
-				// The length is longer; ie a button was pressed.
 
-				const trigger: Trigger = {
-					label: activeTriggersToString(triggers),
-					fullIdentifiers: triggers.map((t) => t.fullIdentifier),
-					action: 'playStop',
-				}
-
-				ipcServer
-					.setPartTrigger({
-						rundownId,
-						groupId,
-						partId: part.id,
-						trigger,
-						triggerIndex: 9999, // Add a trigger
-					})
-					.catch(handleError)
-			} else if (triggerLength < prevTriggerLength.current) {
-				// The length is shorter; ie a button was released.
-				// Stop listening for triggers:
-				setTriggerActive(false)
-			}
-			prevTriggerLength.current = triggerLength
-		},
-		[handleError, ipcServer, groupId, part.id, rundownId]
-	)
-	useEffect(() => {
-		if (triggerActive) {
-			hotkeyContext.triggers.on('trigger', handleTrigger)
-		} else {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-			prevTriggerLength.current = 0
-		}
-		return () => {
-			hotkeyContext.triggers.off('trigger', handleTrigger)
-		}
-	}, [hotkeyContext, triggerActive, handleTrigger])
-	const onEditTrigger = useCallback(
-		(index: number, trigger: Trigger | null) => {
-			ipcServer
-				.setPartTrigger({
-					rundownId,
-					groupId,
-					partId: part.id,
-					trigger,
-					triggerIndex: index,
-				})
-				.catch(handleError)
-		},
-		[groupId, handleError, ipcServer, part.id, rundownId]
-	)
-	const handleTriggerBtn = useCallback(() => {
-		setTriggerActive((oldActive) => !oldActive)
-	}, [])
-
-	const handleDelete = useCallback(() => {
-		ipcServer.deletePart({ rundownId, groupId, partId: part.id }).catch(handleError)
-	}, [groupId, handleError, ipcServer, part.id, rundownId])
-
-	const handleDuplicateBtn = useCallback(() => {
-		ipcServer
-			.duplicatePart({
-				rundownId,
-				groupId,
-				partId: part.id,
-			})
-			.catch(handleError)
-	}, [groupId, handleError, ipcServer, part.id, rundownId])
+	const [partPropertiesDialogOpen, setPartPropertiesDialogOpen] = useState(false)
 
 	return (
 		<div className="part__submenu">
-			{part.triggers.length > 0 && (
-				<div className="triggers">
-					{part.triggers.map((trigger, index) => (
-						<EditTrigger
-							key={index}
-							trigger={trigger}
-							index={index}
-							onEdit={onEditTrigger}
-							locked={locked}
-						/>
-					))}
-				</div>
-			)}
-
 			<div className="controls">
-				<TriggerBtn
+				<Button
+					variant="contained"
+					size="small"
+					title={'Edit Part Name' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 					disabled={locked}
-					onTrigger={handleTriggerBtn}
-					active={triggerActive}
-					title={'Assign Trigger' + (locked ? ' (disabled due to locked Part or Group)' : '')}
-				/>
-
-				<DuplicateBtn title="Duplicate Part" onClick={handleDuplicateBtn} />
-
-				<TrashBtn
-					disabled={locked}
-					title={'Delete Part' + (locked ? ' (disabled due to locked Part or Group)' : '')}
 					onClick={() => {
-						const pressedKeys = hotkeyContext.sorensen.getPressedKeys()
-						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
-							// Delete immediately with no confirmation dialog.
-							handleDelete()
-						} else {
-							setDeleteConfirmationOpen(true)
-						}
+						setPartPropertiesDialogOpen(true)
 					}}
-				/>
+				>
+					<MdOutlineEditNote size={18} />
+				</Button>
 			</div>
 
-			<ConfirmationDialog
-				open={deleteConfirmationOpen}
-				title="Delete Part"
-				body={`Are you sure you want to delete the part "${part.name}"?`}
-				acceptLabel="Delete"
-				onAccepted={() => {
-					handleDelete()
-					setDeleteConfirmationOpen(false)
+			<PartPropertiesDialog
+				open={partPropertiesDialogOpen}
+				title="Edit Part"
+				acceptLabel="Save"
+				initial={{ name: part.name }}
+				onAccepted={({ name }) => {
+					ipcServer
+						.updatePart({
+							rundownId,
+							groupId,
+							partId: part.id,
+							part: {
+								...part,
+								name,
+							},
+						})
+						.catch(handleError)
+					setPartPropertiesDialogOpen(false)
 				}}
 				onDiscarded={() => {
-					setDeleteConfirmationOpen(false)
+					setPartPropertiesDialogOpen(false)
 				}}
 			/>
 		</div>

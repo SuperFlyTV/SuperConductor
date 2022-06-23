@@ -7,6 +7,7 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropZone } from '../../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
+import { useMemoComputedValue } from '../../../mobx/lib'
 
 let EMPTY_LAYER_ID_COUNTER = 0
 
@@ -42,10 +43,13 @@ export const EmptyLayer: React.FC<{
 		return `${EMPTY_LAYER_ID_PREFIX}-${EMPTY_LAYER_ID_COUNTER++}`
 	}, [])
 
-	const canMoveTimelineObjToThisEmptyLayer =
-		store.guiStore.timelineObjMove.moveType === 'whole' &&
-		store.guiStore.timelineObjMove.hoveredLayerId === layerId &&
-		store.guiStore.selectedTimelineObjIds.length === 1
+	const canMoveTimelineObjToThisEmptyLayer = useMemoComputedValue(() => {
+		return (
+			store.guiStore.timelineObjMove.moveType === 'whole' &&
+			store.guiStore.timelineObjMove.hoveredLayerId === layerId &&
+			store.guiStore.selected.timelineObjIds.length === 1
+		)
+	}, [layerId])
 
 	return (
 		<DropZone

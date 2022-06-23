@@ -8,6 +8,7 @@ import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { LogLevel } from '@shared/api'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -27,9 +28,6 @@ export const enum ActionDescription {
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
-	NewTemplateData = 'add new template data',
-	UpdateTemplateData = 'update template data',
-	DeleteTemplateData = 'delete template data',
 	AddResourceToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
@@ -65,9 +63,11 @@ export interface Action {
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
+	log: (method: LogLevel, ...args: any[]) => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
+	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
@@ -95,9 +95,9 @@ export interface IPCServerMethods {
 
 		name: string
 	}) => { partId: string; groupId?: string }
-	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Part }) => void
+	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Partial<Part> }) => void
 	newGroup: (arg: { rundownId: string; name: string }) => string
-	updateGroup: (arg: { rundownId: string; groupId: string; group: Group }) => void
+	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
 	movePart: (arg: {
@@ -113,9 +113,12 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: TimelineObj
+		timelineObj: {
+			resourceId?: TimelineObj['resourceId']
+			obj: Partial<TimelineObj['obj']>
+		}
 	}) => void
-	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
+	deleteTimelineObj: (arg: { rundownId: string; timelineObjId: string }) => void
 	addTimelineObj: (arg: {
 		rundownId: string
 		groupId: string
@@ -138,39 +141,14 @@ export interface IPCServerMethods {
 		resourceId: string
 	}) => void
 
-	newTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-	}) => void
-	updateTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-		key: string
-		changedItemId: string
-		value: string
-	}) => void
-	deleteTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-		key: string
-	}) => void
-
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupAutoplay: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupOneAtATime: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupDisable: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
-	toggleGroupCollapse: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	refreshResources: () => void
+	refreshResourcesSetAuto: (interval: number) => void
+	triggerHandleAutoFill: () => void
 
 	updateProject: (arg: { id: string; project: Project }) => void
 
@@ -181,6 +159,7 @@ export interface IPCServerMethods {
 	listRundowns: (arg: { projectId: string }) => { fileName: string; version: number; name: string; open: boolean }[]
 	renameRundown: (arg: { rundownId: string; newName: string }) => void
 	isRundownPlaying: (arg: { rundownId: string }) => boolean
+	isTimelineObjPlaying: (arg: { rundownId: string; timelineObjId: string }) => boolean
 
 	createMissingMapping: (arg: { rundownId: string; mappingId: string }) => void
 

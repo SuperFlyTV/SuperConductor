@@ -1,5 +1,8 @@
+import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import { IPCServer } from '../api/IPCServer'
+const { ipcRenderer } = window.require('electron')
 
 /**
  * Store contains only information about user interface
@@ -26,9 +29,9 @@ export interface TimelineObjectMove {
 	/** The corresponding layer ID of the layer element that the user's mouse is hovering over. null = not over a valid layer */
 	hoveredLayerId: null | string
 	/** The current client X position of the pointer [pixels] */
-	pointerX?: number
+	// pointerX?: number
 	/** The current client Y position of the pointer [pixels] */
-	pointerY?: number
+	// pointerY?: number
 	/** The origin client X position of the pointer when the move began [pixels] */
 	originX?: number
 	/** The origin client Y position of the pointer when the move began [pixels] */
@@ -37,15 +40,38 @@ export interface TimelineObjectMove {
 	duplicate?: boolean
 	/** A unique identifier for each move transaction */
 	moveId: null | string
+	/** Set to true when a move has completed and is being saved */
+	saving?: boolean
+}
+interface CurrentSelection {
+	groupId?: string
+	partId?: string
+	timelineObjIds: string[]
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
-	selectedGroupId?: string
-	selectedPartId?: string
-	selectedTimelineObjIds: string[] = []
+	serverAPI = new IPCServer(ipcRenderer)
+
+	private _selected: CurrentSelection = {
+		groupId: undefined,
+		partId: undefined,
+		timelineObjIds: [],
+	}
+
+	public resourceLibrary: {
+		selectedResourceId?: string
+		nameFilterValue: string
+		deviceFilterValue: string[]
+	} = {
+		selectedResourceId: undefined,
+		nameFilterValue: '',
+		deviceFilterValue: [],
+	}
 
 	definingArea: DefiningArea | null = null
+
+	private groupSettings = new Map<string, GroupSettings>()
 
 	private _activeTabId = 'home'
 	get activeTabId() {
@@ -53,6 +79,16 @@ export class GuiStore {
 	}
 	set activeTabId(id: string) {
 		this._activeTabId = id
+	}
+
+	get selected(): Readonly<CurrentSelection> {
+		return this._selected
+	}
+	setSelected(selected: Partial<CurrentSelection>) {
+		this._selected = {
+			...this._selected,
+			...selected,
+		}
 	}
 
 	activeHomePageId = 'project'
@@ -90,11 +126,48 @@ export class GuiStore {
 	}
 
 	updateDefiningArea(definingArea: DefiningArea | null) {
-		// console.log('updateDefiningArea')
 		this.definingArea = definingArea
+	}
+
+	async getSelectedAndPlayingTimelineObjIds(rundownId: string): Promise<Set<string>> {
+		const playingIds = new Set<string>()
+		const promises: Array<Promise<void>> = []
+		for (const timelineObjId of this.selected.timelineObjIds) {
+			const promise = this.serverAPI
+				.isTimelineObjPlaying({
+					rundownId,
+					timelineObjId,
+				})
+				.then((isPlaying) => {
+					if (isPlaying) playingIds.add(timelineObjId)
+				})
+			promises.push(promise)
+		}
+
+		await Promise.all(promises)
+
+		return playingIds
+	}
+	getGroupSettings(groupId: string): GroupSettings {
+		return this.groupSettings.get(groupId) || {}
+	}
+	setGroupSettings(groupId: string, update: Partial<GroupSettings>): void {
+		const org = this.getGroupSettings(groupId)
+		const updated: GroupSettings = {
+			...org,
+			...update,
+		}
+		if (!_.isEqual(updated, org)) {
+			this.groupSettings.set(groupId, updated)
+		}
 	}
 
 	constructor() {
 		makeAutoObservable(this)
 	}
+}
+
+interface GroupSettings {
+	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
+	collapsed?: boolean
 }

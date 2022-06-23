@@ -1,0 +1,66 @@
+.sc-switch {
+	display: flex;
+	align-items: center;
+
+	.react-toggle-track {
+		width: 40px;
+		height: 20px;
+		background-color: #bcbcc0;
+	}
+
+	// When hovered
+	.react-toggle:hover:not(.react-toggle--disabled) .react-toggle-track {
+		background-color: #8c8c90;
+	}
+
+	// When checked
+	.react-toggle--checked:not(.react-toggle--disabled) .react-toggle-track {
+		//background-color: #47ae6b;
+		background: #bcbcc0;
+	}
+
+	// When checked and hovered
+	.react-toggle--checked:hover:not(.react-toggle--disabled) .react-toggle-track {
+		//background-color: #63d38a;
+		background-color: #8c8c90;
+	}
+
+	.react-toggle-thumb {
+		width: 15px;
+		height: 15px;
+		top: 2px;
+		left: 3px;
+		background: #1b1c26;
+		box-shadow: none !important;
+		border: none !important;
+	}
+
+	.react-toggle-track-check {
+		left: 6px;
+		top: 2px;
+		svg {
+			width: 11px;
+			height: 9px;
+			path {
+				fill: #1b1c26;
+			}
+		}
+	}
+
+	.react-toggle-track-x {
+		right: 5px;
+		top: 2px;
+		svg {
+			width: 8px;
+			height: 8px;
+			path {
+				fill: #1b1c26;
+			}
+			stroke-width: 0;
+		}
+	}
+
+	.react-toggle--checked .react-toggle-thumb {
+		left: 22px;
+	}
+}

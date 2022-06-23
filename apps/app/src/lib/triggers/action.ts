@@ -1,49 +1,76 @@
 import { Rundown } from '../../models/rundown/Rundown'
-import { Group } from '../../models/rundown/Group'
-import { Part } from '../../models/rundown/Part'
+import { GroupBase } from '../../models/rundown/Group'
+import { PartBase } from '../../models/rundown/Part'
 import { ActiveTrigger, activeTriggersToString, Trigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
+import { PeripheralStatus } from '../../models/project/Peripheral'
+import { GroupWithShallowParts, PartWithRef } from '../util'
 
-export interface Action {
+export interface ActionLight {
 	trigger: Trigger
 	rundownId: string
-	group: Group
-	part: Part
+	part: PartBase
+}
+export interface Action extends ActionLight {
+	group: GroupBase
 }
 
-export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): Action[] {
+export function getAllActionsInRundowns(
+	rundowns: Rundown[],
+	project: Project,
+	peripherals: { [peripheralId: string]: PeripheralStatus } | undefined
+) {
+	const allParts: PartWithRef[] = []
+	for (const rundown of rundowns) {
+		for (const group of rundown.groups) {
+			for (const part of group.parts) {
+				allParts.push({
+					rundown,
+					group,
+					part,
+				})
+			}
+		}
+	}
+
+	return getAllActionsInParts(allParts, project, peripherals)
+}
+export function getAllActionsInParts(
+	allParts: PartWithRef[],
+	project: Project,
+	peripherals: { [peripheralId: string]: PeripheralStatus } | undefined
+): Action[] {
 	const actions: Action[] = []
 	// Collect all actions from the rundowns:
 	const groups = new Map<
 		string,
 		{
 			rundownId: string
-			group: Group
+			group: GroupWithShallowParts
 		}
 	>()
-	for (const rundown of rundowns) {
-		for (const group of rundown.groups) {
-			groups.set(group.id, {
-				rundownId: rundown.id,
-				group,
+	for (const p of allParts) {
+		if (!groups.has(p.group.id)) {
+			groups.set(p.group.id, {
+				rundownId: p.rundown.id,
+				group: p.group,
 			})
-
-			for (const part of group.parts) {
-				for (const trigger of part.triggers) {
-					actions.push({
-						trigger,
-						rundownId: rundown.id,
-						group,
-						part,
-					})
-				}
-			}
+		}
+		for (const trigger of p.part.triggers) {
+			actions.push({
+				trigger,
+				rundownId: p.rundown.id,
+				group: p.group,
+				part: p.part,
+			})
 		}
 	}
 	// Collect actions from Areas:
 
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+			const peripheralStatus = peripherals?.[`${bridgeId}-${deviceId}`] as PeripheralStatus | undefined
+
 			for (const [_areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
@@ -62,7 +89,7 @@ export function getAllActionsInRundowns(rundowns: Rundown[], project: Project): 
 									fullIdentifier: fullIdentifier,
 									bridgeId,
 									deviceId,
-									deviceName: '',
+									deviceName: peripheralStatus?.info.name ?? '',
 									identifier,
 								}
 								const trigger: Trigger = {

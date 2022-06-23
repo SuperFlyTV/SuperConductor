@@ -1,4 +1,4 @@
-import { AttentionLevel, KeyDisplay, PeripheralInfo } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
 import _ from 'lodash'
 import { XKeysWatcher, XKeys } from 'xkeys'
 import { Peripheral } from './peripheral'
@@ -10,7 +10,7 @@ const FLASH_NORMAL = 30
 
 export class PeripheralXkeys extends Peripheral {
 	private connectedToParent = false
-	static Watch(onDevice: (peripheral: PeripheralXkeys) => void) {
+	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralXkeys) => void) {
 		let usePolling = false
 		// Check if usb-detection is installed:
 		try {
@@ -30,16 +30,16 @@ export class PeripheralXkeys extends Peripheral {
 		watcher.on('connected', (xkeysPanel) => {
 			const id = `xkeys-${xkeysPanel.uniqueId}`
 
-			const newDevice = new PeripheralXkeys(id, xkeysPanel)
+			const newDevice = new PeripheralXkeys(log, id, xkeysPanel)
 
 			newDevice
 				.init()
 				.then(() => onDevice(newDevice))
-				.catch(console.error)
+				.catch(log.error)
 		})
 
 		return {
-			stop: () => watcher.stop().catch(console.error),
+			stop: () => watcher.stop().catch(log.error),
 		}
 	}
 
@@ -56,8 +56,8 @@ export class PeripheralXkeys extends Peripheral {
 	} = {}
 	private ignoreKeys = new Set<number>()
 
-	constructor(id: string, private xkeysPanel: XKeys) {
-		super(id)
+	constructor(log: LoggerLike, id: string, private xkeysPanel: XKeys) {
+		super(log, id)
 	}
 
 	async init(): Promise<void> {
@@ -88,7 +88,7 @@ export class PeripheralXkeys extends Peripheral {
 				this.emit('connected')
 			})
 
-			this.xkeysPanel.on('error', console.error)
+			this.xkeysPanel.on('error', this.log.error)
 
 			this.xkeysPanel.setAllBacklights(null)
 			this.xkeysPanel.setIndicatorLED(1, false) // green

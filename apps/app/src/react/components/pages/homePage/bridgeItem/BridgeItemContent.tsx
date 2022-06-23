@@ -3,13 +3,13 @@ import { Bridge, BridgeStatus } from '../../../../../models/project/Bridge'
 import { RoundedSection } from '../roundedSection/RoundedSection'
 import { DevicesList } from '../deviceItem/DevicesList'
 import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
-import { NewDeviceDialog } from '../../../settings/devices/NewDeviceDialog'
-
-import './style.scss'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { TextField } from '@mui/material'
+
+import './style.scss'
+import { NewDeviceDialog } from '../bridgesPage/NewDeviceDialog'
 
 export const BridgeItemContent: React.FC<{
 	id: string
@@ -22,6 +22,7 @@ export const BridgeItemContent: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const [addDeviceOpen, setAddDeviceOpen] = useState(false)
+	const [newlyCreatedDeviceId, setNewlyCreatedDeviceId] = useState<string | undefined>()
 
 	const [name, setName] = useState(props.bridge.name)
 	const [url, setUrl] = useState(props.bridge.url)
@@ -55,6 +56,8 @@ export const BridgeItemContent: React.FC<{
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
 
+	const outgoingBridge: boolean = props.bridge.outgoing
+
 	return (
 		<div className="content">
 			{!props.isInternal && (
@@ -78,22 +81,24 @@ export const BridgeItemContent: React.FC<{
 							}}
 						/>
 
-						<TextField
-							margin="normal"
-							size="small"
-							type="text"
-							label="URL"
-							value={url}
-							onChange={(event) => {
-								setUrl(event.target.value)
-							}}
-							onBlur={() => {
-								handleUrlChange(url)
-							}}
-							onKeyUp={(e) => {
-								if (e.key === 'Enter') handleUrlChange(url)
-							}}
-						/>
+						{outgoingBridge && (
+							<TextField
+								margin="normal"
+								size="small"
+								type="text"
+								label="URL"
+								value={url}
+								onChange={(event) => {
+									setUrl(event.target.value)
+								}}
+								onBlur={() => {
+									handleUrlChange(url)
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Enter') handleUrlChange(url)
+								}}
+							/>
+						)}
 					</div>
 
 					<div className="actions">
@@ -103,17 +108,21 @@ export const BridgeItemContent: React.FC<{
 			)}
 
 			<RoundedSection title="Devices" controls={<TextBtn label="Add" onClick={() => setAddDeviceOpen(true)} />}>
-				{Object.entries(props.bridgeStatus.devices).length > 0 ? (
-					<DevicesList bridge={props.bridge} devices={props.bridgeStatus ? props.bridgeStatus.devices : {}} />
-				) : (
-					<div className="central">There are no devices.</div>
-				)}
+				<DevicesList
+					project={project}
+					bridge={props.bridge}
+					devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
+					newlyCreatedDeviceId={newlyCreatedDeviceId}
+				/>
 			</RoundedSection>
 
 			<NewDeviceDialog
 				bridge={props.bridge}
 				open={addDeviceOpen}
-				onAccepted={() => setAddDeviceOpen(false)}
+				onAccepted={(deviceId) => {
+					setNewlyCreatedDeviceId(deviceId)
+					setAddDeviceOpen(false)
+				}}
 				onDiscarded={() => {
 					setAddDeviceOpen(false)
 				}}

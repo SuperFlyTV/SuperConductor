@@ -1,0 +1,75 @@
+.settings {
+
+    display: flex;
+    flex-direction: column;
+
+    position: relative;
+    max-height: 100vh;
+
+    background-color: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+
+    border-bottom-left-radius: 0.5em;
+    border-bottom-right-radius: 0.5em;
+    border-bottom: 1px solid gray;
+
+    padding-bottom: 2em;
+
+    &.closed .content {
+        display: none;
+    }
+
+    .content {
+        padding: 1em;
+        overflow-y: auto;
+    }
+
+    .open-close-handle {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2em;
+
+        border-top: 1px solid rgba(255,255,255,0.25);
+        cursor: pointer;
+        z-index: 10;
+
+        background-color: rgba(0, 0, 0, 0.8);
+
+        &:hover {
+            background-color: rgba(30, 30, 30, 0.8);
+        }
+
+        text-align: center;
+        svg {
+            font-size: 30px;
+        }
+
+
+    }
+
+    .setting {
+        display: flex;
+        flex-direction: row;
+    }
+    .label {
+        width: 20em;
+        margin-right: 0.5em;
+
+        margin-top: 20px;
+
+        text-align: right;
+    }
+    .value {
+        max-width: 15em;
+
+        >.sc-switch {
+            margin-top: 23px;
+        }
+    }
+    .header {
+        font-size: 125%;
+    }
+
+}

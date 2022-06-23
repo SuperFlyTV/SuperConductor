@@ -72,6 +72,14 @@ $borderColor: rgba(176, 176, 176, 0.5);
 	position: relative;
 	margin-top: 1.2rem;
 
+	.bottom-controls {
+		padding: 1rem;
+		text-align: center;
+		color: rgba(255, 255, 255, 0.8);
+		font-size: 1.4rem;
+		margin-top: 2rem;
+	}
+
 	> .header {
 		display: flex;
 		align-items: center;
@@ -87,6 +95,12 @@ $borderColor: rgba(176, 176, 176, 0.5);
 			font-size: 1.4rem;
 			font-weight: 700;
 			color: rgba(255, 255, 255, 0.8);
+			display: flex;
+			align-items: center;
+
+			img {
+				margin-right: 0.7rem;
+			}
 		}
 
 		> .controls {
@@ -99,23 +113,7 @@ $borderColor: rgba(176, 176, 176, 0.5);
 			background: $borderColor;
 		}
 
-		> button.help {
-			padding: 0;
-			background: transparent;
-			color: $borderColor;
-			border: 0;
-			margin-top: 0.4rem;
 
-			&:hover,
-			&.open {
-				color: #a5a5a5;
-			}
-
-			svg {
-				width: 1.6rem;
-				height: 1.6rem;
-			}
-		}
 	}
 
 	> .border-cropper {

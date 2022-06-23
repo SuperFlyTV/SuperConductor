@@ -48,7 +48,7 @@
 		"@shared/peripherals": "^0.7.2",
 		"lodash": "^4.17.21",
 		"timeline-state-resolver": "^6.2.0-release37.4",
-		"winston": "^3.6.0"
+		"winston": "^3.7.2"
 	},
 	"devDependencies": {
 		"@types/lodash": "^4.14.178"

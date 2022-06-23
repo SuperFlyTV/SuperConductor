@@ -1,10 +1,11 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
+import { HTTPSendAny } from './HTTPSend'
 import { OBSAny } from './OBS'
 import { OSCAny } from './OSC'
 import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -16,6 +17,12 @@ export interface ResourceBase {
 
 	/** Required because it is used to search/filter resources in the sidebar. Does not need to be unique. */
 	displayName: string
+
+	/** When the Resource was added to the Library [unix timestamp, ms] */
+	added?: number
+
+	/** When the Resource was last modified [unix timestamp, ms] */
+	modified?: number
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',
@@ -53,4 +60,6 @@ export enum ResourceType {
 	VMIX_FADER = 'VMIX_FADER',
 
 	OSC_MESSAGE = 'OSC_MESSAGE',
+
+	HTTP_REQUEST = 'HTTP_REQUEST',
 }

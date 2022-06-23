@@ -102,4 +102,12 @@
 	&.osc {
 		background: $oscLayerColor;
 	}
+
+	&.http_request,
+	&.post,
+	&.get,
+	&.put,
+	&.delete {
+		background: $httpLayerColor;
+	}
 }

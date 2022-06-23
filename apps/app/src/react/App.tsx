@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
@@ -29,7 +29,13 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
-import { DefiningArea } from 'src/lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { ConfirmationDialog } from './components/util/ConfirmationDialog'
+import { LoggerContext } from './contexts/Logger'
+import { ClientSideLogger } from './api/logger'
+import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
+import { Action, getAllActionsInParts } from '../lib/triggers/action'
+import { PartWithRef } from '../lib/util'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -40,6 +46,7 @@ const ErrorCruftRegex = /^Error invoking remote method '.+': /
 const ENABLE_WHY_DID_YOU_RENDER = false
 
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
+	// eslint-disable-next-line no-console
 	console.log('Why-did-you-render-enabled')
 	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
@@ -53,13 +60,21 @@ export const App = observer(function App() {
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar } = useSnackbar()
 
+	const serverAPI = useMemo<IPCServer>(() => {
+		return new IPCServer(ipcRenderer)
+	}, [])
+
+	const logger = useMemo(() => {
+		return new ClientSideLogger(serverAPI)
+	}, [serverAPI])
+
 	const triggers = useMemo(() => {
 		return new TriggersEmitter()
 	}, [])
 
 	// Handle IPC-messages from server
 	useEffect(() => {
-		const ipcClient = new IPCClient(ipcRenderer, {
+		const ipcClient = new IPCClient(logger, ipcRenderer, {
 			updateAppData: (appData: AppData) => {
 				store.appStore.update(appData)
 				store.rundownsStore.update(appData.rundowns)
@@ -82,11 +97,11 @@ export const App = observer(function App() {
 		return () => {
 			ipcClient.destroy()
 		}
-	}, [triggers])
+	}, [triggers, logger])
 
 	const handleError = useMemo(() => {
 		return (error: unknown): void => {
-			console.error(error)
+			logger.error(error)
 			if (typeof error === 'object' && error !== null && 'message' in error) {
 				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 			} else if (typeof error === 'string') {
@@ -95,7 +110,7 @@ export const App = observer(function App() {
 				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
 			}
 		}
-	}, [enqueueSnackbar])
+	}, [enqueueSnackbar, logger])
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -103,12 +118,14 @@ export const App = observer(function App() {
 		}
 	}, [handleError])
 
-	const serverAPI = useMemo<IPCServer>(() => {
-		return new IPCServer(ipcRenderer)
-	}, [])
 	useEffect(() => {
 		// Ask backend for the data once ready:
 		serverAPI.triggerSendAll().catch(handleError)
+
+		// @ts-expect-error hack:
+		window.makeDevData = () => {
+			serverAPI.makeDevData().catch(handleError)
+		}
 	}, [handleError, serverAPI])
 
 	// Handle hotkeys from keyboard:
@@ -147,15 +164,21 @@ export const App = observer(function App() {
 
 	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
-		const isOnLayer = tarEl.closest('.object')
-		const isOnSidebar = tarEl.closest('.side-bar')
-		const isOnMUI = tarEl.closest('.MuiModal-root')
 
-		if (!isOnMUI && !isOnLayer && !isOnSidebar && !gui.timelineObjMove.partId) {
-			if (gui.selectedTimelineObjIds.length > 0) {
-				gui.selectedTimelineObjIds = []
-				gui.selectedGroupId = undefined
-				gui.selectedPartId = undefined
+		if (
+			tarEl.closest('.main-area') &&
+			!tarEl.closest('.timeline-object') &&
+			!tarEl.closest('.side-bar') &&
+			!tarEl.closest('.MuiModal-root') &&
+			!tarEl.closest('button') &&
+			!gui.timelineObjMove.moveType
+		) {
+			if (gui.selected.timelineObjIds.length > 0) {
+				gui.setSelected({
+					timelineObjIds: [],
+					groupId: undefined,
+					partId: undefined,
+				})
 			}
 		}
 	}
@@ -166,8 +189,8 @@ export const App = observer(function App() {
 			.then(() => {
 				setSorensenInitialized(true)
 			})
-			.catch(console.error)
-	}, [])
+			.catch(logger.error)
+	}, [logger.error, serverAPI])
 
 	// Handle splash screen:
 	const appStore = store.appStore
@@ -187,14 +210,116 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
-			appStore.serverAPI.acknowledgeSeenVersion().catch(console.error)
+			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
 	}
 
-	const hotkeyContext: IHotkeyContext = {
-		sorensen,
-		triggers,
-	}
+	// Handle using the Delete key to delete timeline objs
+	const currentRundownId = useMemoComputedValue(() => {
+		return store.rundownsStore.currentRundownId
+	}, [])
+	const [showDeleteTimelineObjConfirmationDialog, setShowDeleteTimelineObjConfirmationDialog] = useState(false)
+	const deleteSelectedTimelineObjs = useCallback(() => {
+		if (!currentRundownId) {
+			return
+		}
+
+		const promises: Promise<void>[] = []
+		for (const id of gui.selected.timelineObjIds) {
+			const promise = serverAPI.deleteTimelineObj({
+				rundownId: currentRundownId,
+				timelineObjId: id,
+			})
+			promises.push(promise)
+		}
+
+		Promise.all(promises).catch(handleError)
+	}, [currentRundownId, gui.selected.timelineObjIds, handleError, serverAPI])
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		const onDeleteKey = (e: KeyboardEvent) => {
+			try {
+				if (!currentRundownId) return
+				if (document.activeElement?.tagName === 'INPUT') return
+
+				e.preventDefault()
+				gui.getSelectedAndPlayingTimelineObjIds(currentRundownId)
+					.then((selectedAndPlayingTimelineObjIds) => {
+						if (selectedAndPlayingTimelineObjIds.size > 0) {
+							setShowDeleteTimelineObjConfirmationDialog(true)
+						} else {
+							deleteSelectedTimelineObjs()
+						}
+					})
+					.catch(handleError)
+			} catch (error) {
+				handleError(error)
+			}
+		}
+
+		sorensen.bind('Delete', onDeleteKey, {
+			up: false,
+			global: true,
+			exclusive: true,
+			preventDefaultPartials: false,
+		})
+
+		return () => {
+			sorensen.unbind('Delete', onDeleteKey)
+		}
+	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
+
+	const allButtonActions = useMemoComputedObject(() => {
+		const newButtonActions = new Map<string, Action[]>()
+
+		if (!project) {
+			return newButtonActions
+		}
+
+		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
+
+		/** All Parts in all open rundowns */
+		const allParts: PartWithRef[] = []
+		for (const rundownId of allRundownIds) {
+			if (!store.rundownsStore.hasRundown(rundownId)) continue
+			const rundown = store.rundownsStore.getRundown(rundownId)
+			for (const groupId of rundown.groupIds) {
+				const group = store.rundownsStore.getGroupWithParts(groupId)
+				for (const part of group.parts) {
+					allParts.push({
+						rundown,
+						group,
+						part,
+					})
+				}
+			}
+		}
+
+		const allActions = getAllActionsInParts(allParts, project, store.appStore.peripherals)
+		for (const action of allActions) {
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				let newButtonAction = newButtonActions.get(fullIdentifier)
+				if (!newButtonAction) {
+					newButtonAction = []
+					newButtonActions.set(fullIdentifier, newButtonAction)
+				}
+				newButtonAction.push(action)
+			}
+		}
+		return newButtonActions
+	}, [store.rundownsStore.rundowns, project, store.appStore.peripherals])
+	useEffect(() => {
+		store.rundownsStore.allButtonActions = allButtonActions
+	}, [allButtonActions])
+
+	const hotkeyContext: IHotkeyContext = useMemo(() => {
+		return {
+			triggers,
+		}
+	}, [triggers])
 
 	if (!project || !sorensenInitialized) {
 		return <div>Loading...</div>
@@ -202,38 +327,58 @@ export const App = observer(function App() {
 
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
-			<IPCServerContext.Provider value={serverAPI}>
-				<ProjectContext.Provider value={project}>
-					<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-						<div className="app" onPointerDown={handlePointerDownAnywhere}>
-							<HeaderBar />
+			<LoggerContext.Provider value={logger}>
+				<IPCServerContext.Provider value={serverAPI}>
+					<ProjectContext.Provider value={project}>
+						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
+							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+								<HeaderBar />
 
-							{splashScreenOpen && (
-								<SplashScreen
-									seenVersion={appStore.version?.seenVersion}
-									currentVersion={appStore.version?.currentVersion}
-									onClose={onSplashScreenClose}
-								/>
-							)}
+								{splashScreenOpen && (
+									<SplashScreen
+										seenVersion={appStore.version?.seenVersion}
+										currentVersion={appStore.version?.currentVersion}
+										onClose={onSplashScreenClose}
+									/>
+								)}
 
-							{store.guiStore.isNewRundownSelected() ? (
-								<NewRundownPage />
-							) : store.guiStore.isHomeSelected() ? (
-								<HomePage project={project} />
-							) : (
-								<>
-									<div className="main-area">
-										<RundownView mappings={project.mappings} />
-									</div>
-									<div className="side-bar">
-										<Sidebar mappings={project.mappings} />
-									</div>
-								</>
-							)}
-						</div>
-					</ErrorHandlerContext.Provider>
-				</ProjectContext.Provider>
-			</IPCServerContext.Provider>
+								{store.guiStore.isNewRundownSelected() ? (
+									<NewRundownPage />
+								) : store.guiStore.isHomeSelected() ? (
+									<HomePage project={project} />
+								) : (
+									<>
+										<div className="main-area">
+											<RundownView mappings={project.mappings} />
+										</div>
+										<div className="side-bar">
+											<Sidebar mappings={project.mappings} />
+										</div>
+									</>
+								)}
+
+								<ConfirmationDialog
+									open={showDeleteTimelineObjConfirmationDialog}
+									title="Delete Timeline Object(s)"
+									acceptLabel="Delete"
+									onDiscarded={() => {
+										setShowDeleteTimelineObjConfirmationDialog(false)
+									}}
+									onAccepted={() => {
+										deleteSelectedTimelineObjs()
+										setShowDeleteTimelineObjConfirmationDialog(false)
+									}}
+								>
+									<p>
+										Some of the selected timeline objects are currently being used in playout. Are
+										you sure you wish to delete them?
+									</p>
+								</ConfirmationDialog>
+							</div>
+						</ErrorHandlerContext.Provider>
+					</ProjectContext.Provider>
+				</IPCServerContext.Provider>
+			</LoggerContext.Provider>
 		</HotkeyContext.Provider>
 	)
 })

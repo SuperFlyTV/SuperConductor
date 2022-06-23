@@ -11,7 +11,10 @@ export function ParsedValueInput<V>(
 	emptyPlaceholder?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
-	fullWidth?: boolean
+	fullWidth?: boolean,
+	width?: string,
+	changeOnKey?: boolean,
+	onIncrement?: (value: V, increment: number) => V
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
@@ -30,6 +33,10 @@ export function ParsedValueInput<V>(
 			if (value !== undefined) onChange(value)
 			else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 		}
+	}
+	const onChangeValue = (value: V) => {
+		setValue(stringify(value))
+		onChange(value)
 	}
 	const onEventChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		const str: string = e.target.value
@@ -77,14 +84,35 @@ export function ParsedValueInput<V>(
 			}}
 			onChange={(e) => {
 				onEventChange(e)
+				if (changeOnKey) {
+					onSave(e.target.value)
+				}
 			}}
 			onKeyDown={(e) => {
 				const target = e.target as EventTarget & HTMLInputElement
 				if (e.key === 'Enter') {
+					// Select all text
+					;(document.activeElement as HTMLInputElement).setSelectionRange(0, target.value.length)
+
 					onSave(target.value)
 				} else if (e.key === 'Escape') {
 					// revert to previous value:
+					;(document.activeElement as HTMLInputElement).blur()
 					setValue(stringify(currentValue))
+				} else if (e.key === 'ArrowUp') {
+					if (onIncrement) {
+						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, 100))
+						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, 10))
+						else if (e.altKey) onChangeValue(onIncrement(currentValue, 0.1))
+						else onChangeValue(onIncrement(currentValue, 1))
+					}
+				} else if (e.key === 'ArrowDown') {
+					if (onIncrement) {
+						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, -100))
+						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, -10))
+						else if (e.altKey) onChangeValue(onIncrement(currentValue, -0.1))
+						else onChangeValue(onIncrement(currentValue, -1))
+					}
 				}
 			}}
 			size="small"
@@ -94,6 +122,7 @@ export function ParsedValueInput<V>(
 			value={value}
 			disabled={disabled}
 			placeholder={emptyPlaceholder}
+			sx={{ width: width }}
 		/>
 	)
 }

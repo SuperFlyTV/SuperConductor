@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { LogEntry } from 'winston'
 import { IPCClientMethods } from '../ipc/IPCAPI'
+import { AppSettings, AppSystem } from '../models/AppData'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {
@@ -8,5 +9,11 @@ export class IPCClient implements IPCClientMethods {
 
 	log(entry: LogEntry): void {
 		this.mainWindow?.webContents.send('callMethod', 'log', entry)
+	}
+	settings(settings: AppSettings): void {
+		this.mainWindow?.webContents.send('callMethod', 'settings', settings)
+	}
+	system(system: AppSystem): void {
+		this.mainWindow?.webContents.send('callMethod', 'system', system)
 	}
 }

@@ -1,6 +1,5 @@
-import classNames from 'classnames'
 import React, { useState } from 'react'
-import { FiHelpCircle } from 'react-icons/fi'
+import { HelpButton } from '../../../inputs/HelpButton/HelpButton'
 import { Message } from '../message/Message'
 import './style.scss'
 
@@ -20,14 +19,12 @@ export const ProjectPageLayout: React.FC<{
 					<div className="title">{props.title}</div>
 				</div>
 				{props.help && (
-					<button
-						className={classNames('help', { open: showHelp })}
+					<HelpButton
+						showHelp={showHelp}
 						onClick={() => {
 							setShowHelp(!showHelp)
 						}}
-					>
-						<FiHelpCircle />
-					</button>
+					/>
 				)}
 				{props.controls && <div className="controls">{props.controls}</div>}
 			</div>
