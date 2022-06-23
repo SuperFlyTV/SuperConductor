@@ -7,10 +7,10 @@ interface IProps {
 	onDiscarded: () => void
 	acceptLabel: string
 	title: string
-	body: string
+	children: JSX.Element
 }
 
-export function ConfirmationDialog({ open, title, body, acceptLabel, onAccepted, onDiscarded }: IProps) {
+export function ConfirmationDialog({ open, title, children, acceptLabel, onAccepted, onDiscarded }: IProps) {
 	return (
 		<Dialog
 			open={open}
@@ -20,7 +20,7 @@ export function ConfirmationDialog({ open, title, body, acceptLabel, onAccepted,
 			}}
 		>
 			<DialogTitle>{title}</DialogTitle>
-			<DialogContent>{body}</DialogContent>
+			<DialogContent>{children}</DialogContent>
 			<DialogActions>
 				<Button variant="contained" onClick={onDiscarded}>
 					Cancel

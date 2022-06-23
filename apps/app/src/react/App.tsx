@@ -360,7 +360,6 @@ export const App = observer(function App() {
 								<ConfirmationDialog
 									open={showDeleteTimelineObjConfirmationDialog}
 									title="Delete Timeline Object(s)"
-									body="Some of the selected timeline objects are currently being used in playout. Are you sure you wish to delete them?"
 									acceptLabel="Delete"
 									onDiscarded={() => {
 										setShowDeleteTimelineObjConfirmationDialog(false)
@@ -369,7 +368,12 @@ export const App = observer(function App() {
 										deleteSelectedTimelineObjs()
 										setShowDeleteTimelineObjConfirmationDialog(false)
 									}}
-								/>
+								>
+									<p>
+										Some of the selected timeline objects are currently being used in playout. Are
+										you sure you wish to delete them?
+									</p>
+								</ConfirmationDialog>
 							</div>
 						</ErrorHandlerContext.Provider>
 					</ProjectContext.Provider>

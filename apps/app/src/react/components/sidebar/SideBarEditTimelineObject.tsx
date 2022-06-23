@@ -1,6 +1,6 @@
 import { IPCServerContext } from '../../contexts/IPCServer'
 import React, { useCallback, useContext, useState } from 'react'
-import { Mappings, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow } from './DataRow/DataRow'
@@ -84,7 +84,6 @@ export const SideBarEditTimelineObject: React.FC<{
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}
 				title="Delete Timeline Object"
-				body={`Are you sure you want to delete "${description.label}"?`}
 				acceptLabel="Delete"
 				onAccepted={() => {
 					handleDelete()
@@ -93,7 +92,9 @@ export const SideBarEditTimelineObject: React.FC<{
 				onDiscarded={() => {
 					setDeleteConfirmationOpen(false)
 				}}
-			/>
+			>
+				<p>Are you sure you want to delete &quot;{description.label}&quot;?</p>
+			</ConfirmationDialog>
 		</SidebarContent>
 	)
 })

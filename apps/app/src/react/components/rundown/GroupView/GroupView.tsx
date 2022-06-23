@@ -796,7 +796,6 @@ export const GroupView: React.FC<{
 					<ConfirmationDialog
 						open={deleteConfirmationOpen}
 						title="Delete Group"
-						body={`Are you sure you want to delete the group "${group.name}"?`}
 						acceptLabel="Delete"
 						onAccepted={() => {
 							handleDelete()
@@ -805,7 +804,9 @@ export const GroupView: React.FC<{
 						onDiscarded={() => {
 							setDeleteConfirmationOpen(false)
 						}}
-					/>
+					>
+						<p>Are you sure you want to delete the group &quot;{group.name}&quot;?</p>
+					</ConfirmationDialog>
 				</div>
 			</VisibilitySensor>
 		)
