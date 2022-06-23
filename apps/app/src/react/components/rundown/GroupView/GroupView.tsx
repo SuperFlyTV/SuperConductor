@@ -471,23 +471,26 @@ export const GroupView: React.FC<{
 	// When the Group isn't in view, don't render the parts, but instead render a placeholder of the same height
 	const contentPartsRef = useRef<HTMLDivElement | null>(null)
 	const [hidePartsHeight, setHidePartsHeight] = useState<number | null>(DEFAULT_PART_HEIGHT * group.partIds.length)
-	const onChange = useCallback((isVisible: boolean) => {
-		if (isVisible) {
-			setHidePartsHeight(null)
-		} else {
-			setHidePartsHeight((prevHeight) => {
-				if (prevHeight === null) {
-					if (contentPartsRef.current) {
-						return contentPartsRef.current.clientHeight
+	const onChange = useCallback(
+		(isVisible: boolean) => {
+			if (isVisible) {
+				setHidePartsHeight(null)
+			} else {
+				setHidePartsHeight((prevHeight) => {
+					if (prevHeight === null) {
+						if (contentPartsRef.current) {
+							return contentPartsRef.current.clientHeight
+						} else {
+							return DEFAULT_PART_HEIGHT * group.partIds.length
+						}
 					} else {
-						return DEFAULT_PART_HEIGHT * group.partIds.length
+						return prevHeight
 					}
-				} else {
-					return prevHeight
-				}
-			})
-		}
-	}, [])
+				})
+			}
+		},
+		[group.partIds.length]
+	)
 
 	// Optimize, so that PartView isn't re-rendered on every part group change
 

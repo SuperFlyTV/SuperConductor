@@ -95,3 +95,11 @@ export const Layer: React.FC<{
 		</DropZone>
 	)
 }
+/** Analogue to Layer, used in initial-renders */
+export function LayerEmpty() {
+	return (
+		<div className="layer">
+			<div className="layer__content" />
+		</div>
+	)
+}

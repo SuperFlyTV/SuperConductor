@@ -142,6 +142,11 @@ export const LayerName: React.FC<{
 	)
 })
 
+/** Analogue to LayerName, used in initial-renders */
+export function LayerNameEmpty() {
+	return <div className="layer-name" />
+}
+
 interface DropdownItem {
 	id: string
 	label: string

@@ -2,7 +2,7 @@ import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffec
 import _ from 'lodash'
 import sorensen from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead'
-import { Layer } from './Layer'
+import { Layer, LayerEmpty } from './Layer'
 import {
 	ResolvedTimeline,
 	ResolvedTimelineObject,
@@ -31,7 +31,7 @@ import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
 import { store } from '../../../mobx/store'
 import { PartSubmenu } from './PartSubmenu'
-import { LayerName } from './part/LayerName/LayerName'
+import { LayerName, LayerNameEmpty } from './part/LayerName/LayerName'
 import { observer } from 'mobx-react-lite'
 import { computed } from 'mobx'
 import { CurrentTime } from './part/CurrentTime/CurrentTime'
@@ -48,6 +48,7 @@ import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
 import { formatDuration } from '../../../../lib/timeLib'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
+import VisibilitySensor from 'react-visibility-sensor'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -780,240 +781,284 @@ export const PartView: React.FC<{
 		}
 	})
 
+	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
+	const [renderEverything, setRenderEverything] = useState(false)
+	const onChange = useCallback((isVisible: boolean) => {
+		if (isVisible) {
+			setRenderEverything(true)
+		} else {
+			setRenderEverything(false)
+		}
+	}, [])
+
 	return (
-		<div
-			data-drop-handler-id={handlerId}
-			data-part-id={part.id}
-			ref={previewRef}
-			className={classNames('part', {
-				// active: isActive === 'active',
-				// queued: isActive === 'queued',
-				dragging: isDragging,
-				disabled: groupOrPartDisabled,
-				locked: groupOrPartLocked,
-			})}
-		>
-			<div className="part__dragArrow" />
-			<div className={classNames('part__tab', tabAdditionalClassNames)}>
-				<div ref={dragRef} className="part__drag-handle">
-					{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
+		<VisibilitySensor onChange={onChange} partialVisibility={true}>
+			<div
+				data-drop-handler-id={handlerId}
+				data-part-id={part.id}
+				ref={previewRef}
+				className={classNames('part', {
+					// active: isActive === 'active',
+					// queued: isActive === 'queued',
+					dragging: isDragging,
+					disabled: groupOrPartDisabled,
+					locked: groupOrPartLocked,
+				})}
+			>
+				<div className="part__dragArrow" />
+				<div className={classNames('part__tab', tabAdditionalClassNames)}>
+					{renderEverything && (
+						<>
+							<div ref={dragRef} className="part__drag-handle">
+								{!groupOrPartLocked && <MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />}
+							</div>
+
+							{!groupLocked && (
+								<div className="part__submenu-button">
+									<MdMoreHoriz
+										color="rgba(255, 255, 255, 0.5)"
+										onClick={(event) => {
+											setPartSubmenuPopoverAnchorEl(event.currentTarget)
+										}}
+									/>
+								</div>
+							)}
+						</>
+					)}
 				</div>
+				<div className="part__meta">
+					<div className="part__meta__left">
+						{!editingPartName && part.name.length > 0 && (
+							<div
+								title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
+								className="title"
+								onClick={() => {
+									if (groupOrPartLocked) {
+										return
+									}
+									setEditingPartName(true)
+								}}
+							>
+								{part.name}
+							</div>
+						)}
 
-				{!groupLocked && (
-					<div className="part__submenu-button">
-						<MdMoreHoriz
-							color="rgba(255, 255, 255, 0.5)"
-							onClick={(event) => {
-								setPartSubmenuPopoverAnchorEl(event.currentTarget)
-							}}
-						/>
-					</div>
-				)}
-			</div>
-			<div className="part__meta">
-				<div className="part__meta__left">
-					{!editingPartName && part.name.length > 0 && (
-						<div
-							title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
-							className="title"
-							onClick={() => {
-								if (groupOrPartLocked) {
-									return
-								}
-								setEditingPartName(true)
-							}}
-						>
-							{part.name}
-						</div>
-					)}
-
-					{editingPartName && (
-						<TextField
-							size="small"
-							value={editedName}
-							autoFocus
-							variant="standard"
-							className="edit-title"
-							sx={{ marginTop: '-0.1rem', marginBottom: '0.6rem' }}
-							InputProps={{ style: { fontSize: '1.4rem' } }}
-							onFocus={(event) => {
-								event.target.select()
-							}}
-							onChange={(event) => {
-								setEditedName(event.target.value)
-							}}
-							onBlur={() => {
-								submitNameEdit()
-							}}
-							onKeyUp={(e) => {
-								if (e.key === 'Escape') setEditingPartName(false)
-								else if (e.key === 'Enter') submitNameEdit()
-							}}
-						/>
-					)}
-					{!groupLocked && (
-						<div className="controls">
-							<ToggleBtn
-								title={
-									part.disabled
-										? 'Disabledn\n\nClick to enable Part.'
-										: 'Disable/Skip Part during playback.'
-								}
-								selected={part.disabled}
+						{editingPartName && (
+							<TextField
 								size="small"
-								onChange={toggleDisable}
-							>
-								{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
-							</ToggleBtn>
-							<ToggleBtn
-								title={part.locked ? 'Locked.\n\nClick to unlock Part.' : 'Lock Part for editing.'}
-								disabled={groupLocked}
-								selected={part.locked}
-								size="small"
-								onChange={toggleLock}
-							>
-								{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
-							</ToggleBtn>
-							<ToggleBtn
-								title={
-									part.loop
-										? 'Looping.\n\nDisable Looping.'
-										: 'Enable Looping of Part during playout.'
-								}
-								disabled={groupOrPartLocked}
-								selected={part.loop}
-								size="small"
-								onChange={toggleLoop}
-							>
-								<MdRepeatOne size={18} />
-							</ToggleBtn>
-							<TriggerBtn
-								onTrigger={handleTriggerBtn}
-								title="Open Triggers Submenu"
-								locked={groupOrPartLocked}
-								triggerCount={allActionsForPart.length}
+								value={editedName}
+								autoFocus
+								variant="standard"
+								className="edit-title"
+								sx={{ marginTop: '-0.1rem', marginBottom: '0.6rem' }}
+								InputProps={{ style: { fontSize: '1.4rem' } }}
+								onFocus={(event) => {
+									event.target.select()
+								}}
+								onChange={(event) => {
+									setEditedName(event.target.value)
+								}}
+								onBlur={() => {
+									submitNameEdit()
+								}}
+								onKeyUp={(e) => {
+									if (e.key === 'Escape') setEditingPartName(false)
+									else if (e.key === 'Enter') submitNameEdit()
+								}}
 							/>
-						</div>
-					)}
-				</div>
+						)}
+						{!groupLocked && (
+							<div className="controls">
+								{renderEverything && (
+									<>
+										<ToggleBtn
+											title={
+												part.disabled
+													? 'Disabledn\n\nClick to enable Part.'
+													: 'Disable/Skip Part during playback.'
+											}
+											selected={part.disabled}
+											size="small"
+											onChange={toggleDisable}
+										>
+											{part.disabled ? <RiEyeCloseLine size={18} /> : <IoMdEye size={18} />}
+										</ToggleBtn>
+										<ToggleBtn
+											title={
+												part.locked
+													? 'Locked.\n\nClick to unlock Part.'
+													: 'Lock Part for editing.'
+											}
+											disabled={groupLocked}
+											selected={part.locked}
+											size="small"
+											onChange={toggleLock}
+										>
+											{part.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
+										</ToggleBtn>
+										<ToggleBtn
+											title={
+												part.loop
+													? 'Looping.\n\nDisable Looping.'
+													: 'Enable Looping of Part during playout.'
+											}
+											disabled={groupOrPartLocked}
+											selected={part.loop}
+											size="small"
+											onChange={toggleLoop}
+										>
+											<MdRepeatOne size={18} />
+										</ToggleBtn>
+										<TriggerBtn
+											onTrigger={handleTriggerBtn}
+											title="Open Triggers Submenu"
+											locked={groupOrPartLocked}
+											triggerCount={allActionsForPart.length}
+										/>
+									</>
+								)}
+							</div>
+						)}
+					</div>
 
-				<div className="part__meta__right">
-					<ControlButtons
-						rundownId={rundownId}
-						groupId={parentGroupId}
-						partId={part.id}
-						disabled={part.disabled}
-					/>
-				</div>
-			</div>
-			{!groupLocked && <div className="part__dropdown">{/** TODO **/}</div>}
-
-			<div className="part__layer-names">
-				{sortedLayers.map(({ layerId }) => {
-					return (
-						<LayerName
-							key={layerId}
+					<div className="part__meta__right">
+						<ControlButtons
 							rundownId={rundownId}
 							groupId={parentGroupId}
 							partId={part.id}
-							layerId={layerId}
-							mappings={mappings}
-							locked={groupOrPartLocked}
+							disabled={part.disabled}
 						/>
-					)
-				})}
-			</div>
-			<div className="part__time">
-				<div className="part__time__current-time">
-					<CurrentTime groupId={parentGroupId} partId={part.id} />
+					</div>
 				</div>
+				{!groupLocked && <div className="part__dropdown"></div>}
 
-				<div className="part__time__remaining-time">
-					<RemainingTime groupId={parentGroupId} partId={part.id} />
-				</div>
-
-				<div className="part__time__duration">
-					TOTAL{' '}
-					<span style={{ fontWeight: 700 }}>
-						{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
-					</span>
-				</div>
-				{/* <div className="part__time__endcap" /> */}
-			</div>
-			<div className="part__timeline">
-				<div className="countdown-wrapper">
-					<CountdownHeads groupId={parentGroupId} partId={part.id} />
-				</div>
-				<div className="layers-wrapper">
-					{resolverErrorMessage && <div className="part__error-overlay">{resolverErrorMessage}</div>}
-					<PlayHead partId={part.id} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
-					<div
-						className={classNames('layers', {
-							moving: timelineObjMove.moveType !== null,
-						})}
-						ref={layersDivRef}
-					>
-						{timelineLayerObjects.map(({ layerId, objectsOnLayer }) => {
+				<div className="part__layer-names">
+					{sortedLayers.map(({ layerId }) => {
+						if (renderEverything) {
 							return (
-								<Layer
+								<LayerName
 									key={layerId}
 									rundownId={rundownId}
 									groupId={parentGroupId}
 									partId={part.id}
-									partDuration={orgMaxDuration}
-									objectsOnLayer={objectsOnLayer}
 									layerId={layerId}
-									msPerPixel={msPerPixel}
+									mappings={mappings}
 									locked={groupOrPartLocked}
-									mapping={mappings[layerId]}
 								/>
 							)
-						})}
+						} else {
+							return <LayerNameEmpty key={layerId} />
+						}
+					})}
+				</div>
+				<div className="part__time">
+					{renderEverything && (
+						<>
+							<div className="part__time__current-time">
+								<CurrentTime groupId={parentGroupId} partId={part.id} />
+							</div>
 
-						{!groupOrPartLocked && (
-							<EmptyLayer rundownId={rundownId} groupId={parentGroupId} partId={part.id} />
+							<div className="part__time__remaining-time">
+								<RemainingTime groupId={parentGroupId} partId={part.id} />
+							</div>
+
+							<div className="part__time__duration">
+								TOTAL{' '}
+								<span style={{ fontWeight: 700 }}>
+									{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
+								</span>
+							</div>
+						</>
+					)}
+				</div>
+				<div className="part__timeline">
+					<div className="countdown-wrapper">
+						<CountdownHeads groupId={parentGroupId} partId={part.id} />
+					</div>
+					<div className="layers-wrapper">
+						{renderEverything && (
+							<>
+								{resolverErrorMessage && (
+									<div className="part__error-overlay">{resolverErrorMessage}</div>
+								)}
+								<PlayHead partId={part.id} groupId={parentGroupId} partViewDuration={orgMaxDuration} />
+							</>
 						)}
+						<div
+							className={classNames('layers', {
+								moving: timelineObjMove.moveType !== null,
+							})}
+							ref={layersDivRef}
+						>
+							{timelineLayerObjects.map(({ layerId, objectsOnLayer }) => {
+								if (renderEverything) {
+									return (
+										<Layer
+											key={layerId}
+											rundownId={rundownId}
+											groupId={parentGroupId}
+											partId={part.id}
+											partDuration={orgMaxDuration}
+											objectsOnLayer={objectsOnLayer}
+											layerId={layerId}
+											msPerPixel={msPerPixel}
+											locked={groupOrPartLocked}
+											mapping={mappings[layerId]}
+										/>
+									)
+								} else {
+									return <LayerEmpty key={layerId} />
+								}
+							})}
+
+							{!groupOrPartLocked && (
+								<EmptyLayer rundownId={rundownId} groupId={parentGroupId} partId={part.id} />
+							)}
+						</div>
 					</div>
 				</div>
+				<div className="part__endcap"></div>
+				{renderEverything && (
+					<>
+						<Popover
+							open={partSubmenuOpen}
+							anchorEl={partSubmenuPopoverAnchorEl}
+							onClose={closePartSubmenu}
+							anchorOrigin={{
+								vertical: 'bottom',
+								horizontal: 'left',
+							}}
+						>
+							<PartSubmenu
+								rundownId={rundownId}
+								groupId={parentGroupId}
+								part={part}
+								groupLocked={groupLocked}
+								locked={groupOrPartLocked}
+							/>
+						</Popover>
+
+						<Popover
+							open={triggersSubmenuOpen}
+							anchorEl={triggersSubmenuPopoverAnchorEl}
+							onClose={closeTriggersSubmenu}
+							anchorOrigin={{
+								vertical: 'bottom',
+								horizontal: 'left',
+							}}
+						>
+							<TriggersSubmenu
+								rundownId={rundownId}
+								groupId={parentGroupId}
+								part={part}
+								locked={groupOrPartLocked}
+								allActionsForPart={allActionsForPart}
+							/>
+						</Popover>
+					</>
+				)}
 			</div>
-			<div className="part__endcap"></div>
-
-			<Popover
-				open={partSubmenuOpen}
-				anchorEl={partSubmenuPopoverAnchorEl}
-				onClose={closePartSubmenu}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'left',
-				}}
-			>
-				<PartSubmenu
-					rundownId={rundownId}
-					groupId={parentGroupId}
-					part={part}
-					groupLocked={groupLocked}
-					locked={groupOrPartLocked}
-				/>
-			</Popover>
-
-			<Popover
-				open={triggersSubmenuOpen}
-				anchorEl={triggersSubmenuPopoverAnchorEl}
-				onClose={closeTriggersSubmenu}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'left',
-				}}
-			>
-				<TriggersSubmenu
-					rundownId={rundownId}
-					groupId={parentGroupId}
-					part={part}
-					locked={groupOrPartLocked}
-					allActionsForPart={allActionsForPart}
-				/>
-			</Popover>
-		</div>
+		</VisibilitySensor>
 	)
 })
 
