@@ -114,15 +114,6 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	duplicateGroup(...args: ServerArgs<'duplicateGroup'>) {
 		return this.invokeServerMethod('duplicateGroup', ...args)
 	}
-	newTemplateData(...args: ServerArgs<'newTemplateData'>) {
-		return this.invokeServerMethod('newTemplateData', ...args)
-	}
-	updateTemplateData(...args: ServerArgs<'updateTemplateData'>) {
-		return this.invokeServerMethod('updateTemplateData', ...args)
-	}
-	deleteTemplateData(...args: ServerArgs<'deleteTemplateData'>) {
-		return this.invokeServerMethod('deleteTemplateData', ...args)
-	}
 	deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>) {
 		return this.invokeServerMethod('deleteTimelineObj', ...args)
 	}

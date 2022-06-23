@@ -28,9 +28,6 @@ export const enum ActionDescription {
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
-	NewTemplateData = 'add new template data',
-	UpdateTemplateData = 'update template data',
-	DeleteTemplateData = 'delete template data',
 	AddResourceToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
@@ -142,32 +139,6 @@ export interface IPCServerMethods {
 
 		layerId: string | null
 		resourceId: string
-	}) => void
-
-	newTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-	}) => void
-	updateTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-		key: string
-		changedItemId: string
-		value: string
-	}) => void
-	deleteTemplateData: (arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-
-		timelineObjId: string
-		key: string
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void
