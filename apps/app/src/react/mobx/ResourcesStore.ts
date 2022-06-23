@@ -27,21 +27,31 @@ export class ResourcesStore {
 		this.logger = new ClientSideLogger(this.serverAPI)
 		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
 			updateResources: (resources) => this.updateResources(resources),
-			updateDeviceRefreshStatus: (deviceId, refreshing) => this.updateDeviceRefreshStatus(deviceId, refreshing),
+			updateDeviceRefreshStatus: (deviceId, refreshing) => this._updateDeviceRefreshStatus(deviceId, refreshing),
 		})
 		makeAutoObservable(this)
 
 		if (init) {
-			this.update(init)
+			this._update(init)
 		}
 	}
 
-	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>) {
+	public updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>) {
 		for (const { id, resource } of resources) {
-			this.updateResource(id, resource)
+			this._updateResource(id, resource)
 		}
 	}
-	updateResource(resourceId: string, resource: ResourceAny | null) {
+	public isAnyDeviceRefreshing(): boolean {
+		for (const deviceId in this.refreshStatuses) {
+			const isRefreshing = this.refreshStatuses[deviceId]
+			if (isRefreshing) {
+				return true
+			}
+		}
+
+		return false
+	}
+	private _updateResource(resourceId: string, resource: ResourceAny | null) {
 		const newResources = { ...this.resources }
 		if (resource) {
 			if (!_.isEqual(this.resources[resourceId], resource)) {
@@ -55,22 +65,11 @@ export class ResourcesStore {
 		this.resources = newResources
 	}
 
-	update(data: Resources) {
+	private _update(data: Resources) {
 		this.resources = data
 	}
 
-	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean) {
+	private _updateDeviceRefreshStatus(deviceId: string, refreshing: boolean) {
 		this.refreshStatuses[deviceId] = refreshing
-	}
-
-	isAnyDeviceRefreshing(): boolean {
-		for (const deviceId in this.refreshStatuses) {
-			const isRefreshing = this.refreshStatuses[deviceId]
-			if (isRefreshing) {
-				return true
-			}
-		}
-
-		return false
 	}
 }
