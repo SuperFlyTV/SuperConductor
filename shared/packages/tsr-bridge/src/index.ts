@@ -114,7 +114,7 @@ export class BaseBridge {
 		}
 	}
 
-	handleMessage(msg: BridgeAPI.FromTPT.Any) {
+	handleMessage(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (msg.type === 'setId') {
 			// Reply to SuperConductor with our id:
 			this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false })

@@ -431,7 +431,7 @@ abstract class AbstractBridgeConnection {
 
 		this.session.updateBridgeStatus(this.bridgeId, status)
 	}
-	protected abstract send(msg: BridgeAPI.FromTPT.Any): void
+	protected abstract send(msg: BridgeAPI.FromSuperConductor.Any): void
 	protected abstract getConnectionId(): number
 }
 
@@ -469,7 +469,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 		})
 		this.connection.on('message', this.handleMessage.bind(this))
 	}
-	protected send(msg: BridgeAPI.FromTPT.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (this.connection.connected) {
 			this.connection.send(msg)
 		}
@@ -501,7 +501,7 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	async destroy(): Promise<void> {
 		await this.baseBridge.destroy()
 	}
-	protected send(msg: BridgeAPI.FromTPT.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
 		try {
 			this.baseBridge.handleMessage(msg)
 		} catch (err) {

@@ -4,7 +4,7 @@ import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
-import { TimedPlayerThingy } from './electron/TimedPlayerThingy'
+import { SuperConductor } from './electron/SuperConductor'
 import { createLoggers } from './lib/logging'
 import { baseFolder } from './lib/baseFolder'
 import path from 'path'
@@ -14,9 +14,9 @@ const createWindow = (): void => {
 
 	log.info('Starting up...')
 
-	const tpt = new TimedPlayerThingy(log, rendererLogger)
+	const superConductor = new SuperConductor(log, rendererLogger)
 
-	const appData = tpt.storage.getAppData()
+	const appData = superConductor.storage.getAppData()
 
 	const win = new BrowserWindow({
 		y: appData.windowPosition.y,
@@ -49,7 +49,7 @@ const createWindow = (): void => {
 		win.maximize()
 	}
 
-	tpt.initWindow(win)
+	superConductor.initWindow(win)
 
 	if (isDev) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
@@ -71,13 +71,13 @@ const createWindow = (): void => {
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return tpt.ipcServer?.undo().catch(log.error)
+			return superConductor.ipcServer?.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return tpt.ipcServer?.redo().catch(log.error)
+			return superConductor.ipcServer?.redo().catch(log.error)
 		},
 		onAboutClick: () => {
-			tpt.ipcClient?.displayAboutDialog()
+			superConductor.ipcClient?.displayAboutDialog()
 		},
 		onUpdateClick: async () => {
 			try {
@@ -111,7 +111,7 @@ const createWindow = (): void => {
 	const menu = generateMenu(menuOpts)
 	Menu.setApplicationMenu(menu)
 
-	tpt.ipcServer?.on('updatedUndoLedger', (undoLedger, undoPointer) => {
+	superConductor.ipcServer?.on('updatedUndoLedger', (undoLedger, undoPointer) => {
 		const undoAction = undoLedger[undoPointer]
 		const redoAction = undoLedger[undoPointer + 1]
 		menuOpts.undoLabel = undoAction ? `Undo ${undoAction.description}` : 'Undo'
@@ -126,13 +126,13 @@ const createWindow = (): void => {
 		log.info('Shutting down...')
 		Promise.resolve()
 			.then(() => {
-				tpt.isShuttingDown()
+				superConductor.isShuttingDown()
 			})
 			.then(async () => {
 				await Promise.race([
 					Promise.all([
 						// Write any changes to disk:
-						tpt.storage.writeChangesNow(),
+						superConductor.storage.writeChangesNow(),
 					]),
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
@@ -143,14 +143,14 @@ const createWindow = (): void => {
 				await Promise.race([
 					Promise.all([
 						// Gracefully shut down the internal TSR-Bridge:
-						tpt.bridgeHandler?.onClose(),
+						superConductor.bridgeHandler?.onClose(),
 					]),
 					// Add a timeout, in case the above doesn't finish:
 					new Promise((resolve) => setTimeout(resolve, 1000)),
 				])
 			})
 			.then(() => {
-				tpt.terminate()
+				superConductor.terminate()
 				log.info('Shut down successfully.')
 			})
 			.catch((err) => {
@@ -175,7 +175,7 @@ const createWindow = (): void => {
 	const updateSizeAndPosition = () => {
 		const newBounds = win.getBounds()
 
-		const appData = tpt.storage.getAppData()
+		const appData = superConductor.storage.getAppData()
 
 		const maximized = win.isMaximized()
 		if (maximized) {
@@ -190,7 +190,7 @@ const createWindow = (): void => {
 			appData.windowPosition.maximized = maximized
 		}
 
-		tpt.storage.updateAppData(appData)
+		superConductor.storage.updateAppData(appData)
 	}
 	win.on('resized', () => {
 		updateSizeAndPosition()

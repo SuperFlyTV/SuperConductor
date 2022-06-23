@@ -8,7 +8,7 @@ const RECONNECT_INTERVAL = 5000
 
 Notes:
 
-* Both the Bridge or the TPT can be the one initializing a connection.
+* Both the Bridge or the SuperConductor can be the one initializing a connection.
 * The "Client" is the one who initialized the connection (to the "Server")
 
 * The client pings the bridge every 5 seconds to keep the connection alive and allow for monitoring status.

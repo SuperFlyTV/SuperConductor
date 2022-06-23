@@ -26,7 +26,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 
-export class TimedPlayerThingy {
+export class SuperConductor {
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient

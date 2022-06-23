@@ -115,7 +115,7 @@ export class TSRBridgeServer {
 				})
 				.catch(this.logger.error)
 		})
-		connection.on('message', (message: BridgeAPI.FromTPT.Any) => {
+		connection.on('message', (message: BridgeAPI.FromSuperConductor.Any) => {
 			this.baseBridge.handleMessage(message)
 		})
 
