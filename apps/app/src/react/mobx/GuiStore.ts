@@ -59,6 +59,16 @@ export class GuiStore {
 		timelineObjIds: [],
 	}
 
+	public resourceLibrary: {
+		selectedResourceId?: string
+		nameFilterValue: string
+		deviceFilterValue: string[]
+	} = {
+		selectedResourceId: undefined,
+		nameFilterValue: '',
+		deviceFilterValue: [],
+	}
+
 	definingArea: DefiningArea | null = null
 
 	private groupSettings = new Map<string, GroupSettings>()

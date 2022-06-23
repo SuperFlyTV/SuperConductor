@@ -30,11 +30,12 @@ import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh } from 'react-icons/hi'
-import { useDebounce } from '../../../lib/useDebounce'
+import { useDebounce } from '../../lib/useDebounce'
 import { sortMappings } from '../../../lib/TSRMappings'
 import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
 import classNames from 'classnames'
 import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
+import { computed } from 'mobx'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -60,16 +61,15 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		currentRundownId = undefined
 	}
 
-	const [selectedResourceId, setSelectedResourceId] = useState<string | undefined>()
+	const { selectedResourceId, nameFilterValue, deviceFilterValue } = computed(
+		() => store.guiStore.resourceLibrary
+	).get()
 	const selectedResource = useMemoComputedObject(
 		() => (selectedResourceId ? store.resourcesStore.resources[selectedResourceId] : undefined),
 		[selectedResourceId]
 	)
 	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
-
-	const [nameFilterValue, setNameFilterValue] = React.useState('')
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
-	const [deviceFilterValue, setDeviceFilterValue] = React.useState<string[]>([])
 
 	const sortedResources = useMemoComputedArray(() => {
 		return Object.values(store.resourcesStore.resources).sort((a, b) => {
@@ -132,20 +132,19 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		const {
 			target: { value },
 		} = event
-		setDeviceFilterValue(
+		store.guiStore.resourceLibrary = {
+			...store.guiStore.resourceLibrary,
 			// On autofill we get a stringified value.
-			typeof value === 'string' ? value.split(',') : value
-		)
+			deviceFilterValue: typeof value === 'string' ? value.split(',') : value,
+		}
 	}, [])
 
 	const handleResourceLibraryItemSelect = useCallback((resource: ResourceAny) => {
-		setSelectedResourceId((value) => {
-			if (value === resource.id) {
-				return undefined
-			} else {
-				return resource.id
-			}
-		})
+		const resourceLibrary = store.guiStore.resourceLibrary
+		store.guiStore.resourceLibrary = {
+			...resourceLibrary,
+			selectedResourceId: resourceLibrary.selectedResourceId === resource.id ? undefined : resource.id,
+		}
 	}, [])
 
 	const handleRefreshAuto = useCallback(
@@ -201,24 +200,27 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 
 				<div className="refresh-resources">
 					<ButtonGroup className="">
-						<Button className="on-hover" onClick={() => handleRefreshAuto(0)}>
+						<Button className="on-hover" onClick={() => handleRefreshAuto(0)} title="Turn off auto refresh">
 							Auto: Off
 						</Button>
 						<Button
 							className={classNames('on-hover', { selected: project.autoRefreshInterval === 1000 })}
 							onClick={() => handleRefreshAuto(1000)}
+							title="Refresh resources every second"
 						>
 							1s
 						</Button>
 						<Button
 							className={classNames('on-hover', { selected: project.autoRefreshInterval === 10000 })}
 							onClick={() => handleRefreshAuto(10000)}
+							title="Refresh resources every 10 seconds"
 						>
 							10s
 						</Button>
 						<Button
 							className={classNames('on-hover', { selected: project.autoRefreshInterval === 60000 })}
 							onClick={() => handleRefreshAuto(60000)}
+							title="Refresh resources every minute"
 						>
 							1m
 						</Button>
@@ -226,6 +228,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 						<Button
 							className={classNames('refresh', { active: isAnyDeviceRefreshing })}
 							onClick={() => ipcServer.refreshResources().catch(handleError)}
+							title="Refresh all resources"
 						>
 							<HiRefresh size={15} color="white" />
 						</Button>
@@ -266,7 +269,10 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 					type: 'search',
 				}}
 				onChange={(event) => {
-					setNameFilterValue(event.target.value)
+					store.guiStore.resourceLibrary = {
+						...store.guiStore.resourceLibrary,
+						nameFilterValue: event.target.value,
+					}
 				}}
 			/>
 		</>
