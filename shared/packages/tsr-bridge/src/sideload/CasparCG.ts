@@ -62,6 +62,11 @@ export class CasparCGSideload implements SideLoadDevice {
 			}
 
 			for (const media of mediaList) {
+				if (media.name.startsWith('__')) {
+					// Ignore these
+					continue
+				}
+
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
