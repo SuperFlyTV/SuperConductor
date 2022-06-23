@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
 import { IPCServer } from '../api/IPCServer'
@@ -60,6 +61,8 @@ export class GuiStore {
 
 	definingArea: DefiningArea | null = null
 
+	private groupSettings = new Map<string, GroupSettings>()
+
 	private _activeTabId = 'home'
 	get activeTabId() {
 		return this._activeTabId
@@ -76,7 +79,6 @@ export class GuiStore {
 			...this._selected,
 			...selected,
 		}
-		console.log('setSelected', this._selected.timelineObjIds.join(','))
 	}
 
 	activeHomePageId = 'project'
@@ -136,8 +138,26 @@ export class GuiStore {
 
 		return playingIds
 	}
+	getGroupSettings(groupId: string): GroupSettings {
+		return this.groupSettings.get(groupId) || {}
+	}
+	setGroupSettings(groupId: string, update: Partial<GroupSettings>): void {
+		const org = this.getGroupSettings(groupId)
+		const updated: GroupSettings = {
+			...org,
+			...update,
+		}
+		if (!_.isEqual(updated, org)) {
+			this.groupSettings.set(groupId, updated)
+		}
+	}
 
 	constructor() {
 		makeAutoObservable(this)
 	}
+}
+
+interface GroupSettings {
+	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
+	collapsed?: boolean
 }

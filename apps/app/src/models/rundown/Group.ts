@@ -17,9 +17,6 @@ export interface GroupBase {
 	/** Contains info for the Auto-Fill feature */
 	autoFill: AutoFillSettings
 
-	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
-	collapsed?: boolean // TODO: This should be moved to the guiStore
-
 	/** Data related to the playout of the group */
 	playout: {
 		/** Map of the part(s) currently playing */

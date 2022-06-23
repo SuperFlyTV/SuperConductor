@@ -2,8 +2,8 @@ import { IPCServerMethods } from '../../ipc/IPCAPI'
 
 type Promisify<T> = {
 	[K in keyof T]: T[K] extends (...arg: any[]) => any
-		? (...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>>
-		: T[K]
+	? (...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>>
+	: T[K]
 }
 
 type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
@@ -11,7 +11,7 @@ type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServ
 
 /** This class is used client-side, to send requests to the server */
 export class IPCServer implements Promisify<IPCServerMethods> {
-	constructor(private ipcRenderer: Electron.IpcRenderer) {}
+	constructor(private ipcRenderer: Electron.IpcRenderer) { }
 
 	private async invokeServerMethod<T extends keyof IPCServerMethods>(methodname: T, ...args: any[]): ServerReturn<T> {
 		// Stringifying and parsing data will convert Mobx observable objects into object literals.
@@ -146,9 +146,6 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	toggleGroupLock(...args: ServerArgs<'toggleGroupLock'>) {
 		return this.invokeServerMethod('toggleGroupLock', ...args)
-	}
-	toggleGroupCollapse(...args: ServerArgs<'toggleGroupCollapse'>) {
-		return this.invokeServerMethod('toggleGroupCollapse', ...args)
 	}
 	refreshResources(...args: ServerArgs<'refreshResources'>) {
 		return this.invokeServerMethod('refreshResources', ...args)

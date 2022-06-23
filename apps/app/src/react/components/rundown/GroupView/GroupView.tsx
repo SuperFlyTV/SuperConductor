@@ -113,6 +113,10 @@ export const GroupView: React.FC<{
 		setActiveParts(activeParts0)
 	}, [group])
 
+	const guiSettings = computed(() => store.guiStore.getGroupSettings(groupId))
+
+	const groupCollapsed = guiSettings.get().collapsed
+
 	const groupIsPlaying = computed(() => store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false).get()
 	const anyPartIsPlaying = computed(
 		() => store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
@@ -392,8 +396,11 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		ipcServer.toggleGroupCollapse({ rundownId, groupId: group.id, value: !group.collapsed }).catch(handleError)
-	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
+		const settings = store.guiStore.getGroupSettings(groupId)
+		store.guiStore.setGroupSettings(groupId, {
+			collapsed: !settings.collapsed,
+		})
+	}, [groupId])
 
 	// Disable button:
 	const toggleDisable = useCallback(() => {
@@ -519,7 +526,7 @@ export const GroupView: React.FC<{
 					ref={wrapperRef}
 					className={classNames('group', {
 						disabled: group.disabled,
-						collapsed: group.collapsed,
+						collapsed: groupCollapsed,
 						dragging: isDragging,
 					})}
 					data-drop-handler-id={handlerId}
@@ -535,8 +542,8 @@ export const GroupView: React.FC<{
 						</div>
 
 						<div
-							className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
-							title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
+							className={classNames('collapse', { 'collapse--collapsed': groupCollapsed })}
+							title={groupCollapsed ? 'Expand Group' : 'Collapse Group'}
 						>
 							<MdChevronRight size={22} onClick={handleCollapse} />
 						</div>
@@ -850,7 +857,7 @@ export const GroupView: React.FC<{
 							/>
 						</div>
 					</div>
-					{!group.collapsed && (
+					{!groupCollapsed && (
 						<div className="group__content">
 							<div
 								className="group__content__parts"

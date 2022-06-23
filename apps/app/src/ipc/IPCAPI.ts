@@ -175,7 +175,6 @@ export interface IPCServerMethods {
 	toggleGroupOneAtATime: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupDisable: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
-	toggleGroupCollapse: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	refreshResources: () => void
 	refreshResourcesSetAuto: (interval: number) => void
 	triggerHandleAutoFill: () => void

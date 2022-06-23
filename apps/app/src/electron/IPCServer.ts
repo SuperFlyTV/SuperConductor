@@ -75,10 +75,10 @@ function isUndoable(result: unknown): result is UndoableResult<any> {
 
 type ConvertToServerSide<T> = {
 	[K in keyof T]: T[K] extends (...args: any[]) => any
-		? (
-				...args: Parameters<T[K]>
-		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
-		: T[K]
+	? (
+		...args: Parameters<T[K]>
+	) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
+	: T[K]
 }
 
 /** This class is used server-side, to handle requests from the client */
@@ -1399,8 +1399,7 @@ export class IPCServer
 		const allow = allowAddingResourceToLayer(project, resource, mapping)
 		if (!allow) {
 			throw new Error(
-				`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
-					obj.layer
+				`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${obj.layer
 				}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
 			)
 		}
@@ -1550,30 +1549,6 @@ export class IPCServer
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupDisable,
-		}
-	}
-	async toggleGroupCollapse(arg: {
-		rundownId: string
-		groupId: string
-		value: boolean
-	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group } = this.getGroup(arg)
-
-		const originalValue = group.collapsed
-
-		group.collapsed = arg.value
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
-
-		return {
-			undo: () => {
-				const { rundown, group } = this.getGroup(arg)
-
-				group.collapsed = originalValue
-
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
-			},
-			description: ActionDescription.ToggleGroupCollapse,
 		}
 	}
 	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult<void>> {
