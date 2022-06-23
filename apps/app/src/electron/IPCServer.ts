@@ -1507,6 +1507,17 @@ export class IPCServer
 
 		updateGroupPlayingParts(group)
 		group.oneAtATime = arg.value
+		if (group.oneAtATime) {
+			const playingParts = Object.keys(group.playout.playingParts)
+			if (playingParts.length > 1) {
+				// Only allow one part at a time:
+				const playingPart = playingParts[0] // quick and dirty, just pick one
+
+				group.playout.playingParts = {
+					[playingPart]: group.playout.playingParts[playingPart],
+				}
+			}
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 

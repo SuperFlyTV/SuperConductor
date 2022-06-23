@@ -122,6 +122,9 @@ export const GroupView: React.FC<{
 	const anyPartIsPlaying = computed(
 		() => store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
 	).get()
+	const playingPartCount = computed(
+		() => Object.keys(store.groupPlayDataStore.groups.get(group.id)?.playheads || {}).length
+	).get()
 
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
@@ -517,7 +520,7 @@ export const GroupView: React.FC<{
 			</div>
 		) : null
 	} else {
-		const canModifyOneAtATime = !(!group.oneAtATime && anyPartIsPlaying) && !group.locked
+		const canModifyOneAtATime = (group.oneAtATime ? true : playingPartCount <= 1) && !group.locked
 
 		const canModifyLoop = group.oneAtATime && !group.locked
 		const canModifyAutoPlay = group.oneAtATime && !group.locked

@@ -11,11 +11,11 @@ type PropsType = {
 
 export const CountdownHeads = observer(function CountdownHeads(props: PropsType) {
 	const timesUntilStart = useMemoComputedObject(() => {
-		const playhead = store.groupPlayDataStore.groups.get(props.groupId)
+		const playData = store.groupPlayDataStore.groups.get(props.groupId)
 
-		if (!playhead) return null
+		if (!playData) return null
 
-		return (playhead.anyPartIsPlaying && playhead.countdowns[props.partId]) || null
+		return (playData.anyPartIsPlaying && playData.countdowns[props.partId]) || null
 	}, [props.groupId, props.partId])
 
 	return (
