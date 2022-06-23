@@ -49,6 +49,9 @@ import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
 import { formatDuration } from '../../../../lib/timeLib'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import VisibilitySensor from 'react-visibility-sensor'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { TrashBtn } from '../../inputs/TrashBtn'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -1019,6 +1022,15 @@ export const PartView: React.FC<{
 				</div>
 				<EndCap groupId={parentGroupId} partId={part.id} />
 
+				<EndCapHover
+					rundownId={rundownId}
+					groupId={parentGroupId}
+					partId={partId}
+					partName={part.name}
+					groupOrPartLocked={groupOrPartLocked}
+					groupLocked={groupLocked}
+				/>
+
 				{renderEverything && (
 					<>
 						<Popover
@@ -1034,7 +1046,6 @@ export const PartView: React.FC<{
 								rundownId={rundownId}
 								groupId={parentGroupId}
 								part={part}
-								groupLocked={groupLocked}
 								locked={groupOrPartLocked}
 							/>
 						</Popover>
@@ -1221,4 +1232,71 @@ const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
 	}
 
 	return 0
+}
+const EndCapHover: React.FC<{
+	rundownId: string
+	groupId: string
+	partId: string
+	partName: string
+	groupOrPartLocked: boolean
+	groupLocked: boolean
+}> = function EndCapHover({ rundownId, groupId, partId, groupOrPartLocked, groupLocked, partName }) {
+	const ipcServer = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+	const handleDelete = useCallback(() => {
+		ipcServer.deletePart({ rundownId, groupId, partId }).catch(handleError)
+	}, [groupId, handleError, ipcServer, partId, rundownId])
+
+	const handleDuplicateBtn = useCallback(() => {
+		ipcServer
+			.duplicatePart({
+				rundownId,
+				groupId: groupId,
+				partId: partId,
+			})
+			.catch(handleError)
+	}, [groupId, handleError, ipcServer, partId, rundownId])
+
+	return (
+		<>
+			<div className="end-cap-hover">
+				<TrashBtn
+					disabled={groupOrPartLocked}
+					title={'Delete Part' + (groupOrPartLocked ? ' (disabled due to locked Part or Group)' : '')}
+					onClick={() => {
+						const pressedKeys = sorensen.getPressedKeys()
+						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
+							// Delete immediately with no confirmation dialog.
+							handleDelete()
+						} else {
+							setDeleteConfirmationOpen(true)
+						}
+					}}
+				/>
+				<DuplicateBtn title="Duplicate Part" disabled={groupLocked} onClick={handleDuplicateBtn} />
+			</div>
+
+			<ConfirmationDialog
+				open={deleteConfirmationOpen}
+				title="Delete Part"
+				acceptLabel="Delete"
+				onAccepted={() => {
+					handleDelete()
+					setDeleteConfirmationOpen(false)
+				}}
+				onDiscarded={() => {
+					setDeleteConfirmationOpen(false)
+				}}
+			>
+				<div>
+					Are you sure you want to delete the part {partName}?
+					<br />
+					<br />
+					(Tip: Hold CTRL when clicking the button to skip this dialog)`
+				</div>
+			</ConfirmationDialog>
+		</>
+	)
 }
