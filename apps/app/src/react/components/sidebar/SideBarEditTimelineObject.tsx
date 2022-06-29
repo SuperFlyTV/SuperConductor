@@ -19,7 +19,7 @@ export const SideBarEditTimelineObject: React.FC<{
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
 	disabled?: boolean
-}> = observer(function TimelineObjData(props) {
+}> = observer(function SideBarEditTimelineObject(props) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
@@ -31,12 +31,16 @@ export const SideBarEditTimelineObject: React.FC<{
 		ipcServer
 			.deleteTimelineObj({
 				rundownId: props.rundownId,
+				groupId: props.groupId,
+				partId: props.partId,
 				timelineObjId: props.timelineObj.obj.id,
 			})
 			.then(() => {
-				const selected = gui.selected
-				gui.setSelected({
-					timelineObjIds: selected.timelineObjIds.filter((id) => id !== props.timelineObj.obj.id),
+				gui.removeSelected({
+					type: 'timelineObj',
+					groupId: props.groupId,
+					partId: props.partId,
+					timelineObjId: props.timelineObj.obj.id,
 				})
 			})
 			.catch(handleError)
@@ -45,7 +49,7 @@ export const SideBarEditTimelineObject: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{`Edit ${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}</span>
+				<span>{`${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}</span>
 				<div>
 					<TrashBtn
 						disabled={props.disabled}

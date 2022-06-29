@@ -6,7 +6,11 @@ import { Project } from '../../../models/project/Project'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
 import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
-import { compact } from '@shared/lib'
+import { assertNever } from '@shared/lib'
+import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
+import { SideBarEditPart } from './editPart/SideBarEditPart'
+import { GroupGUI } from '../../../models/rundown/Group'
+import { PartGUI } from '../../../models/rundown/Part'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
@@ -16,39 +20,50 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 	const editing = useMemoComputedObject(
 		() => {
-			const selected = store.guiStore.selected
-			const group =
-				(currentRundownId &&
-					selected.groupId &&
-					store.rundownsStore.hasGroup(selected.groupId) &&
-					store.rundownsStore.getGroup(selected.groupId)) ||
-				null
-			const part =
-				(currentRundownId &&
-					selected.groupId &&
-					selected.partId &&
-					store.rundownsStore.hasPart(selected.partId) &&
-					store.rundownsStore.getPart(selected.partId)) ||
-				null
-			const timelineObjs =
-				(currentRundownId &&
-					selected.groupId &&
-					selected.partId &&
-					compact(
-						selected.timelineObjIds.map(
-							(objId) =>
-								store.rundownsStore.hasTimelineObj(objId) && store.rundownsStore.getTimelineObj(objId)
-						)
-					)) ||
-				[]
+			const mainSelected = store.guiStore.mainSelected
 
-			if (group && part) {
-				return {
-					group,
-					part,
-					timelineObjs,
+			if (mainSelected && currentRundownId) {
+				if (mainSelected.type === 'group') {
+					const group =
+						store.rundownsStore.hasGroup(mainSelected.groupId) &&
+						store.rundownsStore.getGroup(mainSelected.groupId)
+					if (group) return { type: 'group', groupId: group.id } as { type: 'group'; groupId: string }
+				} else if (mainSelected.type === 'part') {
+					const group =
+						store.rundownsStore.hasGroup(mainSelected.groupId) &&
+						store.rundownsStore.getGroup(mainSelected.groupId)
+					const part =
+						store.rundownsStore.hasPart(mainSelected.partId) &&
+						store.rundownsStore.getPart(mainSelected.partId)
+					if (group && part)
+						return { type: 'part', group, partId: part.id } as {
+							type: 'part'
+							group: GroupGUI
+							partId: string
+						}
+				} else if (mainSelected.type === 'timelineObj') {
+					const group =
+						store.rundownsStore.hasGroup(mainSelected.groupId) &&
+						store.rundownsStore.getGroup(mainSelected.groupId)
+					const part =
+						store.rundownsStore.hasPart(mainSelected.partId) &&
+						store.rundownsStore.getPart(mainSelected.partId)
+					const timelineObj =
+						store.rundownsStore.hasTimelineObj(mainSelected.timelineObjId) &&
+						store.rundownsStore.getTimelineObj(mainSelected.timelineObjId)
+					if (group && part && timelineObj)
+						return { type: 'timelineObj', group, part, timelineObj } as {
+							type: 'timelineObj'
+							group: GroupGUI
+							part: PartGUI
+							timelineObj: TimelineObj
+						}
+				} else {
+					assertNever(mainSelected)
 				}
-			} else return null
+			}
+
+			return undefined
 		},
 		[currentRundownId],
 		true
@@ -57,38 +72,34 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	if (!currentRundownId) {
 		return null
 	}
-	let editTimelineObj: TimelineObj | undefined = undefined
-	if (editing) {
-		editTimelineObj = editing.timelineObjs[0]
-	}
-
-	if (editing && editTimelineObj) {
-		// const descriptions = editing.timelineObjs.map((obj) => describeTimelineObject(obj.obj))
+	if (!editing) {
+		// Not editing
+		return <SidebarResourceLibrary />
+	} else if (editing.type === 'group') {
+		return <SideBarEditGroup rundownId={currentRundownId} groupId={editing.groupId} />
+	} else if (editing.type === 'part') {
+		return (
+			<SideBarEditPart
+				rundownId={currentRundownId}
+				groupId={editing.group.id}
+				partId={editing.partId}
+				groupLocked={!!editing.group.locked}
+			/>
+		)
+	} else if (editing.type === 'timelineObj') {
 		const groupOrPartLocked = editing.group.locked || editing.part.locked
-
 		return (
 			<SideBarEditTimelineObject
 				rundownId={currentRundownId}
 				groupId={editing.group.id}
 				partId={editing.part.id}
-				timelineObj={editTimelineObj}
+				timelineObj={editing.timelineObj}
 				mappings={props.mappings}
 				disabled={groupOrPartLocked}
 			/>
-
-			// <div className="">
-			// 	{editing.timelineObjs.map((obj, index) => {
-			// 		return (
-			// 			<div key={obj.obj.id}>
-			// 				{resources[index] && <ResourceData resource={resources[index] as ResourceAny} />}
-
-			// 			</div>
-			// 		)
-			// 	})}
-			// </div>
 		)
 	} else {
-		// not editing
-		return <SidebarResourceLibrary />
+		assertNever(editing)
+		return null
 	}
 })

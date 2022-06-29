@@ -43,21 +43,31 @@ export interface TimelineObjectMove {
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
 }
-interface CurrentSelection {
-	groupId?: string
-	partId?: string
-	timelineObjIds: string[]
+type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
+interface CurrentSelectionBase {
+	type: 'group' | 'part' | 'timelineObj'
+}
+interface CurrentSelectionGroup extends CurrentSelectionBase {
+	type: 'group'
+	groupId: string
+}
+interface CurrentSelectionPart extends CurrentSelectionBase {
+	type: 'part'
+	groupId: string
+	partId: string
+}
+interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
+	type: 'timelineObj'
+	groupId: string
+	partId: string
+	timelineObjId: string
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
 
-	private _selected: CurrentSelection = {
-		groupId: undefined,
-		partId: undefined,
-		timelineObjIds: [],
-	}
+	private _selected: CurrentSelectionAny[] = []
 
 	public resourceLibrary: {
 		selectedResourceId?: string
@@ -81,13 +91,67 @@ export class GuiStore {
 		this._activeTabId = id
 	}
 
-	get selected(): Readonly<CurrentSelection> {
+	/** A list of all selected items */
+	get selected(): Readonly<CurrentSelectionAny[]> {
 		return this._selected
 	}
-	setSelected(selected: Partial<CurrentSelection>) {
-		this._selected = {
-			...this._selected,
-			...selected,
+	/** The main selected item */
+	get mainSelected(): Readonly<CurrentSelectionAny> | undefined {
+		if (this._selected.length === 0) return undefined
+		return this._selected[this._selected.length - 1]
+	}
+	/** Add item to selection */
+	isSelected(selected: CurrentSelectionAny): boolean {
+		return !!this._selected.find((s) => _.isEqual(s, selected))
+	}
+	/** Set the selection to this item */
+	setSelected(selected: CurrentSelectionAny): void {
+		if (this._selected.length !== 1 || !this.isSelected(selected)) {
+			this.clearSelected()
+			this._selected.push(selected)
+		}
+	}
+	/** Set this item to the selection, or if it already is set, clear the selection */
+	toggleSelected(selected: CurrentSelectionAny): void {
+		if (this.selected.length === 1 && this.isSelected(selected)) {
+			this.clearSelected()
+		} else {
+			this.setSelected(selected)
+		}
+	}
+	/** Add item to selection */
+	addSelected(selected: CurrentSelectionAny): void {
+		if (this.isSelected(selected)) {
+			if (this._selected.length > 1) {
+				// Remove and re-add, so that the newly added item is the main selected:
+				this.removeSelected(selected)
+				this._selected.push(selected)
+			} else {
+				// Nothing to do
+			}
+		} else {
+			this._selected.push(selected)
+		}
+	}
+	/** Add this item to the selection, or if it already is in there, remove it */
+	toggleAddSelected(selected: CurrentSelectionAny): void {
+		if (this.isSelected(selected)) {
+			this.removeSelected(selected)
+		} else {
+			this.addSelected(selected)
+		}
+	}
+	/** Add item from selection */
+	removeSelected(selected: CurrentSelectionAny): void {
+		const index = this._selected.findIndex((s) => _.isEqual(s, selected))
+		if (index >= 0) {
+			this._selected.splice(index, 1)
+		}
+	}
+	/** Clear all items from selection */
+	clearSelected(): void {
+		if (this._selected.length > 0) {
+			this._selected.splice(0, 9999)
 		}
 	}
 
@@ -129,25 +193,6 @@ export class GuiStore {
 		this.definingArea = definingArea
 	}
 
-	async getSelectedAndPlayingTimelineObjIds(rundownId: string): Promise<Set<string>> {
-		const playingIds = new Set<string>()
-		const promises: Array<Promise<void>> = []
-		for (const timelineObjId of this.selected.timelineObjIds) {
-			const promise = this.serverAPI
-				.isTimelineObjPlaying({
-					rundownId,
-					timelineObjId,
-				})
-				.then((isPlaying) => {
-					if (isPlaying) playingIds.add(timelineObjId)
-				})
-			promises.push(promise)
-		}
-
-		await Promise.all(promises)
-
-		return playingIds
-	}
 	getGroupSettings(groupId: string): GroupSettings {
 		return this.groupSettings.get(groupId) || {}
 	}

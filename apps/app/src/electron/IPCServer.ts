@@ -1077,6 +1077,8 @@ export class IPCServer
 	}
 	async deleteTimelineObj(arg: {
 		rundownId: string
+		groupId: string
+		partId: string
 		timelineObjId: string
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown } = this.getRundown(arg)

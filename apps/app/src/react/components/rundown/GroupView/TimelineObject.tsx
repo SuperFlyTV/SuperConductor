@@ -41,7 +41,6 @@ export const TimelineObject: React.FC<{
 	const ref = useRef<HTMLDivElement>(null)
 
 	const hotkeyContext = useContext(HotkeyContext)
-	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
 
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
@@ -164,7 +163,6 @@ export const TimelineObject: React.FC<{
 	useEffect(() => {
 		const onKey = () => {
 			const pressed = sorensen.getPressedKeys()
-			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 		}
 		onKey()
@@ -197,47 +195,27 @@ export const TimelineObject: React.FC<{
 
 	const updateSelection = () => {
 		if (!selectable) return
-		const selected = store.guiStore.selected
+		// const selected = store.guiStore.selected
+		const pressed = sorensen.getPressedKeys()
+		const allowMultiSelection =
+			pressed.includes('ShiftLeft') ||
+			pressed.includes('ShiftRight') ||
+			pressed.includes('ControlLeft') ||
+			pressed.includes('ControlRight')
 		if (allowMultiSelection) {
-			if (
-				selected.groupId === groupId &&
-				selected.partId === partId &&
-				selected.timelineObjIds.includes(obj.id)
-			) {
-				// Deselect this timelineObj:
-				store.guiStore.setSelected({
-					timelineObjIds: selected.timelineObjIds.filter((id) => id !== obj.id),
-				})
-			} else {
-				if (selected.groupId === groupId && selected.partId === partId) {
-					if (!selected.timelineObjIds.includes(obj.id)) {
-						// Add this to selection:
-						store.guiStore.setSelected({
-							timelineObjIds: [...selected.timelineObjIds, obj.id],
-						})
-					}
-				} else {
-					store.guiStore.setSelected({
-						groupId: groupId,
-						partId: partId,
-						timelineObjIds: [obj.id],
-					})
-				}
-			}
+			store.guiStore.toggleAddSelected({
+				type: 'timelineObj',
+				groupId: groupId,
+				partId: partId,
+				timelineObjId: obj.id,
+			})
 		} else {
-			if (
-				selected.groupId === groupId &&
-				selected.partId === partId &&
-				selected.timelineObjIds.includes(obj.id)
-			) {
-				// do nothing
-			} else {
-				store.guiStore.setSelected({
-					groupId: groupId,
-					partId: partId,
-					timelineObjIds: [obj.id],
-				})
-			}
+			store.guiStore.toggleSelected({
+				type: 'timelineObj',
+				groupId: groupId,
+				partId: partId,
+				timelineObjId: obj.id,
+			})
 		}
 	}
 
@@ -263,7 +241,14 @@ export const TimelineObject: React.FC<{
 		}
 	}, [])
 
-	const isSelected = computed(() => store.guiStore.selected.timelineObjIds?.includes(obj.id))
+	const isSelected = computed(() =>
+		store.guiStore.isSelected({
+			type: 'timelineObj',
+			groupId: groupId,
+			partId: partId,
+			timelineObjId: obj.id,
+		})
+	)
 
 	return (
 		<div

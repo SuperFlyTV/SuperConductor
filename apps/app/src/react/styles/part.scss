@@ -15,22 +15,32 @@ $part_time_height: 16px;
 		'tab meta dropdown time     endcap'
 		'tab meta names    timeline endcap';
 
+	background-color: $partMetaColor;
+
 	&:first-child {
-		.part__tab {
+		&,
+		.part__tab,
+		> .part__selected {
 			border-top-left-radius: calc($partTabWidth / 2);
 		}
 
-		.part__endcap {
+		&,
+		.part__endcap,
+		> .part__selected {
 			border-top-right-radius: calc($partTabWidth / 2);
 		}
 	}
 
 	&:last-child {
-		.part__tab {
+		&,
+		.part__tab,
+		> .part__selected {
 			border-bottom-left-radius: calc($partTabWidth / 2);
 		}
 
-		.part__endcap {
+		&,
+		.part__endcap,
+		> .part__selected {
 			border-bottom-right-radius: calc($partTabWidth / 2);
 		}
 	}
@@ -39,6 +49,28 @@ $part_time_height: 16px;
 		.toggle-btn:not(.selected),
 		.MuiToggleButton-sizeSmall:not(.Mui-selected) {
 			opacity: 0.4;
+		}
+	}
+
+	&.selectable {
+		cursor: pointer;
+		&:hover {
+			background-color: color.adjust($partMetaColor, $lightness: -3);
+		}
+	}
+	> .part__selected {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		pointer-events: none;
+		z-index: 2;
+		transition: $default-transition;
+	}
+	&.selected {
+		> .part__selected {
+			box-shadow: inset 0px 0px 0px 2px #ffffff65;
 		}
 	}
 
@@ -145,7 +177,7 @@ $part_time_height: 16px;
 	}
 
 	&__meta {
-		background-color: $partMetaColor;
+		// background-color: $partMetaColor;
 		padding: 0.5rem 0.4rem;
 		box-sizing: border-box;
 		grid-area: meta;
@@ -205,7 +237,7 @@ $part_time_height: 16px;
 	}
 
 	&__dropdown {
-		background-color: $partMetaColor;
+		// background-color: $partMetaColor;
 		grid-area: dropdown;
 	}
 
@@ -390,7 +422,7 @@ $part_time_height: 16px;
 		position: absolute;
 		top: 0;
 		right: -15px;
-		z-index: 1;
+		z-index: 3;
 		opacity: 0;
 		// display: none;
 		transition: opacity 0.2s ease-in-out;

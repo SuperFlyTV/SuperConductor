@@ -118,7 +118,7 @@ export interface IPCServerMethods {
 			obj: Partial<TimelineObj['obj']>
 		}
 	}) => void
-	deleteTimelineObj: (arg: { rundownId: string; timelineObjId: string }) => void
+	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
 	addTimelineObj: (arg: {
 		rundownId: string
 		groupId: string

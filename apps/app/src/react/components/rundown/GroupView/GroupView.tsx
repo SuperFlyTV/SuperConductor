@@ -126,6 +126,69 @@ export const GroupView: React.FC<{
 		() => Object.keys(store.groupPlayDataStore.groups.get(group.id)?.playheads || {}).length
 	).get()
 
+	const selectable = true
+	const isSelected = computed(() =>
+		store.guiStore.isSelected({
+			type: 'group',
+			groupId,
+		})
+	)
+
+	const updateSelection = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+		if (!selectable) return
+		const targetEl = event.target as HTMLElement
+
+		if (
+			targetEl.closest('.part') ||
+			targetEl.closest('.controls-left') ||
+			targetEl.closest('.controls-right') ||
+			targetEl.closest('button') ||
+			targetEl.closest('input') ||
+			targetEl.closest('.editable') ||
+			targetEl.closest('.MuiBackdrop-root')
+		)
+			return
+
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+			// Add this group to the selection:
+			store.guiStore.toggleAddSelected({
+				type: 'group',
+				groupId,
+			})
+		} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+			// Add all groups between the last selected and this one:
+			const mainSelected = store.guiStore.mainSelected
+			if (mainSelected && mainSelected.type === 'group') {
+				const allGroups = store.rundownsStore.getRundownGroups(rundownId)
+
+				const mainIndex = allGroups.findIndex((g) => g.id === mainSelected.groupId)
+				const thisIndex = allGroups.findIndex((g) => g.id === groupId)
+				if (mainIndex === -1 || thisIndex === -1) return
+				if (mainIndex < thisIndex) {
+					for (let i = mainIndex + 1; i <= thisIndex; i++) {
+						store.guiStore.addSelected({
+							type: 'group',
+							groupId: allGroups[i].id,
+						})
+					}
+				} else if (mainIndex > thisIndex) {
+					for (let i = mainIndex - 1; i >= thisIndex; i--) {
+						store.guiStore.addSelected({
+							type: 'group',
+							groupId: allGroups[i].id,
+						})
+					}
+				}
+			}
+		} else {
+			store.guiStore.toggleSelected({
+				type: 'group',
+				groupId,
+			})
+		}
+	}
+
 	/** Whether we're allowed to stop playing */
 	const wasPlayingRef = useRef(false)
 	const stopPlayingRef = useRef(true)
@@ -535,8 +598,11 @@ export const GroupView: React.FC<{
 						disabled: group.disabled,
 						collapsed: groupCollapsed,
 						dragging: isDragging,
+						selected: isSelected.get(),
+						selectable: selectable,
 					})}
 					data-drop-handler-id={handlerId}
+					onClick={updateSelection}
 				>
 					<div className="group__dragArrow" />
 					<div className="group__header">
@@ -557,7 +623,7 @@ export const GroupView: React.FC<{
 
 						{!editingGroupName && (
 							<div
-								className="title"
+								className="title editable"
 								title={group.locked ? group.name : 'Click to edit Group name'}
 								onClick={() => {
 									if (group.locked) {
@@ -595,7 +661,7 @@ export const GroupView: React.FC<{
 							/>
 						)}
 
-						<div className="controls">
+						<div className="controls controls-left">
 							<div className="playback">
 								<ControlButtons rundownId={rundownId} group={group} />
 								<Button
@@ -755,7 +821,9 @@ export const GroupView: React.FC<{
 							>
 								<GroupAutoFillPopover rundownId={rundownId} group={group} />
 							</Popover>
-
+						</div>
+						<div className="controls controls-space"></div>
+						<div className="controls controls-right">
 							<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
 							<TrashBtn

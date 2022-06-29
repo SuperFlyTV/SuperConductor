@@ -36,6 +36,7 @@ import { ClientSideLogger } from './api/logger'
 import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
 import { Action, getAllActionsInParts } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
+import { assertNever } from '@shared/lib'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -162,24 +163,20 @@ export const App = observer(function App() {
 
 	const gui = store.guiStore
 
-	const handlePointerDownAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
+	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 
 		if (
 			tarEl.closest('.main-area') &&
+			!tarEl.closest('.group') &&
+			!tarEl.closest('.part') &&
 			!tarEl.closest('.timeline-object') &&
 			!tarEl.closest('.side-bar') &&
 			!tarEl.closest('.MuiModal-root') &&
 			!tarEl.closest('button') &&
 			!gui.timelineObjMove.moveType
 		) {
-			if (gui.selected.timelineObjIds.length > 0) {
-				gui.setSelected({
-					timelineObjIds: [],
-					groupId: undefined,
-					partId: undefined,
-				})
-			}
+			gui.clearSelected()
 		}
 	}
 
@@ -218,23 +215,57 @@ export const App = observer(function App() {
 	const currentRundownId = useMemoComputedValue(() => {
 		return store.rundownsStore.currentRundownId
 	}, [])
-	const [showDeleteTimelineObjConfirmationDialog, setShowDeleteTimelineObjConfirmationDialog] = useState(false)
+	const [showDeleteConfirmationDialog, setShowDeleteConfirmationDialog] = useState<string | undefined>(undefined)
 	const deleteSelectedTimelineObjs = useCallback(() => {
 		if (!currentRundownId) {
 			return
 		}
 
 		const promises: Promise<void>[] = []
-		for (const id of gui.selected.timelineObjIds) {
-			const promise = serverAPI.deleteTimelineObj({
-				rundownId: currentRundownId,
-				timelineObjId: id,
-			})
-			promises.push(promise)
+		const deletedGroups = new Set<string>()
+		const deletedParts = new Set<string>()
+		for (const select of gui.selected) {
+			if (select.type === 'group') {
+				deletedGroups.add(select.groupId)
+				promises.push(
+					serverAPI.deleteGroup({
+						rundownId: currentRundownId,
+						groupId: select.groupId,
+					})
+				)
+			}
+		}
+		for (const select of gui.selected) {
+			if (select.type === 'part') {
+				if (!deletedGroups.has(select.groupId)) {
+					deletedParts.add(select.partId)
+					promises.push(
+						serverAPI.deletePart({
+							rundownId: currentRundownId,
+							groupId: select.groupId,
+							partId: select.partId,
+						})
+					)
+				}
+			}
+		}
+		for (const select of gui.selected) {
+			if (select.type === 'timelineObj') {
+				if (!deletedGroups.has(select.groupId) && !deletedParts.has(select.partId)) {
+					promises.push(
+						serverAPI.deleteTimelineObj({
+							rundownId: currentRundownId,
+							groupId: select.groupId,
+							partId: select.partId,
+							timelineObjId: select.timelineObjId,
+						})
+					)
+				}
+			}
 		}
 
 		Promise.all(promises).catch(handleError)
-	}, [currentRundownId, gui.selected.timelineObjIds, handleError, serverAPI])
+	}, [currentRundownId, gui, handleError, serverAPI])
 	useEffect(() => {
 		if (!sorensenInitialized) {
 			return
@@ -246,15 +277,44 @@ export const App = observer(function App() {
 				if (document.activeElement?.tagName === 'INPUT') return
 
 				e.preventDefault()
-				gui.getSelectedAndPlayingTimelineObjIds(currentRundownId)
-					.then((selectedAndPlayingTimelineObjIds) => {
-						if (selectedAndPlayingTimelineObjIds.size > 0) {
-							setShowDeleteTimelineObjConfirmationDialog(true)
+
+				if (gui.selected.length === 0) {
+					// do nothing
+				} else if (gui.selected.length > 1) {
+					let countGroups = 0
+					let countParts = 0
+					let countTimelineObjs = 0
+
+					for (const select of gui.selected) {
+						if (select.type === 'group') {
+							countGroups++
+						} else if (select.type === 'part') {
+							countParts++
+						} else if (select.type === 'timelineObj') {
+							countTimelineObjs++
 						} else {
-							deleteSelectedTimelineObjs()
+							assertNever(select)
 						}
-					})
-					.catch(handleError)
+					}
+					const strs = []
+					if (countGroups > 0) strs.push(`${countGroups} groups`)
+					if (countParts > 0) strs.push(`${countParts} parts`)
+					if (countTimelineObjs > 0) strs.push(`${countTimelineObjs} timeline objects`)
+
+					setShowDeleteConfirmationDialog(strs.join(', '))
+				} else {
+					deleteSelectedTimelineObjs()
+				}
+
+				// gui.getSelectedAndPlayingTimelineObjIds(currentRundownId)
+				// 	.then((selectedAndPlayingTimelineObjIds) => {
+				// 		if (selectedAndPlayingTimelineObjIds.size > 0) {
+				// 			setShowDeleteConfirmationDialog(true)
+				// 		} else {
+
+				// 		}
+				// 	})
+				// 	.catch(handleError)
 			} catch (error) {
 				handleError(error)
 			}
@@ -331,7 +391,7 @@ export const App = observer(function App() {
 				<IPCServerContext.Provider value={serverAPI}>
 					<ProjectContext.Provider value={project}>
 						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
-							<div className="app" onPointerDown={handlePointerDownAnywhere}>
+							<div className="app" onClick={handleClickAnywhere}>
 								<HeaderBar />
 
 								{splashScreenOpen && (
@@ -358,21 +418,18 @@ export const App = observer(function App() {
 								)}
 
 								<ConfirmationDialog
-									open={showDeleteTimelineObjConfirmationDialog}
-									title="Delete Timeline Object(s)"
+									open={!!showDeleteConfirmationDialog}
+									title="Delete"
 									acceptLabel="Delete"
 									onDiscarded={() => {
-										setShowDeleteTimelineObjConfirmationDialog(false)
+										setShowDeleteConfirmationDialog(undefined)
 									}}
 									onAccepted={() => {
 										deleteSelectedTimelineObjs()
-										setShowDeleteTimelineObjConfirmationDialog(false)
+										setShowDeleteConfirmationDialog(undefined)
 									}}
 								>
-									<p>
-										Some of the selected timeline objects are currently being used in playout. Are
-										you sure you wish to delete them?
-									</p>
+									<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
 								</ConfirmationDialog>
 							</div>
 						</ErrorHandlerContext.Provider>

@@ -100,6 +100,79 @@ export const PartView: React.FC<{
 	const [editingPartName, setEditingPartName] = useState(false)
 	const [editedName, setEditedName] = useState(part.name)
 
+	const selectable = true
+	const isSelected = computed(() =>
+		store.guiStore.isSelected({
+			type: 'part',
+			groupId: parentGroupId,
+			partId: partId,
+		})
+	)
+	const updateSelection = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+		if (!selectable) return
+		const targetEl = event.target as HTMLElement
+
+		if (
+			targetEl.closest('.timeline-object') ||
+			targetEl.closest('.layer-names-dropdown') ||
+			targetEl.closest('button') ||
+			targetEl.closest('input') ||
+			targetEl.closest('.editable') ||
+			targetEl.closest('.MuiBackdrop-root')
+		)
+			return
+
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+			// Add this part to the selection:
+			store.guiStore.toggleAddSelected({
+				type: 'part',
+				groupId: parentGroupId,
+				partId: partId,
+			})
+		} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+			// Add all parts between the last selected and this one:
+			const mainSelected = store.guiStore.mainSelected
+			if (mainSelected && mainSelected.type === 'part') {
+				const allPartIds: { partId: string; groupId: string }[] = []
+				for (const group of store.rundownsStore.getRundownGroups(rundownId)) {
+					for (const part of store.rundownsStore.getGroupParts(group.id)) {
+						allPartIds.push({
+							groupId: group.id,
+							partId: part.id,
+						})
+					}
+				}
+				const mainIndex = allPartIds.findIndex((p) => p.partId === mainSelected.partId)
+				const thisIndex = allPartIds.findIndex((p) => p.partId === partId)
+				if (mainIndex === -1 || thisIndex === -1) return
+				if (mainIndex < thisIndex) {
+					for (let i = mainIndex + 1; i <= thisIndex; i++) {
+						store.guiStore.addSelected({
+							type: 'part',
+							groupId: allPartIds[i].groupId,
+							partId: allPartIds[i].partId,
+						})
+					}
+				} else if (mainIndex > thisIndex) {
+					for (let i = mainIndex - 1; i >= thisIndex; i--) {
+						store.guiStore.addSelected({
+							type: 'part',
+							groupId: allPartIds[i].groupId,
+							partId: allPartIds[i].partId,
+						})
+					}
+				}
+			}
+		} else {
+			store.guiStore.toggleSelected({
+				type: 'part',
+				groupId: parentGroupId,
+				partId: partId,
+			})
+		}
+	}
+
 	const timelineObjMove = useMemoComputedObject<TimelineObjectMove>(
 		() => {
 			const objMove = store.guiStore.timelineObjMove
@@ -274,7 +347,7 @@ export const PartView: React.FC<{
 				timelineObjMove.moveType === 'whole' &&
 				timelineObjMove.hoveredLayerId &&
 				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX) &&
-				store.guiStore.selected.timelineObjIds.length === 1
+				store.guiStore.selected.length === 1
 			) {
 				// Handle moving a timelineObj to the "new layer" area
 				// This type of move is only allowed when a single timelineObj is selected.
@@ -301,6 +374,9 @@ export const PartView: React.FC<{
 					}
 				}
 
+				const selectedTimelineObjIds = compact(
+					store.guiStore.selected.map((s) => (s.type === 'timelineObj' ? s.timelineObjId : undefined))
+				)
 				try {
 					const o = applyMovementToTimeline(
 						partTimeline,
@@ -312,7 +388,7 @@ export const PartView: React.FC<{
 						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
 						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
 						timelineObjMove.leaderTimelineObjId,
-						store.guiStore.selected.timelineObjIds,
+						selectedTimelineObjIds,
 						cache.current,
 						moveToLayerId,
 						Boolean(timelineObjMove.duplicate)
@@ -805,8 +881,12 @@ export const PartView: React.FC<{
 					dragging: isDragging,
 					disabled: groupOrPartDisabled,
 					locked: groupOrPartLocked,
+					selected: isSelected.get(),
+					selectable: selectable,
 				})}
+				onClick={updateSelection}
 			>
+				<div className="part__selected" />
 				<div className="part__dragArrow" />
 				<div className={classNames('part__tab', tabAdditionalClassNames)}>
 					<>
@@ -831,7 +911,7 @@ export const PartView: React.FC<{
 						{!editingPartName && part.name.length > 0 && (
 							<div
 								title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
-								className="title"
+								className="title editable"
 								onClick={() => {
 									if (groupOrPartLocked) {
 										return

@@ -2,7 +2,7 @@
 	"name": "tsr-bridge",
 	"private": true,
 	"version": "0.8.0-alpha.0",
-	"description": "",
+	"description": "A companion app to SuperConductor, to handle playout on another computer",
 	"main": "dist/main.js",
 	"engines": {
 		"node": "^12.20 || ^14.15.3 || 16"
