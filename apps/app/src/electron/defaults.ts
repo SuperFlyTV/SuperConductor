@@ -137,7 +137,10 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 	return {
 		transparent: false,
 
-		oneAtATime: false,
+		// One-at-a-time should be true by default, because this is the "easiest" way to play things for a user.
+		// The multi-play-mode requires the user to knowingly set different layers for the various content
+		// so it is a bit more complicated to use.
+		oneAtATime: true,
 		autoPlay: false,
 		loop: false,
 		parts: [],
