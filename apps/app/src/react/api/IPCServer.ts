@@ -120,8 +120,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	addTimelineObj(...args: ServerArgs<'addTimelineObj'>) {
 		return this.invokeServerMethod('addTimelineObj', ...args)
 	}
-	addResourceToTimeline(...args: ServerArgs<'addResourceToTimeline'>) {
-		return this.invokeServerMethod('addResourceToTimeline', ...args)
+	addResourcesToTimeline(...args: ServerArgs<'addResourcesToTimeline'>) {
+		return this.invokeServerMethod('addResourcesToTimeline', ...args)
 	}
 	toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>) {
 		return this.invokeServerMethod('toggleGroupLoop', ...args)

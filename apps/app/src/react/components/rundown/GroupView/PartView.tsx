@@ -118,7 +118,7 @@ export const PartView: React.FC<{
 			targetEl.closest('button') ||
 			targetEl.closest('input') ||
 			targetEl.closest('.editable') ||
-			targetEl.closest('.MuiBackdrop-root')
+			targetEl.closest('.MuiModal-root')
 		)
 			return
 

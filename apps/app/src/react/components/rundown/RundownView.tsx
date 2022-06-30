@@ -130,23 +130,25 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 						return
 					}
 
-					const { partId, groupId } = await ipcServer.newPart({
-						rundownId,
-						groupId: null, // Creates a transparent group.
-						name: droppedItem.resource.id,
-					})
+					for (const resource of droppedItem.resources) {
+						const { partId, groupId } = await ipcServer.newPart({
+							rundownId,
+							groupId: null, // Creates a transparent group.
+							name: resource.id,
+						})
 
-					if (!groupId) {
-						return
+						if (!groupId) {
+							return
+						}
+
+						await ipcServer.addResourcesToTimeline({
+							rundownId,
+							groupId,
+							partId,
+							layerId: null,
+							resourceIds: [resource.id],
+						})
 					}
-
-					await ipcServer.addResourceToTimeline({
-						rundownId,
-						groupId,
-						partId,
-						layerId: null,
-						resourceId: droppedItem.resource.id,
-					})
 				} catch (error) {
 					handleError(error)
 				}
@@ -176,27 +178,32 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 						return
 					}
 
-					const groupAndPartName =
-						'name' in droppedItem.resource ? (droppedItem.resource as any).name : droppedItem.resource.id
+					let groupName = 'New Group'
+					if (droppedItem.resources.length === 1) {
+						const resource = droppedItem.resources[0]
+						groupName = 'name' in resource ? (resource as any).name : resource.id
+					}
 
 					const groupId = await ipcServer.newGroup({
 						rundownId,
-						name: groupAndPartName,
+						name: groupName,
 					})
+					for (const resource of droppedItem.resources) {
+						const partName = 'name' in resource ? (resource as any).name : resource.id
+						const { partId } = await ipcServer.newPart({
+							rundownId,
+							groupId,
+							name: partName,
+						})
 
-					const { partId } = await ipcServer.newPart({
-						rundownId,
-						groupId,
-						name: groupAndPartName,
-					})
-
-					await ipcServer.addResourceToTimeline({
-						rundownId,
-						groupId,
-						partId,
-						layerId: null,
-						resourceId: droppedItem.resource.id,
-					})
+						await ipcServer.addResourcesToTimeline({
+							rundownId,
+							groupId,
+							partId,
+							layerId: null,
+							resourceIds: [resource.id],
+						})
+					}
 				} catch (error) {
 					handleError(error)
 				}

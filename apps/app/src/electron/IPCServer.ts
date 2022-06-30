@@ -14,6 +14,7 @@ import {
 	getMappingName,
 	getNextPartIndex,
 	getPrevPartIndex,
+	isLayerInfinite,
 	listAvailableDeviceIDs,
 	shortID,
 	updateGroupPlayingParts,
@@ -1164,10 +1165,11 @@ export class IPCServer
 		const resource = this.storage.getResource(timelineObj.resourceId)
 
 		const originalLayer = timelineObj.obj.layer
+		const project = this.getProject()
 		const result = this._findBestOrCreateLayer({
-			rundownId: arg.rundownId,
-			groupId: arg.groupId,
-			partId: arg.partId,
+			project,
+			rundown,
+			part,
 			obj: timelineObj.obj,
 			resource: resource,
 			originalLayerId: originalLayer,
@@ -1175,7 +1177,7 @@ export class IPCServer
 		timelineObj.obj.layer = result.layerId
 
 		postProcessPart(part)
-		this._saveUpdates({ project: result.updatedProject, rundownId: arg.rundownId, rundown, group })
+		this._saveUpdates({ project, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1197,80 +1199,134 @@ export class IPCServer
 		}
 	}
 
-	async addResourceToTimeline(arg: {
+	async addResourcesToTimeline(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 		layerId: string | null
-		resourceId: string
+		resourceIds: string[]
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
 			return
 		}
+		let updatedProject = false
+		const project = this.getProject()
+		const addedNewLayers: string[] = []
+		const addedNewTimelineObjIds: string[] = []
+		let usePreviousLayerId: string | undefined = undefined
 
-		const resource = this.storage.getResource(arg.resourceId)
-		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
+		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
-		const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
+		for (const resourceId of arg.resourceIds) {
+			const resource = this.storage.getResource(resourceId)
+			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
 
-		let addToLayerId: string
-		let createdNewLayer = false
-		let updatedProject: Project | undefined = undefined
-		if (arg.layerId) {
-			addToLayerId = arg.layerId
-		} else {
-			const result = this._findBestOrCreateLayer({
-				rundownId: arg.rundownId,
-				groupId: arg.groupId,
-				partId: arg.partId,
+			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
+
+			let addToLayerId: string | undefined = undefined
+
+			if (arg.layerId) {
+				// Also check if there are any infinites on that layer.
+				// If there is an infinite on that layer, it doesn't make sense to add another object to that layer.
+				if (!isLayerInfinite(part, arg.layerId)) {
+					addToLayerId = arg.layerId
+				}
+			}
+			if (!addToLayerId) {
+				if (usePreviousLayerId) {
+					const mapping = project.mappings[usePreviousLayerId]
+					if (allowAddingResourceToLayer(project, resource, mapping)) {
+						// Also check if there are any infinites on that layer.
+						// If there is an infinite on that layer, it doesn't make sense to add another object to that layer.
+						if (!isLayerInfinite(part, usePreviousLayerId)) {
+							addToLayerId = usePreviousLayerId
+						}
+					}
+				}
+			}
+
+			if (!addToLayerId) {
+				const result = this._findBestOrCreateLayer({
+					project,
+					rundown,
+					part,
+					obj,
+					resource,
+					originalLayerId: undefined,
+				})
+				addToLayerId = result.layerId
+				if (result.createdNewLayer) {
+					addedNewLayers.push(result.layerId)
+				}
+				updatedProject = updatedProject || result.updatedProject
+			}
+			obj.layer = addToLayerId
+			usePreviousLayerId = obj.layer
+
+			const mapping = project.mappings[obj.layer]
+			const allow = allowAddingResourceToLayer(project, resource, mapping)
+			if (!allow) {
+				if (arg.resourceIds.length > 1) continue // ignore the error if we're adding multiple resources
+				throw new Error(
+					`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
+						obj.layer
+					}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
+				)
+			}
+			const timelineObj: TimelineObj = {
+				resourceId: resource.id,
 				obj,
-				resource,
-				originalLayerId: undefined,
-			})
-			addToLayerId = result.layerId
-			createdNewLayer = result.createdNewLayer
-			updatedProject = result.updatedProject
-		}
-		obj.layer = addToLayerId
+				resolved: { instances: [] }, // set later, in postProcessPart
+			}
 
-		const project = updatedProject ?? this.getProject()
-		const mapping = project.mappings[obj.layer]
-		const allow = allowAddingResourceToLayer(project, resource, mapping)
-		if (!allow) {
-			throw new Error(
-				`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
-					obj.layer
-				}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
-			)
+			// Place the timelineObj at the end of the part's timeline:
+			{
+				let lastEndTime = 0
+				let lastEndObjId = ''
+				for (const o of part.timeline) {
+					if (o.obj.layer === obj.layer) {
+						for (const instance of o.resolved.instances) {
+							if (instance.end && lastEndTime < instance.end) {
+								lastEndTime = instance.end
+								lastEndObjId = o.obj.id
+							}
+						}
+					}
+				}
+				if (!Array.isArray(timelineObj.obj.enable)) {
+					timelineObj.obj.enable.start = `#${lastEndObjId}.end`
+				}
+			}
+
+			part.timeline.push(timelineObj)
+			addedNewTimelineObjIds.push(timelineObj.obj.id)
+			postProcessPart(part)
 		}
 
-		const timelineObj: TimelineObj = {
-			resourceId: resource.id,
-			obj,
-			resolved: { instances: [] }, // set later, in postProcessPart
-		}
-
-		part.timeline.push(timelineObj)
-		postProcessPart(part)
-		this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ project: updatedProject ? project : undefined, rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
 				let updatedProject: Project | undefined = undefined
-				if (createdNewLayer) {
+				if (addedNewLayers.length > 0) {
 					// If a new layer was added, remove it.
 					updatedProject = this.getProject()
-					delete updatedProject.mappings[addToLayerId]
+					for (const layerId of addedNewLayers) {
+						delete updatedProject.mappings[layerId]
+					}
 				}
 
 				const { rundown, part } = this.getPart(arg)
-				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
+
+				part.timeline = part.timeline.filter((t) => {
+					return !addedNewTimelineObjIds.includes(t.obj.id)
+				})
 				postProcessPart(part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
-			description: ActionDescription.AddResourceToTimeline,
+			description: ActionDescription.addResourcesToTimeline,
 		}
 	}
 	async toggleGroupLoop(arg: {
@@ -1859,23 +1915,21 @@ export class IPCServer
 		this.callbacks.updatePeripherals()
 	}
 	private _findBestOrCreateLayer(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
+		rundown: Rundown
+		part: Part
+		project: Project
 		obj: TSRTimelineObj
 		resource: ResourceAny | undefined
 		originalLayerId: string | number | undefined
 	}) {
-		const project = this.getProject()
-		const { rundown, part } = this.getPart(arg)
 		let addToLayerId: string | null = null
 		let createdNewLayer = false
 
-		const allDeviceIds = listAvailableDeviceIDs(project.bridges)
+		const allDeviceIds = listAvailableDeviceIDs(arg.project.bridges)
 
 		// First, try to pick next free layer:
 		const possibleLayers: { [layerId: string]: number } = {}
-		for (const { layerId, mapping } of sortMappings(project.mappings)) {
+		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
 			// Is the layer on the same device as the resource?
 			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
 
@@ -1886,13 +1940,13 @@ export class IPCServer
 			if (!filterMapping(mapping, arg.obj)) continue
 
 			// Is the layer free?
-			if (part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+			if (arg.part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
 
 			// Okay then:
 			possibleLayers[layerId] = 1
 		}
 		// Pick the best layer, ie check which layer contains the most similar objects in other parts:
-		for (const group of rundown.groups) {
+		for (const group of arg.rundown.groups) {
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (possibleLayers[timelineObj.obj.layer]) {
@@ -1915,14 +1969,14 @@ export class IPCServer
 		if (bestLayer[0]) {
 			addToLayerId = bestLayer[0]
 		}
-		let updatedProject: Project | undefined = undefined
+		let updatedProject = false
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			let newMapping: Mapping | undefined = undefined
 			if (arg.resource) {
 				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
 			} else if (arg.originalLayerId !== undefined) {
-				const originalLayer = project.mappings[arg.originalLayerId] as Mapping | undefined
+				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
 				if (originalLayer) {
 					// TODO: modify the layer to create the "next" layer:
 					newMapping = {
@@ -1934,11 +1988,10 @@ export class IPCServer
 			if (newMapping && newMapping.layerName) {
 				// Add the new layer to the project
 				const newLayerId = shortID()
-				project.mappings = {
-					...project.mappings,
-					[newLayerId]: newMapping,
-				}
-				updatedProject = project
+
+				arg.project.mappings[newLayerId] = newMapping
+
+				updatedProject = true
 				addToLayerId = newLayerId
 				createdNewLayer = true
 			}
@@ -1947,7 +2000,7 @@ export class IPCServer
 		if (!addToLayerId) throw new Error('No layer found')
 
 		// Check that the layer exists:
-		const layer = addToLayerId ? project.mappings[addToLayerId] : undefined
+		const layer = addToLayerId ? arg.project.mappings[addToLayerId] : undefined
 		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
 
 		// Verify that the layer is OK:

@@ -36,6 +36,7 @@ import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } fro
 import classNames from 'classnames'
 import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
 import { computed } from 'mobx'
+import sorensen from '@sofie-automation/sorensen'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -61,12 +62,12 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		currentRundownId = undefined
 	}
 
-	const { selectedResourceId, nameFilterValue, deviceFilterValue } = computed(
+	const { selectedResourceIds, nameFilterValue, deviceFilterValue } = computed(
 		() => store.guiStore.resourceLibrary
 	).get()
 	const selectedResource = useMemoComputedObject(
-		() => (selectedResourceId ? store.resourcesStore.resources[selectedResourceId] : undefined),
-		[selectedResourceId]
+		() => (selectedResourceIds.length === 1 ? store.resourcesStore.resources[selectedResourceIds[0]] : undefined),
+		[selectedResourceIds]
 	)
 	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
@@ -132,19 +133,10 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		const {
 			target: { value },
 		} = event
-		store.guiStore.resourceLibrary = {
-			...store.guiStore.resourceLibrary,
+		store.guiStore.updateResourceLibrary({
 			// On autofill we get a stringified value.
 			deviceFilterValue: typeof value === 'string' ? value.split(',') : value,
-		}
-	}, [])
-
-	const handleResourceLibraryItemSelect = useCallback((resource: ResourceAny) => {
-		const resourceLibrary = store.guiStore.resourceLibrary
-		store.guiStore.resourceLibrary = {
-			...resourceLibrary,
-			selectedResourceId: resourceLibrary.selectedResourceId === resource.id ? undefined : resource.id,
-		}
+		})
 	}, [])
 
 	const handleRefreshAuto = useCallback(
@@ -155,22 +147,94 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	)
 	const isAnyDeviceRefreshing = useMemoComputedValue(() => store.resourcesStore.isAnyDeviceRefreshing(), [])
 
-	const allListItems: RowItem[] = []
-	for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
-		allListItems.push({
-			type: 'device',
-			key: `__device${deviceId}`,
-			deviceId,
-			resourceCount: resources.length,
-		})
-		for (const resource of resources) {
+	const allListItems = useMemo(() => {
+		const allListItems: RowItem[] = []
+		for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
 			allListItems.push({
-				type: 'resource',
-				key: resource.id,
-				resource,
+				type: 'device',
+				key: `__device${deviceId}`,
+				deviceId,
+				resourceCount: resources.length,
 			})
+			for (const resource of resources) {
+				allListItems.push({
+					type: 'resource',
+					key: resource.id,
+					resource,
+				})
+			}
 		}
-	}
+		return allListItems
+	}, [filteredResourcesByDeviceId])
+
+	const handleResourceLibraryItemSelect = useCallback(
+		(resource: ResourceAny) => {
+			const selectedResourceIds = store.guiStore.resourceLibrary.selectedResourceIds
+			let lastSelectedResourceId = store.guiStore.resourceLibrary.lastSelectedResourceId
+
+			const pressed = sorensen.getPressedKeys()
+			if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+				// Add this group to the selection, or remove it if it's already there:
+				const foundIndex = selectedResourceIds.indexOf(resource.id)
+				if (foundIndex === -1) {
+					selectedResourceIds.push(resource.id)
+					lastSelectedResourceId = resource.id
+				} else {
+					// unselect
+					selectedResourceIds.splice(foundIndex, 1)
+					lastSelectedResourceId = null
+				}
+			} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+				// Add all resources between the last selected and this one:
+
+				const mainIndex = lastSelectedResourceId
+					? allListItems.findIndex((i) => i.type === 'resource' && i.key === lastSelectedResourceId)
+					: 0
+				const thisIndex = allListItems.findIndex((i) => i.type === 'resource' && i.key === resource.id)
+				if (mainIndex === -1 || thisIndex === -1) return
+				if (mainIndex < thisIndex) {
+					for (let i = mainIndex + 1; i <= thisIndex; i++) {
+						const item = allListItems[i]
+						if (item.type === 'resource') {
+							const foundIndex = selectedResourceIds.indexOf(item.key)
+							if (foundIndex === -1) {
+								selectedResourceIds.push(item.key)
+							}
+						}
+					}
+				} else if (mainIndex > thisIndex) {
+					for (let i = mainIndex - 1; i >= thisIndex; i--) {
+						const item = allListItems[i]
+						if (item.type === 'resource') {
+							const foundIndex = selectedResourceIds.indexOf(item.key)
+							if (foundIndex === -1) {
+								selectedResourceIds.push(item.key)
+							}
+						}
+					}
+				}
+				lastSelectedResourceId = resource.id
+			} else {
+				// Set the selection to be this only:
+
+				const foundIndex = selectedResourceIds.indexOf(resource.id)
+				if (foundIndex === -1 || selectedResourceIds.length > 1) {
+					selectedResourceIds.splice(0, 99999)
+					selectedResourceIds.push(resource.id)
+					lastSelectedResourceId = resource.id
+				} else {
+					// unselect
+					selectedResourceIds.splice(0, 99999)
+					lastSelectedResourceId = null
+				}
+			}
+			store.guiStore.updateResourceLibrary({
+				selectedResourceIds,
+				lastSelectedResourceId,
+			})
+		},
+		[allListItems]
+	)
 
 	const MIN_LIMIT = 10
 	const [listItemsLimit, setListItemsLimit] = useState(MIN_LIMIT)
@@ -269,10 +333,9 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 					type: 'search',
 				}}
 				onChange={(event) => {
-					store.guiStore.resourceLibrary = {
-						...store.guiStore.resourceLibrary,
+					store.guiStore.updateResourceLibrary({
 						nameFilterValue: event.target.value,
-					}
+					})
 				}}
 			/>
 		</>
@@ -302,16 +365,16 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 								<React.Fragment key={item.resource.id}>
 									<ResourceLibraryItem
 										resource={item.resource}
-										selected={item.resource.id === selectedResourceId}
+										selected={selectedResourceIds.includes(item.resource.id)}
 										onSelect={handleResourceLibraryItemSelect}
 									/>
 									{selectedResource && currentRundownId && item.resource.id === selectedResource.id && (
 										<>
 											<ResourceData resource={item.resource} />
-											<AddToTimeline
+											{/* <AddToTimeline
 												currentRundownId={currentRundownId}
 												resource={item.resource}
-											/>
+											/> */}
 										</>
 									)}
 								</React.Fragment>
@@ -422,12 +485,12 @@ export const AddToTimeline: React.FC<{
 					}
 
 					ipcServer
-						.addResourceToTimeline({
+						.addResourcesToTimeline({
 							rundownId: values.rundownId,
 							groupId: values.groupId,
 							partId: values.partId,
 							layerId: values.layerId,
-							resourceId: resource.id,
+							resourceIds: [resource.id],
 						})
 						.catch(handleError)
 					actions.setSubmitting(false)

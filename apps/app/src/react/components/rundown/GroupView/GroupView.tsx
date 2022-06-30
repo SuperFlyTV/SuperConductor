@@ -145,7 +145,7 @@ export const GroupView: React.FC<{
 			targetEl.closest('button') ||
 			targetEl.closest('input') ||
 			targetEl.closest('.editable') ||
-			targetEl.closest('.MuiBackdrop-root')
+			targetEl.closest('.MuiModal-root')
 		)
 			return
 
@@ -873,7 +873,12 @@ export const GroupView: React.FC<{
 							setDeleteConfirmationOpen(false)
 						}}
 					>
-						<p>Are you sure you want to delete the group &quot;{group.name}&quot;?</p>
+						<p>
+							Are you sure you want to delete the group &quot;{group.name}&quot;?
+							<br />
+							<br />
+							(Tip: Hold CTRL when clicking the button to skip this dialog)`
+						</p>
 					</ConfirmationDialog>
 				</div>
 			</VisibilitySensor>
@@ -906,22 +911,21 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 						return
 					}
 
-					const { partId } = await ipcServer.newPart({
-						rundownId: rundownId,
-						groupId: group.id,
-						name:
-							'name' in droppedItem.resource
-								? (droppedItem.resource as any).name
-								: droppedItem.resource.id,
-					})
+					for (const resource of droppedItem.resources) {
+						const { partId } = await ipcServer.newPart({
+							rundownId: rundownId,
+							groupId: group.id,
+							name: 'name' in resource ? (resource as any).name : resource.id,
+						})
 
-					await ipcServer.addResourceToTimeline({
-						rundownId: rundownId,
-						groupId: group.id,
-						partId,
-						layerId: null,
-						resourceId: droppedItem.resource.id,
-					})
+						await ipcServer.addResourcesToTimeline({
+							rundownId: rundownId,
+							groupId: group.id,
+							partId,
+							layerId: null,
+							resourceIds: [resource.id],
+						})
+					}
 				} catch (error) {
 					handleError(error)
 				}

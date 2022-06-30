@@ -44,33 +44,56 @@ export const TimelineObject: React.FC<{
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
 
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
+	const wasMoving = useRef(false)
+
+	const obj: TSRTimelineObj = timelineObj.obj
 
 	const selectable = !locked
 	const movable = !locked
 
 	const dragData = useRef({
 		msPerPixel,
+		groupId,
 		partId,
 		moveType,
-		timelineObjId: timelineObj.obj.id,
+		timelineObjId: obj.id,
 		allowDuplicate,
 		movable,
 	})
 	useEffect(() => {
 		dragData.current = {
 			msPerPixel,
+			groupId,
 			partId,
 			moveType,
-			timelineObjId: timelineObj.obj.id,
+			timelineObjId: obj.id,
 			allowDuplicate,
 			movable,
 		}
-	}, [msPerPixel, partId, moveType, timelineObj.obj.id, allowDuplicate, selectable, movable])
+	}, [msPerPixel, partId, moveType, obj.id, allowDuplicate, selectable, movable, groupId])
 	const onDragStart = useCallback((startPosition: { clientX: number; clientY: number }) => {
 		// A move has begun.
 		const dd = dragData.current
 
 		if (!dd.movable) return
+
+		wasMoving.current = true
+
+		if (
+			!store.guiStore.isSelected({
+				type: 'timelineObj',
+				groupId: dd.groupId,
+				partId: dd.partId,
+				timelineObjId: dd.timelineObjId,
+			})
+		) {
+			store.guiStore.setSelected({
+				type: 'timelineObj',
+				groupId: dd.groupId,
+				partId: dd.partId,
+				timelineObjId: dd.timelineObjId,
+			})
+		}
 
 		store.guiStore.updateTimelineObjMove({
 			wasMoved: null,
@@ -143,7 +166,6 @@ export const TimelineObject: React.FC<{
 		onDragEnd,
 	})
 
-	const obj: TSRTimelineObj = timelineObj.obj
 	let instance = resolved.instances[0] as TimelineObjectInstance | undefined
 	if (!instance) {
 		instance = {
@@ -156,7 +178,12 @@ export const TimelineObject: React.FC<{
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
-	const startPercentage = startValue * 100 + '%'
+	const startPercentage =
+		Math.min(
+			// Cap to 98, because if 100, the object is not visible
+			98,
+			startValue * 100
+		) + '%'
 
 	const description = describeTimelineObject(obj)
 
@@ -195,7 +222,14 @@ export const TimelineObject: React.FC<{
 
 	const updateSelection = () => {
 		if (!selectable) return
-		// const selected = store.guiStore.selected
+		// Prevent selection when dragging:
+		if (wasMoving.current) {
+			wasMoving.current = false
+			return
+		} else {
+			wasMoving.current = false
+		}
+
 		const pressed = sorensen.getPressedKeys()
 		const allowMultiSelection =
 			pressed.includes('ShiftLeft') ||
@@ -262,7 +296,7 @@ export const TimelineObject: React.FC<{
 				warning: warnings && warnings.length > 0,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onPointerDown={updateSelection}
+			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
 		>
 			<div

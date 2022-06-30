@@ -1,3 +1,4 @@
+import { deepClone } from '@shared/lib'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
@@ -64,17 +65,22 @@ interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
+interface ResourceLibrarySettings {
+	/** A list of the selected resources, sorted in the order they where selected */
+	selectedResourceIds: string[]
+	/** A reference to the latest selected Resource */
+	lastSelectedResourceId: string | null
+	nameFilterValue: string
+	deviceFilterValue: string[]
+}
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
 
 	private _selected: CurrentSelectionAny[] = []
 
-	public resourceLibrary: {
-		selectedResourceId?: string
-		nameFilterValue: string
-		deviceFilterValue: string[]
-	} = {
-		selectedResourceId: undefined,
+	private _resourceLibrary: ResourceLibrarySettings = {
+		selectedResourceIds: [],
+		lastSelectedResourceId: null,
 		nameFilterValue: '',
 		deviceFilterValue: [],
 	}
@@ -204,6 +210,15 @@ export class GuiStore {
 		}
 		if (!_.isEqual(updated, org)) {
 			this.groupSettings.set(groupId, updated)
+		}
+	}
+	get resourceLibrary(): Readonly<ResourceLibrarySettings> {
+		return deepClone(this._resourceLibrary)
+	}
+	updateResourceLibrary(update: Partial<ResourceLibrarySettings>) {
+		this._resourceLibrary = {
+			...this._resourceLibrary,
+			...update,
 		}
 	}
 

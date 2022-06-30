@@ -264,7 +264,11 @@ export const App = observer(function App() {
 			}
 		}
 
-		Promise.all(promises).catch(handleError)
+		Promise.all(promises)
+			.then(() => {
+				gui.clearSelected()
+			})
+			.catch(handleError)
 	}, [currentRundownId, gui, handleError, serverAPI])
 	useEffect(() => {
 		if (!sorensenInitialized) {

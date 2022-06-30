@@ -114,6 +114,10 @@ export function getResolvedTimelineTotalDuration(
 	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
+			if (instance.start) {
+				maxDuration = Math.max(maxDuration, instance.start)
+			}
+
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -674,4 +678,20 @@ type RateLimitIgnoreFcn = {
 	): void
 	/** Clear any cheduled function executions */
 	clear: () => void
+}
+
+export function isLayerInfinite(part: Part, layerId: string): boolean {
+	let foundInfinite = false
+	for (const o of part.timeline) {
+		if (foundInfinite) break
+		if (o.obj.layer === layerId) {
+			for (const instance of o.resolved.instances) {
+				if (!instance.end) {
+					foundInfinite = true
+					break
+				}
+			}
+		}
+	}
+	return foundInfinite
 }

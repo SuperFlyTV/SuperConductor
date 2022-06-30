@@ -44,7 +44,7 @@ export const SideBarEditTimelineObject: React.FC<{
 				})
 			})
 			.catch(handleError)
-	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id])
+	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id, props.groupId, props.partId])
 
 	const header = (
 		<>

@@ -34,16 +34,20 @@ export const Layer: React.FC<{
 		() => ({
 			accept: locked ? [] : DragItemTypes.RESOURCE_ITEM,
 			canDrop: (item) => {
-				return typeof mapping !== 'undefined' && allowAddingResourceToLayer(project, item.resource, mapping)
+				return (
+					typeof mapping !== 'undefined' &&
+					item.resources.length >= 1 &&
+					allowAddingResourceToLayer(project, item.resources[0], mapping)
+				)
 			},
 			drop: (item: ResourceDragItem) => {
 				ipcServer
-					.addResourceToTimeline({
+					.addResourcesToTimeline({
 						rundownId,
 						groupId,
 						partId,
 						layerId,
-						resourceId: item.resource.id,
+						resourceIds: item.resources.map((r) => r.id),
 					})
 					.catch(handleError)
 			},

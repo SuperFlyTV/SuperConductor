@@ -28,7 +28,7 @@ export const enum ActionDescription {
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
-	AddResourceToTimeline = 'add resource to timeline',
+	addResourcesToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
@@ -132,13 +132,13 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 	}) => void
-	addResourceToTimeline: (arg: {
+	addResourcesToTimeline: (arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 
 		layerId: string | null
-		resourceId: string
+		resourceIds: string[]
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void
