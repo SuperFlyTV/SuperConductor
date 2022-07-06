@@ -1,6 +1,6 @@
 import {
 	allowAddingResourceToLayer,
-	allowMovingItemIntoGroup,
+	allowMovingPartIntoGroup,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -13,9 +13,11 @@ import {
 	generateNewTimelineObjIds,
 	getMappingName,
 	getNextPartIndex,
+	getPositionFromTarget,
 	getPrevPartIndex,
 	isLayerInfinite,
 	listAvailableDeviceIDs,
+	MoveTarget,
 	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
@@ -42,6 +44,7 @@ import { PeripheralArea, PeripheralSettings } from '..//models/project/Periphera
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
+import _ from 'lodash'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -115,7 +118,9 @@ export class IPCServer
 						try {
 							const result = await fcn(...args)
 							if (isUndoable(result)) {
+								// Clear any future things in the undo ledger:
 								this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
+								// Add the new action to the undo ledger:
 								this.undoLedger.push({
 									description: result.description,
 									arguments: args,
@@ -789,145 +794,187 @@ export class IPCServer
 			description: ActionDescription.DeleteGroup,
 		}
 	}
-	async movePart(arg: {
-		from: { rundownId: string; partId: string }
-		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<UndoableResult<Group>> {
-		const { rundown: fromRundown } = this.getRundown(arg.from)
-		const findPartResult = findPartInRundown(fromRundown, arg.from.partId)
+	async moveParts(arg: {
+		parts: { rundownId: string; partId: string }[]
+		to: { rundownId: string; groupId: string | null; target: MoveTarget }
+	}): Promise<UndoableResult<{ partId: string; groupId: string; rundownId: string }[]>> {
+		// For Undo:
+		const originalRundowns: Rundown[] = []
 
-		if (!findPartResult) {
-			throw new Error(`Part "${arg.from.partId}" does not exist in rundown "${arg.from.rundownId}"`)
-		}
+		const resultingParts: { partId: string; groupId: string; rundownId: string }[] = []
 
-		const fromGroup = findPartResult.group
-		const part = findPartResult.part
+		const toRundown: Rundown = this.getRundown(arg.to).rundown
+		originalRundowns.push(deepClone(toRundown))
 
-		let toRundown: Rundown
-		let toGroup: Group
-		let madeNewTransparentGroup = false
-		const isTransparentGroupMove =
-			arg.from.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
-
-		if (arg.to.groupId) {
-			const getGroupResult = this.getGroup({ rundownId: arg.to.rundownId, groupId: arg.to.groupId })
-			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : getGroupResult.rundown
-			toGroup = getGroupResult.group
-		} else {
-			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : this.getRundown(arg.to).rundown
-			if (isTransparentGroupMove) {
-				toGroup = fromGroup
-			} else {
-				toGroup = {
-					...getDefaultGroup(),
-
-					id: shortID(),
-					name: part.name,
-					transparent: true,
-
-					parts: [part],
-				}
-				madeNewTransparentGroup = true
-			}
-		}
-
-		if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
-			throw new Error('Cannot move a Part into an already-existing Transparent Group.')
-		}
-
-		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
-
-		if (!allow) {
-			throw new Error('Move prohibited')
-		}
-
-		const fromPlayhead = allow.fromPlayhead
-		const toPlayhead = allow.toPlayhead
-		const movedPartIsPlaying = fromPlayhead.playheads[arg.from.partId]
-
-		// Save the original position for use in undo.
-		const originalPosition = fromGroup.transparent
-			? fromRundown.groups.findIndex((g) => g.id === fromGroup.id)
-			: fromGroup.parts.findIndex((p) => p.id === arg.from.partId)
-
-		if (!isTransparentGroupMove) {
-			// Remove the part from its original group.
-			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
-		}
-
-		if (madeNewTransparentGroup) {
-			// Add the new transparent group to the rundown.
-			toRundown.groups.splice(arg.to.position, 0, toGroup)
-		} else if (isTransparentGroupMove) {
-			// Move the transparent group to its new position.
-			fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
-			toRundown.groups.splice(arg.to.position, 0, toGroup)
-		} else if (!isTransparentGroupMove) {
-			// Add the part to its new group, in its new position.
-			toGroup.parts.splice(arg.to.position, 0, part)
-		}
-
-		// Clean up leftover empty transparent groups.
-		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
-			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
-		}
-
+		const rundownsToUpdate: Rundown[] = []
 		const groupsToUpdate: Group[] = []
-		// Update timelines:
-		if (!isTransparentGroupMove) {
-			if (fromGroup.id === toGroup.id) {
-				// Moving within the same group
 
-				updateGroupPlayingParts(toGroup)
-				if (movedPartIsPlaying && toGroup.oneAtATime) {
-					// Update the group's playhead, so that the currently playing
-					// part continues to play as if nothing happened:
-					toGroup.playout.playingParts = {
-						[arg.from.partId]: {
-							startTime: movedPartIsPlaying.partStartTime,
-							pauseTime: movedPartIsPlaying.partPauseTime,
-						},
+		let nextTarget: MoveTarget = arg.to.target
+		for (const movePart of arg.parts) {
+			const fromRundown = arg.to.rundownId === movePart.rundownId ? toRundown : this.getRundown(movePart).rundown
+			if (fromRundown.id !== toRundown.id) {
+				originalRundowns.push(deepClone(fromRundown))
+			}
+
+			const findPartResult = findPartInRundown(fromRundown, movePart.partId)
+			if (!findPartResult) {
+				throw new Error(`Part "${movePart.partId}" does not exist in rundown "${movePart.rundownId}"`)
+			}
+			const fromGroup = findPartResult.group
+			const part = findPartResult.part
+
+			let toGroup: Group
+			let madeNewTransparentGroup = false
+			const isTransparentGroupMove =
+				movePart.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
+
+			if (arg.to.groupId) {
+				toGroup = this.getGroupOfRundown(toRundown, arg.to.groupId).group
+			} else {
+				// toRundown = arg.to.rundownId === movePart.rundownId ? fromRundown : this.getRundown(arg.to).rundown
+				if (isTransparentGroupMove) {
+					toGroup = fromGroup
+				} else {
+					toGroup = {
+						...getDefaultGroup(),
+
+						id: shortID(),
+						name: part.name,
+						transparent: true,
+
+						parts: [part],
+					}
+					madeNewTransparentGroup = true
+				}
+			}
+			if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
+				throw new Error('Cannot move a Part into an already-existing Transparent Group.')
+			}
+			const allow = allowMovingPartIntoGroup(movePart.partId, fromGroup, toGroup)
+
+			if (!allow) {
+				throw new Error('Move prohibited')
+			}
+			const fromPlayhead = allow.fromPlayhead
+			const toPlayhead = allow.toPlayhead
+			const movedPartIsPlaying = fromPlayhead.playheads[movePart.partId]
+
+			if (madeNewTransparentGroup) {
+				// Add the new transparent group to the rundown
+
+				// Remove the part from its original group.
+				fromGroup.parts = fromGroup.parts.filter((p) => p.id !== movePart.partId)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toRundown.groups)
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: group insertAfterId "${JSON.stringify(
+							nextTarget
+						)}" not found in rundown (new transparent)`
+					)
+				toRundown.groups.splice(insertPosition, 0, toGroup)
+
+				nextTarget = { type: 'after', id: toGroup.id }
+			} else if (isTransparentGroupMove) {
+				// Move the transparent group to its new position.
+				fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toRundown.groups)
+
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: group insertAfterId "${JSON.stringify(
+							nextTarget
+						)}" not found in rundown (move transparent)`
+					)
+				toRundown.groups.splice(insertPosition, 0, toGroup)
+
+				nextTarget = { type: 'after', id: toGroup.id }
+			} else if (!isTransparentGroupMove) {
+				// Add the part to its new group, in its new position
+
+				// Remove the part from its original group.
+				fromGroup.parts = fromGroup.parts.filter((p) => p.id !== movePart.partId)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toGroup.parts)
+
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: part insertAfterId "${nextTarget}" not found in group "${toGroup.id}"`
+					)
+				toGroup.parts.splice(insertPosition, 0, part)
+
+				nextTarget = { type: 'after', id: part.id }
+			}
+			// Clean up leftover empty transparent groups.
+			if (fromGroup.transparent && fromGroup.parts.length <= 0) {
+				fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
+			}
+
+			resultingParts.push({
+				rundownId: toRundown.id,
+				groupId: toGroup.id,
+				partId: movePart.partId,
+			})
+
+			// Update timelines:
+			if (!isTransparentGroupMove) {
+				if (fromGroup.id === toGroup.id) {
+					// Moving within the same group
+
+					updateGroupPlayingParts(toGroup)
+					if (movedPartIsPlaying && toGroup.oneAtATime) {
+						// Update the group's playhead, so that the currently playing
+						// part continues to play as if nothing happened:
+						toGroup.playout.playingParts = {
+							[movePart.partId]: {
+								startTime: movedPartIsPlaying.partStartTime,
+								pauseTime: movedPartIsPlaying.partPauseTime,
+							},
+						}
+					}
+					groupsToUpdate.push(fromGroup)
+					rundownsToUpdate.push(fromRundown)
+				} else {
+					// Moving between groups
+					if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
+						// Update the playhead, so that the currently playing
+						// part continues to play as if nothing happened.
+						// This means that the target Group will start playing
+						// while the source Group stops.
+
+						// Move over the playout-data:
+						toGroup.playout.playingParts = fromGroup.playout.playingParts
+						fromGroup.playout.playingParts = {}
+					}
+					groupsToUpdate.push(fromGroup, toGroup)
+					rundownsToUpdate.push(fromRundown)
+					if (fromRundown !== toRundown) {
+						rundownsToUpdate.push(toRundown)
 					}
 				}
-				groupsToUpdate.push(fromGroup)
 			} else {
-				// Moving between groups
-				if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
-					// Update the playhead, so that the currently playing
-					// part continues to play as if nothing happened.
-					// This means that the target Group will start playing
-					// while the source Group stops.
-
-					// Move over the playout-data:
-					toGroup.playout.playingParts = fromGroup.playout.playingParts
-					fromGroup.playout.playingParts = {}
+				groupsToUpdate.push(toGroup)
+				rundownsToUpdate.push(fromRundown)
+				if (fromRundown !== toRundown) {
+					rundownsToUpdate.push(toRundown)
 				}
-				groupsToUpdate.push(fromGroup, toGroup)
 			}
 		}
 
 		// Commit the changes:
-		this._saveUpdates({ rundownId: arg.to.rundownId, rundown: toRundown, group: groupsToUpdate })
-		if (fromRundown !== toRundown) {
-			this._saveUpdates({ rundownId: arg.from.rundownId, rundown: fromRundown })
+		this._saveUpdates({ group: _.uniq(groupsToUpdate) })
+		for (const rundown of _.uniq(rundownsToUpdate)) {
+			this._saveUpdates({ rundownId: rundown.id, rundown: rundown })
 		}
-
 		return {
 			undo: async () => {
-				await this.movePart({
-					from: {
-						rundownId: arg.to.rundownId,
-						partId: arg.from.partId,
-					},
-					to: {
-						rundownId: arg.from.rundownId,
-						groupId: fromGroup.transparent ? null : fromGroup.id,
-						position: originalPosition,
-					},
-				})
+				for (const orgRundown of originalRundowns) {
+					this._saveUpdates({ rundownId: orgRundown.id, rundown: orgRundown })
+				}
 			},
 			description: ActionDescription.MovePart,
-			result: toGroup,
+			result: resultingParts,
 		}
 	}
 	async duplicatePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult<void>> {
@@ -981,25 +1028,45 @@ export class IPCServer
 			description: ActionDescription.DuplicatePart,
 		}
 	}
-	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult<void>> {
-		const { rundown, group } = this.getGroup(arg)
+	async moveGroups(arg: {
+		rundownId: string
+		groupIds: string[]
+		target: MoveTarget
+	}): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
 
-		// Save the original position for use in undo.
-		const originalPosition = rundown.groups.findIndex((g) => g.id === arg.groupId)
+		// Save the original positions for use in undo:
+		const originalGroupIds = rundown.groups.map((group) => group.id)
 
-		// Remove the group from the groups array and re-insert it at its new position
-		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
-		rundown.groups.splice(arg.position, 0, group)
+		let nextTarget: MoveTarget = arg.target
+		for (const groupId of arg.groupIds) {
+			// Remove the group from the groups array and re-insert it at its new position
+
+			const group = this.getGroupOfRundown(rundown, groupId).group
+
+			// Remove the group from the groups array and re-insert it at its new position
+			rundown.groups = rundown.groups.filter((g) => g.id !== group.id)
+
+			const insertPosition = getPositionFromTarget(nextTarget, rundown.groups)
+			rundown.groups.splice(insertPosition, 0, group)
+			nextTarget = {
+				type: 'after',
+				id: group.id,
+			}
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: async () => {
-				await this.moveGroup({
-					rundownId: arg.rundownId,
-					groupId: arg.groupId,
-					position: originalPosition,
-				})
+				const { rundown } = this.getRundown(arg)
+				const groups = rundown.groups
+				rundown.groups = []
+				for (const groupId of originalGroupIds) {
+					const group = groups.find((g) => g.id === groupId)
+					if (group) rundown.groups.push(group)
+				}
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.MoveGroup,
 		}
@@ -1897,6 +1964,7 @@ export class IPCServer
 		}
 
 		for (const group of groupsToUpdate) {
+			if (group.parts.length > 1) group.transparent = false
 			if (!updates.noEffectOnPlayout) {
 				// Update Timeline:
 				group.preparedPlayData = this.callbacks.updateTimeline(group)

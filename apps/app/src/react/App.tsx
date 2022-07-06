@@ -33,7 +33,7 @@ import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
-import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
+import { useMemoComputedValue } from './mobx/lib'
 import { Action, getAllActionsInParts } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
@@ -336,12 +336,10 @@ export const App = observer(function App() {
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
 
-	const allButtonActions = useMemoComputedObject(() => {
-		const newButtonActions = new Map<string, Action[]>()
+	useMemoComputedValue(() => {
+		if (!project) return
 
-		if (!project) {
-			return newButtonActions
-		}
+		const newButtonActions = new Map<string, Action[]>()
 
 		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
 
@@ -373,11 +371,9 @@ export const App = observer(function App() {
 				newButtonAction.push(action)
 			}
 		}
-		return newButtonActions
-	}, [store.rundownsStore.rundowns, project, store.appStore.peripherals])
-	useEffect(() => {
-		store.rundownsStore.allButtonActions = allButtonActions
-	}, [allButtonActions])
+
+		store.rundownsStore.updateAllButtonActions(newButtonActions)
+	}, [project])
 
 	const hotkeyContext: IHotkeyContext = useMemo(() => {
 		return {

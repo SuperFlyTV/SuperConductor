@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { GroupGUI } from '../../../../models/rundown/Group'
+import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -18,7 +18,7 @@ import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
-import { allowMovingItemIntoGroup, getNextPartIndex, getPrevPartIndex } from '../../../../lib/util'
+import { allowMovingPartIntoGroup, getNextPartIndex, getPrevPartIndex, MoveTarget } from '../../../../lib/util'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 
 import { DropZone } from '../../util/DropZone'
@@ -42,21 +42,22 @@ import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
 import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
 import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
+import { useMemoComputedObject, useMemoComputedValue, useMemoObject } from '../../../mobx/lib'
 import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
 import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
 import { GroupAutoFillPopover } from './GroupAutoFillPopover'
 import VisibilitySensor from 'react-visibility-sensor'
 import { Btn } from '../../inputs/Btn/Btn'
+import { sortSelected } from '../../../lib/clientUtil'
+import _ from 'lodash'
 
 const DEFAULT_PART_HEIGHT = 80
 
 export const GroupView: React.FC<{
 	rundownId: string
 	groupId: string
-	groupIndex: number
 	mappings: Mappings
-}> = observer(function GroupView({ groupId, groupIndex, rundownId, mappings }) {
+}> = observer(function GroupView({ groupId, rundownId, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
@@ -226,25 +227,45 @@ export const GroupView: React.FC<{
 		{
 			type: DragItemTypes.GROUP_ITEM,
 			item: (): GroupDragItem => {
+				// If this Group isn't included in the current selection, select it:
+				if (
+					!store.guiStore.isSelected({
+						type: 'group',
+						groupId: group.id,
+					})
+				) {
+					store.guiStore.setSelected({
+						type: 'group',
+						groupId: group.id,
+					})
+				}
+
+				const selectedGroups = sortSelected(
+					rundownId,
+					store.rundownsStore,
+					store.guiStore.getSelectedOfType('group')
+				)
 				return {
 					type: DragItemTypes.GROUP_ITEM,
-					groupId: group.id,
-					position: groupIndex,
+					groupIds: selectedGroups.map((g) => g.groupId),
+					target: null,
 				}
 			},
 			collect: (monitor) => ({
 				isDragging: monitor.isDragging(),
 			}),
 			isDragging: (monitor) => {
-				return group.id === monitor.getItem().groupId
+				return !!monitor.getItem().groupIds.find((groupId) => groupId === group.id)
 			},
 			end: () => {
 				store.rundownsStore.commitMoveGroupInCurrentRundown()?.catch(handleError)
 			},
 		},
-		[group.id, groupIndex, store.guiStore]
+		[group.id, store.guiStore]
 	)
 	const [{ handlerId }, drop] = useDrop(
+		// Use case 1: Drag Parts over this Group, to insert the Parts into this Group
+		// Use case 2: Drag Groups over this Group, to insert the Groups above or below this Group
 		{
 			accept: [DragItemTypes.PART_ITEM, DragItemTypes.GROUP_ITEM],
 			collect(monitor) {
@@ -253,11 +274,16 @@ export const GroupView: React.FC<{
 				}
 			},
 			canDrop: (movedItem) => {
-				if (!isPartDragItem(movedItem)) {
-					return false
+				if (isGroupDragItem(movedItem)) {
+					return true
+				} else if (isPartDragItem(movedItem)) {
+					for (const movePart of movedItem.parts) {
+						if (!allowMovingPartIntoGroup(movePart.partId, movePart.fromGroup, group)) {
+							return false
+						}
+					}
 				}
-
-				return !!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)
+				return false
 			},
 			hover(movedItem, monitor) {
 				if (isGroupDragItem(movedItem)) {
@@ -267,14 +293,7 @@ export const GroupView: React.FC<{
 					}
 
 					// Don't replace items with themselves
-					if (movedItem.groupId === group.id) {
-						return
-					}
-
-					const dragIndex = movedItem.position
-					const hoverIndex = groupIndex
-
-					if (dragIndex === null) {
+					if (movedItem.groupIds.find((groupId) => groupId === group.id)) {
 						return
 					}
 
@@ -290,22 +309,21 @@ export const GroupView: React.FC<{
 					// Get pixels to the top
 					const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
 
-					// Only perform the move when the mouse has crossed half of the items height
-					// When dragging downwards, only move when the cursor is below 50%
-					// When dragging upwards, only move when the cursor is above 50%
-
-					// Dragging downwards
-					if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-						return
+					let target: MoveTarget
+					if (hoverClientY < hoverMiddleY) {
+						target = {
+							type: 'before',
+							id: group.id,
+						}
+					} else {
+						target = {
+							type: 'after',
+							id: group.id,
+						}
 					}
 
-					// Dragging upwards
-					if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-						return
-					}
-
-					store.rundownsStore.moveGroupInCurrentRundown(movedItem.groupId, hoverIndex)
-					movedItem.position = hoverIndex
+					store.rundownsStore.moveGroupsInCurrentRundown(movedItem.groupIds, target)
+					movedItem.target = target
 				} else if (isPartDragItem(movedItem)) {
 					// Is dragging a Part
 					if (!monitor.isOver({ shallow: true })) {
@@ -316,9 +334,6 @@ export const GroupView: React.FC<{
 						return
 					}
 
-					const dragIndex = movedItem.position
-					const hoverIndex = groupIndex
-
 					// Determine rectangle on screen
 					const hoverBoundingRect = wrapperRef.current.getBoundingClientRect()
 
@@ -331,82 +346,65 @@ export const GroupView: React.FC<{
 					// Get pixels to the top
 					const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
 
-					/**
-					 * Defines a band of pixels around the vertical middle of the Group,
-					 * used to determine how to handle this hover event depending on if
-					 * the user's cursor is within this band or not.
-					 */
-					const midBand = hoverBoundingRect.height / 3 / 2
+					// If the cursor is over these, we assume the user is trying to move the Part to before or after the Group
+					const headerHeight = 20
+					const footerHeight = 20
+					const headerY = 0 + headerHeight
+					const footerY = hoverBoundingRect.height - footerHeight
 
-					/**
-					 * An array of this Group's Parts, minus the Part currently being dragged.
-					 */
-					const groupPartsWithoutMovedPart = group.partIds.filter((partId) => partId !== movedItem.partId)
-
-					if (groupPartsWithoutMovedPart.length <= 0) {
-						// If the group is empty, and if the user's cursor is hovering within midBand
-						// pixels of the group's vertical center, then we assume that the user wants to move
-						// the Part into the hovered Group.
-
-						if (Math.abs(hoverClientY - hoverMiddleY) > midBand) {
-							return
+					if (hoverClientY < headerY) {
+						const target: MoveTarget = {
+							type: 'before',
+							id: group.id,
 						}
 
-						if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, group)) {
-							return
+						store.rundownsStore.movePartsInCurrentRundown(
+							movedItem.parts.map((p) => p.partId),
+							null,
+							target
+						)
+						movedItem.toGroupId = null
+						movedItem.target = target
+					} else if (hoverClientY > footerY) {
+						const target: MoveTarget = {
+							type: 'after',
+							id: group.id,
 						}
-
-						const hoverIndex = 0
-						const hoverGroup = group
-						const hoverGroupIndex = groupIndex
-
-						// Don't allow dragging into transparent groups, which can only have one part.
-						if (hoverGroup.transparent) {
-							return
-						}
-
-						// Don't replace items with themselves
-						if (movedItem.fromGroup.id === hoverGroup.id && movedItem.position === hoverIndex) {
-							return
-						}
-
-						// Time to actually perform the action
-						store.rundownsStore.movePartInCurrentRundown(movedItem.partId, hoverGroup.id, hoverIndex)
-
-						// Note: we're mutating the monitor item here!
-						// Generally it's better to avoid mutations,
-						// but it's good here for the sake of performance
-						// to avoid expensive index searches.
-						movedItem.toGroupId = hoverGroup.id
-						movedItem.toGroupIndex = hoverGroupIndex
-						movedItem.toGroupTransparent = false
-						movedItem.position = hoverIndex
+						store.rundownsStore.movePartsInCurrentRundown(
+							movedItem.parts.map((p) => p.partId),
+							null,
+							target
+						)
+						movedItem.toGroupId = null
+						movedItem.target = target
 					} else {
-						// Else, we assume that the user wants to move the Part as a Transparent Group
-						// and therefore move it either above or below the currently hovered Group.
-
-						if (dragIndex === hoverIndex - 1 && hoverClientY < hoverMiddleY) {
-							return
-						}
-
-						if (dragIndex === hoverIndex + 1 && hoverClientY > hoverMiddleY) {
-							return
-						}
+						// The pointer is inside of the group
+						let target: MoveTarget
 
 						if (hoverClientY < hoverMiddleY) {
-							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
-							movedItem.position = hoverIndex
+							target = {
+								type: 'first',
+							}
 						} else {
-							store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex + 1)
-							movedItem.position = hoverIndex + 1
+							target = {
+								type: 'last',
+							}
 						}
 
-						movedItem.toGroupId = null
+						store.rundownsStore.movePartsInCurrentRundown(
+							movedItem.parts.map((p) => p.partId),
+							group.id,
+							target
+						)
+
+						movedItem.toGroupId = group.id
+						movedItem.target = target
 					}
+					return
 				}
 			},
 		},
-		[group, groupIndex]
+		[group]
 	)
 
 	useEffect(() => {
@@ -558,6 +556,8 @@ export const GroupView: React.FC<{
 		[group.partIds.length]
 	)
 
+	const groupBase = useMemoObject(() => _.omit(group, ['partIds']) as GroupBase, [group], true)
+
 	// Optimize, so that PartView isn't re-rendered on every part group change
 
 	if (group.transparent) {
@@ -571,15 +571,14 @@ export const GroupView: React.FC<{
 
 		const firstPartId = group.partIds[0] as string | undefined
 		return firstPartId ? (
-			<div ref={wrapperRef} data-drop-handler-id={handlerId} className="group--transparent">
-				<PartView
-					rundownId={rundownId}
-					partId={firstPartId}
-					parentGroupId={group.id}
-					parentGroupIndex={groupIndex}
-					partIndex={0}
-					mappings={mappings}
-				/>
+			<div
+				ref={wrapperRef}
+				data-drop-handler-id={handlerId}
+				className={classNames('group--transparent', {
+					dragging: isDragging,
+				})}
+			>
+				<PartView rundownId={rundownId} partId={firstPartId} parentGroupId={group.id} mappings={mappings} />
 			</div>
 		) : null
 	} else {
@@ -621,49 +620,49 @@ export const GroupView: React.FC<{
 							<MdChevronRight size={22} onClick={handleCollapse} />
 						</div>
 
-						{!editingGroupName && (
-							<div
-								className="title editable"
-								title={group.locked ? group.name : 'Click to edit Group name'}
-								onClick={() => {
-									if (group.locked) {
-										return
-									}
-									setEditingGroupName(true)
-								}}
-							>
-								{group.name}
-							</div>
-						)}
-
-						{editingGroupName && (
-							<TextField
-								size="small"
-								value={editedName}
-								autoFocus
-								variant="standard"
-								className="edit-title"
-								sx={{ marginTop: '0.3rem' }}
-								InputProps={{ style: { fontSize: '1.3rem' } }}
-								onFocus={(event) => {
-									event.target.select()
-								}}
-								onChange={(event) => {
-									setEditedName(event.target.value)
-								}}
-								onBlur={() => {
-									submitNameEdit()
-								}}
-								onKeyUp={(e) => {
-									if (e.key === 'Escape') setEditingGroupName(false)
-									else if (e.key === 'Enter') submitNameEdit()
-								}}
-							/>
-						)}
+						<div className="title-container">
+							{editingGroupName ? (
+								<TextField
+									size="small"
+									value={editedName}
+									autoFocus
+									variant="standard"
+									className="edit-title"
+									sx={{ marginTop: '0.3rem' }}
+									InputProps={{ style: { fontSize: '1.3rem' } }}
+									onFocus={(event) => {
+										event.target.select()
+									}}
+									onChange={(event) => {
+										setEditedName(event.target.value)
+									}}
+									onBlur={() => {
+										submitNameEdit()
+									}}
+									onKeyUp={(e) => {
+										if (e.key === 'Escape') setEditingGroupName(false)
+										else if (e.key === 'Enter') submitNameEdit()
+									}}
+								/>
+							) : (
+								<div
+									className="title editable"
+									title={group.locked ? group.name : 'Click to edit Group name'}
+									onClick={() => {
+										if (group.locked) {
+											return
+										}
+										setEditingGroupName(true)
+									}}
+								>
+									{group.name}
+								</div>
+							)}
+						</div>
 
 						<div className="controls controls-left">
 							<div className="playback">
-								<ControlButtons rundownId={rundownId} group={group} />
+								<GroupControlButtons rundownId={rundownId} group={groupBase} />
 								<Button
 									variant="contained"
 									size="small"
@@ -844,14 +843,12 @@ export const GroupView: React.FC<{
 								}}
 							>
 								{hidePartsHeight === null &&
-									group.partIds.map((partId, index) => (
+									group.partIds.map((partId) => (
 										<PartView
 											key={partId}
 											rundownId={rundownId}
 											partId={partId}
 											parentGroupId={group.id}
-											parentGroupIndex={groupIndex}
-											partIndex={index}
 											mappings={mappings}
 										/>
 									))}
@@ -894,6 +891,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 	const wrapperRef = useRef<HTMLDivElement>(null)
 
 	const [{ handlerId, isOver }, drop] = useDrop(
+		// Use case: Drag Resources over this Group, to insert them as Parts into this Group
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
@@ -915,7 +913,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 						const { partId } = await ipcServer.newPart({
 							rundownId: rundownId,
 							groupId: group.id,
-							name: 'name' in resource ? (resource as any).name : resource.id,
+							name: '', // resource.displayName
 						})
 
 						await ipcServer.addResourcesToTimeline({
@@ -974,10 +972,10 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 	)
 }
 
-const ControlButtons: React.FC<{
+const GroupControlButtons: React.FC<{
 	rundownId: string
-	group: GroupGUI
-}> = observer(function ControlButtons({ rundownId, group }) {
+	group: GroupBase
+}> = observer(function GroupControlButtons({ rundownId, group }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
@@ -997,28 +995,32 @@ const ControlButtons: React.FC<{
 	}, [handleError, ipcServer, rundownId, group.id])
 
 	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
-		useMemoComputedObject(() => {
-			const playData = store.groupPlayDataStore.groups.get(group.id)
+		useMemoComputedObject(
+			() => {
+				const playData = store.groupPlayDataStore.groups.get(group.id)
 
-			if (!playData) {
+				if (!playData) {
+					return {
+						groupIsPlaying: false,
+						anyPartIsPlaying: false,
+						allPartsArePaused: false,
+						playheadCount: 0,
+						partIsPlaying: false,
+						partIsPaused: false,
+					}
+				}
 				return {
-					groupIsPlaying: false,
-					anyPartIsPlaying: false,
-					allPartsArePaused: false,
-					playheadCount: 0,
+					groupIsPlaying: playData.groupIsPlaying,
+					anyPartIsPlaying: playData.anyPartIsPlaying,
+					allPartsArePaused: playData.allPartsArePaused,
+					playheadCount: Object.keys(playData.playheads).length,
 					partIsPlaying: false,
 					partIsPaused: false,
 				}
-			}
-			return {
-				groupIsPlaying: playData.groupIsPlaying,
-				anyPartIsPlaying: playData.anyPartIsPlaying,
-				allPartsArePaused: playData.allPartsArePaused,
-				playheadCount: Object.keys(playData.playheads).length,
-				partIsPlaying: false,
-				partIsPaused: false,
-			}
-		}, [group.id])
+			},
+			[group.id],
+			true
+		)
 
 	const groupDisabled = group.disabled || false
 	const groupOneAtATime = group.oneAtATime || false

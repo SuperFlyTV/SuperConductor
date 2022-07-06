@@ -9,8 +9,6 @@ import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
 import { assertNever } from '@shared/lib'
 import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
 import { SideBarEditPart } from './editPart/SideBarEditPart'
-import { GroupGUI } from '../../../models/rundown/Group'
-import { PartGUI } from '../../../models/rundown/Part'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
@@ -36,9 +34,10 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 						store.rundownsStore.hasPart(mainSelected.partId) &&
 						store.rundownsStore.getPart(mainSelected.partId)
 					if (group && part)
-						return { type: 'part', group, partId: part.id } as {
+						return { type: 'part', groupId: group.id, groupLocked: group.locked, partId: part.id } as {
 							type: 'part'
-							group: GroupGUI
+							groupId: string
+							groupLocked: boolean
 							partId: string
 						}
 				} else if (mainSelected.type === 'timelineObj') {
@@ -52,10 +51,19 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 						store.rundownsStore.hasTimelineObj(mainSelected.timelineObjId) &&
 						store.rundownsStore.getTimelineObj(mainSelected.timelineObjId)
 					if (group && part && timelineObj)
-						return { type: 'timelineObj', group, part, timelineObj } as {
+						return {
+							type: 'timelineObj',
+							groupId: group.id,
+							groupLocked: group.locked,
+							partId: part.id,
+							partLocked: part.locked,
+							timelineObj,
+						} as {
 							type: 'timelineObj'
-							group: GroupGUI
-							part: PartGUI
+							groupId: string
+							groupLocked: boolean
+							partId: string
+							partLocked: boolean
 							timelineObj: TimelineObj
 						}
 				} else {
@@ -81,18 +89,18 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 		return (
 			<SideBarEditPart
 				rundownId={currentRundownId}
-				groupId={editing.group.id}
+				groupId={editing.groupId}
 				partId={editing.partId}
-				groupLocked={!!editing.group.locked}
+				groupLocked={!!editing.groupLocked}
 			/>
 		)
 	} else if (editing.type === 'timelineObj') {
-		const groupOrPartLocked = editing.group.locked || editing.part.locked
+		const groupOrPartLocked = editing.groupLocked || editing.partLocked
 		return (
 			<SideBarEditTimelineObject
 				rundownId={currentRundownId}
-				groupId={editing.group.id}
-				partId={editing.part.id}
+				groupId={editing.groupId}
+				partId={editing.partId}
 				timelineObj={editing.timelineObj}
 				mappings={props.mappings}
 				disabled={groupOrPartLocked}

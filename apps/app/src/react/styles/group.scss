@@ -1,18 +1,17 @@
+$margin-v: 2rem;
 .group {
 	border: 0.1rem solid $partOutlineColor;
 	position: relative;
-	margin: 2rem 0 1.5rem;
+	margin: $margin-v 0;
 	padding-top: 0.4rem;
 	padding-bottom: 2rem;
 	background: #2c2c2c;
 	border-radius: calc($partTabWidth / 2);
-	transition: $default-transition;
+	transition: box-shadow $default-transition-time;
+	overflow: hidden;
 
-	&:not(:last-child) {
-		margin-bottom: 2.5rem;
-	}
 	&--transparent {
-		margin-right: 0.5em;
+		margin: $margin-v 0;
 	}
 	&.selectable {
 		cursor: pointer;
@@ -55,19 +54,23 @@
 			}
 		}
 
-		.title,
-		.edit-title {
-			margin-right: 1rem;
-			font-family: 'Barlow';
-			font-weight: 700;
+		.title-container {
 			width: 10.8rem;
-		}
+			.title,
+			.edit-title {
+				margin-right: 1rem;
+				font-family: 'Barlow';
+				font-weight: 700;
+				max-width: 10.8rem;
+			}
 
-		.title {
-			cursor: text;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
+			.title {
+				cursor: text;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				display: inline-block;
+			}
 		}
 
 		.controls {
@@ -126,11 +129,15 @@
 		overflow: visible;
 		padding: 0;
 		border-radius: 0;
-		margin-bottom: calc(-2rem - 1px) !important;
-		top: calc(-1rem - 2px);
 
-		&:not(:first-child) {
-			margin-top: 0 !important;
+		margin-top: calc(-1px - $margin-v);
+		top: $margin-v/2;
+
+		&:first-child {
+			// margin-top: 0 !important;
+
+			margin-top: -1px;
+			top: $margin-v/2;
 		}
 
 		> * {

@@ -7,9 +7,11 @@ import { IPCClient } from '../api/IPCClient'
 import { IPCServer } from '../api/IPCServer'
 import { store } from './store'
 import {
-	allowMovingItemIntoGroup,
+	allowMovingPartIntoGroup,
 	findPartInRundown,
+	getPositionFromTarget,
 	GroupWithShallowParts,
+	MoveTarget,
 	RundownWithShallowGroups,
 	shortID,
 } from '../../lib/util'
@@ -435,38 +437,59 @@ export class RundownsStore {
 			}))
 	}
 
-	moveGroupInCurrentRundown(groupId: string, position: number): void {
+	private _currentMove: any | null = null
+
+	moveGroupsInCurrentRundown(groupIds: string[], target: MoveTarget): void {
+		const currentMove = { groupIds, target }
+		if (_.isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
+		this._currentMove = currentMove
+
 		const currentRundownId = this.currentRundownId
 		if (currentRundownId === undefined) return
 
 		let currentRundown = this.getRundownRaw(currentRundownId, false)
 		if (!currentRundown) return
 
-		/** The group being moved */
-		const group = currentRundown.groups.find((g) => g.id === groupId)
-		if (!group) return
-
 		// Make a shallow copy, so it can be edited and saved:
 		currentRundown = {
 			...currentRundown,
 			groups: [...currentRundown.groups],
 		}
-		// Remove the group from the groups array and re-insert it at its new position
-		const oldPosition = currentRundown.groups.findIndex((g) => g.id === group.id)
-		if (oldPosition === -1) return
-		currentRundown.groups.splice(oldPosition, 1)
-		currentRundown.groups.splice(position, 0, group)
 
+		let nextTarget: MoveTarget = target
+		for (const groupId of groupIds) {
+			nextTarget = this._moveGroupInCurrentRundown(currentRundown, groupId, nextTarget)
+		}
 		// Temporary update while moving:
-		this._updateRundown(currentRundownId, currentRundown)
+		this._updateRundown(currentRundown.id, currentRundown)
 
 		this._commitMoveGroupFn = async () => {
-			await this.serverAPI.moveGroup({
+			this._currentMove = null
+			await this.serverAPI.moveGroups({
 				rundownId: currentRundownId,
-				groupId: groupId,
-				position: position,
+				groupIds: groupIds,
+				target: target,
 			})
 		}
+	}
+	private _moveGroupInCurrentRundown(currentRundown: Rundown, groupId: string, target: MoveTarget): MoveTarget {
+		let nextTarget: MoveTarget = target
+		/** The group being moved */
+		const group = currentRundown.groups.find((g) => g.id === groupId)
+		if (!group)
+			throw new Error(`Move Group failed: Could not find group "${groupId}" in rundown "${currentRundown.id}".`)
+
+		// Remove the group from the groups array and re-insert it at its new position
+		currentRundown.groups = currentRundown.groups.filter((g) => g.id !== group.id)
+
+		const insertPosition = getPositionFromTarget(target, currentRundown.groups)
+		currentRundown.groups.splice(insertPosition, 0, group)
+		nextTarget = {
+			type: 'after',
+			id: group.id,
+		}
+
+		return nextTarget
 	}
 
 	commitMoveGroupInCurrentRundown() {
@@ -483,25 +506,76 @@ export class RundownsStore {
 		})
 	}
 
-	movePartInCurrentRundown(partId: string, toGroupId: string | null, position: number): void {
+	movePartsInCurrentRundown(partIds: string[], toGroupId: string | null, target: MoveTarget): void {
+		const currentMove = { partIds, toGroupId, target }
+		if (_.isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
+		this._currentMove = currentMove
+
 		const currentRundownId = this.currentRundownId
 		if (currentRundownId === undefined) return
 
 		const currentRundown = this.getRundownRaw(currentRundownId)
 		if (!currentRundown) return
 
-		const result = findPartInRundown(currentRundown, partId)
+		const moveParts: {
+			rundownId: string
+			partId: string
+		}[] = []
 
-		if (!result) {
-			throw new Error(
-				`Move Part failed: Could not find part "${partId}" in the dirty copy of rundown "${currentRundown.id}".`
-			)
+		let nextTarget: MoveTarget = target
+		for (const partId of partIds) {
+			const result = findPartInRundown(currentRundown, partId)
+
+			if (!result) {
+				throw new Error(
+					`Move Part failed: Could not find part "${partId}" in the dirty copy of rundown "${currentRundown.id}".`
+				)
+			}
+			const part = result.part
+			const fromGroup = result.group
+
+			nextTarget = this._movePartInCurrentRundown(currentRundown, part, fromGroup, toGroupId, nextTarget)
+
+			moveParts.push({
+				partId: part.id,
+				rundownId: currentRundownId,
+			})
 		}
-		const part = result.part
-		const fromGroup = result.group
+		// Temporary update while moving:
+		this._updateRundown(currentRundown.id, currentRundown)
 
+		this._commitMovePartFn = async () => {
+			this._currentMove = null
+			const resultingParts = await this.serverAPI.moveParts({
+				parts: moveParts,
+				to: {
+					rundownId: currentRundown.id,
+					groupId: toGroupId,
+					target: target,
+				},
+			})
+
+			store.guiStore.clearSelected()
+			for (const movePart of resultingParts) {
+				store.guiStore.addSelected({
+					type: 'part',
+					groupId: movePart.groupId,
+					partId: movePart.partId,
+				})
+			}
+		}
+	}
+	private _movePartInCurrentRundown(
+		currentRundown: Rundown,
+		part: Part,
+		fromGroup: Group,
+		toGroupId: string | null,
+		target: MoveTarget
+	): MoveTarget {
+		let nextTarget: MoveTarget = target
 		let toGroup: Group | undefined
 		let madeNewTransparentGroup = false
+		/** Is moving into transparent group */
 		const isTransparentGroupMove = fromGroup.transparent && toGroupId === null
 
 		if (toGroupId) {
@@ -523,35 +597,40 @@ export class RundownsStore {
 			}
 		}
 
-		if (!toGroup) return
+		if (!toGroup) return nextTarget
 
-		const allow = allowMovingItemIntoGroup(part.id, fromGroup, toGroup)
-		if (!allow) return
-
-		if (!isTransparentGroupMove) {
-			// Remove the part from its original group.
-
-			fromGroup.parts = fromGroup.parts.filter((p) => p !== part)
-		}
+		const allow = allowMovingPartIntoGroup(part.id, fromGroup, toGroup)
+		if (!allow) return nextTarget
 
 		if (madeNewTransparentGroup) {
 			// Add the new transparent group to the rundown.
 
-			// currentRundown.groups.spliceWithArray(position, 0, [toGroup])
+			// Remove the part from its original group:
+			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== part.id)
+
 			currentRundown.groups = [...currentRundown.groups]
-			currentRundown.groups.splice(position, 0, toGroup)
+			const insertPosition = getPositionFromTarget(target, currentRundown.groups)
+			if (insertPosition === -1) return nextTarget
+			currentRundown.groups.splice(insertPosition, 0, toGroup)
+
+			nextTarget = { type: 'after', id: toGroup.id }
 		} else if (isTransparentGroupMove) {
 			// Move the transparent group to its new position.
 
-			// currentRundown.groups.remove(toGroup)
-			// currentRundown.groups.spliceWithArray(position, 0, [toGroup])
 			const toGroupId = toGroup.id
 			currentRundown.groups = currentRundown.groups.filter((g) => g.id !== toGroupId)
-			currentRundown.groups.splice(position, 0, toGroup)
-		} else if (!isTransparentGroupMove) {
+
+			const insertPosition = getPositionFromTarget(target, currentRundown.groups)
+			if (insertPosition === -1) return nextTarget
+			currentRundown.groups.splice(insertPosition, 0, toGroup)
+
+			nextTarget = { type: 'after', id: toGroup.id }
+		} else {
 			// Add the part to its new group, in its new position.
 
-			// ;(toGroup as any as IObservableObject<Group>).parts.spliceWithArray(position, 0, [part])
+			// Remove the part from its original group:
+			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== part.id)
+
 			currentRundown.groups = [...currentRundown.groups]
 			const toGroupId = toGroup.id
 			const group = currentRundown.groups.find((g) => g.id === toGroupId)
@@ -559,34 +638,19 @@ export class RundownsStore {
 
 			group.parts = [...group.parts]
 
-			group.parts.splice(position, 0, part)
+			const insertPosition = getPositionFromTarget(target, toGroup.parts)
+			if (insertPosition === -1) return nextTarget
+			group.parts.splice(insertPosition, 0, part)
+
+			nextTarget = { type: 'after', id: part.id }
 		}
 
 		// Clean up leftover empty transparent groups.
 		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
 			currentRundown.groups = currentRundown.groups.filter((g) => g.id !== fromGroup.id)
-			// const groupToRemove = currentRundown.groups.findIndex((g) => g.id === fromGroup.id)
-			// if (groupToRemove) {
-			// 	currentRundown.groups.remove(groupToRemove)
-			// }
 		}
 
-		// Temporary update while moving:
-		this._updateRundown(currentRundownId, currentRundown)
-
-		this._commitMovePartFn = async () => {
-			await this.serverAPI.movePart({
-				from: {
-					rundownId: currentRundown.id,
-					partId: partId,
-				},
-				to: {
-					rundownId: currentRundown.id,
-					groupId: toGroupId,
-					position: position,
-				},
-			})
-		}
+		return nextTarget
 	}
 
 	commitMovePartInCurrentRundown() {
@@ -615,8 +679,12 @@ export class RundownsStore {
 	get allButtonActions() {
 		return this._allButtonActions as Readonly<typeof this._allButtonActions>
 	}
-	set allButtonActions(newValue: Map<string, Action[]>) {
-		this._allButtonActions = newValue
+	public updateAllButtonActions(actions: Map<string, Action[]>): void {
+		runInAction(() => {
+			if (!_.isEqual(actions, this._allButtonActions)) {
+				this._allButtonActions = actions
+			}
+		})
 	}
 
 	getActionsForPart(partId: string): ActionLight[] {

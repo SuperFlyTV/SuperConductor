@@ -84,6 +84,13 @@ export function useMovable(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
+	const updateMove = useCallback(() => {
+		if (isDragging.current) {
+			callbacks.onDragMove(delta.current, position.current)
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
 	const onPointerMove = useCallback((event: PointerEvent) => {
 		position.current = {
 			clientX: event.clientX,
@@ -106,9 +113,7 @@ export function useMovable(
 			}
 		}
 
-		if (isDragging.current) {
-			callbacks.onDragMove(delta.current, position.current)
-		}
+		updateMove()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
@@ -146,5 +151,6 @@ export function useMovable(
 
 	return {
 		onStartMoving,
+		updateMove,
 	}
 }

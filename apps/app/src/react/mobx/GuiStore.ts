@@ -44,20 +44,20 @@ export interface TimelineObjectMove {
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
 }
-type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
-interface CurrentSelectionBase {
+export type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
+export interface CurrentSelectionBase {
 	type: 'group' | 'part' | 'timelineObj'
 }
-interface CurrentSelectionGroup extends CurrentSelectionBase {
+export interface CurrentSelectionGroup extends CurrentSelectionBase {
 	type: 'group'
 	groupId: string
 }
-interface CurrentSelectionPart extends CurrentSelectionBase {
+export interface CurrentSelectionPart extends CurrentSelectionBase {
 	type: 'part'
 	groupId: string
 	partId: string
 }
-interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
+export interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
 	type: 'timelineObj'
 	groupId: string
 	partId: string
@@ -105,6 +105,12 @@ export class GuiStore {
 	get mainSelected(): Readonly<CurrentSelectionAny> | undefined {
 		if (this._selected.length === 0) return undefined
 		return this._selected[this._selected.length - 1]
+	}
+	getSelectedOfType(type: 'group'): CurrentSelectionGroup[]
+	getSelectedOfType(type: 'part'): CurrentSelectionPart[]
+	getSelectedOfType(type: 'timelineObj'): CurrentSelectionTimelineObj[]
+	getSelectedOfType(type: string) {
+		return this._selected.filter((s) => s.type === type)
 	}
 	/** Add item to selection */
 	isSelected(selected: CurrentSelectionAny): boolean {

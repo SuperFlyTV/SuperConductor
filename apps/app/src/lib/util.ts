@@ -129,7 +129,7 @@ export function getResolvedTimelineTotalDuration(
 	return maxDuration
 }
 
-export function allowMovingItemIntoGroup(
+export function allowMovingPartIntoGroup(
 	movedPartId: string,
 	fromGroup: GroupBase,
 	toGroup: GroupBase
@@ -694,4 +694,33 @@ export function isLayerInfinite(part: Part, layerId: string): boolean {
 		}
 	}
 	return foundInfinite
+}
+export type MoveTarget =
+	| {
+			type: 'first'
+	  }
+	| {
+			type: 'last'
+	  }
+	| {
+			type: 'before'
+			id: string
+	  }
+	| {
+			type: 'after'
+			id: string
+	  }
+export function getPositionFromTarget(target: MoveTarget, items: { id: string }[]): number {
+	if (target.type === 'first') {
+		return 0
+	} else if (target.type === 'last') {
+		return items.length
+	} else if (target.type === 'before') {
+		return items.findIndex((item) => item.id === target.id)
+	} else if (target.type === 'after') {
+		return items.findIndex((item) => item.id === target.id) + 1
+	} else {
+		assertNever(target)
+		return -1
+	}
 }

@@ -191,6 +191,9 @@ export const TimelineObject: React.FC<{
 		const onKey = () => {
 			const pressed = sorensen.getPressedKeys()
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
+
+			// Debounce to let setAllowDuplicate update:
+			setTimeout(() => move.updateMove(), 1)
 		}
 		onKey()
 
@@ -218,7 +221,7 @@ export const TimelineObject: React.FC<{
 			sorensen.unbind('Shift', onKey)
 			sorensen.unbind('Alt', onKey)
 		}
-	}, [hotkeyContext])
+	}, [hotkeyContext, move])
 
 	const updateSelection = () => {
 		if (!selectable) return

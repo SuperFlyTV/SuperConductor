@@ -9,6 +9,7 @@ import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
+import { MoveTarget } from '../lib/util'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -100,12 +101,12 @@ export interface IPCServerMethods {
 	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
-	movePart: (arg: {
-		from: { rundownId: string; partId: string }
-		to: { rundownId: string; groupId: string | null; position: number }
-	}) => Group
+	moveParts: (arg: {
+		parts: { rundownId: string; partId: string }[]
+		to: { rundownId: string; groupId: string | null; target: MoveTarget }
+	}) => { partId: string; groupId: string; rundownId: string }[]
 	duplicatePart: (data: { rundownId: string; groupId: string; partId: string }) => void
-	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => void
+	moveGroups: (data: { rundownId: string; groupIds: string[]; target: MoveTarget }) => void
 	duplicateGroup: (data: { rundownId: string; groupId: string }) => void
 
 	updateTimelineObj: (arg: {

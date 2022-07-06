@@ -102,14 +102,14 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	deleteGroup(...args: ServerArgs<'deleteGroup'>) {
 		return this.invokeServerMethod('deleteGroup', ...args)
 	}
-	movePart(...args: ServerArgs<'movePart'>) {
-		return this.invokeServerMethod('movePart', ...args)
+	moveParts(...args: ServerArgs<'moveParts'>) {
+		return this.invokeServerMethod('moveParts', ...args)
 	}
 	duplicatePart(...args: ServerArgs<'duplicatePart'>) {
 		return this.invokeServerMethod('duplicatePart', ...args)
 	}
-	moveGroup(...args: ServerArgs<'moveGroup'>) {
-		return this.invokeServerMethod('moveGroup', ...args)
+	moveGroups(...args: ServerArgs<'moveGroups'>) {
+		return this.invokeServerMethod('moveGroups', ...args)
 	}
 	duplicateGroup(...args: ServerArgs<'duplicateGroup'>) {
 		return this.invokeServerMethod('duplicateGroup', ...args)
