@@ -38,6 +38,7 @@ import {
 	TimelineContentTypeOSC,
 	TimelineObjHTTPRequest,
 	TimelineContentTypeHTTP,
+	TimelineObjCCGTemplate,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -61,22 +62,27 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			},
 		}
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-		return {
+		const obj: TimelineObjCCGTemplate = {
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
-				duration: 8 * 1000,
+				duration: resource.duration || 8000,
 			},
 			content: {
 				deviceType: DeviceType.CASPARCG,
 				type: TimelineContentTypeCasparCg.TEMPLATE,
 				templateType: 'html',
 				name: resource.name,
-				data: JSON.stringify({}),
+				data: JSON.stringify(resource.data ?? {}),
 				useStopCommand: true,
 			},
 		}
+
+		// hack:
+		;(obj.content as any).sendDataAsXML = !!resource.sendDataAsXML
+
+		return obj
 	} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 		throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
 	} else if (resource.resourceType === ResourceType.ATEM_ME) {

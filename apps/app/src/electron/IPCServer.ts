@@ -23,13 +23,13 @@ import {
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, Mapping } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceType } from '@shared/models'
 import { deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
@@ -1956,7 +1956,7 @@ export class IPCServer
 
 						if (!deviceId) continue
 
-						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId)
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId, undefined)
 						if (newMapping) {
 							createdMappings[data.mappingId] = newMapping
 						}
@@ -2243,8 +2243,10 @@ export class IPCServer
 
 		const allDeviceIds = listAvailableDeviceIDs(arg.project.bridges)
 
-		// First, try to pick next free layer:
+		/** Possible layers, wich votes. The layer with the highest vote will be picked in the end */
 		const possibleLayers: { [layerId: string]: number } = {}
+
+		// First, try to pick next free layer:
 		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
 			// Is the layer on the same device as the resource?
 			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
@@ -2275,6 +2277,27 @@ export class IPCServer
 				}
 			}
 		}
+
+		if (
+			(arg.resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			(arg.resource.channel || arg.resource.layer)
+		) {
+			for (const layerId of Object.keys(possibleLayers)) {
+				const mapping = arg.project.mappings[layerId]
+				if (mapping?.device === DeviceType.CASPARCG) {
+					const m = mapping as MappingCasparCG
+
+					if (arg.resource.channel && m.channel !== arg.resource.channel) {
+						possibleLayers[layerId] = -999
+					}
+					if (arg.resource.layer && m.layer !== arg.resource.layer) {
+						possibleLayers[layerId] = -999
+					}
+				}
+			}
+		}
+
 		const bestLayer = Object.entries(possibleLayers).reduce(
 			(prev, current) => {
 				if (current[1] > prev[1]) return current
@@ -2282,15 +2305,16 @@ export class IPCServer
 			},
 			['', 0]
 		)
-		if (bestLayer[0]) {
+		if (bestLayer[1] > 0) {
 			addToLayerId = bestLayer[0]
 		}
+
 		let updatedProject = false
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			let newMapping: Mapping | undefined = undefined
 			if (arg.resource) {
-				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
+				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId, arg.resource)
 			} else if (arg.originalLayerId !== undefined) {
 				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
 				if (originalLayer) {

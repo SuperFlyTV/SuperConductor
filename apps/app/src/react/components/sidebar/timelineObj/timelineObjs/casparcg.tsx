@@ -547,9 +547,9 @@ const CasparEditTemplateData: React.FC<{
 			<div className="setting">
 				<BooleanInput
 					label="Classic CasparCG XML Data"
-					currentValue={(obj.content as any).casparXMLData}
+					currentValue={(obj.content as any).sendDataAsXML}
 					onChange={(v) => {
-						;(obj.content as any).casparXMLData = v
+						;(obj.content as any).sendDataAsXML = v
 						onSave(obj)
 					}}
 				/>
