@@ -15,12 +15,14 @@ export const MAX_UNDO_LEDGER_LENGTH = 100
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
+	InsertParts = 'insert part(s)',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
 	TogglePartLoop = 'toggle part loop',
 	TogglePartDisable = 'toggle part disable',
 	TogglePartLock = 'toggle part lock',
 	NewGroup = 'create new group',
+	InsertGroups = 'insert group(s)',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
 	DeleteGroup = 'delete group',
@@ -96,8 +98,29 @@ export interface IPCServerMethods {
 
 		name: string
 	}) => { partId: string; groupId?: string }
+	insertParts: (arg: {
+		rundownId: string
+		groupId: string | null
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}) => {
+		groupId: string
+		partId: string
+	}[]
 	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Partial<Part> }) => void
 	newGroup: (arg: { rundownId: string; name: string }) => string
+	insertGroups: (arg: {
+		rundownId: string
+		groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[]
+		target: MoveTarget
+	}) => {
+		groupId: string
+	}[]
 	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
@@ -139,7 +162,7 @@ export interface IPCServerMethods {
 		partId: string
 
 		layerId: string | null
-		resourceIds: string[]
+		resourceIds: (string | ResourceAny)[]
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void

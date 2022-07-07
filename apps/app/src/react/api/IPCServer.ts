@@ -87,11 +87,17 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	newPart(...args: ServerArgs<'newPart'>) {
 		return this.invokeServerMethod('newPart', ...args)
 	}
+	insertParts(...args: ServerArgs<'insertParts'>) {
+		return this.invokeServerMethod('insertParts', ...args)
+	}
 	updatePart(...args: ServerArgs<'updatePart'>) {
 		return this.invokeServerMethod('updatePart', ...args)
 	}
 	newGroup(...args: ServerArgs<'newGroup'>) {
 		return this.invokeServerMethod('newGroup', ...args)
+	}
+	insertGroups(...args: ServerArgs<'insertGroups'>) {
+		return this.invokeServerMethod('insertGroups', ...args)
 	}
 	updateGroup(...args: ServerArgs<'updateGroup'>) {
 		return this.invokeServerMethod('updateGroup', ...args)

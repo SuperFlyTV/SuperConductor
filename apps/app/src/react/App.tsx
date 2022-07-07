@@ -37,6 +37,8 @@ import { useMemoComputedValue } from './mobx/lib'
 import { Action, getAllActionsInParts } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
+import { setupClipboard } from './api/clipboard/clipboard'
+import { ClipBoardContext } from './api/clipboard/lib'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -373,6 +375,18 @@ export const App = observer(function App() {
 		}
 
 		store.rundownsStore.updateAllButtonActions(newButtonActions)
+	}, [project])
+
+	const clipBoardContext = useRef<ClipBoardContext>({
+		handleError,
+		project,
+		serverAPI,
+	})
+	useEffect(() => {
+		setupClipboard(clipBoardContext.current)
+	}, [])
+	useEffect(() => {
+		clipBoardContext.current.project = project
 	}, [project])
 
 	const hotkeyContext: IHotkeyContext = useMemo(() => {

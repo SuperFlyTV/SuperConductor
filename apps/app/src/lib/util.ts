@@ -724,3 +724,22 @@ export function getPositionFromTarget(target: MoveTarget, items: { id: string }[
 		return -1
 	}
 }
+export function copyGroup(group: Group): Group {
+	const newGroup = deepClone(group)
+	newGroup.id = shortID()
+
+	newGroup.parts = group.parts.map((part) => copyPart(part))
+	return newGroup
+}
+export function copyPart(part: Part): Part {
+	const newPart = deepClone(part)
+	newPart.id = shortID()
+
+	newPart.timeline = part.timeline.map((o) => copyTimelineObj(o))
+	return newPart
+}
+export function copyTimelineObj(obj: TimelineObj): TimelineObj {
+	const newObj = deepClone(obj)
+	newObj.obj.id = shortID()
+	return newObj
+}

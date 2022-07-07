@@ -641,6 +641,163 @@ export class IPCServer
 			result,
 		}
 	}
+	async insertParts(arg: {
+		rundownId: string
+		groupId: string | null
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+				partId: string
+			}[]
+		>
+	> {
+		if (arg.groupId) {
+			const inserted: {
+				groupId: string
+				partId: string
+			}[] = []
+			const arg2 = {
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+			}
+			const { rundown, group } = this.getGroup(arg2)
+
+			if (group.transparent) {
+				// Oh, we can't add Parts to a transparent group.
+				// add them to the side instead:
+				return this._insertPartsAsTransparentGroup({
+					rundownId: arg.rundownId,
+					parts: arg.parts,
+					target: {
+						type: 'after',
+						id: group.id,
+					},
+				})
+			}
+
+			// Save the original positions for use in undo:
+			const originalPartIds = group.parts.map((g) => g.id)
+
+			let nextTarget: MoveTarget = arg.target
+			for (const part of arg.parts) {
+				// Ensure that the part id is unique:
+				for (const g of rundown.groups) {
+					for (const p of g.parts) {
+						if (p.id === part.part.id) throw new Error(`part id is already in use: ${part.part.id}`)
+					}
+				}
+
+				const insertPosition = getPositionFromTarget(nextTarget, group.parts)
+				group.parts.splice(insertPosition, 0, part.part)
+				nextTarget = {
+					type: 'after',
+					id: part.part.id,
+				}
+				inserted.push({
+					groupId: group.id,
+					partId: part.part.id,
+				})
+			}
+
+			this._saveUpdates({ rundownId: arg.rundownId, rundown })
+
+			// Now, also add the resources as timeline-objects into the parts:
+			const addedResourcesUndo: (() => void | Promise<void>)[] = []
+			for (const part of arg.parts) {
+				if (part.resources.length) {
+					const r = await this.addResourcesToTimeline({
+						rundownId: arg.rundownId,
+						groupId: arg.groupId,
+						partId: part.part.id,
+						resourceIds: part.resources,
+						layerId: null,
+					})
+					if (r) addedResourcesUndo.push(r.undo)
+				}
+			}
+
+			return {
+				undo: async () => {
+					for (const undo of addedResourcesUndo.reverse()) {
+						await undo()
+					}
+
+					const { rundown, group } = this.getGroup(arg2)
+					const parts = group.parts
+					group.parts = []
+					for (const partId of originalPartIds) {
+						const part = parts.find((p) => p.id === partId)
+						if (part) group.parts.push(part)
+					}
+					this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+				},
+				description: ActionDescription.InsertParts,
+				result: inserted,
+			}
+		} else {
+			return this._insertPartsAsTransparentGroup({
+				rundownId: arg.rundownId,
+				parts: arg.parts,
+				target: arg.target,
+			})
+		}
+	}
+	private async _insertPartsAsTransparentGroup(arg: {
+		rundownId: string
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+				partId: string
+			}[]
+		>
+	> {
+		const inserted: {
+			groupId: string
+			partId: string
+		}[] = []
+		const groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[] = []
+		for (const part of arg.parts) {
+			// Create a new "transparent group":
+			const newGroup: Group = {
+				...getDefaultGroup(),
+				id: shortID(),
+				name: part.part.name,
+				transparent: true,
+				parts: [part.part],
+			}
+			groups.push({
+				group: newGroup,
+				resources: {
+					[part.part.id]: part.resources,
+				},
+			})
+			inserted.push({
+				groupId: newGroup.id,
+				partId: part.part.id,
+			})
+		}
+		const r = await this.insertGroups({
+			rundownId: arg.rundownId,
+			groups,
+			target: arg.target,
+		})
+
+		return {
+			...r,
+			result: inserted,
+		}
+	}
 	async updatePart(arg: {
 		rundownId: string
 		groupId: string
@@ -690,6 +847,96 @@ export class IPCServer
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
+		}
+	}
+	async insertGroups(arg: {
+		rundownId: string
+		groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+			}[]
+		>
+	> {
+		const inserted: {
+			groupId: string
+		}[] = []
+		const { rundown } = this.getRundown(arg)
+
+		// Save the original positions for use in undo:
+		const originalGroupIds = rundown.groups.map((group) => group.id)
+
+		let nextTarget: MoveTarget = arg.target
+		for (const group of arg.groups) {
+			// Ensure that the group id is unique:
+			if (rundown.groups.find((g) => g.id === group.group.id)) {
+				throw new Error(`Group id is already in use: ${group.group.id}`)
+			}
+
+			for (const part of group.group.parts) {
+				// Ensure that the part id is unique:
+				for (const g of rundown.groups) {
+					for (const p of g.parts) {
+						if (p.id === part.id) throw new Error(`part id is already in use: ${part.id}`)
+					}
+				}
+			}
+
+			const insertPosition = getPositionFromTarget(nextTarget, rundown.groups)
+			rundown.groups.splice(insertPosition, 0, group.group)
+			nextTarget = {
+				type: 'after',
+				id: group.group.id,
+			}
+			inserted.push({
+				groupId: group.group.id,
+			})
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+
+		// Now, also add the resources as timeline-objects into the parts:
+		const addedResourcesUndo: (() => void | Promise<void>)[] = []
+		for (const group of arg.groups) {
+			for (const part of group.group.parts) {
+				const resources = group.resources[part.id]
+				if (resources?.length) {
+					const r = await this.addResourcesToTimeline({
+						rundownId: arg.rundownId,
+						groupId: group.group.id,
+						partId: part.id,
+						resourceIds: resources,
+						layerId: null,
+					})
+					if (r) addedResourcesUndo.push(r.undo)
+				}
+			}
+		}
+
+		return {
+			undo: async () => {
+				for (const undo of addedResourcesUndo.reverse()) {
+					await undo()
+				}
+
+				const { rundown } = this.getRundown(arg)
+				const groups = rundown.groups
+				rundown.groups = []
+				for (const groupId of originalGroupIds) {
+					const group = groups.find((g) => g.id === groupId)
+					if (group) rundown.groups.push(group)
+				}
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+			},
+			description: ActionDescription.InsertGroups,
+			result: inserted,
 		}
 	}
 	async updateGroup(arg: {
@@ -1271,7 +1518,7 @@ export class IPCServer
 		groupId: string
 		partId: string
 		layerId: string | null
-		resourceIds: string[]
+		resourceIds: (string | ResourceAny)[]
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1286,9 +1533,10 @@ export class IPCServer
 
 		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
-		for (const resourceId of arg.resourceIds) {
-			const resource = this.storage.getResource(resourceId)
+		for (let resourceId of arg.resourceIds) {
+			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
+			resourceId = resource?.id
 
 			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
 
