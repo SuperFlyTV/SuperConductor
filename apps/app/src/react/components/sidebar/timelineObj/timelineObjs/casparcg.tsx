@@ -506,9 +506,11 @@ const CasparEditTemplateData: React.FC<{
 		const newData = deepClone(parsed)
 		const newObj = deepClone(obj)
 		newObj.content.data = newData
-		newData[newKey] = newData[oldKey]
-		delete newData[oldKey]
-		onSave(newObj)
+		if (newKey !== oldKey) {
+			newData[newKey] = newData[oldKey]
+			delete newData[oldKey]
+			onSave(newObj)
+		}
 	}
 
 	const handleAddNew = () => {
