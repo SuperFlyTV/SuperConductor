@@ -131,13 +131,13 @@ $margin-v: 2rem;
 		border-radius: 0;
 
 		margin-top: calc(-1px - $margin-v);
-		top: $margin-v/2;
+		top: calc($margin-v / 2);
 
 		&:first-child {
 			// margin-top: 0 !important;
 
 			margin-top: -1px;
-			top: $margin-v/2;
+			top: calc($margin-v / 2);
 		}
 
 		> * {

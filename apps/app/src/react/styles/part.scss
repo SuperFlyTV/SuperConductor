@@ -55,7 +55,7 @@ $part_time_height: 16px;
 	&.selectable {
 		cursor: pointer;
 		&:hover {
-			background-color: color.adjust($partMetaColor, $lightness: -3);
+			background-color: color.adjust($partMetaColor, $lightness: -3%);
 		}
 	}
 	> .part__selected {
