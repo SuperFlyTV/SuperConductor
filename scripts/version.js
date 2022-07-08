@@ -1,4 +1,4 @@
-// This script is executed after the version is updated.
+// This script is executed after the version is updated, before the new tag is set.
 const fs = require('fs').promises
 const { exec } = require('child_process')
 
@@ -14,7 +14,7 @@ function cmd(command) {
 	})
 }
 
-;(async () => {
+; (async () => {
 	const lernaPackage = require('../lerna.json')
 	const currentVersion = lernaPackage.version
 
@@ -27,10 +27,11 @@ function cmd(command) {
 	readmeText = readmeText.replace(/\d{1,2}\.\d{1,3}\.\d{1,3}/g, currentVersion)
 
 	if (readmeTextOrg !== readmeText) {
-		console.log('Saving and committing...')
+		console.log('Saving...')
 		fs.writeFile('README.md', readmeText)
-		// cmd('git add README.md')
-		// cmd('git commit -m "Update README to ${currentVersion}"')
+		// console.log('and committing...')
+		cmd('git add README.md')
+		// cmd(`git commit -m "Update README to ${currentVersion}"`)
 	} else {
 		console.log('no change')
 	}
