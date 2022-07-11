@@ -1,14 +1,30 @@
+$margin-v: 2rem;
 .group {
 	border: 0.1rem solid $partOutlineColor;
 	position: relative;
-	margin: 2rem 0 1.5rem;
+	margin: $margin-v 0;
 	padding-top: 0.4rem;
 	padding-bottom: 2rem;
 	background: #2c2c2c;
 	border-radius: calc($partTabWidth / 2);
+	transition: box-shadow $default-transition-time;
+	overflow: hidden;
 
-	&:not(:last-child) {
-		margin-bottom: 2.5rem;
+	&--transparent {
+		margin: $margin-v 0;
+	}
+	&.selectable {
+		cursor: pointer;
+		&:hover {
+			background: #252525;
+		}
+		.group__content__parts {
+			cursor: initial;
+			// pointer-events: none;
+		}
+	}
+	&.selected {
+		box-shadow: inset 0px 0px 0px 3px #ffffff85;
 	}
 
 	&__header {
@@ -38,45 +54,54 @@
 			}
 		}
 
-		.title,
-		.edit-title {
-			margin-right: 1rem;
-			font-family: 'Barlow';
-			font-weight: 700;
+		.title-container {
 			width: 10.8rem;
-		}
+			.title,
+			.edit-title {
+				margin-right: 1rem;
+				font-family: 'Barlow';
+				font-weight: 700;
+				max-width: 10.8rem;
+			}
 
-		.title {
-			cursor: text;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
+			.title {
+				cursor: text;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				display: inline-block;
+			}
 		}
 
 		.controls {
 			display: flex;
 			align-items: center;
-			flex-grow: 1;
-
 			& > * {
 				margin-right: 0.6rem;
 			}
+			&.controls-left {
+				cursor: initial;
+				.playback {
+					flex-shrink: 0;
 
-			.playback {
-				flex-shrink: 0;
-
-				& > * {
-					margin-right: 0.6rem;
+					& > * {
+						margin-right: 0.6rem;
+					}
 				}
 			}
-
-			.duplicate {
-				flex-shrink: 0;
-				margin-left: auto;
+			&.controls-space {
+				flex-grow: 1;
 			}
+			&.controls-right {
+				cursor: initial;
+				.duplicate {
+					flex-shrink: 0;
+					margin-left: auto;
+				}
 
-			.delete {
-				flex-shrink: 0;
+				.delete {
+					flex-shrink: 0;
+				}
 			}
 		}
 	}
@@ -104,11 +129,15 @@
 		overflow: visible;
 		padding: 0;
 		border-radius: 0;
-		margin-bottom: calc(-2rem - 1px) !important;
-		top: calc(-1rem - 2px);
 
-		&:not(:first-child) {
-			margin-top: 0 !important;
+		margin-top: calc(-1px - $margin-v);
+		top: calc($margin-v / 2);
+
+		&:first-child {
+			// margin-top: 0 !important;
+
+			margin-top: -1px;
+			top: calc($margin-v / 2);
 		}
 
 		> * {

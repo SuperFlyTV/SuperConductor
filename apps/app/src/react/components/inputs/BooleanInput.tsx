@@ -5,7 +5,8 @@ export const BooleanInput: React.FC<{
 	currentValue: boolean | undefined
 	onChange: (newValue: boolean) => void
 	label: string
-}> = ({ currentValue, onChange, label }) => {
+	disabled?: boolean
+}> = ({ currentValue, onChange, label, disabled }) => {
 	return (
 		<FormGroup>
 			<FormControlLabel
@@ -15,6 +16,7 @@ export const BooleanInput: React.FC<{
 							onChange(e.target.checked)
 						}}
 						checked={!!currentValue}
+						disabled={disabled}
 					/>
 				}
 				label={label}

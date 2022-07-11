@@ -68,7 +68,7 @@ export function useMemoComputedObject<T extends object | any[] | string | number
 	}, deps).get()
 }
 /** Variant of useMemo, useful when memoizing values computed from a mobx store */
-export function useMemoComputedValue<T extends string | number | boolean | null | undefined>(
+export function useMemoComputedValue<T extends string | number | boolean | null | undefined | void>(
 	fcn: () => T,
 	deps: React.DependencyList
 ): T {

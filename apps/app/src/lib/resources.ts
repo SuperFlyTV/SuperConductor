@@ -38,6 +38,7 @@ import {
 	TimelineContentTypeOSC,
 	TimelineObjHTTPRequest,
 	TimelineContentTypeHTTP,
+	TimelineObjCCGTemplate,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -61,22 +62,27 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			},
 		}
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-		return {
+		const obj: TimelineObjCCGTemplate = {
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
-				duration: 8 * 1000,
+				duration: resource.duration || 8000,
 			},
 			content: {
 				deviceType: DeviceType.CASPARCG,
 				type: TimelineContentTypeCasparCg.TEMPLATE,
 				templateType: 'html',
 				name: resource.name,
-				data: JSON.stringify({}),
+				data: JSON.stringify(resource.data ?? {}),
 				useStopCommand: true,
 			},
 		}
+
+		// hack:
+		;(obj.content as any).sendDataAsXML = !!resource.sendDataAsXML
+
+		return obj
 	} else if (resource.resourceType === ResourceType.CASPARCG_SERVER) {
 		throw new Error(`The resource "${resource.resourceType}" can't be added to a timeline.`)
 	} else if (resource.resourceType === ResourceType.ATEM_ME) {
@@ -543,5 +549,76 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		assertNever(resource)
 		// @ts-expect-error never
 		throw new Error(`Unknown resource type "${resource.resourceType}"`)
+	}
+}
+
+/**
+ * Returns a string to represent the name for a class of resources.
+ * This can be used to populate group names when inserting new resources
+ */
+export function getClassNameFromResource(resource: ResourceAny): string {
+	switch (resource.resourceType) {
+		case ResourceType.CASPARCG_MEDIA:
+		case ResourceType.ATEM_MEDIA_PLAYER:
+			return 'Media'
+		case ResourceType.CASPARCG_TEMPLATE:
+			return 'Graphics'
+		case ResourceType.CASPARCG_SERVER:
+			return 'Servers'
+		case ResourceType.ATEM_ME:
+			return 'MEs'
+		case ResourceType.ATEM_DSK:
+			return 'DSKs'
+		case ResourceType.ATEM_AUX:
+			return 'Auxes'
+		case ResourceType.ATEM_SSRC:
+			return 'SSRC'
+		case ResourceType.ATEM_SSRC_PROPS:
+			return 'SSRC'
+		case ResourceType.ATEM_MACRO_PLAYER:
+			return 'Macros'
+		case ResourceType.ATEM_AUDIO_CHANNEL:
+			return 'Audio'
+		case ResourceType.OBS_SCENE:
+			return 'Scenes'
+		case ResourceType.OBS_TRANSITION:
+			return 'Transitions'
+		case ResourceType.OBS_RECORDING:
+		case ResourceType.VMIX_RECORDING:
+			return 'Recordings'
+		case ResourceType.OBS_STREAMING:
+		case ResourceType.VMIX_STREAMING:
+			return 'Streams'
+		case ResourceType.OBS_SOURCE_SETTINGS:
+			return 'Sources'
+		case ResourceType.OBS_MUTE:
+			return 'Mute'
+		case ResourceType.OBS_RENDER:
+			return 'Render'
+		case ResourceType.VMIX_INPUT:
+			return 'Inputs'
+		case ResourceType.VMIX_PREVIEW:
+			return 'Preview'
+		case ResourceType.VMIX_INPUT_SETTINGS:
+			return 'Input'
+		case ResourceType.VMIX_OUTPUT_SETTINGS:
+			return 'Output settings'
+		case ResourceType.VMIX_OVERLAY_SETTINGS:
+			return 'Overlay settings'
+		case ResourceType.VMIX_EXTERNAL:
+			return 'External outputs'
+		case ResourceType.VMIX_FADE_TO_BLACK:
+			return 'FTB'
+		case ResourceType.VMIX_FADER:
+			return 'Faders'
+		case ResourceType.VMIX_AUDIO_SETTINGS:
+			return 'Audio settings'
+		case ResourceType.OSC_MESSAGE:
+			return 'OSC'
+		case ResourceType.HTTP_REQUEST:
+			return 'HTTP'
+		default:
+			assertNever(resource)
+			return 'Other'
 	}
 }

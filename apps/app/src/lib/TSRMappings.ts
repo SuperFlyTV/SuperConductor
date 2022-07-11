@@ -1,4 +1,5 @@
 import { assertNever, literal } from '@shared/lib'
+import { ResourceAny, ResourceType } from '@shared/models'
 import {
 	DeviceType,
 	Mapping,
@@ -217,7 +218,11 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 	}
 }
 
-export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: string): Mapping | undefined {
+export function getMappingFromTimelineObject(
+	obj: TSRTimelineObj,
+	deviceId: string,
+	resource: ResourceAny | undefined
+): Mapping | undefined {
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
 		return literal<MappingAbstract>({
 			device: DeviceType.ABSTRACT,
@@ -305,12 +310,26 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 		}
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
 		// MappingCasparCG
+		let channel = 1
+		if (
+			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			resource.channel
+		)
+			channel = resource.channel
+		let layer = 1
+		if (
+			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			resource.layer
+		)
+			layer = resource.layer
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceId,
-			layerName: 'CasparCG 1-10',
-			channel: 1,
-			layer: 10,
+			layerName: `CasparCG ${channel}-${layer}`,
+			channel: channel,
+			layer: layer,
 		})
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		// MappingHTTPSend

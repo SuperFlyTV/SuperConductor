@@ -3,9 +3,10 @@ import classNames from 'classnames'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { useDrag } from 'react-dnd'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
-import { assertNever, bytesToSize, describeResource } from '@shared/lib'
+import { assertNever, bytesToSize, compact, describeResource } from '@shared/lib'
 import { formatDurationLabeled } from '../../../../lib/timeLib'
 import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
+import { store } from '../../../mobx/store'
 
 type IProps = {
 	resource: ResourceAny
@@ -18,7 +19,21 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 		() => ({
 			type: DragItemTypes.RESOURCE_ITEM,
 			item: (): ResourceDragItem => {
-				return { type: DragItemTypes.RESOURCE_ITEM, resource }
+				const selectedResourceIds = store.guiStore.resourceLibrary.selectedResourceIds
+
+				// If this resource is a selected resource, drag all selected resources.
+				// otherwise, drag just this resource.
+				if (selectedResourceIds.includes(resource.id)) {
+					const storeResources = store.resourcesStore.resources
+					const resources = compact(
+						selectedResourceIds.map((resourceId) => {
+							return storeResources[resourceId]
+						})
+					)
+					return { type: DragItemTypes.RESOURCE_ITEM, resources }
+				} else {
+					return { type: DragItemTypes.RESOURCE_ITEM, resources: [resource] }
+				}
 			},
 			collect: (monitor) => ({
 				dragged: monitor.isDragging() ? true : false,

@@ -87,11 +87,17 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	newPart(...args: ServerArgs<'newPart'>) {
 		return this.invokeServerMethod('newPart', ...args)
 	}
+	insertParts(...args: ServerArgs<'insertParts'>) {
+		return this.invokeServerMethod('insertParts', ...args)
+	}
 	updatePart(...args: ServerArgs<'updatePart'>) {
 		return this.invokeServerMethod('updatePart', ...args)
 	}
 	newGroup(...args: ServerArgs<'newGroup'>) {
 		return this.invokeServerMethod('newGroup', ...args)
+	}
+	insertGroups(...args: ServerArgs<'insertGroups'>) {
+		return this.invokeServerMethod('insertGroups', ...args)
 	}
 	updateGroup(...args: ServerArgs<'updateGroup'>) {
 		return this.invokeServerMethod('updateGroup', ...args)
@@ -102,14 +108,14 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	deleteGroup(...args: ServerArgs<'deleteGroup'>) {
 		return this.invokeServerMethod('deleteGroup', ...args)
 	}
-	movePart(...args: ServerArgs<'movePart'>) {
-		return this.invokeServerMethod('movePart', ...args)
+	moveParts(...args: ServerArgs<'moveParts'>) {
+		return this.invokeServerMethod('moveParts', ...args)
 	}
 	duplicatePart(...args: ServerArgs<'duplicatePart'>) {
 		return this.invokeServerMethod('duplicatePart', ...args)
 	}
-	moveGroup(...args: ServerArgs<'moveGroup'>) {
-		return this.invokeServerMethod('moveGroup', ...args)
+	moveGroups(...args: ServerArgs<'moveGroups'>) {
+		return this.invokeServerMethod('moveGroups', ...args)
 	}
 	duplicateGroup(...args: ServerArgs<'duplicateGroup'>) {
 		return this.invokeServerMethod('duplicateGroup', ...args)
@@ -120,8 +126,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	addTimelineObj(...args: ServerArgs<'addTimelineObj'>) {
 		return this.invokeServerMethod('addTimelineObj', ...args)
 	}
-	addResourceToTimeline(...args: ServerArgs<'addResourceToTimeline'>) {
-		return this.invokeServerMethod('addResourceToTimeline', ...args)
+	addResourcesToTimeline(...args: ServerArgs<'addResourcesToTimeline'>) {
+		return this.invokeServerMethod('addResourcesToTimeline', ...args)
 	}
 	toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>) {
 		return this.invokeServerMethod('toggleGroupLoop', ...args)

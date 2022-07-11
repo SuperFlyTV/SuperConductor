@@ -181,8 +181,21 @@ export function modifyTimelineObjectForPlayout(
 			}
 		}
 		if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
-			if ((obj.content as any).casparXMLData) {
-				obj.content.data = parametersToCasparXML(obj.content.data)
+			if (
+				(obj.content as any).sendDataAsXML ||
+				(obj.content as any).casparXMLData // backwards compatibility
+			) {
+				let data = obj.content.data
+				if (typeof data === 'string') {
+					try {
+						data = JSON.parse(data)
+					} catch (_err) {
+						// unable to parse, do nothing
+					}
+				}
+				if (typeof data === 'object') {
+					obj.content.data = parametersToCasparXML(data)
+				}
 			}
 		}
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
@@ -218,8 +231,8 @@ function escapeHtml(unsafe: any) {
 }
 function parametersToCasparXML(params: { [key: string]: string }): string {
 	let xml = ''
-	for (const key in params) {
-		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(params[key])}" /></componentData>`
+	for (const [key, value] of Object.entries(params)) {
+		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(value)}" /></componentData>`
 	}
 
 	return `<templateData>${xml}</templateData>`
