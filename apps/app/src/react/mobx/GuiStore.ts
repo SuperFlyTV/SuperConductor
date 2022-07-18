@@ -167,6 +167,18 @@ export class GuiStore {
 		}
 	}
 
+	updateSelection(isSelectionValid: (selected: CurrentSelectionAny) => boolean): void {
+		const selectionsToRemove: CurrentSelectionAny[] = []
+		for (const selected of this._selected) {
+			if (!isSelectionValid(selected)) {
+				selectionsToRemove.push(selected)
+			}
+		}
+		for (const selected of selectionsToRemove) {
+			this.removeSelected(selected)
+		}
+	}
+
 	activeHomePageId = 'project'
 
 	timelineObjMove: TimelineObjectMove = {

@@ -21,6 +21,7 @@ import { ClientSideLogger } from '../api/logger'
 import { Action, ActionLight } from '../../lib/triggers/action'
 import _ from 'lodash'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
+import { assertNever } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -72,6 +73,20 @@ export class RundownsStore {
 				runInAction(() => {
 					this._rundownsClean.set(rundownId, rundown)
 					this._updateRundown(rundownId, rundown)
+
+					// Update selection to remove any selections of non-existent things:
+					store.guiStore.updateSelection((selected) => {
+						if (selected.type === 'group') {
+							return store.rundownsStore.hasGroup(selected.groupId)
+						} else if (selected.type === 'part') {
+							return store.rundownsStore.hasPart(selected.partId)
+						} else if (selected.type === 'timelineObj') {
+							return store.rundownsStore.hasTimelineObj(selected.timelineObjId)
+						} else {
+							assertNever(selected)
+							return false
+						}
+					})
 				})
 			},
 		})
