@@ -3,13 +3,7 @@ import _ from 'lodash'
 import sorensen from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead'
 import { Layer, LayerEmpty } from './Layer'
-import {
-	ResolvedTimeline,
-	ResolvedTimelineObject,
-	Resolver,
-	ResolverCache,
-	TimelineObjectInstance,
-} from 'superfly-timeline'
+import { ResolvedTimeline, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import {
 	allowMovingPartIntoGroup,
 	EMPTY_LAYER_ID_PREFIX,
@@ -29,8 +23,7 @@ import { EmptyLayer } from './EmptyLayer'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { ProjectContext } from '../../../contexts/Project'
-import { filterMapping, sortMappings } from '../../../../lib/TSRMappings'
+import { filterMapping } from '../../../../lib/TSRMappings'
 import { Popover, TextField } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -58,6 +51,7 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { sortSelected } from '../../../lib/clientUtil'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -85,7 +79,6 @@ export const PartView: React.FC<{
 
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const project = useContext(ProjectContext)
 	const log = useContext(LoggerContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
@@ -372,7 +365,7 @@ export const PartView: React.FC<{
 				// Check the the layer movement is legal:
 				let moveToLayerId = timelineObjMove.hoveredLayerId
 				if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
-					const newLayerMapping = project.mappings[moveToLayerId]
+					const newLayerMapping = mappings[moveToLayerId]
 					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
 					}
@@ -444,7 +437,7 @@ export const PartView: React.FC<{
 		}, [
 			timelineObjMove,
 			part.id,
-			project.mappings,
+			mappings,
 			handleError,
 			orgResolvedTimeline,
 			bypassSnapping,
@@ -858,28 +851,7 @@ export const PartView: React.FC<{
 		true
 	)
 
-	const timelineLayerObjects = sortedLayers.map(({ layerId, objectIds }) => {
-		const objectsOnLayer: {
-			resolved: ResolvedTimelineObject['resolved']
-			timelineObj: TimelineObj
-		}[] = compact(
-			objectIds.map((objectId) => {
-				const resolvedObj = resolvedTimeline.objects[objectId]
-				const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
-
-				if (resolvedObj && timelineObj) {
-					return {
-						resolved: resolvedObj.resolved,
-						timelineObj: timelineObj,
-					}
-				}
-			})
-		)
-		return {
-			layerId,
-			objectsOnLayer,
-		}
-	})
+	const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, modifiedTimeline)
 
 	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
 	const [renderEverything, setRenderEverything] = useState(false)
@@ -1313,20 +1285,6 @@ const EndCap: React.FC<{
 		></div>
 	)
 })
-
-function sortLayers(
-	layers: ResolvedTimeline['layers'],
-	mappings: Mappings
-): { layerId: string; objectIds: string[] }[] {
-	const usedMappings: Mappings = {}
-
-	for (const layerId of Object.keys(layers)) {
-		const mapping = mappings[layerId]
-		if (mapping) usedMappings[layerId] = mapping
-	}
-
-	return sortMappings(usedMappings).map(({ layerId }) => ({ layerId, objectIds: layers[layerId] }))
-}
 
 const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
 	if (a.time < b.time) {
