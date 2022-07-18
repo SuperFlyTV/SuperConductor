@@ -5,7 +5,7 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { ResolvedTimelineObject, TimelineObjectInstance } from 'superfly-timeline'
+import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
@@ -14,6 +14,7 @@ import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { shortID } from '../../../../lib/util'
 import { computed } from 'mobx'
 import { millisecondsToTime } from '../../../../lib/timeLib'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 
 const HANDLE_WIDTH = 8
 
@@ -234,18 +235,84 @@ export const TimelineObject: React.FC<{
 		}
 
 		const pressed = sorensen.getPressedKeys()
-		const allowMultiSelection =
-			pressed.includes('ShiftLeft') ||
-			pressed.includes('ShiftRight') ||
-			pressed.includes('ControlLeft') ||
-			pressed.includes('ControlRight')
-		if (allowMultiSelection) {
+		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+			// Add this timline-object to the selection:
 			store.guiStore.toggleAddSelected({
 				type: 'timelineObj',
 				groupId: groupId,
 				partId: partId,
 				timelineObjId: obj.id,
 			})
+		} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+			// Add all timline-objects between the last selected and this one:
+			const mainSelected = store.guiStore.mainSelected
+			if (mainSelected && mainSelected.type === 'timelineObj' && mainSelected.partId === partId) {
+				const project = store.projectStore.project
+				const partTimeline = store.rundownsStore.getPartTimeline(partId)
+				const resolvedTimeline = Resolver.resolveTimeline(
+					partTimeline.map((o) => o.obj),
+					{ time: 0 }
+				)
+				const sortedLayers = sortLayers(resolvedTimeline.layers, project.mappings)
+				const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, partTimeline)
+
+				let mainLayerIndex = -1
+				let thisLayerIndex = -1
+
+				let mainObjStartTime: number | undefined = undefined
+				let thisObjStartTime: number | undefined = undefined
+
+				// Find start and end indexes:
+				{
+					let layerIndex = 0
+					for (const { objectsOnLayer } of timelineLayerObjects) {
+						for (const o of objectsOnLayer) {
+							if (o.timelineObj.obj.id === mainSelected.timelineObjId) {
+								mainLayerIndex = layerIndex
+								mainObjStartTime = o.resolved.instances[0]?.start
+							}
+							if (o.timelineObj.obj.id === timelineObj.obj.id) {
+								thisLayerIndex = layerIndex
+								thisObjStartTime = o.resolved.instances[0]?.start
+							}
+						}
+						layerIndex++
+					}
+				}
+				if (
+					mainLayerIndex !== -1 &&
+					thisLayerIndex !== -1 &&
+					mainObjStartTime !== undefined &&
+					thisObjStartTime !== undefined
+				) {
+					const layerIndexes = [
+						Math.min(mainLayerIndex, thisLayerIndex),
+						Math.max(mainLayerIndex, thisLayerIndex),
+					]
+					const times = [
+						Math.min(mainObjStartTime, thisObjStartTime),
+						Math.max(mainObjStartTime, thisObjStartTime),
+					]
+
+					let layerIndex = 0
+					for (const { objectsOnLayer } of timelineLayerObjects) {
+						if (layerIndex >= layerIndexes[0] && layerIndex <= layerIndexes[1]) {
+							for (const o of objectsOnLayer) {
+								const startTime = o.resolved.instances[0]?.start
+								if (startTime !== undefined && startTime >= times[0] && startTime <= times[1]) {
+									store.guiStore.addSelected({
+										type: 'timelineObj',
+										groupId: groupId,
+										partId: partId,
+										timelineObjId: o.timelineObj.obj.id,
+									})
+								}
+							}
+						}
+						layerIndex++
+					}
+				}
+			}
 		} else {
 			store.guiStore.toggleSelected({
 				type: 'timelineObj',
