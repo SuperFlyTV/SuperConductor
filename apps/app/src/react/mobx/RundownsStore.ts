@@ -160,62 +160,65 @@ export class RundownsStore {
 
 	/** Go through all the changes in the rundown, group and parts  */
 	private _updateRundown(rundownId: string, rundown: Rundown | null): void {
+		const cleanup = {
+			existingGroupIds: new Set<string>(),
+			usedGroupIds: new Set<string>(),
+
+			existingPartIds: new Set<string>(),
+			usedPartIds: new Set<string>(),
+
+			existingTimelineIds: new Set<string>(),
+			usedTimelineIds: new Set<string>(),
+		}
 		const existingRundown = this._uiRundowns.get(rundownId)
-		if (!rundown) {
-			this._rundowns.delete(rundownId)
-			if (existingRundown) {
-				// Removed Groups:
-				for (const groupId of existingRundown.groupIds) {
-					const existingGroup = this._uiGroups.get(groupId)
-					if (existingGroup) {
-						this._uiGroups.delete(groupId)
-						// Removed Parts:
-						for (const partId of existingGroup.partIds) {
-							const existingPart = this._uiParts.get(partId)
-							if (existingPart) {
-								this._uiParts.delete(partId)
-								// Removed Timeline objects:
-								for (const objId of existingPart.timelineIds) {
-									this._uiTimeline.delete(objId)
-								}
+		if (existingRundown) {
+			for (const groupId of existingRundown.groupIds) {
+				cleanup.existingGroupIds.add(groupId)
+				const group = this._uiGroups.get(groupId)
+				if (group) {
+					for (const partId of group.partIds) {
+						cleanup.existingPartIds.add(partId)
+
+						const part = this._uiParts.get(partId)
+						if (part) {
+							for (const timelineId of part.timelineIds) {
+								cleanup.existingTimelineIds.add(timelineId)
 							}
 						}
 					}
 				}
 			}
-			return
 		}
-		this._rundowns.set(rundownId, rundown)
+		if (rundown) {
+			this._rundowns.set(rundownId, rundown)
+			const uiRundown = literal<RundownGUI>({
+				...omit(rundown, 'groups'),
+				groupIds: rundown.groups.map((g) => g.id),
+			})
+			if (!_.isEqual(uiRundown, existingRundown)) {
+				this._uiRundowns.set(rundownId, uiRundown)
+			}
 
-		const existingGroupIds = new Set(existingRundown?.groupIds)
-		const uiRundown = literal<RundownGUI>({
-			...omit(rundown, 'groups'),
-			groupIds: rundown.groups.map((g) => g.id),
-		})
-		if (!_.isEqual(uiRundown, existingRundown)) {
-			this._uiRundowns.set(rundownId, uiRundown)
+			// Save Groups:
+			for (const group of rundown.groups) {
+				cleanup.usedGroupIds.add(group.id)
+				const c = this._updateGroup(group)
+				c.existingPartIds.forEach((partId) => cleanup.existingPartIds.add(partId))
+				c.usedPartIds.forEach((partId) => cleanup.usedPartIds.add(partId))
+				c.existingTimelineIds.forEach((objId) => cleanup.existingTimelineIds.add(objId))
+				c.usedTimelineIds.forEach((objId) => cleanup.usedTimelineIds.add(objId))
+			}
 		}
 
-		const cleanup = {
-			existingPartIds: new Set<string>(),
-			usedPartIds: new Set<string>(),
-			existingTimelineIds: new Set<string>(),
-			usedTimelineIds: new Set<string>(),
+		// Removed Rundown:
+		if (existingRundown && !rundown) {
+			this._rundowns.delete(rundownId)
+			this._uiRundowns.delete(rundownId)
 		}
-
-		// Save Groups:
-		for (const group of rundown.groups) {
-			existingGroupIds.delete(group.id)
-			const c = this._updateGroup(group)
-			c.existingPartIds.forEach((partId) => cleanup.existingPartIds.add(partId))
-			c.usedPartIds.forEach((partId) => cleanup.usedPartIds.add(partId))
-			c.existingTimelineIds.forEach((objId) => cleanup.existingTimelineIds.add(objId))
-			c.usedTimelineIds.forEach((objId) => cleanup.usedTimelineIds.add(objId))
-		}
-		// Removed TimelineObjects:
-		for (const objId of cleanup.existingTimelineIds.keys()) {
-			if (!cleanup.usedTimelineIds.has(objId)) {
-				this._uiTimeline.delete(objId)
+		// Removed Groups:
+		for (const groupId of cleanup.existingGroupIds.keys()) {
+			if (!cleanup.usedGroupIds.has(groupId)) {
+				this._uiGroups.delete(groupId)
 			}
 		}
 		// Removed Parts:
@@ -224,9 +227,11 @@ export class RundownsStore {
 				this._uiParts.delete(partId)
 			}
 		}
-		// Removed Groups:
-		for (const groupId of existingGroupIds.keys()) {
-			this._uiGroups.delete(groupId)
+		// Removed TimelineObjects:
+		for (const objId of cleanup.existingTimelineIds.keys()) {
+			if (!cleanup.usedTimelineIds.has(objId)) {
+				this._uiTimeline.delete(objId)
+			}
 		}
 	}
 	private _updateGroup(group: Group) {
