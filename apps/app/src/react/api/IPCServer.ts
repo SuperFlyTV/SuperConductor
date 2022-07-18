@@ -123,8 +123,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>) {
 		return this.invokeServerMethod('deleteTimelineObj', ...args)
 	}
-	addTimelineObj(...args: ServerArgs<'addTimelineObj'>) {
-		return this.invokeServerMethod('addTimelineObj', ...args)
+	insertTimelineObjs(...args: ServerArgs<'insertTimelineObjs'>) {
+		return this.invokeServerMethod('insertTimelineObjs', ...args)
 	}
 	addResourcesToTimeline(...args: ServerArgs<'addResourcesToTimeline'>) {
 		return this.invokeServerMethod('addResourcesToTimeline', ...args)

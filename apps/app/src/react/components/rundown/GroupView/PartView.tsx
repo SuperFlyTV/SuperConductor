@@ -498,16 +498,15 @@ export const PartView: React.FC<{
 				changedObjects.current = null
 			}
 			if (duplicatedObjects.current) {
-				for (const obj of Object.values(duplicatedObjects.current)) {
-					const promise = ipcServer.addTimelineObj({
+				promises.push(
+					ipcServer.insertTimelineObjs({
 						rundownId: rundownId,
 						partId: part.id,
 						groupId: parentGroupId,
-						timelineObjId: obj.obj.id,
-						timelineObj: obj,
+						timelineObjs: Object.values(duplicatedObjects.current),
+						target: null,
 					})
-					promises.push(promise)
-				}
+				)
 				duplicatedObjects.current = null
 			}
 

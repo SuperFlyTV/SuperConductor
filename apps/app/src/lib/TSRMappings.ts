@@ -42,6 +42,8 @@ import {
 	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
+import { Project } from '../models/project/Project'
+import { listAvailableDeviceIDs } from './util'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
 export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
@@ -218,6 +220,21 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 	}
 }
 
+/** Tries to guess which device a timelineObject is likely to be using */
+export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): string | undefined {
+	const allDeviceIds = listAvailableDeviceIDs(project.bridges)
+	const sortedMappings = sortMappings(project.mappings)
+
+	for (const { mapping } of sortedMappings) {
+		// Does the layer have a device?
+		if (!allDeviceIds.has(mapping.deviceId)) continue
+		// Is the layer compatible?
+		if (!filterMapping(mapping, obj)) continue
+
+		return mapping.deviceId
+	}
+	return undefined
+}
 export function getMappingFromTimelineObject(
 	obj: TSRTimelineObj,
 	deviceId: string,
@@ -1036,7 +1053,8 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 	return index === -1 ? 9999 : index
 }
 
-export function sortMappings(mappings: Mappings): { layerId: string; mapping: Mapping }[] {
+export type SortedMappings = { layerId: string; mapping: Mapping }[]
+export function sortMappings(mappings: Mappings): SortedMappings {
 	return Object.entries(mappings)
 		.map(([layerId, mapping]) => ({
 			layerId,

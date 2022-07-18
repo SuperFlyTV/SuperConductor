@@ -1,5 +1,6 @@
 import { assertNever } from '@shared/lib'
-import { copyGroup, copyPart, copyTimelineObj, MoveTarget } from '../../../lib/util'
+import { getDefaultPart } from '../../../electron/defaults'
+import { copyGroup, copyPart, copyTimelineObj, MoveTarget, shortID } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
@@ -117,7 +118,100 @@ export async function handleInternal(context: ClipBoardContext, str: string): Pr
 		}
 	}
 	if (timelineObjs.length) {
-		// TODO: support pasting timelineObjs
+		let insertGroupId: string | null
+		const selected = store.guiStore.mainSelected
+		if (selected && (selected.type === 'timelineObj' || selected.type === 'part')) {
+			insertGroupId = selected.groupId
+			const insertPartId = selected.partId
+
+			let target: MoveTarget
+
+			if (selected.type === 'timelineObj') {
+				target = {
+					type: 'after',
+					id: selected.timelineObjId,
+				}
+				// Put the inserted objs on the same layer:
+				const selectedTimelineObj = store.rundownsStore.getTimelineObj(selected.timelineObjId)
+				for (const timelineObj of timelineObjs) {
+					timelineObj.obj.layer = selectedTimelineObj.obj.layer
+				}
+			} else if (selected.type === 'part') {
+				target = {
+					type: 'last',
+				}
+				// Put the inserted objs on new layers:
+				for (const timelineObj of timelineObjs) {
+					timelineObj.obj.layer = ''
+				}
+			} else {
+				assertNever(selected)
+				target = {
+					type: 'last',
+				}
+			}
+
+			const insertedObjs = await context.serverAPI.insertTimelineObjs({
+				rundownId: currentRundownId,
+				groupId: insertGroupId,
+				partId: insertPartId,
+				timelineObjs: timelineObjs,
+				target,
+			})
+			if (insertedObjs.length) {
+				store.guiStore.clearSelected()
+				for (const insert of insertedObjs) {
+					store.guiStore.addSelected({
+						type: 'timelineObj',
+						groupId: insert.groupId,
+						partId: insert.partId,
+						timelineObjId: insert.timelineObjId,
+					})
+				}
+			}
+		} else {
+			let target: MoveTarget
+			if (selected && selected.type === 'group') {
+				insertGroupId = selected.groupId
+				target = {
+					type: 'last',
+				}
+			} else {
+				insertGroupId = null
+				target = {
+					type: 'last',
+				}
+			}
+
+			const part: Part = {
+				...getDefaultPart(),
+				name: '',
+				id: shortID(),
+				timeline: timelineObjs,
+			}
+
+			const insertedParts = await context.serverAPI.insertParts({
+				rundownId: currentRundownId,
+				groupId: insertGroupId,
+				parts: [
+					{
+						part: part,
+						resources: [],
+					},
+				],
+				target,
+			})
+			if (insertedParts.length) {
+				store.guiStore.clearSelected()
+				for (const insert of insertedParts) {
+					store.guiStore.addSelected({
+						type: 'part',
+						groupId: insert.groupId,
+						partId: insert.partId,
+					})
+				}
+			}
+		}
 	}
 
 	return true

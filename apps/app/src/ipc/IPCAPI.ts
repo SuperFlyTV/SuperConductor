@@ -143,13 +143,17 @@ export interface IPCServerMethods {
 		}
 	}) => void
 	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
-	addTimelineObj: (arg: {
+	insertTimelineObjs: (arg: {
 		rundownId: string
 		groupId: string
 		partId: string
+		timelineObjs: TimelineObj[]
+		target: MoveTarget | null
+	}) => {
+		groupId: string
+		partId: string
 		timelineObjId: string
-		timelineObj: TimelineObj
-	}) => void
+	}[]
 	moveTimelineObjToNewLayer: (arg: {
 		rundownId: string
 		groupId: string

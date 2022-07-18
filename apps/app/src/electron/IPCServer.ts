@@ -30,12 +30,17 @@ import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
-import { deepClone } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
-import { filterMapping, getMappingFromTimelineObject, sortMappings } from '../lib/TSRMappings'
+import {
+	filterMapping,
+	getMappingFromTimelineObject,
+	guessDeviceIdFromTimelineObject,
+	sortMappings,
+} from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
@@ -45,6 +50,7 @@ import { DefiningArea } from '..//lib/triggers/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
+import { getLastEndTime } from '../lib/partTimeline'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -1428,36 +1434,129 @@ export class IPCServer
 			description: ActionDescription.DeleteTimelineObj,
 		}
 	}
-	async addTimelineObj(arg: {
+	async insertTimelineObjs(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
-		timelineObjId: string
-		timelineObj: TimelineObj
-	}): Promise<UndoableResult<void> | undefined> {
+		timelineObjs: TimelineObj[]
+		target: MoveTarget | null
+	}): Promise<
+		| UndoableResult<
+				{
+					groupId: string
+					partId: string
+					timelineObjId: string
+				}[]
+		  >
+		| undefined
+	> {
+		const project = this.getProject()
+		let updatedProject = false
+		const addedNewLayers: string[] = []
+
 		const { rundown, group, part } = this.getPart(arg)
+		const inserted: {
+			groupId: string
+			partId: string
+			timelineObjId: string
+		}[] = []
 
 		if (group.locked || part.locked) {
 			return
 		}
 
-		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
-		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
-		part.timeline.push(arg.timelineObj)
+		let nextTarget: MoveTarget | null = arg.target
+		for (const timelineObj of arg.timelineObjs) {
+			const existingTimelineObj = findTimelineObj(part, timelineObj.obj.id)
+			if (existingTimelineObj)
+				throw new Error(`A timelineObj with the ID "${timelineObj.obj.id}" already exists.`)
 
-		postProcessPart(part)
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+			if (nextTarget) {
+				const enable = Array.isArray(timelineObj.obj.enable)
+					? timelineObj.obj.enable[0]
+					: timelineObj.obj.enable
+				if (nextTarget.type === 'first') {
+					enable.start = 0
+				} else if (nextTarget.type === 'last') {
+					// Place the timelineObj at the end of the part's timeline:
+					const lastEnd = getLastEndTime(part.timeline, `${timelineObj.obj.layer}`)
+					enable.start = lastEnd.objId ? `#${lastEnd.objId}.end` : lastEnd.time
+				} else if (
+					nextTarget.type === 'after' ||
+					nextTarget.type === 'before' // Note: 'before' is not supported at the moment, so we handle that as 'after' for now.
+				) {
+					const afterId = nextTarget.id
+					const afterObj = part.timeline.find((t) => t.obj.id === afterId)
+					if (!afterObj) throw new Error(`timelineObj with the ID "${afterId}" not found!`)
+
+					enable.start = `#${afterObj.obj.id}.end`
+				} else {
+					assertNever(nextTarget)
+				}
+			}
+			let layerMustBeFree = true
+			if (timelineObj.obj.layer && !project.mappings[timelineObj.obj.layer]) {
+				// If the layer doesn't exist, set to falsy to create a new one:
+				timelineObj.obj.layer = ''
+				layerMustBeFree = false
+			}
+			// Set a layer in case it doesn't exist:
+			if (!timelineObj.obj.layer) {
+				const result = this._findBestOrCreateLayer({
+					project,
+					rundown,
+					part,
+					obj: timelineObj.obj,
+					resource: undefined,
+					layerMustBeFree,
+					originalLayerId: undefined,
+				})
+
+				if (result.createdNewLayer) {
+					addedNewLayers.push(result.layerId)
+					updatedProject = true
+				}
+
+				timelineObj.obj.layer = result.layerId
+			}
+
+			part.timeline.push(timelineObj)
+			nextTarget = {
+				type: 'after',
+				id: timelineObj.obj.id,
+			}
+			inserted.push({
+				groupId: group.id,
+				partId: part.id,
+				timelineObjId: timelineObj.obj.id,
+			})
+
+			postProcessPart(part)
+		}
+		const insertedTimelineObjIds = inserted.map((t) => t.timelineObjId)
+
+		this._saveUpdates({ project: updatedProject ? project : undefined, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
+				let updatedProject: Project | undefined = undefined
+				if (addedNewLayers.length > 0) {
+					// If a new layer was added, remove it.
+					updatedProject = this.getProject()
+					for (const layerId of addedNewLayers) {
+						delete updatedProject.mappings[layerId]
+					}
+				}
+
 				const { rundown, group, part } = this.getPart(arg)
 
-				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
+				part.timeline = part.timeline.filter((obj) => !insertedTimelineObjIds.includes(obj.obj.id))
 
 				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
+			result: inserted,
 		}
 	}
 	async moveTimelineObjToNewLayer(arg: {
@@ -1486,6 +1585,7 @@ export class IPCServer
 			part,
 			obj: timelineObj.obj,
 			resource: resource,
+			layerMustBeFree: true,
 			originalLayerId: originalLayer,
 		})
 		timelineObj.obj.layer = result.layerId
@@ -1569,13 +1669,14 @@ export class IPCServer
 					part,
 					obj,
 					resource,
+					layerMustBeFree: true,
 					originalLayerId: undefined,
 				})
 				addToLayerId = result.layerId
 				if (result.createdNewLayer) {
 					addedNewLayers.push(result.layerId)
+					updatedProject = true
 				}
-				updatedProject = updatedProject || result.updatedProject
 			}
 			obj.layer = addToLayerId
 			usePreviousLayerId = obj.layer
@@ -1598,20 +1699,9 @@ export class IPCServer
 
 			// Place the timelineObj at the end of the part's timeline:
 			{
-				let lastEndTime = 0
-				let lastEndObjId = ''
-				for (const o of part.timeline) {
-					if (o.obj.layer === obj.layer) {
-						for (const instance of o.resolved.instances) {
-							if (instance.end && lastEndTime < instance.end) {
-								lastEndTime = instance.end
-								lastEndObjId = o.obj.id
-							}
-						}
-					}
-				}
+				const lastEnd = getLastEndTime(part.timeline, obj.layer)
 				if (!Array.isArray(timelineObj.obj.enable)) {
-					timelineObj.obj.enable.start = `#${lastEndObjId}.end`
+					timelineObj.obj.enable.start = lastEnd.objId ? `#${lastEnd.objId}.end` : lastEnd.time
 				}
 			}
 
@@ -2230,12 +2320,17 @@ export class IPCServer
 
 		this.callbacks.updatePeripherals()
 	}
+	/**
+	 * Tries to find the best layer to match the provided timeline obj, or creates on if not found.
+	 */
 	private _findBestOrCreateLayer(arg: {
 		rundown: Rundown
 		part: Part
 		project: Project
 		obj: TSRTimelineObj
 		resource: ResourceAny | undefined
+
+		layerMustBeFree: boolean
 		originalLayerId: string | number | undefined
 	}) {
 		let addToLayerId: string | null = null
@@ -2257,8 +2352,10 @@ export class IPCServer
 			// Is the layer compatible?
 			if (!filterMapping(mapping, arg.obj)) continue
 
-			// Is the layer free?
-			if (arg.part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+			if (arg.layerMustBeFree) {
+				// Is the layer free?
+				if (arg.part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+			}
 
 			// Okay then:
 			possibleLayers[layerId] = 1
@@ -2278,6 +2375,7 @@ export class IPCServer
 			}
 		}
 
+		// For CasparCG: Don't pick layers that have the wrong channel or layer:
 		if (
 			(arg.resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
 				arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
@@ -2309,13 +2407,15 @@ export class IPCServer
 			addToLayerId = bestLayer[0]
 		}
 
-		let updatedProject = false
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			let newMapping: Mapping | undefined = undefined
-			if (arg.resource) {
-				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId, arg.resource)
-			} else if (arg.originalLayerId !== undefined) {
+			const deviceId = arg.resource?.deviceId || guessDeviceIdFromTimelineObject(arg.project, arg.obj)
+			if (deviceId) {
+				newMapping = getMappingFromTimelineObject(arg.obj, deviceId, arg.resource)
+			}
+
+			if (!newMapping && arg.originalLayerId !== undefined) {
 				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
 				if (originalLayer) {
 					// TODO: modify the layer to create the "next" layer:
@@ -2331,7 +2431,6 @@ export class IPCServer
 
 				arg.project.mappings[newLayerId] = newMapping
 
-				updatedProject = true
 				addToLayerId = newLayerId
 				createdNewLayer = true
 			}
@@ -2346,6 +2445,11 @@ export class IPCServer
 		// Verify that the layer is OK:
 		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
-		return { layerId: addToLayerId, createdNewLayer, updatedProject }
+		return {
+			/** id of the layer to use */
+			layerId: addToLayerId,
+			/** True if a layer was created */
+			createdNewLayer,
+		}
 	}
 }
