@@ -20,6 +20,10 @@ export interface CasparCGMedia extends ResourceBase {
 	frameRate: number
 	duration: number
 	thumbnail?: string
+
+	// prefilled data:
+	channel?: number
+	layer?: number
 }
 
 export interface CasparCGTemplate extends ResourceBase {
@@ -28,4 +32,11 @@ export interface CasparCGTemplate extends ResourceBase {
 	name: string
 	size: number
 	changed: number
+
+	// prefilled data:
+	duration?: number
+	data?: any
+	sendDataAsXML?: boolean
+	channel?: number
+	layer?: number
 }

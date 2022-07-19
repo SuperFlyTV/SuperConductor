@@ -1,5 +1,6 @@
 import { ResourceAny } from '@shared/models'
-import { Group } from '../../models/rundown/Group'
+import { MoveTarget } from '../../lib/util'
+import { GroupGUI } from '../../models/rundown/Group'
 
 export enum DragItemTypes {
 	RESOURCE_ITEM = 'resource_item',
@@ -9,25 +10,30 @@ export enum DragItemTypes {
 
 export interface ResourceDragItem {
 	type: DragItemTypes.RESOURCE_ITEM
-	resource: ResourceAny
+	resources: ResourceAny[]
 }
 
 export interface PartDragItem {
 	type: DragItemTypes.PART_ITEM
-	partId: string
-	fromGroup: Group
+
+	parts: {
+		partId: string
+		fromGroup: GroupGUI
+	}[]
+
 	/** null = make a new transparent group */
 	toGroupId: string | null
-	toGroupIndex: number
-	toGroupTransparent: boolean
-	/** The position in toGroup's parts array at which to place the dragged part */
-	position: number
+	// toGroupIndex: number
+	// toGroupTransparent: boolean
+	target: MoveTarget | null
 }
 
 export interface GroupDragItem {
 	type: DragItemTypes.GROUP_ITEM
-	groupId: string
-	position: number
+
+	groupIds: string[]
+	/** The position in the Rundown at which to place the dragged Group */
+	target: MoveTarget | null
 }
 
 export type AnyDragItem = ResourceDragItem | PartDragItem | GroupDragItem

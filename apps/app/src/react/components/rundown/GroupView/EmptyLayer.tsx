@@ -19,16 +19,17 @@ export const EmptyLayer: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [{ isOver }, drop] = useDrop(
+		// Use case: Drag Resources over this Empty Layer, to insert them as Timeline obejcts on a new Layer
 		() => ({
 			accept: DragItemTypes.RESOURCE_ITEM,
 			drop: (item: ResourceDragItem) => {
 				ipcServer
-					.addResourceToTimeline({
+					.addResourcesToTimeline({
 						rundownId,
 						groupId,
 						partId,
 						layerId: null,
-						resourceId: item.resource.id,
+						resourceIds: item.resources.map((r) => r.id),
 					})
 					.catch(handleError)
 			},
@@ -47,7 +48,8 @@ export const EmptyLayer: React.FC<{
 		return (
 			store.guiStore.timelineObjMove.moveType === 'whole' &&
 			store.guiStore.timelineObjMove.hoveredLayerId === layerId &&
-			store.guiStore.selected.timelineObjIds.length === 1
+			store.guiStore.selected.length === 1 &&
+			store.guiStore.mainSelected?.type === 'timelineObj'
 		)
 	}, [layerId])
 

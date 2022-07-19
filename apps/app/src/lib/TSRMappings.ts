@@ -1,4 +1,5 @@
 import { assertNever, literal } from '@shared/lib'
+import { ResourceAny, ResourceType } from '@shared/models'
 import {
 	DeviceType,
 	Mapping,
@@ -41,6 +42,8 @@ import {
 	TimelineContentTypeVMix,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
+import { Project } from '../models/project/Project'
+import { listAvailableDeviceIDs } from './util'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
 export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
@@ -217,7 +220,26 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 	}
 }
 
-export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: string): Mapping | undefined {
+/** Tries to guess which device a timelineObject is likely to be using */
+export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): string | undefined {
+	const allDeviceIds = listAvailableDeviceIDs(project.bridges)
+	const sortedMappings = sortMappings(project.mappings)
+
+	for (const { mapping } of sortedMappings) {
+		// Does the layer have a device?
+		if (!allDeviceIds.has(mapping.deviceId)) continue
+		// Is the layer compatible?
+		if (!filterMapping(mapping, obj)) continue
+
+		return mapping.deviceId
+	}
+	return undefined
+}
+export function getMappingFromTimelineObject(
+	obj: TSRTimelineObj,
+	deviceId: string,
+	resource: ResourceAny | undefined
+): Mapping | undefined {
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
 		return literal<MappingAbstract>({
 			device: DeviceType.ABSTRACT,
@@ -305,12 +327,26 @@ export function getMappingFromTimelineObject(obj: TSRTimelineObj, deviceId: stri
 		}
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
 		// MappingCasparCG
+		let channel = 1
+		if (
+			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			resource.channel
+		)
+			channel = resource.channel
+		let layer = 1
+		if (
+			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			resource.layer
+		)
+			layer = resource.layer
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceId,
-			layerName: 'CasparCG 1-10',
-			channel: 1,
-			layer: 10,
+			layerName: `CasparCG ${channel}-${layer}`,
+			channel: channel,
+			layer: layer,
 		})
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		// MappingHTTPSend
@@ -1017,7 +1053,8 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 	return index === -1 ? 9999 : index
 }
 
-export function sortMappings(mappings: Mappings): { layerId: string; mapping: Mapping }[] {
+export type SortedMappings = { layerId: string; mapping: Mapping }[]
+export function sortMappings(mappings: Mappings): SortedMappings {
 	return Object.entries(mappings)
 		.map(([layerId, mapping]) => ({
 			layerId,

@@ -5,7 +5,7 @@ import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { ResolvedTimelineObject, TimelineObjectInstance } from 'superfly-timeline'
+import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
@@ -14,6 +14,7 @@ import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { shortID } from '../../../../lib/util'
 import { computed } from 'mobx'
 import { millisecondsToTime } from '../../../../lib/timeLib'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 
 const HANDLE_WIDTH = 8
 
@@ -41,37 +42,59 @@ export const TimelineObject: React.FC<{
 	const ref = useRef<HTMLDivElement>(null)
 
 	const hotkeyContext = useContext(HotkeyContext)
-	const [allowMultiSelection, setAllowMultiSelection] = useState(false)
 	const [allowDuplicate, setAllowDuplicate] = useState(false)
 
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
+	const wasMoving = useRef(false)
+
+	const obj: TSRTimelineObj = timelineObj.obj
 
 	const selectable = !locked
 	const movable = !locked
 
 	const dragData = useRef({
 		msPerPixel,
+		groupId,
 		partId,
 		moveType,
-		timelineObjId: timelineObj.obj.id,
+		timelineObjId: obj.id,
 		allowDuplicate,
 		movable,
 	})
 	useEffect(() => {
 		dragData.current = {
 			msPerPixel,
+			groupId,
 			partId,
 			moveType,
-			timelineObjId: timelineObj.obj.id,
+			timelineObjId: obj.id,
 			allowDuplicate,
 			movable,
 		}
-	}, [msPerPixel, partId, moveType, timelineObj.obj.id, allowDuplicate, selectable, movable])
+	}, [msPerPixel, partId, moveType, obj.id, allowDuplicate, selectable, movable, groupId])
 	const onDragStart = useCallback((startPosition: { clientX: number; clientY: number }) => {
 		// A move has begun.
 		const dd = dragData.current
 
 		if (!dd.movable) return
+
+		wasMoving.current = true
+
+		if (
+			!store.guiStore.isSelected({
+				type: 'timelineObj',
+				groupId: dd.groupId,
+				partId: dd.partId,
+				timelineObjId: dd.timelineObjId,
+			})
+		) {
+			store.guiStore.setSelected({
+				type: 'timelineObj',
+				groupId: dd.groupId,
+				partId: dd.partId,
+				timelineObjId: dd.timelineObjId,
+			})
+		}
 
 		store.guiStore.updateTimelineObjMove({
 			wasMoved: null,
@@ -144,7 +167,6 @@ export const TimelineObject: React.FC<{
 		onDragEnd,
 	})
 
-	const obj: TSRTimelineObj = timelineObj.obj
 	let instance = resolved.instances[0] as TimelineObjectInstance | undefined
 	if (!instance) {
 		instance = {
@@ -157,15 +179,22 @@ export const TimelineObject: React.FC<{
 	const duration = instance.end ? instance.end - instance.start : null
 	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
-	const startPercentage = startValue * 100 + '%'
+	const startPercentage =
+		Math.min(
+			// Cap to 98, because if 100, the object is not visible
+			98,
+			startValue * 100
+		) + '%'
 
 	const description = describeTimelineObject(obj)
 
 	useEffect(() => {
 		const onKey = () => {
 			const pressed = sorensen.getPressedKeys()
-			setAllowMultiSelection(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
+
+			// Debounce to let setAllowDuplicate update:
+			setTimeout(() => move.updateMove(), 1)
 		}
 		onKey()
 
@@ -193,51 +222,104 @@ export const TimelineObject: React.FC<{
 			sorensen.unbind('Shift', onKey)
 			sorensen.unbind('Alt', onKey)
 		}
-	}, [hotkeyContext])
+	}, [hotkeyContext, move])
 
 	const updateSelection = () => {
 		if (!selectable) return
-		const selected = store.guiStore.selected
-		if (allowMultiSelection) {
-			if (
-				selected.groupId === groupId &&
-				selected.partId === partId &&
-				selected.timelineObjIds.includes(obj.id)
-			) {
-				// Deselect this timelineObj:
-				store.guiStore.setSelected({
-					timelineObjIds: selected.timelineObjIds.filter((id) => id !== obj.id),
-				})
-			} else {
-				if (selected.groupId === groupId && selected.partId === partId) {
-					if (!selected.timelineObjIds.includes(obj.id)) {
-						// Add this to selection:
-						store.guiStore.setSelected({
-							timelineObjIds: [...selected.timelineObjIds, obj.id],
-						})
+		// Prevent selection when dragging:
+		if (wasMoving.current) {
+			wasMoving.current = false
+			return
+		} else {
+			wasMoving.current = false
+		}
+
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+			// Add this timline-object to the selection:
+			store.guiStore.toggleAddSelected({
+				type: 'timelineObj',
+				groupId: groupId,
+				partId: partId,
+				timelineObjId: obj.id,
+			})
+		} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+			// Add all timline-objects between the last selected and this one:
+			const mainSelected = store.guiStore.mainSelected
+			if (mainSelected && mainSelected.type === 'timelineObj' && mainSelected.partId === partId) {
+				const project = store.projectStore.project
+				const partTimeline = store.rundownsStore.getPartTimeline(partId)
+				const resolvedTimeline = Resolver.resolveTimeline(
+					partTimeline.map((o) => o.obj),
+					{ time: 0 }
+				)
+				const sortedLayers = sortLayers(resolvedTimeline.layers, project.mappings)
+				const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, partTimeline)
+
+				let mainLayerIndex = -1
+				let thisLayerIndex = -1
+
+				let mainObjStartTime: number | undefined = undefined
+				let thisObjStartTime: number | undefined = undefined
+
+				// Find start and end indexes:
+				{
+					let layerIndex = 0
+					for (const { objectsOnLayer } of timelineLayerObjects) {
+						for (const o of objectsOnLayer) {
+							if (o.timelineObj.obj.id === mainSelected.timelineObjId) {
+								mainLayerIndex = layerIndex
+								mainObjStartTime = o.resolved.instances[0]?.start
+							}
+							if (o.timelineObj.obj.id === timelineObj.obj.id) {
+								thisLayerIndex = layerIndex
+								thisObjStartTime = o.resolved.instances[0]?.start
+							}
+						}
+						layerIndex++
 					}
-				} else {
-					store.guiStore.setSelected({
-						groupId: groupId,
-						partId: partId,
-						timelineObjIds: [obj.id],
-					})
+				}
+				if (
+					mainLayerIndex !== -1 &&
+					thisLayerIndex !== -1 &&
+					mainObjStartTime !== undefined &&
+					thisObjStartTime !== undefined
+				) {
+					const layerIndexes = [
+						Math.min(mainLayerIndex, thisLayerIndex),
+						Math.max(mainLayerIndex, thisLayerIndex),
+					]
+					const times = [
+						Math.min(mainObjStartTime, thisObjStartTime),
+						Math.max(mainObjStartTime, thisObjStartTime),
+					]
+
+					let layerIndex = 0
+					for (const { objectsOnLayer } of timelineLayerObjects) {
+						if (layerIndex >= layerIndexes[0] && layerIndex <= layerIndexes[1]) {
+							for (const o of objectsOnLayer) {
+								const startTime = o.resolved.instances[0]?.start
+								if (startTime !== undefined && startTime >= times[0] && startTime <= times[1]) {
+									store.guiStore.addSelected({
+										type: 'timelineObj',
+										groupId: groupId,
+										partId: partId,
+										timelineObjId: o.timelineObj.obj.id,
+									})
+								}
+							}
+						}
+						layerIndex++
+					}
 				}
 			}
 		} else {
-			if (
-				selected.groupId === groupId &&
-				selected.partId === partId &&
-				selected.timelineObjIds.includes(obj.id)
-			) {
-				// do nothing
-			} else {
-				store.guiStore.setSelected({
-					groupId: groupId,
-					partId: partId,
-					timelineObjIds: [obj.id],
-				})
-			}
+			store.guiStore.toggleSelected({
+				type: 'timelineObj',
+				groupId: groupId,
+				partId: partId,
+				timelineObjId: obj.id,
+			})
 		}
 	}
 
@@ -263,7 +345,14 @@ export const TimelineObject: React.FC<{
 		}
 	}, [])
 
-	const isSelected = computed(() => store.guiStore.selected.timelineObjIds?.includes(obj.id))
+	const isSelected = computed(() =>
+		store.guiStore.isSelected({
+			type: 'timelineObj',
+			groupId: groupId,
+			partId: partId,
+			timelineObjId: obj.id,
+		})
+	)
 
 	return (
 		<div
@@ -277,7 +366,7 @@ export const TimelineObject: React.FC<{
 				warning: warnings && warnings.length > 0,
 			})}
 			style={{ width: widthPercentage, left: startPercentage }}
-			onPointerDown={updateSelection}
+			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
 		>
 			<div

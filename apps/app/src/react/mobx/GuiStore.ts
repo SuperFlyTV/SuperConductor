@@ -1,3 +1,4 @@
+import { deepClone } from '@shared/lib'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import { DefiningArea } from '../../lib/triggers/keyDisplay'
@@ -43,28 +44,43 @@ export interface TimelineObjectMove {
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
 }
-interface CurrentSelection {
-	groupId?: string
-	partId?: string
-	timelineObjIds: string[]
+export type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
+export interface CurrentSelectionBase {
+	type: 'group' | 'part' | 'timelineObj'
+}
+export interface CurrentSelectionGroup extends CurrentSelectionBase {
+	type: 'group'
+	groupId: string
+}
+export interface CurrentSelectionPart extends CurrentSelectionBase {
+	type: 'part'
+	groupId: string
+	partId: string
+}
+export interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
+	type: 'timelineObj'
+	groupId: string
+	partId: string
+	timelineObjId: string
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
+interface ResourceLibrarySettings {
+	/** A list of the selected resources, sorted in the order they where selected */
+	selectedResourceIds: string[]
+	/** A reference to the latest selected Resource */
+	lastSelectedResourceId: string | null
+	nameFilterValue: string
+	deviceFilterValue: string[]
+}
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
 
-	private _selected: CurrentSelection = {
-		groupId: undefined,
-		partId: undefined,
-		timelineObjIds: [],
-	}
+	private _selected: CurrentSelectionAny[] = []
 
-	public resourceLibrary: {
-		selectedResourceId?: string
-		nameFilterValue: string
-		deviceFilterValue: string[]
-	} = {
-		selectedResourceId: undefined,
+	private _resourceLibrary: ResourceLibrarySettings = {
+		selectedResourceIds: [],
+		lastSelectedResourceId: null,
 		nameFilterValue: '',
 		deviceFilterValue: [],
 	}
@@ -81,13 +97,85 @@ export class GuiStore {
 		this._activeTabId = id
 	}
 
-	get selected(): Readonly<CurrentSelection> {
+	/** A list of all selected items */
+	get selected(): Readonly<CurrentSelectionAny[]> {
 		return this._selected
 	}
-	setSelected(selected: Partial<CurrentSelection>) {
-		this._selected = {
-			...this._selected,
-			...selected,
+	/** The main selected item */
+	get mainSelected(): Readonly<CurrentSelectionAny> | undefined {
+		if (this._selected.length === 0) return undefined
+		return this._selected[this._selected.length - 1]
+	}
+	getSelectedOfType(type: 'group'): CurrentSelectionGroup[]
+	getSelectedOfType(type: 'part'): CurrentSelectionPart[]
+	getSelectedOfType(type: 'timelineObj'): CurrentSelectionTimelineObj[]
+	getSelectedOfType(type: string) {
+		return this._selected.filter((s) => s.type === type)
+	}
+	/** Add item to selection */
+	isSelected(selected: CurrentSelectionAny): boolean {
+		return !!this._selected.find((s) => _.isEqual(s, selected))
+	}
+	/** Set the selection to this item */
+	setSelected(selected: CurrentSelectionAny): void {
+		if (this._selected.length !== 1 || !this.isSelected(selected)) {
+			this.clearSelected()
+			this._selected.push(selected)
+		}
+	}
+	/** Set this item to the selection, or if it already is set, clear the selection */
+	toggleSelected(selected: CurrentSelectionAny): void {
+		if (this.selected.length === 1 && this.isSelected(selected)) {
+			this.clearSelected()
+		} else {
+			this.setSelected(selected)
+		}
+	}
+	/** Add item to selection */
+	addSelected(selected: CurrentSelectionAny): void {
+		if (this.isSelected(selected)) {
+			if (this._selected.length > 1) {
+				// Remove and re-add, so that the newly added item is the main selected:
+				this.removeSelected(selected)
+				this._selected.push(selected)
+			} else {
+				// Nothing to do
+			}
+		} else {
+			this._selected.push(selected)
+		}
+	}
+	/** Add this item to the selection, or if it already is in there, remove it */
+	toggleAddSelected(selected: CurrentSelectionAny): void {
+		if (this.isSelected(selected)) {
+			this.removeSelected(selected)
+		} else {
+			this.addSelected(selected)
+		}
+	}
+	/** Add item from selection */
+	removeSelected(selected: CurrentSelectionAny): void {
+		const index = this._selected.findIndex((s) => _.isEqual(s, selected))
+		if (index >= 0) {
+			this._selected.splice(index, 1)
+		}
+	}
+	/** Clear all items from selection */
+	clearSelected(): void {
+		if (this._selected.length > 0) {
+			this._selected.splice(0, 9999)
+		}
+	}
+
+	updateSelection(isSelectionValid: (selected: CurrentSelectionAny) => boolean): void {
+		const selectionsToRemove: CurrentSelectionAny[] = []
+		for (const selected of this._selected) {
+			if (!isSelectionValid(selected)) {
+				selectionsToRemove.push(selected)
+			}
+		}
+		for (const selected of selectionsToRemove) {
+			this.removeSelected(selected)
 		}
 	}
 
@@ -129,25 +217,6 @@ export class GuiStore {
 		this.definingArea = definingArea
 	}
 
-	async getSelectedAndPlayingTimelineObjIds(rundownId: string): Promise<Set<string>> {
-		const playingIds = new Set<string>()
-		const promises: Array<Promise<void>> = []
-		for (const timelineObjId of this.selected.timelineObjIds) {
-			const promise = this.serverAPI
-				.isTimelineObjPlaying({
-					rundownId,
-					timelineObjId,
-				})
-				.then((isPlaying) => {
-					if (isPlaying) playingIds.add(timelineObjId)
-				})
-			promises.push(promise)
-		}
-
-		await Promise.all(promises)
-
-		return playingIds
-	}
 	getGroupSettings(groupId: string): GroupSettings {
 		return this.groupSettings.get(groupId) || {}
 	}
@@ -159,6 +228,15 @@ export class GuiStore {
 		}
 		if (!_.isEqual(updated, org)) {
 			this.groupSettings.set(groupId, updated)
+		}
+	}
+	get resourceLibrary(): Readonly<ResourceLibrarySettings> {
+		return deepClone(this._resourceLibrary)
+	}
+	updateResourceLibrary(update: Partial<ResourceLibrarySettings>) {
+		this._resourceLibrary = {
+			...this._resourceLibrary,
+			...update,
 		}
 	}
 

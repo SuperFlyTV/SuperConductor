@@ -3,14 +3,13 @@ import _ from 'lodash'
 import sorensen from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead'
 import { Layer, LayerEmpty } from './Layer'
+import { ResolvedTimeline, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import {
-	ResolvedTimeline,
-	ResolvedTimelineObject,
-	Resolver,
-	ResolverCache,
-	TimelineObjectInstance,
-} from 'superfly-timeline'
-import { allowMovingItemIntoGroup, EMPTY_LAYER_ID_PREFIX, getResolvedTimelineTotalDuration } from '../../../../lib/util'
+	allowMovingPartIntoGroup,
+	EMPTY_LAYER_ID_PREFIX,
+	getResolvedTimelineTotalDuration,
+	MoveTarget,
+} from '../../../../lib/util'
 import { Group } from '../../../../models/rundown/Group'
 import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -24,8 +23,7 @@ import { EmptyLayer } from './EmptyLayer'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { ProjectContext } from '../../../contexts/Project'
-import { filterMapping, sortMappings } from '../../../../lib/TSRMappings'
+import { filterMapping } from '../../../../lib/TSRMappings'
 import { Popover, TextField } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -52,6 +50,8 @@ import VisibilitySensor from 'react-visibility-sensor'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
+import { sortSelected } from '../../../lib/clientUtil'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -71,17 +71,14 @@ const MAX_HANDLED_MOVE_IDS = 100
 export const PartView: React.FC<{
 	rundownId: string
 	parentGroupId: string
-	parentGroupIndex: number
 	partId: string
-	partIndex: number
 	mappings: Mappings
-}> = observer(function PartView({ rundownId, parentGroupId, parentGroupIndex, partId, partIndex, mappings }) {
+}> = observer(function PartView({ rundownId, parentGroupId, partId, mappings }) {
 	const part = store.rundownsStore.getPart(partId)
 	const ipcServer = useContext(IPCServerContext)
 
 	const hotkeyContext = useContext(HotkeyContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const project = useContext(ProjectContext)
 	const log = useContext(LoggerContext)
 	const layersDivRef = useRef<HTMLDivElement>(null)
 	const changedObjects = useRef<{
@@ -99,6 +96,79 @@ export const PartView: React.FC<{
 
 	const [editingPartName, setEditingPartName] = useState(false)
 	const [editedName, setEditedName] = useState(part.name)
+
+	const selectable = true
+	const isSelected = computed(() =>
+		store.guiStore.isSelected({
+			type: 'part',
+			groupId: parentGroupId,
+			partId: partId,
+		})
+	)
+	const updateSelection = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+		if (!selectable) return
+		const targetEl = event.target as HTMLElement
+
+		if (
+			targetEl.closest('.timeline-object') ||
+			targetEl.closest('.layer-names-dropdown') ||
+			targetEl.closest('button') ||
+			targetEl.closest('input') ||
+			targetEl.closest('.editable') ||
+			targetEl.closest('.MuiModal-root')
+		)
+			return
+
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
+			// Add this part to the selection:
+			store.guiStore.toggleAddSelected({
+				type: 'part',
+				groupId: parentGroupId,
+				partId: partId,
+			})
+		} else if (pressed.includes('ShiftLeft') || pressed.includes('ShiftRight')) {
+			// Add all parts between the last selected and this one:
+			const mainSelected = store.guiStore.mainSelected
+			if (mainSelected && mainSelected.type === 'part') {
+				const allPartIds: { partId: string; groupId: string }[] = []
+				for (const group of store.rundownsStore.getRundownGroups(rundownId)) {
+					for (const part of store.rundownsStore.getGroupParts(group.id)) {
+						allPartIds.push({
+							groupId: group.id,
+							partId: part.id,
+						})
+					}
+				}
+				const mainIndex = allPartIds.findIndex((p) => p.partId === mainSelected.partId)
+				const thisIndex = allPartIds.findIndex((p) => p.partId === partId)
+				if (mainIndex === -1 || thisIndex === -1) return
+				if (mainIndex < thisIndex) {
+					for (let i = mainIndex + 1; i <= thisIndex; i++) {
+						store.guiStore.addSelected({
+							type: 'part',
+							groupId: allPartIds[i].groupId,
+							partId: allPartIds[i].partId,
+						})
+					}
+				} else if (mainIndex > thisIndex) {
+					for (let i = mainIndex - 1; i >= thisIndex; i--) {
+						store.guiStore.addSelected({
+							type: 'part',
+							groupId: allPartIds[i].groupId,
+							partId: allPartIds[i].partId,
+						})
+					}
+				}
+			}
+		} else {
+			store.guiStore.toggleSelected({
+				type: 'part',
+				groupId: parentGroupId,
+				partId: partId,
+			})
+		}
+	}
 
 	const timelineObjMove = useMemoComputedObject<TimelineObjectMove>(
 		() => {
@@ -274,7 +344,7 @@ export const PartView: React.FC<{
 				timelineObjMove.moveType === 'whole' &&
 				timelineObjMove.hoveredLayerId &&
 				timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX) &&
-				store.guiStore.selected.timelineObjIds.length === 1
+				store.guiStore.selected.length === 1
 			) {
 				// Handle moving a timelineObj to the "new layer" area
 				// This type of move is only allowed when a single timelineObj is selected.
@@ -295,12 +365,15 @@ export const PartView: React.FC<{
 				// Check the the layer movement is legal:
 				let moveToLayerId = timelineObjMove.hoveredLayerId
 				if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
-					const newLayerMapping = project.mappings[moveToLayerId]
+					const newLayerMapping = mappings[moveToLayerId]
 					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
 					}
 				}
 
+				const selectedTimelineObjIds = compact(
+					store.guiStore.selected.map((s) => (s.type === 'timelineObj' ? s.timelineObjId : undefined))
+				)
 				try {
 					const o = applyMovementToTimeline(
 						partTimeline,
@@ -312,7 +385,7 @@ export const PartView: React.FC<{
 						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
 						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
 						timelineObjMove.leaderTimelineObjId,
-						store.guiStore.selected.timelineObjIds,
+						selectedTimelineObjIds,
 						cache.current,
 						moveToLayerId,
 						Boolean(timelineObjMove.duplicate)
@@ -364,7 +437,7 @@ export const PartView: React.FC<{
 		}, [
 			timelineObjMove,
 			part.id,
-			project.mappings,
+			mappings,
 			handleError,
 			orgResolvedTimeline,
 			bypassSnapping,
@@ -378,16 +451,14 @@ export const PartView: React.FC<{
 			changedObjects.current = null
 		} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
-		}
-	}, [newChangedObjects, newObjectsToMoveToNewLayer])
 
-	useEffect(() => {
-		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
-			changedObjects.current = null
-		} else if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
-			duplicatedObjects.current = newDuplicatedObjects
+			if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+				duplicatedObjects.current = newDuplicatedObjects
+			} else {
+				duplicatedObjects.current = null
+			}
 		}
-	}, [newDuplicatedObjects, newObjectsToMoveToNewLayer])
+	}, [newChangedObjects, newObjectsToMoveToNewLayer, newDuplicatedObjects])
 
 	useEffect(() => {
 		// Handle when we stop moving:
@@ -427,16 +498,15 @@ export const PartView: React.FC<{
 				changedObjects.current = null
 			}
 			if (duplicatedObjects.current) {
-				for (const obj of Object.values(duplicatedObjects.current)) {
-					const promise = ipcServer.addTimelineObj({
+				promises.push(
+					ipcServer.insertTimelineObjs({
 						rundownId: rundownId,
 						partId: part.id,
 						groupId: parentGroupId,
-						timelineObjId: obj.obj.id,
-						timelineObj: obj,
+						timelineObjs: Object.values(duplicatedObjects.current),
+						target: null,
 					})
-					promises.push(promise)
-				}
+				)
 				duplicatedObjects.current = null
 			}
 
@@ -563,6 +633,7 @@ export const PartView: React.FC<{
 	const dragRef = useRef<HTMLDivElement>(null)
 	const previewRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(
+		// Use case: Drag Parts over this Part, to insert the Parts above or below this Part
 		{
 			accept: DragItemTypes.PART_ITEM,
 			collect(monitor) {
@@ -581,8 +652,10 @@ export const PartView: React.FC<{
 					return false
 				}
 
-				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)) {
-					return false
+				for (const movePart of movedItem.parts) {
+					if (!allowMovingPartIntoGroup(movePart.partId, movePart.fromGroup, parentGroup)) {
+						return false
+					}
 				}
 
 				return true
@@ -596,23 +669,23 @@ export const PartView: React.FC<{
 					return
 				}
 
-				let hoverIndex = partIndex
 				const parentGroup = store.rundownsStore.getGroupInCurrentRundown(parentGroupId) || null
 				let hoverGroup: Group | null = parentGroup
 				const hoverPartId = part.id
-				const hoverGroupIndex = parentGroupIndex
 
 				if (parentGroup === null || hoverGroup === null) {
 					return
 				}
 
 				// Don't replace items with themselves
-				if (movedItem.partId === hoverPartId) {
+				if (movedItem.parts.find((p) => p.partId === hoverPartId)) {
 					return
 				}
 
-				if (!allowMovingItemIntoGroup(movedItem.partId, movedItem.fromGroup, parentGroup)) {
-					return
+				for (const movePart of movedItem.parts) {
+					if (!allowMovingPartIntoGroup(movePart.partId, movePart.fromGroup, parentGroup)) {
+						return false
+					}
 				}
 
 				// Determine rectangle on screen
@@ -627,57 +700,51 @@ export const PartView: React.FC<{
 				// Get pixels to the top
 				const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
 
-				// Only perform the move when the mouse has crossed half of the items height
-				// When dragging downwards, only move when the cursor is below 50%
-				// When dragging upwards, only move when the cursor is above 50%
-
-				const isDraggingToNewGroup = movedItem.toGroupId !== hoverGroup.id
-				const isDraggingUpFromWithinGroup = !isDraggingToNewGroup && movedItem.position > hoverIndex
-				const isDraggingDownFromWithinGroup = !isDraggingToNewGroup && movedItem.position < hoverIndex
-				const isDraggingUpFromAnotherGroup = movedItem.toGroupIndex > hoverGroupIndex
-
-				// Dragging downwards
-				if (isDraggingDownFromWithinGroup && hoverClientY < hoverMiddleY) {
-					return
-				}
-
-				// Dragging upwards
-				const isHoveringOverLastPartInGroup = hoverIndex === hoverGroup.parts.length - 1
-				if (
-					isDraggingUpFromAnotherGroup &&
-					isHoveringOverLastPartInGroup &&
-					!hoverGroup.transparent &&
-					hoverClientY > hoverMiddleY
-				) {
-					hoverIndex += 1
-				}
-				if (isDraggingUpFromWithinGroup && hoverClientY > hoverMiddleY) {
-					return
-				}
-
-				// Handle transparent group moves.
+				let target: MoveTarget
 				if (hoverGroup.transparent) {
+					// Handle transparent group moves:
+					if (hoverClientY < hoverMiddleY) {
+						target = {
+							type: 'before',
+							id: hoverGroup.id,
+						}
+					} else {
+						target = {
+							type: 'after',
+							id: hoverGroup.id,
+						}
+					}
 					hoverGroup = null
-					hoverIndex = hoverGroupIndex
-					if (hoverClientY > hoverMiddleY) {
-						hoverIndex = hoverGroupIndex + 1
+				} else {
+					if (hoverClientY < hoverMiddleY) {
+						target = {
+							type: 'before',
+							id: part.id,
+						}
+					} else {
+						target = {
+							type: 'after',
+							id: part.id,
+						}
 					}
 				}
 
 				// Time to actually perform the action
-				store.rundownsStore.movePartInCurrentRundown(movedItem.partId, hoverGroup?.id ?? null, hoverIndex)
+				store.rundownsStore.movePartsInCurrentRundown(
+					movedItem.parts.map((p) => p.partId),
+					hoverGroup?.id ?? null,
+					target
+				)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
 				movedItem.toGroupId = hoverGroup?.id ?? null
-				movedItem.toGroupIndex = hoverGroup ? hoverGroupIndex : hoverIndex
-				movedItem.toGroupTransparent = !hoverGroup
-				movedItem.position = hoverIndex
+				movedItem.target = target
 			},
 		},
-		[parentGroupId, parentGroupIndex, partIndex, part.id]
+		[parentGroupId, part.id]
 	)
 	const [{ isDragging }, drag, preview] = useDrag(
 		{
@@ -689,27 +756,50 @@ export const PartView: React.FC<{
 					return null
 				}
 
+				// If this Part isn't included in the current selection, select it:
+				if (
+					!store.guiStore.isSelected({
+						type: 'part',
+						groupId: parentGroup.id,
+						partId: part.id,
+					})
+				) {
+					store.guiStore.setSelected({
+						type: 'part',
+						groupId: parentGroup.id,
+						partId: part.id,
+					})
+				}
+
+				const selectedParts = sortSelected(
+					rundownId,
+					store.rundownsStore,
+					store.guiStore.getSelectedOfType('part')
+				)
 				return {
 					type: DragItemTypes.PART_ITEM,
-					partId: part.id,
-					fromGroup: parentGroup,
+					parts: selectedParts.map((selectedPart) => {
+						return {
+							partId: selectedPart.partId,
+							fromGroup: store.rundownsStore.getGroup(selectedPart.groupId),
+						}
+					}),
+
 					toGroupId: parentGroupId,
-					toGroupIndex: parentGroupIndex,
-					toGroupTransparent: parentGroup.transparent,
-					position: partIndex,
+					target: null,
 				}
 			},
 			collect: (monitor) => ({
 				isDragging: monitor.isDragging(),
 			}),
 			isDragging: (monitor) => {
-				return part.id === monitor.getItem().partId
+				return !!monitor.getItem().parts.find((p) => p.partId === part.id)
 			},
 			end: () => {
 				store.rundownsStore.commitMovePartInCurrentRundown()?.catch(handleError)
 			},
 		},
-		[part.id, parentGroupId, parentGroupIndex, partIndex]
+		[part.id, parentGroupId]
 	)
 
 	useEffect(() => {
@@ -760,28 +850,7 @@ export const PartView: React.FC<{
 		true
 	)
 
-	const timelineLayerObjects = sortedLayers.map(({ layerId, objectIds }) => {
-		const objectsOnLayer: {
-			resolved: ResolvedTimelineObject['resolved']
-			timelineObj: TimelineObj
-		}[] = compact(
-			objectIds.map((objectId) => {
-				const resolvedObj = resolvedTimeline.objects[objectId]
-				const timelineObj = modifiedTimeline.find((obj) => obj.obj.id === objectId)
-
-				if (resolvedObj && timelineObj) {
-					return {
-						resolved: resolvedObj.resolved,
-						timelineObj: timelineObj,
-					}
-				}
-			})
-		)
-		return {
-			layerId,
-			objectsOnLayer,
-		}
-	})
+	const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, modifiedTimeline)
 
 	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
 	const [renderEverything, setRenderEverything] = useState(false)
@@ -805,8 +874,12 @@ export const PartView: React.FC<{
 					dragging: isDragging,
 					disabled: groupOrPartDisabled,
 					locked: groupOrPartLocked,
+					selected: isSelected.get(),
+					selectable: selectable,
 				})}
+				onClick={updateSelection}
 			>
+				<div className="part__selected" />
 				<div className="part__dragArrow" />
 				<div className={classNames('part__tab', tabAdditionalClassNames)}>
 					<>
@@ -831,7 +904,7 @@ export const PartView: React.FC<{
 						{!editingPartName && part.name.length > 0 && (
 							<div
 								title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
-								className="title"
+								className="title editable"
 								onClick={() => {
 									if (groupOrPartLocked) {
 										return
@@ -922,7 +995,7 @@ export const PartView: React.FC<{
 					</div>
 
 					<div className="part__meta__right">
-						<ControlButtons
+						<PartControlButtons
 							rundownId={rundownId}
 							groupId={parentGroupId}
 							partId={part.id}
@@ -1071,12 +1144,12 @@ export const PartView: React.FC<{
 	)
 })
 
-const ControlButtons: React.FC<{
+const PartControlButtons: React.FC<{
 	rundownId: string
 	groupId: string
 	partId: string
 	disabled?: boolean
-}> = observer(function ControlButtons({ rundownId, groupId, partId, disabled }) {
+}> = observer(function PartControlButtons({ rundownId, groupId, partId, disabled }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
@@ -1091,44 +1164,51 @@ const ControlButtons: React.FC<{
 	}, [handleError, ipcServer, rundownId, groupId, partId])
 
 	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
-		useMemoComputedObject(() => {
-			const playData = store.groupPlayDataStore.groups.get(groupId)
+		useMemoComputedObject(
+			() => {
+				const playData = store.groupPlayDataStore.groups.get(groupId)
 
-			if (!playData) {
-				return {
-					groupIsPlaying: false,
-					anyPartIsPlaying: false,
-					allPartsArePaused: false,
-					playheadCount: 0,
-					partIsPlaying: false,
-					partIsPaused: false,
+				if (!playData) {
+					return {
+						groupIsPlaying: false,
+						anyPartIsPlaying: false,
+						allPartsArePaused: false,
+						playheadCount: 0,
+						partIsPlaying: false,
+						partIsPaused: false,
+					}
 				}
-			}
-			const playhead = partId && playData.playheads[partId]
+				const playhead = partId && playData.playheads[partId]
+				return {
+					groupIsPlaying: playData.groupIsPlaying,
+					anyPartIsPlaying: playData.anyPartIsPlaying,
+					allPartsArePaused: playData.allPartsArePaused,
+					playheadCount: Object.keys(playData.playheads).length,
+					partIsPlaying: Boolean(partId && partId in playData.playheads), // partIsPlaying: Boolean(playhead),
+					partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
+				}
+			},
+			[groupId],
+			true
+		)
+
+	const { groupDisabled, groupOneAtATime } = useMemoComputedObject(
+		() => {
+			const group = store.rundownsStore.getGroupWithParts(groupId)
+
 			return {
-				groupIsPlaying: playData.groupIsPlaying,
-				anyPartIsPlaying: playData.anyPartIsPlaying,
-				allPartsArePaused: playData.allPartsArePaused,
-				playheadCount: Object.keys(playData.playheads).length,
-				partIsPlaying: Boolean(partId && partId in playData.playheads), // partIsPlaying: Boolean(playhead),
-				partIsPaused: Boolean(playhead && playhead.partPauseTime !== undefined),
+				groupDisabled: group?.disabled || false,
+				groupOneAtATime: group?.oneAtATime || false,
 			}
-		}, [groupId])
-
-	const { groupDisabled, groupOneAtATime, countPlayablePartsInGroup } = useMemoComputedObject(() => {
-		const group = store.rundownsStore.getGroupWithParts(groupId)
-
-		return {
-			groupDisabled: group?.disabled || false,
-			groupOneAtATime: group?.oneAtATime || false,
-			countPlayablePartsInGroup: group ? group.parts.filter((p) => !p.disabled).length : 0,
-		}
-	}, [groupId])
+		},
+		[groupId],
+		true
+	)
 
 	const data: PlayButtonData = {
 		groupDisabled,
 		groupOneAtATime,
-		countPlayablePartsInGroup,
+		countPlayablePartsInGroup: 0, // not used in parts
 
 		groupIsPlaying,
 		anyPartIsPlaying,
@@ -1204,20 +1284,6 @@ const EndCap: React.FC<{
 		></div>
 	)
 })
-
-function sortLayers(
-	layers: ResolvedTimeline['layers'],
-	mappings: Mappings
-): { layerId: string; objectIds: string[] }[] {
-	const usedMappings: Mappings = {}
-
-	for (const layerId of Object.keys(layers)) {
-		const mapping = mappings[layerId]
-		if (mapping) usedMappings[layerId] = mapping
-	}
-
-	return sortMappings(usedMappings).map(({ layerId }) => ({ layerId, objectIds: layers[layerId] }))
-}
 
 const sortSnapPoints = (a: SnapPoint, b: SnapPoint): number => {
 	if (a.time < b.time) {

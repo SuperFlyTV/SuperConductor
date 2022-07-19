@@ -114,6 +114,10 @@ export function getResolvedTimelineTotalDuration(
 	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
+			if (instance.start) {
+				maxDuration = Math.max(maxDuration, instance.start)
+			}
+
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -125,7 +129,7 @@ export function getResolvedTimelineTotalDuration(
 	return maxDuration
 }
 
-export function allowMovingItemIntoGroup(
+export function allowMovingPartIntoGroup(
 	movedPartId: string,
 	fromGroup: GroupBase,
 	toGroup: GroupBase
@@ -674,4 +678,68 @@ type RateLimitIgnoreFcn = {
 	): void
 	/** Clear any cheduled function executions */
 	clear: () => void
+}
+
+export function isLayerInfinite(part: Part, layerId: string): boolean {
+	let foundInfinite = false
+	for (const o of part.timeline) {
+		if (foundInfinite) break
+		if (o.obj.layer === layerId) {
+			for (const instance of o.resolved.instances) {
+				if (!instance.end) {
+					foundInfinite = true
+					break
+				}
+			}
+		}
+	}
+	return foundInfinite
+}
+export type MoveTarget =
+	| {
+			type: 'first'
+	  }
+	| {
+			type: 'last'
+	  }
+	| {
+			type: 'before'
+			id: string
+	  }
+	| {
+			type: 'after'
+			id: string
+	  }
+export function getPositionFromTarget(target: MoveTarget, items: { id: string }[]): number {
+	if (target.type === 'first') {
+		return 0
+	} else if (target.type === 'last') {
+		return items.length
+	} else if (target.type === 'before') {
+		return items.findIndex((item) => item.id === target.id)
+	} else if (target.type === 'after') {
+		return items.findIndex((item) => item.id === target.id) + 1
+	} else {
+		assertNever(target)
+		return -1
+	}
+}
+export function copyGroup(group: Group): Group {
+	const newGroup = deepClone(group)
+	newGroup.id = shortID()
+
+	newGroup.parts = group.parts.map((part) => copyPart(part))
+	return newGroup
+}
+export function copyPart(part: Part): Part {
+	const newPart = deepClone(part)
+	newPart.id = shortID()
+
+	newPart.timeline = part.timeline.map((o) => copyTimelineObj(o))
+	return newPart
+}
+export function copyTimelineObj(obj: TimelineObj): TimelineObj {
+	const newObj = deepClone(obj)
+	newObj.obj.id = shortID()
+	return newObj
 }

@@ -1,6 +1,6 @@
 import {
 	allowAddingResourceToLayer,
-	allowMovingItemIntoGroup,
+	allowMovingPartIntoGroup,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -13,26 +13,34 @@ import {
 	generateNewTimelineObjIds,
 	getMappingName,
 	getNextPartIndex,
+	getPositionFromTarget,
 	getPrevPartIndex,
+	isLayerInfinite,
 	listAvailableDeviceIDs,
+	MoveTarget,
 	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, Mapping } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny } from '@shared/models'
-import { deepClone } from '@shared/lib'
+import { ResourceAny, ResourceType } from '@shared/models'
+import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
-import { filterMapping, getMappingFromTimelineObject, sortMappings } from '../lib/TSRMappings'
+import {
+	filterMapping,
+	getMappingFromTimelineObject,
+	guessDeviceIdFromTimelineObject,
+	sortMappings,
+} from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData } from '../lib/playhead'
@@ -41,6 +49,8 @@ import { PeripheralArea, PeripheralSettings } from '..//models/project/Periphera
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
+import _ from 'lodash'
+import { getLastEndTime } from '../lib/partTimeline'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -114,7 +124,9 @@ export class IPCServer
 						try {
 							const result = await fcn(...args)
 							if (isUndoable(result)) {
+								// Clear any future things in the undo ledger:
 								this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
+								// Add the new action to the undo ledger:
 								this.undoLedger.push({
 									description: result.description,
 									arguments: args,
@@ -635,6 +647,163 @@ export class IPCServer
 			result,
 		}
 	}
+	async insertParts(arg: {
+		rundownId: string
+		groupId: string | null
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+				partId: string
+			}[]
+		>
+	> {
+		if (arg.groupId) {
+			const inserted: {
+				groupId: string
+				partId: string
+			}[] = []
+			const arg2 = {
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+			}
+			const { rundown, group } = this.getGroup(arg2)
+
+			if (group.transparent) {
+				// Oh, we can't add Parts to a transparent group.
+				// add them to the side instead:
+				return this._insertPartsAsTransparentGroup({
+					rundownId: arg.rundownId,
+					parts: arg.parts,
+					target: {
+						type: 'after',
+						id: group.id,
+					},
+				})
+			}
+
+			// Save the original positions for use in undo:
+			const originalPartIds = group.parts.map((g) => g.id)
+
+			let nextTarget: MoveTarget = arg.target
+			for (const part of arg.parts) {
+				// Ensure that the part id is unique:
+				for (const g of rundown.groups) {
+					for (const p of g.parts) {
+						if (p.id === part.part.id) throw new Error(`part id is already in use: ${part.part.id}`)
+					}
+				}
+
+				const insertPosition = getPositionFromTarget(nextTarget, group.parts)
+				group.parts.splice(insertPosition, 0, part.part)
+				nextTarget = {
+					type: 'after',
+					id: part.part.id,
+				}
+				inserted.push({
+					groupId: group.id,
+					partId: part.part.id,
+				})
+			}
+
+			this._saveUpdates({ rundownId: arg.rundownId, rundown })
+
+			// Now, also add the resources as timeline-objects into the parts:
+			const addedResourcesUndo: (() => void | Promise<void>)[] = []
+			for (const part of arg.parts) {
+				if (part.resources.length) {
+					const r = await this.addResourcesToTimeline({
+						rundownId: arg.rundownId,
+						groupId: arg.groupId,
+						partId: part.part.id,
+						resourceIds: part.resources,
+						layerId: null,
+					})
+					if (r) addedResourcesUndo.push(r.undo)
+				}
+			}
+
+			return {
+				undo: async () => {
+					for (const undo of addedResourcesUndo.reverse()) {
+						await undo()
+					}
+
+					const { rundown, group } = this.getGroup(arg2)
+					const parts = group.parts
+					group.parts = []
+					for (const partId of originalPartIds) {
+						const part = parts.find((p) => p.id === partId)
+						if (part) group.parts.push(part)
+					}
+					this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+				},
+				description: ActionDescription.InsertParts,
+				result: inserted,
+			}
+		} else {
+			return this._insertPartsAsTransparentGroup({
+				rundownId: arg.rundownId,
+				parts: arg.parts,
+				target: arg.target,
+			})
+		}
+	}
+	private async _insertPartsAsTransparentGroup(arg: {
+		rundownId: string
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+				partId: string
+			}[]
+		>
+	> {
+		const inserted: {
+			groupId: string
+			partId: string
+		}[] = []
+		const groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[] = []
+		for (const part of arg.parts) {
+			// Create a new "transparent group":
+			const newGroup: Group = {
+				...getDefaultGroup(),
+				id: shortID(),
+				name: part.part.name,
+				transparent: true,
+				parts: [part.part],
+			}
+			groups.push({
+				group: newGroup,
+				resources: {
+					[part.part.id]: part.resources,
+				},
+			})
+			inserted.push({
+				groupId: newGroup.id,
+				partId: part.part.id,
+			})
+		}
+		const r = await this.insertGroups({
+			rundownId: arg.rundownId,
+			groups,
+			target: arg.target,
+		})
+
+		return {
+			...r,
+			result: inserted,
+		}
+	}
 	async updatePart(arg: {
 		rundownId: string
 		groupId: string
@@ -684,6 +853,96 @@ export class IPCServer
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
+		}
+	}
+	async insertGroups(arg: {
+		rundownId: string
+		groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[]
+		target: MoveTarget
+	}): Promise<
+		UndoableResult<
+			{
+				groupId: string
+			}[]
+		>
+	> {
+		const inserted: {
+			groupId: string
+		}[] = []
+		const { rundown } = this.getRundown(arg)
+
+		// Save the original positions for use in undo:
+		const originalGroupIds = rundown.groups.map((group) => group.id)
+
+		let nextTarget: MoveTarget = arg.target
+		for (const group of arg.groups) {
+			// Ensure that the group id is unique:
+			if (rundown.groups.find((g) => g.id === group.group.id)) {
+				throw new Error(`Group id is already in use: ${group.group.id}`)
+			}
+
+			for (const part of group.group.parts) {
+				// Ensure that the part id is unique:
+				for (const g of rundown.groups) {
+					for (const p of g.parts) {
+						if (p.id === part.id) throw new Error(`part id is already in use: ${part.id}`)
+					}
+				}
+			}
+
+			const insertPosition = getPositionFromTarget(nextTarget, rundown.groups)
+			rundown.groups.splice(insertPosition, 0, group.group)
+			nextTarget = {
+				type: 'after',
+				id: group.group.id,
+			}
+			inserted.push({
+				groupId: group.group.id,
+			})
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+
+		// Now, also add the resources as timeline-objects into the parts:
+		const addedResourcesUndo: (() => void | Promise<void>)[] = []
+		for (const group of arg.groups) {
+			for (const part of group.group.parts) {
+				const resources = group.resources[part.id]
+				if (resources?.length) {
+					const r = await this.addResourcesToTimeline({
+						rundownId: arg.rundownId,
+						groupId: group.group.id,
+						partId: part.id,
+						resourceIds: resources,
+						layerId: null,
+					})
+					if (r) addedResourcesUndo.push(r.undo)
+				}
+			}
+		}
+
+		return {
+			undo: async () => {
+				for (const undo of addedResourcesUndo.reverse()) {
+					await undo()
+				}
+
+				const { rundown } = this.getRundown(arg)
+				const groups = rundown.groups
+				rundown.groups = []
+				for (const groupId of originalGroupIds) {
+					const group = groups.find((g) => g.id === groupId)
+					if (group) rundown.groups.push(group)
+				}
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
+			},
+			description: ActionDescription.InsertGroups,
+			result: inserted,
 		}
 	}
 	async updateGroup(arg: {
@@ -788,145 +1047,187 @@ export class IPCServer
 			description: ActionDescription.DeleteGroup,
 		}
 	}
-	async movePart(arg: {
-		from: { rundownId: string; partId: string }
-		to: { rundownId: string; groupId: string | null; position: number }
-	}): Promise<UndoableResult<Group>> {
-		const { rundown: fromRundown } = this.getRundown(arg.from)
-		const findPartResult = findPartInRundown(fromRundown, arg.from.partId)
+	async moveParts(arg: {
+		parts: { rundownId: string; partId: string }[]
+		to: { rundownId: string; groupId: string | null; target: MoveTarget }
+	}): Promise<UndoableResult<{ partId: string; groupId: string; rundownId: string }[]>> {
+		// For Undo:
+		const originalRundowns: Rundown[] = []
 
-		if (!findPartResult) {
-			throw new Error(`Part "${arg.from.partId}" does not exist in rundown "${arg.from.rundownId}"`)
-		}
+		const resultingParts: { partId: string; groupId: string; rundownId: string }[] = []
 
-		const fromGroup = findPartResult.group
-		const part = findPartResult.part
+		const toRundown: Rundown = this.getRundown(arg.to).rundown
+		originalRundowns.push(deepClone(toRundown))
 
-		let toRundown: Rundown
-		let toGroup: Group
-		let madeNewTransparentGroup = false
-		const isTransparentGroupMove =
-			arg.from.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
-
-		if (arg.to.groupId) {
-			const getGroupResult = this.getGroup({ rundownId: arg.to.rundownId, groupId: arg.to.groupId })
-			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : getGroupResult.rundown
-			toGroup = getGroupResult.group
-		} else {
-			toRundown = arg.to.rundownId === arg.from.rundownId ? fromRundown : this.getRundown(arg.to).rundown
-			if (isTransparentGroupMove) {
-				toGroup = fromGroup
-			} else {
-				toGroup = {
-					...getDefaultGroup(),
-
-					id: shortID(),
-					name: part.name,
-					transparent: true,
-
-					parts: [part],
-				}
-				madeNewTransparentGroup = true
-			}
-		}
-
-		if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
-			throw new Error('Cannot move a Part into an already-existing Transparent Group.')
-		}
-
-		const allow = allowMovingItemIntoGroup(arg.from.partId, fromGroup, toGroup)
-
-		if (!allow) {
-			throw new Error('Move prohibited')
-		}
-
-		const fromPlayhead = allow.fromPlayhead
-		const toPlayhead = allow.toPlayhead
-		const movedPartIsPlaying = fromPlayhead.playheads[arg.from.partId]
-
-		// Save the original position for use in undo.
-		const originalPosition = fromGroup.transparent
-			? fromRundown.groups.findIndex((g) => g.id === fromGroup.id)
-			: fromGroup.parts.findIndex((p) => p.id === arg.from.partId)
-
-		if (!isTransparentGroupMove) {
-			// Remove the part from its original group.
-			fromGroup.parts = fromGroup.parts.filter((p) => p.id !== arg.from.partId)
-		}
-
-		if (madeNewTransparentGroup) {
-			// Add the new transparent group to the rundown.
-			toRundown.groups.splice(arg.to.position, 0, toGroup)
-		} else if (isTransparentGroupMove) {
-			// Move the transparent group to its new position.
-			fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
-			toRundown.groups.splice(arg.to.position, 0, toGroup)
-		} else if (!isTransparentGroupMove) {
-			// Add the part to its new group, in its new position.
-			toGroup.parts.splice(arg.to.position, 0, part)
-		}
-
-		// Clean up leftover empty transparent groups.
-		if (fromGroup.transparent && fromGroup.parts.length <= 0) {
-			fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
-		}
-
+		const rundownsToUpdate: Rundown[] = []
 		const groupsToUpdate: Group[] = []
-		// Update timelines:
-		if (!isTransparentGroupMove) {
-			if (fromGroup.id === toGroup.id) {
-				// Moving within the same group
 
-				updateGroupPlayingParts(toGroup)
-				if (movedPartIsPlaying && toGroup.oneAtATime) {
-					// Update the group's playhead, so that the currently playing
-					// part continues to play as if nothing happened:
-					toGroup.playout.playingParts = {
-						[arg.from.partId]: {
-							startTime: movedPartIsPlaying.partStartTime,
-							pauseTime: movedPartIsPlaying.partPauseTime,
-						},
+		let nextTarget: MoveTarget = arg.to.target
+		for (const movePart of arg.parts) {
+			const fromRundown = arg.to.rundownId === movePart.rundownId ? toRundown : this.getRundown(movePart).rundown
+			if (fromRundown.id !== toRundown.id) {
+				originalRundowns.push(deepClone(fromRundown))
+			}
+
+			const findPartResult = findPartInRundown(fromRundown, movePart.partId)
+			if (!findPartResult) {
+				throw new Error(`Part "${movePart.partId}" does not exist in rundown "${movePart.rundownId}"`)
+			}
+			const fromGroup = findPartResult.group
+			const part = findPartResult.part
+
+			let toGroup: Group
+			let madeNewTransparentGroup = false
+			const isTransparentGroupMove =
+				movePart.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
+
+			if (arg.to.groupId) {
+				toGroup = this.getGroupOfRundown(toRundown, arg.to.groupId).group
+			} else {
+				// toRundown = arg.to.rundownId === movePart.rundownId ? fromRundown : this.getRundown(arg.to).rundown
+				if (isTransparentGroupMove) {
+					toGroup = fromGroup
+				} else {
+					toGroup = {
+						...getDefaultGroup(),
+
+						id: shortID(),
+						name: part.name,
+						transparent: true,
+
+						parts: [part],
+					}
+					madeNewTransparentGroup = true
+				}
+			}
+			if (!madeNewTransparentGroup && toGroup !== fromGroup && toGroup.transparent) {
+				throw new Error('Cannot move a Part into an already-existing Transparent Group.')
+			}
+			const allow = allowMovingPartIntoGroup(movePart.partId, fromGroup, toGroup)
+
+			if (!allow) {
+				throw new Error('Move prohibited')
+			}
+			const fromPlayhead = allow.fromPlayhead
+			const toPlayhead = allow.toPlayhead
+			const movedPartIsPlaying = fromPlayhead.playheads[movePart.partId]
+
+			if (madeNewTransparentGroup) {
+				// Add the new transparent group to the rundown
+
+				// Remove the part from its original group.
+				fromGroup.parts = fromGroup.parts.filter((p) => p.id !== movePart.partId)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toRundown.groups)
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: group insertAfterId "${JSON.stringify(
+							nextTarget
+						)}" not found in rundown (new transparent)`
+					)
+				toRundown.groups.splice(insertPosition, 0, toGroup)
+
+				nextTarget = { type: 'after', id: toGroup.id }
+			} else if (isTransparentGroupMove) {
+				// Move the transparent group to its new position.
+				fromRundown.groups = fromRundown.groups.filter((g) => g.id !== toGroup.id)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toRundown.groups)
+
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: group insertAfterId "${JSON.stringify(
+							nextTarget
+						)}" not found in rundown (move transparent)`
+					)
+				toRundown.groups.splice(insertPosition, 0, toGroup)
+
+				nextTarget = { type: 'after', id: toGroup.id }
+			} else if (!isTransparentGroupMove) {
+				// Add the part to its new group, in its new position
+
+				// Remove the part from its original group.
+				fromGroup.parts = fromGroup.parts.filter((p) => p.id !== movePart.partId)
+
+				const insertPosition = getPositionFromTarget(nextTarget, toGroup.parts)
+
+				if (insertPosition === -1)
+					throw new Error(
+						`Internal error: part insertAfterId "${nextTarget}" not found in group "${toGroup.id}"`
+					)
+				toGroup.parts.splice(insertPosition, 0, part)
+
+				nextTarget = { type: 'after', id: part.id }
+			}
+			// Clean up leftover empty transparent groups.
+			if (fromGroup.transparent && fromGroup.parts.length <= 0) {
+				fromRundown.groups = fromRundown.groups.filter((group) => group.id !== fromGroup.id)
+			}
+
+			resultingParts.push({
+				rundownId: toRundown.id,
+				groupId: toGroup.id,
+				partId: movePart.partId,
+			})
+
+			// Update timelines:
+			if (!isTransparentGroupMove) {
+				if (fromGroup.id === toGroup.id) {
+					// Moving within the same group
+
+					updateGroupPlayingParts(toGroup)
+					if (movedPartIsPlaying && toGroup.oneAtATime) {
+						// Update the group's playhead, so that the currently playing
+						// part continues to play as if nothing happened:
+						toGroup.playout.playingParts = {
+							[movePart.partId]: {
+								startTime: movedPartIsPlaying.partStartTime,
+								pauseTime: movedPartIsPlaying.partPauseTime,
+							},
+						}
+					}
+					groupsToUpdate.push(fromGroup)
+					rundownsToUpdate.push(fromRundown)
+				} else {
+					// Moving between groups
+					if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
+						// Update the playhead, so that the currently playing
+						// part continues to play as if nothing happened.
+						// This means that the target Group will start playing
+						// while the source Group stops.
+
+						// Move over the playout-data:
+						toGroup.playout.playingParts = fromGroup.playout.playingParts
+						fromGroup.playout.playingParts = {}
+					}
+					groupsToUpdate.push(fromGroup, toGroup)
+					rundownsToUpdate.push(fromRundown)
+					if (fromRundown !== toRundown) {
+						rundownsToUpdate.push(toRundown)
 					}
 				}
-				groupsToUpdate.push(fromGroup)
 			} else {
-				// Moving between groups
-				if (movedPartIsPlaying && !toPlayhead.groupIsPlaying) {
-					// Update the playhead, so that the currently playing
-					// part continues to play as if nothing happened.
-					// This means that the target Group will start playing
-					// while the source Group stops.
-
-					// Move over the playout-data:
-					toGroup.playout.playingParts = fromGroup.playout.playingParts
-					fromGroup.playout.playingParts = {}
+				groupsToUpdate.push(toGroup)
+				rundownsToUpdate.push(fromRundown)
+				if (fromRundown !== toRundown) {
+					rundownsToUpdate.push(toRundown)
 				}
-				groupsToUpdate.push(fromGroup, toGroup)
 			}
 		}
 
 		// Commit the changes:
-		this._saveUpdates({ rundownId: arg.to.rundownId, rundown: toRundown, group: groupsToUpdate })
-		if (fromRundown !== toRundown) {
-			this._saveUpdates({ rundownId: arg.from.rundownId, rundown: fromRundown })
+		this._saveUpdates({ group: _.uniq(groupsToUpdate) })
+		for (const rundown of _.uniq(rundownsToUpdate)) {
+			this._saveUpdates({ rundownId: rundown.id, rundown: rundown })
 		}
-
 		return {
 			undo: async () => {
-				await this.movePart({
-					from: {
-						rundownId: arg.to.rundownId,
-						partId: arg.from.partId,
-					},
-					to: {
-						rundownId: arg.from.rundownId,
-						groupId: fromGroup.transparent ? null : fromGroup.id,
-						position: originalPosition,
-					},
-				})
+				for (const orgRundown of originalRundowns) {
+					this._saveUpdates({ rundownId: orgRundown.id, rundown: orgRundown })
+				}
 			},
 			description: ActionDescription.MovePart,
-			result: toGroup,
+			result: resultingParts,
 		}
 	}
 	async duplicatePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult<void>> {
@@ -980,25 +1281,45 @@ export class IPCServer
 			description: ActionDescription.DuplicatePart,
 		}
 	}
-	async moveGroup(arg: { rundownId: string; groupId: string; position: number }): Promise<UndoableResult<void>> {
-		const { rundown, group } = this.getGroup(arg)
+	async moveGroups(arg: {
+		rundownId: string
+		groupIds: string[]
+		target: MoveTarget
+	}): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
 
-		// Save the original position for use in undo.
-		const originalPosition = rundown.groups.findIndex((g) => g.id === arg.groupId)
+		// Save the original positions for use in undo:
+		const originalGroupIds = rundown.groups.map((group) => group.id)
 
-		// Remove the group from the groups array and re-insert it at its new position
-		rundown.groups = rundown.groups.filter((g) => g.id !== arg.groupId)
-		rundown.groups.splice(arg.position, 0, group)
+		let nextTarget: MoveTarget = arg.target
+		for (const groupId of arg.groupIds) {
+			// Remove the group from the groups array and re-insert it at its new position
+
+			const group = this.getGroupOfRundown(rundown, groupId).group
+
+			// Remove the group from the groups array and re-insert it at its new position
+			rundown.groups = rundown.groups.filter((g) => g.id !== group.id)
+
+			const insertPosition = getPositionFromTarget(nextTarget, rundown.groups)
+			rundown.groups.splice(insertPosition, 0, group)
+			nextTarget = {
+				type: 'after',
+				id: group.id,
+			}
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: async () => {
-				await this.moveGroup({
-					rundownId: arg.rundownId,
-					groupId: arg.groupId,
-					position: originalPosition,
-				})
+				const { rundown } = this.getRundown(arg)
+				const groups = rundown.groups
+				rundown.groups = []
+				for (const groupId of originalGroupIds) {
+					const group = groups.find((g) => g.id === groupId)
+					if (group) rundown.groups.push(group)
+				}
+				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.MoveGroup,
 		}
@@ -1077,6 +1398,8 @@ export class IPCServer
 	}
 	async deleteTimelineObj(arg: {
 		rundownId: string
+		groupId: string
+		partId: string
 		timelineObjId: string
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown } = this.getRundown(arg)
@@ -1111,36 +1434,129 @@ export class IPCServer
 			description: ActionDescription.DeleteTimelineObj,
 		}
 	}
-	async addTimelineObj(arg: {
+	async insertTimelineObjs(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
-		timelineObjId: string
-		timelineObj: TimelineObj
-	}): Promise<UndoableResult<void> | undefined> {
+		timelineObjs: TimelineObj[]
+		target: MoveTarget | null
+	}): Promise<
+		| UndoableResult<
+				{
+					groupId: string
+					partId: string
+					timelineObjId: string
+				}[]
+		  >
+		| undefined
+	> {
+		const project = this.getProject()
+		let updatedProject = false
+		const addedNewLayers: string[] = []
+
 		const { rundown, group, part } = this.getPart(arg)
+		const inserted: {
+			groupId: string
+			partId: string
+			timelineObjId: string
+		}[] = []
 
 		if (group.locked || part.locked) {
 			return
 		}
 
-		const existingTimelineObj = findTimelineObj(part, arg.timelineObjId)
-		if (existingTimelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" already exists.`)
-		part.timeline.push(arg.timelineObj)
+		let nextTarget: MoveTarget | null = arg.target
+		for (const timelineObj of arg.timelineObjs) {
+			const existingTimelineObj = findTimelineObj(part, timelineObj.obj.id)
+			if (existingTimelineObj)
+				throw new Error(`A timelineObj with the ID "${timelineObj.obj.id}" already exists.`)
 
-		postProcessPart(part)
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+			if (nextTarget) {
+				const enable = Array.isArray(timelineObj.obj.enable)
+					? timelineObj.obj.enable[0]
+					: timelineObj.obj.enable
+				if (nextTarget.type === 'first') {
+					enable.start = 0
+				} else if (nextTarget.type === 'last') {
+					// Place the timelineObj at the end of the part's timeline:
+					const lastEnd = getLastEndTime(part.timeline, `${timelineObj.obj.layer}`)
+					enable.start = lastEnd.objId ? `#${lastEnd.objId}.end` : lastEnd.time
+				} else if (
+					nextTarget.type === 'after' ||
+					nextTarget.type === 'before' // Note: 'before' is not supported at the moment, so we handle that as 'after' for now.
+				) {
+					const afterId = nextTarget.id
+					const afterObj = part.timeline.find((t) => t.obj.id === afterId)
+					if (!afterObj) throw new Error(`timelineObj with the ID "${afterId}" not found!`)
+
+					enable.start = `#${afterObj.obj.id}.end`
+				} else {
+					assertNever(nextTarget)
+				}
+			}
+			let layerMustBeFree = true
+			if (timelineObj.obj.layer && !project.mappings[timelineObj.obj.layer]) {
+				// If the layer doesn't exist, set to falsy to create a new one:
+				timelineObj.obj.layer = ''
+				layerMustBeFree = false
+			}
+			// Set a layer in case it doesn't exist:
+			if (!timelineObj.obj.layer) {
+				const result = this._findBestOrCreateLayer({
+					project,
+					rundown,
+					part,
+					obj: timelineObj.obj,
+					resource: undefined,
+					layerMustBeFree,
+					originalLayerId: undefined,
+				})
+
+				if (result.createdNewLayer) {
+					addedNewLayers.push(result.layerId)
+					updatedProject = true
+				}
+
+				timelineObj.obj.layer = result.layerId
+			}
+
+			part.timeline.push(timelineObj)
+			nextTarget = {
+				type: 'after',
+				id: timelineObj.obj.id,
+			}
+			inserted.push({
+				groupId: group.id,
+				partId: part.id,
+				timelineObjId: timelineObj.obj.id,
+			})
+
+			postProcessPart(part)
+		}
+		const insertedTimelineObjIds = inserted.map((t) => t.timelineObjId)
+
+		this._saveUpdates({ project: updatedProject ? project : undefined, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
+				let updatedProject: Project | undefined = undefined
+				if (addedNewLayers.length > 0) {
+					// If a new layer was added, remove it.
+					updatedProject = this.getProject()
+					for (const layerId of addedNewLayers) {
+						delete updatedProject.mappings[layerId]
+					}
+				}
+
 				const { rundown, group, part } = this.getPart(arg)
 
-				part.timeline = part.timeline.filter((obj) => obj.obj.id !== arg.timelineObjId)
+				part.timeline = part.timeline.filter((obj) => !insertedTimelineObjIds.includes(obj.obj.id))
 
 				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
+			result: inserted,
 		}
 	}
 	async moveTimelineObjToNewLayer(arg: {
@@ -1162,18 +1578,20 @@ export class IPCServer
 		const resource = this.storage.getResource(timelineObj.resourceId)
 
 		const originalLayer = timelineObj.obj.layer
+		const project = this.getProject()
 		const result = this._findBestOrCreateLayer({
-			rundownId: arg.rundownId,
-			groupId: arg.groupId,
-			partId: arg.partId,
+			project,
+			rundown,
+			part,
 			obj: timelineObj.obj,
 			resource: resource,
+			layerMustBeFree: true,
 			originalLayerId: originalLayer,
 		})
 		timelineObj.obj.layer = result.layerId
 
 		postProcessPart(part)
-		this._saveUpdates({ project: result.updatedProject, rundownId: arg.rundownId, rundown, group })
+		this._saveUpdates({ project, rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
@@ -1195,80 +1613,125 @@ export class IPCServer
 		}
 	}
 
-	async addResourceToTimeline(arg: {
+	async addResourcesToTimeline(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 		layerId: string | null
-		resourceId: string
+		resourceIds: (string | ResourceAny)[]
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
 		if (group.locked || part.locked) {
 			return
 		}
+		let updatedProject = false
+		const project = this.getProject()
+		const addedNewLayers: string[] = []
+		const addedNewTimelineObjIds: string[] = []
+		let usePreviousLayerId: string | undefined = undefined
 
-		const resource = this.storage.getResource(arg.resourceId)
-		if (!resource) throw new Error(`Resource ${arg.resourceId} not found.`)
+		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
-		const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
+		for (let resourceId of arg.resourceIds) {
+			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
+			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
+			resourceId = resource?.id
 
-		let addToLayerId: string
-		let createdNewLayer = false
-		let updatedProject: Project | undefined = undefined
-		if (arg.layerId) {
-			addToLayerId = arg.layerId
-		} else {
-			const result = this._findBestOrCreateLayer({
-				rundownId: arg.rundownId,
-				groupId: arg.groupId,
-				partId: arg.partId,
+			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
+
+			let addToLayerId: string | undefined = undefined
+
+			if (arg.layerId) {
+				// Also check if there are any infinites on that layer.
+				// If there is an infinite on that layer, it doesn't make sense to add another object to that layer.
+				if (!isLayerInfinite(part, arg.layerId)) {
+					addToLayerId = arg.layerId
+				}
+			}
+			if (!addToLayerId) {
+				if (usePreviousLayerId) {
+					const mapping = project.mappings[usePreviousLayerId]
+					if (allowAddingResourceToLayer(project, resource, mapping)) {
+						// Also check if there are any infinites on that layer.
+						// If there is an infinite on that layer, it doesn't make sense to add another object to that layer.
+						if (!isLayerInfinite(part, usePreviousLayerId)) {
+							addToLayerId = usePreviousLayerId
+						}
+					}
+				}
+			}
+
+			if (!addToLayerId) {
+				const result = this._findBestOrCreateLayer({
+					project,
+					rundown,
+					part,
+					obj,
+					resource,
+					layerMustBeFree: true,
+					originalLayerId: undefined,
+				})
+				addToLayerId = result.layerId
+				if (result.createdNewLayer) {
+					addedNewLayers.push(result.layerId)
+					updatedProject = true
+				}
+			}
+			obj.layer = addToLayerId
+			usePreviousLayerId = obj.layer
+
+			const mapping = project.mappings[obj.layer]
+			const allow = allowAddingResourceToLayer(project, resource, mapping)
+			if (!allow) {
+				if (arg.resourceIds.length > 1) continue // ignore the error if we're adding multiple resources
+				throw new Error(
+					`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
+						obj.layer
+					}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
+				)
+			}
+			const timelineObj: TimelineObj = {
+				resourceId: resource.id,
 				obj,
-				resource,
-				originalLayerId: undefined,
-			})
-			addToLayerId = result.layerId
-			createdNewLayer = result.createdNewLayer
-			updatedProject = result.updatedProject
-		}
-		obj.layer = addToLayerId
+				resolved: { instances: [] }, // set later, in postProcessPart
+			}
 
-		const project = updatedProject ?? this.getProject()
-		const mapping = project.mappings[obj.layer]
-		const allow = allowAddingResourceToLayer(project, resource, mapping)
-		if (!allow) {
-			throw new Error(
-				`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
-					obj.layer
-				}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
-			)
+			// Place the timelineObj at the end of the part's timeline:
+			{
+				const lastEnd = getLastEndTime(part.timeline, obj.layer)
+				if (!Array.isArray(timelineObj.obj.enable)) {
+					timelineObj.obj.enable.start = lastEnd.objId ? `#${lastEnd.objId}.end` : lastEnd.time
+				}
+			}
+
+			part.timeline.push(timelineObj)
+			addedNewTimelineObjIds.push(timelineObj.obj.id)
+			postProcessPart(part)
 		}
 
-		const timelineObj: TimelineObj = {
-			resourceId: resource.id,
-			obj,
-			resolved: { instances: [] }, // set later, in postProcessPart
-		}
-
-		part.timeline.push(timelineObj)
-		postProcessPart(part)
-		this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ project: updatedProject ? project : undefined, rundownId: arg.rundownId, rundown })
 
 		return {
 			undo: () => {
 				let updatedProject: Project | undefined = undefined
-				if (createdNewLayer) {
+				if (addedNewLayers.length > 0) {
 					// If a new layer was added, remove it.
 					updatedProject = this.getProject()
-					delete updatedProject.mappings[addToLayerId]
+					for (const layerId of addedNewLayers) {
+						delete updatedProject.mappings[layerId]
+					}
 				}
 
 				const { rundown, part } = this.getPart(arg)
-				part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObj.obj.id)
+
+				part.timeline = part.timeline.filter((t) => {
+					return !addedNewTimelineObjIds.includes(t.obj.id)
+				})
 				postProcessPart(part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
-			description: ActionDescription.AddResourceToTimeline,
+			description: ActionDescription.addResourcesToTimeline,
 		}
 	}
 	async toggleGroupLoop(arg: {
@@ -1583,7 +2046,7 @@ export class IPCServer
 
 						if (!deviceId) continue
 
-						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId)
+						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId, undefined)
 						if (newMapping) {
 							createdMappings[data.mappingId] = newMapping
 						}
@@ -1839,6 +2302,7 @@ export class IPCServer
 		}
 
 		for (const group of groupsToUpdate) {
+			if (group.parts.length > 1) group.transparent = false
 			if (!updates.noEffectOnPlayout) {
 				// Update Timeline:
 				group.preparedPlayData = this.callbacks.updateTimeline(group)
@@ -1856,24 +2320,29 @@ export class IPCServer
 
 		this.callbacks.updatePeripherals()
 	}
+	/**
+	 * Tries to find the best layer to match the provided timeline obj, or creates on if not found.
+	 */
 	private _findBestOrCreateLayer(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
+		rundown: Rundown
+		part: Part
+		project: Project
 		obj: TSRTimelineObj
 		resource: ResourceAny | undefined
+
+		layerMustBeFree: boolean
 		originalLayerId: string | number | undefined
 	}) {
-		const project = this.getProject()
-		const { rundown, part } = this.getPart(arg)
 		let addToLayerId: string | null = null
 		let createdNewLayer = false
 
-		const allDeviceIds = listAvailableDeviceIDs(project.bridges)
+		const allDeviceIds = listAvailableDeviceIDs(arg.project.bridges)
+
+		/** Possible layers, wich votes. The layer with the highest vote will be picked in the end */
+		const possibleLayers: { [layerId: string]: number } = {}
 
 		// First, try to pick next free layer:
-		const possibleLayers: { [layerId: string]: number } = {}
-		for (const { layerId, mapping } of sortMappings(project.mappings)) {
+		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
 			// Is the layer on the same device as the resource?
 			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
 
@@ -1883,14 +2352,16 @@ export class IPCServer
 			// Is the layer compatible?
 			if (!filterMapping(mapping, arg.obj)) continue
 
-			// Is the layer free?
-			if (part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+			if (arg.layerMustBeFree) {
+				// Is the layer free?
+				if (arg.part.timeline.find((checkTimelineObj) => checkTimelineObj.obj.layer === layerId)) continue
+			}
 
 			// Okay then:
 			possibleLayers[layerId] = 1
 		}
 		// Pick the best layer, ie check which layer contains the most similar objects in other parts:
-		for (const group of rundown.groups) {
+		for (const group of arg.rundown.groups) {
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (possibleLayers[timelineObj.obj.layer]) {
@@ -1903,6 +2374,28 @@ export class IPCServer
 				}
 			}
 		}
+
+		// For CasparCG: Don't pick layers that have the wrong channel or layer:
+		if (
+			(arg.resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+				arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+			(arg.resource.channel || arg.resource.layer)
+		) {
+			for (const layerId of Object.keys(possibleLayers)) {
+				const mapping = arg.project.mappings[layerId]
+				if (mapping?.device === DeviceType.CASPARCG) {
+					const m = mapping as MappingCasparCG
+
+					if (arg.resource.channel && m.channel !== arg.resource.channel) {
+						possibleLayers[layerId] = -999
+					}
+					if (arg.resource.layer && m.layer !== arg.resource.layer) {
+						possibleLayers[layerId] = -999
+					}
+				}
+			}
+		}
+
 		const bestLayer = Object.entries(possibleLayers).reduce(
 			(prev, current) => {
 				if (current[1] > prev[1]) return current
@@ -1910,17 +2403,20 @@ export class IPCServer
 			},
 			['', 0]
 		)
-		if (bestLayer[0]) {
+		if (bestLayer[1] > 0) {
 			addToLayerId = bestLayer[0]
 		}
-		let updatedProject: Project | undefined = undefined
+
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
 			let newMapping: Mapping | undefined = undefined
-			if (arg.resource) {
-				newMapping = getMappingFromTimelineObject(arg.obj, arg.resource.deviceId)
-			} else if (arg.originalLayerId !== undefined) {
-				const originalLayer = project.mappings[arg.originalLayerId] as Mapping | undefined
+			const deviceId = arg.resource?.deviceId || guessDeviceIdFromTimelineObject(arg.project, arg.obj)
+			if (deviceId) {
+				newMapping = getMappingFromTimelineObject(arg.obj, deviceId, arg.resource)
+			}
+
+			if (!newMapping && arg.originalLayerId !== undefined) {
+				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
 				if (originalLayer) {
 					// TODO: modify the layer to create the "next" layer:
 					newMapping = {
@@ -1932,11 +2428,9 @@ export class IPCServer
 			if (newMapping && newMapping.layerName) {
 				// Add the new layer to the project
 				const newLayerId = shortID()
-				project.mappings = {
-					...project.mappings,
-					[newLayerId]: newMapping,
-				}
-				updatedProject = project
+
+				arg.project.mappings[newLayerId] = newMapping
+
 				addToLayerId = newLayerId
 				createdNewLayer = true
 			}
@@ -1945,12 +2439,17 @@ export class IPCServer
 		if (!addToLayerId) throw new Error('No layer found')
 
 		// Check that the layer exists:
-		const layer = addToLayerId ? project.mappings[addToLayerId] : undefined
+		const layer = addToLayerId ? arg.project.mappings[addToLayerId] : undefined
 		if (!layer) throw new Error(`Layer ${addToLayerId} not found.`)
 
 		// Verify that the layer is OK:
 		if (!filterMapping(layer, arg.obj)) throw new Error('Not a valid layer for that timeline-object.')
 
-		return { layerId: addToLayerId, createdNewLayer, updatedProject }
+		return {
+			/** id of the layer to use */
+			layerId: addToLayerId,
+			/** True if a layer was created */
+			createdNewLayer,
+		}
 	}
 }

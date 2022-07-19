@@ -31,19 +31,24 @@ export const Layer: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
 	const [{ isOver }, drop] = useDrop(
+		// Use case: Drag Resources over this Layer, to insert them as TimelineObjects at this Layer
 		() => ({
 			accept: locked ? [] : DragItemTypes.RESOURCE_ITEM,
 			canDrop: (item) => {
-				return typeof mapping !== 'undefined' && allowAddingResourceToLayer(project, item.resource, mapping)
+				return (
+					typeof mapping !== 'undefined' &&
+					item.resources.length >= 1 &&
+					allowAddingResourceToLayer(project, item.resources[0], mapping)
+				)
 			},
 			drop: (item: ResourceDragItem) => {
 				ipcServer
-					.addResourceToTimeline({
+					.addResourcesToTimeline({
 						rundownId,
 						groupId,
 						partId,
 						layerId,
-						resourceId: item.resource.id,
+						resourceIds: item.resources.map((r) => r.id),
 					})
 					.catch(handleError)
 			},

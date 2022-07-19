@@ -9,17 +9,20 @@ import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
+import { MoveTarget } from '../lib/util'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
+	InsertParts = 'insert part(s)',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
 	TogglePartLoop = 'toggle part loop',
 	TogglePartDisable = 'toggle part disable',
 	TogglePartLock = 'toggle part lock',
 	NewGroup = 'create new group',
+	InsertGroups = 'insert group(s)',
 	UpdateGroup = 'update group',
 	DeletePart = 'delete part',
 	DeleteGroup = 'delete group',
@@ -28,7 +31,7 @@ export const enum ActionDescription {
 	UpdateTimelineObj = 'update timeline object',
 	DeleteTimelineObj = 'delete timeline object',
 	AddTimelineObj = 'add timeline obj',
-	AddResourceToTimeline = 'add resource to timeline',
+	addResourcesToTimeline = 'add resource to timeline',
 	ToggleGroupLoop = 'toggle group loop',
 	ToggleGroupAutoplay = 'toggle group autoplay',
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
@@ -95,17 +98,38 @@ export interface IPCServerMethods {
 
 		name: string
 	}) => { partId: string; groupId?: string }
+	insertParts: (arg: {
+		rundownId: string
+		groupId: string | null
+		parts: { part: Part; resources: ResourceAny[] }[]
+		target: MoveTarget
+	}) => {
+		groupId: string
+		partId: string
+	}[]
 	updatePart: (arg: { rundownId: string; groupId: string; partId: string; part: Partial<Part> }) => void
 	newGroup: (arg: { rundownId: string; name: string }) => string
+	insertGroups: (arg: {
+		rundownId: string
+		groups: {
+			group: Group
+			resources: {
+				[partId: string]: ResourceAny[]
+			}
+		}[]
+		target: MoveTarget
+	}) => {
+		groupId: string
+	}[]
 	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
-	movePart: (arg: {
-		from: { rundownId: string; partId: string }
-		to: { rundownId: string; groupId: string | null; position: number }
-	}) => Group
+	moveParts: (arg: {
+		parts: { rundownId: string; partId: string }[]
+		to: { rundownId: string; groupId: string | null; target: MoveTarget }
+	}) => { partId: string; groupId: string; rundownId: string }[]
 	duplicatePart: (data: { rundownId: string; groupId: string; partId: string }) => void
-	moveGroup: (data: { rundownId: string; groupId: string; position: number }) => void
+	moveGroups: (data: { rundownId: string; groupIds: string[]; target: MoveTarget }) => void
 	duplicateGroup: (data: { rundownId: string; groupId: string }) => void
 
 	updateTimelineObj: (arg: {
@@ -118,27 +142,31 @@ export interface IPCServerMethods {
 			obj: Partial<TimelineObj['obj']>
 		}
 	}) => void
-	deleteTimelineObj: (arg: { rundownId: string; timelineObjId: string }) => void
-	addTimelineObj: (arg: {
+	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
+	insertTimelineObjs: (arg: {
 		rundownId: string
 		groupId: string
 		partId: string
+		timelineObjs: TimelineObj[]
+		target: MoveTarget | null
+	}) => {
+		groupId: string
+		partId: string
 		timelineObjId: string
-		timelineObj: TimelineObj
-	}) => void
+	}[]
 	moveTimelineObjToNewLayer: (arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 		timelineObjId: string
 	}) => void
-	addResourceToTimeline: (arg: {
+	addResourcesToTimeline: (arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 
 		layerId: string | null
-		resourceId: string
+		resourceIds: (string | ResourceAny)[]
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void

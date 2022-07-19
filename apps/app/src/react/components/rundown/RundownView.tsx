@@ -12,11 +12,14 @@ import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 import { useMemoComputedObject } from '../../mobx/lib'
 import { Btn } from '../inputs/Btn/Btn'
+import { getClassNameFromResource } from '../../../lib/resources'
+import { MoveTarget } from '../../../lib/util'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(
+		// Use case: Drag Parts over this Rundown to insert them as transparent Group-Parts in this Rundown
 		{
 			accept: DragItemTypes.PART_ITEM,
 			collect(monitor) {
@@ -30,13 +33,10 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 
 				if (!isPartDragItem(movedItem)) return
 
-				const currentRundown = store.rundownsStore.getRundown(currentRundownId)
-
 				// Handle when dragging a Part outside of a Group, to create a new transparent Group
-				const hoverIndex = currentRundown.groupIds.length
+				// const hoverIndex = currentRundown.groupIds.length
 
-				// Don't replace items with themselves
-				if (movedItem.fromGroup.transparent) {
+				if (movedItem.parts.find((p) => p.fromGroup.transparent)) {
 					return
 				}
 
@@ -45,17 +45,24 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 					return
 				}
 
+				const target: MoveTarget = {
+					type: 'last',
+				}
+
 				// Time to actually perform the action
-				store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
+				// store.rundownsStore.movePartInCurrentRundown(movedItem.partId, null, hoverIndex)
+				store.rundownsStore.movePartsInCurrentRundown(
+					movedItem.parts.map((p) => p.partId),
+					null,
+					target
+				)
 
 				// Note: we're mutating the monitor item here!
 				// Generally it's better to avoid mutations,
 				// but it's good here for the sake of performance
 				// to avoid expensive index searches.
 				movedItem.toGroupId = null
-				movedItem.toGroupIndex = hoverIndex
-				movedItem.toGroupTransparent = true
-				movedItem.position = hoverIndex
+				movedItem.target = target
 			},
 		},
 		[store.rundownsStore]
@@ -77,16 +84,8 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 
 	return (
 		<div className="group-list" ref={wrapperRef} data-drop-handler-id={handlerId}>
-			{currentRundown.groupIds.map((groupId, index) => {
-				return (
-					<GroupView
-						key={groupId}
-						groupId={groupId}
-						groupIndex={index}
-						rundownId={currentRundown.id}
-						mappings={mappings}
-					/>
-				)
+			{currentRundown.groupIds.map((groupId) => {
+				return <GroupView key={groupId} groupId={groupId} rundownId={currentRundown.id} mappings={mappings} />
 			})}
 
 			<GroupListOptions rundownId={currentRundown.id} />
@@ -113,6 +112,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 	const newGroupRef = useRef<HTMLDivElement>(null)
 
 	const [{ handlerId: partDropHandlerId, isOver: partDropIsOver }, newPartDrop] = useDrop(
+		// Use case: Drag Resources over this area, to insert them as transparent Group-Parts in the Rundown
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
@@ -130,23 +130,25 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 						return
 					}
 
-					const { partId, groupId } = await ipcServer.newPart({
-						rundownId,
-						groupId: null, // Creates a transparent group.
-						name: droppedItem.resource.id,
-					})
+					for (const resource of droppedItem.resources) {
+						const { partId, groupId } = await ipcServer.newPart({
+							rundownId,
+							groupId: null, // Creates a transparent group.
+							name: '', // resource.displayName,
+						})
 
-					if (!groupId) {
-						return
+						if (!groupId) {
+							return
+						}
+
+						await ipcServer.addResourcesToTimeline({
+							rundownId,
+							groupId,
+							partId,
+							layerId: null,
+							resourceIds: [resource.id],
+						})
 					}
-
-					await ipcServer.addResourceToTimeline({
-						rundownId,
-						groupId,
-						partId,
-						layerId: null,
-						resourceId: droppedItem.resource.id,
-					})
 				} catch (error) {
 					handleError(error)
 				}
@@ -159,6 +161,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 	}, [newPartDrop])
 
 	const [{ handlerId: groupDropHandlerId, isOver: groupDropIsOver }, newGroupDrop] = useDrop(
+		// Use case: Drag Resources over this area, to insert them as a Group with Parts in the Rundown
 		{
 			accept: DragItemTypes.RESOURCE_ITEM,
 			collect(monitor) {
@@ -176,27 +179,39 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 						return
 					}
 
-					const groupAndPartName =
-						'name' in droppedItem.resource ? (droppedItem.resource as any).name : droppedItem.resource.id
+					// If all of the dropped items are of the same type, we can give the group a nice name:
+					let firstGroupName = ''
+					let useFirstGroupName = true
+					for (const resource of droppedItem.resources) {
+						const name = getClassNameFromResource(resource)
+						if (!firstGroupName) {
+							firstGroupName = name
+						} else if (firstGroupName !== name) {
+							useFirstGroupName = false
+							break
+						}
+					}
+					const groupName = useFirstGroupName ? firstGroupName : 'New Group'
 
 					const groupId = await ipcServer.newGroup({
 						rundownId,
-						name: groupAndPartName,
+						name: groupName,
 					})
+					for (const resource of droppedItem.resources) {
+						const { partId } = await ipcServer.newPart({
+							rundownId,
+							groupId,
+							name: '', // resource.displayName,
+						})
 
-					const { partId } = await ipcServer.newPart({
-						rundownId,
-						groupId,
-						name: groupAndPartName,
-					})
-
-					await ipcServer.addResourceToTimeline({
-						rundownId,
-						groupId,
-						partId,
-						layerId: null,
-						resourceId: droppedItem.resource.id,
-					})
+						await ipcServer.addResourcesToTimeline({
+							rundownId,
+							groupId,
+							partId,
+							layerId: null,
+							resourceIds: [resource.id],
+						})
+					}
 				} catch (error) {
 					handleError(error)
 				}
