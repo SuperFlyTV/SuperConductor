@@ -9,6 +9,8 @@ import { store } from '../../../mobx/store'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
+import { SelectEnum } from '../../inputs/SelectEnum'
+import { PlayoutMode } from '../../../../models/rundown/Group'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -59,6 +61,45 @@ export const SideBarEditGroup: React.FC<{
 			<DataRow label="ID" value={group.id} />
 
 			<div className="settings">
+				<div className="setting">
+					<SelectEnum
+						label="Playout mode"
+						currentValue={group.playoutMode}
+						disabled={group.locked}
+						options={PlayoutMode}
+						onChange={(value) => {
+							ipcServer
+								.updateGroup({
+									rundownId,
+									groupId,
+									group: {
+										playoutMode: value,
+									},
+								})
+								.catch(handleError)
+						}}
+					/>
+				</div>
+				{group.playoutMode === PlayoutMode.SCHEDULE && (
+					<div className="settings-group">
+						{/* <div className="setting">
+							<BooleanInput
+								label="Start Time"
+								currentValue={group.schedule.startTime}
+								disabled={group.locked}
+								onChange={(value) => {
+									ipcServer
+										.toggleGroupDisable({
+											rundownId,
+											groupId,
+											value,
+										})
+										.catch(handleError)
+								}}
+							/>
+						</div> */}
+					</div>
+				)}
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"

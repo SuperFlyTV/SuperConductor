@@ -1,3 +1,4 @@
+import { DateTimeObject, RepeatingSettingsAny } from '../../lib/timeLib'
 import { GroupPreparedPlayData } from '../GUI/PreparedPlayhead'
 import { Part } from './Part'
 
@@ -14,8 +15,13 @@ export interface GroupBase {
 	disabled?: boolean
 	locked?: boolean
 
+	playoutMode: PlayoutMode
+
 	/** Contains info for the Auto-Fill feature */
 	autoFill: AutoFillSettings
+
+	/** Contains info for when playoutMode is in SCHEDULE */
+	schedule: ScheduleSettings
 
 	/** Data related to the playout of the group */
 	playout: {
@@ -73,4 +79,14 @@ export enum AutoFillSortMode {
 	ADDED_DESC = 'added_desc',
 	MODIFIED_ASC = 'modified_asc',
 	MODIFIED_DESC = 'modified_desc',
+}
+export enum PlayoutMode {
+	NORMAL = 'normal',
+	SCHEDULE = 'schedule',
+	// EXPRESSION = 'expression', // <-- not implemented yet
+}
+export interface ScheduleSettings {
+	/** timestamp */
+	startTime?: DateTimeObject
+	repeating: RepeatingSettingsAny
 }
