@@ -1,6 +1,10 @@
 import { prepareGroupPlayData } from '../lib/playhead'
 import { Group, GroupBase } from '../models/rundown/Group'
-import { GroupPreparedPlayData, GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
+import {
+	GroupPreparedPlayData,
+	GroupPreparedPlayDataPart,
+	GroupPreparedPlayDataSection,
+} from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
 import { TimelineEnable, TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
@@ -63,83 +67,94 @@ export function getTimelineForGroup(
 		const timeline: TSRTimeline = []
 
 		if (prepared.type === 'single') {
-			/** (unix timestamp) */
-			const groupStartTime = prepared.startTime
-
-			const timelineGroup: TimelineObjEmpty = {
-				id: `group_${group.id}`,
-				enable: {
-					start: groupStartTime,
-				},
-				layer: '',
-				content: {
-					deviceType: DeviceType.ABSTRACT,
-					type: 'empty',
-				},
-				classes: [],
-				isGroup: true,
-				children: [],
-			}
-			// First, add the parts that doesn't loop:
-			for (const playingPart of prepared.parts) {
-				// Add the part to the timeline:
-				const obj: TimelineObjEmpty | null = partToTimelineObj(
-					makeUniqueId(playingPart.part.id),
-					playingPart,
-					playingPart.startTime - groupStartTime,
-					customPartContent
-				)
-
-				changeTimelineId(obj, (id) => getUniqueId(id))
-				timelineGroup.children?.push(obj)
-			}
-
-			// Then add the parts that loop:
-			if (prepared.repeating && prepared.duration !== null) {
-				/** Repeating start time, relative to groupStartTime */
-				const repeatingStartTime = prepared.duration
-				/** unit timestamp */
-				const repeatingStartTimeUnix = repeatingStartTime + groupStartTime
-
-				const repeatingObj: TimelineObjEmpty = {
-					id: `repeating_${group.id}`,
+			for (const section of prepared.sections) {
+				const timelineGroup: TimelineObjEmpty = {
+					id: `group_${group.id}`,
 					enable: {
-						start: repeatingStartTime,
-						duration: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
-						repeating: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
+						start: section.startTime,
+						end: section.endTime,
 					},
-					layer: '',
+					layer: `__group_${group.id}`,
 					content: {
 						deviceType: DeviceType.ABSTRACT,
 						type: 'empty',
 					},
 					classes: [],
 					isGroup: true,
-					children: [],
+					children: sectionToTimelineObj(section, group.id, makeUniqueId, customPartContent),
 				}
-				for (const part of prepared.repeating.parts) {
-					// Add the part to the timeline:
-					const obj: TimelineObjEmpty | null = partToTimelineObj(
-						makeUniqueId(part.part.id),
-						part,
-						part.startTime - repeatingStartTimeUnix,
-						customPartContent
-					)
-					// We have to modify the ids so that they won't collide with the previous ones:
-					changeTimelineId(obj, (id) => getUniqueId(id))
-					repeatingObj.children?.push(obj)
-				}
-				timelineGroup.children?.push(repeatingObj)
+
+				timeline.push(timelineGroup)
 			}
 
-			timeline.push(timelineGroup)
+			if (groupStartTime) {
+				// First, add the parts that doesn't loop:
+				for (const playingPart of prepared.parts) {
+					// Add the part to the timeline:
+					const obj: TimelineObjEmpty | null = partToTimelineObj(
+						makeUniqueId(playingPart.part.id),
+						playingPart,
+						playingPart.startTime - groupStartTime,
+						customPartContent
+					)
+
+					changeTimelineId(obj, (id) => getUniqueId(id))
+					timelineGroup.children?.push(obj)
+				}
+
+				// Then add the parts that loop:
+				if (prepared.repeating && prepared.duration !== null) {
+					/** Repeating start time, relative to groupStartTime */
+					const repeatingStartTime = prepared.duration
+					/** unix timestamp */
+					const repeatingStartTimeUnix = repeatingStartTime + groupStartTime
+
+					const repeatingObj: TimelineObjEmpty = {
+						id: `repeating_${group.id}`,
+						enable: {
+							start: repeatingStartTime,
+							duration: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
+							repeating: prepared.repeating.duration === null ? undefined : prepared.repeating.duration,
+						},
+						layer: '',
+						content: {
+							deviceType: DeviceType.ABSTRACT,
+							type: 'empty',
+						},
+						classes: [],
+						isGroup: true,
+						children: [],
+					}
+					for (const part of prepared.repeating.parts) {
+						// Add the part to the timeline:
+						const obj: TimelineObjEmpty | null = partToTimelineObj(
+							makeUniqueId(part.part.id),
+							part,
+							part.startTime - repeatingStartTimeUnix,
+							customPartContent
+						)
+						// We have to modify the ids so that they won't collide with the previous ones:
+						changeTimelineId(obj, (id) => getUniqueId(id))
+						repeatingObj.children?.push(obj)
+					}
+					timelineGroup.children?.push(repeatingObj)
+				}
+
+				timeline.push(timelineGroup)
+			}
 		} else if (prepared.type === 'multi') {
+			for (const [partId, sections] of Object.entries(prepared.sections)) {
+				for (const section of sections) {
+					timeline.push(...sectionToTimelineObj(section))
+				}
+			}
+
 			const timelineGroup: TimelineObjEmpty = {
 				id: `group_${group.id}`,
-				enable: {
-					start: 0,
-				},
-				layer: '',
+				enable: prepared.repeatOffsets.map((t) => ({
+					start: t,
+				})),
+				layer: `__group_${group.id}`,
 				content: {
 					deviceType: DeviceType.ABSTRACT,
 					type: 'empty',
@@ -168,6 +183,49 @@ export function getTimelineForGroup(
 	} else {
 		return null
 	}
+}
+function sectionToTimelineObj(
+	section: GroupPreparedPlayDataSection,
+	id: string,
+	makeUniqueId: (id: string) => string,
+	customPartContent: CustomPartConent
+): TSRTimeline {
+	const timeline: TSRTimeline = []
+
+	const sectionObj: TimelineObjEmpty = {
+		id: `section_${id}`,
+		enable: {
+			start: section.startTime,
+			duration: section.duration,
+			repeating: section.repeating ? section.duration : undefined,
+		},
+		layer: '',
+		content: {
+			deviceType: DeviceType.ABSTRACT,
+			type: 'empty',
+		},
+		classes: [],
+		isGroup: true,
+		children: [],
+	}
+
+	for (const part of section.parts) {
+		// Add the part to the timeline:
+		const obj: TimelineObjEmpty | null = partToTimelineObj(
+			makeUniqueId(part.part.id),
+			part,
+			part.startTime - section.startTime,
+			customPartContent
+		)
+		// We have to modify the ids so that they won't collide with the previous ones:
+		changeTimelineId(obj, (id) => getUniqueId(id))
+		sectionObj.children?.push(obj)
+	}
+
+	if (section.startTime) {
+	}
+
+	return timeline
 }
 function partToTimelineObj(
 	objId: string,

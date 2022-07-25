@@ -15,7 +15,8 @@ export const CountdownHeads = observer(function CountdownHeads(props: PropsType)
 
 		if (!playData) return null
 
-		return (playData.anyPartIsPlaying && playData.countdowns[props.partId]) || null
+		// return (playData.anyPartIsPlaying && playData.countdowns[props.partId]) || null
+		return playData.countdowns[props.partId] || null
 	}, [props.groupId, props.partId])
 
 	return (

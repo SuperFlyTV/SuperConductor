@@ -124,7 +124,7 @@ export function millisecondsToTime(ms: number): { h: number; m: number; s: numbe
 	return { h, m, s, ms }
 }
 
-export function formatDuration(inputMs: number | null | undefined, decimalCount?: number): string {
+export function formatDuration(inputMs: number | null | undefined, decimalCount?: number | 'smart'): string {
 	if (inputMs === null) return '∞'
 	if (inputMs === undefined) return ''
 
@@ -132,6 +132,9 @@ export function formatDuration(inputMs: number | null | undefined, decimalCount?
 
 	let msStr = !ms ? '000' : ms < 10 ? `00${ms}` : ms < 100 ? `0${ms}` : `${ms}` // 001 | 012 | 123
 
+	if (decimalCount === 'smart') {
+		decimalCount = inputMs > 60000 ? 0 : 1
+	}
 	if (decimalCount !== undefined) {
 		msStr = msStr.slice(0, decimalCount)
 	} else {
@@ -143,8 +146,12 @@ export function formatDuration(inputMs: number | null | undefined, decimalCount?
 	if (min) return `${min}:${pad(sec)}` + msStr
 	return `${sec}` + msStr
 }
-function pad(n: number): string {
-	return n < 10 ? `0${n}` : `${n}`
+function pad(n: number, size = 2): string {
+	let str = `${n}`
+	while (str.length < size) {
+		str = '0' + str
+	}
+	return str
 }
 
 export function formatDurationLabeled(inputMs: number | undefined): string {
@@ -421,47 +428,12 @@ export function repeatTime(
 		/** Max return count */
 		maxCount: number
 	}
-): number[] {
+): { startTimes: number[]; validUntil: number | undefined } {
 	const start = startTime.unixTimestamp
 
 	if (settings.type === RepeatingType.NO_REPEAT) {
-		return [start]
+		return { startTimes: [start], validUntil: undefined }
 	} else if (settings.type === RepeatingType.DAILY) {
-		// const intervalMs = settings.interval * 24 * 3600 * 1000
-
-		// const filterStart = options.now - intervalMs
-		// const filterEnd = options.end
-
-		// const firstDay = new Date(start + Math.max(0, Math.floor((filterStart - start) / intervalMs) * intervalMs))
-
-		// const time = _.clone(startTime)
-		// time.year = firstDay.getFullYear()
-		// time.month = firstDay.getMonth()
-		// time.date = firstDay.getDate()
-		// time.unixTimestamp = dateTimeObjectToDate(time).getTime()
-
-		// const startTimes: number[] = []
-
-		// while (
-		// 	time.unixTimestamp <= filterEnd &&
-		// 	startTimes.length < options.maxCount &&
-		// 	time.unixTimestamp <= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)
-		// ) {
-		// 	const d = dateTimeObjectToDate(time)
-		// 	if (d.getTime() >= filterStart) {
-		// 		startTimes.push(d.getTime())
-		// 	}
-
-		// 	const nextDay = new Date(d.getTime() + intervalMs)
-		// 	time.year = nextDay.getFullYear()
-		// 	time.month = nextDay.getMonth()
-		// 	time.date = nextDay.getDate()
-		// 	time.unixTimestamp = dateTimeObjectToDate(time).getTime()
-		// }
-		// return startTimes
-
-		if (settings.interval < 1) return []
-
 		const filterStart = options.now
 		const filterEnd = options.end
 
@@ -470,6 +442,7 @@ export function repeatTime(
 
 		let prevTime = _.clone(startTime)
 		const startTimes: number[] = []
+		let validUntil: number | undefined = undefined
 		while (startTimes.length < options.maxCount) {
 			if (days > 9999) break
 
@@ -484,23 +457,30 @@ export function repeatTime(
 						startTimes.push(prevTime.unixTimestamp)
 					}
 					startTimes.push(time.unixTimestamp)
+
+					if (time.unixTimestamp > filterStart) validUntil = time.unixTimestamp
 				}
 				prevTime = time
 			}
+			if (!settings.interval) break
 			days += settings.interval
 		}
-		return startTimes
+		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
+			validUntil = undefined
+		}
+		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.WEEKLY) {
 		const filterStart = options.now
 		const filterEnd = options.end
 
 		const start = dateTimeObject(filterStart)
 		const startMonday = dateTimeAdvance(start, { date: -start.weekDay - 7 })
-		if (!startMonday) return []
+		if (!startMonday) return { startTimes: [], validUntil: undefined }
 
 		let days = 0
 		let prevTime = _.clone(startTime)
 		const startTimes: number[] = []
+		let validUntil: number | undefined = undefined
 		while (startTimes.length < options.maxCount) {
 			if (days > 9999) break
 
@@ -515,63 +495,75 @@ export function repeatTime(
 						startTimes.push(prevTime.unixTimestamp)
 					}
 					startTimes.push(time.unixTimestamp)
+
+					if (time.unixTimestamp > filterStart) validUntil = time.unixTimestamp
 				}
 				prevTime = time
 			}
 			days++
 		}
-		return startTimes
+		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
+			validUntil = undefined
+		}
+		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.MONTHLY) {
-		if (settings.interval < 1) return []
-
-		const filterStart = options.now
-		const filterEnd = options.end
-
-		const startTimes: number[] = []
 		let prevTime = _.clone(startTime)
 
 		let months = 0
+		const startTimes: number[] = []
+		let validUntil: number | undefined = undefined
 		while (startTimes.length < options.maxCount) {
 			if (months > 9999) break
 
 			const time = dateTimeAdvance(startTime, { month: months })
 
 			if (time) {
-				if (time.unixTimestamp > filterStart) {
-					if (time.unixTimestamp > filterEnd) break
+				if (time.unixTimestamp > options.now) {
+					if (time.unixTimestamp > options.end) break
 					if (time.unixTimestamp > (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) break
 
 					if (startTimes.length === 0 && prevTime.unixTimestamp !== time.unixTimestamp) {
 						startTimes.push(prevTime.unixTimestamp)
 					}
 					startTimes.push(time.unixTimestamp)
+					if (time.unixTimestamp > options.now) validUntil = time.unixTimestamp
 				}
 				prevTime = time
 			}
+			if (!settings.interval) break
 			months += settings.interval
 		}
 
-		return startTimes
+		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
+			validUntil = undefined
+		}
+		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.CUSTOM) {
-		if (settings.interval <= 0) return []
-
 		const filterStart = options.now - settings.interval // Include last repeating time
 		const filterEnd = options.end
 
 		let time = start + Math.max(0, Math.floor((filterStart - start) / settings.interval) * settings.interval)
 		const startTimes: number[] = []
+		let validUntil: number | undefined = undefined
 		while (
 			time <= filterEnd &&
 			startTimes.length < options.maxCount &&
 			time <= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)
 		) {
 			startTimes.push(time)
+			if (time > options.now) validUntil = time
+
+			if (settings.interval < 1000) break
 			time += settings.interval
 		}
-		return startTimes
+
+		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
+			validUntil = undefined
+		}
+		return { startTimes, validUntil }
 	} else {
 		assertNever(settings)
-		return []
+		return { startTimes: [], validUntil: undefined }
 	}
 }
 // TODO: Write unit tests
@@ -612,7 +604,7 @@ try {
 				end: strTime('2022-07-21 17:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[strTime('2022-07-20 18:00:00')]
 	)
 	assert(
@@ -628,7 +620,7 @@ try {
 				end: strTime('2022-07-21 17:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-07-20 17:00:00'),
 			strTime('2022-07-20 18:00:00'),
@@ -659,7 +651,7 @@ try {
 				end: strTime('2022-07-20 20:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[strTime('2022-07-20 18:00:00'), strTime('2022-07-20 19:00:00'), strTime('2022-07-20 20:00:00')]
 	)
 	assert(
@@ -675,7 +667,7 @@ try {
 				end: strTime('2022-07-31 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-07-20 18:00:00'),
 			strTime('2022-07-21 18:00:00'),
@@ -698,7 +690,7 @@ try {
 				end: strTime('2022-12-31 23:59:59'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-10-29 18:00:00'),
 			strTime('2022-10-31 18:00:00'),
@@ -719,7 +711,7 @@ try {
 				end: strTime('2022-11-11 23:59:59'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-11-04 18:00:00'),
 			strTime('2022-11-06 18:00:00'),
@@ -740,7 +732,7 @@ try {
 				end: strTime('2023-07-31 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-07-31 18:00:00'),
 			strTime('2022-08-31 18:00:00'),
@@ -764,7 +756,7 @@ try {
 				end: strTime('2023-05-31 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-10-15 18:00:00'),
 			strTime('2022-12-15 18:00:00'),
@@ -785,7 +777,7 @@ try {
 				end: strTime('2023-05-31 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[strTime('2023-02-15 18:00:00'), strTime('2023-04-15 18:00:00')]
 	)
 	assert(
@@ -809,7 +801,7 @@ try {
 				end: strTime('2022-10-21 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-10-12 18:00:00'), // wed
 			strTime('2022-10-14 18:00:00'), // fri
@@ -839,7 +831,7 @@ try {
 				end: strTime('2022-10-27 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-10-21 18:00:00'), // fri
 			strTime('2022-10-23 18:00:00'), // sun
@@ -867,7 +859,7 @@ try {
 				end: strTime('2022-12-31 18:00:00'),
 				maxCount: 999,
 			}
-		),
+		).startTimes,
 		[
 			strTime('2022-10-24 18:00:00'), // mon
 			strTime('2022-10-31 18:00:00'), // mon
@@ -879,4 +871,30 @@ try {
 	)
 } catch (e) {
 	console.error(e)
+}
+
+export function parseDateTime(str: string): DateTimeObject | undefined {
+	if (str === '') return undefined
+	if (!str) return undefined
+
+	const d = dateTimeObject(new Date(str))
+
+	if (dateTimeObjectIsValid(d)) {
+		return d
+	}
+
+	return undefined
+}
+export function formatDateTime(d: DateTimeObject | undefined | null): string {
+	if (d === undefined) return ''
+	if (d === null) return ''
+
+	// TODO: Maybe support locale datestring later?
+	// return dateTimeObjectToDate(input).toLocaleString()
+
+	let str = `${d.year}-${pad(d.month + 1)}-${pad(d.date)} ${pad(d.hour)}:${pad(d.minute)}:${pad(d.second)}`
+	if (d.millisecond) {
+		str += `.${pad(d.millisecond, 3)}`
+	}
+	return str
 }

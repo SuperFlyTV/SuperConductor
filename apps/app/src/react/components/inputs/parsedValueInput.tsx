@@ -1,4 +1,5 @@
 import { TextField } from '@mui/material'
+import _ from 'lodash'
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
 
 export function ParsedValueInput<V>(
@@ -19,12 +20,17 @@ export function ParsedValueInput<V>(
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
 	const fieldRef = useRef<HTMLInputElement>(null)
+	const hasUnsavedChanges = useRef<boolean>(false)
 
 	useEffect(() => {
 		setValue(stringify(currentValue))
 	}, [currentValue, stringify])
 
+	useEffect(() => {}, [currentValue])
+
 	const onSave = (str: string) => {
+		hasUnsavedChanges.current = false
+
 		if (!str) {
 			onChange(defaultValue)
 			setValue(stringify(currentValue))
@@ -59,14 +65,15 @@ export function ParsedValueInput<V>(
 	useEffect(() => {
 		const input = fieldRef.current
 		return () => {
-			if (input && input.value) {
+			if (input && input.value && hasUnsavedChanges.current) {
 				const value = parse(input.value)
-				if (value !== undefined && value !== currentValue) {
+				if (value !== undefined && !_.isEqual(value, currentValue)) {
 					onChange(value)
 				}
 			}
 		}
-	}, [fieldRef, currentValue, parse, onChange])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 
 	useLayoutEffect(() => {
 		// Move the selector position:
@@ -83,12 +90,15 @@ export function ParsedValueInput<V>(
 				onSave(e.target.value)
 			}}
 			onChange={(e) => {
-				onEventChange(e)
 				if (changeOnKey) {
+					onEventChange(e)
 					onSave(e.target.value)
+				} else {
+					setValue(e.target.value)
 				}
 			}}
 			onKeyDown={(e) => {
+				hasUnsavedChanges.current = true
 				const target = e.target as EventTarget & HTMLInputElement
 				if (e.key === 'Enter') {
 					// Select all text

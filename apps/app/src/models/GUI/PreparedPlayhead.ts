@@ -8,42 +8,63 @@ import { Part } from '../rundown/Part'
 export type GroupPreparedPlayData = GroupPreparedPlayDataSingle | GroupPreparedPlayDataMulti
 export interface GroupPreparedPlayDataBase {
 	type: 'single' | 'multi'
+
+	/** Timestamp, at which point the prepared data needs to be recalculated */
+	validUntil: number | undefined
 }
 /** Defines how the parts will be played, when there's a single part at a time playing */
 export interface GroupPreparedPlayDataSingle extends GroupPreparedPlayDataBase {
 	type: 'single'
-	/** Timestamp, starting time of the first part-to-be-played (unit timestamp) [ms] */
-	startTime: number
-	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-	pauseTime: number | undefined
-	/** Total duration of the parts in .parts. null = infinite [ms] */
-	duration: number | null
-	parts: GroupPreparedPlayDataPart[]
-
-	repeating: {
-		/** Total duration of the repeating.parts, null means infinite [ms] */
-		duration: number | null
-		parts: GroupPreparedPlayDataPart[]
-	} | null
+	sections: GroupPreparedPlayDataSection[]
 }
 
 export interface GroupPreparedPlayDataMulti extends GroupPreparedPlayDataBase {
 	type: 'multi'
-	parts: {
-		[partId: string]: GroupPreparedPlayDataPart
+	sections: {
+		[partId: string]: GroupPreparedPlayDataSection[]
 	}
 }
 
+export interface GroupPreparedPlayDataSection {
+	/** Starting time of the first part in this section (unix timestamp) [ms] */
+	startTime: number
+	/** If set, startTime is disregarded and the section is instead paused at the pauseTime (0 is start of the section) [ms] */
+	pauseTime: number | undefined
+
+	/** End time of the section (like when another section starts) (unix timestamp) [ms] */
+	endTime: number | null
+
+	/** Total duration of the parts in .parts. null = infinite [ms] */
+	duration: number | null
+	parts: GroupPreparedPlayDataPart[]
+	/** If the section is repeating or not */
+	repeating?: boolean
+
+	/** If the section originate from a schedule */
+	schedule: boolean
+}
 export interface GroupPreparedPlayDataPart {
-	/**
-	 * The point in time the part starts to play. (unix timestamp) [ms] */
+	/** The point in time the part starts to play. (unix timestamp) [ms] */
 	startTime: number
 	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-	pauseTime: number | undefined
+	// pauseTime: number | undefined
 	/** Duration of the part, null = infinite [ms] */
 	duration: number | null
+
 	part: Part
 
-	/** What the playhead should do when it reaches the end of the part */
-	endAction: 'stop' | 'next' | 'loop' | 'infinite'
+	/** What the playhead will do when it reaches the end of the part */
+	endAction?: PlayPartEndAction
+}
+export enum PlayPartEndAction {
+	/** Playout will stop */
+	STOP = 'stop',
+	/** Will play the next part in group */
+	NEXT_PART = 'next',
+	/** Will play the same part in a loop */
+	LOOP_SELF = 'loop_self',
+	/** Will be interrupted by a schedule */
+	SCHEDULE = 'schedule',
+	/** Will continue to play this part indefinitely */
+	INFINITE = 'infinite',
 }

@@ -1,3 +1,4 @@
+import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
 import { ResourceAny } from '@shared/models'
@@ -121,7 +122,7 @@ export interface IPCServerMethods {
 	}) => {
 		groupId: string
 	}[]
-	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
+	updateGroup: (arg: { rundownId: string; groupId: string; group: PartialDeep<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
 	moveParts: (arg: {

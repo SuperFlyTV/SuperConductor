@@ -27,18 +27,19 @@ export interface GroupBase {
 	playout: {
 		/** Map of the part(s) currently playing */
 		playingParts: {
-			[partId: string]: {
-				/** Timestamp of when the part started playing (unix timestamp) */
-				startTime: number
-
-				/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-				pauseTime: number | undefined
-			}
+			[partId: string]: PlayingPart
 		}
 	}
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+}
+export interface PlayingPart {
+	/** Timestamp of when the part started playing (unix timestamp) */
+	startTime: number
+
+	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+	pauseTime: number | undefined
 }
 
 export interface Group extends GroupBase {

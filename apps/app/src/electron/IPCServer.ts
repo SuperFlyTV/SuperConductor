@@ -21,7 +21,9 @@ import {
 	shortID,
 	updateGroupPlayingParts,
 } from '../lib/util'
-import { Group } from '../models/rundown/Group'
+import { PartialDeep } from 'type-fest'
+import deepExtend from 'deep-extend'
+import { Group, PlayoutMode, PlayingPart } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
@@ -43,7 +45,7 @@ import {
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
-import { getGroupPlayData } from '../lib/playhead'
+import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
@@ -274,6 +276,7 @@ export class IPCServer
 		if (part.disabled) {
 			return
 		}
+		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (group.oneAtATime) {
 			// Anything already playing should be stopped:
@@ -315,6 +318,7 @@ export class IPCServer
 		if (part.disabled) {
 			return
 		}
+		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (!group.playout.playingParts) group.playout.playingParts = {}
 
@@ -326,23 +330,27 @@ export class IPCServer
 				}
 			}
 		}
+		const playData = getGroupPlayData(group.preparedPlayData)
+		const playhead = playData.playheads[part.id] as GroupPlayDataPlayhead | undefined
+		// const existingPlayingPart = group.playout.playingParts[part.id] as PlayingPart | undefined
 
 		// Handle this Part:
-		const playingPart = group.playout.playingParts[part.id]
-		if (playingPart) {
-			if (playingPart.pauseTime === undefined) {
+		if (playhead) {
+			if (playhead.partPauseTime === undefined) {
 				// The part is playing, so it should be paused:
-
-				playingPart.pauseTime =
-					pauseTime ??
-					// If a specific pauseTime not specified, pause at the current time:
-					now - playingPart.startTime
+				group.playout.playingParts[part.id] = {
+					startTime: playhead.partStartTime,
+					pauseTime:
+						pauseTime ??
+						// If a specific pauseTime not specified, pause at the current time:
+						now - playhead.partStartTime,
+				}
 			} else {
 				// The part is paused, so it should be resumed:
-
-				// playingPart.startTime = now - playingPart.pauseTime
-				playingPart.startTime = now - playingPart.pauseTime
-				playingPart.pauseTime = undefined
+				group.playout.playingParts[part.id] = {
+					startTime: now - playhead.partPauseTime,
+					pauseTime: undefined,
+				}
 			}
 		} else {
 			// Part is not playing, cue (pause) it at the time specified:
@@ -351,6 +359,30 @@ export class IPCServer
 				pauseTime: pauseTime ?? 0,
 			}
 		}
+		// // Handle this Part:
+		// const playingPart = group.playout.playingParts[part.id]
+		// if (playingPart) {
+		// 	if (playingPart.pauseTime === undefined) {
+		// 		// The part is playing, so it should be paused:
+
+		// 		playingPart.pauseTime =
+		// 			pauseTime ??
+		// 			// If a specific pauseTime not specified, pause at the current time:
+		// 			now - playingPart.startTime
+		// 	} else {
+		// 		// The part is paused, so it should be resumed:
+
+		// 		// playingPart.startTime = now - playingPart.pauseTime
+		// 		playingPart.startTime = now - playingPart.pauseTime
+		// 		playingPart.pauseTime = undefined
+		// 	}
+		// } else {
+		// 	// Part is not playing, cue (pause) it at the time specified:
+		// 	group.playout.playingParts[part.id] = {
+		// 		startTime: Date.now(),
+		// 		pauseTime: pauseTime ?? 0,
+		// 	}
+		// }
 	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
@@ -487,6 +519,8 @@ export class IPCServer
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { rundown, group } = this.getGroup(arg)
 
+		// if (group.playoutMode !== PlayoutMode.NORMAL) return
+
 		// Stop the group:
 		group.playout.playingParts = {}
 
@@ -498,6 +532,7 @@ export class IPCServer
 		if (group.disabled) {
 			return
 		}
+		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (group.oneAtATime) {
 			// Play the first non-disabled part
@@ -522,6 +557,7 @@ export class IPCServer
 		if (group.disabled) {
 			return
 		}
+		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		updateGroupPlayingParts(group)
 
@@ -948,7 +984,7 @@ export class IPCServer
 	async updateGroup(arg: {
 		rundownId: string
 		groupId: string
-		group: Partial<Group>
+		group: PartialDeep<Group>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -957,9 +993,23 @@ export class IPCServer
 		}
 
 		const groupPreChange = deepClone(group)
-		Object.assign(group, arg.group)
+		deepExtend(group, arg.group)
 
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		let affectsPlayout: Group | undefined = undefined
+		if (
+			arg.group.schedule ||
+			arg.group.autoPlay ||
+			arg.group.loop ||
+			arg.group.disabled ||
+			arg.group.oneAtATime ||
+			arg.group.parts ||
+			arg.group.playout ||
+			arg.group.playoutMode
+		) {
+			affectsPlayout = group
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
 		return {
 			undo: () => {

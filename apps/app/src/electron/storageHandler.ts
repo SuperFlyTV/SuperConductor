@@ -578,7 +578,6 @@ export class StorageHandler extends EventEmitter {
 					// If the rundown exists in the appData and it is marked as open, load it.
 					if (this.appData.appData.rundowns[rundown.fileName].open) {
 						const fileRundown = this._loadRundown(this._projectId, rundown.fileName)
-						this.ensureCompatibilityRundown(fileRundown.rundown)
 						rundowns[rundown.fileName] = fileRundown
 					}
 				} else {
@@ -642,6 +641,7 @@ export class StorageHandler extends EventEmitter {
 			this.rundownsNeedsWrite[fileName] = true
 			return StorageHandler.getDefaultRundown(newName)
 		}
+		this.ensureCompatibilityRundown(rundown.rundown)
 
 		return rundown
 	}
@@ -843,7 +843,7 @@ export class StorageHandler extends EventEmitter {
 			if (!group.playoutMode) {
 				group.playoutMode = getDefaultGroup().playoutMode
 			}
-			if (group.schedule) {
+			if (!group.schedule) {
 				group.schedule = getDefaultGroup().schedule
 			}
 			for (const part of group.parts) {

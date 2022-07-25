@@ -1,13 +1,28 @@
-import { Group } from '../models/rundown/Group'
+import { Group, GroupBase, PlayoutMode } from '../models/rundown/Group'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataMulti,
 	GroupPreparedPlayDataPart,
+	GroupPreparedPlayDataSection,
 	GroupPreparedPlayDataSingle,
+	PlayPartEndAction,
 } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
 import { findPart } from './util'
-import { assertNever } from '@shared/lib'
+import { assertNever, literal } from '@shared/lib'
+import { repeatTime } from './timeLib'
+import _ from 'lodash'
+
+const prepareValidDuration = 365 * 24 * 3600 * 1000
+const prepareValidMaxCount = 10
+
+type PlayAction = {
+	time: number
+	partId: string
+
+	pauseTime?: number
+	fromSchedule: boolean
+}
 
 /** Calculates how the parts in a group is going to be played
  * @see GroupPreparedPlayheadData
@@ -16,259 +31,309 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 	if (group.disabled) {
 		return null
 	}
+	const now = Date.now()
 
 	if (group.oneAtATime) {
-		const playingPartId = Object.keys(group.playout.playingParts)[0]
-		let groupStartTime = playingPartId ? group.playout.playingParts[playingPartId].startTime : null
-		const groupPausedTime = playingPartId ? group.playout.playingParts[playingPartId].pauseTime : undefined
+		let validUntil: number | undefined = undefined
 
-		// Is playing?
-		if (groupStartTime && playingPartId) {
+		const actions: PlayAction[] = []
+
+		const playingPartId = Object.keys(group.playout.playingParts)[0] as string | undefined
+		if (playingPartId) {
+			actions.push({
+				time: group.playout.playingParts[playingPartId].startTime,
+				pauseTime: group.playout.playingParts[playingPartId].pauseTime,
+				partId: playingPartId,
+				fromSchedule: false,
+			})
+		}
+
+		if (group.playoutMode === PlayoutMode.SCHEDULE) {
+			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
+			if (group.schedule.startTime && firstPlayablePart) {
+				// const groupLastInteractionTime = Math.max(0, ...groupStartTimes, groupPausedTime || 0)
+				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
+					now: now,
+					end: now + prepareValidDuration,
+					maxCount: prepareValidMaxCount,
+				})
+
+				for (const startTime of repeatResult.startTimes) {
+					actions.push({
+						time: startTime,
+						partId: firstPlayablePart.id,
+						fromSchedule: true,
+					})
+				}
+				validUntil = repeatResult.validUntil
+			}
+		}
+		// Sort in time ascending:
+		actions.sort((a, b) => {
+			return a.time - b.time
+		})
+		// If there are more than one in the past, remove older ones:
+		for (let i = 1; i < actions.length; i++) {
+			if (actions[i].time <= now) {
+				actions.splice(i - 1, 1)
+				i--
+			}
+		}
+
+		// Is playing at all?
+		if (actions.length > 0) {
+			// let groupStartTime = groupStartTimes[0]
 			const data: GroupPreparedPlayDataSingle = {
 				type: 'single',
-				startTime: 0,
-				pauseTime: undefined,
-				duration: 0,
-				parts: [],
-				repeating: null,
+				sections: [],
+				validUntil: validUntil,
 			}
-			data.startTime = groupStartTime
 
-			let firstPart = findPart(group, playingPartId)
-			if (!firstPart) return null
+			let previousSection: GroupPreparedPlayDataSection | undefined = undefined
+			for (const action of actions) {
+				let actionPart = findPart(group, action.partId)
+				if (!actionPart) continue
 
-			if (groupPausedTime !== undefined) {
-				// Only play the one part, and pause it at groupPausedTime
-				data.pauseTime = groupPausedTime
-				data.duration = null // infinite
-
-				const pausedPart: GroupPreparedPlayDataPart = {
-					startTime: groupStartTime,
-					pauseTime: groupPausedTime,
-					duration: firstPart.resolved.duration,
-					part: firstPart,
-					endAction: 'infinite',
-				}
-
-				data.parts.push(pausedPart)
-			} else if (group.loop && !group.autoPlay) {
-				// Only loop the one part
-
-				// Add the rudown into .repeating instead, to make it loop:
-				data.parts = []
-				data.duration = 0 // Becase .parts is empty
-				data.repeating = {
-					duration: 0, // set later
-					parts: [],
-				}
-
-				let nextStartTime: number | null = groupStartTime
-
-				if (!firstPart.disabled) {
-					// Add the part
-					const loopingPart: GroupPreparedPlayDataPart = {
-						startTime: nextStartTime,
-						pauseTime: undefined,
-						duration: firstPart.resolved.duration,
-						part: firstPart,
-						endAction: 'loop',
+				if (action.pauseTime !== undefined) {
+					// Only play the one part, and pause it at groupPausedTime
+					const section: GroupPreparedPlayDataSection = {
+						startTime: action.time,
+						pauseTime: action.pauseTime,
+						endTime: null,
+						duration: null,
+						parts: [],
+						repeating: false,
+						schedule: action.fromSchedule,
 					}
-					data.repeating.parts.push(loopingPart)
-					if (firstPart.resolved.duration === null) {
-						nextStartTime = null
-						loopingPart.endAction = 'infinite'
-					} else nextStartTime += firstPart.resolved.duration
 
-					data.repeating.duration = firstPart.resolved.duration
-				}
-			} else {
-				// Add the starting Part:
+					const pausedPart: GroupPreparedPlayDataPart = {
+						startTime: action.time,
+						duration: actionPart.resolved.duration,
+						part: actionPart,
+					}
+					section.parts.push(pausedPart)
+					saveSection(data.sections, section)
+					// } else if (group.loop && !group.autoPlay) {
+					// 	// Only loop the one part
+					// 	if (!actionPart.disabled) {
+					// 		const section: GroupPreparedPlayDataSection = {
+					// 			startTime: action.time,
+					// 			pauseTime: undefined,
+					// 			endTime: null,
+					// 			duration: null,
+					// 			parts: [],
+					// 			repeating: true,
+					// 			schedule: action.fromSchedule,
+					// 		}
+					// 		// Add the part
+					// 		const loopingPart: GroupPreparedPlayDataPart = {
+					// 			startTime: action.time,
+					// 			// pauseTime: undefined,
+					// 			duration: actionPart.resolved.duration,
+					// 			part: actionPart,
+					// 		}
+					// 		section.parts.push(loopingPart)
+					// 		saveSection(data.sections, section)
+					// 	}
+				} else {
+					// Add the starting Part:
+					const section: GroupPreparedPlayDataSection = {
+						startTime: action.time,
+						pauseTime: undefined,
+						endTime: null,
+						duration: null,
+						parts: [],
+						repeating: false,
+						schedule: action.fromSchedule,
+					}
 
-				// Special case: If the first part is disabled:
-				if (firstPart.disabled) {
-					// The currently playing part is disabled.
+					// Special case: If the first part is disabled:
+					if (actionPart.disabled) {
+						// The currently playing part is disabled.
+
+						if (group.autoPlay) {
+							// Go to next playable part:
+							let restParts = getPlayablePartsAfter(group.parts, actionPart.id)
+							if (restParts.length === 0) {
+								if (group.loop) {
+									restParts = getPlayablePartsAfter(group.parts, null)
+								}
+							}
+							if (restParts.length > 0) {
+								actionPart = restParts[0]
+								section.startTime = now
+							} else {
+								actionPart = undefined
+							}
+						} else {
+							// Stop playing:
+							actionPart = undefined
+						}
+					}
+					if (!actionPart) continue
+
+					let endLoopingPart: Part | undefined = undefined
+					const partsToPlay: Part[] = [actionPart]
 
 					if (group.autoPlay) {
-						// Go to next playable part:
-						let restParts = getPlayablePartsAfter(group.parts, firstPart.id)
-						if (restParts.length === 0) {
-							if (group.loop) {
-								restParts = getPlayablePartsAfter(group.parts, null)
-							}
-						}
-						if (restParts.length > 0) {
-							firstPart = restParts[0]
-							groupStartTime = Date.now()
-						} else {
-							firstPart = undefined
-						}
-					} else {
-						// Stop playing:
-						firstPart = undefined
+						// Add the rest of the Parts in the group:
+						const restParts = getPlayablePartsAfter(group.parts, actionPart.id)
+
+						partsToPlay.push(...restParts)
 					}
-				}
-
-				if (!firstPart) return null
-
-				/** The startTime of the next Part. */
-				let nextStartTime: number | null = groupStartTime
-
-				let prevPart: GroupPreparedPlayDataSingle['parts'][0] = {
-					startTime: nextStartTime,
-					pauseTime: undefined,
-					duration: firstPart.resolved.duration,
-					part: firstPart,
-					endAction: 'stop', // Changed later
-				}
-				data.parts.push(prevPart)
-
-				if (firstPart.resolved.duration === null) {
-					// Infinite
-					nextStartTime = null
-					data.duration = null
-					prevPart.endAction = 'infinite'
-				} else {
-					nextStartTime += firstPart.resolved.duration
-					data.duration = nextStartTime - groupStartTime // Note: This might be overwritten later.
-				}
-
-				if (group.autoPlay) {
-					// Add the rest of the Parts in the group:
-					const restParts = getPlayablePartsAfter(group.parts, firstPart.id)
-
-					for (const part of restParts) {
-						if (nextStartTime === null) break
-
-						// Change the previous part:
-						prevPart.endAction = 'next'
-
-						// Add the part:
-						prevPart = {
-							startTime: nextStartTime,
-							pauseTime: undefined,
-							duration: part.resolved.duration,
-							part: part,
-							endAction: 'stop', // Changed later
-						}
-						data.parts.push(prevPart)
-
-						if (part.resolved.duration === null) {
-							// Infinite
-							nextStartTime = null
-							prevPart.endAction = 'infinite'
-						} else {
-							nextStartTime += part.resolved.duration
-						}
-					}
-					if (nextStartTime === null) {
-						// Infinite
-						data.duration = null
-					} else {
-						data.duration = nextStartTime - groupStartTime
-					}
-
-					// Looping parts:
-					if (group.loop) {
-						data.repeating = {
-							duration: 0,
-							parts: [],
-						}
-
-						let repeatingDuration: number | null = 0
-						for (const part of group.parts) {
-							if (nextStartTime === null) break
-							if (repeatingDuration === null) break
-							if (part.disabled) continue
-							// Change the previous part:
-							prevPart.endAction = 'next'
-							// Add the part:
-							prevPart = {
-								startTime: nextStartTime,
-								pauseTime: undefined,
-								duration: part.resolved.duration,
-								part: part,
-								endAction: 'next',
-							}
-							data.repeating.parts.push(prevPart)
-
-							if (part.resolved.duration === null) {
-								// Infinite
-								nextStartTime = null
-								repeatingDuration = null
-								prevPart.endAction = 'infinite'
-							} else {
-								nextStartTime += part.resolved.duration
-								repeatingDuration += part.resolved.duration
-							}
-						}
-						data.repeating.duration = repeatingDuration
-					}
-				}
-			}
-
-			// Post process, to handle Looping Part:
-			let foundLooping = false
-			for (let i = 0; i < data.parts.length; i++) {
-				const part = data.parts[i]
-				if (part.part.loop && !part.part.disabled && part.pauseTime === undefined) {
-					// Oh my! The part is looping!
-					// discard the rest of the parts, and put this part in repeating:
-					data.parts.splice(i, Infinity)
-
-					// Calculate the duration of the remaining parts:
-					data.duration = data.parts.reduce((mem: number | null, part) => {
-						if (mem === null || part.duration === null) return null
-						return mem + part.duration
-					}, 0)
-
-					// Ensure that the previous part endAction is 'next':
-					if (i > 0) data.parts[i - 1].endAction = 'next'
-					if (part.duration === null) {
-						part.endAction = 'infinite'
-					} else {
-						part.endAction = 'loop'
-					}
-					data.repeating = {
-						parts: [part],
-						duration: part.duration,
-					}
-					foundLooping = true
-					break
-				}
-			}
-			// Post process, to handle Looping Part in the repeating section:
-			if (!foundLooping && data.repeating) {
-				for (let i = 0; i < data.repeating.parts.length; i++) {
-					const part = data.repeating.parts[i]
-					if (part.part.loop && !part.part.disabled && part.pauseTime === undefined) {
-						// Oh my! The part is looping!
-						// This means that we should move over the previous repeating parts to the .parts array,
-						// and put this part in repeating:
-
-						const partsToMove = data.repeating.parts.slice(0, i)
-						for (const movePart of partsToMove) {
-							if (data.duration === null) {
-								movePart.endAction = 'infinite'
+					{
+						let nextStartTime: number = action.time
+						for (const part of partsToPlay) {
+							if (part.loop) {
+								endLoopingPart = part
 								break
 							}
-							movePart.endAction = 'next'
-							data.parts.push(movePart)
-							if (movePart.duration === null) data.duration = null
-							else data.duration += movePart.duration
+
+							// Add the part:
+							const playPart: GroupPreparedPlayDataPart = {
+								startTime: nextStartTime,
+								duration: part.resolved.duration,
+								part: part,
+							}
+							section.parts.push(playPart)
+
+							if (playPart.duration === null) {
+								// Infinite
+								break
+							} else {
+								nextStartTime += playPart.duration
+							}
 						}
-						if (part.duration === null) {
-							part.endAction = 'infinite'
-						} else {
-							part.endAction = 'loop'
+					}
+					saveSection(data.sections, section)
+
+					if (group.loop && section.endTime !== null && !endLoopingPart) {
+						// Looping parts:
+
+						const loopSection: GroupPreparedPlayDataSection = {
+							startTime: section.endTime,
+							pauseTime: undefined,
+							endTime: null,
+							duration: null,
+							parts: [],
+							repeating: true,
+							schedule: false, // Set to false, since this follows a scheduled(?) section
 						}
-						data.repeating = {
-							parts: [part],
-							duration: part.duration,
+
+						let nextStartTime: number = loopSection.startTime
+
+						const playableParts = getPlayablePartsAfter(group.parts, null)
+						for (const part of playableParts) {
+							if (part.loop) {
+								endLoopingPart = part
+								section.repeating = false
+								break
+							}
+
+							// Add the part:
+							const playPart: GroupPreparedPlayDataPart = {
+								startTime: nextStartTime,
+								duration: part.resolved.duration,
+								part: part,
+							}
+							loopSection.parts.push(playPart)
+
+							if (part.resolved.duration !== null) {
+								nextStartTime += part.resolved.duration
+							} else {
+								// Infinite
+								break
+							}
 						}
-						foundLooping = true
-						break
+						saveSection(data.sections, loopSection)
+					}
+
+					// Handle the case when a part is looping:
+					const lastSection = _.last(data.sections)
+					if (endLoopingPart && lastSection && lastSection.endTime) {
+						const loopPartSection: GroupPreparedPlayDataSection = {
+							startTime: lastSection.endTime,
+							pauseTime: undefined,
+							endTime: null,
+							duration: null,
+							parts: [],
+							repeating: true,
+							schedule: false, // Set to false, since this follows a scheduled(?) section
+						}
+						const playPart: GroupPreparedPlayDataPart = {
+							startTime: loopPartSection.startTime,
+							duration: endLoopingPart.resolved.duration,
+							part: endLoopingPart,
+						}
+						loopPartSection.parts.push(playPart)
+						saveSection(data.sections, loopPartSection)
 					}
 				}
+
+				// Post process, to handle Looping Part:
+				// let foundLooping = false
+				// for (let i = 0; i < data.parts.length; i++) {
+				// 	const part = data.parts[i]
+				// 	if (part.part.loop && !part.part.disabled && part.pauseTime === undefined) {
+				// 		// Oh my! The part is looping!
+				// 		// discard the rest of the parts, and put this part in repeating:
+				// 		data.parts.splice(i, Infinity)
+
+				// 		// Calculate the duration of the remaining parts:
+				// 		data.duration = data.parts.reduce((mem: number | null, part) => {
+				// 			if (mem === null || part.duration === null) return null
+				// 			return mem + part.duration
+				// 		}, 0)
+
+				// 		// // Ensure that the previous part endAction is 'next':
+				// 		// if (i > 0) data.parts[i - 1].endAction = 'next'
+				// 		// if (part.duration === null) {
+				// 		// 	part.endAction = 'infinite'
+				// 		// } else {
+				// 		// 	part.endAction = 'loop'
+				// 		// }
+				// 		data.repeating = {
+				// 			parts: [part],
+				// 			duration: part.duration,
+				// 		}
+				// 		foundLooping = true
+				// 		break
+				// 	}
+				// }
+				// // Post process, to handle Looping Part in the repeating section:
+				// if (!foundLooping && data.repeating) {
+				// 	for (let i = 0; i < data.repeating.parts.length; i++) {
+				// 		const part = data.repeating.parts[i]
+				// 		if (part.part.loop && !part.part.disabled && part.pauseTime === undefined) {
+				// 			// Oh my! The part is looping!
+				// 			// This means that we should move over the previous repeating parts to the .parts array,
+				// 			// and put this part in repeating:
+
+				// 			const partsToMove = data.repeating.parts.slice(0, i)
+				// 			for (const movePart of partsToMove) {
+				// 				if (data.duration === null) {
+				// 					movePart.endAction = 'infinite'
+				// 					break
+				// 				}
+				// 				movePart.endAction = 'next'
+				// 				data.parts.push(movePart)
+				// 				if (movePart.duration === null) data.duration = null
+				// 				else data.duration += movePart.duration
+				// 			}
+				// 			if (part.duration === null) {
+				// 				part.endAction = 'infinite'
+				// 			} else {
+				// 				part.endAction = 'loop'
+				// 			}
+				// 			data.repeating = {
+				// 				parts: [part],
+				// 				duration: part.duration,
+				// 			}
+				// 			foundLooping = true
+				// 			break
+				// 		}
+				// 	}
+				// }
 			}
 
 			return data
@@ -276,38 +341,101 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 	} else {
 		// Playing multiple parts at the same time.
 
-		const partIds = Object.keys(group.playout.playingParts)
-		// Is playing?
-		if (partIds.length > 0) {
+		// let playingParts: GroupBase['playout']['playingParts']
+		// let repeatTimes: GroupPreparedPlayDataMulti['repeatOffsets']
+		let validUntil: number | undefined = undefined
+
+		const actions: { [partId: string]: PlayAction[] } = {}
+
+		for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+			if (!actions[partId]) actions[partId] = []
+			actions[partId].push({
+				partId: partId,
+				time: playingPart.startTime,
+				pauseTime: playingPart.pauseTime,
+				fromSchedule: false,
+			})
+		}
+
+		if (group.playoutMode === PlayoutMode.SCHEDULE) {
+			if (group.schedule.startTime) {
+				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
+					now: now,
+					end: now + prepareValidDuration,
+					maxCount: prepareValidMaxCount,
+				})
+				const playableParts = getPlayablePartsAfter(group.parts, null)
+				for (const part of playableParts) {
+					if (!actions[part.id]) actions[part.id] = []
+
+					for (const startTime of repeatResult.startTimes) {
+						actions[part.id].push({
+							time: startTime,
+							partId: part.id,
+							fromSchedule: true,
+						})
+					}
+					validUntil = repeatResult.validUntil
+				}
+			}
+		}
+
+		// Is anything playing?
+		if (Object.keys(actions).length > 0) {
 			const data: GroupPreparedPlayDataMulti = {
 				type: 'multi',
-				parts: {},
+				sections: {},
+				validUntil: validUntil,
 			}
 
-			for (const playingPartId of partIds) {
-				const playingPart = group.playout.playingParts[playingPartId]
+			for (const [partId, partActions] of Object.entries(actions)) {
+				const partSections: GroupPreparedPlayDataSection[] = []
 
-				const part = findPart(group, playingPartId)
-				if (part && !part.disabled) {
-					if (playingPart.pauseTime !== undefined) {
-						// The part is paused at pauseTime
-						data.parts[playingPartId] = {
-							startTime: playingPart.startTime,
-							pauseTime: playingPart.pauseTime,
-							duration: part.resolved.duration,
-							part,
-							endAction: 'infinite',
-						}
-					} else {
-						// The part is playing
-						data.parts[playingPartId] = {
-							startTime: playingPart.startTime,
-							pauseTime: undefined,
-							duration: part.resolved.duration,
-							part,
-							endAction: part.resolved.duration === null ? 'infinite' : part.loop ? 'loop' : 'stop',
+				const actionPart = findPart(group, partId)
+				if (actionPart && !actionPart.disabled) {
+					for (const action of partActions) {
+						if (action.pauseTime !== undefined) {
+							// The part is paused at pauseTime
+
+							const section: GroupPreparedPlayDataSection = {
+								startTime: action.time,
+								pauseTime: action.pauseTime,
+								endTime: null,
+								duration: null,
+								parts: [],
+								repeating: false,
+								schedule: action.fromSchedule,
+							}
+							const part: GroupPreparedPlayDataPart = {
+								startTime: action.time,
+								duration: actionPart.resolved.duration,
+								part: actionPart,
+							}
+							section.parts.push(part)
+							saveSection(partSections, section)
+						} else {
+							const section: GroupPreparedPlayDataSection = {
+								startTime: action.time,
+								pauseTime: undefined,
+								endTime: null,
+								duration: actionPart.resolved.duration,
+								parts: [],
+								repeating: actionPart.loop,
+								schedule: action.fromSchedule,
+							}
+							const part: GroupPreparedPlayDataPart = {
+								startTime: action.time,
+								duration: actionPart.resolved.duration,
+								part: actionPart,
+							}
+							section.parts.push(part)
+							saveSection(partSections, section)
 						}
 					}
+				}
+
+				if (partSections.length > 0) {
+					data.sections[partId] = partSections
 				}
 			}
 
@@ -333,13 +461,59 @@ function getPlayablePartsAfter(allParts: Part[], currentPartId: string | null): 
 	}
 	return restParts
 }
+/** Post-process section and add it to the list */
+function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPreparedPlayDataSection): void {
+	section.duration = 0
+	for (let i = 0; i < section.parts.length; i++) {
+		const prevPart = i > 0 ? section.parts[i - 1] : undefined
+		const part = section.parts[i]
+
+		if (section.duration !== null) {
+			if (part.duration !== null) {
+				section.duration += part.duration
+			} else {
+				section.duration = null
+			}
+		}
+		part.endAction = part.duration === null ? PlayPartEndAction.INFINITE : PlayPartEndAction.STOP
+
+		if (prevPart) {
+			prevPart.endAction = PlayPartEndAction.NEXT_PART
+		}
+	}
+
+	if (section.parts.length === 1 && section.parts[0].part.loop) {
+		section.parts[0].endAction = PlayPartEndAction.LOOP_SELF
+	}
+	if (section.duration !== null) {
+		section.endTime = section.startTime + section.duration
+	}
+
+	const prevSection = _.last(sections)
+	if (prevSection) {
+		// Ensure that the previous section has a correct endTime:
+		prevSection.endTime = section.startTime
+
+		const lastPart = _.last(prevSection.parts)
+		if (lastPart) {
+			if (section.schedule) {
+				lastPart.endAction = PlayPartEndAction.SCHEDULE
+			} else {
+				lastPart.endAction = PlayPartEndAction.NEXT_PART
+			}
+		}
+	}
+
+	sections.push(section)
+}
 
 /**
- * Calculates which parts in GroupPreparedPlayheadData is currently on-air, and how far in it we currently are.
+ * Calculates which parts in GroupPreparedPlayheadData is currently on-air, and how far in them we currently are.
  */
 export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = Date.now()): GroupPlayData {
 	const playData: GroupPlayData = {
 		groupIsPlaying: false,
+		groupScheduledToPlay: [],
 		anyPartIsPlaying: false,
 		allPartsArePaused: true,
 		playheads: {},
@@ -348,138 +522,29 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 
 	if (prepared) {
 		if (prepared.type === 'single') {
-			let playheadPartId: string | null = null
 			let playhead: GroupPlayDataPlayhead | null = null
 
-			if (
-				now >= prepared.startTime &&
-				(prepared.duration === null || now < prepared.startTime + prepared.duration)
-			) {
-				for (const part of prepared.parts) {
-					const partPauseTime = part.pauseTime
-					const partStartTime = part.startTime
-					const partEndTime = part.duration === null ? null : partStartTime + part.duration
-
-					const isPaused = partPauseTime !== undefined
-					const playheadTime = isPaused ? partPauseTime : now - partStartTime
-					const timeUntilPart = isPaused ? 0 : partStartTime - now
-
-					addCountdown(playData, part.part, timeUntilPart)
-
-					if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
-						playheadPartId = part.part.id
-						playhead = {
-							playheadTime: playheadTime,
-							partStartTime: partStartTime,
-							partPauseTime: partPauseTime,
-							partEndTime: partEndTime,
-							partDuration: part.duration,
-							isInRepeating: false,
-							endAction: part.endAction,
-						}
-					}
-				}
+			for (const section of prepared.sections) {
+				playhead = getPlayheadForSection(playData, now, section) || playhead
 			}
 
-			if (prepared.repeating && prepared.duration !== null) {
-				// Is in the repeating section
-
-				/** When the repeating first starts (unix timestamp) */
-				const repeatingStartTime = prepared.startTime + prepared.duration
-				/** A value that goes from 0 - repeating.duration */
-				const nowInRepeating = (now - repeatingStartTime) % (prepared.repeating.duration ?? Infinity)
-				/** When the current iteration of the repeating started (unix timestamp) */
-				const currentRepeatingStartTime = now - nowInRepeating
-				/** How much to add to times to get the times in the current repetition [ms] */
-				const repeatAddition = Math.max(0, currentRepeatingStartTime - repeatingStartTime)
-
-				for (const part of prepared.repeating.parts) {
-					/** Start time of the part, in this repetition (unix timestamp) */
-					const partStartTime = part.startTime + repeatAddition
-					/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-					const partPauseTime = part.pauseTime
-					/** End time of the part (unix timestamp) */
-					const partEndTime = part.duration === null ? null : partStartTime + part.duration
-
-					const isPaused = partPauseTime !== undefined
-					const playheadTime = isPaused ? partPauseTime : now - partStartTime
-
-					const timeUntilPart = isPaused ? 0 : partStartTime - now
-					addCountdown(playData, part.part, timeUntilPart)
-					if (part.endAction === 'loop' && prepared.repeating.duration !== null) {
-						// Also add for the next repeating loop:
-						addCountdown(playData, part.part, timeUntilPart + prepared.repeating.duration)
-					}
-
-					if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
-						playheadPartId = part.part.id
-						playhead = {
-							playheadTime: playheadTime,
-							partStartTime: partStartTime,
-							partPauseTime: partPauseTime,
-							partEndTime: partEndTime,
-							partDuration: part.duration,
-							isInRepeating: true,
-							endAction: part.endAction,
-						}
-					}
-				}
-			}
-
-			if (playheadPartId && playhead) {
+			if (playhead) {
 				playData.groupIsPlaying = true
 				playData.anyPartIsPlaying = true
-				playData.playheads[playheadPartId] = playhead
+				playData.playheads[playhead.partId] = playhead
 
 				if (playhead.partPauseTime === undefined) playData.allPartsArePaused = false
 			}
 		} else if (prepared.type === 'multi') {
-			for (const [playingPartId, playingPart] of Object.entries(prepared.parts)) {
-				/** When the part first starts (unix timestamp) */
-				const firstPartStartTime = playingPart.startTime
+			for (const [partId, sections] of Object.entries(prepared.sections)) {
+				for (const section of sections) {
+					const playhead = getPlayheadForSection(playData, now, section)
 
-				const partPauseTime = playingPart.pauseTime
+					if (playhead) {
+						playData.anyPartIsPlaying = true
+						playData.playheads[partId] = playhead
 
-				/** How much to add to times to get the times in the current repetition [ms] */
-				let repeatAddition: number
-
-				if (playingPart.endAction === 'loop') {
-					/** A value that goes from 0 -  playingPart.duration */
-					const nowInRepeating = (now - firstPartStartTime) % (playingPart.duration ?? Infinity)
-
-					/** When the current iteration of the repeating started (unix timestamp) */
-					const currentRepeatingStartTime = now - nowInRepeating
-
-					repeatAddition = currentRepeatingStartTime - firstPartStartTime
-				} else {
-					repeatAddition = 0
-				}
-
-				const partStartTime = firstPartStartTime + repeatAddition
-
-				const partEndTime = playingPart.duration === null ? null : partStartTime + playingPart.duration
-
-				const isPaused = partPauseTime !== undefined
-				const playheadTime = isPaused ? partPauseTime : now - partStartTime
-				const timeUntilPart = isPaused ? 0 : partStartTime - now
-
-				addCountdown(playData, playingPart.part, timeUntilPart)
-				if (playingPart.endAction === 'loop' && playingPart.duration !== null) {
-					addCountdown(playData, playingPart.part, timeUntilPart + playingPart.duration) // Also add for the next repeating loop
-				}
-
-				if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
-					if (partPauseTime === undefined) playData.allPartsArePaused = false
-					playData.anyPartIsPlaying = true
-
-					playData.playheads[playingPartId] = {
-						playheadTime: playheadTime,
-						partStartTime: partStartTime,
-						partPauseTime: partPauseTime,
-						partEndTime: partEndTime,
-						partDuration: playingPart.duration,
-						endAction: playingPart.endAction,
-						isInRepeating: Boolean(playingPart.part.loop),
+						if (playhead.partPauseTime === undefined) playData.allPartsArePaused = false
 					}
 				}
 			}
@@ -501,9 +566,93 @@ function addCountdown(playData: GroupPlayData, part: Part, duration: number) {
 	if (!playData.countdowns[part.id]) playData.countdowns[part.id] = []
 	playData.countdowns[part.id].push(duration)
 }
+function getPlayheadForSection(
+	playData: GroupPlayData,
+	now: number,
+	section: GroupPreparedPlayDataSection
+): GroupPlayDataPlayhead | null {
+	let playhead: GroupPlayDataPlayhead | null = null
+
+	let sectionStartTime = section.startTime
+
+	/** How much to add to times to get the times in the current repetition [ms] */
+	let repeatAddition: number = 0
+
+	if (section.repeating && section.duration !== null && now >= section.startTime) {
+		// /** When the repeating first starts (unix timestamp) */
+		// const repeatingStartTime = sectionStartTime + section.duration
+
+		/** A value that goes from 0 - repeating.duration */
+		const nowInRepeating = (now - section.startTime) % (section.duration ?? Infinity)
+		/** When the current iteration of the repeating started (unix timestamp) */
+		const currentRepeatingStartTime = now - nowInRepeating
+
+		/** How much to add to times to get the times in the current repetition [ms] */
+		repeatAddition = Math.max(0, currentRepeatingStartTime - section.startTime)
+	}
+
+	sectionStartTime += repeatAddition
+	const sectionEndTime = section.duration === null ? null : sectionStartTime + section.duration
+	const nextSectionStartTime = section.duration === null ? null : sectionStartTime + section.duration
+
+	if (section.schedule) {
+		if (sectionStartTime > now) playData.groupScheduledToPlay.push(sectionStartTime)
+		if (nextSectionStartTime !== null && nextSectionStartTime > now)
+			playData.groupScheduledToPlay.push(nextSectionStartTime)
+	}
+
+	if (now >= sectionStartTime && now < (sectionEndTime || Infinity)) {
+		for (const part of section.parts) {
+			/** Start time of the part, in this repetition (unix timestamp) */
+			const partStartTime = part.startTime + repeatAddition
+			/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+			// const partPauseTime = part.pauseTime
+			/** End time of the part (unix timestamp) */
+			const partEndTime = part.duration === null ? null : partStartTime + part.duration
+
+			// if (nextScheduleStartTime && partStartTime > nextScheduleStartTime) {
+			// 	// The Part won't play, since the group is scheduled to play next time before it starts
+			// 	continue
+			// }
+			// part.
+			// const isPaused = section.pauseTime !== undefined
+			const playheadTime = section.pauseTime !== undefined ? section.pauseTime : now - partStartTime
+
+			if (section.pauseTime !== undefined) {
+				const timeUntilPart = partStartTime - now
+				addCountdown(playData, part.part, part.startTime - now)
+				if (section.repeating && section.duration !== null) {
+					// Also add for the next repeating loop:
+					addCountdown(playData, part.part, timeUntilPart + section.duration)
+				}
+			}
+			// if (part.endAction === 'loop' && prepared.repeating.duration !== null) {
+			// 	// Also add for the next repeating loop:
+			// 	addCountdown(playData, part.part, timeUntilPart + prepared.repeating.duration)
+			// }
+
+			// if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
+			if (playheadTime >= 0 && playheadTime < (part.duration || Infinity)) {
+				playhead = literal<GroupPlayDataPlayhead>({
+					playheadTime: playheadTime,
+					partStartTime: partStartTime,
+					partPauseTime: section.pauseTime,
+					partEndTime: partEndTime,
+					partDuration: part.duration,
+					partId: part.part.id,
+					isInRepeating: true,
+					endAction: part.endAction,
+				})
+			}
+		}
+	}
+	return playhead
+}
 export interface GroupPlayData {
 	/** If the Group is playing (this is always false if one-at-a-time is set) */
 	groupIsPlaying: boolean
+	/** If the group is scheduled to play in the future, this contains the time until it'll play [ms] */
+	groupScheduledToPlay: number[]
 	/** If any part in the group is playing */
 	anyPartIsPlaying: boolean
 	/** If all parts in the group are playing, and paused */
@@ -528,8 +677,10 @@ export interface GroupPlayDataPlayhead {
 	partEndTime: number | null
 	/** Duration of the part [ms], null = infinity*/
 	partDuration: number | null
+	/** Id of the Part the playead refers to */
+	partId: string
 	/** What the playhead will to when it reaches the partEndTime */
-	endAction: 'stop' | 'next' | 'loop' | 'infinite'
+	endAction: PlayPartEndAction | undefined
 
 	/** Whether the playhead has entered the repeating section of parts */
 	isInRepeating: boolean
