@@ -485,7 +485,10 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 	if (section.parts.length === 1 && section.parts[0].part.loop) {
 		section.parts[0].endAction = PlayPartEndAction.LOOP_SELF
 	}
-	if (section.duration !== null && !section.repeating) {
+
+	if (section.pauseTime !== undefined || section.repeating) {
+		section.endTime = null
+	} else if (section.duration !== null) {
 		section.endTime = section.startTime + section.duration
 	}
 
@@ -592,13 +595,13 @@ function getPlayheadForSection(
 	}
 
 	sectionStartTime += repeatAddition
-	const sectionEndTime = section.duration === null ? null : sectionStartTime + section.duration
+	// const sectionEndTime = section.duration === null ? null : sectionStartTime + section.duration
 	const nextSectionStartTime = section.duration === null ? null : sectionStartTime + section.duration
 
 	if (section.schedule) {
-		if (sectionStartTime > now) playData.groupScheduledToPlay.push(sectionStartTime)
+		if (sectionStartTime > now) playData.groupScheduledToPlay.push(sectionStartTime - now)
 		if (nextSectionStartTime !== null && nextSectionStartTime > now)
-			playData.groupScheduledToPlay.push(nextSectionStartTime)
+			playData.groupScheduledToPlay.push(nextSectionStartTime - now)
 	}
 
 	// if (now >= sectionStartTime && now < (sectionEndTime || Infinity)) {
@@ -619,11 +622,16 @@ function getPlayheadForSection(
 		const playheadTime = section.pauseTime !== undefined ? section.pauseTime : now - partStartTime
 
 		if (section.pauseTime === undefined) {
-			const timeUntilPart = partStartTime - now
-			addCountdown(playData, part.part, timeUntilPart)
+			if (partStartTime >= section.startTime && partStartTime < (section.endTime ?? Infinity)) {
+				addCountdown(playData, part.part, partStartTime - now)
+			}
+
 			if (section.repeating && section.duration !== null) {
 				// Also add for the next repeating loop:
-				addCountdown(playData, part.part, timeUntilPart + section.duration)
+				const nextPartStartTime = partStartTime + section.duration
+				if (nextPartStartTime >= section.startTime && nextPartStartTime < (section.endTime ?? Infinity)) {
+					addCountdown(playData, part.part, nextPartStartTime - now)
+				}
 			}
 		}
 		// if (part.endAction === 'loop' && prepared.repeating.duration !== null) {

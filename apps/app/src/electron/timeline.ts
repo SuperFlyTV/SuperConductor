@@ -77,7 +77,14 @@ export function getTimelineForGroup(
 				lastEnd = Math.max(section.endTime || Infinity, lastEnd)
 
 				children.push(
-					...sectionToTimelineObj(section, `${group.id}_${i}`, makeUniqueId, getUniqueId, customPartContent)
+					...sectionToTimelineObj(
+						section,
+						`${group.id}_${i}`,
+						group.id,
+						makeUniqueId,
+						getUniqueId,
+						customPartContent
+					)
 				)
 			}
 
@@ -146,7 +153,8 @@ export function getTimelineForGroup(
 					children.push(
 						...sectionToTimelineObj(
 							section,
-							`${group.id}_${i}`,
+							`${group.id}_${partId}_${i}`,
+							`${group.id}_${partId}`,
 							makeUniqueId,
 							getUniqueId,
 							customPartContent
@@ -170,6 +178,7 @@ export function getTimelineForGroup(
 function sectionToTimelineObj(
 	section: GroupPreparedPlayDataSection,
 	id: string,
+	layer: string,
 	makeUniqueId: (id: string) => string,
 	getUniqueId: (id: string) => string,
 	customPartContent: CustomPartContent | undefined
@@ -180,10 +189,9 @@ function sectionToTimelineObj(
 		id: `section_${id}`,
 		enable: {
 			start: section.startTime,
-			duration: section.duration,
-			repeating: section.repeating ? section.duration : undefined,
+			end: section.endTime ?? undefined,
 		},
-		layer: '',
+		layer: layer,
 		content: {
 			deviceType: DeviceType.ABSTRACT,
 			type: 'empty',
@@ -192,6 +200,27 @@ function sectionToTimelineObj(
 		isGroup: true,
 		children: [],
 	}
+	const sectionContentObj: TimelineObjEmpty = {
+		id: `section_content_${id}`,
+		enable: {
+			start: 0,
+			duration: section.repeating
+				? section.duration
+				: section.endTime !== null
+				? section.endTime - section.startTime
+				: null,
+			repeating: section.repeating ? section.duration : undefined,
+		},
+		layer: `${layer}_content`,
+		content: {
+			deviceType: DeviceType.ABSTRACT,
+			type: 'empty',
+		},
+		classes: [],
+		isGroup: true,
+		children: [],
+	}
+	sectionObj.children?.push(sectionContentObj)
 
 	for (const part of section.parts) {
 		// Add the part to the timeline:
@@ -204,10 +233,10 @@ function sectionToTimelineObj(
 		)
 		// We have to modify the ids so that they won't collide with the previous ones:
 		changeTimelineId(obj, (id) => getUniqueId(id))
-		sectionObj.children?.push(obj)
+		sectionContentObj.children?.push(obj)
 	}
 
-	if ((sectionObj.children?.length ?? 0) > 0) {
+	if ((sectionContentObj.children?.length ?? 0) > 0) {
 		timeline.push(sectionObj)
 	}
 
