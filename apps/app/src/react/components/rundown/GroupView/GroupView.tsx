@@ -96,17 +96,17 @@ export const GroupView: React.FC<{
 
 		if (group.preparedPlayData) {
 			if (group.preparedPlayData.type === 'single') {
-				for (const part of group.preparedPlayData.parts) {
-					activeParts0[part.part.id] = true
-				}
-				if (group.preparedPlayData.repeating) {
-					for (const part of group.preparedPlayData.repeating.parts) {
+				for (const section of group.preparedPlayData.sections) {
+					for (const part of section.parts) {
 						activeParts0[part.part.id] = true
 					}
 				}
 			} else if (group.preparedPlayData.type === 'multi') {
-				for (const part of Object.values(group.preparedPlayData.parts)) {
-					activeParts0[part.part.id] = true
+				for (const partId of Object.keys(group.preparedPlayData.sections)) {
+					activeParts0[partId] = true
+					// for (const part of section.parts) {
+					// 	activeParts0[part.part.id] = true
+					// }
 				}
 			} else {
 				assertNever(group.preparedPlayData)

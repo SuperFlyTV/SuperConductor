@@ -348,14 +348,14 @@ export function _getKeyDisplay(
 		const tl = getTimelineForGroup(
 			action.group,
 			action.group.preparedPlayData,
-			(playingPart: GroupPreparedPlayDataPart, parentId: string) => {
+			(playingPart: GroupPreparedPlayDataPart, parentId: string, isPaused: boolean) => {
 				// return content for the part
 
 				const part: PartBase = playingPart.part
 				// if (action.part.id !== part.id) return []
 
 				let content: KeyDisplay | null = null
-				if (playingPart.pauseTime !== undefined) {
+				if (isPaused) {
 					// The part is paused
 					content =
 						labels.paused?.({

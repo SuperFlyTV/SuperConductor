@@ -485,7 +485,7 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 	if (section.parts.length === 1 && section.parts[0].part.loop) {
 		section.parts[0].endAction = PlayPartEndAction.LOOP_SELF
 	}
-	if (section.duration !== null) {
+	if (section.duration !== null && !section.repeating) {
 		section.endTime = section.startTime + section.duration
 	}
 
@@ -601,51 +601,51 @@ function getPlayheadForSection(
 			playData.groupScheduledToPlay.push(nextSectionStartTime)
 	}
 
-	if (now >= sectionStartTime && now < (sectionEndTime || Infinity)) {
-		for (const part of section.parts) {
-			/** Start time of the part, in this repetition (unix timestamp) */
-			const partStartTime = part.startTime + repeatAddition
-			/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-			// const partPauseTime = part.pauseTime
-			/** End time of the part (unix timestamp) */
-			const partEndTime = part.duration === null ? null : partStartTime + part.duration
+	// if (now >= sectionStartTime && now < (sectionEndTime || Infinity)) {
+	for (const part of section.parts) {
+		/** Start time of the part, in this repetition (unix timestamp) */
+		const partStartTime = part.startTime + repeatAddition
+		/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+		// const partPauseTime = part.pauseTime
+		/** End time of the part (unix timestamp) */
+		const partEndTime = part.duration === null ? null : partStartTime + part.duration
 
-			// if (nextScheduleStartTime && partStartTime > nextScheduleStartTime) {
-			// 	// The Part won't play, since the group is scheduled to play next time before it starts
-			// 	continue
-			// }
-			// part.
-			// const isPaused = section.pauseTime !== undefined
-			const playheadTime = section.pauseTime !== undefined ? section.pauseTime : now - partStartTime
+		// if (nextScheduleStartTime && partStartTime > nextScheduleStartTime) {
+		// 	// The Part won't play, since the group is scheduled to play next time before it starts
+		// 	continue
+		// }
+		// part.
+		// const isPaused = section.pauseTime !== undefined
+		const playheadTime = section.pauseTime !== undefined ? section.pauseTime : now - partStartTime
 
-			if (section.pauseTime !== undefined) {
-				const timeUntilPart = partStartTime - now
-				addCountdown(playData, part.part, part.startTime - now)
-				if (section.repeating && section.duration !== null) {
-					// Also add for the next repeating loop:
-					addCountdown(playData, part.part, timeUntilPart + section.duration)
-				}
-			}
-			// if (part.endAction === 'loop' && prepared.repeating.duration !== null) {
-			// 	// Also add for the next repeating loop:
-			// 	addCountdown(playData, part.part, timeUntilPart + prepared.repeating.duration)
-			// }
-
-			// if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
-			if (playheadTime >= 0 && playheadTime < (part.duration || Infinity)) {
-				playhead = literal<GroupPlayDataPlayhead>({
-					playheadTime: playheadTime,
-					partStartTime: partStartTime,
-					partPauseTime: section.pauseTime,
-					partEndTime: partEndTime,
-					partDuration: part.duration,
-					partId: part.part.id,
-					isInRepeating: true,
-					endAction: part.endAction,
-				})
+		if (section.pauseTime === undefined) {
+			const timeUntilPart = partStartTime - now
+			addCountdown(playData, part.part, timeUntilPart)
+			if (section.repeating && section.duration !== null) {
+				// Also add for the next repeating loop:
+				addCountdown(playData, part.part, timeUntilPart + section.duration)
 			}
 		}
+		// if (part.endAction === 'loop' && prepared.repeating.duration !== null) {
+		// 	// Also add for the next repeating loop:
+		// 	addCountdown(playData, part.part, timeUntilPart + prepared.repeating.duration)
+		// }
+
+		// if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
+		if (playheadTime >= 0 && playheadTime < (part.duration || Infinity)) {
+			playhead = literal<GroupPlayDataPlayhead>({
+				playheadTime: playheadTime,
+				partStartTime: partStartTime,
+				partPauseTime: section.pauseTime,
+				partEndTime: partEndTime,
+				partDuration: part.duration,
+				partId: part.part.id,
+				isInRepeating: true,
+				endAction: part.endAction,
+			})
+		}
 	}
+	// }
 	return playhead
 }
 export interface GroupPlayData {
