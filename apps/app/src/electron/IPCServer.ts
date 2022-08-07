@@ -15,6 +15,7 @@ import {
 	getNextPartIndex,
 	getPositionFromTarget,
 	getPrevPartIndex,
+	has,
 	isLayerInfinite,
 	listAvailableDeviceIDs,
 	MoveTarget,
@@ -997,14 +998,14 @@ export class IPCServer
 
 		let affectsPlayout: Group | undefined = undefined
 		if (
-			arg.group.schedule ||
-			arg.group.autoPlay ||
-			arg.group.loop ||
-			arg.group.disabled ||
-			arg.group.oneAtATime ||
-			arg.group.parts ||
-			arg.group.playout ||
-			arg.group.playoutMode
+			has(arg.group, 'schedule') ||
+			has(arg.group, 'autoPlay') ||
+			has(arg.group, 'loop') ||
+			has(arg.group, 'disabled') ||
+			has(arg.group, 'oneAtATime') ||
+			has(arg.group, 'parts') ||
+			has(arg.group, 'playout') ||
+			has(arg.group, 'playoutMode')
 		) {
 			affectsPlayout = group
 		}
