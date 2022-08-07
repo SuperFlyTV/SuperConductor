@@ -20,6 +20,7 @@ import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
+import { describeTimelineObject } from './TimelineObj'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -747,4 +748,17 @@ export function copyTimelineObj(obj: TimelineObj): TimelineObj {
 /** Checks if key is a direct property of object. */
 export function has<T extends { [key: string]: any }>(obj: T, key: keyof T): boolean {
 	return _.has(obj, key)
+}
+export function getPartLabel(part: PartBase): string {
+	if (part.name) return part.name
+
+	if ((part as Part).timeline) {
+		const firstTimelineObj = (part as Part).timeline[0]
+		if (firstTimelineObj) {
+			const description = describeTimelineObject(firstTimelineObj.obj)
+			return description.label
+		}
+	}
+
+	return ''
 }
