@@ -115,6 +115,7 @@ $margin-v: 2rem;
 	}
 
 	&.disabled {
+		color: #999;
 		.group__header {
 			.title {
 				opacity: 0.5;
