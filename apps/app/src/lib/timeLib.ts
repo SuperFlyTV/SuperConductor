@@ -263,6 +263,7 @@ try {
 	assert(formatDuration(1234, 2), '1.23')
 	assert(formatDuration(1234, 4), '1.234')
 } catch (e) {
+	// eslint-disable-next-line no-console
 	console.error(e)
 }
 
@@ -870,6 +871,7 @@ try {
 		]
 	)
 } catch (e) {
+	// eslint-disable-next-line no-console
 	console.error(e)
 }
 

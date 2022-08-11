@@ -1,4 +1,4 @@
-import { Group, GroupBase, PlayoutMode } from '../models/rundown/Group'
+import { Group, PlayoutMode } from '../models/rundown/Group'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataMulti,
@@ -89,7 +89,6 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 				validUntil: validUntil,
 			}
 
-			let previousSection: GroupPreparedPlayDataSection | undefined = undefined
 			for (const action of actions) {
 				let actionPart = findPart(group, action.partId)
 				if (!actionPart) continue
@@ -579,7 +578,7 @@ function getPlayheadForSection(
 	let sectionStartTime = section.startTime
 
 	/** How much to add to times to get the times in the current repetition [ms] */
-	let repeatAddition: number = 0
+	let repeatAddition = 0
 
 	if (section.repeating && section.duration !== null && now >= section.startTime) {
 		// /** When the repeating first starts (unix timestamp) */

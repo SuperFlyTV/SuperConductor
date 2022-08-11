@@ -1155,7 +1155,7 @@ const PartControlButtons: React.FC<{
 	partId: string
 	disabled?: boolean
 	groupPlayoutMode: PlayoutMode
-}> = observer(function PartControlButtons({ rundownId, groupId, partId, disabled, groupPlayoutMode }) {
+}> = observer(function PartControlButtons({ rundownId, groupId, partId, disabled }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 

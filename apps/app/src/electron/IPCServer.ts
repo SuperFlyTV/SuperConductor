@@ -25,7 +25,7 @@ import {
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group, PlayoutMode, PlayingPart } from '../models/rundown/Group'
+import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'

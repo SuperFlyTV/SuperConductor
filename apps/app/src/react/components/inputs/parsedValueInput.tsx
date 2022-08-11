@@ -26,8 +26,6 @@ export function ParsedValueInput<V>(
 		setValue(stringify(currentValue))
 	}, [currentValue, stringify])
 
-	useEffect(() => {}, [currentValue])
-
 	const onSave = (str: string) => {
 		hasUnsavedChanges.current = false
 

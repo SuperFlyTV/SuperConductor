@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { GroupBase, GroupGUI, PlayoutMode } from '../../../../models/rundown/Group'
+import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
 import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -51,7 +51,6 @@ import { Btn } from '../../inputs/Btn/Btn'
 import { sortSelected } from '../../../lib/clientUtil'
 import _ from 'lodash'
 import { formatDuration } from '../../../../lib/timeLib'
-import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -931,7 +930,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 const GroupCountDown: React.FC<{
 	rundownId: string
 	group: GroupBase
-}> = observer(function GroupCountDown({ rundownId, group }) {
+}> = observer(function GroupCountDown({ group }) {
 	const nextCoundown = computed(
 		() => (store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? [])[0] || null
 	).get()
