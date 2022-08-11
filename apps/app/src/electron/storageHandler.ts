@@ -11,7 +11,6 @@ import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
-import { PlayoutMode } from '../models/rundown/Group'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -845,6 +844,17 @@ export class StorageHandler extends EventEmitter {
 			}
 			if (!group.schedule) {
 				group.schedule = getDefaultGroup().schedule
+			}
+			if (group.preparedPlayData) {
+				if (group.preparedPlayData.type === 'single') {
+					if (!group.preparedPlayData.sections) {
+						group.preparedPlayData.sections = []
+					}
+				} else if (group.preparedPlayData.type === 'multi') {
+					if (!group.preparedPlayData.sections) {
+						group.preparedPlayData.sections = {}
+					}
+				}
 			}
 			for (const part of group.parts) {
 				if (!part.triggers) {
