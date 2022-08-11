@@ -762,3 +762,22 @@ export function getPartLabel(part: PartBase): string {
 
 	return ''
 }
+/** Deeply clones an object and replaces any undefined values with '__undefined'.
+ * This is useful because undefined values are not supported by JSON
+ * To restore the original object, use unReplaceUndefined()
+ */
+export function replaceUndefined(obj: any): any {
+	return JSON.parse(JSON.stringify(obj, (_k, v) => (v === undefined ? '__undefined__' : v)))
+}
+export function unReplaceUndefined(obj: any): any {
+	if (obj === '__undefined__') return undefined
+	if (obj === null) return null
+	if (typeof obj === 'object') {
+		const newObj: any = Array.isArray(obj) ? [] : {}
+		for (const key in obj) {
+			newObj[key] = unReplaceUndefined(obj[key])
+		}
+		return newObj
+	}
+	return obj
+}

@@ -20,6 +20,7 @@ import {
 	listAvailableDeviceIDs,
 	MoveTarget,
 	shortID,
+	unReplaceUndefined,
 	updateGroupPlayingParts,
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
@@ -123,8 +124,9 @@ export class IPCServer
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
-					ipcMain.handle(methodName, async (event, ...args) => {
+					ipcMain.handle(methodName, async (event, args0: string) => {
 						try {
+							const args = unReplaceUndefined(args0)
 							const result = await fcn(...args)
 							if (isUndoable(result)) {
 								// Clear any future things in the undo ledger:
@@ -1732,14 +1734,16 @@ export class IPCServer
 			obj.layer = addToLayerId
 			usePreviousLayerId = obj.layer
 
-			const mapping = project.mappings[obj.layer]
-			const allow = allowAddingResourceToLayer(project, resource, mapping)
+			const mapping = project.mappings[obj.layer] as Mapping | undefined
+			const allow = mapping && allowAddingResourceToLayer(project, resource, mapping)
 			if (!allow) {
 				if (arg.resourceIds.length > 1) continue // ignore the error if we're adding multiple resources
 				throw new Error(
 					`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
 						obj.layer
-					}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
+					}" ("${
+						mapping ? getMappingName(mapping, obj.layer) : 'N/A'
+					}") because it is of an incompatible type.`
 				)
 			}
 			const timelineObj: TimelineObj = {
