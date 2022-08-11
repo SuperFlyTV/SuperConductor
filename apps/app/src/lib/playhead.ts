@@ -50,7 +50,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
 			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
-			if (group.schedule.startTime && firstPlayablePart) {
+			if (group.schedule.startTime && group.schedule.activate && firstPlayablePart) {
 				// const groupLastInteractionTime = Math.max(0, ...groupStartTimes, groupPausedTime || 0)
 				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
 					now: now,
@@ -357,7 +357,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 		}
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
-			if (group.schedule.startTime) {
+			if (group.schedule.startTime && group.schedule.activate) {
 				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
 					now: now,
 					end: now + prepareValidDuration,

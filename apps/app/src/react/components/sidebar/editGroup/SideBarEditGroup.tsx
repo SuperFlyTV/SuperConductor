@@ -18,6 +18,7 @@ import { assertNever } from '@shared/lib'
 import { PartialDeep } from 'type-fest'
 import { IntInput } from '../../inputs/IntInput'
 import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
+import { Btn } from '../../inputs/Btn/Btn'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -89,6 +90,41 @@ export const SideBarEditGroup: React.FC<{
 				</div>
 				{group.playoutMode === PlayoutMode.SCHEDULE && (
 					<div className="settings-group">
+						<div className="setting">
+							{group.schedule.activate ? (
+								<Btn
+									className="btn-active"
+									title="Click to disable schedule"
+									onClick={() => {
+										ipcServer
+											.updateGroup({
+												rundownId,
+												groupId,
+												group: { schedule: { activate: false } },
+											})
+											.catch(handleError)
+									}}
+								>
+									ON
+								</Btn>
+							) : (
+								<Btn
+									className="btn-inactive"
+									title="Click to activate schedule"
+									onClick={() => {
+										ipcServer
+											.updateGroup({
+												rundownId,
+												groupId,
+												group: { schedule: { activate: true } },
+											})
+											.catch(handleError)
+									}}
+								>
+									OFF
+								</Btn>
+							)}
+						</div>
 						<div className="setting">
 							<DateTimeInput
 								label="Start Time"

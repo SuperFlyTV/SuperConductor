@@ -87,6 +87,7 @@ export enum PlayoutMode {
 	// EXPRESSION = 'expression', // <-- not implemented yet
 }
 export interface ScheduleSettings {
+	activate?: boolean
 	/** timestamp */
 	startTime?: DateTimeObject
 	repeating: RepeatingSettingsAny
