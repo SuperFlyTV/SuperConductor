@@ -30,6 +30,8 @@ export interface GroupPreparedPlayDataSection {
 	startTime: number
 	/** If set, startTime is disregarded and the section is instead paused at the pauseTime (0 is start of the section) [ms] */
 	pauseTime: number | undefined
+	/** If set, the content of the section is intended to stop at this time */
+	stopTime: number | undefined
 
 	/** End time of the section (like when another section starts) (unix timestamp) [ms] */
 	endTime: number | null

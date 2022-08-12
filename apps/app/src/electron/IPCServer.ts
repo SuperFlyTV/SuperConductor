@@ -290,6 +290,8 @@ export class IPCServer
 		group.playout.playingParts[part.id] = {
 			startTime: now,
 			pauseTime: undefined,
+			stopTime: undefined,
+			fromSchedule: false,
 		}
 	}
 	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
@@ -329,7 +331,7 @@ export class IPCServer
 			// If any other parts are playing, they should be stopped:
 			for (const partId of Object.keys(group.playout.playingParts)) {
 				if (partId !== part.id) {
-					delete group.playout.playingParts[partId]
+					group.playout.playingParts[partId].stopTime = now
 				}
 			}
 		}
@@ -347,12 +349,16 @@ export class IPCServer
 						pauseTime ??
 						// If a specific pauseTime not specified, pause at the current time:
 						now - playhead.partStartTime,
+					stopTime: undefined,
+					fromSchedule: false,
 				}
 			} else {
 				// The part is paused, so it should be resumed:
 				group.playout.playingParts[part.id] = {
 					startTime: now - playhead.partPauseTime,
 					pauseTime: undefined,
+					stopTime: undefined,
+					fromSchedule: false,
 				}
 			}
 		} else {
@@ -360,44 +366,27 @@ export class IPCServer
 			group.playout.playingParts[part.id] = {
 				startTime: Date.now(),
 				pauseTime: pauseTime ?? 0,
+				stopTime: undefined,
+				fromSchedule: false,
 			}
 		}
-		// // Handle this Part:
-		// const playingPart = group.playout.playingParts[part.id]
-		// if (playingPart) {
-		// 	if (playingPart.pauseTime === undefined) {
-		// 		// The part is playing, so it should be paused:
-
-		// 		playingPart.pauseTime =
-		// 			pauseTime ??
-		// 			// If a specific pauseTime not specified, pause at the current time:
-		// 			now - playingPart.startTime
-		// 	} else {
-		// 		// The part is paused, so it should be resumed:
-
-		// 		// playingPart.startTime = now - playingPart.pauseTime
-		// 		playingPart.startTime = now - playingPart.pauseTime
-		// 		playingPart.pauseTime = undefined
-		// 	}
-		// } else {
-		// 	// Part is not playing, cue (pause) it at the time specified:
-		// 	group.playout.playingParts[part.id] = {
-		// 		startTime: Date.now(),
-		// 		pauseTime: pauseTime ?? 0,
-		// 	}
-		// }
 	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.oneAtATime) {
 			// Stop the group:
-			group.playout.playingParts = {}
+			for (const partId of Object.keys(group.playout.playingParts)) {
+				group.playout.playingParts[partId].stopTime = now
+			}
 		} else {
 			// Stop the part:
-			delete group.playout.playingParts[arg.partId]
+			const playingPart = group.playout.playingParts[arg.partId]
+			if (playingPart) {
+				playingPart.stopTime = now
+			}
 		}
-
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async setPartTrigger(arg: {
@@ -520,12 +509,15 @@ export class IPCServer
 		}
 	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
 		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		// Stop the group:
-		group.playout.playingParts = {}
+		for (const partId of Object.keys(group.playout.playingParts)) {
+			group.playout.playingParts[partId].stopTime = now
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
@@ -1236,6 +1228,8 @@ export class IPCServer
 							[movePart.partId]: {
 								startTime: movedPartIsPlaying.partStartTime,
 								pauseTime: movedPartIsPlaying.partPauseTime,
+								stopTime: undefined,
+								fromSchedule: movedPartIsPlaying.fromSchedule,
 							},
 						}
 					}

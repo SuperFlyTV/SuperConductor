@@ -40,6 +40,12 @@ export interface PlayingPart {
 
 	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
 	pauseTime: number | undefined
+
+	/** If set, the time when the part stopped playing (unix timestamp) */
+	stopTime: number | undefined
+
+	/** Whether the playingPart originates from a schedule */
+	fromSchedule: boolean
 }
 
 export interface Group extends GroupBase {

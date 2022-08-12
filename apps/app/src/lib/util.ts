@@ -89,8 +89,8 @@ export const deletePart = (group: Group, partId: string): Part | undefined => {
 		return true
 	})
 	if (group.playout) {
-		// If we're removing the one which is playing, we need to figure out what to play instead:
-		// TODO: How to handle this?
+		// Note for future:
+		// If we're removing the one which is playing, should anything else start playing instead?
 		delete group.playout.playingParts[partId]
 	}
 	return deletedPart
@@ -168,17 +168,26 @@ export function allowMovingPartIntoGroup(
  */
 export function updateGroupPlayingParts(group: Group) {
 	const now = Date.now()
-	const playhead = getGroupPlayData(group.preparedPlayData, now)
+	const playData = getGroupPlayData(group.preparedPlayData, now)
 
+	const prevPlayingParts = group.playout.playingParts
 	group.playout.playingParts = {}
-	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
+	for (const [partId, playhead] of Object.entries(playData.playheads)) {
 		group.playout.playingParts[partId] = {
-			startTime: playingPart.partStartTime,
-			pauseTime: playingPart.partPauseTime,
+			startTime: playhead.partStartTime,
+			pauseTime: playhead.partPauseTime,
+			stopTime: undefined,
+			fromSchedule: playhead.fromSchedule,
+		}
+	}
+	// Also add previously stopped playingParts, so that the stops still block sheduled playing parts:
+	for (const [partId, prevPlayingPart] of Object.entries(prevPlayingParts)) {
+		if (!group.playout.playingParts[partId] && prevPlayingPart.stopTime) {
+			if (!group.parts.find((p) => p.id === partId)) continue
+			group.playout.playingParts[partId] = prevPlayingPart
 		}
 	}
 }
-
 /**
  * Returns a string that changes whenever the input changes.
  * Does NOT depend on the order of object attributes.
