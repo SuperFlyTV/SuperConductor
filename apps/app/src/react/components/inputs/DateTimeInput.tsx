@@ -51,7 +51,8 @@ export const DateTimeInput: React.FC<
 			props.disabled,
 			props.fullWidth,
 			props.width,
-			false
+			false,
+			onIncrement
 		)
 	} else if (props.allowNull) {
 		return ParsedValueInput<DateTimeObject | null>(
@@ -66,7 +67,8 @@ export const DateTimeInput: React.FC<
 			props.disabled,
 			props.fullWidth,
 			props.width,
-			false
+			false,
+			onIncrement
 		)
 	} else {
 		return ParsedValueInput<DateTimeObject>(
@@ -81,7 +83,57 @@ export const DateTimeInput: React.FC<
 			props.disabled,
 			props.fullWidth,
 			props.width,
-			false
+			false,
+			onIncrement
 		)
 	}
+}
+
+function onIncrement(
+	value: DateTimeObject | undefined,
+	increment: number,
+	str: string,
+	cursorStart: number | undefined,
+	cursorEnd: number | undefined
+): DateTimeObject | undefined
+function onIncrement(
+	value: DateTimeObject | null,
+	increment: number,
+	str: string,
+	cursorStart: number | undefined,
+	cursorEnd: number | undefined
+): DateTimeObject | null
+function onIncrement(
+	value: DateTimeObject,
+	increment: number,
+	str: string,
+	cursorStart: number | undefined,
+	cursorEnd: number | undefined
+): DateTimeObject
+function onIncrement(
+	value: DateTimeObject | null | undefined,
+	increment: number,
+	str: string,
+	cursorStart: number | undefined,
+	_cursorEnd: number | undefined
+): DateTimeObject | null | undefined {
+	// Increment the selected value
+	if (cursorStart !== undefined) {
+		const matchBefore = str.slice(0, cursorStart).match(/(.*?)(\d*)$/) ?? []
+		const matchAfter = str.slice(cursorStart).match(/^(\d*)(.*)/) ?? []
+
+		const before = matchBefore[1] ?? ''
+		let num = Number((matchBefore[2] ?? '') + (matchAfter[1] ?? ''))
+		const after = matchAfter[2] ?? ''
+
+		if (!Number.isNaN(num)) {
+			num += increment
+			const newStr = before + num + after
+
+			const newValue = parseDateTime(newStr)
+			if (newValue) return newValue
+		}
+	}
+
+	return value
 }

@@ -15,7 +15,13 @@ export function ParsedValueInput<V>(
 	fullWidth?: boolean,
 	width?: string,
 	changeOnKey?: boolean,
-	onIncrement?: (value: V, increment: number) => V
+	onIncrement?: (
+		value: V,
+		increment: number,
+		str: string,
+		cursorStart: number | undefined,
+		cursorEnd: number | undefined
+	) => V
 ): JSX.Element {
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
@@ -75,10 +81,16 @@ export function ParsedValueInput<V>(
 
 	useLayoutEffect(() => {
 		// Move the selector position:
-		if (selectorPosition.current !== null)
-			fieldRef.current?.setSelectionRange(selectorPosition.current, selectorPosition.current)
+		if (selectorPosition.current !== null) {
+			const pos = selectorPosition.current
+			fieldRef.current?.setSelectionRange(pos, pos)
+			// Also set it in a bit, because the selection is also reset after the next render:
+			setTimeout(() => {
+				fieldRef.current?.setSelectionRange(pos, pos)
+			}, 1)
+		}
 		selectorPosition.current = null
-	})
+	}, [value])
 
 	return (
 		<TextField
@@ -96,8 +108,18 @@ export function ParsedValueInput<V>(
 				}
 			}}
 			onKeyDown={(e) => {
-				hasUnsavedChanges.current = true
 				const target = e.target as EventTarget & HTMLInputElement
+
+				// @ts-expect-error selectionStart not found
+				const selectionStart: number = target.selectionStart
+				// @ts-expect-error selectionStart not found
+				const selectionEnd: number = target.selectionEnd
+
+				const str = target.value
+
+				hasUnsavedChanges.current = true
+
+				let incrementValue: number | undefined = undefined
 				if (e.key === 'Enter') {
 					// Select all text
 					;(document.activeElement as HTMLInputElement).setSelectionRange(0, target.value.length)
@@ -108,19 +130,20 @@ export function ParsedValueInput<V>(
 					;(document.activeElement as HTMLInputElement).blur()
 					setValue(stringify(currentValue))
 				} else if (e.key === 'ArrowUp') {
-					if (onIncrement) {
-						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, 100))
-						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, 10))
-						else if (e.altKey) onChangeValue(onIncrement(currentValue, 0.1))
-						else onChangeValue(onIncrement(currentValue, 1))
-					}
+					if (e.ctrlKey) incrementValue = 100
+					else if (e.shiftKey) incrementValue = 10
+					else if (e.altKey) incrementValue = 0.1
+					else incrementValue = 1
 				} else if (e.key === 'ArrowDown') {
-					if (onIncrement) {
-						if (e.ctrlKey) onChangeValue(onIncrement(currentValue, -100))
-						else if (e.shiftKey) onChangeValue(onIncrement(currentValue, -10))
-						else if (e.altKey) onChangeValue(onIncrement(currentValue, -0.1))
-						else onChangeValue(onIncrement(currentValue, -1))
-					}
+					if (e.ctrlKey) incrementValue = -100
+					else if (e.shiftKey) incrementValue = -10
+					else if (e.altKey) incrementValue = -0.1
+					else incrementValue = -1
+				}
+				if (onIncrement && incrementValue !== undefined) {
+					onChangeValue(onIncrement(currentValue, incrementValue, str, selectionStart, selectionEnd))
+					selectorPosition.current = selectionStart
+					// ;(document.activeElement as HTMLInputElement).setSelectionRange(selectionStart, selectionEnd)
 				}
 			}}
 			size="small"

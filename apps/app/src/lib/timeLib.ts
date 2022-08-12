@@ -879,7 +879,15 @@ export function parseDateTime(str: string): DateTimeObject | undefined {
 	if (str === '') return undefined
 	if (!str) return undefined
 
-	const d = dateTimeObject(new Date(str))
+	let date: Date | undefined = undefined
+	const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+) (-?\d+):(-?\d+):(-?\d+)$/)
+	if (m) {
+		date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
+		if (Number.isNaN(date.getTime())) date = undefined
+	}
+	if (!date) date = new Date(str)
+
+	const d = dateTimeObject(date)
 
 	if (dateTimeObjectIsValid(d)) {
 		return d
@@ -887,9 +895,16 @@ export function parseDateTime(str: string): DateTimeObject | undefined {
 
 	return undefined
 }
-export function formatDateTime(d: DateTimeObject | undefined | null): string {
+export function formatDateTime(d: DateTimeObject | Date | number | undefined | null): string {
 	if (d === undefined) return ''
 	if (d === null) return ''
+
+	if (typeof d === 'number') {
+		d = new Date(d)
+	}
+	if (d instanceof Date) {
+		d = dateTimeObject(d)
+	}
 
 	// TODO: Maybe support locale datestring later?
 	// return dateTimeObjectToDate(input).toLocaleString()
@@ -899,4 +914,20 @@ export function formatDateTime(d: DateTimeObject | undefined | null): string {
 		str += `.${pad(d.millisecond, 3)}`
 	}
 	return str
+}
+
+try {
+	assert(parseDateTime('2022-11-28 18:00:00'), dateTimeObject(new Date('2022-11-28 18:00:00')))
+	assert(parseDateTime('2022-01-01 18:00:00'), dateTimeObject(new Date('2022-01-01 18:00:00')))
+	assert(parseDateTime('2022-11-28 18:00:00'), parseDateTime('2022-11-28 18:00:00'))
+	assert(parseDateTime('2022-11-28 18:00:-1'), parseDateTime('2022-11-28 17:59:59'))
+	assert(parseDateTime('2022-11-28 18:-1:00'), parseDateTime('2022-11-28 17:59:00'))
+	assert(parseDateTime('2022-11-28 -1:00:00'), parseDateTime('2022-11-27 23:00:00'))
+	assert(parseDateTime('2022-11-00 18:00:00'), parseDateTime('2022-10-31 18:00:00'))
+	assert(parseDateTime('2022-11--1 18:00:00'), parseDateTime('2022-10-30 18:00:00'))
+	assert(parseDateTime('2022-00-28 18:00:00'), parseDateTime('2021-12-28 18:00:00'))
+	assert(parseDateTime('2022--1-28 18:00:00'), parseDateTime('2021-11-28 18:00:00'))
+} catch (e) {
+	// eslint-disable-next-line no-console
+	console.error(e)
 }
