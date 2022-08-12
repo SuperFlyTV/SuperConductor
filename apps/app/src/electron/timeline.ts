@@ -65,7 +65,6 @@ export function getTimelineForGroup(
 
 	if (prepared) {
 		const timeline: TSRTimeline = []
-		// console.log('prepared', JSON.stringify(prepared, null, 2))
 
 		if (prepared.type === 'single') {
 			let firstStart = Infinity

@@ -82,7 +82,7 @@ export const SelectEnumMultiple: React.FC<SelectEnumMultipleProps<string> | Sele
 			>
 				{Object.entries(allOptions).map(([key, value]) => {
 					return (
-						<MenuItem key={key} value={key}>
+						<MenuItem key={key} value={value.value}>
 							{value.label}
 						</MenuItem>
 					)

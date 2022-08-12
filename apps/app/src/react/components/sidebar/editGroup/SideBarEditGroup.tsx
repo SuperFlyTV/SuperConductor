@@ -300,12 +300,12 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DurationInput
 						label="Interval"
-						currentValue={settings.repeating.interval}
+						currentValue={settings.repeating.intervalCustom as number}
 						allowUndefined={false}
 						allowNull={false}
 						disabled={locked}
-						defaultValue={0}
-						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
+						defaultValue={1}
+						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
 					/>
 				</div>
 				<div className="setting">
@@ -325,10 +325,10 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X day"
-						currentValue={settings.repeating.interval}
+						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
+						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
 					/>
 				</div>
 				<div className="setting">
@@ -344,8 +344,8 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 		)
 	} else if (settings.repeating.type === RepeatingType.WEEKLY) {
 		const weekdaysSelect: number[] = []
-		for (let i = 0; i < settings.repeating.weekdays.length; i++) {
-			if (settings.repeating.weekdays[i]) weekdaysSelect.push(i)
+		for (let i = 0; i < (settings.repeating.weekdays ?? []).length; i++) {
+			if ((settings.repeating.weekdays ?? [])[i]) weekdaysSelect.push(i)
 		}
 		return (
 			<>
@@ -374,7 +374,6 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 								value.includes(5),
 								value.includes(6),
 							]
-
 							onChange({ schedule: { repeating: { weekdays: weekdays } } })
 						}}
 					/>
@@ -396,10 +395,10 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X month"
-						currentValue={settings.repeating.interval}
+						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
+						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
 					/>
 				</div>
 				<div className="setting">

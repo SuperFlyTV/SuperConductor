@@ -385,36 +385,38 @@ export interface RepeatingSettingsNoRepeat extends RepeatingSettingsBase {
 export interface RepeatingSettingsDaily extends RepeatingSettingsBase {
 	type: RepeatingType.DAILY
 	/** Repeat every X day */
-	interval: number
+	interval: number | undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
 }
 export interface RepeatingSettingsWeekly extends RepeatingSettingsBase {
 	type: RepeatingType.WEEKLY
 	/** Which weekdays to repeat on */
-	weekdays: [
-		boolean, // sunday
-		boolean, // monday
-		boolean, // tuesday
-		boolean, // wednesday
-		boolean, // thursday
-		boolean, // friday
-		boolean // saturday
-	]
+	weekdays:
+		| [
+				boolean, // sunday
+				boolean, // monday
+				boolean, // tuesday
+				boolean, // wednesday
+				boolean, // thursday
+				boolean, // friday
+				boolean // saturday
+		  ]
+		| undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
 }
 export interface RepeatingSettingsMonthly extends RepeatingSettingsBase {
 	type: RepeatingType.MONTHLY
 	/** Repeat every X month */
-	interval: number
+	interval: number | undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
 }
 export interface RepeatingSettingsCustom extends RepeatingSettingsBase {
 	type: RepeatingType.CUSTOM
 	/** Repeat every x milliseconds */
-	interval: number
+	intervalCustom: number | undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
 }
@@ -439,7 +441,7 @@ export function repeatTime(
 		const filterEnd = options.end
 
 		let days = Math.max(0, Math.floor((filterStart - start) / 24 / 3600 / 1000))
-		days = days - (days % settings.interval)
+		days = days - (days % (settings.interval ?? 1))
 
 		let prevTime = _.clone(startTime)
 		const startTimes: number[] = []
@@ -487,7 +489,7 @@ export function repeatTime(
 
 			const time = dateTimeAdvance(startMonday, { date: days })
 
-			if (time && settings.weekdays[time.weekDay]) {
+			if (time && (settings.weekdays ?? [])[time.weekDay]) {
 				if (time.unixTimestamp > filterStart) {
 					if (time.unixTimestamp > filterEnd) break
 					if (time.unixTimestamp > (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) break
@@ -540,10 +542,11 @@ export function repeatTime(
 		}
 		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.CUSTOM) {
-		const filterStart = options.now - settings.interval // Include last repeating time
+		const interval = settings.intervalCustom ?? 1
+		const filterStart = options.now - interval // Include last repeating time
 		const filterEnd = options.end
 
-		let time = start + Math.max(0, Math.floor((filterStart - start) / settings.interval) * settings.interval)
+		let time = start + Math.max(0, Math.floor((filterStart - start) / interval) * interval)
 		const startTimes: number[] = []
 		let validUntil: number | undefined = undefined
 		while (
@@ -554,8 +557,8 @@ export function repeatTime(
 			startTimes.push(time)
 			if (time > options.now) validUntil = time
 
-			if (settings.interval < 1000) break
-			time += settings.interval
+			if (interval < 1000) break
+			time += interval
 		}
 
 		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
@@ -613,7 +616,7 @@ try {
 			strDate('2022-07-19 18:00:00'),
 			{
 				type: RepeatingType.CUSTOM,
-				interval: 60 * 60 * 1000,
+				intervalCustom: 60 * 60 * 1000,
 				repeatUntil: strDate('2022-07-21 6:00:00'),
 			},
 			{
@@ -644,7 +647,7 @@ try {
 			strDate('2022-07-20 18:00:00'),
 			{
 				type: RepeatingType.CUSTOM,
-				interval: 60 * 60 * 1000,
+				intervalCustom: 60 * 60 * 1000,
 				repeatUntil: strDate('2022-07-21 6:00:00'),
 			},
 			{

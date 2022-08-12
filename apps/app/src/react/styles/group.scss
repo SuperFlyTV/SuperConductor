@@ -1,3 +1,4 @@
+$group-background: #2c2c2c;
 $margin-v: 2rem;
 .group {
 	border: 0.1rem solid $partOutlineColor;
@@ -5,10 +6,9 @@ $margin-v: 2rem;
 	margin: $margin-v 0;
 	padding-top: 0.4rem;
 	padding-bottom: 2rem;
-	background: #2c2c2c;
+	background: $group-background;
 	border-radius: calc($partTabWidth / 2);
 	transition: box-shadow $default-transition-time;
-	overflow: hidden;
 
 	&--transparent {
 		margin: $margin-v 0;
@@ -106,7 +106,25 @@ $margin-v: 2rem;
 		}
 
 		.schedule-countdown {
-			width: 5em;
+			width: 15em;
+			position: absolute;
+			left: 10em;
+			height: 1.2em;
+			top: -1.2em;
+
+			> div {
+				background: $group-background;
+				padding: 0 0.5em;
+				border-top-left-radius: 5px;
+				border-top-right-radius: 5px;
+			}
+
+			border-top: 0.1rem solid $partOutlineColor;
+			border-left: 0.1rem solid $partOutlineColor;
+			border-right: 0.1rem solid $partOutlineColor;
+
+			border-top-left-radius: 5px;
+			border-top-right-radius: 5px;
 		}
 	}
 

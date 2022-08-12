@@ -50,7 +50,7 @@ import VisibilitySensor from 'react-visibility-sensor'
 import { Btn } from '../../inputs/Btn/Btn'
 import { sortSelected } from '../../../lib/clientUtil'
 import _ from 'lodash'
-import { formatDuration } from '../../../../lib/timeLib'
+import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -931,13 +931,26 @@ const GroupCountDown: React.FC<{
 	rundownId: string
 	group: GroupBase
 }> = observer(function GroupCountDown({ group }) {
-	const nextCoundown = computed(
-		() => (store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? [])[0] || null
+	const nextCoundowns = computed(
+		() => store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? []
 	).get()
 
-	if (nextCoundown === null) return null
+	if (nextCoundowns.length === 0) return null
 
-	return <div className="schedule-countdown">{formatDuration(nextCoundown, 'smart')}</div>
+	return (
+		<div className="schedule-countdown">
+			<div
+				title={
+					nextCoundowns
+						.slice(0, 10)
+						.map((nc) => formatDateTime(nc.timestamp))
+						.join('\n') + (nextCoundowns.length > 10 ? '\n...' : '')
+				}
+			>
+				Scheduled start: {formatDuration(nextCoundowns[0].duration, 'smart')}
+			</div>
+		</div>
+	)
 })
 const GroupControlButtons: React.FC<{
 	rundownId: string
