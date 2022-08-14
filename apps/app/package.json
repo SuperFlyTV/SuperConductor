@@ -98,7 +98,7 @@
 		"react-visibility-sensor": "^5.1.1",
 		"short-uuid": "^4.2.0",
 		"superfly-timeline": "^8.2.1",
-		"timeline-state-resolver-types": "^6.2.0-release37.4",
+		"timeline-state-resolver-types": "^7.3.0-release44.0",
 		"utf-8-validate": "^5.0.2",
 		"winston": "^3.7.2",
 		"winston-daily-rotate-file": "^4.6.1",

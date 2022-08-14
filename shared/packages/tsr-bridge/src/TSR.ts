@@ -25,7 +25,6 @@ export class TSR {
 	constructor(private log: LoggerLike) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
-			initializeAsClear: true,
 			multiThreadedResolver: false,
 			proActiveResolve: true,
 		}
