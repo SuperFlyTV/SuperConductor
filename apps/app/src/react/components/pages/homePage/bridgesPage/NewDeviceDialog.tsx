@@ -5,6 +5,7 @@ import {
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
 	DeviceOptionsHTTPSend,
+	DeviceOptionsHyperdeck,
 	DeviceOptionsOBS,
 	DeviceOptionsOSC,
 	DeviceOptionsVMix,
@@ -108,6 +109,18 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					break
 				}
 
+				case DeviceType.HYPERDECK: {
+					newDevice = literal<DeviceOptionsHyperdeck>({
+						type: DeviceType.HYPERDECK,
+						options: {
+							host: '192.168.0.10',
+							port: 9993,
+						},
+					})
+
+					break
+				}
+
 				// @TODO: Add more device types
 
 				default:
@@ -179,6 +192,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					<MenuItem value={DeviceType.VMIX}>vMix</MenuItem>
 					<MenuItem value={DeviceType.OSC}>OSC</MenuItem>
 					<MenuItem value={DeviceType.HTTPSEND}>HTTP Send</MenuItem>
+					<MenuItem value={DeviceType.HYPERDECK}>Hyperdeck</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 			</DialogContent>

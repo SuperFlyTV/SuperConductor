@@ -5,6 +5,7 @@ import casparcg from '../../../../../img/casparcg.png'
 import vmix from '../../../../../img/vmix.png'
 import obs from '../../../../../img/obs.png'
 import atem from '../../../../../img/atem.png'
+import hyperdeck from '../../../../../img/hyperdeck.png'
 import './style.scss'
 
 export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
@@ -29,6 +30,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
 			break
 		case DeviceType.HTTPSEND:
 			iconElement = <span>HTTP</span>
+			break
+		case DeviceType.HYPERDECK:
+			iconElement = <img src={hyperdeck} alt="Hyperdeck" />
 			break
 		default:
 			iconElement = <span>{props.type}</span>

@@ -154,6 +154,10 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <ResourceDataInner title="OSC Message">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
 		return <ResourceDataInner title="HTTP Request">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PLAY) {
+		return <ResourceDataInner title="Hyperdeck Play">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_RECORD) {
+		return <ResourceDataInner title="Hyperdeck Record">{universalRows}</ResourceDataInner>
 	} else {
 		assertNever(resource)
 		return null

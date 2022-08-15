@@ -110,4 +110,8 @@
 	&.delete {
 		background: $httpLayerColor;
 	}
+
+	&.transport {
+		background: $transportLayerColor;
+	}
 }

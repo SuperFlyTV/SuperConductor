@@ -11,6 +11,8 @@ import {
 	Mapping,
 	MappingAtem,
 	MappingAtemType,
+	MappingHyperdeck,
+	MappingHyperdeckType,
 	MappingOBS,
 	MappingOBSType,
 	MappingVMix,
@@ -413,8 +415,13 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.HYPERDECK) {
-		// @TODO
-		return false
+		const mapping0 = mapping as MappingHyperdeck
+		if (mapping0.mappingType === MappingHyperdeckType.TRANSPORT) {
+			return (
+				resource.resourceType === ResourceType.HYPERDECK_PLAY ||
+				resource.resourceType === ResourceType.HYPERDECK_RECORD
+			)
+		}
 	} else if (mapping.device === DeviceType.LAWO) {
 		// @TODO
 		return false

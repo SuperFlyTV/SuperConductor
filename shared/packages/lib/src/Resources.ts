@@ -27,6 +27,8 @@ enum GeneralResourceType {
 	PREVIEW = 'PREVIEW',
 	OSC = 'osc',
 	HTTP_REQUEST = 'http_request',
+	PLAY = 'play',
+	TRANSPORT = 'transport',
 	UNKNOWN = 'unknown',
 }
 
@@ -94,6 +96,10 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.OSC
 		case ResourceType.HTTP_REQUEST:
 			return GeneralResourceType.HTTP_REQUEST
+		case ResourceType.HYPERDECK_PLAY:
+			return GeneralResourceType.TRANSPORT
+		case ResourceType.HYPERDECK_RECORD:
+			return GeneralResourceType.TRANSPORT
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
