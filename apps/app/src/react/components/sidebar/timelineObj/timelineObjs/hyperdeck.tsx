@@ -34,7 +34,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 		<>
 			<div className="setting">
 				<SelectEnum
-					label="Request Type"
+					label="Type"
 					fullWidth
 					currentValue={obj.content.type}
 					options={TimelineContentTypeHyperdeck}
