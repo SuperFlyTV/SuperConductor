@@ -419,7 +419,8 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		if (mapping0.mappingType === MappingHyperdeckType.TRANSPORT) {
 			return (
 				resource.resourceType === ResourceType.HYPERDECK_PLAY ||
-				resource.resourceType === ResourceType.HYPERDECK_RECORD
+				resource.resourceType === ResourceType.HYPERDECK_RECORD ||
+				resource.resourceType === ResourceType.HYPERDECK_PREVIEW
 			)
 		}
 	} else if (mapping.device === DeviceType.LAWO) {

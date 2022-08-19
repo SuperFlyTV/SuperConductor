@@ -580,6 +580,20 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				status: TransportStatus.RECORD,
 			},
 		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PREVIEW) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.PREVIEW,
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -635,6 +649,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_INPUT:
 			return 'Inputs'
 		case ResourceType.VMIX_PREVIEW:
+		case ResourceType.HYPERDECK_PREVIEW:
 			return 'Preview'
 		case ResourceType.VMIX_INPUT_SETTINGS:
 			return 'Input'

@@ -100,6 +100,8 @@ export function describeResource(resource: ResourceAny) {
 			return GeneralResourceType.TRANSPORT
 		case ResourceType.HYPERDECK_RECORD:
 			return GeneralResourceType.TRANSPORT
+		case ResourceType.HYPERDECK_PREVIEW:
+			return GeneralResourceType.TRANSPORT
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

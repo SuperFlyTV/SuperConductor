@@ -1,6 +1,6 @@
 import { ResourceBase, ResourceType } from './resource'
 
-export type HyperdeckAny = HyperdeckPlay | HyperdeckRecord
+export type HyperdeckAny = HyperdeckPlay | HyperdeckRecord | HyperdeckPreview
 
 export interface HyperdeckPlay extends ResourceBase {
 	resourceType: ResourceType.HYPERDECK_PLAY
@@ -8,4 +8,8 @@ export interface HyperdeckPlay extends ResourceBase {
 
 export interface HyperdeckRecord extends ResourceBase {
 	resourceType: ResourceType.HYPERDECK_RECORD
+}
+
+export interface HyperdeckPreview extends ResourceBase {
+	resourceType: ResourceType.HYPERDECK_PREVIEW
 }

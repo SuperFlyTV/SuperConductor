@@ -1,5 +1,5 @@
 import { DeviceOptionsHyperdeck } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, HyperdeckPlay, HyperdeckRecord } from '@shared/models'
+import { ResourceAny, ResourceType, HyperdeckPlay, HyperdeckRecord, HyperdeckPreview } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 
@@ -32,6 +32,17 @@ export class HyperdeckSideload implements SideLoadDevice {
 				deviceId: this.deviceId,
 				id: `${this.deviceId}_hyperdeck_record`,
 				displayName: 'Hyperdeck Record',
+			}
+			resources[resource.id] = resource
+		}
+
+		// Preview command
+		{
+			const resource: HyperdeckPreview = {
+				resourceType: ResourceType.HYPERDECK_PREVIEW,
+				deviceId: this.deviceId,
+				id: `${this.deviceId}_hyperdeck_preview`,
+				displayName: 'Hyperdeck Preview',
 			}
 			resources[resource.id] = resource
 		}
