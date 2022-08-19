@@ -32,7 +32,7 @@ export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
 			iconElement = <span>HTTP</span>
 			break
 		case DeviceType.HYPERDECK:
-			iconElement = <img src={hyperdeck} alt="Hyperdeck" />
+			iconElement = <img src={hyperdeck} alt="HyperDeck" />
 			break
 		default:
 			iconElement = <span>{props.type}</span>

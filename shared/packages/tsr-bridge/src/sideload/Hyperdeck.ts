@@ -20,7 +20,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 				resourceType: ResourceType.HYPERDECK_PLAY,
 				deviceId: this.deviceId,
 				id: `${this.deviceId}_hyperdeck_play`,
-				displayName: 'Hyperdeck Play',
+				displayName: 'HyperDeck Play',
 			}
 			resources[resource.id] = resource
 		}
@@ -31,7 +31,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 				resourceType: ResourceType.HYPERDECK_RECORD,
 				deviceId: this.deviceId,
 				id: `${this.deviceId}_hyperdeck_record`,
-				displayName: 'Hyperdeck Record',
+				displayName: 'HyperDeck Record',
 			}
 			resources[resource.id] = resource
 		}
@@ -42,7 +42,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 				resourceType: ResourceType.HYPERDECK_PREVIEW,
 				deviceId: this.deviceId,
 				id: `${this.deviceId}_hyperdeck_preview`,
-				displayName: 'Hyperdeck Preview',
+				displayName: 'HyperDeck Preview',
 			}
 			resources[resource.id] = resource
 		}

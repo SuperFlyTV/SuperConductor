@@ -155,11 +155,11 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
 		return <ResourceDataInner title="HTTP Request">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HYPERDECK_PLAY) {
-		return <ResourceDataInner title="Hyperdeck Play">{universalRows}</ResourceDataInner>
+		return <ResourceDataInner title="HyperDeck Play">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HYPERDECK_RECORD) {
-		return <ResourceDataInner title="Hyperdeck Record">{universalRows}</ResourceDataInner>
+		return <ResourceDataInner title="HyperDeck Record">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HYPERDECK_PREVIEW) {
-		return <ResourceDataInner title="Hyperdeck Record">{universalRows}</ResourceDataInner>
+		return <ResourceDataInner title="HyperDeck Record">{universalRows}</ResourceDataInner>
 	} else {
 		assertNever(resource)
 		return null
