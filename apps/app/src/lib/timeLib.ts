@@ -16,107 +16,127 @@ export function parseDuration(str: string, isWriting?: boolean): number | null |
 			if (m) return undefined
 		}
 		{
-			const m = str.match(/^(\d{1,2}):(\d{2})\.(\d*0)$/) // mm:ss.xxx
+			const m = str.match(/^(\d{1,2}):(\d{2})\.(\d*0)$/) // mm:ss.xx0
 			if (m) return undefined
 		}
 		{
 			const m = str.match(/^(\d{1,2})\.(\d*?0)$/) // ss.xx0
 			if (m) return undefined
 		}
+		{
+			const m = str.match(/[:;,.-]$/) // anything tailing :;,.-
+			if (m) return undefined
+		}
 	}
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d{1,3})$/) // hh:mm:ss.xxx
-		if (m)
-			return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000 + parseMilliseconds(m[4])
+		if (m) return sumTime(m[1], m[2], m[3], m[4], isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2})\.(\d{1,3})$/) // mm:ss.xxx
-		if (m) return parseInt(m[1]) * 60000 + parseInt(m[2]) * 1000 + parseMilliseconds(m[3])
+		if (m) return sumTime(0, m[1], m[2], m[3], isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2})\.(\d{1,3})$/) // ss.xxx
-		if (m) return parseInt(m[1]) * 1000 + parseMilliseconds(m[2])
+		if (m) return sumTime(0, 0, m[1], m[2], isWriting)
 	}
 	{
 		const m = str.match(/^\.(\d{1,3})$/) // .xxx
-		if (m) return parseMilliseconds(m[1])
+		if (m) return sumTime(0, 0, 0, m[1], isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})$/) // hh:mm:ss | hhmmss
-		if (m) return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000
+		if (m) return sumTime(m[1], m[2], m[3], 0, isWriting)
 	}
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2})(\d{2})$/) // hh:mmss
-		if (m) return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000
+		if (m) sumTime(m[1], m[2], m[3], 0, isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2})(\d{2})(\d{2})$/) // hhmmss
-		if (m) return parseInt(m[1]) * 3600000 + parseInt(m[2]) * 60000 + parseInt(m[3]) * 1000
+		if (m) return sumTime(m[1], m[2], m[3], 0, isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2})$/) // mm:ss
-		if (m) return parseInt(m[1]) * 60000 + parseInt(m[2]) * 1000
+		if (m) return sumTime(0, m[1], m[2], 0, isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2})(\d{2})$/) // mmss
-		if (m) return parseInt(m[1]) * 60000 + parseInt(m[2]) * 1000
+		if (m) return sumTime(0, m[1], m[2], 0, isWriting)
 	}
 	{
 		const m = str.match(/^(\d{1,2})(\d{2})\.(\d{1,3})$/) // mmss.xxx
-		if (m) return parseInt(m[1]) * 60000 + parseInt(m[2]) * 1000 + parseMilliseconds(m[3])
+		if (m) return sumTime(0, m[1], m[2], m[3], isWriting)
 	}
 
 	{
 		const m = str.match(/^(\d{1,2})$/) // ss
-		if (m) return parseInt(m[1]) * 1000
+		if (m) return sumTime(0, 0, m[1], 0, isWriting)
 	}
 
 	// Transition-formats (ie these might show up while typing):
 	{
 		const m = str.match(/^(\d{1,2}):(\d{3,4})$/) // hh:mmxx
-		if (m) return parseDuration(m[1] + m[2]) // -> hhmmss
+		if (m) return parseDuration(m[1] + m[2], isWriting) // -> hhmmss
 	}
 	{
 		const m = str.match(/^(\d{1}):(\d{1,2}):(\d{3})$/) // h:mm:ssx
-		if (m) return parseDuration(m[1] + m[2] + m[3]) // -> hhmmss
+		if (m) return parseDuration(m[1] + m[2] + m[3], isWriting) // -> hhmmss
 	}
 	{
 		const m = str.match(/^(\d{1,2}):(\d{1})$/) // s:s or ms:s
-		if (m) return parseDuration(m[1] + m[2]) // -> ss or m:ss
+		if (m) return parseDuration(m[1] + m[2], isWriting) // -> ss or m:ss
 	}
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{1})$/) // m:ms:s or hm:ms:s
-		if (m) return parseDuration(m[1] + m[2] + m[3]) // -> mm:ss or h:mm:ss
+		if (m) return parseDuration(m[1] + m[2] + m[3], isWriting) // -> mm:ss or h:mm:ss xxxxxxxxxxxxxxxxxxxxxxxxx
 	}
 	{
 		const m = str.match(/^(\d{1,2}):$/) // s: or ss:
-		if (m) return parseDuration(m[1]) // -> s or ss
+		if (m) return parseDuration(m[1], isWriting) // -> s or ss
 	}
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):$/) // m:ss: or mm:ss:
-		if (m) return parseDuration(m[1] + m[2]) // -> m:ss or mm:ss
+		if (m) return parseDuration(m[1] + m[2], isWriting) // -> m:ss or mm:ss
 	}
 	{
 		const m = str.match(/^:(\d{2})$/) // :ss
-		if (m) return parseDuration(m[1]) // -> ss
+		if (m) return parseDuration(m[1], isWriting) // -> ss
 	}
 	{
 		const m = str.match(/^:(\d{2}):(\d{2})$/) // :mm:ss
-		if (m) return parseDuration(m[1] + m[2]) // -> mm:ss
+		if (m) return parseDuration(m[1] + m[2], isWriting) // -> mm:ss
 	}
 	{
 		const m = str.match(/^(\d{3,4}):(\d{2})$/) // hmm:ss or hhmm:ss
-		if (m) return parseDuration(m[1] + m[2]) // -> h:mm:ss or hh:mm:ss
+		if (m) return parseDuration(m[1] + m[2], isWriting) // -> h:mm:ss or hh:mm:ss
 	}
 
 	return undefined
+}
+
+function sumTime(
+	hhStr: string | number,
+	mmStr: string | number,
+	ssStr: string | number,
+	xxxStr: string | number,
+	isWriting: boolean | undefined
+): number | undefined {
+	const hh = typeof hhStr === 'number' ? hhStr : parseInt(hhStr)
+	const mm = typeof mmStr === 'number' ? mmStr : parseInt(mmStr)
+	const ss = typeof ssStr === 'number' ? ssStr : parseInt(ssStr)
+	const xxx = typeof xxxStr === 'number' ? xxxStr : parseMilliseconds(xxxStr)
+
+	if (isWriting && mm >= 60) return undefined
+	if (isWriting && ss >= 60) return undefined
+	return hh * 3600000 + mm * 60000 + ss * 1000 + xxx
 }
 
 function assert<T>(val: T, check: T) {
@@ -216,11 +236,14 @@ assert(parseDuration('0.5'), 500)
 assert(parseDuration(',12'), 120)
 
 // Special cases that happen when user adds numbers at the end while typing:
+assert(parseDuration('∞1'), 1000)
 assert(parseDuration('1:234'), 12 * 60000 + 34 * 1000) // 12:34
 assert(parseDuration('12:345'), 1 * 3600000 + 23 * 60000 + 45 * 1000) // 1:23:45
 assert(parseDuration('1:23:456'), 12 * 3600000 + 34 * 60000 + 56 * 1000) // 12:34:56
+assert(parseDuration('1:16:3', true), undefined) // because while writing it would become 11:63 -> 12:03
 
 // Special cases that happen when user adds numbers at the beginning while typing:
+assert(parseDuration('1∞'), 1000)
 assert(parseDuration('123:45'), 1 * 3600000 + 23 * 60000 + 45 * 1000) // 1:23:34
 assert(parseDuration('1234:56'), 12 * 3600000 + 34 * 60000 + 56 * 1000) // 12:34:56
 
