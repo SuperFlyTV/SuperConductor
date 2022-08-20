@@ -5,6 +5,9 @@ export function parseDuration(str: string): number | null | undefined {
 
 	str = str.replace(/,/g, '.')
 
+	str = str.replace(/^∞/g, '') // Remove initial ∞
+	str = str.replace(/∞$/g, '') // Remove tailing ∞
+
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d{1,3})$/) // hh:mm:ss.xxx
 		if (m)
