@@ -1,4 +1,4 @@
-export function parseDuration(str: string): number | null | undefined {
+export function parseDuration(str: string, isWriting?: boolean): number | null | undefined {
 	if (str === '') return null
 	if (str === '∞') return null
 	if (!str) return undefined
@@ -7,6 +7,23 @@ export function parseDuration(str: string): number | null | undefined {
 
 	str = str.replace(/^∞/g, '') // Remove initial ∞
 	str = str.replace(/∞$/g, '') // Remove tailing ∞
+
+	if (isWriting) {
+		// A few cases where the user is still writing, so we don't really want to parse it
+
+		{
+			const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d*0)$/) // hh:mm:ss.xx0
+			if (m) return undefined
+		}
+		{
+			const m = str.match(/^(\d{1,2}):(\d{2})\.(\d*0)$/) // mm:ss.xxx
+			if (m) return undefined
+		}
+		{
+			const m = str.match(/^(\d{1,2})\.(\d*?0)$/) // ss.xx0
+			if (m) return undefined
+		}
+	}
 
 	{
 		const m = str.match(/^(\d{1,2}):(\d{2}):(\d{2})\.(\d{1,3})$/) // hh:mm:ss.xxx
