@@ -7,7 +7,7 @@ import obs from '../../../../../img/obs.png'
 import atem from '../../../../../img/atem.png'
 import './style.scss'
 
-export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
+export const DeviceIcon: React.FC<{ type: DeviceType | undefined }> = (props) => {
 	const type = props.type
 
 	let iconElement = null
@@ -29,6 +29,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
 			break
 		case DeviceType.HTTPSEND:
 			iconElement = <span>HTTP</span>
+			break
+		case undefined:
+			iconElement = <span>?</span>
 			break
 		default:
 			iconElement = <span>{props.type}</span>

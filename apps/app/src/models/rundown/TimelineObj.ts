@@ -16,3 +16,9 @@ export interface TimelineObjResolvedInstance {
 	/** The resolved sendTime of the object. 0 is the beginning of the Part, null = Infinity */
 	end: number | null
 }
+
+/**
+ * Default duration of timeline-objects. If the duration is infinite,
+ * this duration is used instead in GUI when starting a drag operation.
+ */
+export const DEFAULT_DURATION = 10 * 1000

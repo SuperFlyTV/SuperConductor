@@ -9,16 +9,15 @@ import { LayerItemHeader } from '../layerItem/LayerItemHeader'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 import { findDevice, getDeviceName, listAvailableDeviceIDs, shortID } from '../../../../../lib/util'
 import 'react-toggle/style.css'
-import { getDefaultMappingForDeviceType, sortMappings } from '../../../../../lib/TSRMappings'
+import { getDefaultMappingForDeviceType, SortedMappings, sortMappings } from '../../../../../lib/TSRMappings'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { LoggerContext } from '../../../../contexts/Logger'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon'
+import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const log = useContext(LoggerContext)
 
 	const [newlyCreatedId, setNewlyCreatedId] = useState<string | undefined>()
 
@@ -31,16 +30,39 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 		</>
 	)
 
+	const devicesWithMappings: Map<
+		string,
+		{
+			device: DeviceOptionsAny | undefined
+			mappings: SortedMappings
+		}
+	> = new Map()
+
+	for (const deviceId of listAvailableDeviceIDs(project.bridges)) {
+		devicesWithMappings.set(deviceId, {
+			device: findDevice(project.bridges, deviceId),
+			mappings: [],
+		})
+	}
+	for (const m of sortMappings(project.mappings)) {
+		let d = devicesWithMappings.get(m.mapping.deviceId)
+		if (!d) {
+			d = {
+				device: undefined,
+				mappings: [],
+			}
+			devicesWithMappings.set(m.mapping.deviceId, d)
+		}
+		d.mappings.push(m)
+	}
+
 	return (
 		<ProjectPageLayout title="Layers" help={help}>
-			{Array.from(listAvailableDeviceIDs(project.bridges)).map((deviceId) => {
-				const device = findDevice(project.bridges, deviceId)
-				const deviceName = getDeviceName(project, deviceId)
+			{Array.from(devicesWithMappings.entries()).map(([deviceId, d]) => {
+				const device = d.device
+				const mappings = d.mappings
 
-				if (!device) {
-					log.error(`Device ${deviceId} not found.`)
-					return null
-				}
+				const deviceName = getDeviceName(project, deviceId)
 
 				const nameToShow = deviceName ? deviceName : 'Untitled device'
 
@@ -49,13 +71,13 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 						key={deviceId}
 						title={
 							<>
-								<DeviceIcon type={device.type} />
+								<DeviceIcon type={device?.type} />
 								{`${nameToShow} layers`}
 							</>
 						}
 					>
 						<ScList
-							list={sortMappings(project.mappings)
+							list={mappings
 								.filter(({ mapping }) => {
 									return mapping.deviceId === deviceId
 								})
@@ -70,23 +92,25 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 							openByDefault={newlyCreatedId ? [newlyCreatedId] : undefined}
 						/>
 						<div className="bottom-controls">
-							<TextBtn
-								label="Add new layer"
-								onClick={() => {
-									const defaultMapping = getDefaultMappingForDeviceType(
-										device.type,
-										deviceId,
-										project.mappings
-									)
+							{device && (
+								<TextBtn
+									label="Add new layer"
+									onClick={() => {
+										const defaultMapping = getDefaultMappingForDeviceType(
+											device.type,
+											deviceId,
+											project.mappings
+										)
 
-									const mappingId = shortID()
-									project.mappings[mappingId] = defaultMapping
+										const mappingId = shortID()
+										project.mappings[mappingId] = defaultMapping
 
-									setNewlyCreatedId(mappingId)
+										setNewlyCreatedId(mappingId)
 
-									ipcServer.updateProject({ id: project.id, project }).catch(handleError)
-								}}
-							/>
+										ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+									}}
+								/>
+							)}
 						</div>
 					</RoundedSection>
 				)
