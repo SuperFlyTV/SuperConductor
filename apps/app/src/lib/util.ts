@@ -114,10 +114,6 @@ export function getResolvedTimelineTotalDuration(
 	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.start) {
-				maxDuration = Math.max(maxDuration, instance.start)
-			}
-
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
