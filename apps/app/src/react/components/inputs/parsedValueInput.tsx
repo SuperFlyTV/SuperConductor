@@ -6,7 +6,7 @@ export function ParsedValueInput<V>(
 	currentValue: V,
 	onChange: (newValue: V) => void,
 	defaultValue: V,
-	parse: (str: string) => V | undefined,
+	parse: (str: string, isWriting: boolean) => V | undefined,
 	stringify: (val: V) => string,
 	label?: string,
 	emptyPlaceholder?: string,
@@ -39,7 +39,7 @@ export function ParsedValueInput<V>(
 			onChange(defaultValue)
 			setValue(stringify(currentValue))
 		} else {
-			const value = parse(str)
+			const value = parse(str, false)
 			if (value !== undefined) onChange(value)
 			else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 		}
@@ -50,7 +50,7 @@ export function ParsedValueInput<V>(
 	}
 	const onEventChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		const str: string = e.target.value
-		const v = parse(str)
+		const v = parse(str, true)
 		if (v !== undefined) {
 			if (e.target.selectionStart !== null) {
 				const addedLength = str.length - value.length
@@ -70,7 +70,7 @@ export function ParsedValueInput<V>(
 		const input = fieldRef.current
 		return () => {
 			if (input && input.value && hasUnsavedChanges.current) {
-				const value = parse(input.value)
+				const value = parse(input.value, false)
 				if (value !== undefined && !_.isEqual(value, currentValue)) {
 					onChange(value)
 				}

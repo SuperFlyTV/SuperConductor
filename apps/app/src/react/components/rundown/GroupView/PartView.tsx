@@ -16,7 +16,7 @@ import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
-import { TimelineObj } from '../../../../models/rundown/TimelineObj'
+import { TimelineObj, DEFAULT_DURATION } from '../../../../models/rundown/TimelineObj'
 import { compact } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
@@ -247,7 +247,9 @@ export const PartView: React.FC<{
 		// }, [part.timeline, trackWidth])
 	}, [partId])
 
-	const msPerPixel = orgMaxDuration / trackWidth
+	const maxDurationAdjusted = orgMaxDuration || DEFAULT_DURATION
+
+	const msPerPixel = maxDurationAdjusted / trackWidth
 	const snapDistanceInMilliseconds = msPerPixel * SNAP_DISTANCE_IN_PIXELS
 
 	const snapPoints = useMemo(() => {
@@ -1076,7 +1078,7 @@ export const PartView: React.FC<{
 											rundownId={rundownId}
 											groupId={parentGroupId}
 											partId={part.id}
-											partDuration={orgMaxDuration}
+											partDuration={maxDurationAdjusted}
 											objectsOnLayer={objectsOnLayer}
 											layerId={layerId}
 											msPerPixel={msPerPixel}

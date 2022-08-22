@@ -177,7 +177,11 @@ export const TimelineObject: React.FC<{
 		}
 	}
 	const duration = instance.end ? instance.end - instance.start : null
-	const widthPercentage = (duration ? duration / partDuration : 1) * 100 + '%'
+	const widthPercentage =
+		Math.min(
+			101, // Limit to 101% so that when dragging to the right, the duration or the object is still visible
+			(duration ? duration / partDuration : 1) * 100
+		) + '%'
 	const startValue = Math.max(0, instance.start / partDuration)
 	const startPercentage =
 		Math.min(

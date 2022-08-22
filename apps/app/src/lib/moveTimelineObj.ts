@@ -1,8 +1,8 @@
 import { deepClone } from '@shared/lib'
 import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
-import { TimelineObj } from '../models/rundown/TimelineObj'
+import { TimelineObj, DEFAULT_DURATION } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/mobx/GuiStore'
-import { shortID } from './util'
+import { getResolvedTimelineTotalDuration, shortID } from './util'
 
 const MIN_DURATION = 1
 
@@ -87,7 +87,8 @@ export function applyMovementToTimeline(
 	let dragSnap: DragSnap | null = null
 
 	const orgStartTime = Math.max(0, orgLeaderInstance.start)
-	const orgEndTime = orgLeaderInstance.end && Math.max(0, orgLeaderInstance.end)
+	const orgLeaderInstanceEnd = orgLeaderInstance.end ? orgLeaderInstance.end : orgStartTime + DEFAULT_DURATION
+	const orgEndTime = Math.max(0, orgLeaderInstanceEnd)
 
 	/** [ms] */
 	const movedStartTime = Math.max(0, orgStartTime + dragDelta)
@@ -284,12 +285,18 @@ function applyDragDelta(
 		const obj = deepClone(orgObj)
 		appliedTimeline.push(obj)
 		let changed = false
-		// Check if the object isselected (ie to be moved)
+
+		// Check if the object is selected (ie to be moved)
 		if (selectedTimelineObjIds.includes(obj.obj.id)) {
 			const enable = obj.obj.enable as TimelineEnable
 			const orgResolvedObj = orgResolvedTimeline.objects[obj.obj.id]
 			const orgInstance = orgResolvedObj.resolved.instances[0] as TimelineObjectInstance | undefined
 			if (!orgInstance) continue
+
+			const orgMaxDuration = orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0
+			const maxDurationAdjusted = orgMaxDuration || DEFAULT_DURATION
+
+			const orgInstanceEndAdjusted = orgInstance.end ? orgInstance.end : maxDurationAdjusted
 
 			if (moveType === 'whole') {
 				if (
@@ -383,19 +390,10 @@ function applyDragDelta(
 						}
 					}
 
-					if (orgInstance.end) {
-						enable.duration = Math.max(
-							MIN_DURATION,
-							Math.round(orgInstance.end - orgInstance.start + dragDelta)
-						)
-					} else {
-						// Is infinite
-						if (enable.end) {
-							enable.start = 0
-						} else {
-							enable.end = null
-						}
-					}
+					enable.duration = Math.max(
+						MIN_DURATION,
+						Math.round(orgInstanceEndAdjusted - orgInstance.start + dragDelta)
+					)
 				}
 			}
 		}
