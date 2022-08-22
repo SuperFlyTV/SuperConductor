@@ -8,22 +8,22 @@ A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&n
 
 ### Windows
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/SuperConductor-0.8.3-Windows-Installer.exe).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/TSR-Bridge-0.8.3-Windows-Installer.exe).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-Windows-Installer.exe).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-Windows-Installer.exe).
 
 ### Linux (Ubuntu)
 
-- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/SuperConductor-0.8.3-Linux-Executable.AppImage).<br/>
+- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/SuperConductor-0.8.3-Linux-Executable.AppImage`
-- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/TSR-Bridge-0.8.3-Linux-Executable.AppImage).<br/>
+  `chmod +x Downloads/SuperConductor-0.8.4-Linux-Executable.AppImage`
+- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/TSR-Bridge-0.8.3-Linux-Executable.AppImage`
+  `chmod +x Downloads/TSR-Bridge-0.8.4-Linux-Executable.AppImage`
 
 ### macOS
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/SuperConductor-0.8.3-macOS-Installer.dmg).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.3/TSR-Bridge-0.8.3-macOS-Installer.dmg).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-macOS-Installer.dmg).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-macOS-Installer.dmg).
 
 ## Problems and Issues
 
