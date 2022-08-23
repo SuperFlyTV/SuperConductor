@@ -423,6 +423,33 @@ export const TimelineObject: React.FC<{
 					setMoveType('duration')
 				}}
 			/>
+			{description.inTransition && (
+				<div
+					className="transition transition--in"
+					style={{
+						width:
+							description.inTransition.duration === undefined
+								? undefined
+								: description.inTransition.duration / msPerPixel,
+					}}
+					title={description.inTransition.label}
+				></div>
+			)}
+			{description.outTransition && (
+				<div
+					className={classNames(
+						'transition transition--out',
+						(widthPercentage === null || widthPercentage > 99) && 'at-end'
+					)}
+					style={{
+						width:
+							description.outTransition.duration === undefined
+								? undefined
+								: description.outTransition.duration / msPerPixel,
+					}}
+					title={description.outTransition.label}
+				></div>
+			)}
 		</div>
 	)
 })
