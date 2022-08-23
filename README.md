@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
@@ -74,6 +74,7 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - **[OBS Studio](https://obsproject.com/)** Live video production software
 - **[vMix](https://www.vmix.com/)** software vision mixer
 - Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
+- Arbitrary HTTP ([REST](https://en.wikipedia.org/wiki/Representational_state_transfer#Semantics_of_HTTP_methods)) compatible devices
 - (GUI not implemented yet) **Blackmagic Design HyperDeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
@@ -81,7 +82,6 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - (GUI not implemented yet) **[Sisyfos](https://github.com/olzzon/sisyfos-audio-controller)** audio controller
 - (GUI not implemented yet) **Quantel** video servers
 - (GUI not implemented yet) **VizRT MediaSequencer** graphics system
-- (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
 - (GUI not implemented yet) Arbitrary TCP-socket compatible devices
 
 ## TSR Bridge
