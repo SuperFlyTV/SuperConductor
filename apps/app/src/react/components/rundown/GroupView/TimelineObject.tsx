@@ -184,7 +184,7 @@ export const TimelineObject: React.FC<{
 		startValue * 100
 	)
 
-	const duration = instance.end ? instance.end - instance.start : null
+	const duration = instance.end !== null ? instance.end - instance.start : null
 	let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
 	if (widthPercentage > 100 - startPercentage) {
 		// Limit the width, so that the rightmost part is always visible
@@ -454,6 +454,7 @@ function timelineObjectDurationString(duration: number | null): string {
 }
 function TimelineObjectDuration(props: { duration: number | null }) {
 	if (props.duration === null) return <div className="duration">∞</div>
+	if (props.duration === 0) return <div className="duration">0</div>
 	const { h, m, s, ms } = millisecondsToTime(props.duration)
 	const secondTenths = Math.floor(ms / 100)
 	return (
