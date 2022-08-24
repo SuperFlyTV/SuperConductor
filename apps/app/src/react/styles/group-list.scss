@@ -9,11 +9,10 @@
 
 	.group-list__control-row {
 		display: flex;
+		flex-grow: 1;
 		padding-top: 1rem;
 		padding-bottom: 1rem;
 		margin-bottom: -1rem;
-		display: flex;
-		flex-grow: 1;
 
 		> * {
 			margin-right: 1rem;

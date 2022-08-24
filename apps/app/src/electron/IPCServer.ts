@@ -111,7 +111,7 @@ export class IPCServer
 			refreshResources: () => void
 			refreshResourcesSetAuto: (interval: number) => void
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
-			makeDevData: () => void
+			makeDevData: () => Promise<void>
 			triggerHandleAutoFill: () => void
 		}
 	) {
@@ -727,7 +727,8 @@ export class IPCServer
 
 			return {
 				undo: async () => {
-					for (const undo of addedResourcesUndo.reverse()) {
+					addedResourcesUndo.reverse()
+					for (const undo of addedResourcesUndo) {
 						await undo()
 					}
 
@@ -928,7 +929,8 @@ export class IPCServer
 
 		return {
 			undo: async () => {
-				for (const undo of addedResourcesUndo.reverse()) {
+				addedResourcesUndo.reverse()
+				for (const undo of addedResourcesUndo) {
 					await undo()
 				}
 
@@ -1633,10 +1635,9 @@ export class IPCServer
 
 		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
-		for (let resourceId of arg.resourceIds) {
+		for (const resourceId of arg.resourceIds) {
 			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
-			resourceId = resource?.id
 
 			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
 
@@ -1928,7 +1929,7 @@ export class IPCServer
 		}
 	}
 	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		await this.storage.openRundown(data.rundownId)
+		this.storage.openRundown(data.rundownId)
 		this._saveUpdates({})
 
 		return {
@@ -1955,7 +1956,7 @@ export class IPCServer
 
 		return {
 			undo: async () => {
-				await this.storage.openRundown(data.rundownId)
+				this.storage.openRundown(data.rundownId)
 				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
@@ -2418,7 +2419,6 @@ export class IPCServer
 			if (!newMapping && arg.originalLayerId !== undefined) {
 				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
 				if (originalLayer) {
-					// TODO: modify the layer to create the "next" layer:
 					newMapping = {
 						...deepClone(originalLayer),
 					}

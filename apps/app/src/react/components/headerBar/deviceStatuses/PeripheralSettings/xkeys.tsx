@@ -158,16 +158,12 @@ function renderXkeysKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 			} else {
 				color = 'blue'
 			}
-		} else {
-			color = 'black'
 		}
 	} else {
 		if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
 			color = 'blue'
-			flashFrequency = 0
 		} else if (keyDisplay.attentionLevel === AttentionLevel.INFO) {
 			color = 'red'
-			flashFrequency = 0
 		} else if (keyDisplay.attentionLevel === AttentionLevel.NOTIFY) {
 			color = 'red' // flashing slowly
 			flashFrequency = FLASH_NORMAL
