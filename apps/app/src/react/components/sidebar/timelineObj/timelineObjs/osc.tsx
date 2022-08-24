@@ -1,6 +1,7 @@
 import { Box, Button, Stack, Typography } from '@mui/material'
 import React from 'react'
 import { OSCMessageCommandContent, OSCValueType, SomeOSCValue, TimelineObjOSCAny } from 'timeline-state-resolver-types'
+import { DurationInput } from '../../../inputs/DurationInput'
 import { FloatInput } from '../../../inputs/FloatInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -186,16 +187,18 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 					</Stack>
 
 					<div className="setting">
-						<FloatInput
+						<DurationInput
 							label="Transition Duration (milliseconds)"
 							fullWidth
 							currentValue={obj.content.transition.duration}
+							defaultValue={0}
 							onChange={(v) => {
 								if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
 								obj.content.transition.duration = v
 								onSave(obj)
 							}}
 							allowUndefined={false}
+							allowNull={false}
 						/>
 					</div>
 

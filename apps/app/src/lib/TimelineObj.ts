@@ -1,4 +1,5 @@
 import {
+	AtemTransitionStyle,
 	DeviceType,
 	MediaSourceType,
 	TimelineContentTypeAtem,
@@ -14,6 +15,7 @@ import { assertNever } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
+import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -30,7 +32,7 @@ export interface TimelineObjectDescription {
 	}
 }
 
-export function describeTimelineObject(obj: TSRTimelineObj) {
+export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescription {
 	let label: string = obj.id
 	let inTransition: TimelineObjectDescription['inTransition'] = undefined
 	let outTransition: TimelineObjectDescription['outTransition'] = undefined
@@ -100,6 +102,22 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
 			label = `Input ${obj.content.me.input}`
+
+			if (obj.content.me.transition !== undefined) {
+				if (obj.content.me.transition === AtemTransitionStyle.MIX) {
+					const rate = obj.content.me.transitionSettings?.mix?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
+					inTransition = {
+						duration: 1000 * (rate / getAtemFrameRate()),
+						label: `MIX (${rate})`,
+					}
+				} else if (obj.content.me.transition !== AtemTransitionStyle.CUT) {
+					const rate = obj.content.me.transitionSettings?.wipe?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
+					inTransition = {
+						duration: 1000 * (rate / getAtemFrameRate()),
+						label: `${obj.content.me.transition} (${rate})`,
+					}
+				}
+			}
 		} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
 			label = `Fill ${obj.content.dsk.sources?.fillSource} / Cut ${obj.content.dsk.sources?.cutSource}`
 		} else if (obj.content.type === TimelineContentTypeAtem.AUX) {
@@ -170,6 +188,12 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 			label = `Input ${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {
 			label = `Input ${obj.content.input}`
+			if (obj.content.transition?.duration) {
+				inTransition = {
+					duration: obj.content.transition.duration,
+					label: `${obj.content.transition?.effect}}`,
+				}
+			}
 		} else if (obj.content.type === TimelineContentTypeVMix.RECORDING) {
 			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
@@ -179,6 +203,13 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
 		label = obj.content.path
+
+		if (obj.content.transition?.duration) {
+			inTransition = {
+				duration: obj.content.transition.duration,
+				label: `${obj.content.transition.type}, ${obj.content.transition.direction}`,
+			}
+		}
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
 	} else {
