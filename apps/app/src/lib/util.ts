@@ -116,10 +116,6 @@ export function getResolvedTimelineTotalDuration(
 	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.start) {
-				maxDuration = Math.max(maxDuration, instance.start)
-			}
-
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -376,11 +372,6 @@ export function getPrevPartIndex(group: GroupWithShallowParts): number {
  * @returns True if the resource can be added to the layer/mapping, false if not.
  */
 export function allowAddingResourceToLayer(project: Project, resource: ResourceAny, mapping: Mapping): boolean {
-	const resourceDevice = findDevice(project.bridges, resource.deviceId)
-	if (!resourceDevice) {
-		return false
-	}
-
 	if (mapping.device === DeviceType.ABSTRACT) {
 		return false
 	} else if (mapping.device === DeviceType.ATEM) {
@@ -500,6 +491,13 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		}
 	} else {
 		assertNever(mapping.device)
+	}
+
+	// else:
+	// (this will only hit in the case of an unknown mapping device)
+	const resourceDevice = findDevice(project.bridges, resource.deviceId)
+	if (!resourceDevice) {
+		return false
 	}
 
 	return mapping.device === resourceDevice.type

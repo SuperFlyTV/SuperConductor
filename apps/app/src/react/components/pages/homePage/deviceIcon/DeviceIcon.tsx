@@ -8,7 +8,7 @@ import atem from '../../../../../img/atem.png'
 import hyperdeck from '../../../../../img/hyperdeck.png'
 import './style.scss'
 
-export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
+export const DeviceIcon: React.FC<{ type: DeviceType | undefined }> = (props) => {
 	const type = props.type
 
 	let iconElement = null
@@ -33,6 +33,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType }> = (props) => {
 			break
 		case DeviceType.HYPERDECK:
 			iconElement = <img src={hyperdeck} alt="HyperDeck" />
+			break
+		case undefined:
+			iconElement = <span>?</span>
 			break
 		default:
 			iconElement = <span>{props.type}</span>
