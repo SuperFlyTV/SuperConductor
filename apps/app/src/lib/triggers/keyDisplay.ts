@@ -353,7 +353,6 @@ export function _getKeyDisplay(
 				// return content for the part
 
 				const part: PartBase = playingPart.part
-				// if (action.part.id !== part.id) return []
 
 				let content: KeyDisplay | null = null
 				if (isPaused) {

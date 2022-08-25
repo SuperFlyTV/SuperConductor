@@ -116,10 +116,6 @@ export function getResolvedTimelineTotalDuration(
 	let isInfinite = false
 	Object.values(resolvedTimeline.objects).forEach((obj) => {
 		Object.values(obj.resolved.instances).forEach((instance) => {
-			if (instance.start) {
-				maxDuration = Math.max(maxDuration, instance.start)
-			}
-
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -256,9 +252,7 @@ export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?:
 		const bridge = bridges[bridgeId]
 		for (const deviceId in bridge.settings.devices) {
 			const device = bridge.settings.devices[deviceId]
-			if (deviceType === undefined) {
-				deviceIds.add(deviceId)
-			} else if (device.type === deviceType) {
+			if (deviceType === undefined || device.type === deviceType) {
 				deviceIds.add(deviceId)
 			}
 		}
@@ -332,7 +326,7 @@ export function getNextPartIndex(group: GroupWithShallowParts): number {
 
 		const isAtEnd = i === group.parts.length - 1
 		if (isAtEnd && group.loop && !looped) {
-			i = -1
+			i = -1 // Continue loop from the beginning
 			looped = true
 		}
 	}
@@ -373,7 +367,7 @@ export function getPrevPartIndex(group: GroupWithShallowParts): number {
 
 		const isAtStart = i === 0
 		if (isAtStart && group.loop && !looped) {
-			i = group.parts.length
+			i = group.parts.length // Continue loop from the end
 			looped = true
 		}
 	}
@@ -385,11 +379,6 @@ export function getPrevPartIndex(group: GroupWithShallowParts): number {
  * @returns True if the resource can be added to the layer/mapping, false if not.
  */
 export function allowAddingResourceToLayer(project: Project, resource: ResourceAny, mapping: Mapping): boolean {
-	const resourceDevice = findDevice(project.bridges, resource.deviceId)
-	if (!resourceDevice) {
-		return false
-	}
-
 	if (mapping.device === DeviceType.ABSTRACT) {
 		return false
 	} else if (mapping.device === DeviceType.ATEM) {
@@ -503,6 +492,13 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		}
 	} else {
 		assertNever(mapping.device)
+	}
+
+	// else:
+	// (this will only hit in the case of an unknown mapping device)
+	const resourceDevice = findDevice(project.bridges, resource.deviceId)
+	if (!resourceDevice) {
+		return false
 	}
 
 	return mapping.device === resourceDevice.type
@@ -621,9 +617,7 @@ export function scatterMatchString(source: string, search: string): null | numbe
 	source = source.toLowerCase()
 
 	let j = 0
-	for (let i = 0; i < search.length; i++) {
-		const char = search[i]
-
+	for (const char of search) {
 		const foundIndex = source.indexOf(char, j)
 
 		if (foundIndex === -1) {

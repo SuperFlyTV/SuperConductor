@@ -176,19 +176,20 @@ export const TimelineObject: React.FC<{
 			references: [],
 		}
 	}
-	const duration = instance.end ? instance.end - instance.start : null
-	const widthPercentage =
-		Math.min(
-			101, // Limit to 101% so that when dragging to the right, the duration or the object is still visible
-			(duration ? duration / partDuration : 1) * 100
-		) + '%'
+
 	const startValue = Math.max(0, instance.start / partDuration)
-	const startPercentage =
-		Math.min(
-			// Cap to 98, because if 100, the object is not visible
-			98,
-			startValue * 100
-		) + '%'
+	const startPercentage = Math.min(
+		// Cap to 98, because if 100, the object is not visible
+		98,
+		startValue * 100
+	)
+
+	const duration = instance.end !== null ? instance.end - instance.start : null
+	let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
+	if (widthPercentage > 100 - startPercentage) {
+		// Limit the width, so that the rightmost part is always visible
+		widthPercentage = null
+	}
 
 	const description = describeTimelineObject(obj)
 
@@ -369,7 +370,11 @@ export const TimelineObject: React.FC<{
 				locked,
 				warning: warnings && warnings.length > 0,
 			})}
-			style={{ width: widthPercentage, left: startPercentage }}
+			style={{
+				left: `${startPercentage}%`,
+				width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
+				right: widthPercentage === null ? '-4px' : undefined,
+			}}
 			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
 		>
@@ -449,6 +454,7 @@ function timelineObjectDurationString(duration: number | null): string {
 }
 function TimelineObjectDuration(props: { duration: number | null }) {
 	if (props.duration === null) return <div className="duration">∞</div>
+	if (props.duration === 0) return <div className="duration">0</div>
 	const { h, m, s, ms } = millisecondsToTime(props.duration)
 	const secondTenths = Math.floor(ms / 100)
 	return (

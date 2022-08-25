@@ -69,7 +69,7 @@ export function getAllActionsInParts(
 
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
-			const peripheralStatus = peripherals?.[`${bridgeId}-${deviceId}`] as PeripheralStatus | undefined
+			const peripheralStatus: PeripheralStatus | undefined = peripherals?.[`${bridgeId}-${deviceId}`]
 
 			for (const [_areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {

@@ -13,6 +13,10 @@
 		height: 0.8rem;
 		background-color: $deviceOfflineColor;
 		flex-shrink: 0;
+
+		&.ok {
+			background-color: $deviceOnlineColor;
+		}
 	}
 	&.clickable:hover,
 	&.open {
@@ -25,12 +29,5 @@
 		.connection-status__dot {
 			background-color: $deviceOnlineColor;
 		}
-	}
-}
-
-.connection-status__dot {
-	background-color: $deviceOfflineColor;
-	&.ok {
-		background-color: $deviceOnlineColor;
 	}
 }

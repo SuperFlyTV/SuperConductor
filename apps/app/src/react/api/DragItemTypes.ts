@@ -23,8 +23,6 @@ export interface PartDragItem {
 
 	/** null = make a new transparent group */
 	toGroupId: string | null
-	// toGroupIndex: number
-	// toGroupTransparent: boolean
 	target: MoveTarget | null
 }
 

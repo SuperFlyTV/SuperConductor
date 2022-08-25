@@ -9,9 +9,10 @@
 
 	.group-list__control-row {
 		display: flex;
-		margin-top: 2rem;
-		display: flex;
 		flex-grow: 1;
+		padding-top: 1rem;
+		padding-bottom: 1rem;
+		margin-bottom: -1rem;
 
 		> * {
 			margin-right: 1rem;
@@ -19,6 +20,8 @@
 
 		&.last-in-rundown {
 			height: calc(100vh - 20rem);
+
+			margin-top: -2rem;
 		}
 	}
 }

@@ -377,21 +377,22 @@ export const PartView: React.FC<{
 					store.guiStore.selected.map((s) => (s.type === 'timelineObj' ? s.timelineObjId : undefined))
 				)
 				try {
-					const o = applyMovementToTimeline(
-						partTimeline,
-						orgResolvedTimeline,
-						bypassSnapping ? [] : snapPoints || [],
-						snapDistanceInMilliseconds,
-						dragDelta,
+					const o = applyMovementToTimeline({
+						orgTimeline: partTimeline,
+						orgResolvedTimeline: orgResolvedTimeline,
+						snapPoints: bypassSnapping ? [] : snapPoints || [],
+						snapDistanceInMilliseconds: snapDistanceInMilliseconds,
+						dragDelta: dragDelta,
+
 						// The use of wasMoved here helps prevent a brief flash at the
 						// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-						timelineObjMove.moveType ?? timelineObjMove.wasMoved,
-						timelineObjMove.leaderTimelineObjId,
-						selectedTimelineObjIds,
-						cache.current,
-						moveToLayerId,
-						Boolean(timelineObjMove.duplicate)
-					)
+						moveType: timelineObjMove.moveType ?? timelineObjMove.wasMoved,
+						leaderTimelineObjId: timelineObjMove.leaderTimelineObjId,
+						selectedTimelineObjIds: selectedTimelineObjIds,
+						cache: cache.current,
+						leaderTimelineObjNewLayer: moveToLayerId,
+						duplicate: Boolean(timelineObjMove.duplicate),
+					})
 					modifiedTimeline = o.modifiedTimeline
 					resolvedTimeline = o.resolvedTimeline
 					newChangedObjects = o.changedObjects

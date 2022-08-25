@@ -1,6 +1,6 @@
 import { compact } from 'lodash'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
-import { Mappings } from 'timeline-state-resolver-types'
+import { DeviceType, Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { sortMappings } from './TSRMappings'
 
@@ -9,7 +9,15 @@ export function sortLayers(layers: ResolvedTimeline['layers'], mappings: Mapping
 
 	for (const layerId of Object.keys(layers)) {
 		const mapping = mappings[layerId]
-		if (mapping) usedMappings[layerId] = mapping
+		if (mapping) {
+			usedMappings[layerId] = mapping
+		} else {
+			usedMappings[layerId] = {
+				device: DeviceType.ABSTRACT,
+				deviceId: '',
+				layerName: 'N/A',
+			}
+		}
 	}
 
 	return sortMappings(usedMappings).map(({ layerId }) => ({ layerId, objectIds: layers[layerId] }))
