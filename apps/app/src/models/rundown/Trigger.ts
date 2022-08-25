@@ -5,7 +5,6 @@ export interface Trigger {
 	label: string
 }
 
-// export type ActiveTriggers = { [fullIdentifier: string]: true }
 export interface ActiveTrigger {
 	fullIdentifier: string
 	bridgeId: string

@@ -1154,8 +1154,8 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			} else {
 				assertNever(device)
 			}
-			if (a.layerId > a.layerId) return 1
-			if (a.layerId < a.layerId) return -1
+			if (a.layerId > b.layerId) return 1
+			if (a.layerId < b.layerId) return -1
 			return 0
 		})
 }

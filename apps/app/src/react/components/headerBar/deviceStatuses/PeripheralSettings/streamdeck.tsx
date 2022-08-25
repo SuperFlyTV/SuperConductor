@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import classNames from 'classnames'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo_StreamDeck, AttentionLevel } from '@shared/api'
-import { stringToRGB, RGBToString } from '@shared/lib'
+import { stringToRGB, RGBToString, assertNever } from '@shared/lib'
 import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
@@ -131,9 +131,8 @@ export const StreamdeckSettings: React.FC<{
 
 function renderStreamDeckKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 	if (keyDisplay.intercept) {
-		let textColor = '#fff'
-
 		if (keyDisplay.area) {
+			let textColor: string
 			if (keyDisplay.area.areaInDefinition) {
 				textColor = '#fff'
 			} else {
@@ -187,8 +186,7 @@ function renderStreamDeckKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 		}
 
 		if (keyDisplay.attentionLevel === AttentionLevel.IGNORE) {
-			borderWidth = 0
-			borderColor = '#000'
+			// No border
 		} else if (keyDisplay.attentionLevel === AttentionLevel.NEUTRAL) {
 			borderWidth = 2
 			borderColor = '#333'
@@ -202,6 +200,8 @@ function renderStreamDeckKeyDisplay(keyDisplay: KeyDisplay): JSX.Element {
 			borderWidth = 7
 			borderColor = '#f00'
 			bgColor = '#ff3'
+		} else {
+			assertNever(keyDisplay.attentionLevel)
 		}
 
 		// Calculate background brightness:

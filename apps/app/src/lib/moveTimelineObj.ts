@@ -19,24 +19,37 @@ interface DragSnap {
 	type: 'start' | 'end'
 }
 
-export function applyMovementToTimeline(
-	orgTimeline: TimelineObj[],
-	orgResolvedTimeline: ResolvedTimeline,
-	snapPoints: SnapPoint[],
-	snapDistanceInMilliseconds: number,
-	dragDelta: number,
-	moveType: TimelineObjectMove['moveType'],
-	leaderTimelineObjId: string,
-	selectedTimelineObjIds: string[],
-	cache: ResolverCache | undefined,
-	leaderTimelineObjNewLayer: string | null,
+export function applyMovementToTimeline(args: {
+	orgTimeline: TimelineObj[]
+	orgResolvedTimeline: ResolvedTimeline
+	snapPoints: SnapPoint[]
+	snapDistanceInMilliseconds: number
+	dragDelta: number
+	moveType: TimelineObjectMove['moveType']
+	leaderTimelineObjId: string
+	selectedTimelineObjIds: string[]
+	cache: ResolverCache | undefined
+	leaderTimelineObjNewLayer: string | null
 	duplicate: boolean
-): {
+}): {
 	modifiedTimeline: TimelineObj[]
 	resolvedTimeline: ResolvedTimeline
 	changedObjects: { [objectId: string]: TimelineObj } | null
 	duplicatedObjects: { [objectId: string]: TimelineObj } | null
 } {
+	const {
+		orgTimeline,
+		orgResolvedTimeline,
+		snapPoints,
+		snapDistanceInMilliseconds,
+		moveType,
+		leaderTimelineObjId,
+		selectedTimelineObjIds,
+		cache,
+		duplicate,
+	} = args
+	let { dragDelta } = args
+	let { leaderTimelineObjNewLayer } = args
 	if (selectedTimelineObjIds.length > 1 || moveType !== 'whole') {
 		// Don't allow layer changes when moving more than one timelineObj OR if not doing a "whole" type move
 		leaderTimelineObjNewLayer = null
@@ -155,19 +168,6 @@ export function applyMovementToTimeline(
 				}
 			}
 		}
-		// {
-		// 	if (orgEndTime && movedEndTime) {
-		// 		const distance = Math.abs(sp.time - movedEndTime)
-		// 		if (distance <= snapDistanceInMilliseconds) {
-		// 			closestSnapPoints.push({
-		// 				distanceToSnapPoint: distance,
-		// 				resultingDragDelta: sp.time - orgEndTime,
-		// 				expression: sp.expression,
-		// 				type: 'end',
-		// 			})
-		// 		}
-		// 	}
-		// }
 	})
 
 	const closestSnapPoint = closestSnapPoints.reduce(
@@ -205,14 +205,14 @@ export function applyMovementToTimeline(
 		}
 	}
 
-	const o = applyDragDelta(
+	const o = applyDragDelta({
 		dragDelta,
-		modifiedTimeline,
+		timeline: modifiedTimeline,
 		selectedTimelineObjIds,
 		moveType,
 		orgResolvedTimeline,
-		dragSnap
-	)
+		dragSnap,
+	})
 	const draggedTimeline = o.all
 
 	changedObjects = { ...changedObjects, ...o.changed }
@@ -245,14 +245,14 @@ export function applyMovementToTimeline(
 			}
 		}
 
-		const o = applyDragDelta(
+		const o = applyDragDelta({
 			dragDelta,
-			modifiedTimeline,
+			timeline: modifiedTimeline,
 			selectedTimelineObjIds,
 			moveType,
 			orgResolvedTimeline,
-			dragSnap
-		)
+			dragSnap,
+		})
 		const draggedTimeline2 = o.all
 		changedObjects = { ...changedObjects, ...o.changed }
 		// Resolve it again...
@@ -270,15 +270,16 @@ export function applyMovementToTimeline(
 	}
 }
 
-function applyDragDelta(
+function applyDragDelta(args: {
 	/** [ms] */
-	dragDelta: number,
-	timeline: TimelineObj[],
-	selectedTimelineObjIds: string[],
-	moveType: TimelineObjectMove['moveType'],
-	orgResolvedTimeline: ResolvedTimeline,
+	dragDelta: number
+	timeline: TimelineObj[]
+	selectedTimelineObjIds: string[]
+	moveType: TimelineObjectMove['moveType']
+	orgResolvedTimeline: ResolvedTimeline
 	dragSnap: DragSnap | null
-): { all: TimelineObj[]; changed: { [objectId: string]: TimelineObj } } {
+}): { all: TimelineObj[]; changed: { [objectId: string]: TimelineObj } } {
+	const { dragDelta, timeline, selectedTimelineObjIds, moveType, orgResolvedTimeline, dragSnap } = args
 	const appliedTimeline: TimelineObj[] = []
 	const changedObjects: { [objectId: string]: TimelineObj } = {}
 	for (const orgObj of timeline) {

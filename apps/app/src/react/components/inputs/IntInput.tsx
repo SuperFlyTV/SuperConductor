@@ -32,7 +32,7 @@ export const IntInput: React.FC<
 		(str: string) => {
 			let value: number | undefined = undefined
 
-			const parsedValue = parseInt(`${str}`.replace(/[\D]/g, ''))
+			const parsedValue = parseInt(`${str}`.replace(/\D/g, ''))
 			if (!isNaN(parsedValue)) value = parsedValue
 
 			if (value !== undefined && props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))

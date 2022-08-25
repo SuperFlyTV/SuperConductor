@@ -12,6 +12,12 @@ $margin-v: 2rem;
 
 	&--transparent {
 		margin: $margin-v 0;
+
+		.part.dragging {
+			padding: 0;
+			margin-top: calc(0px - 2rem);
+			top: 1rem;
+		}
 	}
 	&.selectable {
 		cursor: pointer;
