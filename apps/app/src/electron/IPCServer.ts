@@ -279,7 +279,6 @@ export class IPCServer
 		if (part.disabled) {
 			return
 		}
-		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (group.oneAtATime) {
 			// Anything already playing should be stopped:
@@ -323,7 +322,6 @@ export class IPCServer
 		if (part.disabled) {
 			return
 		}
-		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (!group.playout.playingParts) group.playout.playingParts = {}
 
@@ -512,8 +510,6 @@ export class IPCServer
 		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
-		// if (group.playoutMode !== PlayoutMode.NORMAL) return
-
 		// Stop the group:
 		for (const partId of Object.keys(group.playout.playingParts)) {
 			group.playout.playingParts[partId].stopTime = now
@@ -527,7 +523,6 @@ export class IPCServer
 		if (group.disabled) {
 			return
 		}
-		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		if (group.oneAtATime) {
 			// Play the first non-disabled part
@@ -552,7 +547,6 @@ export class IPCServer
 		if (group.disabled) {
 			return
 		}
-		// if (group.playoutMode !== PlayoutMode.NORMAL) return
 
 		updateGroupPlayingParts(group)
 

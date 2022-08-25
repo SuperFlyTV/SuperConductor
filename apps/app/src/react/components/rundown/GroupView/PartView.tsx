@@ -1213,7 +1213,6 @@ const PartControlButtons: React.FC<{
 		[groupId],
 		true
 	)
-	// if (groupPlayoutMode !== PlayoutMode.NORMAL) return null
 
 	const data: PlayButtonData = {
 		groupDisabled,

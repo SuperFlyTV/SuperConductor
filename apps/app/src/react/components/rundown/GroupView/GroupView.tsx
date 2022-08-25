@@ -103,9 +103,6 @@ export const GroupView: React.FC<{
 			} else if (group.preparedPlayData.type === 'multi') {
 				for (const partId of Object.keys(group.preparedPlayData.sections)) {
 					activeParts0[partId] = true
-					// for (const part of section.parts) {
-					// 	activeParts0[part.part.id] = true
-					// }
 				}
 			} else {
 				assertNever(group.preparedPlayData)
@@ -1047,8 +1044,6 @@ const GroupControlButtons: React.FC<{
 		partIsPaused,
 		playheadCount,
 	}
-
-	// if (group.playoutMode !== PlayoutMode.NORMAL) return null
 
 	return (
 		<>

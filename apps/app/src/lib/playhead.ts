@@ -61,7 +61,6 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
 			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
 			if (group.schedule.startTime && group.schedule.activate && firstPlayablePart) {
-				// const groupLastInteractionTime = Math.max(0, ...groupStartTimes, groupPausedTime || 0)
 				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
 					now: now,
 					end: now + prepareValidDuration,
@@ -94,7 +93,6 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 
 		// Is playing at all?
 		if (actions.length > 0) {
-			// let groupStartTime = groupStartTimes[0]
 			const data: GroupPreparedPlayDataSingle = {
 				type: 'single',
 				sections: [],
@@ -271,8 +269,6 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 	} else {
 		// Playing multiple parts at the same time.
 
-		// let playingParts: GroupBase['playout']['playingParts']
-		// let repeatTimes: GroupPreparedPlayDataMulti['repeatOffsets']
 		let validUntil: number | undefined = undefined
 
 		const actions: { [partId: string]: PlayAction[] } = {}
@@ -607,7 +603,6 @@ function getPlayheadForSection(
 			}
 		}
 
-		// if (isPaused || (now >= partStartTime && (partEndTime === null || now < partEndTime))) {
 		if (playheadTime >= 0 && playheadTime < (part.duration || Infinity) && sectionEndTime > now) {
 			playhead = literal<GroupPlayDataPlayhead>({
 				playheadTime: playheadTime,
