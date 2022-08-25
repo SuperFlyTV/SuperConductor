@@ -926,20 +926,57 @@ export function parseDateTime(str: string): DateTimeObject | undefined {
 	if (!str) return undefined
 
 	let date: Date | undefined = undefined
-	const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+) (-?\d+):(-?\d+):(-?\d+)$/)
+	const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+) (-?\d+):(-?\d+):(-?\d+)$/) // yyyy-mm-dd hh:mm:ss
 	if (m) {
-		date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
-		if (Number.isNaN(date.getTime())) date = undefined
+		const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
+		if (dateIsReasonable(d)) date = d
 	}
-	if (!date) date = new Date(str)
+	if (!date) {
+		const d = new Date(str)
+		if (dateIsReasonable(d)) date = d
+	}
+	if (!date) {
+		// Handle input that looks like duration, like hh:mm:ss, hhmm etc...
+		// Interpret it as "the time today"
+		const duration = parseDuration(str)
+		if (typeof duration === 'number') {
+			let durationString = formatDuration(duration)
+			if (!durationString.match(/:/)) durationString += ':00'
 
-	const d = dateTimeObject(date)
+			// Note: We're exploiting a lucky coincidence here;
+			// formatDuration('123') evaluates to 1 minute 23 seconds ('1:23')
+			// But when combined with a date ('2020-01-01 8:00') it is interpreted as 1 hour 23 minutes,
+			// which is actually what we want.
+			const today = new Date()
+			const fullDateString = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()} ${durationString}`
 
-	if (dateTimeObjectIsValid(d)) {
-		return d
+			const d = new Date(fullDateString)
+
+			if (dateIsReasonable(d)) date = d
+		}
 	}
 
-	return undefined
+	// Last resort: use "now"
+	if (!date) {
+		date = new Date()
+	}
+
+	const dateTimeObj = dateTimeObject(date)
+	if (dateTimeObjectIsValid(dateTimeObj)) {
+		return dateTimeObj
+	} else {
+		return undefined
+	}
+}
+function dateIsReasonable(d: Date): boolean {
+	const now = new Date()
+	if (Number.isNaN(d.getTime())) return false
+
+	// Assuming we're only interested in dates +- 20 years from now:
+	if (d.getFullYear() < now.getFullYear() - 20) return false
+	if (d.getFullYear() > now.getFullYear() + 20) return false
+
+	return true
 }
 export function formatDateTime(d: DateTimeObject | Date | number | undefined | null): string {
 	if (d === undefined) return ''
@@ -963,6 +1000,9 @@ export function formatDateTime(d: DateTimeObject | Date | number | undefined | n
 }
 
 try {
+	const today = new Date()
+	const todaysDate = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+
 	assert(parseDateTime('2022-11-28 18:00:00'), dateTimeObject(new Date('2022-11-28 18:00:00')))
 	assert(parseDateTime('2022-01-01 18:00:00'), dateTimeObject(new Date('2022-01-01 18:00:00')))
 	assert(parseDateTime('2022-11-28 18:00:00'), parseDateTime('2022-11-28 18:00:00'))
@@ -973,6 +1013,13 @@ try {
 	assert(parseDateTime('2022-11--1 18:00:00'), parseDateTime('2022-10-30 18:00:00'))
 	assert(parseDateTime('2022-00-28 18:00:00'), parseDateTime('2021-12-28 18:00:00'))
 	assert(parseDateTime('2022--1-28 18:00:00'), parseDateTime('2021-11-28 18:00:00'))
+
+	assert(parseDateTime('800'), dateTimeObject(new Date(`${todaysDate} 08:00:00`)))
+	assert(parseDateTime('8:00:00'), dateTimeObject(new Date(`${todaysDate} 08:00:00`)))
+	assert(parseDateTime('94518'), dateTimeObject(new Date(`${todaysDate} 09:45:18`)))
+	assert(parseDateTime('9:45:18'), dateTimeObject(new Date(`${todaysDate} 09:45:18`)))
+	assert(parseDateTime('16'), dateTimeObject(new Date(`${todaysDate} 16:00:00`)))
+	assert(parseDateTime('16:00'), dateTimeObject(new Date(`${todaysDate} 16:00:00`)))
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.error(e)
