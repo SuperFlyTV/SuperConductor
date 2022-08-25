@@ -1005,6 +1005,13 @@ export class IPCServer
 		) {
 			affectsPlayout = group
 		}
+		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
+		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
+		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
+			for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+				if (playingPart.stopTime) delete group.playout.playingParts[partId]
+			}
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
