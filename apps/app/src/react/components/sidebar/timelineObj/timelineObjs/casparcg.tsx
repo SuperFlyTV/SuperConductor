@@ -2,15 +2,21 @@ import React from 'react'
 import { assertNever, deepClone } from '@shared/lib'
 import {
 	ChannelFormat,
+	Direction,
+	Ease,
 	TimelineContentTypeCasparCg,
 	TimelineObjCasparCGAny,
 	TimelineObjCCGHTMLPage,
 	TimelineObjCCGInput,
 	TimelineObjCCGIP,
 	TimelineObjCCGMedia,
+	TimelineObjCCGProducerContentBase,
 	TimelineObjCCGRecord,
 	TimelineObjCCGRoute,
 	TimelineObjCCGTemplate,
+	TimelineTransition,
+	Transition,
+	TSRTransitionOptions,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
@@ -24,6 +30,7 @@ import { TrashBtn } from '../../../inputs/TrashBtn'
 import { AddBtn } from '../../../inputs/AddBtn'
 
 import './casparcg.scss'
+import { FloatInput } from '../../../inputs/FloatInput'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -111,6 +118,297 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 			) : null}
 		</>
 	)
+
+	const getSettingsTransitions = (obj: TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase }) => {
+		if (!obj.content.transitions) obj.content.transitions = {}
+		if (!obj.content.transitions.inTransition) obj.content.transitions.inTransition = { type: Transition.CUT }
+		if (!obj.content.transitions.outTransition) obj.content.transitions.outTransition = { type: Transition.CUT }
+
+		return (
+			<>
+				<div className="setting-separator"></div>
+				{getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')}
+				<div className="setting-separator"></div>
+				{getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')}
+			</>
+		)
+	}
+	const getSettingsTransitionInner = (obj: TimelineObjCasparCGAny, transition: TimelineTransition, label: string) => {
+		const el: JSX.Element[] = []
+
+		if (showAll || (transition.type ?? Transition.CUT) !== Transition.CUT) {
+			el.push(
+				<div className="setting" key="type">
+					<SelectEnum
+						label={`${label} Transition`}
+						fullWidth
+						currentValue={transition?.type}
+						options={Transition}
+						defaultValue={Transition.CUT}
+						onChange={(v) => {
+							transition.type = v
+							// Convenience: add default values:
+							if (transition.type === Transition.CUT) {
+								transition.duration = undefined
+							} else if (transition.type === Transition.MIX) {
+								if (!transition.duration) transition.duration = 500
+							} else if (
+								transition.type === Transition.PUSH ||
+								transition.type === Transition.SLIDE ||
+								transition.type === Transition.WIPE
+							) {
+								if (!transition.duration) transition.duration = 500
+								if (transition.easing === undefined) transition.easing = Ease.IN_OUT_CUBIC
+							}
+							onSave(obj)
+						}}
+					/>
+				</div>
+			)
+		}
+
+		const mixSettings: JSX.Element[] = []
+
+		if (transition.type !== Transition.STING && transition.type !== Transition.TSR_TRANSITION) {
+			if (showAll || transition.duration !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="duration">
+						<DurationInput
+							label="Mix Duration"
+							fullWidth
+							currentValue={transition.duration}
+							onChange={(v) => {
+								transition.duration = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || transition.easing !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="ease">
+						<SelectEnum
+							label="Easing"
+							fullWidth
+							currentValue={transition.easing}
+							options={Ease}
+							defaultValue={Ease.LINEAR}
+							onChange={(v) => {
+								transition.easing = v
+								onSave(obj)
+							}}
+						/>
+					</div>
+				)
+			}
+		}
+
+		if (transition.type === Transition.CUT) {
+			// No settings
+		} else if (transition.type === Transition.MIX) {
+			// No more settings
+		} else if (
+			transition.type === Transition.PUSH ||
+			transition.type === Transition.SLIDE ||
+			transition.type === Transition.WIPE
+		) {
+			if (showAll || transition.direction !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="direction">
+						<SelectEnum
+							label="Direction"
+							fullWidth
+							currentValue={transition.direction}
+							options={Direction}
+							defaultValue={Direction.LEFT}
+							onChange={(v) => {
+								transition.direction = v
+								onSave(obj)
+							}}
+						/>
+					</div>
+				)
+			}
+		} else if (transition.type === Transition.STING) {
+			if (showAll || transition.maskFile !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="maskFile">
+						<TextInput
+							label="Mask File"
+							fullWidth
+							currentValue={transition.maskFile}
+							onChange={(v) => {
+								transition.maskFile = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+						/>
+					</div>
+				)
+			}
+			if (showAll || transition.overlayFile !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="overlayFile">
+						<TextInput
+							label="Overlay File"
+							fullWidth
+							currentValue={transition.overlayFile}
+							onChange={(v) => {
+								transition.overlayFile = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || transition.delay !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="delay">
+						<DurationInput
+							label="Delay"
+							fullWidth
+							currentValue={transition.delay}
+							onChange={(v) => {
+								transition.delay = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || transition.audioFadeStart !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="audioFadeStart">
+						<DurationInput
+							label="Audio Fade start"
+							fullWidth
+							currentValue={transition.audioFadeStart}
+							onChange={(v) => {
+								transition.audioFadeStart = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || transition.audioFadeDuration !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="audioFadeDuration">
+						<DurationInput
+							label="Audio Fade duration"
+							fullWidth
+							currentValue={transition.audioFadeDuration}
+							onChange={(v) => {
+								transition.audioFadeDuration = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+		} else if (transition.type === Transition.TSR_TRANSITION) {
+			// Hackish implementation in TSR:
+			if (!(transition as any).customOptions) (transition as any).customOptions = {}
+			const customOptions: TSRTransitionOptions = (transition as any).customOptions
+
+			if (showAll || customOptions.updateInterval !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="updateInterval">
+						<DurationInput
+							label="Update Interval"
+							fullWidth
+							currentValue={customOptions.updateInterval}
+							onChange={(v) => {
+								customOptions.updateInterval = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || customOptions.linearSpeed !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="linearSpeed">
+						<FloatInput
+							label="Linear Speed"
+							fullWidth
+							currentValue={customOptions.linearSpeed}
+							onChange={(v) => {
+								customOptions.linearSpeed = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || customOptions.acceleration !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="acceleration">
+						<FloatInput
+							label="Acceleration"
+							fullWidth
+							currentValue={customOptions.acceleration}
+							onChange={(v) => {
+								customOptions.acceleration = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || customOptions.maxSpeed !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="maxSpeed">
+						<FloatInput
+							label="Max Speed"
+							fullWidth
+							currentValue={customOptions.maxSpeed}
+							onChange={(v) => {
+								customOptions.maxSpeed = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+			if (showAll || customOptions.snapDistance !== undefined) {
+				mixSettings.push(
+					<div className="setting" key="snapDistance">
+						<IntInput
+							label="Snap Distance"
+							fullWidth
+							currentValue={customOptions.snapDistance}
+							onChange={(v) => {
+								customOptions.snapDistance = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					</div>
+				)
+			}
+		} else {
+			assertNever(transition.type)
+		}
+		if (mixSettings.length > 0) {
+			el.push(
+				<div className="settings-group" key="group">
+					{...mixSettings}
+				</div>
+			)
+		}
+		return el
+	}
 
 	const showAllButton = showAll ? (
 		<Link href="#" onClick={() => setShowAll(false)}>
@@ -207,6 +505,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div> */}
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsTransitions(obj)}
 
 				{showAllButton}
 			</>
@@ -229,6 +528,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div>
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsTransitions(obj)}
 
 				{showAllButton}
 			</>
@@ -289,6 +589,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsTransitions(obj)}
+
 				{showAllButton}
 			</>
 		)
@@ -333,6 +635,10 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div>
 
 				<CasparEditTemplateData obj={obj} onSave={onSave} />
+
+				{getSettingsTransitions(obj)}
+
+				{showAllButton}
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeCasparCg.HTMLPAGE) {
@@ -433,6 +739,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsTransitions(obj)}
 				{showAllButton}
 			</>
 		)

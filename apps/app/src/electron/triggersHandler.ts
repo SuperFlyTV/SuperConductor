@@ -160,7 +160,6 @@ export class TriggersHandler {
 				let allMatching = false
 				/** If the action has a newly pressed */
 				let matchingNewlyPressed = false
-				const matchingTriggers: ActiveTriggers = []
 				for (const fullIdentifier of action.trigger.fullIdentifiers) {
 					if (newlyActiveTriggers[fullIdentifier]) {
 						matchingNewlyPressed = true
@@ -169,7 +168,6 @@ export class TriggersHandler {
 					// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
 					if (activeTriggersMap[fullIdentifier]) {
 						allMatching = true
-						matchingTriggers.push(activeTriggersMap[fullIdentifier])
 					} else {
 						// The trigger is not pressed, so we can stop looking
 						allMatching = false

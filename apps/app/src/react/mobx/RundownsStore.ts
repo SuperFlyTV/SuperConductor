@@ -402,7 +402,7 @@ export class RundownsStore {
 	 * Method triggers rundown update with the new rundown id.
 	 * @param rundownId ID of the new current rundown
 	 */
-	setCurrentRundown(rundownId?: string) {
+	setCurrentRundown(rundownId: string | undefined) {
 		if (rundownId) {
 			this._currentRundownId = rundownId
 			store.guiStore.activeTabId = rundownId

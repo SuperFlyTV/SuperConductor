@@ -2,7 +2,6 @@
 import React, { useCallback, useContext } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { Bridge as BridgeType } from '../../../../../models/project/Bridge'
-import { DeviceOptionsCasparCG, DeviceType } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'

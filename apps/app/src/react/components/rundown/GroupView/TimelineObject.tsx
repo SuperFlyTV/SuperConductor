@@ -184,7 +184,7 @@ export const TimelineObject: React.FC<{
 		startValue * 100
 	)
 
-	const duration = instance.end ? instance.end - instance.start : null
+	const duration = instance.end !== null ? instance.end - instance.start : null
 	let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
 	if (widthPercentage > 100 - startPercentage) {
 		// Limit the width, so that the rightmost part is always visible
@@ -374,6 +374,7 @@ export const TimelineObject: React.FC<{
 				left: `${startPercentage}%`,
 				width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
 				right: widthPercentage === null ? '-4px' : undefined,
+				zIndex: Math.round(startPercentage),
 			}}
 			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}
@@ -423,6 +424,33 @@ export const TimelineObject: React.FC<{
 					setMoveType('duration')
 				}}
 			/>
+			{description.inTransition && (
+				<div
+					className="transition transition--in"
+					style={{
+						width:
+							description.inTransition.duration === undefined
+								? undefined
+								: description.inTransition.duration / msPerPixel,
+					}}
+					title={description.inTransition.label}
+				></div>
+			)}
+			{description.outTransition && (
+				<div
+					className={classNames(
+						'transition transition--out',
+						(widthPercentage === null || widthPercentage > 99) && 'at-end'
+					)}
+					style={{
+						width:
+							description.outTransition.duration === undefined
+								? undefined
+								: description.outTransition.duration / msPerPixel,
+					}}
+					title={description.outTransition.label}
+				></div>
+			)}
 		</div>
 	)
 })
@@ -454,6 +482,7 @@ function timelineObjectDurationString(duration: number | null): string {
 }
 function TimelineObjectDuration(props: { duration: number | null }) {
 	if (props.duration === null) return <div className="duration">∞</div>
+	if (props.duration === 0) return <div className="duration">0</div>
 	const { h, m, s, ms } = millisecondsToTime(props.duration)
 	const secondTenths = Math.floor(ms / 100)
 	return (
