@@ -63,6 +63,19 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 						options={SupportedTransportStatuses}
 						onChange={(v: TransportStatus) => {
 							obj.content.status = v
+
+							// There isn't any runtime code which enforces that clipId is a number or null.
+							// What this means is that, if a user first creates a RECORD object then
+							// changes it to a PLAY object, it can have an undefined clipId which
+							// can then propogate throughout the system, which won't be handled correctly by TSR.
+							// To prevent this, we check for an undefined value and replace it with null here.
+							if (
+								obj.content.status === TransportStatus.PLAY &&
+								(obj.content as any).clipId === undefined
+							) {
+								obj.content.clipId === null
+							}
+
 							onSave(obj)
 						}}
 						allowUndefined={false}
