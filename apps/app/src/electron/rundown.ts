@@ -45,10 +45,10 @@ export function postProcessPart(part: Part, noModify?: boolean): void {
 			}
 		}
 	}
-	const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+	const partDuration = part.duration ?? getResolvedTimelineTotalDuration(resolvedTimeline, false)
 
 	part.resolved = {
-		duration: maxDuration,
+		duration: partDuration,
 		label: getPartLabel(part),
 	}
 

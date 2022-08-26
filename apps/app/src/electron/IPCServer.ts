@@ -769,7 +769,7 @@ export class IPCServer
 		}
 
 		let affectsPlayout: Group | undefined = undefined
-		if (has(arg.part, 'loop') || has(arg.part, 'disabled') )) {
+		if (has(arg.part, 'loop') || has(arg.part, 'disabled') || has(arg.part, 'duration')) {
 			affectsPlayout = group
 		}
 

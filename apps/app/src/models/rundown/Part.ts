@@ -13,6 +13,8 @@ export interface PartBase {
 
 	triggers: Trigger[]
 
+	duration?: number
+
 	resolved: {
 		/** Duration of the part, derived by resolving the timeline in the Part  */
 		duration: number | null // null means infinite

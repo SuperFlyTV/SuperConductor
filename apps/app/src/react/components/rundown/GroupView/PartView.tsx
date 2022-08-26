@@ -241,11 +241,13 @@ export const PartView: React.FC<{
 
 		return {
 			orgResolvedTimeline,
-			orgMaxDuration: orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0,
+			orgMaxDuration: orgResolvedTimeline
+				? part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
+				: 0,
 			resolverErrorMessage: errorMessage,
 		}
 		// }, [part.timeline, trackWidth])
-	}, [partId])
+	}, [partId, part.duration])
 
 	const maxDurationAdjusted = orgMaxDuration || DEFAULT_DURATION
 

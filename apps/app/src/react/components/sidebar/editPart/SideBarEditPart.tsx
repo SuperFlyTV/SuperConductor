@@ -9,6 +9,7 @@ import { store } from '../../../mobx/store'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
+import { DurationInput } from '../../inputs/DurationInput'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
@@ -122,6 +123,27 @@ export const SideBarEditPart: React.FC<{
 								})
 								.catch(handleError)
 						}}
+					/>
+				</div>
+				<div className="setting">
+					<DurationInput
+						label="Fixed Part duration"
+						currentValue={part.duration}
+						disabled={groupOrPartLocked}
+						emptyPlaceholder="From content"
+						onChange={(value) => {
+							ipcServer
+								.updatePart({
+									rundownId,
+									groupId,
+									partId,
+									part: {
+										duration: value,
+									},
+								})
+								.catch(handleError)
+						}}
+						allowUndefined={true}
 					/>
 				</div>
 			</div>
