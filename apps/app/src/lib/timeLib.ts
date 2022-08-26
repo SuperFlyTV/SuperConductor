@@ -6,6 +6,7 @@ export function parseDuration(str: string, isWriting?: boolean): number | null |
 	if (str === '∞') return null
 	if (!str) return undefined
 
+	str = str.trim()
 	str = str.replace(/,/g, '.')
 
 	str = str.replace(/^∞/g, '') // Remove initial ∞
@@ -926,15 +927,29 @@ export function parseDateTime(str: string): DateTimeObject | undefined {
 	if (!str) return undefined
 
 	let date: Date | undefined = undefined
-	const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+) (-?\d+):(-?\d+):(-?\d+)$/) // yyyy-mm-dd hh:mm:ss
-	if (m) {
-		const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
-		if (dateIsReasonable(d)) date = d
+	{
+		const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+) (-?\d+):(-?\d+):(-?\d+)$/) // yyyy-mm-dd hh:mm:ss
+		if (m) {
+			const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]))
+			if (dateIsReasonable(d)) date = d
+		}
 	}
-	if (!date) {
-		const d = new Date(str)
-		if (dateIsReasonable(d)) date = d
+
+	let dayDate = new Date()
+	let dayDateHasBeenSet = false
+
+	{
+		const m = str.match(/^(-?\d+)-(-?\d+)-(-?\d+)(.*)$/) // yyyy-mm-dd
+		if (m) {
+			const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0)
+			if (dateIsReasonable(d)) {
+				dayDate = d
+				dayDateHasBeenSet = true
+				str = m[4] // Set the string to the "rest"
+			}
+		}
 	}
+
 	if (!date) {
 		// Handle input that looks like duration, like hh:mm:ss, hhmm etc...
 		// Interpret it as "the time today"
@@ -947,12 +962,24 @@ export function parseDateTime(str: string): DateTimeObject | undefined {
 			// formatDuration('123') evaluates to 1 minute 23 seconds ('1:23')
 			// But when combined with a date ('2020-01-01 8:00') it is interpreted as 1 hour 23 minutes,
 			// which is actually what we want.
-			const today = new Date()
-			const fullDateString = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()} ${durationString}`
+
+			const fullDateString = `${dayDate.getFullYear()}-${
+				dayDate.getMonth() + 1
+			}-${dayDate.getDate()} ${durationString}`
 
 			const d = new Date(fullDateString)
 
 			if (dateIsReasonable(d)) date = d
+		}
+	}
+	if (!date) {
+		const d = new Date(str)
+		if (dateIsReasonable(d)) date = d
+	}
+
+	if (!date) {
+		if (dayDateHasBeenSet) {
+			date = dayDate
 		}
 	}
 
@@ -1020,6 +1047,12 @@ try {
 	assert(parseDateTime('9:45:18'), dateTimeObject(new Date(`${todaysDate} 09:45:18`)))
 	assert(parseDateTime('16'), dateTimeObject(new Date(`${todaysDate} 16:00:00`)))
 	assert(parseDateTime('16:00'), dateTimeObject(new Date(`${todaysDate} 16:00:00`)))
+	assert(parseDateTime('2023'), dateTimeObject(new Date(`${todaysDate} 20:23:00`)))
+	assert(parseDateTime('2022-08-30'), dateTimeObject(new Date(`2022-08-30 00:00:00`)))
+	assert(parseDateTime('2022-08-30 8:30:14'), dateTimeObject(new Date(`2022-08-30 08:30:14`)))
+	assert(parseDateTime('2022-08-30 8:30'), dateTimeObject(new Date(`2022-08-30 08:30:00`)))
+	assert(parseDateTime('2022-08-30 830'), dateTimeObject(new Date(`2022-08-30 08:30:00`)))
+	assert(parseDateTime('2022-08-30 8'), dateTimeObject(new Date(`2022-08-30 08:00:00`)))
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.error(e)
