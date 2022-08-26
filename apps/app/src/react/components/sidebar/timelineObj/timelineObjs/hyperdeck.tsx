@@ -21,7 +21,6 @@ import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 enum SupportedTransportStatuses {
 	PLAY = 'play',
 	RECORD = 'record',
-	STOPPED = 'stopped',
 	PREVIEW = 'preview',
 }
 
@@ -76,11 +75,10 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 			obj.content.status === TransportStatus.FORWARD ||
 			obj.content.status === TransportStatus.REWIND ||
 			obj.content.status === TransportStatus.JOG ||
-			obj.content.status === TransportStatus.SHUTTLE
+			obj.content.status === TransportStatus.SHUTTLE ||
+			obj.content.status === TransportStatus.STOPPED
 		) {
 			specificTransportSettings = <>{NOT_IMPLEMENTED_SETTINGS}</>
-		} else if (obj.content.status === TransportStatus.STOPPED) {
-			specificTransportSettings = <></>
 		} else if (obj.content.status === TransportStatus.PREVIEW) {
 			specificTransportSettings = <></>
 		} else if (obj.content.status === TransportStatus.PLAY) {
