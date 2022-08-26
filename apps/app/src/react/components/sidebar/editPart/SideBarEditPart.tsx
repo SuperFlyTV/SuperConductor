@@ -49,7 +49,7 @@ export const SideBarEditPart: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{`${part.name}`}</span>
+				<span>{`Part: ${part.resolved.label}`}</span>
 				<div>
 					<TrashBtn
 						disabled={part?.locked}
@@ -160,7 +160,7 @@ export const SideBarEditPart: React.FC<{
 					setDeleteConfirmationOpen(false)
 				}}
 			>
-				<p>Are you sure you want to delete &quot;{part.name}&quot;?</p>
+				<p>Are you sure you want to delete &quot;{part.resolved.label}&quot;?</p>
 			</ConfirmationDialog>
 		</SidebarContent>
 	)

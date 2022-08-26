@@ -50,7 +50,7 @@ export const SideBarEditGroup: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{`${group?.name}`}</span>
+				<span>{`Group: ${group?.name}`}</span>
 				<div>
 					<TrashBtn
 						disabled={group?.locked}
