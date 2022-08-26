@@ -115,6 +115,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 						options: {
 							host: '192.168.0.10',
 							port: 9993,
+							warnOnEmptySlots: true,
 						},
 					})
 

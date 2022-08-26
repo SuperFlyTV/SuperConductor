@@ -7,6 +7,7 @@ import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { SelectEnum } from '../../../inputs/SelectEnum'
+import { BooleanInput } from '../../../inputs/BooleanInput'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -219,6 +220,22 @@ export const DeviceItemContent: React.FC<{
 								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 							}}
 							allowUndefined={false}
+						/>
+					</div>
+				) : deviceSettings.type === DeviceType.HYPERDECK && deviceSettings.options ? (
+					<div className="form-control">
+						<BooleanInput
+							label="Warn on empty slots"
+							currentValue={
+								typeof deviceSettings.options.warnOnEmptySlots === 'undefined'
+									? true
+									: deviceSettings.options.warnOnEmptySlots
+							}
+							onChange={(v) => {
+								if (!deviceSettings.options) return
+								deviceSettings.options.warnOnEmptySlots = v
+								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+							}}
 						/>
 					</div>
 				) : (
