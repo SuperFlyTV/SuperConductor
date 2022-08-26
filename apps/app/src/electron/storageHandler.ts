@@ -11,6 +11,7 @@ import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
+import { getPartLabel } from '../lib/util'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -860,6 +861,7 @@ export class StorageHandler extends EventEmitter {
 				if (!part.triggers) {
 					part.triggers = []
 				}
+				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
 			}
 		}
 	}

@@ -14,7 +14,10 @@ export interface PartBase {
 	triggers: Trigger[]
 
 	resolved: {
+		/** Duration of the part, derived by resolving the timeline in the Part  */
 		duration: number | null // null means infinite
+		/** Label of the part (derived from the name/timeline of the Part) */
+		label: string
 	}
 	/** If this part was created from the AutoFill */
 	autoFilled?: boolean

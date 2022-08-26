@@ -8,7 +8,6 @@ import { GroupPreparedPlayDataPart } from '../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../models/project/Peripheral'
 import { Project } from '../../models/project/Project'
 import { ActiveTrigger } from '../../models/rundown/Trigger'
-import { getPartLabel } from '../util'
 
 export type TriggersAreaMap = Map<string, TriggerArea>
 export interface TriggerArea {
@@ -141,8 +140,8 @@ export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 			area: triggersAreaToArea(triggerArea, false),
 
 			header: {
-				long: `Play ${getPartLabel(action0.part)}`,
-				short: `▶${getPartLabel(action0.part)}`,
+				long: `Play ${action0.part.resolved.label}`,
+				short: `▶${action0.part.resolved.label}`,
 			},
 			info: {
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
@@ -152,7 +151,7 @@ export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 			// Only show the playing state while OUR part is playing
 			if (action.part.id !== part.id) return null
 
-			const label = getPartLabel(action0.part)
+			const label = action0.part.resolved.label
 			return {
 				attentionLevel: AttentionLevel.INFO,
 				area: triggersAreaToArea(triggerArea, false),
@@ -170,7 +169,7 @@ export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 			// Only show the playing state while OUR part is playing
 			if (data.action.part.id !== data.part.id) return null
 
-			const label = getPartLabel(action0.part)
+			const label = action0.part.resolved.label
 			return {
 				attentionLevel: AttentionLevel.INFO,
 				area: triggersAreaToArea(triggerArea, false),
@@ -217,7 +216,7 @@ export function stopKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 					short: `⏹${label}`,
 				},
 				info: {
-					long: `${getPartLabel(data.part)}` + (longestDuration === null ? '' : '\n#timeToEnd'),
+					long: `${data.part.resolved.label}` + (longestDuration === null ? '' : '\n#timeToEnd'),
 				},
 			}
 		},
@@ -234,8 +233,8 @@ export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea |
 			area: triggersAreaToArea(triggerArea, false),
 
 			header: {
-				long: `Play ${getPartLabel(action0.part)}`,
-				short: `▶${getPartLabel(action0.part)}`,
+				long: `Play ${action0.part.resolved.label}`,
+				short: `▶${action0.part.resolved.label}`,
 			},
 			info: {
 				long: longestDuration === null ? '-' : `#duration(${longestDuration})`,
@@ -245,7 +244,7 @@ export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea |
 			// Only show the playing state while OUR part is playing
 			if (action.part.id !== part.id) return null
 
-			const label = getPartLabel(action0.part)
+			const label = action0.part.resolved.label
 			return {
 				attentionLevel: AttentionLevel.INFO,
 				area: triggersAreaToArea(triggerArea, false),
@@ -275,7 +274,7 @@ export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea |
 					short: `⏹${label}`,
 				},
 				info: {
-					long: `${getPartLabel(data.part)}` + (longestDuration === null ? '' : '\n#timeToEnd'),
+					long: `${data.part.resolved.label}` + (longestDuration === null ? '' : '\n#timeToEnd'),
 				},
 			}
 		},
@@ -309,7 +308,7 @@ function getLabel(actions: Action[], part: PartBase) {
 	} else if (actions.length > 1) {
 		return `#${actions.length}`
 	} else {
-		return getPartLabel(part)
+		return part.resolved.label
 	}
 }
 

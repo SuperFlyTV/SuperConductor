@@ -752,11 +752,11 @@ export function copyTimelineObj(obj: TimelineObj): TimelineObj {
 export function has<T extends { [key: string]: any }>(obj: T, key: keyof T): boolean {
 	return _.has(obj, key)
 }
-export function getPartLabel(part: PartBase): string {
+export function getPartLabel(part: Part): string {
 	if (part.name) return part.name
 
-	if ((part as Part).timeline) {
-		const firstTimelineObj = (part as Part).timeline[0]
+	if (part.timeline) {
+		const firstTimelineObj = part.timeline[0]
 		if (firstTimelineObj) {
 			const description = describeTimelineObject(firstTimelineObj.obj)
 			return description.label
