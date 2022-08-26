@@ -374,6 +374,7 @@ export const TimelineObject: React.FC<{
 				left: `${startPercentage}%`,
 				width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
 				right: widthPercentage === null ? '-4px' : undefined,
+				zIndex: Math.round(startPercentage),
 			}}
 			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label + ' ' + durationTitle}

@@ -39,7 +39,7 @@
 			&.selectable {
 				cursor: pointer;
 				&:hover {
-					opacity: 0.8;
+					filter: brightness(80%);
 				}
 			}
 			&.selected {
@@ -73,6 +73,8 @@
 				top: 0;
 				height: 100%;
 				width: 1em;
+
+				pointer-events: none;
 
 				&.transition--in {
 					left: 0;
