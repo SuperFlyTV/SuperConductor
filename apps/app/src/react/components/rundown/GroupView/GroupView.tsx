@@ -50,6 +50,7 @@ import VisibilitySensor from 'react-visibility-sensor'
 import { Btn } from '../../inputs/Btn/Btn'
 import { sortSelected } from '../../../lib/clientUtil'
 import _ from 'lodash'
+import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -90,23 +91,18 @@ export const GroupView: React.FC<{
 	useEffect(() => {
 		playheadData.current = group.preparedPlayData
 
-		// console
-
 		const activeParts0: { [partId: string]: true } = {}
 
 		if (group.preparedPlayData) {
 			if (group.preparedPlayData.type === 'single') {
-				for (const part of group.preparedPlayData.parts) {
-					activeParts0[part.part.id] = true
-				}
-				if (group.preparedPlayData.repeating) {
-					for (const part of group.preparedPlayData.repeating.parts) {
+				for (const section of group.preparedPlayData.sections) {
+					for (const part of section.parts) {
 						activeParts0[part.part.id] = true
 					}
 				}
 			} else if (group.preparedPlayData.type === 'multi') {
-				for (const part of Object.values(group.preparedPlayData.parts)) {
-					activeParts0[part.part.id] = true
+				for (const partId of Object.keys(group.preparedPlayData.sections)) {
+					activeParts0[partId] = true
 				}
 			} else {
 				assertNever(group.preparedPlayData)
@@ -120,8 +116,8 @@ export const GroupView: React.FC<{
 	const groupCollapsed = guiSettings.get().collapsed
 
 	const groupIsPlaying = computed(() => store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false).get()
-	const anyPartIsPlaying = computed(
-		() => store.groupPlayDataStore.groups.get(group.id)?.anyPartIsPlaying || false
+	const groupWillPlay = computed(
+		() => (store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? []).length > 0 || false
 	).get()
 	const playingPartCount = computed(
 		() => Object.keys(store.groupPlayDataStore.groups.get(group.id)?.playheads || {}).length
@@ -434,31 +430,6 @@ export const GroupView: React.FC<{
 		ipcServer.duplicateGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 
-	// Step down button:
-	const { nextPartExists, prevPartExists } = useMemoComputedObject(() => {
-		const groupWithParts = store.rundownsStore.getGroupWithParts(groupId)
-
-		const nextPartIndex = getNextPartIndex(groupWithParts)
-		const prevPartIndex = getPrevPartIndex(groupWithParts)
-
-		return {
-			nextPartExists: nextPartIndex in groupWithParts.parts,
-			prevPartExists: prevPartIndex in groupWithParts.parts,
-		}
-	}, [groupId])
-
-	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
-	const handleStepDown = useCallback(() => {
-		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
-	// Step down up:
-
-	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
-	const handleStepUp = useCallback(() => {
-		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
-	}, [group.id, handleError, ipcServer, rundownId])
-
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
 		const settings = store.guiStore.getGroupSettings(groupId)
@@ -662,31 +633,12 @@ export const GroupView: React.FC<{
 
 						<div className="controls controls-left">
 							<div className="playback">
+								{groupWillPlay && (
+									<>
+										<GroupCountDown rundownId={rundownId} group={groupBase} />
+									</>
+								)}
 								<GroupControlButtons rundownId={rundownId} group={groupBase} />
-								<Button
-									variant="contained"
-									size="small"
-									disabled={!canStepDown}
-									onClick={handleStepDown}
-									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-									title="Play next"
-								>
-									<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-										<AiFillStepForward size={22} />
-									</div>
-								</Button>
-								<Button
-									variant="contained"
-									size="small"
-									disabled={!canStepUp}
-									onClick={handleStepUp}
-									sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-									title="Play previous"
-								>
-									<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
-										<AiFillStepForward size={22} />
-									</div>
-								</Button>
 							</div>
 
 							<ToggleButton
@@ -972,6 +924,31 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 	)
 }
 
+const GroupCountDown: React.FC<{
+	rundownId: string
+	group: GroupBase
+}> = observer(function GroupCountDown({ group }) {
+	const nextCoundowns = computed(
+		() => store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? []
+	).get()
+
+	if (nextCoundowns.length === 0) return null
+
+	return (
+		<div className="schedule-countdown">
+			<div
+				title={
+					nextCoundowns
+						.slice(0, 10)
+						.map((nc) => formatDateTime(nc.timestamp))
+						.join('\n') + (nextCoundowns.length > 10 ? '\n...' : '')
+				}
+			>
+				Scheduled start: {formatDuration(nextCoundowns[0].duration, 'smart')}
+			</div>
+		</div>
+	)
+})
 const GroupControlButtons: React.FC<{
 	rundownId: string
 	group: GroupBase
@@ -993,6 +970,29 @@ const GroupControlButtons: React.FC<{
 	const handlePause = useCallback(() => {
 		ipcServer.pauseGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [handleError, ipcServer, rundownId, group.id])
+
+	// Step down button:
+	const { nextPartExists, prevPartExists } = useMemoComputedObject(() => {
+		const groupWithParts = store.rundownsStore.getGroupWithParts(group.id)
+
+		const nextPartIndex = getNextPartIndex(groupWithParts)
+		const prevPartIndex = getPrevPartIndex(groupWithParts)
+
+		return {
+			nextPartExists: nextPartIndex in groupWithParts.parts,
+			prevPartExists: prevPartIndex in groupWithParts.parts,
+		}
+	}, [group.id])
+
+	const handleStepDown = useCallback(() => {
+		ipcServer.playNext({ rundownId, groupId: group.id }).catch(handleError)
+	}, [group.id, handleError, ipcServer, rundownId])
+
+	// Step down up:
+
+	const handleStepUp = useCallback(() => {
+		ipcServer.playPrev({ rundownId, groupId: group.id }).catch(handleError)
+	}, [group.id, handleError, ipcServer, rundownId])
 
 	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
 		useMemoComputedObject(
@@ -1029,6 +1029,9 @@ const GroupControlButtons: React.FC<{
 		return groupWithParts.parts.filter((p) => !p.disabled).length
 	}, [group.id])
 
+	const canStepDown = !group.disabled && anyPartIsPlaying && nextPartExists
+	const canStepUp = !group.disabled && anyPartIsPlaying && prevPartExists
+
 	const data: PlayButtonData = {
 		groupDisabled,
 		groupOneAtATime,
@@ -1047,6 +1050,30 @@ const GroupControlButtons: React.FC<{
 			<StopBtn className="part__stop" groupId={group.id} data={data} onClick={handleStop} />
 			<PlayBtn groupId={group.id} data={data} onClick={handlePlay} />
 			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
+			<Button
+				variant="contained"
+				size="small"
+				disabled={!canStepDown}
+				onClick={handleStepDown}
+				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+				title="Play next"
+			>
+				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
+					<AiFillStepForward size={22} />
+				</div>
+			</Button>
+			<Button
+				variant="contained"
+				size="small"
+				disabled={!canStepUp}
+				onClick={handleStepUp}
+				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+				title="Play previous"
+			>
+				<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+					<AiFillStepForward size={22} />
+				</div>
+			</Button>
 		</>
 	)
 })

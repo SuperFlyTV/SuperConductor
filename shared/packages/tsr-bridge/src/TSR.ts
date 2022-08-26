@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType } from 'timeline-state-resolver'
+import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType, OSCDeviceType } from 'timeline-state-resolver'
 import { ResourceAny } from '@shared/models'
 import { BridgeAPI, LoggerLike } from '@shared/api'
 import { CasparCGSideload } from './sideload/CasparCG'
@@ -198,9 +198,12 @@ export class TSR {
 	}
 	private reportDeviceStatus(deviceId: string) {
 		const status = this.deviceStatus[deviceId]
+		const device = this.devices[deviceId]
 
-		if (status && this.devices[deviceId]) {
-			const ok = status.statusCode === StatusCode.GOOD
+		if (status && device) {
+			// Hack to get rid of warnings for UDP OSC devices, which always have an UNKNOWN status code.
+			const isOscUdp = device.type === DeviceType.OSC && device.options?.type === OSCDeviceType.UDP
+			const ok = isOscUdp ? true : status.statusCode === StatusCode.GOOD
 			const message = status.messages?.join(', ') ?? ''
 			this.send({
 				type: 'deviceStatus',

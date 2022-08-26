@@ -74,6 +74,9 @@ export function stringifyError(error: unknown, noStack = false): string {
 
 	return str
 }
+export function ensureArray<T>(v: T | T[]): T[] {
+	return Array.isArray(v) ? v : [v]
+}
 /** Capitalizes the first letter of a string */
 export function capitalizeFirstLetter(input: string) {
 	return input.charAt(0).toUpperCase() + input.slice(1)

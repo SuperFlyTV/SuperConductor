@@ -1,3 +1,4 @@
+import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
 import { ResourceAny } from '@shared/models'
@@ -18,9 +19,6 @@ export const enum ActionDescription {
 	InsertParts = 'insert part(s)',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
-	TogglePartLoop = 'toggle part loop',
-	TogglePartDisable = 'toggle part disable',
-	TogglePartLock = 'toggle part lock',
 	NewGroup = 'create new group',
 	InsertGroups = 'insert group(s)',
 	UpdateGroup = 'update group',
@@ -83,9 +81,6 @@ export interface IPCServerMethods {
 		trigger: Trigger | null
 		triggerIndex: number | null
 	}) => void
-	togglePartLoop: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
-	togglePartDisable: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
-	togglePartLock: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
 	stopGroup: (arg: { rundownId: string; groupId: string }) => void
 	playGroup: (arg: { rundownId: string; groupId: string }) => void
 	pauseGroup: (arg: { rundownId: string; groupId: string }) => void
@@ -121,7 +116,7 @@ export interface IPCServerMethods {
 	}) => {
 		groupId: string
 	}[]
-	updateGroup: (arg: { rundownId: string; groupId: string; group: Partial<Group> }) => void
+	updateGroup: (arg: { rundownId: string; groupId: string; group: PartialDeep<Group> }) => void
 	deletePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
 	deleteGroup: (arg: { rundownId: string; groupId: string }) => void
 	moveParts: (arg: {

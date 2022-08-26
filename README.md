@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
@@ -8,22 +8,22 @@ A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&n
 
 ### Windows
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-Windows-Installer.exe).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-Windows-Installer.exe).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/SuperConductor-0.8.5-Windows-Installer.exe).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/TSR-Bridge-0.8.5-Windows-Installer.exe).
 
 ### Linux (Ubuntu)
 
-- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-Linux-Executable.AppImage).<br/>
+- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/SuperConductor-0.8.5-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/SuperConductor-0.8.4-Linux-Executable.AppImage`
-- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-Linux-Executable.AppImage).<br/>
+  `chmod +x Downloads/SuperConductor-0.8.5-Linux-Executable.AppImage`
+- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/TSR-Bridge-0.8.5-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/TSR-Bridge-0.8.4-Linux-Executable.AppImage`
+  `chmod +x Downloads/TSR-Bridge-0.8.5-Linux-Executable.AppImage`
 
 ### macOS
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/SuperConductor-0.8.4-macOS-Installer.dmg).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.4/TSR-Bridge-0.8.4-macOS-Installer.dmg).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/SuperConductor-0.8.5-macOS-Installer.dmg).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.8.5/TSR-Bridge-0.8.5-macOS-Installer.dmg).
 
 ## Problems and Issues
 
@@ -74,6 +74,7 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - **[OBS Studio](https://obsproject.com/)** Live video production software
 - **[vMix](https://www.vmix.com/)** software vision mixer
 - Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
+- Arbitrary HTTP ([REST](https://en.wikipedia.org/wiki/Representational_state_transfer#Semantics_of_HTTP_methods)) compatible devices
 - (GUI not implemented yet) **Blackmagic Design HyperDeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
@@ -81,7 +82,6 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 - (GUI not implemented yet) **[Sisyfos](https://github.com/olzzon/sisyfos-audio-controller)** audio controller
 - (GUI not implemented yet) **Quantel** video servers
 - (GUI not implemented yet) **VizRT MediaSequencer** graphics system
-- (GUI not implemented yet) Arbitrary HTTP (REST) compatible devices
 - (GUI not implemented yet) Arbitrary TCP-socket compatible devices
 
 ## TSR Bridge

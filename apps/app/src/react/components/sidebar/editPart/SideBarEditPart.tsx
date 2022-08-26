@@ -9,6 +9,7 @@ import { store } from '../../../mobx/store'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
+import { DurationInput } from '../../inputs/DurationInput'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
@@ -48,7 +49,7 @@ export const SideBarEditPart: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{`${part.name}`}</span>
+				<span>{`Part: ${part.resolved.label}`}</span>
 				<div>
 					<TrashBtn
 						disabled={part?.locked}
@@ -74,11 +75,13 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupOrPartLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartDisable({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										disabled: value,
+									},
 								})
 								.catch(handleError)
 						}}
@@ -91,11 +94,13 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartLock({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										locked: value,
+									},
 								})
 								.catch(handleError)
 						}}
@@ -108,14 +113,37 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupOrPartLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartLoop({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										loop: value,
+									},
 								})
 								.catch(handleError)
 						}}
+					/>
+				</div>
+				<div className="setting">
+					<DurationInput
+						label="Fixed Part duration"
+						currentValue={part.duration}
+						disabled={groupOrPartLocked}
+						emptyPlaceholder="From content"
+						onChange={(value) => {
+							ipcServer
+								.updatePart({
+									rundownId,
+									groupId,
+									partId,
+									part: {
+										duration: value,
+									},
+								})
+								.catch(handleError)
+						}}
+						allowUndefined={true}
 					/>
 				</div>
 			</div>
@@ -132,7 +160,7 @@ export const SideBarEditPart: React.FC<{
 					setDeleteConfirmationOpen(false)
 				}}
 			>
-				<p>Are you sure you want to delete &quot;{part.name}&quot;?</p>
+				<p>Are you sure you want to delete &quot;{part.resolved.label}&quot;?</p>
 			</ConfirmationDialog>
 		</SidebarContent>
 	)

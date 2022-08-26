@@ -11,6 +11,7 @@ import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
+import { getPartLabel } from '../lib/util'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -577,7 +578,6 @@ export class StorageHandler extends EventEmitter {
 					// If the rundown exists in the appData and it is marked as open, load it.
 					if (this.appData.appData.rundowns[rundown.fileName].open) {
 						const fileRundown = this._loadRundown(this._projectId, rundown.fileName)
-						this.ensureCompatibilityRundown(fileRundown.rundown)
 						rundowns[rundown.fileName] = fileRundown
 					}
 				} else {
@@ -641,6 +641,7 @@ export class StorageHandler extends EventEmitter {
 			this.rundownsNeedsWrite[fileName] = true
 			return StorageHandler.getDefaultRundown(newName)
 		}
+		this.ensureCompatibilityRundown(rundown.rundown)
 
 		return rundown
 	}
@@ -839,10 +840,28 @@ export class StorageHandler extends EventEmitter {
 			if (!group.autoFill) {
 				group.autoFill = getDefaultGroup().autoFill
 			}
+			if (!group.playoutMode) {
+				group.playoutMode = getDefaultGroup().playoutMode
+			}
+			if (!group.schedule) {
+				group.schedule = getDefaultGroup().schedule
+			}
+			if (group.preparedPlayData) {
+				if (group.preparedPlayData.type === 'single') {
+					if (!group.preparedPlayData.sections) {
+						group.preparedPlayData.sections = []
+					}
+				} else if (group.preparedPlayData.type === 'multi') {
+					if (!group.preparedPlayData.sections) {
+						group.preparedPlayData.sections = {}
+					}
+				}
+			}
 			for (const part of group.parts) {
 				if (!part.triggers) {
 					part.triggers = []
 				}
+				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
 			}
 		}
 	}

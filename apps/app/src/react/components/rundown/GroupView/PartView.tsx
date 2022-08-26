@@ -10,7 +10,7 @@ import {
 	getResolvedTimelineTotalDuration,
 	MoveTarget,
 } from '../../../../lib/util'
-import { Group } from '../../../../models/rundown/Group'
+import { Group, PlayoutMode } from '../../../../models/rundown/Group'
 import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
@@ -241,11 +241,13 @@ export const PartView: React.FC<{
 
 		return {
 			orgResolvedTimeline,
-			orgMaxDuration: orgResolvedTimeline ? getResolvedTimelineTotalDuration(orgResolvedTimeline, true) : 0,
+			orgMaxDuration: orgResolvedTimeline
+				? part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
+				: 0,
 			resolverErrorMessage: errorMessage,
 		}
 		// }, [part.timeline, trackWidth])
-	}, [partId])
+	}, [partId, part.duration])
 
 	const maxDurationAdjusted = orgMaxDuration || DEFAULT_DURATION
 
@@ -593,11 +595,13 @@ export const PartView: React.FC<{
 	// Disable button:
 	const toggleDisable = useCallback(() => {
 		ipcServer
-			.togglePartDisable({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.disabled,
+				part: {
+					disabled: !part.disabled,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.disabled, part.id, rundownId])
@@ -605,11 +609,13 @@ export const PartView: React.FC<{
 	// Lock button:
 	const toggleLock = useCallback(() => {
 		ipcServer
-			.togglePartLock({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.locked,
+				part: {
+					locked: !part.locked,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, part.locked, rundownId])
@@ -617,11 +623,13 @@ export const PartView: React.FC<{
 	// Loop button:
 	const toggleLoop = useCallback(() => {
 		ipcServer
-			.togglePartLoop({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.loop,
+				part: {
+					loop: !part.loop,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, part.loop, rundownId])
@@ -834,6 +842,10 @@ export const PartView: React.FC<{
 		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.locked).get() || false
 	const groupOrPartDisabled = groupDisabled || part.disabled
 
+	const groupPlayoutMode =
+		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.playoutMode).get() ||
+		PlayoutMode.NORMAL
+
 	const groupOrPartLocked = groupLocked || part.locked || false
 	const sortedLayers = useMemo(() => {
 		return sortLayers(resolvedTimeline.layers, mappings)
@@ -1003,6 +1015,7 @@ export const PartView: React.FC<{
 							groupId={parentGroupId}
 							partId={part.id}
 							disabled={part.disabled}
+							groupPlayoutMode={groupPlayoutMode}
 						/>
 					</div>
 				</div>
@@ -1152,6 +1165,7 @@ const PartControlButtons: React.FC<{
 	groupId: string
 	partId: string
 	disabled?: boolean
+	groupPlayoutMode: PlayoutMode
 }> = observer(function PartControlButtons({ rundownId, groupId, partId, disabled }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)

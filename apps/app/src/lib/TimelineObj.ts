@@ -1,4 +1,5 @@
 import {
+	AtemTransitionStyle,
 	DeviceType,
 	MediaSourceType,
 	TimelineContentTypeAtem,
@@ -7,15 +8,36 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
+	TimelineTransition,
+	Transition,
 	TransportStatus,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
+import { formatDuration } from './timeLib'
+import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 
-export function describeTimelineObject(obj: TSRTimelineObj) {
+export interface TimelineObjectDescription {
+	label: string
+	contentTypeClassNames: string[]
+	inTransition?: {
+		/** Duration [ms], undefined means that there is a transition, but we don't know how long */
+		duration: number | undefined
+		label: string
+	}
+	outTransition?: {
+		/** Duration [ms], undefined means that there is a transition, but we don't know how long */
+		duration: number | undefined
+		label: string
+	}
+}
+
+export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescription {
 	let label: string = obj.id
+	let inTransition: TimelineObjectDescription['inTransition'] = undefined
+	let outTransition: TimelineObjectDescription['outTransition'] = undefined
 	if (obj.content.deviceType === DeviceType.CASPARCG) {
 		if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
 			label = obj.content.file
@@ -42,9 +64,62 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 			// todo: for later:
 			// assertNever(obj.content)
 		}
+		if (obj.content.type !== TimelineContentTypeCasparCg.RECORD && obj.content.transitions) {
+			const describeTransition = (transition: TimelineTransition | undefined) => {
+				if (transition) {
+					if (
+						transition.type === Transition.CUT ||
+						transition.type === Transition.MIX ||
+						transition.type === Transition.PUSH ||
+						transition.type === Transition.SLIDE ||
+						transition.type === Transition.WIPE
+					) {
+						if (transition.duration) {
+							return {
+								duration: transition.duration,
+								label: `Transition: ${transition.type} (${formatDuration(transition.duration)})`,
+							}
+						}
+					} else if (transition.type === Transition.STING) {
+						if (transition.maskFile) {
+							return {
+								duration: undefined,
+								label: `Sting Transition: ${transition.maskFile}, ${transition.overlayFile}`,
+							}
+						}
+					} else if (transition.type === Transition.TSR_TRANSITION) {
+						return {
+							duration: undefined,
+							label: 'Custom TSR Transition',
+						}
+					} else {
+						assertNever(transition.type)
+					}
+				}
+				return undefined
+			}
+			inTransition = describeTransition(obj.content.transitions.inTransition)
+			outTransition = describeTransition(obj.content.transitions.outTransition)
+		}
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
 			label = `Input ${obj.content.me.input}`
+
+			if (obj.content.me.transition !== undefined) {
+				if (obj.content.me.transition === AtemTransitionStyle.MIX) {
+					const rate = obj.content.me.transitionSettings?.mix?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
+					inTransition = {
+						duration: 1000 * (rate / getAtemFrameRate()),
+						label: `MIX (${rate})`,
+					}
+				} else if (obj.content.me.transition !== AtemTransitionStyle.CUT) {
+					const rate = obj.content.me.transitionSettings?.wipe?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
+					inTransition = {
+						duration: 1000 * (rate / getAtemFrameRate()),
+						label: `${obj.content.me.transition} (${rate})`,
+					}
+				}
+			}
 		} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
 			label = `Fill ${obj.content.dsk.sources?.fillSource} / Cut ${obj.content.dsk.sources?.cutSource}`
 		} else if (obj.content.type === TimelineContentTypeAtem.AUX) {
@@ -115,6 +190,12 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 			label = `Input ${obj.content.input}`
 		} else if (obj.content.type === TimelineContentTypeVMix.PROGRAM) {
 			label = `Input ${obj.content.input}`
+			if (obj.content.transition?.duration) {
+				inTransition = {
+					duration: obj.content.transition.duration,
+					label: `${obj.content.transition?.effect}}`,
+				}
+			}
 		} else if (obj.content.type === TimelineContentTypeVMix.RECORDING) {
 			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
@@ -124,6 +205,13 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
 		label = obj.content.path
+
+		if (obj.content.transition?.duration) {
+			inTransition = {
+				duration: obj.content.transition.duration,
+				label: `${obj.content.transition.type}, ${obj.content.transition.direction}`,
+			}
+		}
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
@@ -148,6 +236,8 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 	return {
 		label,
 		contentTypeClassNames,
+		inTransition,
+		outTransition,
 	}
 }
 
@@ -157,17 +247,15 @@ export function describeTimelineObject(obj: TSRTimelineObj) {
 export function modifyTimelineObjectForPlayout(
 	obj: TSRTimelineObj,
 	playingPart: GroupPreparedPlayDataPart,
-	orgTimelineObj: TimelineObj
+	orgTimelineObj: TimelineObj,
+	pauseTime: number | undefined
 ): void {
-	let pauseTime = 0
 	let isPaused = false
-	if (playingPart.pauseTime !== undefined) {
+	if (pauseTime !== undefined) {
 		// is paused
 
 		// Convert the timing of the timeline object to a infinite, paused object:
-
 		isPaused = true
-		pauseTime = playingPart.pauseTime
 
 		// Check if the object exists at the time of pauseTime:
 		let existsAtPauseTime = false
@@ -183,6 +271,8 @@ export function modifyTimelineObjectForPlayout(
 		} else {
 			obj.enable = { while: 0 }
 		}
+	} else {
+		pauseTime = 0
 	}
 
 	if (obj.content.deviceType === DeviceType.CASPARCG) {

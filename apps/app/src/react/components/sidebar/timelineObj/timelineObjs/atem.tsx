@@ -20,8 +20,7 @@ import { IntInput } from '../../../inputs/IntInput'
 import { EditWrapper, OnSave } from './lib'
 import { Button, Stack, Typography } from '@mui/material'
 import { TrashBtn } from '../../../inputs/TrashBtn'
-
-const DEFAULT_TRANSITION_RATE = 25
+import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
 
 enum ATEMAudioChannelMixOption {
 	Off = 0,
@@ -80,7 +79,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 						<IntInput
 							label={'Transition: Mix Rate'}
 							fullWidth
-							currentValue={obj.content.me.transitionSettings?.mix?.rate ?? DEFAULT_TRANSITION_RATE}
+							currentValue={obj.content.me.transitionSettings?.mix?.rate ?? ATEM_DEFAULT_TRANSITION_RATE}
 							onChange={(v) => {
 								if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
 								if (!obj.content.me.transitionSettings.mix)
@@ -99,7 +98,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							<IntInput
 								label={'Transition: Rate'}
 								fullWidth
-								currentValue={obj.content.me.transitionSettings?.wipe?.rate ?? DEFAULT_TRANSITION_RATE}
+								currentValue={
+									obj.content.me.transitionSettings?.wipe?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
+								}
 								onChange={(v) => {
 									if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
 									if (!obj.content.me.transitionSettings.wipe)

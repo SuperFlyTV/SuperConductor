@@ -49,7 +49,7 @@ export const SideBarEditTimelineObject: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{`${describeTimelineObject(props.timelineObj.obj)?.label || 'Timeline Object'}`}</span>
+				<span>{`Timeline-object: ${describeTimelineObject(props.timelineObj.obj)?.label || ''}`}</span>
 				<div>
 					<TrashBtn
 						disabled={props.disabled}

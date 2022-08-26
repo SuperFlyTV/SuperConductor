@@ -33,13 +33,13 @@
 			transition: $default-transition;
 			border-radius: $borderRadius;
 			justify-content: space-between;
-			overflow: hidden;
+			// overflow: hidden;
 			min-width: calc($timelineObjHandleWidth * 2);
 
 			&.selectable {
 				cursor: pointer;
 				&:hover {
-					opacity: 0.8;
+					filter: brightness(80%);
 				}
 			}
 			&.selected {
@@ -67,47 +67,77 @@
 				background: $invalidLayerColor !important;
 			}
 
+			.transition {
+				z-index: 1;
+				position: absolute;
+				top: 0;
+				height: 100%;
+				width: 1em;
+
+				pointer-events: none;
+
+				&.transition--in {
+					left: 0;
+					background: linear-gradient(to bottom right, #000 49%, rgba(255, 255, 255, 0.3) 50%);
+				}
+				&.transition--out {
+					left: 100%;
+					background: linear-gradient(to top right, rgba(255, 255, 255, 0.3) 49%, rgba(0, 0, 0, 0.5) 50%);
+
+					&.at-end {
+						// There is no space to use to the right.
+						// Show that there is an out-transition in another way:
+						left: calc(100% - 5px);
+						border-left: 2px solid rgba(255, 255, 255, 0.5);
+						background: linear-gradient(to top right, rgba(255, 255, 255, 0.5) 49%, #000 50%);
+						width: 7px !important;
+					}
+				}
+			}
+
 			.body {
+				z-index: 2;
+
 				flex-grow: 1;
 				flex-shrink: 1;
 				min-width: 0;
 				display: flex;
-			}
+				.warning-icon {
+					margin-right: 0.6rem;
+					transform: translateY(2px);
+					flex-shrink: 0;
+				}
 
-			.warning-icon {
-				margin-right: 0.6rem;
-				transform: translateY(2px);
-				flex-shrink: 0;
-			}
+				.title,
+				.duration {
+					font-size: 1.4rem;
+					text-shadow: 0 0 4px #00000080;
+					white-space: nowrap;
+				}
 
-			.title,
-			.duration {
-				font-size: 1.4rem;
-				text-shadow: 0 0 4px #00000080;
-				white-space: nowrap;
-			}
+				.title {
+					font-weight: 600;
+					flex-shrink: 1;
+					min-width: 0;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					margin-right: auto;
+				}
 
-			.title {
-				font-weight: 600;
-				flex-shrink: 1;
-				min-width: 0;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				margin-right: auto;
-			}
-
-			.duration {
-				font-family: 'Barlow Condensed';
-				font-variant-numeric: tabular-nums;
-				font-weight: 500;
-				color: rgba(255, 255, 255, 0.7);
-				flex-shrink: 0;
-				margin-left: 1rem;
-				overflow: hidden;
-				text-overflow: ellipsis;
+				.duration {
+					font-family: 'Barlow Condensed';
+					font-variant-numeric: tabular-nums;
+					font-weight: 500;
+					color: rgba(255, 255, 255, 0.7);
+					flex-shrink: 0;
+					margin-left: 1rem;
+					overflow: hidden;
+					text-overflow: ellipsis;
+				}
 			}
 
 			.handle {
+				z-index: 3;
 				position: absolute;
 				top: 0;
 				height: 100%;
