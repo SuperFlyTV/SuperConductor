@@ -40,6 +40,21 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
 		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
 	}
+	exportProject(...args: ServerArgs<'exportProject'>) {
+		return this.invokeServerMethod('exportProject', ...args)
+	}
+	importProject(...args: ServerArgs<'importProject'>) {
+		return this.invokeServerMethod('importProject', ...args)
+	}
+	newProject(...args: ServerArgs<'newProject'>) {
+		return this.invokeServerMethod('newProject', ...args)
+	}
+	listProjects(...args: ServerArgs<'listProjects'>) {
+		return this.invokeServerMethod('listProjects', ...args)
+	}
+	openProject(...args: ServerArgs<'openProject'>) {
+		return this.invokeServerMethod('openProject', ...args)
+	}
 	playPart(...args: ServerArgs<'playPart'>) {
 		return this.invokeServerMethod('playPart', ...args)
 	}
@@ -159,9 +174,6 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	closeRundown(...args: ServerArgs<'closeRundown'>) {
 		return this.invokeServerMethod('closeRundown', ...args)
-	}
-	listRundowns(...args: ServerArgs<'listRundowns'>) {
-		return this.invokeServerMethod('listRundowns', ...args)
 	}
 	renameRundown(...args: ServerArgs<'renameRundown'>) {
 		return this.invokeServerMethod('renameRundown', ...args)

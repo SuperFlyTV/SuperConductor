@@ -11,7 +11,7 @@ import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
-import { getPartLabel } from '../lib/util'
+import { getPartLabel, shortID } from '../lib/util'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRm = fs.promises.rm
@@ -50,7 +50,7 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition, appVersion: string) {
+	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition, private appVersion: string) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
 
@@ -69,23 +69,41 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Returns a list of available projects */
-	listProjects(): { dirName: string; fileName: string }[] {
+	listProjects(): { name: string; id: string }[] {
 		// list all files and directories in the project folder
 		const projectsDirents = fs.readdirSync(this._projectsFolder, { withFileTypes: true })
 
 		// filter out non-directories
 		const directories = projectsDirents.filter((dirent) => dirent.isDirectory())
 
-		return directories.map((directory) => {
-			return {
-				dirName: directory.name,
-				fileName: path.join(directory.name, 'project.json'),
+		const projects: { name: string; id: string }[] = []
+
+		for (const directory of directories) {
+			let project: FileProject | undefined = undefined
+
+			const projectPath = this.projectPath(directory.name)
+			try {
+				const read = fs.readFileSync(projectPath, 'utf8')
+				project = JSON.parse(read)
+				if (project) this.ensureCompatibilityProject(project?.project)
+			} catch (error) {
+				// ignore
 			}
-		})
+
+			if (project) {
+				projects.push({
+					name: project.project.name,
+					id: project.id,
+				})
+			}
+		}
+		return projects
 	}
 
 	/** Returns a list of available rundowns */
-	listRundownsInProject(projectId: string): { fileName: string; version: number; name: string; open: boolean }[] {
+	private listRundownsInProject(
+		projectId: string
+	): { fileName: string; version: number; name: string; open: boolean }[] {
 		// list all files in the rundowns folder
 		const rundownsDir = this.rundownsDir(projectId)
 		let files: string[] = []
@@ -150,13 +168,66 @@ export class StorageHandler extends EventEmitter {
 
 	getProject(): Project {
 		return {
-			id: this.appData.appData.project.id,
 			...this.project.project,
+			id: this.appData.appData.project.id,
 		}
 	}
 	updateProject(project: Omit<Project, 'id'>) {
-		this.project.project = project
+		this.project.project = _.omit(project, 'id')
 		this.triggerUpdate({ project: true })
+	}
+	getProjectForExport(): ExportProjectData {
+		const o: ExportProjectData = {
+			appVersion: this.appVersion,
+			project: this.project,
+			rundowns: [],
+			openRundowns: [],
+		}
+
+		const rundownList = this.listRundownsInProject(this._projectId)
+		for (const rundown of rundownList) {
+			o.rundowns.push(this._loadRundown(this._projectId, rundown.fileName))
+			if (rundown.fileName in this.appData.appData.rundowns) {
+				// The Rundown is open
+				o.openRundowns.push(rundown.fileName)
+			}
+		}
+		return o
+	}
+	async importProject(o: ExportProjectData) {
+		// Before doing anything else:
+		await this._beforeWriteChanges()
+
+		const projectId = shortID() // Generate a new project ID
+
+		o.project.id = projectId
+
+		// First, write imported data to disk:
+		{
+			// Store Project:
+			this.ensureDirectory(this.projectDir(projectId))
+			await this.writeFileSafe(this.projectPath(projectId), JSON.stringify(o.project))
+			// Store Rundowns:
+			this.ensureDirectory(this.rundownsDir(projectId))
+			for (const fileRundown of o.rundowns) {
+				await this.writeFileSafe(this.rundownPath(projectId, fileRundown.id), JSON.stringify(fileRundown))
+			}
+		}
+
+		// Close all rundowns
+		for (const fileName of Object.keys(this.rundowns)) {
+			await this.closeRundown(fileName)
+		}
+
+		// Open project:
+		await this.openProject(projectId)
+
+		// Restore open rundowns:
+		for (const fileName of o.openRundowns) {
+			this.openRundown(fileName)
+		}
+
+		this.cleanUpData()
 	}
 
 	getRundown(fileName: string): Rundown | undefined {
@@ -189,9 +260,18 @@ export class StorageHandler extends EventEmitter {
 			// to ensure that any changes are saved
 			await this.writeChangesNow()
 		}
-		this.appData.appData.project.id = convertToFilename(name)
-		this.project = this.loadProject(name)
+		const projectId = shortID() // Generate a new project ID
+
+		this.appData.appData.project.id = projectId
+		this.project = this.loadProject(projectId)
+		this.project.project.name = name
+
+		this.rundowns = this.loadRundowns()
+		this.resources = this.loadResources()
+
 		this.triggerUpdate({ project: true, appData: true })
+
+		this.cleanUpData()
 	}
 	async openProject(id: string) {
 		if (this.project) {
@@ -766,21 +846,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 	private async writeChanges() {
-		this.cleanUpData()
-
-		// Create dir if not exists:
-		if (!fs.existsSync(this._baseFolder)) {
-			fs.mkdirSync(this._baseFolder)
-		}
-		if (!fs.existsSync(this._projectsFolder)) {
-			fs.mkdirSync(this._projectsFolder)
-		}
-		if (!fs.existsSync(this.projectDir(this._projectId))) {
-			fs.mkdirSync(this.projectDir(this._projectId))
-		}
-		if (!fs.existsSync(this.rundownsDir(this._projectId))) {
-			fs.mkdirSync(this.rundownsDir(this._projectId))
-		}
+		await this._beforeWriteChanges()
 
 		// Store AppData:
 		if (this.appDataNeedsWrite) {
@@ -789,11 +855,13 @@ export class StorageHandler extends EventEmitter {
 		}
 
 		// Store Project:
+		this.ensureDirectory(this.projectDir(this._projectId))
 		if (this.projectNeedsWrite) {
 			await this.writeFileSafe(this.projectPath(this._projectId), JSON.stringify(this.project))
 			this.projectNeedsWrite = false
 		}
 		// Store Rundowns:
+		this.ensureDirectory(this.rundownsDir(this._projectId))
 		for (const fileName of Object.keys(this.rundownsNeedsWrite)) {
 			await this.writeFileSafe(
 				this.rundownPath(this._projectId, fileName),
@@ -806,6 +874,19 @@ export class StorageHandler extends EventEmitter {
 		if (this.resourcesNeedsWrite) {
 			await this.writeFileSafe(this.resourcesPath(this._projectId), JSON.stringify(this.resources))
 			this.projectNeedsWrite = false
+		}
+	}
+	private async _beforeWriteChanges() {
+		this.cleanUpData()
+
+		// Create dir if not exists:
+		this.ensureDirectory(this._baseFolder)
+		this.ensureDirectory(this._projectsFolder)
+	}
+	private ensureDirectory(dirPath: string) {
+		// Create directory if not exists:
+		if (!fs.existsSync(dirPath)) {
+			fs.mkdirSync(dirPath)
 		}
 	}
 	private getTmpFilePath(filePath: string): string {
@@ -936,4 +1017,12 @@ const CURRENT_VERSION = 0
 
 function convertToFilename(str: string): string {
 	return str.toLowerCase().replace(/[^a-z0-9]/g, '-')
+}
+
+export interface ExportProjectData {
+	appVersion: string
+	project: FileProject
+	rundowns: FileRundown[]
+
+	openRundowns: string[]
 }

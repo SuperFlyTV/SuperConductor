@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import { dialog } from 'electron'
 import {
 	allowAddingResourceToLayer,
 	allowMovingPartIntoGroup,
@@ -30,7 +32,7 @@ import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { StorageHandler } from './storageHandler'
+import { ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
@@ -253,6 +255,62 @@ export class IPCServer
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
 	}
+	async exportProject(): Promise<void> {
+		const exportData = JSON.stringify(this.storage.getProjectForExport())
+
+		const result = await dialog.showSaveDialog({
+			title: 'Export Project',
+			// defaultPath: 'abc.project.json',
+			buttonLabel: 'Save',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['showOverwriteConfirmation'],
+		})
+
+		if (!result.canceled) {
+			if (result.filePath) {
+				await fs.promises.writeFile(result.filePath, exportData, 'utf-8')
+			}
+		}
+	}
+	async importProject(): Promise<void> {
+		const result = await dialog.showOpenDialog({
+			title: 'Import Project',
+			buttonLabel: 'Import',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['openFile'],
+		})
+		if (!result.canceled) {
+			const filePath = result.filePaths[0]
+			if (filePath) {
+				const exportDataStr = await fs.promises.readFile(filePath, 'utf-8')
+				let exportData: ExportProjectData | undefined = undefined
+				try {
+					exportData = JSON.parse(exportDataStr)
+				} catch (err) {
+					throw new Error(`Invalid project file (error: ${err})`)
+				}
+				if (exportData) {
+					await this.storage.importProject(exportData)
+				}
+			}
+		}
+	}
+	async newProject(): Promise<void> {
+		await this.storage.newProject('New Project')
+	}
+	async listProjects(): Promise<{ name: string; id: string }[]> {
+		return this.storage.listProjects()
+	}
+	async openProject(projectId: string): Promise<void> {
+		return this.storage.openProject(projectId)
+	}
+
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
@@ -1946,11 +2004,6 @@ export class IPCServer
 			},
 			description: ActionDescription.CloseRundown,
 		}
-	}
-	async listRundowns(data: {
-		projectId: string
-	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
-		return this.storage.listRundownsInProject(data.projectId)
 	}
 	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
 		const rundown = this.storage.getRundown(data.rundownId)

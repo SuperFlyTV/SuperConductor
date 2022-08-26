@@ -5,7 +5,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import * as Yup from 'yup'
-
+import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 import { TextBtn } from '../../../inputs/textBtn/TextBtn'
 import { Project } from '../../../../../models/project/Project'
@@ -24,6 +24,9 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 	const guiStore = store.guiStore
 
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
+	const handleRenameRundownClose = () => {
+		setRenameProjectOpen(false)
+	}
 
 	const handleReopen = (rundownId: string) => {
 		serverAPI
@@ -35,15 +38,54 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 		guiStore.activeTabId = rundownId
 	}
 
-	const handleRenameRundownClose = () => {
-		setRenameProjectOpen(false)
+	const [listProjectsOpen, setListProjectsOpen] = useState<{ name: string; id: string }[] | false>(false)
+	const handleListProjectsClose = () => {
+		setListProjectsOpen(false)
 	}
 
 	return (
 		<ProjectPageLayout
 			title={props.project.name}
 			subtitle="Project"
-			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
+			controls={
+				<>
+					<div className="section">
+						<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />
+					</div>
+					<div className="section">
+						<TextBtn
+							label={
+								<>
+									<AiOutlinePlusCircle /> New project
+								</>
+							}
+							onClick={() => serverAPI.newProject().catch(handleError)}
+						/>
+						<TextBtn
+							label={
+								<>
+									<AiFillFolderOpen /> Open existing project
+								</>
+							}
+							onClick={() => {
+								serverAPI
+									.listProjects()
+									.then((projects) => {
+										setListProjectsOpen(projects)
+									})
+									.catch(handleError)
+							}}
+						/>
+					</div>
+					<div className="section">
+						<TextBtn label="Export to file" onClick={() => serverAPI.exportProject().catch(handleError)} />
+						<TextBtn
+							label="Import from file"
+							onClick={() => serverAPI.importProject().catch(handleError)}
+						/>
+					</div>
+				</>
+			}
 		>
 			<RoundedSection title="Rundown archive">
 				<ScList
@@ -122,6 +164,57 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 									}}
 								>
 									Rename
+								</Button>
+							</DialogActions>
+						</Dialog>
+					)
+				}}
+			</Formik>
+
+			{/* List Projects dialog */}
+			<Formik
+				initialValues={{ projectId: '' }}
+				// validationSchema={Yup.object({
+				// 	name: Yup.string().label('Project Name').required(),
+				// })}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					serverAPI.openProject(values.projectId).catch(handleError)
+					handleListProjectsClose()
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => {
+					return (
+						<Dialog open={listProjectsOpen !== false} onClose={handleListProjectsClose}>
+							<DialogTitle>Open existing Project</DialogTitle>
+							<DialogContent>
+								<table>
+									<tbody>
+										{listProjectsOpen &&
+											listProjectsOpen.map((project) => (
+												<tr key={project.id}>
+													<td>{project.name}</td>
+													<td>
+														<Button
+															variant="contained"
+															onClick={() => {
+																formik.values.projectId = project.id
+																formik.submitForm().catch(handleError)
+															}}
+														>
+															Open
+														</Button>
+													</td>
+												</tr>
+											))}
+									</tbody>
+								</table>
+							</DialogContent>
+							<DialogActions>
+								<Button variant="contained" onClick={handleListProjectsClose}>
+									Cancel
 								</Button>
 							</DialogActions>
 						</Dialog>
