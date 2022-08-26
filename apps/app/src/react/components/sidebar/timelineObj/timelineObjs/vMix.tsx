@@ -10,6 +10,7 @@ import {
 	VMixTransitionType,
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput'
+import { DurationInput } from '../../../inputs/DurationInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
@@ -464,7 +465,7 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 				</div>
 
 				<div className="setting">
-					<IntInput
+					<DurationInput
 						label="Transition Duration"
 						fullWidth
 						currentValue={obj.content.transition?.duration ?? 0}
@@ -480,6 +481,8 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={false}
+						allowNull={false}
+						defaultValue={0}
 					/>
 				</div>
 			</>
