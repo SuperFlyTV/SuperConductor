@@ -73,7 +73,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 								obj.content.status === TransportStatus.PLAY &&
 								(obj.content as any).clipId === undefined
 							) {
-								obj.content.clipId === null
+								obj.content.clipId = null
 							}
 
 							onSave(obj)
