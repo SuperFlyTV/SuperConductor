@@ -10,7 +10,7 @@ import {
 	getResolvedTimelineTotalDuration,
 	MoveTarget,
 } from '../../../../lib/util'
-import { Group } from '../../../../models/rundown/Group'
+import { Group, PlayoutMode } from '../../../../models/rundown/Group'
 import classNames from 'classnames'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
@@ -834,6 +834,10 @@ export const PartView: React.FC<{
 		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.locked).get() || false
 	const groupOrPartDisabled = groupDisabled || part.disabled
 
+	const groupPlayoutMode =
+		computed(() => store.rundownsStore.getGroupInCurrentRundown(parentGroupId)?.playoutMode).get() ||
+		PlayoutMode.NORMAL
+
 	const groupOrPartLocked = groupLocked || part.locked || false
 	const sortedLayers = useMemo(() => {
 		return sortLayers(resolvedTimeline.layers, mappings)
@@ -1003,6 +1007,7 @@ export const PartView: React.FC<{
 							groupId={parentGroupId}
 							partId={part.id}
 							disabled={part.disabled}
+							groupPlayoutMode={groupPlayoutMode}
 						/>
 					</div>
 				</div>
@@ -1152,6 +1157,7 @@ const PartControlButtons: React.FC<{
 	groupId: string
 	partId: string
 	disabled?: boolean
+	groupPlayoutMode: PlayoutMode
 }> = observer(function PartControlButtons({ rundownId, groupId, partId, disabled }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)

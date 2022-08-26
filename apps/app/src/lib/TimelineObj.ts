@@ -235,17 +235,15 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 export function modifyTimelineObjectForPlayout(
 	obj: TSRTimelineObj,
 	playingPart: GroupPreparedPlayDataPart,
-	orgTimelineObj: TimelineObj
+	orgTimelineObj: TimelineObj,
+	pauseTime: number | undefined
 ): void {
-	let pauseTime = 0
 	let isPaused = false
-	if (playingPart.pauseTime !== undefined) {
+	if (pauseTime !== undefined) {
 		// is paused
 
 		// Convert the timing of the timeline object to a infinite, paused object:
-
 		isPaused = true
-		pauseTime = playingPart.pauseTime
 
 		// Check if the object exists at the time of pauseTime:
 		let existsAtPauseTime = false
@@ -261,6 +259,8 @@ export function modifyTimelineObjectForPlayout(
 		} else {
 			obj.enable = { while: 0 }
 		}
+	} else {
+		pauseTime = 0
 	}
 
 	if (obj.content.deviceType === DeviceType.CASPARCG) {

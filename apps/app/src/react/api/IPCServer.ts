@@ -1,4 +1,5 @@
 import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { replaceUndefined } from '../../lib/util'
 
 type Promisify<T> = {
 	[K in keyof T]: T[K] extends (...arg: any[]) => any
@@ -16,7 +17,7 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	private async invokeServerMethod<T extends keyof IPCServerMethods>(methodname: T, ...args: any[]): ServerReturn<T> {
 		// Stringifying and parsing data will convert Mobx observable objects into object literals.
 		// Otherwise, Electron won't be able to clone it.
-		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
+		return this.ipcRenderer.invoke(methodname, replaceUndefined(args))
 	}
 
 	log(...args: ServerArgs<'log'>) {

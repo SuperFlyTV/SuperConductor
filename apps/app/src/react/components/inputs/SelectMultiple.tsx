@@ -1,16 +1,27 @@
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material'
 import React from 'react'
 
-export const SelectEnumMultiple: React.FC<{
+export interface SelectEnumMultipleProps<T extends string | number> {
 	label: string
-	currentValues: any[]
-	options: { [key: string]: any } | { value: string; label: string }[]
-	onChange: (newValue: any[]) => void
+	currentValues: T[]
+	options: { [key: string]: T } | { value: T; label: string }[]
+	onChange: (newValue: T[]) => void
 	allowUndefined?: boolean
 	fullWidth?: boolean
 	width?: string
 	disabled?: boolean
-}> = ({ currentValues, options, onChange, allowUndefined, label, fullWidth, width, disabled }) => {
+}
+
+export const SelectEnumMultiple: React.FC<SelectEnumMultipleProps<string> | SelectEnumMultipleProps<number>> = ({
+	currentValues,
+	options,
+	onChange,
+	allowUndefined,
+	label,
+	fullWidth,
+	width,
+	disabled,
+}) => {
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -25,7 +36,7 @@ export const SelectEnumMultiple: React.FC<{
 		for (const key in options) {
 			if (!isNaN(Number(key))) {
 				foundAny = true
-				allOptions[key] = { value: Number(key), label: options[key] }
+				allOptions[key] = { value: Number(key), label: `${options[key] || key}` }
 			}
 		}
 		if (!foundAny) {
@@ -48,7 +59,7 @@ export const SelectEnumMultiple: React.FC<{
 			if (v === '__undefined') {
 				allOptions[v] = { value: v, label: 'Not set' }
 			} else {
-				allOptions[v] = { value: v, label: v }
+				allOptions[v] = { value: v, label: `${v}` }
 			}
 		}
 	}
@@ -71,7 +82,7 @@ export const SelectEnumMultiple: React.FC<{
 			>
 				{Object.entries(allOptions).map(([key, value]) => {
 					return (
-						<MenuItem key={key} value={key}>
+						<MenuItem key={key} value={value.value}>
 							{value.label}
 						</MenuItem>
 					)

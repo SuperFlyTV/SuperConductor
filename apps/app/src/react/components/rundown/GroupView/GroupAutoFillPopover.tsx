@@ -93,7 +93,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 								value: o.layerId,
 								label: getMappingName(o.mapping, o.layerId),
 							}))}
-							onChange={(vs) => {
+							onChange={(vs: string[]) => {
 								autoFill.layerIds = vs
 								onSave(autoFill)
 							}}

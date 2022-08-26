@@ -19,6 +19,8 @@ import {
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
+import _ from 'lodash'
+import { describeTimelineObject } from './TimelineObj'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -87,8 +89,8 @@ export const deletePart = (group: Group, partId: string): Part | undefined => {
 		return true
 	})
 	if (group.playout) {
-		// If we're removing the one which is playing, we need to figure out what to play instead:
-		// TODO: How to handle this?
+		// Note for future:
+		// If we're removing the one which is playing, should anything else start playing instead?
 		delete group.playout.playingParts[partId]
 	}
 	return deletedPart
@@ -162,17 +164,26 @@ export function allowMovingPartIntoGroup(
  */
 export function updateGroupPlayingParts(group: Group) {
 	const now = Date.now()
-	const playhead = getGroupPlayData(group.preparedPlayData, now)
+	const playData = getGroupPlayData(group.preparedPlayData, now)
 
+	const prevPlayingParts = group.playout.playingParts
 	group.playout.playingParts = {}
-	for (const [partId, playingPart] of Object.entries(playhead.playheads)) {
+	for (const [partId, playhead] of Object.entries(playData.playheads)) {
 		group.playout.playingParts[partId] = {
-			startTime: playingPart.partStartTime,
-			pauseTime: playingPart.partPauseTime,
+			startTime: playhead.partStartTime,
+			pauseTime: playhead.partPauseTime,
+			stopTime: undefined,
+			fromSchedule: playhead.fromSchedule,
+		}
+	}
+	// Also add previously stopped playingParts, so that the stops still block sheduled playing parts:
+	for (const [partId, prevPlayingPart] of Object.entries(prevPlayingParts)) {
+		if (!group.playout.playingParts[partId] && prevPlayingPart.stopTime) {
+			if (!group.parts.find((p) => p.id === partId)) continue
+			group.playout.playingParts[partId] = prevPlayingPart
 		}
 	}
 }
-
 /**
  * Returns a string that changes whenever the input changes.
  * Does NOT depend on the order of object attributes.
@@ -736,4 +747,40 @@ export function copyTimelineObj(obj: TimelineObj): TimelineObj {
 	const newObj = deepClone(obj)
 	newObj.obj.id = shortID()
 	return newObj
+}
+/** Checks if key is a direct property of object. */
+export function has<T extends { [key: string]: any }>(obj: T, key: keyof T): boolean {
+	return _.has(obj, key)
+}
+export function getPartLabel(part: PartBase): string {
+	if (part.name) return part.name
+
+	if ((part as Part).timeline) {
+		const firstTimelineObj = (part as Part).timeline[0]
+		if (firstTimelineObj) {
+			const description = describeTimelineObject(firstTimelineObj.obj)
+			return description.label
+		}
+	}
+
+	return ''
+}
+/** Deeply clones an object and replaces any undefined values with '__undefined'.
+ * This is useful because undefined values are not supported by JSON
+ * To restore the original object, use unReplaceUndefined()
+ */
+export function replaceUndefined(obj: any): any {
+	return JSON.parse(JSON.stringify(obj, (_k, v) => (v === undefined ? '__undefined__' : v)))
+}
+export function unReplaceUndefined(obj: any): any {
+	if (obj === '__undefined__') return undefined
+	if (obj === null) return null
+	if (typeof obj === 'object') {
+		const newObj: any = Array.isArray(obj) ? [] : {}
+		for (const key in obj) {
+			newObj[key] = unReplaceUndefined(obj[key])
+		}
+		return newObj
+	}
+	return obj
 }

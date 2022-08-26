@@ -91,6 +91,7 @@ $part_time_height: 16px;
 		}
 	}
 	&.disabled {
+		color: #999;
 		.part__meta {
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}

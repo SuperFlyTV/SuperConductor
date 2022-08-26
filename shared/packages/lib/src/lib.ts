@@ -74,3 +74,6 @@ export function stringifyError(error: unknown, noStack = false): string {
 
 	return str
 }
+export function ensureArray<T>(v: T | T[]): T[] {
+	return Array.isArray(v) ? v : [v]
+}

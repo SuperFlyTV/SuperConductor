@@ -44,4 +44,27 @@
 			background-color: rgba(255, 255, 255, 0.08);
 		}
 	}
+
+	&.disabled {
+		opacity: 0.5;
+		pointer-events: none;
+		cursor: inherit;
+	}
+
+	&.btn-active {
+		color: #fff;
+		background: #e63232;
+
+		&:hover {
+			background: #541313;
+		}
+	}
+	&.btn-inactive {
+		color: #ddd;
+		background: #8e8e8e;
+
+		&:hover {
+			background: #333;
+		}
+	}
 }
