@@ -52,15 +52,6 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	setPartTrigger(...args: ServerArgs<'setPartTrigger'>) {
 		return this.invokeServerMethod('setPartTrigger', ...args)
 	}
-	togglePartLoop(...args: ServerArgs<'togglePartLoop'>) {
-		return this.invokeServerMethod('togglePartLoop', ...args)
-	}
-	togglePartDisable(...args: ServerArgs<'togglePartDisable'>) {
-		return this.invokeServerMethod('togglePartDisable', ...args)
-	}
-	togglePartLock(...args: ServerArgs<'togglePartLock'>) {
-		return this.invokeServerMethod('togglePartLock', ...args)
-	}
 	stopGroup(...args: ServerArgs<'stopGroup'>) {
 		return this.invokeServerMethod('stopGroup', ...args)
 	}

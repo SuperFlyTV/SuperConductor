@@ -74,11 +74,13 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupOrPartLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartDisable({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										disabled: value,
+									},
 								})
 								.catch(handleError)
 						}}
@@ -91,11 +93,13 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartLock({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										locked: value,
+									},
 								})
 								.catch(handleError)
 						}}
@@ -108,11 +112,13 @@ export const SideBarEditPart: React.FC<{
 						disabled={groupOrPartLocked}
 						onChange={(value) => {
 							ipcServer
-								.togglePartLoop({
+								.updatePart({
 									rundownId,
 									groupId,
 									partId,
-									value,
+									part: {
+										loop: value,
+									},
 								})
 								.catch(handleError)
 						}}

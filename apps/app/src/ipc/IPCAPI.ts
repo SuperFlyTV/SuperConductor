@@ -19,9 +19,6 @@ export const enum ActionDescription {
 	InsertParts = 'insert part(s)',
 	UpdatePart = 'update part',
 	SetPartTrigger = 'Assign trigger',
-	TogglePartLoop = 'toggle part loop',
-	TogglePartDisable = 'toggle part disable',
-	TogglePartLock = 'toggle part lock',
 	NewGroup = 'create new group',
 	InsertGroups = 'insert group(s)',
 	UpdateGroup = 'update group',
@@ -84,9 +81,6 @@ export interface IPCServerMethods {
 		trigger: Trigger | null
 		triggerIndex: number | null
 	}) => void
-	togglePartLoop: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
-	togglePartDisable: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
-	togglePartLock: (arg: { rundownId: string; groupId: string; partId: string; value: boolean }) => void
 	stopGroup: (arg: { rundownId: string; groupId: string }) => void
 	playGroup: (arg: { rundownId: string; groupId: string }) => void
 	pauseGroup: (arg: { rundownId: string; groupId: string }) => void

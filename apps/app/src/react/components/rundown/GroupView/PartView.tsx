@@ -593,11 +593,13 @@ export const PartView: React.FC<{
 	// Disable button:
 	const toggleDisable = useCallback(() => {
 		ipcServer
-			.togglePartDisable({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.disabled,
+				part: {
+					disabled: !part.disabled,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.disabled, part.id, rundownId])
@@ -605,11 +607,13 @@ export const PartView: React.FC<{
 	// Lock button:
 	const toggleLock = useCallback(() => {
 		ipcServer
-			.togglePartLock({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.locked,
+				part: {
+					locked: !part.locked,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, part.locked, rundownId])
@@ -617,11 +621,13 @@ export const PartView: React.FC<{
 	// Loop button:
 	const toggleLoop = useCallback(() => {
 		ipcServer
-			.togglePartLoop({
+			.updatePart({
 				rundownId,
 				groupId: parentGroupId,
 				partId: part.id,
-				value: !part.loop,
+				part: {
+					loop: !part.loop,
+				},
 			})
 			.catch(handleError)
 	}, [handleError, ipcServer, parentGroupId, part.id, part.loop, rundownId])

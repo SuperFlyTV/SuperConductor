@@ -428,84 +428,6 @@ export class IPCServer
 			description: ActionDescription.SetPartTrigger,
 		}
 	}
-	async togglePartLoop(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		if (group.locked || part.locked) {
-			return
-		}
-
-		const originalValue = part.loop
-
-		updateGroupPlayingParts(group)
-		part.loop = arg.value
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-
-		return {
-			undo: () => {
-				const { rundown, group, part } = this.getPart(arg)
-
-				updateGroupPlayingParts(group)
-				part.loop = originalValue
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-			},
-			description: ActionDescription.TogglePartLoop,
-		}
-	}
-	async togglePartDisable(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		const originalValue = part.disabled
-
-		part.disabled = arg.value
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-
-		return {
-			undo: () => {
-				const { rundown, group, part } = this.getPart(arg)
-
-				updateGroupPlayingParts(group)
-				part.disabled = originalValue
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-			},
-			description: ActionDescription.TogglePartDisable,
-		}
-	}
-	async togglePartLock(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void>> {
-		const { rundown, part } = this.getPart(arg)
-		const originalValue = part.locked
-
-		part.locked = arg.value
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
-
-		return {
-			undo: () => {
-				const { rundown, part } = this.getPart(arg)
-
-				part.locked = originalValue
-
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
-			},
-			description: ActionDescription.TogglePartLock,
-		}
-	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
@@ -838,15 +760,28 @@ export class IPCServer
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
-		if (group.locked || part.locked) {
+		if (group.locked) {
 			return
+		}
+
+		if (part.locked && !has(arg.part, 'locked')) {
+			return
+		}
+
+		let affectsPlayout: Group | undefined = undefined
+		if (has(arg.part, 'loop') || has(arg.part, 'disabled') )) {
+			affectsPlayout = group
+		}
+
+		if (affectsPlayout) {
+			updateGroupPlayingParts(group)
 		}
 
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
 		postProcessPart(part)
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
 		return {
 			undo: () => {
