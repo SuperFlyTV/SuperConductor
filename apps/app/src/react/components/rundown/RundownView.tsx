@@ -99,6 +99,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 	const [newGroupOpen, setNewGroupOpen] = useState(false)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { partCount, groupCount } = useMemoComputedObject(() => {
+		if (!store.rundownsStore.hasRundown(rundownId)) return { partCount: 0, groupCount: 0 }
 		const rundown = store.rundownsStore.getRundownWithGroups(rundownId)
 		return {
 			partCount:

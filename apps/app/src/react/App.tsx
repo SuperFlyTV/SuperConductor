@@ -351,13 +351,15 @@ export const App = observer(function App() {
 			if (!store.rundownsStore.hasRundown(rundownId)) continue
 			const rundown = store.rundownsStore.getRundown(rundownId)
 			for (const groupId of rundown.groupIds) {
-				const group = store.rundownsStore.getGroupWithParts(groupId)
-				for (const part of group.parts) {
-					allParts.push({
-						rundown,
-						group,
-						part,
-					})
+				if (store.rundownsStore.hasGroup(groupId)) {
+					const group = store.rundownsStore.getGroupWithParts(groupId)
+					for (const part of group.parts) {
+						allParts.push({
+							rundown,
+							group,
+							part,
+						})
+					}
 				}
 			}
 		}

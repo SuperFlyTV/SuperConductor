@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import React, { useContext, useState } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { store } from '../../../../mobx/store'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -22,7 +22,6 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore
-	const guiStore = store.guiStore
 
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
 	const handleRenameRundownClose = () => {
@@ -30,13 +29,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 	}
 
 	const handleReopen = (rundownId: string) => {
-		serverAPI
-			.openRundown({ rundownId })
-			.then(() => {
-				store.rundownsStore.setCurrentRundown(rundownId)
-			})
-			.catch(handleError)
-		guiStore.activeTabId = rundownId
+		serverAPI.openRundown({ rundownId }).catch(handleError)
 	}
 
 	const [listProjectsOpen, setListProjectsOpen] = useState<{ name: string; id: string }[] | false>(false)

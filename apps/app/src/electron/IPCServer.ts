@@ -1940,7 +1940,7 @@ export class IPCServer
 	async updateProject(data: { id: string; project: Project }): Promise<void> {
 		this._saveUpdates({ project: data.project })
 	}
-	async newRundown(data: { name: string }): Promise<UndoableResult<void>> {
+	async newRundown(data: { name: string }): Promise<UndoableResult<string>> {
 		const fileName = this.storage.newRundown(data.name)
 		this._saveUpdates({})
 
@@ -1950,6 +1950,7 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
+			result: fileName,
 		}
 	}
 	async deleteRundown(data: { rundownId: string }): Promise<void> {
@@ -2004,7 +2005,7 @@ export class IPCServer
 			description: ActionDescription.CloseRundown,
 		}
 	}
-	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
+	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
 		const rundown = this.storage.getRundown(data.rundownId)
 		if (!rundown) {
 			throw new Error(`Rundown "${data.rundownId}" not found`)
@@ -2020,6 +2021,7 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.RenameRundown,
+			result: newRundownId,
 		}
 	}
 	async isRundownPlaying(data: { rundownId: string }): Promise<boolean> {

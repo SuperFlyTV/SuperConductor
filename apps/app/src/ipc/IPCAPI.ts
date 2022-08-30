@@ -182,11 +182,11 @@ export interface IPCServerMethods {
 
 	updateProject: (arg: { id: string; project: Project }) => void
 
-	newRundown: (arg: { name: string }) => void
+	newRundown: (arg: { name: string }) => string
 	deleteRundown: (arg: { rundownId: string }) => void
 	openRundown: (arg: { rundownId: string }) => void
 	closeRundown: (arg: { rundownId: string }) => void
-	renameRundown: (arg: { rundownId: string; newName: string }) => void
+	renameRundown: (arg: { rundownId: string; newName: string }) => string
 	isRundownPlaying: (arg: { rundownId: string }) => boolean
 	isTimelineObjPlaying: (arg: { rundownId: string; timelineObjId: string }) => boolean
 
