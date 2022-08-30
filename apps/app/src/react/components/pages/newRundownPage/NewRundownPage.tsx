@@ -16,7 +16,6 @@ export const NewRundownPage = () => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore
-	const guiStore = store.guiStore
 
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
@@ -25,7 +24,6 @@ export const NewRundownPage = () => {
 			.newRundown({ name: rundownName })
 			.then((rundownId) => {
 				setTimeout(() => {
-					// guiStore.activeTabId = rundownId
 					store.rundownsStore.setCurrentRundown(rundownId)
 				}, 100)
 			})
