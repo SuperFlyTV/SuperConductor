@@ -38,11 +38,13 @@ export class StorageHandler extends EventEmitter {
 	private projectNeedsWrite = false
 
 	private rundowns: { [fileName: string]: FileRundown }
-	private rundownsHasChanged: { [fileName: string]: true } = {}
-	private rundownsNeedsWrite: { [fileName: string]: true } = {}
+	private rundownsNeedsWrite = new Set<string>()
+	private rundownsHasChanged = new Set<string>()
+	private emittedRundowns = new Set<string>()
 
 	private resources: { [resourceId: string]: FileResource } = {}
-	private resourcesHasChanged: { [resourceId: string]: true } = {}
+	private resourcesHasChanged = new Set<string>()
+	private emittedResources = new Set<string>()
 	private resourcesNeedsWrite = false
 
 	private emitEverything = false
@@ -210,7 +212,10 @@ export class StorageHandler extends EventEmitter {
 			// Store Rundowns:
 			this.ensureDirectory(this.rundownsDir(projectId))
 			for (const fileRundown of o.rundowns) {
-				await this.writeFileSafe(this.rundownPath(projectId, fileRundown.id), JSON.stringify(fileRundown))
+				await this.writeFileSafe(
+					this.rundownPath(projectId, this.getRundownFilename(fileRundown.id)),
+					JSON.stringify(fileRundown)
+				)
 			}
 		}
 
@@ -230,6 +235,9 @@ export class StorageHandler extends EventEmitter {
 		this.cleanUpData()
 	}
 
+	hasRundown(fileName: string): boolean {
+		return !!this.rundowns[fileName]
+	}
 	getRundown(fileName: string): Rundown | undefined {
 		const rundown = this.rundowns[fileName]?.rundown
 
@@ -250,7 +258,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	updateRundown(fileName: string, rundown: Rundown) {
 		this.rundowns[fileName].rundown = omit(rundown, 'id')
-		this.rundownsHasChanged[fileName] = true
+		this.rundownsHasChanged.add(fileName)
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 
@@ -281,7 +289,10 @@ export class StorageHandler extends EventEmitter {
 		}
 		this.appData.appData.project.id = id
 		this.project = this.loadProject()
-		this.triggerUpdate({ project: true, appData: true })
+		this.rundowns = this.loadRundowns()
+		this.resources = this.loadResources()
+
+		this.triggerEmitAll()
 	}
 
 	newRundown(name: string) {
@@ -298,7 +309,7 @@ export class StorageHandler extends EventEmitter {
 	}
 	openRundown(fileName: string) {
 		this.rundowns[fileName] = this._loadRundown(this._projectId, fileName)
-		this.rundownsHasChanged[fileName] = true
+		this.rundownsHasChanged.add(fileName)
 		this.appData.appData.rundowns[fileName].open = true
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
@@ -307,7 +318,9 @@ export class StorageHandler extends EventEmitter {
 	async closeRundown(fileName: string) {
 		// Write any pending changes before closing the rundown,
 		// to ensure that any changes are saved, and that no further changes are written after it has closed.
-		this.appData.appData.rundowns[fileName].open = false
+		if (this.appData.appData.rundowns[fileName]) {
+			this.appData.appData.rundowns[fileName].open = false
+		}
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		await this.writeChangesNow()
@@ -336,6 +349,10 @@ export class StorageHandler extends EventEmitter {
 				throw error
 			}
 		}
+
+		delete this.appData.appData.rundowns[fileName]
+		this.appDataHasChanged = true
+		this.triggerEmitRundown(fileName)
 	}
 
 	/**
@@ -351,8 +368,8 @@ export class StorageHandler extends EventEmitter {
 				...omit(rundown, 'id'),
 			},
 		}
-		this.rundownsHasChanged[rundown.id] = true
-		this.rundownsNeedsWrite[rundown.id] = true
+		this.rundownsHasChanged.add(rundown.id)
+		this.rundownsNeedsWrite.add(rundown.id)
 		this.triggerUpdate({ rundowns: { [rundown.id]: true } })
 	}
 
@@ -361,7 +378,7 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({})
 	}
 	triggerEmitRundown(rundownId: string) {
-		this.rundownsHasChanged[rundownId] = true
+		this.rundownsHasChanged.add(rundownId)
 		this.triggerUpdate({})
 	}
 	async writeChangesNow() {
@@ -395,6 +412,7 @@ export class StorageHandler extends EventEmitter {
 			open: true, // If a rundown is being renamed, then it must be open.
 		}
 		delete this.appData.appData.rundowns[rundownId]
+
 		this.rundowns[newFileName] = {
 			version: this.rundowns[rundownId].version,
 			id: newFileName,
@@ -406,7 +424,8 @@ export class StorageHandler extends EventEmitter {
 		delete this.rundowns[rundownId]
 
 		this.appDataNeedsWrite = true
-		this.rundownsNeedsWrite[newFileName] = true
+		this.rundownsHasChanged.add(rundownId)
+		this.rundownsNeedsWrite.add(newFileName)
 		this.triggerEmitAll()
 		await this.writeChanges()
 
@@ -518,13 +537,13 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.rundowns) {
 			for (const rundownId of Object.keys(updates.rundowns)) {
-				this.rundownsHasChanged[rundownId] = true
-				this.rundownsNeedsWrite[rundownId] = true
+				this.rundownsHasChanged.add(rundownId)
+				this.rundownsNeedsWrite.add(rundownId)
 			}
 		}
 		if (updates.resources) {
 			for (const resourceId of Object.keys(updates.resources)) {
-				this.resourcesHasChanged[resourceId] = true
+				this.resourcesHasChanged.add(resourceId)
 				this.resourcesNeedsWrite = true
 			}
 		}
@@ -631,7 +650,7 @@ export class StorageHandler extends EventEmitter {
 		if (!project) {
 			// Create a default project instead
 			this.projectNeedsWrite = true
-			return StorageHandler.getDefaultProject(newName)
+			return StorageHandler.getDefaultProject(newName, this._projectId)
 		}
 
 		return project
@@ -707,7 +726,7 @@ export class StorageHandler extends EventEmitter {
 				rundown = JSON.parse(read)
 
 				// If we only have a temporary file, we should write to the real one asap:
-				this.rundownsNeedsWrite[fileName] = true
+				this.rundownsNeedsWrite.add(fileName)
 			} catch (error) {
 				if ((error as any)?.code === 'ENOENT') {
 					// not found
@@ -718,7 +737,7 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (!rundown) {
 			// Create a default rundown then:
-			this.rundownsNeedsWrite[fileName] = true
+			this.rundownsNeedsWrite.add(fileName)
 			return StorageHandler.getDefaultRundown(newName)
 		}
 		this.ensureCompatibilityRundown(rundown.rundown)
@@ -797,10 +816,10 @@ export class StorageHandler extends EventEmitter {
 			},
 		}
 	}
-	static getDefaultProject(newName?: string): FileProject {
+	static getDefaultProject(newName?: string, id = 'default'): FileProject {
 		return {
 			version: CURRENT_VERSION,
-			id: 'default',
+			id: id,
 			project: getDefaultProject(newName),
 		}
 	}
@@ -817,10 +836,18 @@ export class StorageHandler extends EventEmitter {
 			this.appDataHasChanged = true
 			this.projectHasChanged = true
 			for (const fileName of Object.keys(this.rundowns)) {
-				this.rundownsHasChanged[fileName] = true
+				this.rundownsHasChanged.add(fileName)
+			}
+			// Also add previously emitted rundowns, so that removed rundowns are emitted:
+			for (const fileName of this.emittedRundowns.keys()) {
+				this.rundownsHasChanged.add(fileName)
 			}
 			for (const resourceId of Object.keys(this.resources)) {
-				this.resourcesHasChanged[resourceId] = true
+				this.resourcesHasChanged.add(resourceId)
+			}
+			// Also add previously emitted resources, so that removed resources are emitted:
+			for (const resourceId of this.emittedResources.keys()) {
+				this.resourcesHasChanged.add(resourceId)
 			}
 			this.emitEverything = false
 		}
@@ -834,15 +861,34 @@ export class StorageHandler extends EventEmitter {
 			this.emit('project', this.getProject())
 			this.projectHasChanged = false
 		}
-		for (const fileName of Object.keys(this.rundownsHasChanged)) {
-			this.emit('rundown', fileName, this.getRundown(fileName))
-			delete this.rundownsHasChanged[fileName]
+		const rundownsToEmit = Array.from(this.rundownsHasChanged.keys()).sort((a, b) => {
+			const aExist = this.hasRundown(a)
+			const bExist = this.hasRundown(b)
+
+			// Sort to put the removed ones first.
+			// It is important to emit the removed rundowns first
+			// because otherwise, there might be a groupId existing (temporarily) in multiple rundowns
+			if (aExist && !bExist) return 1
+			if (!aExist && bExist) return -1
+			return 0
+		})
+		for (const fileName of rundownsToEmit) {
+			const rundown = this.getRundown(fileName)
+			this.emit('rundown', fileName, rundown)
+
+			this.rundownsHasChanged.delete(fileName)
+			if (rundown) this.emittedRundowns.add(fileName)
+			else this.emittedRundowns.delete(fileName)
 		}
-		for (const resourceId of Object.keys(this.resourcesHasChanged)) {
+		for (const resourceId of this.resourcesHasChanged.keys()) {
 			let resource = this.resources[resourceId] as FileResource | undefined
 			if (resource && resource.deleted) resource = undefined
-			this.emit('resource', resourceId, resource?.resource ?? null)
-			delete this.resourcesHasChanged[resourceId]
+			const emittedResource = resource?.resource ?? null
+			this.emit('resource', resourceId, emittedResource)
+
+			this.resourcesHasChanged.delete(resourceId)
+			if (emittedResource) this.emittedResources.add(resourceId)
+			else this.emittedResources.delete(resourceId)
 		}
 	}
 	private async writeChanges() {
@@ -862,13 +908,13 @@ export class StorageHandler extends EventEmitter {
 		}
 		// Store Rundowns:
 		this.ensureDirectory(this.rundownsDir(this._projectId))
-		for (const fileName of Object.keys(this.rundownsNeedsWrite)) {
+		for (const fileName of this.rundownsNeedsWrite.keys()) {
 			await this.writeFileSafe(
 				this.rundownPath(this._projectId, fileName),
 				JSON.stringify(this.rundowns[fileName])
 			)
 
-			delete this.rundownsNeedsWrite[fileName]
+			this.rundownsNeedsWrite.delete(fileName)
 		}
 		// Store Resources:
 		if (this.resourcesNeedsWrite) {
