@@ -1,7 +1,18 @@
+/** Defines a Trigger that is associated with a certain Part */
 export interface RundownTrigger {
 	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
 	fullIdentifiers: string[]
 	action: 'play' | 'stop' | 'playStop'
+	label: string
+}
+/**
+ * Defines a Trigger that is associated with whatever is selected
+ * in the current view (so it might be one or multiple Parts/Groups)
+ */
+export interface ProjectTrigger {
+	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
+	fullIdentifiers: string[]
+	action: 'play' | 'stop' | 'playStop' | 'pause' | 'delete'
 	label: string
 }
 

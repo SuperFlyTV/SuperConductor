@@ -1,12 +1,12 @@
 import { KeyDisplay, KeyDisplayTimeline, LoggerLike } from '@shared/api'
-import { assertNever } from '@shared/lib'
+import { assertNever, literal } from '@shared/lib'
 import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playhead'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
-import { RundownAction, getAllActionsInRundowns } from '../lib/triggers/action'
+import { RundownAction, getAllActionsInRundowns, ActionAny, getAllProjectActions } from '../lib/triggers/action'
 import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
 
 export class TriggersHandler {
@@ -109,8 +109,28 @@ export class TriggersHandler {
 		}
 	}
 	/** Returns all Actions in all Rundowns */
-	private getActions(): RundownAction[] {
-		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject(), undefined)
+	private getActions(): ActionAny[] {
+		const rundownActions = getAllActionsInRundowns(
+			this.storage.getAllRundowns(),
+			this.storage.getProject(),
+			undefined
+		)
+		const projectActions = getAllProjectActions(this.storage.getProject())
+
+		return [
+			...rundownActions.map((action) =>
+				literal<ActionAny>({
+					type: 'rundown',
+					action,
+				})
+			),
+			...projectActions.map((action) =>
+				literal<ActionAny>({
+					type: 'project',
+					action,
+				})
+			),
+		]
 	}
 
 	private handleUpdate() {

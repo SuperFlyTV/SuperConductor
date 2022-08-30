@@ -1,10 +1,20 @@
 import { Rundown } from '../../models/rundown/Rundown'
 import { GroupBase } from '../../models/rundown/Group'
 import { PartBase } from '../../models/rundown/Part'
-import { ActiveTrigger, activeTriggersToString, RundownTrigger } from '../../models/rundown/Trigger'
+import { ActiveTrigger, activeTriggersToString, RundownTrigger, ProjectTrigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { GroupWithShallowParts, PartWithRef } from '../util'
+
+export type ActionAny =
+	| {
+			type: 'rundown'
+			action: RundownAction
+	  }
+	| {
+			type: 'project'
+			action: ProjectAction
+	  }
 
 export interface RundownActionLight {
 	trigger: RundownTrigger
@@ -13,6 +23,10 @@ export interface RundownActionLight {
 }
 export interface RundownAction extends RundownActionLight {
 	group: GroupBase
+}
+
+export interface ProjectAction {
+	trigger: ProjectTrigger
 }
 
 export function getAllActionsInRundowns(
@@ -112,4 +126,8 @@ export function getAllActionsInParts(
 	}
 
 	return actions
+}
+
+export function getAllProjectActions(project: Project): ProjectAction[] {
+	return project.actions
 }
