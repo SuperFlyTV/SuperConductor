@@ -1952,24 +1952,23 @@ export class IPCServer
 			description: ActionDescription.NewRundown,
 		}
 	}
-	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		const { rundown } = this.getRundown(data)
+	async deleteRundown(data: { rundownId: string }): Promise<void> {
+		const rundown = this.storage.getRundown(data.rundownId)
 
-		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+		if (rundown) {
+			// If the rundown is open:
+
+			// Stop all groups, to trigger relevant timeline-updates:
+			for (const group of rundown.groups) {
+				await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+			}
 		}
 
-		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
+		const rundownFileName = data.rundownId // this.storage.getRundownFilename(data.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
 		this._saveUpdates({})
 
-		return {
-			undo: () => {
-				this.storage.restoreRundown(rundown)
-				this._saveUpdates({})
-			},
-			description: ActionDescription.DeleteRundown,
-		}
+		// Note: This is not undoable
 	}
 	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
 		this.storage.openRundown(data.rundownId)

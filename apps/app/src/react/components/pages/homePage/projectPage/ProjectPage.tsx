@@ -16,6 +16,7 @@ import { ScList } from '../scList/ScList'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 
 import './style.scss'
+import { ConfirmationDialog } from '../../../util/ConfirmationDialog'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
@@ -42,6 +43,17 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 	const handleListProjectsClose = () => {
 		setListProjectsOpen(false)
 	}
+
+	const [deleteRundownConfirmationOpen, setDeleteRundownConfirmationOpen] = useState<string | false>(false)
+	const handleDeleteRundown = useCallback(() => {
+		if (deleteRundownConfirmationOpen) {
+			serverAPI
+				.deleteRundown({
+					rundownId: deleteRundownConfirmationOpen,
+				})
+				.catch(handleError)
+		}
+	}, [handleError, serverAPI, deleteRundownConfirmationOpen])
 
 	return (
 		<ProjectPageLayout
@@ -100,7 +112,9 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 										<TextBtn
 											label="Permanently delete"
 											style="danger"
-											onClick={() => alert('This feature is not implemented yet.')}
+											onClick={() => {
+												setDeleteRundownConfirmationOpen(closedRundown.rundownId)
+											}}
 										/>
 									</div>
 								</div>
@@ -110,6 +124,21 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 				/>
 				{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
 			</RoundedSection>
+
+			<ConfirmationDialog
+				open={!!deleteRundownConfirmationOpen}
+				title="Delete Rundown"
+				acceptLabel="Delete"
+				onAccepted={() => {
+					handleDeleteRundown()
+					setDeleteRundownConfirmationOpen(false)
+				}}
+				onDiscarded={() => {
+					setDeleteRundownConfirmationOpen(false)
+				}}
+			>
+				<div>Are you sure you want to delete the Rundown?</div>
+			</ConfirmationDialog>
 
 			<div className="rundowns-page"></div>
 
