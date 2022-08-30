@@ -6,7 +6,7 @@ import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
-import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
+import { RundownAction, getAllActionsInRundowns } from '../lib/triggers/action'
 import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
 
 export class TriggersHandler {
@@ -72,7 +72,7 @@ export class TriggersHandler {
 
 		const usedTriggers: {
 			[fullIdentifier: string]: {
-				actions: Action[]
+				actions: RundownAction[]
 			}
 		} = {}
 
@@ -109,7 +109,7 @@ export class TriggersHandler {
 		}
 	}
 	/** Returns all Actions in all Rundowns */
-	private getActions(): Action[] {
+	private getActions(): RundownAction[] {
 		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject(), undefined)
 	}
 

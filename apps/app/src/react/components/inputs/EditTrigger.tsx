@@ -2,7 +2,7 @@ import { Button, ButtonGroup } from '@mui/material'
 
 import React from 'react'
 
-import { Trigger } from '../../../models/rundown/Trigger'
+import { RundownTrigger } from '../../../models/rundown/Trigger'
 import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import classNames from 'classnames'
@@ -10,7 +10,7 @@ import classNames from 'classnames'
 const ACTION_ICON_SIZE = 12
 
 export const NoEditTrigger: React.FC<{
-	trigger: Trigger
+	trigger: RundownTrigger
 }> = ({ trigger }) => {
 	const labelParts = trigger.label.split('+')
 
@@ -47,9 +47,9 @@ export const NoEditTrigger: React.FC<{
 }
 
 export const EditTrigger: React.FC<{
-	trigger: Trigger
+	trigger: RundownTrigger
 	index: number
-	onEdit: (index: number, trigger: Trigger | null) => void
+	onEdit: (index: number, trigger: RundownTrigger | null) => void
 	locked?: boolean
 }> = ({ trigger, index, onEdit, locked }) => {
 	const labelParts = trigger.label.split('+')

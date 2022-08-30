@@ -8,7 +8,7 @@ import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
-import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, RundownTrigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
 import { MoveTarget } from '../lib/util'
 
@@ -78,7 +78,7 @@ export interface IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}) => void
 	stopGroup: (arg: { rundownId: string; groupId: string }) => void

@@ -18,7 +18,7 @@ import {
 import { Part, PartGUI } from '../../models/rundown/Part'
 import { deepClone, literal, omit } from '@shared/lib'
 import { ClientSideLogger } from '../api/logger'
-import { Action, ActionLight } from '../../lib/triggers/action'
+import { RundownAction, RundownActionLight } from '../../lib/triggers/action'
 import _ from 'lodash'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { assertNever } from '@shared/lib'
@@ -695,11 +695,11 @@ export class RundownsStore {
 		this._updateRundown(rundownId, this._rundownsClean.get(rundownId) ?? null)
 	}
 
-	private _allButtonActions: Map<string, Action[]> = new Map()
+	private _allButtonActions: Map<string, RundownAction[]> = new Map()
 	get allButtonActions() {
 		return this._allButtonActions as Readonly<typeof this._allButtonActions>
 	}
-	public updateAllButtonActions(actions: Map<string, Action[]>): void {
+	public updateAllButtonActions(actions: Map<string, RundownAction[]>): void {
 		runInAction(() => {
 			if (!_.isEqual(actions, this._allButtonActions)) {
 				this._allButtonActions = actions
@@ -707,7 +707,7 @@ export class RundownsStore {
 		})
 	}
 
-	getActionsForPart(partId: string): ActionLight[] {
+	getActionsForPart(partId: string): RundownActionLight[] {
 		const result = []
 		for (const [_id, actions] of this._allButtonActions) {
 			for (const action of actions) {

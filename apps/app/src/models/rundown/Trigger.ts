@@ -1,4 +1,4 @@
-export interface Trigger {
+export interface RundownTrigger {
 	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
 	fullIdentifiers: string[]
 	action: 'play' | 'stop' | 'playStop'

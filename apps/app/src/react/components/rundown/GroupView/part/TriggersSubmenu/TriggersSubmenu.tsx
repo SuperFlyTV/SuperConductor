@@ -2,9 +2,9 @@ import { Button } from '@mui/material'
 import _ from 'lodash'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
-import { ActionLight } from '../../../../../../lib/triggers/action'
+import { RundownActionLight } from '../../../../../../lib/triggers/action'
 import { PartGUI } from '../../../../../../models/rundown/Part'
-import { ActiveTriggers, activeTriggersToString, Trigger } from '../../../../../../models/rundown/Trigger'
+import { ActiveTriggers, activeTriggersToString, RundownTrigger } from '../../../../../../models/rundown/Trigger'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { HotkeyContext } from '../../../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
@@ -15,19 +15,19 @@ export const TriggersSubmenu: React.FC<{
 	groupId: string
 	part: PartGUI
 	locked?: boolean
-	allActionsForPart: ActionLight[]
+	allActionsForPart: RundownActionLight[]
 }> = ({ rundownId, groupId, part, locked, allActionsForPart }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const hotkeyContext = useContext(HotkeyContext)
 
-	const otherActions: ActionLight[] = allActionsForPart.filter(
+	const otherActions: RundownActionLight[] = allActionsForPart.filter(
 		(action) => !part.triggers.find((t) => _.isEqual(t.fullIdentifiers, action.trigger.fullIdentifiers))
 	)
 	const actionCount = part.triggers.length + otherActions.length
 
 	const onEditTrigger = useCallback(
-		(index: number, trigger: Trigger | null) => {
+		(index: number, trigger: RundownTrigger | null) => {
 			ipcServer
 				.setPartTrigger({
 					rundownId,
@@ -56,7 +56,7 @@ export const TriggersSubmenu: React.FC<{
 			} else if (triggerLength < prevTriggers.current.length) {
 				// The length is shorter; ie a button was released.
 
-				const trigger: Trigger = {
+				const trigger: RundownTrigger = {
 					label: activeTriggersToString(prevTriggers.current),
 					fullIdentifiers: prevTriggers.current.map((t) => t.fullIdentifier),
 					action: 'playStop',

@@ -46,7 +46,7 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
@@ -391,7 +391,7 @@ export class IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)

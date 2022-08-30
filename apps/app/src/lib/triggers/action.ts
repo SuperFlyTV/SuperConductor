@@ -1,17 +1,17 @@
 import { Rundown } from '../../models/rundown/Rundown'
 import { GroupBase } from '../../models/rundown/Group'
 import { PartBase } from '../../models/rundown/Part'
-import { ActiveTrigger, activeTriggersToString, Trigger } from '../../models/rundown/Trigger'
+import { ActiveTrigger, activeTriggersToString, RundownTrigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { GroupWithShallowParts, PartWithRef } from '../util'
 
-export interface ActionLight {
-	trigger: Trigger
+export interface RundownActionLight {
+	trigger: RundownTrigger
 	rundownId: string
 	part: PartBase
 }
-export interface Action extends ActionLight {
+export interface RundownAction extends RundownActionLight {
 	group: GroupBase
 }
 
@@ -39,8 +39,8 @@ export function getAllActionsInParts(
 	allParts: PartWithRef[],
 	project: Project,
 	peripherals: { [peripheralId: string]: PeripheralStatus } | undefined
-): Action[] {
-	const actions: Action[] = []
+): RundownAction[] {
+	const actions: RundownAction[] = []
 	// Collect all actions from the rundowns:
 	const groups = new Map<
 		string,
@@ -92,7 +92,7 @@ export function getAllActionsInParts(
 									deviceName: peripheralStatus?.info.name ?? '',
 									identifier,
 								}
-								const trigger: Trigger = {
+								const trigger: RundownTrigger = {
 									fullIdentifiers: [fullIdentifier],
 									action: area.action || 'playStop',
 									label: activeTriggersToString([activeTrigger]),

@@ -1,6 +1,6 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
-import { Action } from './action'
+import { RundownAction } from './action'
 import { PartBase } from '../../models/rundown/Part'
 import { getTimelineForGroup } from '../../electron/timeline'
 import { GroupBase } from '../../models/rundown/Group'
@@ -71,7 +71,7 @@ export function getKeyDisplayForButtonActions(
 	trigger: ActiveTrigger,
 	triggersAreaMap: TriggersAreaMap,
 	definingArea: DefiningArea | null,
-	actionsOnButton: Action[] | undefined
+	actionsOnButton: RundownAction[] | undefined
 ): KeyDisplayTimeline | KeyDisplay {
 	const triggerArea = triggersAreaMap.get(trigger.fullIdentifier)
 	if (definingArea && definingArea.bridgeId === trigger.bridgeId && definingArea.deviceId === trigger.deviceId) {
@@ -129,7 +129,7 @@ export function idleKeyDisplay(triggerArea: TriggerArea | undefined): KeyDisplay
 	]
 }
 
-export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
+export function playKeyDisplay(actions: RundownAction[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
@@ -185,7 +185,7 @@ export function playKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 		},
 	})
 }
-export function stopKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
+export function stopKeyDisplay(actions: RundownAction[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
@@ -222,7 +222,7 @@ export function stopKeyDisplay(actions: Action[], triggerArea: TriggerArea | und
 		},
 	})
 }
-export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
+export function playStopKeyDisplay(actions: RundownAction[], triggerArea: TriggerArea | undefined): KeyDisplayTimeline {
 	const longestDuration = getLongestActionDuration(actions)
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
@@ -281,7 +281,7 @@ export function playStopKeyDisplay(actions: Action[], triggerArea: TriggerArea |
 	})
 }
 
-function getLongestActionDuration(actions: Action[]): number | null {
+function getLongestActionDuration(actions: RundownAction[]): number | null {
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	return actions.reduce((max: number | null, action) => {
 		if (action.part.resolved.duration === null || max === null) return null
@@ -289,7 +289,7 @@ function getLongestActionDuration(actions: Action[]): number | null {
 	}, 0)
 }
 
-function getLabel(actions: Action[], part: PartBase) {
+function getLabel(actions: RundownAction[], part: PartBase) {
 	if (actions.length === 0) throw new Error('Actions array is empty')
 	const action0 = actions[0]
 
@@ -313,19 +313,19 @@ function getLabel(actions: Action[], part: PartBase) {
 }
 
 export function _getKeyDisplay(
-	actions: Action[],
+	actions: RundownAction[],
 	labels: {
 		idle: KeyDisplay
 		paused?: (data: {
 			group: GroupBase
 			part: PartBase
-			action: Action
+			action: RundownAction
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
 		playing: (data: {
 			group: GroupBase
 			part: PartBase
-			action: Action
+			action: RundownAction
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
 	}

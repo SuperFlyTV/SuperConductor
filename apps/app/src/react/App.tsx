@@ -34,7 +34,7 @@ import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
 import { useMemoComputedValue } from './mobx/lib'
-import { Action, getAllActionsInParts } from '../lib/triggers/action'
+import { RundownAction, getAllActionsInParts } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
@@ -341,7 +341,7 @@ export const App = observer(function App() {
 	useMemoComputedValue(() => {
 		if (!project) return
 
-		const newButtonActions = new Map<string, Action[]>()
+		const newButtonActions = new Map<string, RundownAction[]>()
 
 		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
 

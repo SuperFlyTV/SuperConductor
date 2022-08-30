@@ -1,5 +1,5 @@
 import { TimelineObj } from './TimelineObj'
-import { Trigger } from './Trigger'
+import { RundownTrigger } from './Trigger'
 
 export interface PartBase {
 	id: string
@@ -11,7 +11,7 @@ export interface PartBase {
 	/** Disables the ability to edit the Part in GUI. Does not affect ability to play out. */
 	locked?: boolean
 
-	triggers: Trigger[]
+	triggers: RundownTrigger[]
 
 	duration?: number
 

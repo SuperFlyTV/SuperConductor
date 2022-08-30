@@ -8,7 +8,7 @@ import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
-import { Action } from '../../../../../lib/triggers/action'
+import { RundownAction } from '../../../../../lib/triggers/action'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
@@ -59,7 +59,7 @@ export const StreamdeckSettings: React.FC<{
 		label: string
 		iCol: number
 		iRow: number
-		actions: Action[]
+		actions: RundownAction[]
 		keyDisplay: KeyDisplay | KeyDisplayTimeline
 	}[] = []
 	let iKey = -1
