@@ -39,6 +39,7 @@ import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
+import { Spinner } from './components/util/Spinner'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -396,7 +397,11 @@ export const App = observer(function App() {
 	}, [triggers])
 
 	if (!project || !sorensenInitialized) {
-		return <div>Loading...</div>
+		return (
+			<div className="app-loading">
+				<Spinner heavyOperation />
+			</div>
+		)
 	}
 
 	return (

@@ -1,5 +1,6 @@
 import React, { useCallback, useContext } from 'react'
-import { Button } from '@mui/material'
+import { Box, Button, Grid } from '@mui/material'
+
 import { observer } from 'mobx-react-lite'
 import { DefiningArea } from '../../../../../lib/triggers/keyDisplay'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
@@ -78,53 +79,59 @@ export const PeripheralSettings: React.FC<{
 				)}
 			</div>
 			<div className="peripheral-settings__areas">
-				<div>{definingArea && 'Press the buttons in order, to add them to the Button Area'}</div>
-				<table>
-					<tbody>
-						{Object.entries(peripheralSettings?.areas || []).map(([areaId, area]) => {
-							return (
-								<tr key={areaId}>
-									<td>{area.name}</td>
-									<td>{area.identifiers.length} buttons</td>
-									<td>
-										{definingArea?.areaId === areaId ? (
-											<Button
-												className="btn"
-												variant="contained"
-												onClick={() => finishDefiningArea()}
-											>
-												Finish
-											</Button>
-										) : (
-											<Button
-												className="btn"
-												variant="contained"
-												disabled={!!definingArea}
-												onClick={() => startDefiningArea(areaId)}
-											>
-												{area.identifiers.length > 0
-													? 'Clear and re-define keys'
-													: 'Define keys'}
-											</Button>
-										)}
-									</td>
-									<td>
-										<TrashBtn
-											className="delete"
-											title={'Delete Area'}
-											onClick={() => removeArea(areaId)}
-										/>
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-				<div>
-					<Button className="btn" variant="contained" onClick={() => createNewArea()}>
+				{definingArea && (
+					<Box className="message" sx={{ maxWidth: 'fit-content', p: 1, my: 1, bgcolor: 'info.main' }}>
+						Press the buttons in order, to add them to the Button Area
+					</Box>
+				)}
+				<Box sx={{ mt: 1 }}>
+					{Object.entries(peripheralSettings?.areas || []).map(([areaId, area]) => {
+						return (
+							<Grid container key={areaId}>
+								<Grid item xs={2}>
+									{area.name}
+								</Grid>
+								<Grid item xs={3}>
+									{area.identifiers.length} buttons
+								</Grid>
+								<Grid item xs={7} textAlign="right">
+									{definingArea?.areaId === areaId ? (
+										<Button
+											className="btn"
+											variant="contained"
+											size="small"
+											sx={{ mr: 1 }}
+											onClick={() => finishDefiningArea()}
+										>
+											Finish
+										</Button>
+									) : (
+										<Button
+											className="btn"
+											variant="outlined"
+											size="small"
+											sx={{ mr: 1 }}
+											disabled={!!definingArea}
+											onClick={() => startDefiningArea(areaId)}
+										>
+											{area.identifiers.length > 0 ? 'Clear and re-define' : 'Define keys'}
+										</Button>
+									)}
+									<TrashBtn
+										className="delete"
+										title={'Delete Area'}
+										onClick={() => removeArea(areaId)}
+									/>
+								</Grid>
+							</Grid>
+						)
+					})}
+				</Box>
+				<Box sx={{ mt: 1 }}>
+					<Button className="btn" variant="contained" color="primary" onClick={() => createNewArea()}>
 						Create new button Area
 					</Button>
-				</div>
+				</Box>
 			</div>
 		</div>
 	)

@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import { GroupGUI } from '../../../../models/rundown/Group'
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import { Button } from '@mui/material'
+import { Box, Button } from '@mui/material'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
@@ -46,71 +46,68 @@ export const GroupButtonAreaPopover: React.FC<{ group: GroupGUI }> = observer(fu
 	}, [project])
 
 	return (
-		<>
-			<div>
-				Assign a Button Area to this Group:
-				<table className="table">
-					<tbody>
-						<tr>
-							<th>Device</th>
-							<th>Area</th>
-							<th>Buttons</th>
-							<th></th>
-						</tr>
-						{allAreas.map(({ area, areaId, bridgeId, deviceId, peripheralStatus }) => {
-							const deviceName = peripheralStatus ? (
-								peripheralStatus.info.name
-							) : (
-								<i>(Device-not-connected)</i>
-							)
+		<Box sx={{ p: 1 }}>
+			Assign a Button Area to this Group:
+			<table className="table">
+				<tbody>
+					<tr>
+						<th>Device</th>
+						<th>Area</th>
+						<th>Buttons</th>
+						<th></th>
+					</tr>
+					{allAreas.map(({ area, areaId, bridgeId, deviceId, peripheralStatus }) => {
+						const deviceName = peripheralStatus ? peripheralStatus.info.name : <i>(Device-not-connected)</i>
 
-							return (
-								<tr key={areaId}>
-									<td>{deviceName}</td>
-									<td>{area.name}</td>
-									<td>{area.identifiers.length} buttons</td>
-									<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>
-									<td>
-										{area.assignedToGroupId === group.id ? (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: undefined,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Remove
-											</Button>
-										) : (
-											<Button
-												variant="contained"
-												onClick={() => {
-													ipcServer
-														.assignAreaToGroup({
-															groupId: group.id,
-															areaId,
-															bridgeId,
-															deviceId,
-														})
-														.catch(handleError)
-												}}
-											>
-												Assign
-											</Button>
-										)}
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-			</div>
-		</>
+						return (
+							<tr key={areaId}>
+								<td>{deviceName}</td>
+								<td>{area.name}</td>
+								<td>{area.identifiers.length} buttons</td>
+								<td>{area.assignedToGroupId === group.id && 'Assigned to this group'}</td>
+								<td>
+									{area.assignedToGroupId === group.id ? (
+										<Button
+											variant="contained"
+											size="small"
+											color="warning"
+											onClick={() => {
+												ipcServer
+													.assignAreaToGroup({
+														groupId: undefined,
+														areaId,
+														bridgeId,
+														deviceId,
+													})
+													.catch(handleError)
+											}}
+										>
+											Remove
+										</Button>
+									) : (
+										<Button
+											variant="contained"
+											size="small"
+											onClick={() => {
+												ipcServer
+													.assignAreaToGroup({
+														groupId: group.id,
+														areaId,
+														bridgeId,
+														deviceId,
+													})
+													.catch(handleError)
+											}}
+										>
+											Assign
+										</Button>
+									)}
+								</td>
+							</tr>
+						)
+					})}
+				</tbody>
+			</table>
+		</Box>
 	)
 })
