@@ -225,15 +225,11 @@ export const DeviceItemContent: React.FC<{
 				) : deviceSettings.type === DeviceType.HYPERDECK && deviceSettings.options ? (
 					<div className="form-control">
 						<BooleanInput
-							label="Warn on empty slots"
-							currentValue={
-								typeof deviceSettings.options.warnOnEmptySlots === 'undefined'
-									? true
-									: deviceSettings.options.warnOnEmptySlots
-							}
+							label="Suppress empty slot warnings"
+							currentValue={deviceSettings.options.suppressEmptySlotWarnings}
 							onChange={(v) => {
 								if (!deviceSettings.options) return
-								deviceSettings.options.warnOnEmptySlots = v
+								deviceSettings.options.suppressEmptySlotWarnings = v
 								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 							}}
 						/>
