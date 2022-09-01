@@ -300,6 +300,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DurationInput
 						label="Interval"
+						fullWidth
 						currentValue={settings.repeating.intervalCustom as number}
 						allowUndefined={false}
 						allowNull={false}
@@ -311,6 +312,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -325,6 +327,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X day"
+						fullWidth
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
@@ -334,6 +337,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -352,6 +356,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<SelectEnumMultiple
 						label="Repeat on week-day"
+						fullWidth
 						currentValues={weekdaysSelect}
 						allowUndefined={false}
 						disabled={locked}
@@ -381,6 +386,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -395,6 +401,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X month"
+						fullWidth
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
@@ -404,6 +411,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
