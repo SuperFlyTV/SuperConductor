@@ -20,6 +20,7 @@ import { IntInput } from '../../inputs/IntInput'
 import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
 import Toggle from 'react-toggle'
 import { FormLabel, Grid } from '@mui/material'
+import { shortID } from '../../../../lib/util'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -48,7 +49,7 @@ export const SideBarEditGroup: React.FC<{
 			.catch(handleError)
 	}, [handleError, ipcServer, rundownId, groupId])
 
-	const toggleId = useMemo(() => `toggle_${Date.now()}_${Math.floor(Math.random() * 1000)}`, [])
+	const toggleId = useMemo(() => `toggle_${shortID()}`, [])
 
 	const header = (
 		<>
