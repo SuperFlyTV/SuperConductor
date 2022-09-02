@@ -40,6 +40,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
 		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
 	}
+	acknowledgeUserAgreement(...args: ServerArgs<'acknowledgeUserAgreement'>) {
+		return this.invokeServerMethod('acknowledgeUserAgreement', ...args)
+	}
 	playPart(...args: ServerArgs<'playPart'>) {
 		return this.invokeServerMethod('playPart', ...args)
 	}

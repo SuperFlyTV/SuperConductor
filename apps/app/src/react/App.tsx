@@ -39,6 +39,8 @@ import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
+import { UserAgreementScreen } from './components/UserAgreementScreen'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -191,18 +193,24 @@ export const App = observer(function App() {
 			.catch(logger.error)
 	}, [logger.error, serverAPI])
 
-	// Handle splash screen:
 	const appStore = store.appStore
+
+	// Handle splash screen & User agreement:
 	const [splashScreenOpen, setSplashScreenOpen] = useState(false)
+	const [userAgreementScreenOpen, setUserAgreementScreenOpen] = useState(false)
 	/** Will be set to true after appStore.version has been set and initially checked*/
 	const splashScreenInitial = useRef(false)
 	useEffect(() => {
 		// Check upon startup if the splash screen should be displayed:
 		if (appStore.version && splashScreenInitial.current === false) {
+			// The initial data has been set
 			splashScreenInitial.current = true
 
 			if (!appStore.version.seenVersion || appStore.version.seenVersion !== appStore.version.currentVersion) {
 				setSplashScreenOpen(true)
+			}
+			if (appStore.userAgreement !== USER_AGREEMENT_VERSION) {
+				setUserAgreementScreenOpen(true)
 			}
 		}
 	}, [appStore.version])
@@ -211,6 +219,10 @@ export const App = observer(function App() {
 		if (!remindMeLater) {
 			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
+	}
+	function onUserAgreement(agreementVersion: string): void {
+		setUserAgreementScreenOpen(false)
+		appStore.serverAPI.acknowledgeUserAgreement(agreementVersion).catch(logger.error)
 	}
 
 	// Handle using the Delete key to delete timeline objs
@@ -408,13 +420,25 @@ export const App = observer(function App() {
 							<div className="app" onClick={handleClickAnywhere}>
 								<HeaderBar />
 
-								{splashScreenOpen && (
-									<SplashScreen
-										seenVersion={appStore.version?.seenVersion}
-										currentVersion={appStore.version?.currentVersion}
-										onClose={onSplashScreenClose}
-									/>
-								)}
+								{
+									// Splash screens:
+									splashScreenOpen ? (
+										<SplashScreen
+											seenVersion={appStore.version?.seenVersion}
+											currentVersion={appStore.version?.currentVersion}
+											onClose={onSplashScreenClose}
+										/>
+									) : userAgreementScreenOpen ? (
+										<UserAgreementScreen
+											onAgree={(agreementVersion: string) => {
+												onUserAgreement(agreementVersion)
+											}}
+											onDisagree={() => {
+												window.close()
+											}}
+										/>
+									) : null
+								}
 
 								{store.guiStore.isNewRundownSelected() ? (
 									<NewRundownPage />

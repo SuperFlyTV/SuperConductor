@@ -71,6 +71,7 @@ export interface IPCServerMethods {
 	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
+	acknowledgeUserAgreement: (agreementVersion: string) => void
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
 	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
 	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => void

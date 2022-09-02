@@ -117,6 +117,7 @@ export class IPCServer
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 			makeDevData: () => Promise<void>
 			triggerHandleAutoFill: () => void
+			userHasAgreed: () => void
 		}
 	) {
 		super()
@@ -252,6 +253,15 @@ export class IPCServer
 		const appData = this.storage.getAppData()
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
+	}
+	async acknowledgeUserAgreement(agreementVersion: string): Promise<void> {
+		const appData = this.storage.getAppData()
+		appData.userAgreement = agreementVersion
+
+		this.storage.updateAppData(appData)
+		if (agreementVersion) {
+			this.callbacks.userHasAgreed()
+		}
 	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()

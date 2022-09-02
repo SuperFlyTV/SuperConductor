@@ -25,6 +25,8 @@ import { getDefaultPart } from './defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
+import { TelemetryHandler } from './telemetry'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 
 export class SuperConductor {
 	mainWindow?: BrowserWindow
@@ -33,6 +35,7 @@ export class SuperConductor {
 
 	session: SessionHandler
 	storage: StorageHandler
+	statisticsHandler: TelemetryHandler
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
@@ -44,6 +47,8 @@ export class SuperConductor {
 		timer: NodeJS.Timer
 	} | null = null
 	private refreshStatus: { [deviceId: string]: number } = {}
+
+	private hasStoredStartupUserStatistics = false
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -59,6 +64,7 @@ export class SuperConductor {
 			},
 			CURRENT_VERSION
 		)
+		this.statisticsHandler = new TelemetryHandler(this.storage)
 
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
@@ -93,6 +99,24 @@ export class SuperConductor {
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
 		})
+
+		for (const argv of process.argv) {
+			if (argv === '--disable-telemetry') {
+				console.log('Telemetry disabled')
+				this.statisticsHandler.disableTelemetry()
+			}
+		}
+
+		const appData = this.storage.getAppData()
+		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
+			// The user has previously agreed to the user agreement
+			this.statisticsHandler.setUserHasAgreed()
+
+			if (!this.hasStoredStartupUserStatistics) {
+				this.hasStoredStartupUserStatistics = true
+				this.statisticsHandler.onStartup()
+			}
+		}
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
@@ -346,6 +370,13 @@ export class SuperConductor {
 			},
 			makeDevData: async () => {
 				await this.storage.makeDevData()
+			},
+			userHasAgreed: () => {
+				this.statisticsHandler.setUserHasAgreed()
+				if (!this.hasStoredStartupUserStatistics) {
+					this.hasStoredStartupUserStatistics = true
+					this.statisticsHandler.onStartup()
+				}
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
