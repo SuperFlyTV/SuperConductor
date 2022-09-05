@@ -35,7 +35,7 @@ export class SuperConductor {
 
 	session: SessionHandler
 	storage: StorageHandler
-	statisticsHandler: TelemetryHandler
+	telemetryHandler: TelemetryHandler
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
@@ -64,7 +64,7 @@ export class SuperConductor {
 			},
 			CURRENT_VERSION
 		)
-		this.statisticsHandler = new TelemetryHandler(this.storage)
+		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
 
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
@@ -103,18 +103,18 @@ export class SuperConductor {
 		for (const argv of process.argv) {
 			if (argv === '--disable-telemetry') {
 				console.log('Telemetry disabled')
-				this.statisticsHandler.disableTelemetry()
+				this.telemetryHandler.disableTelemetry()
 			}
 		}
 
 		const appData = this.storage.getAppData()
 		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
 			// The user has previously agreed to the user agreement
-			this.statisticsHandler.setUserHasAgreed()
+			this.telemetryHandler.setUserHasAgreed()
 
 			if (!this.hasStoredStartupUserStatistics) {
 				this.hasStoredStartupUserStatistics = true
-				this.statisticsHandler.onStartup()
+				this.telemetryHandler.onStartup()
 			}
 		}
 	}
@@ -372,10 +372,10 @@ export class SuperConductor {
 				await this.storage.makeDevData()
 			},
 			userHasAgreed: () => {
-				this.statisticsHandler.setUserHasAgreed()
+				this.telemetryHandler.setUserHasAgreed()
 				if (!this.hasStoredStartupUserStatistics) {
 					this.hasStoredStartupUserStatistics = true
-					this.statisticsHandler.onStartup()
+					this.telemetryHandler.onStartup()
 				}
 			},
 		})
