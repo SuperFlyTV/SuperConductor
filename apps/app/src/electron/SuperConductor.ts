@@ -385,8 +385,10 @@ export class SuperConductor {
 			makeDevData: async () => {
 				await this.storage.makeDevData()
 			},
-			userHasAgreed: () => {
+			onAgreeToUserAgreement: () => {
 				this.telemetryHandler.setUserHasAgreed()
+				this.telemetryHandler.onAcceptUserAgreement()
+
 				if (!this.hasStoredStartupUserStatistics) {
 					this.hasStoredStartupUserStatistics = true
 					this.telemetryHandler.onStartup()

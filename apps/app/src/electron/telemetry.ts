@@ -5,6 +5,7 @@ import { CURRENT_VERSION } from './bridgeHandler'
 import { StorageHandler } from './storageHandler'
 import { hash } from '../lib/util'
 import { LoggerLike } from '@shared/api'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 
 /*
   This file handles the sending of usage statistics.
@@ -44,22 +45,23 @@ export class TelemetryHandler {
 	 * Create a report of usage statistics on application startup
 	 */
 	onStartup(): void {
-		const date = new Date()
-
 		this.storeTelemetry({
 			reportType: 'application-start',
-			date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`, // YYYY-MM-DD
-			version: CURRENT_VERSION,
-
-			osType: os.type(), // Which Operating system, eg "Windows_NT"
-			osRelease: os.release(), // Which OS version, eg "10.0.14393"
-			osPlatform: os.platform(), // Which OS platform, eg "win32"
+			...this.standardData(),
+		})
+	}
+	/**
+	 * Create a report when user clicks accept on the user agreement
+	 */
+	onAcceptUserAgreement(): void {
+		this.storeTelemetry({
+			reportType: 'accept-user-agreement',
+			userAgreementVersion: USER_AGREEMENT_VERSION,
+			...this.standardData(),
 		})
 	}
 
 	onError(error: string, stack?: string): void {
-		const date = new Date()
-
 		// Make sure we only store a certain error once, to avoid flooding:
 		const errorHash = hash(error)
 		if (!this.storedErrors.has(errorHash)) {
@@ -67,16 +69,22 @@ export class TelemetryHandler {
 
 			this.storeTelemetry({
 				reportType: 'application-error',
-				date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`, // YYYY-MM-DD
-				version: CURRENT_VERSION,
-
-				osType: os.type(), // Which Operating system, eg "Windows_NT"
-				osRelease: os.release(), // Which OS version, eg "10.0.14393"
-				osPlatform: os.platform(), // Which OS platform, eg "win32"
-
 				error: error,
 				errorStack: stack,
+				...this.standardData(),
 			})
+		}
+	}
+
+	/** Return a few data-points that are sent with every report */
+	private standardData(): { [key: string]: string } {
+		const date = new Date()
+		return {
+			date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`, // YYYY-MM-DD
+			version: CURRENT_VERSION,
+			osType: os.type(), // Which Operating system, eg "Windows_NT"
+			osRelease: os.release(), // Which OS version, eg "10.0.14393"
+			osPlatform: os.platform(), // Which OS platform, eg "win32"
 		}
 	}
 

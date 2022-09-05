@@ -16,10 +16,10 @@ export const UserAgreementScreen: React.FC<{
 		<BootstrapDialog aria-labelledby="customized-dialog-title" open={true}>
 			<DialogContent dividers>
 				<Typography gutterBottom>
-					<b>SuperConductor user agreement</b>
+					<b>SuperConductor User Agreement</b>
 					<br />
 					<br />
-					<b>By using this software you agree to this user agreement:</b>
+					<b>By using this software you agree to this User Agreement:</b>
 					<br />
 					<br />
 					<b>This is a pre-release software</b>, features will be added and <i>might be removed</i> in later
