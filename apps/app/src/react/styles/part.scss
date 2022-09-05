@@ -210,7 +210,10 @@ $part_time_height: 16px;
 			flex-grow: 1;
 			min-height: 1em;
 			font-size: 1.4rem;
-			cursor: text;
+
+			&.editable {
+				cursor: text;
+			}
 		}
 
 		& .controls {

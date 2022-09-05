@@ -71,11 +71,14 @@ $margin-v: 2rem;
 			}
 
 			.title {
-				cursor: text;
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				display: inline-block;
+
+				&.editable {
+					cursor: text;
+				}
 			}
 		}
 
