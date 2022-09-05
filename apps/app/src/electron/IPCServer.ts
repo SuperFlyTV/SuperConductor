@@ -126,7 +126,7 @@ export class IPCServer
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
-					ipcMain.handle(methodName, async (event, args0: string) => {
+					ipcMain.handle(methodName, async (event, args0: string[]) => {
 						try {
 							const args = unReplaceUndefined(args0)
 							const result = await fcn(...args)

@@ -109,8 +109,6 @@ export const App = observer(function App() {
 
 	const handleError = useCallback(
 		(error: any) => {
-			// console.log('Recreate handleError')
-			// return (error: any): void => {
 			logger.error(error)
 
 			let message: string
@@ -120,7 +118,7 @@ export const App = observer(function App() {
 			} else if (error === null) {
 				message = ''
 			} else if (typeof error === 'object' && 'message' in error) {
-				message = (error as any).message ?? ''
+				message = error.message ?? ''
 			} else if (typeof error === 'object' && typeof error.reason === 'object' && error.reason.message) {
 				message = error.reason.message
 				stack = error.reason.stack || error.reason.reason
