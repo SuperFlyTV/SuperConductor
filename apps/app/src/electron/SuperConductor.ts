@@ -102,7 +102,7 @@ export class SuperConductor {
 
 		for (const argv of process.argv) {
 			if (argv === '--disable-telemetry') {
-				console.log('Telemetry disabled')
+				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
 			}
 		}
@@ -117,6 +117,20 @@ export class SuperConductor {
 				this.telemetryHandler.onStartup()
 			}
 		}
+
+		// Set up handlers for exceptions, to be reported
+		process.on('uncaughtException', (err, origin) => {
+			this.telemetryHandler.onError(`Uncaught exception: ${err}`, `Origin: ${origin}`)
+			this.log.error(`Uncaught exception: ${err} \nOrigin: ${origin}`)
+		})
+		process.on('unhandledRejection', (reason: any, promise: any) => {
+			this.telemetryHandler.onError(`Unhandled rejection: ${reason}`, `at ${promise}`)
+			this.log.error(`Unhandled rejection: ${reason} \nat ${promise}`)
+		})
+		process.on('warning', (warning) => {
+			this.telemetryHandler.onError(`Warning: ${warning.name}: ${warning.message}`, warning.stack)
+			this.log.warn(`Warning: ${warning.name}: ${warning.message} \nStack: ${warning.stack}`)
+		})
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
@@ -377,6 +391,10 @@ export class SuperConductor {
 					this.hasStoredStartupUserStatistics = true
 					this.telemetryHandler.onStartup()
 				}
+			},
+			handleError: (error: string, stack?: string) => {
+				this.log.error(error, stack)
+				this.telemetryHandler.onError(error, stack)
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)

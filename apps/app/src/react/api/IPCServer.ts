@@ -23,6 +23,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	log(...args: ServerArgs<'log'>) {
 		return this.invokeServerMethod('log', ...args)
 	}
+	handleClientError(...args: ServerArgs<'handleClientError'>) {
+		return this.invokeServerMethod('handleClientError', ...args)
+	}
 	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}

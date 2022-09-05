@@ -118,6 +118,7 @@ export class IPCServer
 			makeDevData: () => Promise<void>
 			triggerHandleAutoFill: () => void
 			userHasAgreed: () => void
+			handleError: (error: string, stack?: string) => void
 		}
 	) {
 		super()
@@ -151,7 +152,10 @@ export class IPCServer
 								return result
 							}
 						} catch (error) {
-							this._log.error(`Error when calling ${methodName}:`, error)
+							this.callbacks.handleError(
+								`Error when calling ${methodName}: ${error}`,
+								typeof error === 'object' && (error as any).stack
+							)
 							throw error
 						}
 					})
@@ -234,6 +238,10 @@ export class IPCServer
 
 	async log(method: LogLevel, ...args: any[]): Promise<void> {
 		this._renderLog[method](args[0], ...args.slice(1))
+	}
+	async handleClientError(error: string, stack?: string): Promise<void> {
+		// Handle an error thrown in the client
+		this.callbacks.handleError(error, stack)
 	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()

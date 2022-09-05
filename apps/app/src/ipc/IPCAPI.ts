@@ -65,6 +65,7 @@ export interface Action {
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
 	log: (method: LogLevel, ...args: any[]) => void
+	handleClientError: (error: string, stack?: string) => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void

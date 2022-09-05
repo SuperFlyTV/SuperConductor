@@ -4,6 +4,7 @@ import { app } from 'electron'
 import { CURRENT_VERSION } from './bridgeHandler'
 import { StorageHandler } from './storageHandler'
 import { hash } from '../lib/util'
+import { LoggerLike } from '@shared/api'
 
 /*
   This file handles the sending of usage statistics.
@@ -17,7 +18,7 @@ export class TelemetryHandler {
 
 	private storedErrors = new Set<string>()
 
-	constructor(private storageHandler: StorageHandler) {}
+	constructor(private log: LoggerLike, private storageHandler: StorageHandler) {}
 
 	private get enabled(): boolean {
 		return (
@@ -26,7 +27,7 @@ export class TelemetryHandler {
 			// Telemetry is not disabled:
 			!this._disableTelemetry &&
 			// Don't send updates when in development mode:
-			!app.isPackaged
+			app.isPackaged
 		)
 	}
 	/** This is called when the user has agreed to the user agreement */
@@ -56,11 +57,11 @@ export class TelemetryHandler {
 		})
 	}
 
-	onError(error: Error): void {
+	onError(error: string, stack?: string): void {
 		const date = new Date()
 
 		// Make sure we only store a certain error once, to avoid flooding:
-		const errorHash = hash(error.toString())
+		const errorHash = hash(error)
 		if (!this.storedErrors.has(errorHash)) {
 			this.storedErrors.add(errorHash)
 
@@ -73,16 +74,22 @@ export class TelemetryHandler {
 				osRelease: os.release(), // Which OS version, eg "10.0.14393"
 				osPlatform: os.platform(), // Which OS platform, eg "win32"
 
-				error: error.toString(),
-				errorStack: error.stack,
+				error: error,
+				errorStack: stack,
 			})
 		}
 	}
 
 	/** Store a statistics report for later send */
 	private storeTelemetry(report: any): void {
-		if (!this.enabled) return // Don't do anything if the user hasn't agreed
-		this.storageHandler.addTelemetryReport(report).catch(console.error)
+		// Don't do anything if the user hasn't agreed
+		if (this.enabled) {
+			this.storageHandler.addTelemetryReport(report).catch(this.log.error)
+
+			this.triggerSendTelemetry()
+		} else if (!app.isPackaged) {
+			this.log.info('TELEMETRY: ' + JSON.stringify(report))
+		}
 	}
 
 	/**
@@ -128,8 +135,8 @@ export class TelemetryHandler {
 						notSentStatistics.push(report)
 						errorCount++
 
-						if (error.response) console.error(error.response?.body)
-						else console.error(error)
+						if (error.response) this.log.error(error.response?.body)
+						else this.log.error(error)
 					}
 				}
 			} else {
@@ -149,7 +156,8 @@ export class TelemetryHandler {
 		if (!this.enabled) return
 		if (!this.sendUsageStatisticsTimeout) {
 			this.sendUsageStatisticsTimeout = setTimeout(() => {
-				this.sendTelemetry().catch(console.error)
+				this.sendUsageStatisticsTimeout = undefined
+				this.sendTelemetry().catch(this.log.error)
 			}, 1000)
 		}
 	}

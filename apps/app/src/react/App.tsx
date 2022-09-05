@@ -41,6 +41,8 @@ import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
 import { UserAgreementScreen } from './components/UserAgreementScreen'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { DebugTestErrors } from './components/util/Debug'
+import { ErrorBoundary } from './components/util/ErrorBoundary'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -104,18 +106,47 @@ export const App = observer(function App() {
 		}
 	}, [triggers, logger])
 
-	const handleError = useMemo(() => {
-		return (error: unknown): void => {
+	const handleError = useCallback(
+		(error: any) => {
+			// console.log('Recreate handleError')
+			// return (error: any): void => {
 			logger.error(error)
-			if (typeof error === 'object' && error !== null && 'message' in error) {
-				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
-			} else if (typeof error === 'string') {
-				enqueueSnackbar(error.replace(ErrorCruftRegex, ''), { variant: 'error' })
+
+			let message: string
+			let stack = undefined
+			if (typeof error === 'string') {
+				message = error
+			} else if (error === null) {
+				message = ''
+			} else if (typeof error === 'object' && 'message' in error) {
+				message = (error as any).message ?? ''
+			} else if (typeof error === 'object' && typeof error.reason === 'object' && error.reason.message) {
+				message = error.reason.message
+				stack = error.reason.stack || error.reason.reason
+			} else if (typeof error === 'object' && typeof error.error === 'object' && error.error.message) {
+				message = error.error.message
+				stack = error.error.stack
+			} else if (typeof error === 'object' && error.message) {
+				message = 'error message: ' + error.message
+			} else if (typeof error === 'object') {
+				message = 'error object: ' + error.toString()
 			} else {
-				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
+				message = `Unknown error, see console for details. (${error})`
 			}
-		}
-	}, [enqueueSnackbar, logger])
+
+			if (message) {
+				enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
+
+				// Don't send sever-errors back to server:
+				if (!message.match(ErrorCruftRegex)) {
+					// eslint-disable-next-line no-console
+					serverAPI.handleClientError(message, stack).catch(console.error)
+				}
+			}
+			// }
+		},
+		[enqueueSnackbar, logger, serverAPI]
+	)
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -132,6 +163,21 @@ export const App = observer(function App() {
 			serverAPI.makeDevData().catch(handleError)
 		}
 	}, [handleError, serverAPI])
+
+	useEffect(() => {
+		window.addEventListener('error', handleError)
+		window.addEventListener('unhandledrejection', handleError)
+		window.addEventListener('uncaughtException', handleError)
+		// @ts-expect-error hack
+		window.handleError = handleError
+		return () => {
+			window.removeEventListener('error', handleError)
+			window.removeEventListener('unhandledrejection', handleError)
+			window.removeEventListener('uncaughtException', handleError)
+			// @ts-expect-error hack
+			window.handleError = undefined
+		}
+	}, [handleError])
 
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
@@ -213,6 +259,7 @@ export const App = observer(function App() {
 				setUserAgreementScreenOpen(true)
 			}
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [appStore.version])
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
