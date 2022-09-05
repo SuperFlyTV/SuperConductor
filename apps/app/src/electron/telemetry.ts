@@ -67,6 +67,15 @@ export class TelemetryHandler {
 		if (!this.storedErrors.has(errorHash)) {
 			this.storedErrors.add(errorHash)
 
+			if (stack) {
+				// Remove everything before "app.asar", as that can contain information about the local file system:
+				// Tested on data:
+				// "   at hashCode (C:\\Users\\USERNAME\\AppData\\Local\\Programs\\superconductor\\resources\\app.asar\\dist\\lib\\util.js:209:26)"
+				// "   at Generator.next (<anonymous>)"
+				// "   at (C:\\Users\\USERNAME\\AppData\\Local\\Programs\\superconductor\\resources\\app.asar\\dist\\lib\\util.js:209:26)"
+				stack = stack.replace(/^(\W+at )(\w+)?.+(app\.asar)/gm, '$1$2 LOCAL_PATH')
+			}
+
 			this.storeTelemetry({
 				reportType: 'application-error',
 				error: error,
