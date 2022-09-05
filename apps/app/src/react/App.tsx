@@ -43,6 +43,7 @@ import { UserAgreementScreen } from './components/UserAgreementScreen'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { DebugTestErrors } from './components/util/Debug'
 import { ErrorBoundary } from './components/util/ErrorBoundary'
+import { Spinner } from './components/util/Spinner'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -446,6 +447,45 @@ export const App = observer(function App() {
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
 
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		// Bind Escape key to clear any selected Groups, Parts or Timeline-objects:
+		const onEscapeKey = (e: KeyboardEvent) => {
+			try {
+				if (!currentRundownId) return
+				if (
+					document.activeElement?.tagName === 'INPUT' ||
+					document.activeElement?.classList.contains('MuiPaper-root') ||
+					document.activeElement?.classList.contains('MuiDialog-container') ||
+					document.activeElement?.classList.contains('MuiMenuItem-root')
+				)
+					return
+
+				e.preventDefault()
+
+				if (gui.selected.length === 0) {
+					// do nothing
+				} else if (gui.selected.length > 0) {
+					gui.clearSelected()
+				}
+			} catch (error) {
+				handleError(error)
+			}
+		}
+		sorensen.bind('Escape', onEscapeKey, {
+			up: false,
+			global: true,
+			exclusive: true,
+			preventDefaultPartials: false,
+		})
+		return () => {
+			sorensen.unbind('Escape', onEscapeKey)
+		}
+	}, [sorensenInitialized, handleError, gui, currentRundownId])
+
 	useMemoComputedValue(() => {
 		if (!project) return
 
@@ -504,7 +544,11 @@ export const App = observer(function App() {
 	}, [triggers])
 
 	if (!project || !sorensenInitialized) {
-		return <div>Loading...</div>
+		return (
+			<div className="app-loading">
+				<Spinner heavyOperation />
+			</div>
+		)
 	}
 
 	return (
