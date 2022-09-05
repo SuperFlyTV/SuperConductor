@@ -343,6 +343,7 @@ export const App = observer(function App() {
 			return
 		}
 
+		// Bind Escape key to clear any selected Groups, Parts or Timeline-objects:
 		const onEscapeKey = (e: KeyboardEvent) => {
 			try {
 				if (!currentRundownId) return
@@ -365,14 +366,12 @@ export const App = observer(function App() {
 				handleError(error)
 			}
 		}
-
 		sorensen.bind('Escape', onEscapeKey, {
 			up: false,
 			global: true,
 			exclusive: true,
 			preventDefaultPartials: false,
 		})
-
 		return () => {
 			sorensen.unbind('Escape', onEscapeKey)
 		}
