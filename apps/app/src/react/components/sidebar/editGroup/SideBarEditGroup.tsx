@@ -1,5 +1,5 @@
 import { IPCServerContext } from '../../../contexts/IPCServer'
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useCallback, useContext, useMemo, useState } from 'react'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { DataRow } from '../DataRow/DataRow'
 import { SidebarContent } from '../SidebarContent'
@@ -18,7 +18,9 @@ import { assertNever } from '@shared/lib'
 import { PartialDeep } from 'type-fest'
 import { IntInput } from '../../inputs/IntInput'
 import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
-import { Btn } from '../../inputs/Btn/Btn'
+import Toggle from 'react-toggle'
+import { FormLabel, Grid } from '@mui/material'
+import { shortID } from '../../../../lib/util'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -47,6 +49,8 @@ export const SideBarEditGroup: React.FC<{
 			.catch(handleError)
 	}, [handleError, ipcServer, rundownId, groupId])
 
+	const toggleId = useMemo(() => `toggle_${shortID()}`, [])
+
 	const header = (
 		<>
 			<div className="title">
@@ -74,6 +78,7 @@ export const SideBarEditGroup: React.FC<{
 						label="Playout mode"
 						currentValue={group.playoutMode}
 						disabled={group.locked}
+						fullWidth
 						options={PlayoutMode}
 						onChange={(value) => {
 							ipcServer
@@ -91,39 +96,33 @@ export const SideBarEditGroup: React.FC<{
 				{group.playoutMode === PlayoutMode.SCHEDULE && (
 					<div className="settings-group">
 						<div className="setting">
-							{group.schedule.activate ? (
-								<Btn
-									className="btn-active"
-									title="Click to disable schedule"
-									onClick={() => {
-										ipcServer
-											.updateGroup({
-												rundownId,
-												groupId,
-												group: { schedule: { activate: false } },
-											})
-											.catch(handleError)
-									}}
-								>
-									ON
-								</Btn>
-							) : (
-								<Btn
-									className="btn-inactive"
-									title="Click to activate schedule"
-									onClick={() => {
-										ipcServer
-											.updateGroup({
-												rundownId,
-												groupId,
-												group: { schedule: { activate: true } },
-											})
-											.catch(handleError)
-									}}
-								>
-									OFF
-								</Btn>
-							)}
+							<Grid container>
+								<Grid item sx={{ mr: 1 }}>
+									<Toggle
+										id={toggleId}
+										onChange={(e) => {
+											ipcServer
+												.updateGroup({
+													rundownId,
+													groupId,
+													group: { schedule: { activate: e.target.checked } },
+												})
+												.catch(handleError)
+										}}
+										checked={!!group.schedule.activate}
+										title={
+											group.schedule.activate
+												? 'Click to disable schedule'
+												: 'Click to activate schedule'
+										}
+									/>
+								</Grid>
+								<Grid item>
+									<FormLabel htmlFor={toggleId}>
+										{group.schedule.activate ? 'Schedule active' : 'Schedule disabled'}
+									</FormLabel>
+								</Grid>
+							</Grid>
 						</div>
 						<div className="setting">
 							<DateTimeInput
@@ -131,6 +130,7 @@ export const SideBarEditGroup: React.FC<{
 								currentValue={group.schedule.startTime}
 								allowUndefined={true}
 								disabled={group.locked}
+								fullWidth
 								onChange={(value) => {
 									ipcServer
 										.updateGroup({
@@ -151,6 +151,7 @@ export const SideBarEditGroup: React.FC<{
 								label="Repeating"
 								currentValue={group.schedule.repeating.type}
 								disabled={group.locked}
+								fullWidth
 								options={RepeatingType}
 								onChange={(value) => {
 									ipcServer
@@ -300,6 +301,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DurationInput
 						label="Interval"
+						fullWidth
 						currentValue={settings.repeating.intervalCustom as number}
 						allowUndefined={false}
 						allowNull={false}
@@ -311,6 +313,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -325,6 +328,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X day"
+						fullWidth
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
@@ -334,6 +338,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -352,6 +357,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<SelectEnumMultiple
 						label="Repeat on week-day"
+						fullWidth
 						currentValues={weekdaysSelect}
 						allowUndefined={false}
 						disabled={locked}
@@ -381,6 +387,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
@@ -395,6 +402,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<IntInput
 						label="Repeat every X month"
+						fullWidth
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
@@ -404,6 +412,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
+						fullWidth
 						currentValue={settings.repeating.repeatUntil}
 						allowUndefined={true}
 						disabled={locked}
