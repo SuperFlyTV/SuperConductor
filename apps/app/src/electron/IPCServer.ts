@@ -243,6 +243,25 @@ export class IPCServer
 		// Handle an error thrown in the client
 		this.callbacks.handleError(error, stack)
 	}
+	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
+		// This method is used for development-purposes only, to check how error reporting works.
+
+		if (type === 'sync') {
+			throw new Error('This is an error in an IPC method')
+		} else if (type === 'async') {
+			await new Promise((_, reject) => {
+				setTimeout(() => {
+					reject(new Error('This is an error in a promise'))
+				}, 10)
+			})
+		} else if (type === 'setTimeout') {
+			setTimeout(() => {
+				throw new Error('This is an error in a setTImeout')
+			}, 10)
+		} else {
+			assertNever(type)
+		}
+	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()

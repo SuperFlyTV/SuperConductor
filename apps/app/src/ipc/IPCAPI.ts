@@ -66,6 +66,7 @@ export interface Action {
 export interface IPCServerMethods {
 	log: (method: LogLevel, ...args: any[]) => void
 	handleClientError: (error: string, stack?: string) => void
+	debugThrowError: (type: 'sync' | 'async' | 'setTimeout') => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void

@@ -179,6 +179,55 @@ export const App = observer(function App() {
 		}
 	}, [handleError])
 
+	const debugKeyPresses = useRef(0)
+	const debugKeyPressesLastTime = useRef(0)
+	const [debugMode, setDebugMode] = useState(false)
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		// 5 keypresses in a quick succession triggers various errors.
+		// This is used to test reporting of errors as telemetry.
+		const onF12Key = () => {
+			const timeSinceLast = Date.now() - debugKeyPressesLastTime.current
+			if (timeSinceLast < 1000) {
+				debugKeyPresses.current++
+				if (debugKeyPresses.current === 5) {
+					serverAPI.debugThrowError('sync').catch(handleError)
+					serverAPI.debugThrowError('async').catch(handleError)
+					serverAPI.debugThrowError('setTimeout').catch(handleError)
+
+					setTimeout(() => {
+						throw new Error('This is a client-side error in a setTimeout')
+					}, 100)
+					setTimeout(() => {
+						handleError(new Error('This is an error sent into handleError'))
+					}, 350)
+
+					setTimeout(() => {
+						setDebugMode(true)
+					}, 1000)
+
+					debugKeyPresses.current = 0
+				}
+			} else {
+				debugKeyPresses.current = 0
+			}
+
+			debugKeyPressesLastTime.current = Date.now()
+		}
+		sorensen.bind('F12', onF12Key, {
+			up: false,
+			global: true,
+			exclusive: true,
+			preventDefaultPartials: false,
+		})
+		return () => {
+			sorensen.unbind('F12', onF12Key)
+		}
+	}, [sorensenInitialized, handleError, serverAPI])
+
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
 		const handleKey = (e: KeyboardEvent) => {
@@ -516,6 +565,8 @@ export const App = observer(function App() {
 								>
 									<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
 								</ConfirmationDialog>
+
+								<ErrorBoundary>{debugMode && <DebugTestErrors />}</ErrorBoundary>
 							</div>
 						</ErrorHandlerContext.Provider>
 					</ProjectContext.Provider>
