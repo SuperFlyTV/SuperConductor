@@ -79,7 +79,6 @@
 		"casparcg-connection": "^5.1.0",
 		"classnames": "^2.3.1",
 		"deep-extend": "^0.6.0",
-		"electron-devtools-installer": "git+https://github.com/mduclehcm/electron-devtools-installer#mduclehcm-patch-1",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^4.6.1",
 		"file-loader": "^6.2.0",
