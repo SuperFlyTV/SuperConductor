@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite'
-import React, { useContext, useState } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { store } from '../../../../mobx/store'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Popover } from '@mui/material'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import * as Yup from 'yup'
@@ -16,24 +16,19 @@ import { ScList } from '../scList/ScList'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 
 import './style.scss'
+import { ProjectTrigger } from '../../../../../models/rundown/Trigger'
+import { Message } from '../message/Message'
+import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn'
+import {
+	ProjectTriggersSubmenu,
+	RundownTriggersSubmenu,
+} from '../../../rundown/GroupView/part/TriggersSubmenu/TriggersSubmenu'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const rundownsStore = store.rundownsStore
-	const guiStore = store.guiStore
 
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
-
-	const handleReopen = (rundownId: string) => {
-		serverAPI
-			.openRundown({ rundownId })
-			.then(() => {
-				store.rundownsStore.setCurrentRundown(rundownId)
-			})
-			.catch(handleError)
-		guiStore.activeTabId = rundownId
-	}
 
 	const handleRenameRundownClose = () => {
 		setRenameProjectOpen(false)
@@ -45,31 +40,8 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 			subtitle="Project"
 			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
 		>
-			<RoundedSection title="Rundown archive">
-				<ScList
-					list={rundownsStore.closedRundowns.map((closedRundown) => {
-						return {
-							id: closedRundown.rundownId,
-							header: (
-								<div className="rundown-header-item">
-									<ScListItemLabel title={closedRundown.name} />
-									<div className="controls">
-										<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
-										<TextBtn
-											label="Permanently delete"
-											style="danger"
-											onClick={() => alert('This feature is not implemented yet.')}
-										/>
-									</div>
-								</div>
-							),
-						}
-					})}
-				/>
-				{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
-			</RoundedSection>
-
-			<div className="rundowns-page"></div>
+			<RundownArchive project={props.project} />
+			<ProjectActions project={props.project} />
 
 			{/* Rename Project dialog */}
 			<Formik
@@ -129,5 +101,163 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 				}}
 			</Formik>
 		</ProjectPageLayout>
+	)
+})
+
+const RundownArchive: React.FC<{ project: Project }> = observer(function RundownArchive(props) {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const guiStore = store.guiStore
+	const rundownsStore = store.rundownsStore
+
+	const handleReopen = (rundownId: string) => {
+		serverAPI
+			.openRundown({ rundownId })
+			.then(() => {
+				store.rundownsStore.setCurrentRundown(rundownId)
+			})
+			.catch(handleError)
+		guiStore.activeTabId = rundownId
+	}
+
+	return (
+		<RoundedSection
+			title="Rundown archive"
+			help="When you close a Rundown Tab, the Rundown move into this list, to rest and sleep :)"
+		>
+			<ScList
+				list={rundownsStore.closedRundowns.map((closedRundown) => {
+					return {
+						id: closedRundown.rundownId,
+						header: (
+							<div className="rundown-header-item">
+								<ScListItemLabel title={closedRundown.name} />
+								<div className="controls">
+									<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+									<TextBtn
+										label="Permanently delete"
+										style="danger"
+										onClick={() => alert('This feature is not implemented yet.')}
+									/>
+								</div>
+							</div>
+						),
+					}
+				})}
+			/>
+			{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
+		</RoundedSection>
+	)
+})
+const ProjectActions: React.FC<{ project: Project }> = observer(function ProjectActions({ project }) {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const guiStore = store.guiStore
+	const rundownsStore = store.rundownsStore
+
+	const handleReopen = (rundownId: string) => {
+		serverAPI
+			.openRundown({ rundownId })
+			.then(() => {
+				store.rundownsStore.setCurrentRundown(rundownId)
+			})
+			.catch(handleError)
+		guiStore.activeTabId = rundownId
+	}
+
+	const projectActions: {
+		[Key in ProjectTrigger['action']]: {
+			label: string
+			triggers: ProjectTrigger[]
+		}
+	} = {
+		stop: { triggers: [], label: 'Stop' },
+		play: { triggers: [], label: 'Play' },
+		playStop: { triggers: [], label: 'PlayStop' },
+		pause: { triggers: [], label: 'Pause' },
+		previous: { triggers: [], label: 'Previous' },
+		next: { triggers: [], label: 'Next' },
+		delete: { triggers: [], label: 'Delete' },
+	}
+	for (const [triggerAction0, triggers] of Object.entries(project.triggers)) {
+		const triggerAction = triggerAction0 as ProjectTrigger['action']
+		if (projectActions[triggerAction]) {
+			projectActions[triggerAction].triggers = triggers
+		}
+	}
+
+	// Triggers Submenu
+	const [triggersSubmenuPopover, setTriggersSubmenuPopover] = React.useState<{
+		anchor: HTMLButtonElement
+		triggerAction: ProjectTrigger['action']
+		triggers: ProjectTrigger[]
+	} | null>(null)
+	const closeTriggersSubmenu = useCallback(() => {
+		setTriggersSubmenuPopover(null)
+	}, [])
+	// const handleTriggerBtn = useCallback((event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {}, [])
+
+	return (
+		<>
+			<RoundedSection
+				title="Actions"
+				help='The Project Actions are executed in the context of the GUI. For example, a "Play" will play the currently selected
+		Group(s) or Part(s).'
+			>
+				<ScList
+					list={Object.entries(projectActions).map(([triggerAction, projectAction]) => {
+						return {
+							id: triggerAction,
+							header: (
+								<div className="rundown-header-item">
+									<ScListItemLabel title={projectAction.label} />
+									<div className="controls">
+										<TriggerBtn
+											onTrigger={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+												setTriggersSubmenuPopover({
+													anchor: event.currentTarget,
+													triggerAction: triggerAction as ProjectTrigger['action'],
+													triggers: projectAction.triggers,
+												})
+											}}
+											title="Open Triggers Submenu"
+											locked={false}
+											triggerCount={projectAction.triggers.length}
+										/>
+
+										{/* <TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+									<TextBtn
+										label="Permanently delete"
+										style="danger"
+										onClick={() => alert('This feature is not implemented yet.')}
+									/> */}
+									</div>
+								</div>
+							),
+						}
+					})}
+				/>
+			</RoundedSection>
+			<Popover
+				open={!!triggersSubmenuPopover}
+				anchorEl={triggersSubmenuPopover?.anchor}
+				onClose={closeTriggersSubmenu}
+				anchorOrigin={{
+					vertical: 'bottom',
+					horizontal: 'left',
+				}}
+			>
+				{triggersSubmenuPopover && (
+					<ProjectTriggersSubmenu
+						triggerAction={triggersSubmenuPopover.triggerAction}
+						triggers={project.triggers[triggersSubmenuPopover.triggerAction] ?? []}
+						// project={props.project}
+						// allActionsForPart={allActionsForPart}
+					/>
+				)}
+			</Popover>
+		</>
 	)
 })

@@ -12,16 +12,18 @@ import {
 	getPositionFromTarget,
 	GroupWithShallowParts,
 	MoveTarget,
+	PartWithRef,
 	RundownWithShallowGroups,
 	shortID,
 } from '../../lib/util'
 import { Part, PartGUI } from '../../models/rundown/Part'
 import { deepClone, literal, omit } from '@shared/lib'
 import { ClientSideLogger } from '../api/logger'
-import { RundownAction, RundownActionLight } from '../../lib/triggers/action'
+import { ActionAny, RundownAction, RundownActionLight } from '../../lib/triggers/action'
 import _ from 'lodash'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { assertNever } from '@shared/lib'
+import { Project } from '../../models/project/Project'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -107,7 +109,8 @@ export class RundownsStore {
 				  }
 				| undefined
 
-			if (firstRundown) this.setCurrentRundown(firstRundown.rundownId)
+			console.log()
+			// if (firstRundown) this.setCurrentRundown(firstRundown.rundownId) // TMP!!!!!!!!!!!!
 		}
 	}
 
@@ -212,6 +215,7 @@ export class RundownsStore {
 			})
 			if (!_.isEqual(uiRundown, existingRundown)) {
 				this._uiRundowns.set(rundownId, uiRundown)
+				this.onUIDataChanged()
 			}
 
 			// Save Groups:
@@ -229,23 +233,27 @@ export class RundownsStore {
 		if (existingRundown && !rundown) {
 			this._rundowns.delete(rundownId)
 			this._uiRundowns.delete(rundownId)
+			this.onUIDataChanged()
 		}
 		// Removed Groups:
 		for (const groupId of cleanup.existingGroupIds.keys()) {
 			if (!cleanup.usedGroupIds.has(groupId)) {
 				this._uiGroups.delete(groupId)
+				this.onUIDataChanged()
 			}
 		}
 		// Removed Parts:
 		for (const partId of cleanup.existingPartIds.keys()) {
 			if (!cleanup.usedPartIds.has(partId)) {
 				this._uiParts.delete(partId)
+				this.onUIDataChanged()
 			}
 		}
 		// Removed TimelineObjects:
 		for (const objId of cleanup.existingTimelineIds.keys()) {
 			if (!cleanup.usedTimelineIds.has(objId)) {
 				this._uiTimeline.delete(objId)
+				this.onUIDataChanged()
 			}
 		}
 	}
@@ -264,6 +272,7 @@ export class RundownsStore {
 		})
 		if (!_.isEqual(uiGroup, existingGroup)) {
 			this._uiGroups.set(groupId, uiGroup)
+			this.onUIDataChanged()
 		}
 		// Save Parts:
 		for (const part of group.parts) {
@@ -288,6 +297,7 @@ export class RundownsStore {
 		})
 		if (!_.isEqual(uiPart, existingPart)) {
 			this._uiParts.set(partId, uiPart)
+			this.onUIDataChanged()
 		}
 		// Save Timeline:
 		for (const obj of part.timeline) {
@@ -295,6 +305,7 @@ export class RundownsStore {
 			cleanup.usedTimelineIds.add(objId)
 			if (!_.isEqual(obj, this._uiTimeline.get(objId))) {
 				this._uiTimeline.set(objId, obj)
+				this.onUIDataChanged()
 			}
 		}
 		return cleanup
@@ -386,6 +397,43 @@ export class RundownsStore {
 	 */
 	get currentRundownId() {
 		return this._currentRundownId
+	}
+
+	private onUIDataChanged(): void {
+		this.triggerUpdateAllPartsWithRefs()
+	}
+
+	private _cacheAllParts: PartWithRef[] = []
+	private _cacheAllPartsTimeout: NodeJS.Timer | null = null
+	/** All Parts in all open rundowns */
+	get allPartsWithRefs(): PartWithRef[] {
+		return this._cacheAllParts
+	}
+	private triggerUpdateAllPartsWithRefs(): void {
+		if (!this._cacheAllPartsTimeout) {
+			this._cacheAllPartsTimeout = setTimeout(() => {
+				this._cacheAllPartsTimeout = null
+
+				runInAction(() => {
+					const allRundownIds = Object.keys(this.rundowns ?? {})
+					this._cacheAllParts = []
+					for (const rundownId of allRundownIds) {
+						if (!this.hasRundown(rundownId)) continue
+						const rundown = this.getRundown(rundownId)
+						for (const groupId of rundown.groupIds) {
+							const group = this.getGroupWithParts(groupId)
+							for (const part of group.parts) {
+								this._cacheAllParts.push({
+									rundown,
+									group,
+									part,
+								})
+							}
+						}
+					}
+				})
+			})
+		}
 	}
 
 	/**
@@ -695,15 +743,35 @@ export class RundownsStore {
 		this._updateRundown(rundownId, this._rundownsClean.get(rundownId) ?? null)
 	}
 
-	private _allButtonActions: Map<string, RundownAction[]> = new Map()
+	private _projectButtonActions: Map<string, ActionAny[]> = new Map()
+	private _rundownButtonActions: Map<string, ActionAny[]> = new Map()
+	private _allButtonActions: Map<string, ActionAny[]> = new Map()
 	get allButtonActions() {
 		return this._allButtonActions as Readonly<typeof this._allButtonActions>
 	}
-	public updateAllButtonActions(actions: Map<string, RundownAction[]>): void {
+
+	public updateProjectButtonActions(actions: Map<string, ActionAny[]>): void {
+		if (!_.isEqual(actions, this._projectButtonActions)) {
+			this._projectButtonActions = actions
+			this.updateAllButtonActions()
+		}
+	}
+	public updateRundownButtonActions(actions: Map<string, ActionAny[]>): void {
+		if (!_.isEqual(actions, this._rundownButtonActions)) {
+			this._rundownButtonActions = actions
+			this.updateAllButtonActions()
+		}
+	}
+	private updateAllButtonActions(): void {
 		runInAction(() => {
-			if (!_.isEqual(actions, this._allButtonActions)) {
-				this._allButtonActions = actions
-			}
+			const allActions = new Map()
+			this._projectButtonActions.forEach((action, key) => {
+				allActions.set(key, action)
+			})
+			this._rundownButtonActions.forEach((action, key) => {
+				allActions.set(key, action)
+			})
+			this._allButtonActions = allActions
 		})
 	}
 
@@ -711,14 +779,16 @@ export class RundownsStore {
 		const result = []
 		for (const [_id, actions] of this._allButtonActions) {
 			for (const action of actions) {
-				if (action.part.id === partId) {
-					result.push(
-						_.omit(
-							action,
+				if (action.type === 'rundown') {
+					if (action.part.id === partId) {
+						result.push(
+							_.omit(
+								action,
 
-							'group' // omit the group here, to avoid subscribers being reactive to any change in the whole group
+								'group' // omit the group here, to avoid subscribers being reactive to any change in the whole group
+							)
 						)
-					)
+					}
 				}
 			}
 		}

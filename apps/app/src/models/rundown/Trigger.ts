@@ -12,7 +12,7 @@ export interface RundownTrigger {
 export interface ProjectTrigger {
 	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
 	fullIdentifiers: string[]
-	action: 'play' | 'stop' | 'playStop' | 'pause' | 'delete'
+	action: 'play' | 'stop' | 'playStop' | 'pause' | 'delete' | 'next' | 'previous'
 	label: string
 }
 

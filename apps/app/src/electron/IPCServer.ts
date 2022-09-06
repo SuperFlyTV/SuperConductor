@@ -46,15 +46,16 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, RundownTrigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ProjectTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
-import { DefiningArea } from '..//lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
+import { CurrentSelectionAny } from '../lib/GUI'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -252,6 +253,10 @@ export class IPCServer
 		const appData = this.storage.getAppData()
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
+	}
+
+	async updateGUISelection(selection: Readonly<CurrentSelectionAny[]>): Promise<void> {
+		this.session.updateSelection(selection)
 	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
@@ -2154,7 +2159,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
 	async updatePeripheralArea(data: {
@@ -2197,7 +2202,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.UpdatePeripheralArea,
 		}
 	}
 	async assignAreaToGroup(arg: {
@@ -2258,6 +2263,47 @@ export class IPCServer
 	}
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
+	}
+	async setProjectTrigger(arg: {
+		triggerAction: ProjectTrigger['action']
+		trigger: ProjectTrigger | null
+		triggerIndex: number | null
+	}): Promise<UndoableResult<void> | undefined> {
+		const project = this.getProject()
+
+		const originalTriggers = deepClone(project.triggers)
+
+		let triggers: ProjectTrigger[] = project.triggers[arg.triggerAction] ?? []
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				// Remove
+				triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					triggers.push(arg.trigger)
+				}
+			}
+		}
+		// Save changes:
+		project.triggers[arg.triggerAction] = triggers
+
+		this._saveUpdates({ project, noEffectOnPlayout: true })
+		return {
+			undo: () => {
+				const project = this.getProject()
+				project.triggers = originalTriggers
+				this._saveUpdates({ project, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.SetProjectTrigger,
+		}
 	}
 
 	/** Save updates to various data sets.

@@ -8,9 +8,10 @@ import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
-import { ActiveTrigger, ActiveTriggers, RundownTrigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, ProjectTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
 import { MoveTarget } from '../lib/util'
+import { CurrentSelectionAny } from '../lib/GUI'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -35,7 +36,6 @@ export const enum ActionDescription {
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
 	ToggleGroupDisable = 'toggle group disable',
 	ToggleGroupLock = 'toggle group lock',
-	ToggleGroupCollapse = 'toggle group collapse',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -46,7 +46,10 @@ export const enum ActionDescription {
 	DuplicateGroup = 'duplicate group',
 	DuplicatePart = 'duplicate part',
 	AddPeripheralArea = 'Add button area',
+	UpdatePeripheralArea = 'Update button area',
+	RemovePeripheralArea = 'Remove button area',
 	AssignAreaToGroup = 'Assign Area to Group',
+	SetProjectTrigger = 'Assign trigger',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -71,6 +74,8 @@ export interface IPCServerMethods {
 	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
+	updateGUISelection: (selection: Readonly<CurrentSelectionAny[]>) => void
+
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
 	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
 	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => void
@@ -203,6 +208,11 @@ export interface IPCServerMethods {
 
 	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
 	finishDefiningArea: () => void
+	setProjectTrigger: (arg: {
+		triggerAction: ProjectTrigger['action']
+		trigger: ProjectTrigger | null
+		triggerIndex: number | null
+	}) => void
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

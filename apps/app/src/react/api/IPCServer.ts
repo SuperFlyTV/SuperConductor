@@ -40,6 +40,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
 		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
 	}
+	updateGUISelection(...args: ServerArgs<'updateGUISelection'>) {
+		return this.invokeServerMethod('updateGUISelection', ...args)
+	}
 	playPart(...args: ServerArgs<'playPart'>) {
 		return this.invokeServerMethod('playPart', ...args)
 	}
@@ -192,5 +195,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
+	}
+	setProjectTrigger(...args: ServerArgs<'setProjectTrigger'>) {
+		return this.invokeServerMethod('setProjectTrigger', ...args)
 	}
 }

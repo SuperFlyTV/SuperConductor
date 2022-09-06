@@ -16,7 +16,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
@@ -47,19 +47,6 @@ export class SuperConductor {
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
-		this.storage = new StorageHandler(
-			log,
-			{
-				// Default window position:
-				y: undefined,
-				x: undefined,
-				width: 1200,
-				height: 600,
-				maximized: false,
-			},
-			CURRENT_VERSION
-		)
-
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
@@ -77,6 +64,22 @@ export class SuperConductor {
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
 		})
+		this.session.on('selection', () => {
+			this.triggers?.triggerUpdatePeripherals()
+		})
+
+		this.storage = new StorageHandler(
+			log,
+			{
+				// Default window position:
+				y: undefined,
+				x: undefined,
+				width: 1200,
+				height: 600,
+				maximized: false,
+			},
+			CURRENT_VERSION
+		)
 		this.storage.on('appData', (appData: AppData) => {
 			this.ipcClient?.updateAppData(appData)
 		})
@@ -349,7 +352,7 @@ export class SuperConductor {
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
-		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
+		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
 	}
 	private refreshResources(): void {
 		// Remove resources of devices we don't have anymore:

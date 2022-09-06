@@ -829,6 +829,7 @@ export class StorageHandler extends EventEmitter {
 			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
 		}
 		if (!project.deviceNames) project.deviceNames = {}
+		if (!project.triggers) project.triggers = {}
 	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
 		for (const group of rundown.groups) {

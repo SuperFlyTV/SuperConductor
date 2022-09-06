@@ -82,6 +82,56 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		settings: {
 			enableInternalBridge: true,
 		},
+		triggers: {
+			// These defaults are inspired by the default keyboard shortcuts in CasparCG:
+			// Stop: F1
+			// Play: F2
+			// Load: F3
+			// Pause/Resume: F4
+			// Next: F5
+			// Update: F6
+			// Invoke: F7
+			// Preview: F8
+			// Clear: F10
+			// Clear Video layer: F11
+			// Clear Channel: F12
+			// Play Now: Shift+F2
+			stop: [
+				{
+					label: 'Stop',
+					fullIdentifiers: ['keyboard-F1'],
+					action: 'stop',
+				},
+			],
+			play: [
+				{
+					label: 'Play',
+					fullIdentifiers: ['keyboard-F2'],
+					action: 'play',
+				},
+			],
+			pause: [
+				{
+					label: 'Pause',
+					fullIdentifiers: ['keyboard-F3'], //
+					action: 'pause',
+				},
+			],
+			next: [
+				{
+					label: 'Pause',
+					fullIdentifiers: ['keyboard-F5'], //
+					action: 'pause',
+				},
+			],
+			previous: [
+				{
+					label: 'Pause',
+					fullIdentifiers: ['keyboard-F6'], //
+					action: 'pause',
+				},
+			],
+		},
 	}
 }
 export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'id'> {

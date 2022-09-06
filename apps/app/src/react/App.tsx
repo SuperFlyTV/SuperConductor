@@ -29,12 +29,12 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
 import { useMemoComputedValue } from './mobx/lib'
-import { RundownAction, getAllActionsInParts } from '../lib/triggers/action'
+import { RundownAction, getAllActionsInParts, ActionAny, getAllProjectActions } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
@@ -164,6 +164,12 @@ export const App = observer(function App() {
 	}, [handleError, triggers, serverAPI])
 
 	const gui = store.guiStore
+
+	useMemoComputedValue(() => {
+		// Report any changes to the selection to the backend,
+		// to that actions are handled properly:
+		serverAPI.updateGUISelection(gui.selected).catch(handleError)
+	}, [gui.selected])
 
 	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
@@ -341,40 +347,47 @@ export const App = observer(function App() {
 	useMemoComputedValue(() => {
 		if (!project) return
 
-		const newButtonActions = new Map<string, RundownAction[]>()
-
-		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
-
 		/** All Parts in all open rundowns */
-		const allParts: PartWithRef[] = []
-		for (const rundownId of allRundownIds) {
-			if (!store.rundownsStore.hasRundown(rundownId)) continue
-			const rundown = store.rundownsStore.getRundown(rundownId)
-			for (const groupId of rundown.groupIds) {
-				const group = store.rundownsStore.getGroupWithParts(groupId)
-				for (const part of group.parts) {
-					allParts.push({
-						rundown,
-						group,
-						part,
-					})
-				}
-			}
-		}
+		const allParts = store.rundownsStore.allPartsWithRefs
 
-		const allActions = getAllActionsInParts(allParts, project, store.appStore.peripherals)
-		for (const action of allActions) {
+		const buttonActions = new Map<string, ActionAny[]>()
+		for (const action of getAllActionsInParts(allParts, project, store.appStore.peripherals)) {
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				let newButtonAction = newButtonActions.get(fullIdentifier)
+				let newButtonAction = buttonActions.get(fullIdentifier)
 				if (!newButtonAction) {
 					newButtonAction = []
-					newButtonActions.set(fullIdentifier, newButtonAction)
+					buttonActions.set(fullIdentifier, newButtonAction)
 				}
-				newButtonAction.push(action)
+				newButtonAction.push({
+					type: 'rundown',
+					...action,
+				})
+			}
+		}
+		store.rundownsStore.updateRundownButtonActions(buttonActions)
+	}, [project])
+	useMemoComputedValue(() => {
+		if (!project) return
+
+		/** All Parts in all open rundowns */
+		const allParts = store.rundownsStore.allPartsWithRefs
+
+		const buttonActions = new Map<string, ActionAny[]>()
+		for (const action of getAllProjectActions(gui.selected, allParts, project)) {
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				let newButtonAction = buttonActions.get(fullIdentifier)
+				if (!newButtonAction) {
+					newButtonAction = []
+					buttonActions.set(fullIdentifier, newButtonAction)
+				}
+				newButtonAction.push({
+					type: 'project',
+					...action,
+				})
 			}
 		}
 
-		store.rundownsStore.updateAllButtonActions(newButtonActions)
+		store.rundownsStore.updateProjectButtonActions(buttonActions)
 	}, [project])
 
 	const clipBoardContext = useRef<ClipBoardContext>({

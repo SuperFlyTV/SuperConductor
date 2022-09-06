@@ -77,6 +77,7 @@ export function getTimelineForGroup(
 
 				children.push(
 					...sectionToTimelineObj(
+						group,
 						section,
 						`${group.id}_${i}`,
 						group.id,
@@ -151,6 +152,7 @@ export function getTimelineForGroup(
 
 					children.push(
 						...sectionToTimelineObj(
+							group,
 							section,
 							`${group.id}_${partId}_${i}`,
 							`${group.id}_${partId}`,
@@ -175,6 +177,7 @@ export function getTimelineForGroup(
 	}
 }
 function sectionToTimelineObj(
+	group: GroupBase,
 	section: GroupPreparedPlayDataSection,
 	id: string,
 	layer: string,
@@ -225,6 +228,7 @@ function sectionToTimelineObj(
 		// Add the part to the timeline:
 		const obj: TimelineObjEmpty | null = partToTimelineObj(
 			makeUniqueId(part.part.id),
+			group,
 			part,
 			part.startTime - section.startTime,
 			section.pauseTime,
@@ -243,6 +247,7 @@ function sectionToTimelineObj(
 }
 function partToTimelineObj(
 	objId: string,
+	group: GroupBase,
 	playingPart: GroupPreparedPlayDataPart,
 	startTime: number,
 	pauseTime: number | undefined,
@@ -273,7 +278,7 @@ function partToTimelineObj(
 		isGroup: true,
 
 		children: customPartContent
-			? customPartContent(playingPart, objId, pauseTime !== undefined)
+			? customPartContent(group, playingPart, objId, pauseTime !== undefined)
 			: part.timeline.map((o) => {
 					const partTimelineObj = deepClone(o.obj)
 					modifyTimelineObjectForPlayout(partTimelineObj, playingPart, o, pauseTime)
@@ -309,6 +314,7 @@ function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObj
 }
 
 type CustomPartContent = (
+	group: GroupBase,
 	playingPart: GroupPreparedPlayDataPart,
 	parentId: string,
 	isPaused: boolean

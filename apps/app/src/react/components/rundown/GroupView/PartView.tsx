@@ -41,7 +41,7 @@ import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { LoggerContext } from '../../../contexts/Logger'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
-import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
+import { RundownTriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
 import { formatDuration } from '../../../../lib/timeLib'
@@ -1145,7 +1145,7 @@ export const PartView: React.FC<{
 								horizontal: 'left',
 							}}
 						>
-							<TriggersSubmenu
+							<RundownTriggersSubmenu
 								rundownId={rundownId}
 								groupId={parentGroupId}
 								part={part}
