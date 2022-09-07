@@ -14,6 +14,8 @@ import { makeDevData } from './makeDevData'
 import { getPartLabel } from '../lib/util'
 
 const fsWriteFile = fs.promises.writeFile
+const fsAppendFile = fs.promises.appendFile
+const fsReadFile = fs.promises.readFile
 const fsRm = fs.promises.rm
 const fsAccess = fs.promises.access
 const fsExists = async (filePath: string): Promise<boolean> => {
@@ -418,6 +420,24 @@ export class StorageHandler extends EventEmitter {
 		for (const resource of devData.resources) {
 			this.updateResource(resource.id, resource)
 		}
+	}
+
+	/** Add an telemetry entry */
+	async addTelemetryReport(data: any): Promise<void> {
+		await fsAppendFile(this.telemetryPath, JSON.stringify(data) + '\n', 'utf-8')
+	}
+	/** Overwrite telemetry entries */
+	async setTelemetryReport(strs: string[]): Promise<void> {
+		await fsWriteFile(this.telemetryPath, strs.join('\n') + '\n', 'utf-8')
+	}
+	async retrieveTelemetryReports(): Promise<string[]> {
+		if (!(await fsExists(this.telemetryPath))) return []
+		const str = await fsReadFile(this.telemetryPath, 'utf-8')
+		return str.split('\n')
+	}
+	async clearTelemetryReport(): Promise<void> {
+		if (!(await fsExists(this.telemetryPath))) return
+		await fsUnlink(this.telemetryPath)
 	}
 
 	/** Triggered when the stored data has been updated */
@@ -893,6 +913,9 @@ export class StorageHandler extends EventEmitter {
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
+	}
+	private get telemetryPath() {
+		return path.join(this._baseFolder, 'telemetry.txt')
 	}
 	private get _projectsFolder() {
 		return path.join(this._baseFolder, 'Projects')

@@ -25,6 +25,8 @@ import { getDefaultPart } from './defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
+import { TelemetryHandler } from './telemetry'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 
 export class SuperConductor {
 	mainWindow?: BrowserWindow
@@ -33,6 +35,7 @@ export class SuperConductor {
 
 	session: SessionHandler
 	storage: StorageHandler
+	telemetryHandler: TelemetryHandler
 	triggers?: TriggersHandler
 	bridgeHandler?: BridgeHandler
 
@@ -45,8 +48,11 @@ export class SuperConductor {
 	} | null = null
 	private refreshStatus: { [deviceId: string]: number } = {}
 
+	private hasStoredStartupUserStatistics = false
+
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
+
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.ipcClient?.updateBridgeStatus(id, status)
 		})
@@ -95,6 +101,40 @@ export class SuperConductor {
 			this.resourceUpdatesToSend.push({ id, resource })
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
+		})
+
+		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
+
+		for (const argv of process.argv) {
+			if (argv === '--disable-telemetry') {
+				this.log.info('Telemetry disabled')
+				this.telemetryHandler.disableTelemetry()
+			}
+		}
+
+		const appData = this.storage.getAppData()
+		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
+			// The user has previously agreed to the user agreement
+			this.telemetryHandler.setUserHasAgreed()
+
+			if (!this.hasStoredStartupUserStatistics) {
+				this.hasStoredStartupUserStatistics = true
+				this.telemetryHandler.onStartup()
+			}
+		}
+
+		// Set up handlers for exceptions, to be reported
+		process.on('uncaughtException', (err, origin) => {
+			this.telemetryHandler.onError(`Uncaught exception: ${err}`, `Origin: ${origin}`)
+			this.log.error(`Uncaught exception: ${err} \nOrigin: ${origin}`)
+		})
+		process.on('unhandledRejection', (reason: any, promise: any) => {
+			this.telemetryHandler.onError(`Unhandled rejection: ${reason}`, `at ${promise}`)
+			this.log.error(`Unhandled rejection: ${reason} \nat ${promise}`)
+		})
+		process.on('warning', (warning) => {
+			this.telemetryHandler.onError(`Warning: ${warning.name}: ${warning.message}`, warning.stack)
+			this.log.warn(`Warning: ${warning.name}: ${warning.message} \nStack: ${warning.stack}`)
 		})
 	}
 	private _triggerBatchSendResources() {
@@ -349,6 +389,19 @@ export class SuperConductor {
 			},
 			makeDevData: async () => {
 				await this.storage.makeDevData()
+			},
+			onAgreeToUserAgreement: () => {
+				this.telemetryHandler.setUserHasAgreed()
+				this.telemetryHandler.onAcceptUserAgreement()
+
+				if (!this.hasStoredStartupUserStatistics) {
+					this.hasStoredStartupUserStatistics = true
+					this.telemetryHandler.onStartup()
+				}
+			},
+			handleError: (error: string, stack?: string) => {
+				this.log.error(error, stack)
+				this.telemetryHandler.onError(error, stack)
 			},
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)

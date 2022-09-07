@@ -919,11 +919,9 @@ export const PartView: React.FC<{
 						{!editingPartName && part.name.length > 0 && (
 							<div
 								title={groupOrPartLocked ? part.name : 'Click to edit Part name'}
-								className="title editable"
+								className={classNames('title', groupOrPartLocked ? undefined : 'editable')}
 								onClick={() => {
-									if (groupOrPartLocked) {
-										return
-									}
+									if (groupOrPartLocked) return
 									setEditingPartName(true)
 								}}
 							>

@@ -118,6 +118,8 @@ export class IPCServer
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 			makeDevData: () => Promise<void>
 			triggerHandleAutoFill: () => void
+			onAgreeToUserAgreement: () => void
+			handleError: (error: string, stack?: string) => void
 		}
 	) {
 		super()
@@ -125,7 +127,7 @@ export class IPCServer
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
-					ipcMain.handle(methodName, async (event, args0: string) => {
+					ipcMain.handle(methodName, async (event, args0: string[]) => {
 						try {
 							const args = unReplaceUndefined(args0)
 							const result = await fcn(...args)
@@ -151,7 +153,10 @@ export class IPCServer
 								return result
 							}
 						} catch (error) {
-							this._log.error(`Error when calling ${methodName}:`, error)
+							this.callbacks.handleError(
+								`Error when calling ${methodName}: ${error}`,
+								typeof error === 'object' && (error as any).stack
+							)
 							throw error
 						}
 					})
@@ -235,6 +240,29 @@ export class IPCServer
 	async log(method: LogLevel, ...args: any[]): Promise<void> {
 		this._renderLog[method](args[0], ...args.slice(1))
 	}
+	async handleClientError(error: string, stack?: string): Promise<void> {
+		// Handle an error thrown in the client
+		this.callbacks.handleError(error, stack)
+	}
+	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
+		// This method is used for development-purposes only, to check how error reporting works.
+
+		if (type === 'sync') {
+			throw new Error('This is an error in an IPC method')
+		} else if (type === 'async') {
+			await new Promise((_, reject) => {
+				setTimeout(() => {
+					reject(new Error('This is an error in a promise'))
+				}, 10)
+			})
+		} else if (type === 'setTimeout') {
+			setTimeout(() => {
+				throw new Error('This is an error in a setTImeout')
+			}, 10)
+		} else {
+			assertNever(type)
+		}
+	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
@@ -254,7 +282,15 @@ export class IPCServer
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
 	}
+	async acknowledgeUserAgreement(agreementVersion: string): Promise<void> {
+		const appData = this.storage.getAppData()
+		appData.userAgreement = agreementVersion
 
+		this.storage.updateAppData(appData)
+		if (agreementVersion) {
+			this.callbacks.onAgreeToUserAgreement()
+		}
+	}
 	async updateGUISelection(selection: Readonly<CurrentSelectionAny[]>): Promise<void> {
 		this.session.updateSelection(selection)
 	}
