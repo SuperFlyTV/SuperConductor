@@ -246,6 +246,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			setListItemsLimit(newLimit)
 		}
 	}, [allListItems.length, listItemsLimit])
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const loadMoreItems = useCallback(
 		rateLimitIgnore(() => {
 			setListItemsLimit((value) => {
