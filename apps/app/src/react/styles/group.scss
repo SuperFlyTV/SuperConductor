@@ -1,14 +1,14 @@
+$group-background: #2c2c2c;
 $margin-v: 2rem;
 .group {
 	border: 0.1rem solid $partOutlineColor;
 	position: relative;
 	margin: $margin-v 0;
 	padding-top: 0.4rem;
-	padding-bottom: 1rem;
-	background: #2c2c2c;
+	padding-bottom: 2rem;
+	background: $group-background;
 	border-radius: calc($partTabWidth / 2);
 	transition: box-shadow $default-transition-time;
-	overflow: hidden;
 
 	&--transparent {
 		margin: $margin-v 0;
@@ -71,11 +71,14 @@ $margin-v: 2rem;
 			}
 
 			.title {
-				cursor: text;
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				display: inline-block;
+
+				&.editable {
+					cursor: text;
+				}
 			}
 		}
 
@@ -110,6 +113,28 @@ $margin-v: 2rem;
 				}
 			}
 		}
+
+		.schedule-countdown {
+			width: 15em;
+			position: absolute;
+			left: 10em;
+			height: 1.2em;
+			top: -1.2em;
+
+			> div {
+				background: $group-background;
+				padding: 0 0.5em;
+				border-top-left-radius: 5px;
+				border-top-right-radius: 5px;
+			}
+
+			border-top: 0.1rem solid $partOutlineColor;
+			border-left: 0.1rem solid $partOutlineColor;
+			border-right: 0.1rem solid $partOutlineColor;
+
+			border-top-left-radius: 5px;
+			border-top-right-radius: 5px;
+		}
 	}
 
 	&__content {
@@ -117,6 +142,7 @@ $margin-v: 2rem;
 	}
 
 	&.disabled {
+		color: #999;
 		.group__header {
 			.title {
 				opacity: 0.5;

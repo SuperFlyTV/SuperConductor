@@ -1,5 +1,5 @@
 import { Resolver } from 'superfly-timeline'
-import { getResolvedTimelineTotalDuration } from '../lib/util'
+import { getPartLabel, getResolvedTimelineTotalDuration } from '../lib/util'
 import { Part } from '../models/rundown/Part'
 import { TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
 
@@ -45,10 +45,11 @@ export function postProcessPart(part: Part, noModify?: boolean): void {
 			}
 		}
 	}
-	const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
+	const partDuration = part.duration ?? getResolvedTimelineTotalDuration(resolvedTimeline, false)
 
 	part.resolved = {
-		duration: maxDuration,
+		duration: partDuration,
+		label: getPartLabel(part),
 	}
 
 	// If it was modified, run again to properly calculate artifacts:

@@ -15,6 +15,8 @@ export class AppStore {
 		currentVersion: string
 	} = undefined
 
+	userAgreement?: string
+
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 
@@ -44,6 +46,7 @@ export class AppStore {
 	update(data: AppData) {
 		this.windowPosition = data.windowPosition
 		this.version = data.version
+		this.userAgreement = data.userAgreement
 	}
 
 	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null) {

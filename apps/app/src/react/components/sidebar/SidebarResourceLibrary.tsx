@@ -7,7 +7,7 @@ import { flatten } from '@shared/lib'
 import { ResourceData } from './resource/ResourceData'
 import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
 import { Field, Form, Formik } from 'formik'
-import { getDeviceName, scatterMatchString } from '../../../lib/util'
+import { getDeviceName, rateLimitIgnore, scatterMatchString } from '../../../lib/util'
 
 import {
 	Button,
@@ -246,12 +246,15 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			setListItemsLimit(newLimit)
 		}
 	}, [allListItems.length, listItemsLimit])
-	const loadMoreItems = useCallback(() => {
-		setListItemsLimit((value) => {
-			const newLimit = Math.max(MIN_LIMIT, Math.min(listLength.current, value + 10))
-			return newLimit
-		})
-	}, [])
+	const loadMoreItems = useCallback(
+		rateLimitIgnore(() => {
+			setListItemsLimit((value) => {
+				const newLimit = Math.max(MIN_LIMIT, Math.min(listLength.current, value + 10))
+				return newLimit
+			})
+		}, 100),
+		[]
+	)
 
 	if (!currentRundownId) {
 		return null

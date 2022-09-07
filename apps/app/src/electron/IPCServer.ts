@@ -15,12 +15,16 @@ import {
 	getNextPartIndex,
 	getPositionFromTarget,
 	getPrevPartIndex,
+	has,
 	isLayerInfinite,
 	listAvailableDeviceIDs,
 	MoveTarget,
 	shortID,
+	unReplaceUndefined,
 	updateGroupPlayingParts,
 } from '../lib/util'
+import { PartialDeep } from 'type-fest'
+import deepExtend from 'deep-extend'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
@@ -43,7 +47,7 @@ import {
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
-import { getGroupPlayData } from '../lib/playhead'
+import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
 import { DefiningArea } from '..//lib/triggers/keyDisplay'
@@ -113,6 +117,8 @@ export class IPCServer
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]) => void
 			makeDevData: () => Promise<void>
 			triggerHandleAutoFill: () => void
+			onAgreeToUserAgreement: () => void
+			handleError: (error: string, stack?: string) => void
 		}
 	) {
 		super()
@@ -120,8 +126,9 @@ export class IPCServer
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
-					ipcMain.handle(methodName, async (event, ...args) => {
+					ipcMain.handle(methodName, async (event, args0: string[]) => {
 						try {
+							const args = unReplaceUndefined(args0)
 							const result = await fcn(...args)
 							if (isUndoable(result)) {
 								// Clear any future things in the undo ledger:
@@ -145,7 +152,10 @@ export class IPCServer
 								return result
 							}
 						} catch (error) {
-							this._log.error(`Error when calling ${methodName}:`, error)
+							this.callbacks.handleError(
+								`Error when calling ${methodName}: ${error}`,
+								typeof error === 'object' && (error as any).stack
+							)
 							throw error
 						}
 					})
@@ -229,6 +239,29 @@ export class IPCServer
 	async log(method: LogLevel, ...args: any[]): Promise<void> {
 		this._renderLog[method](args[0], ...args.slice(1))
 	}
+	async handleClientError(error: string, stack?: string): Promise<void> {
+		// Handle an error thrown in the client
+		this.callbacks.handleError(error, stack)
+	}
+	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
+		// This method is used for development-purposes only, to check how error reporting works.
+
+		if (type === 'sync') {
+			throw new Error('This is an error in an IPC method')
+		} else if (type === 'async') {
+			await new Promise((_, reject) => {
+				setTimeout(() => {
+					reject(new Error('This is an error in a promise'))
+				}, 10)
+			})
+		} else if (type === 'setTimeout') {
+			setTimeout(() => {
+				throw new Error('This is an error in a setTImeout')
+			}, 10)
+		} else {
+			assertNever(type)
+		}
+	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
@@ -247,6 +280,15 @@ export class IPCServer
 		const appData = this.storage.getAppData()
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
+	}
+	async acknowledgeUserAgreement(agreementVersion: string): Promise<void> {
+		const appData = this.storage.getAppData()
+		appData.userAgreement = agreementVersion
+
+		this.storage.updateAppData(appData)
+		if (agreementVersion) {
+			this.callbacks.onAgreeToUserAgreement()
+		}
 	}
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
@@ -284,6 +326,8 @@ export class IPCServer
 		group.playout.playingParts[part.id] = {
 			startTime: now,
 			pauseTime: undefined,
+			stopTime: undefined,
+			fromSchedule: false,
 		}
 	}
 	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
@@ -322,47 +366,62 @@ export class IPCServer
 			// If any other parts are playing, they should be stopped:
 			for (const partId of Object.keys(group.playout.playingParts)) {
 				if (partId !== part.id) {
-					delete group.playout.playingParts[partId]
+					group.playout.playingParts[partId].stopTime = now
 				}
 			}
 		}
+		const playData = getGroupPlayData(group.preparedPlayData)
+		const playhead = playData.playheads[part.id] as GroupPlayDataPlayhead | undefined
+		// const existingPlayingPart = group.playout.playingParts[part.id] as PlayingPart | undefined
 
 		// Handle this Part:
-		const playingPart = group.playout.playingParts[part.id]
-		if (playingPart) {
-			if (playingPart.pauseTime === undefined) {
+		if (playhead) {
+			if (playhead.partPauseTime === undefined) {
 				// The part is playing, so it should be paused:
-
-				playingPart.pauseTime =
-					pauseTime ??
-					// If a specific pauseTime not specified, pause at the current time:
-					now - playingPart.startTime
+				group.playout.playingParts[part.id] = {
+					startTime: playhead.partStartTime,
+					pauseTime:
+						pauseTime ??
+						// If a specific pauseTime not specified, pause at the current time:
+						now - playhead.partStartTime,
+					stopTime: undefined,
+					fromSchedule: false,
+				}
 			} else {
 				// The part is paused, so it should be resumed:
-
-				// playingPart.startTime = now - playingPart.pauseTime
-				playingPart.startTime = now - playingPart.pauseTime
-				playingPart.pauseTime = undefined
+				group.playout.playingParts[part.id] = {
+					startTime: now - playhead.partPauseTime,
+					pauseTime: undefined,
+					stopTime: undefined,
+					fromSchedule: false,
+				}
 			}
 		} else {
 			// Part is not playing, cue (pause) it at the time specified:
 			group.playout.playingParts[part.id] = {
 				startTime: Date.now(),
 				pauseTime: pauseTime ?? 0,
+				stopTime: undefined,
+				fromSchedule: false,
 			}
 		}
 	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
 		if (group.oneAtATime) {
 			// Stop the group:
-			group.playout.playingParts = {}
+			for (const partId of Object.keys(group.playout.playingParts)) {
+				group.playout.playingParts[partId].stopTime = now
+			}
 		} else {
 			// Stop the part:
-			delete group.playout.playingParts[arg.partId]
+			const playingPart = group.playout.playingParts[arg.partId]
+			if (playingPart) {
+				playingPart.stopTime = now
+			}
 		}
-
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async setPartTrigger(arg: {
@@ -406,89 +465,14 @@ export class IPCServer
 			description: ActionDescription.SetPartTrigger,
 		}
 	}
-	async togglePartLoop(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		if (group.locked || part.locked) {
-			return
-		}
-
-		const originalValue = part.loop
-
-		updateGroupPlayingParts(group)
-		part.loop = arg.value
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-
-		return {
-			undo: () => {
-				const { rundown, group, part } = this.getPart(arg)
-
-				updateGroupPlayingParts(group)
-				part.loop = originalValue
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-			},
-			description: ActionDescription.TogglePartLoop,
-		}
-	}
-	async togglePartDisable(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void> | undefined> {
-		const { rundown, group, part } = this.getPart(arg)
-
-		const originalValue = part.disabled
-
-		part.disabled = arg.value
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-
-		return {
-			undo: () => {
-				const { rundown, group, part } = this.getPart(arg)
-
-				updateGroupPlayingParts(group)
-				part.disabled = originalValue
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-			},
-			description: ActionDescription.TogglePartDisable,
-		}
-	}
-	async togglePartLock(arg: {
-		rundownId: string
-		groupId: string
-		partId: string
-		value: boolean
-	}): Promise<UndoableResult<void>> {
-		const { rundown, part } = this.getPart(arg)
-		const originalValue = part.locked
-
-		part.locked = arg.value
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
-
-		return {
-			undo: () => {
-				const { rundown, part } = this.getPart(arg)
-
-				part.locked = originalValue
-
-				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
-			},
-			description: ActionDescription.TogglePartLock,
-		}
-	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
+		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
 		// Stop the group:
-		group.playout.playingParts = {}
+		for (const partId of Object.keys(group.playout.playingParts)) {
+			group.playout.playingParts[partId].stopTime = now
+		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
@@ -813,15 +797,28 @@ export class IPCServer
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
-		if (group.locked || part.locked) {
+		if (group.locked) {
 			return
+		}
+
+		if (part.locked && !has(arg.part, 'locked')) {
+			return
+		}
+
+		let affectsPlayout: Group | undefined = undefined
+		if (has(arg.part, 'loop') || has(arg.part, 'disabled') || has(arg.part, 'duration')) {
+			affectsPlayout = group
+		}
+
+		if (affectsPlayout) {
+			updateGroupPlayingParts(group)
 		}
 
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
 		postProcessPart(part)
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
 		return {
 			undo: () => {
@@ -950,7 +947,7 @@ export class IPCServer
 	async updateGroup(arg: {
 		rundownId: string
 		groupId: string
-		group: Partial<Group>
+		group: PartialDeep<Group>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -959,9 +956,30 @@ export class IPCServer
 		}
 
 		const groupPreChange = deepClone(group)
-		Object.assign(group, arg.group)
+		deepExtend(group, arg.group)
 
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		let affectsPlayout: Group | undefined = undefined
+		if (
+			has(arg.group, 'schedule') ||
+			has(arg.group, 'autoPlay') ||
+			has(arg.group, 'loop') ||
+			has(arg.group, 'disabled') ||
+			has(arg.group, 'oneAtATime') ||
+			has(arg.group, 'parts') ||
+			has(arg.group, 'playout') ||
+			has(arg.group, 'playoutMode')
+		) {
+			affectsPlayout = group
+		}
+		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
+		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
+		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
+			for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+				if (playingPart.stopTime) delete group.playout.playingParts[partId]
+			}
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
 		return {
 			undo: () => {
@@ -1185,6 +1203,8 @@ export class IPCServer
 							[movePart.partId]: {
 								startTime: movedPartIsPlaying.partStartTime,
 								pauseTime: movedPartIsPlaying.partPauseTime,
+								stopTime: undefined,
+								fromSchedule: movedPartIsPlaying.fromSchedule,
 							},
 						}
 					}
@@ -1682,14 +1702,16 @@ export class IPCServer
 			obj.layer = addToLayerId
 			usePreviousLayerId = obj.layer
 
-			const mapping = project.mappings[obj.layer]
-			const allow = allowAddingResourceToLayer(project, resource, mapping)
+			const mapping = project.mappings[obj.layer] as Mapping | undefined
+			const allow = mapping && allowAddingResourceToLayer(project, resource, mapping)
 			if (!allow) {
 				if (arg.resourceIds.length > 1) continue // ignore the error if we're adding multiple resources
 				throw new Error(
 					`Prevented addition of resource "${resource.id}" of type "${resource.resourceType}" to layer "${
 						obj.layer
-					}" ("${getMappingName(mapping, obj.layer)}") because it is of an incompatible type.`
+					}" ("${
+						mapping ? getMappingName(mapping, obj.layer) : 'N/A'
+					}") because it is of an incompatible type.`
 				)
 			}
 			const timelineObj: TimelineObj = {

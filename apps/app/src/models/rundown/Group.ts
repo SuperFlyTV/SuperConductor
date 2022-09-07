@@ -1,3 +1,4 @@
+import { DateTimeObject, RepeatingSettingsAny } from '../../lib/timeLib'
 import { GroupPreparedPlayData } from '../GUI/PreparedPlayhead'
 import { Part } from './Part'
 
@@ -14,25 +15,37 @@ export interface GroupBase {
 	disabled?: boolean
 	locked?: boolean
 
+	playoutMode: PlayoutMode
+
 	/** Contains info for the Auto-Fill feature */
 	autoFill: AutoFillSettings
+
+	/** Contains info for when playoutMode is in SCHEDULE */
+	schedule: ScheduleSettings
 
 	/** Data related to the playout of the group */
 	playout: {
 		/** Map of the part(s) currently playing */
 		playingParts: {
-			[partId: string]: {
-				/** Timestamp of when the part started playing (unix timestamp) */
-				startTime: number
-
-				/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
-				pauseTime: number | undefined
-			}
+			[partId: string]: PlayingPart
 		}
 	}
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+}
+export interface PlayingPart {
+	/** Timestamp of when the part started playing (unix timestamp) */
+	startTime: number
+
+	/** If set, startTime is disregarded and the part is instead paused at the pauseTime (0 is start of the part) [ms] */
+	pauseTime: number | undefined
+
+	/** If set, the time when the part stopped playing (unix timestamp) */
+	stopTime: number | undefined
+
+	/** Whether the playingPart originates from a schedule */
+	fromSchedule: boolean
 }
 
 export interface Group extends GroupBase {
@@ -73,4 +86,15 @@ export enum AutoFillSortMode {
 	ADDED_DESC = 'added_desc',
 	MODIFIED_ASC = 'modified_asc',
 	MODIFIED_DESC = 'modified_desc',
+}
+export enum PlayoutMode {
+	NORMAL = 'normal',
+	SCHEDULE = 'schedule',
+	// EXPRESSION = 'expression', // <-- not implemented yet
+}
+export interface ScheduleSettings {
+	activate?: boolean
+	/** timestamp */
+	startTime?: DateTimeObject
+	repeating: RepeatingSettingsAny
 }

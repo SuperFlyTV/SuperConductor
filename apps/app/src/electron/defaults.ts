@@ -1,11 +1,12 @@
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
-import { AutoFillMode, AutoFillSortMode, Group } from '../models/rundown/Group'
+import { AutoFillMode, AutoFillSortMode, Group, PlayoutMode } from '../models/rundown/Group'
 import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { shortID } from '../lib/util'
 import { Part } from '../models/rundown/Part'
+import { RepeatingType } from '../lib/timeLib'
 
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {
@@ -126,6 +127,7 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 						triggers: [],
 						resolved: {
 							duration: 5000,
+							label: 'Main',
 						},
 					},
 				],
@@ -143,6 +145,7 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 		oneAtATime: true,
 		autoPlay: false,
 		loop: false,
+		playoutMode: PlayoutMode.NORMAL,
 		parts: [],
 		playout: {
 			playingParts: {},
@@ -155,6 +158,12 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 			mode: AutoFillMode.APPEND,
 			sortMode: AutoFillSortMode.ADDED_ASC,
 		},
+		schedule: {
+			startTime: undefined,
+			repeating: {
+				type: RepeatingType.NO_REPEAT,
+			},
+		},
 	}
 }
 export function getDefaultPart(): Omit<Part, 'id' | 'name'> {
@@ -162,6 +171,7 @@ export function getDefaultPart(): Omit<Part, 'id' | 'name'> {
 		timeline: [],
 		resolved: {
 			duration: 0,
+			label: '',
 		},
 		triggers: [],
 	}

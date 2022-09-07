@@ -14,6 +14,7 @@ import { SelectEnum } from '../../inputs/SelectEnum'
 import { findAutoFillResources } from '../../../../lib/autoFill'
 import { Message } from '../../pages/homePage/message/Message'
 import { HelpButton } from '../../inputs/HelpButton/HelpButton'
+import { Box } from '@mui/material'
 
 export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI }> = observer(
 	function GroupButtonAreaPopover({ rundownId, group }) {
@@ -54,10 +55,10 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 		const matchedResources = findAutoFillResources(project, autoFill, resources)
 		const MAX_VIEW_COUNT = 20
 		return (
-			<>
+			<Box sx={{ p: 1 }}>
 				<div>
 					<div>
-						Show help:{' '}
+						Show help:&nbsp;
 						<HelpButton
 							showHelp={showHelp}
 							onClick={() => {
@@ -93,7 +94,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 								value: o.layerId,
 								label: getMappingName(o.mapping, o.layerId),
 							}))}
-							onChange={(vs) => {
+							onChange={(vs: string[]) => {
 								autoFill.layerIds = vs
 								onSave(autoFill)
 							}}
@@ -177,7 +178,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 						</>
 					)}
 				</div>
-			</>
+			</Box>
 		)
 	}
 )
