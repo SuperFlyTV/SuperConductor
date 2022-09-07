@@ -332,7 +332,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
+						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
 					/>
 				</div>
 				<div className="setting">
@@ -406,7 +406,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 						currentValue={settings.repeating.interval ?? 1}
 						allowUndefined={false}
 						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
+						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
 					/>
 				</div>
 				<div className="setting">
