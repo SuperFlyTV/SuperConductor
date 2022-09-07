@@ -6,6 +6,8 @@ export interface AppData {
 		/** The version of the SuperConductor who saved the data*/
 		currentVersion: string
 	}
+	/** Which version of the user agreement the user has agreed to  */
+	userAgreement?: string
 	project: {
 		id: string
 	}

@@ -617,7 +617,7 @@ export const GroupView: React.FC<{
 								/>
 							) : (
 								<div
-									className="title editable"
+									className={classNames('title', group.locked ? undefined : 'editable')}
 									title={group.locked ? group.name : 'Click to edit Group name'}
 									onClick={() => {
 										if (group.locked) {

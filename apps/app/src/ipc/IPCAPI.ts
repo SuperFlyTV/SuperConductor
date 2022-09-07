@@ -65,12 +65,15 @@ export interface Action {
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
 	log: (method: LogLevel, ...args: any[]) => void
+	handleClientError: (error: string, stack?: string) => void
+	debugThrowError: (type: 'sync' | 'async' | 'setTimeout') => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
 	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
+	acknowledgeUserAgreement: (agreementVersion: string) => void
 
 	exportProject: () => void
 	importProject: () => void
