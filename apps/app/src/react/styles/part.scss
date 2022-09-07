@@ -54,10 +54,12 @@ $part_time_height: 16px;
 
 	&.selectable {
 		cursor: pointer;
+
 		&:hover {
 			background-color: color.adjust($partMetaColor, $lightness: -3%);
 		}
 	}
+
 	> .part__selected {
 		position: absolute;
 		top: 0;
@@ -68,6 +70,7 @@ $part_time_height: 16px;
 		z-index: 2;
 		transition: $default-transition;
 	}
+
 	&.selected {
 		> .part__selected {
 			box-shadow: inset 0px 0px 0px 2px #ffffff65;
@@ -90,8 +93,10 @@ $part_time_height: 16px;
 			display: block;
 		}
 	}
+
 	&.disabled {
 		color: #999;
+
 		.part__meta {
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
@@ -112,6 +117,7 @@ $part_time_height: 16px;
 			background-color: color.adjust($partMetaColor, $alpha: -0.5);
 		}
 	}
+
 	&.locked {
 		.part__drag-handle {
 			pointer-events: none;
@@ -182,11 +188,12 @@ $part_time_height: 16px;
 		padding: 0.5rem 0.4rem;
 		box-sizing: border-box;
 		grid-area: meta;
-		display: flex;
+		display: grid;
+		grid-template: auto / 1fr auto;
 
 		&__left {
-			display: flex;
-			flex-direction: column;
+			display: grid;
+			grid-template: 1fr auto / auto;
 			flex-grow: 1;
 			flex-shrink: 1;
 			min-width: 0;
@@ -206,11 +213,12 @@ $part_time_height: 16px;
 			font-weight: 400;
 			overflow-wrap: break-word;
 			min-width: 1px;
-			flex-shrink: 1;
-			flex-grow: 1;
 			min-height: 1em;
 			font-size: 1.4rem;
-			cursor: text;
+
+			&.editable {
+				cursor: text;
+			}
 		}
 
 		& .controls {
@@ -230,6 +238,7 @@ $part_time_height: 16px;
 			flex-shrink: 0;
 			margin-left: 0.6rem;
 		}
+
 		.button-placeholder {
 			// Used as a placeholder instead of a button, in initial-render
 			height: 22px;
@@ -337,6 +346,7 @@ $part_time_height: 16px;
 			height: 100%;
 			overflow: hidden;
 		}
+
 		& > .countdown-overlay {
 			position: absolute;
 			top: 0.3rem;
@@ -368,23 +378,29 @@ $part_time_height: 16px;
 		&.part-play-next {
 			background: linear-gradient(180deg, black $part_time_height, #0f630f $part_time_height);
 		}
+
 		&.part-playing {
 			background: #aa0000;
 		}
+
 		&.part-paused {
 			// background: #aaaa00;
 			animation: anim-part-paused 2s infinite;
 		}
+
 		@keyframes anim-part-paused {
 			0% {
 				background-color: #aa0000;
 			}
+
 			33% {
 				background-color: #aa0000;
 			}
+
 			66% {
 				background-color: black;
 			}
+
 			100% {
 				background-color: #aa0000;
 			}
@@ -409,6 +425,7 @@ $part_time_height: 16px;
 			display: none;
 		}
 	}
+
 	.part__error-overlay {
 		position: absolute;
 		top: 0;
@@ -436,6 +453,7 @@ $part_time_height: 16px;
 			opacity: 1 !important;
 		}
 	}
+
 	&:hover .end-cap-hover {
 		// display: block;
 		opacity: 0.3;

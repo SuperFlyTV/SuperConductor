@@ -51,9 +51,8 @@ export const ContextWrapper: React.FC = () => {
 							},
 						},
 						sizeSmall: {
-							padding: 0,
-							minWidth: 0,
-							width: SMALL_BTN_SIZE,
+							padding: '0 2px',
+							minWidth: SMALL_BTN_SIZE,
 							height: SMALL_BTN_SIZE,
 						},
 						containedPrimary: {
