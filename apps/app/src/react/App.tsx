@@ -39,6 +39,10 @@ import { PartWithRef } from '../lib/util'
 import { assertNever } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
+import { UserAgreementScreen } from './components/UserAgreementScreen'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { DebugTestErrors } from './components/util/Debug'
+import { ErrorBoundary } from './components/util/ErrorBoundary'
 import { Spinner } from './components/util/Spinner'
 
 /**
@@ -103,18 +107,45 @@ export const App = observer(function App() {
 		}
 	}, [triggers, logger])
 
-	const handleError = useMemo(() => {
-		return (error: unknown): void => {
+	const handleError = useCallback(
+		(error: any) => {
 			logger.error(error)
-			if (typeof error === 'object' && error !== null && 'message' in error) {
-				enqueueSnackbar((error as any).message.replace(ErrorCruftRegex, ''), { variant: 'error' })
-			} else if (typeof error === 'string') {
-				enqueueSnackbar(error.replace(ErrorCruftRegex, ''), { variant: 'error' })
+
+			let message: string
+			let stack = undefined
+			if (typeof error === 'string') {
+				message = error
+			} else if (error === null) {
+				message = ''
+			} else if (typeof error === 'object' && 'message' in error) {
+				message = error.message ?? ''
+			} else if (typeof error === 'object' && typeof error.reason === 'object' && error.reason.message) {
+				message = error.reason.message
+				stack = error.reason.stack || error.reason.reason
+			} else if (typeof error === 'object' && typeof error.error === 'object' && error.error.message) {
+				message = error.error.message
+				stack = error.error.stack
+			} else if (typeof error === 'object' && error.message) {
+				message = 'error message: ' + error.message
+			} else if (typeof error === 'object') {
+				message = 'error object: ' + error.toString()
 			} else {
-				enqueueSnackbar('Unknown error, see console for details.', { variant: 'error' })
+				message = `Unknown error, see console for details. (${error})`
 			}
-		}
-	}, [enqueueSnackbar, logger])
+
+			if (message) {
+				enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
+
+				// Don't send sever-errors back to server:
+				if (!message.match(ErrorCruftRegex)) {
+					// eslint-disable-next-line no-console
+					serverAPI.handleClientError(message, stack).catch(console.error)
+				}
+			}
+			// }
+		},
+		[enqueueSnackbar, logger, serverAPI]
+	)
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -131,6 +162,70 @@ export const App = observer(function App() {
 			serverAPI.makeDevData().catch(handleError)
 		}
 	}, [handleError, serverAPI])
+
+	useEffect(() => {
+		window.addEventListener('error', handleError)
+		window.addEventListener('unhandledrejection', handleError)
+		window.addEventListener('uncaughtException', handleError)
+		// @ts-expect-error hack
+		window.handleError = handleError
+		return () => {
+			window.removeEventListener('error', handleError)
+			window.removeEventListener('unhandledrejection', handleError)
+			window.removeEventListener('uncaughtException', handleError)
+			// @ts-expect-error hack
+			window.handleError = undefined
+		}
+	}, [handleError])
+
+	const debugKeyPresses = useRef(0)
+	const debugKeyPressesLastTime = useRef(0)
+	const [debugMode, setDebugMode] = useState(false)
+	useEffect(() => {
+		if (!sorensenInitialized) {
+			return
+		}
+
+		// 5 keypresses in a quick succession triggers various errors.
+		// This is used to test reporting of errors as telemetry.
+		const onF12Key = () => {
+			const timeSinceLast = Date.now() - debugKeyPressesLastTime.current
+			if (timeSinceLast < 1000) {
+				debugKeyPresses.current++
+				if (debugKeyPresses.current === 5) {
+					serverAPI.debugThrowError('sync').catch(handleError)
+					serverAPI.debugThrowError('async').catch(handleError)
+					serverAPI.debugThrowError('setTimeout').catch(handleError)
+
+					setTimeout(() => {
+						throw new Error('This is a client-side error in a setTimeout')
+					}, 100)
+					setTimeout(() => {
+						handleError(new Error('This is an error sent into handleError'))
+					}, 350)
+
+					setTimeout(() => {
+						setDebugMode(true)
+					}, 1000)
+
+					debugKeyPresses.current = 0
+				}
+			} else {
+				debugKeyPresses.current = 0
+			}
+
+			debugKeyPressesLastTime.current = Date.now()
+		}
+		sorensen.bind('F12', onF12Key, {
+			up: false,
+			global: true,
+			exclusive: true,
+			preventDefaultPartials: false,
+		})
+		return () => {
+			sorensen.unbind('F12', onF12Key)
+		}
+	}, [sorensenInitialized, handleError, serverAPI])
 
 	// Handle hotkeys from keyboard:
 	useEffect(() => {
@@ -192,26 +287,37 @@ export const App = observer(function App() {
 			.catch(logger.error)
 	}, [logger.error, serverAPI])
 
-	// Handle splash screen:
 	const appStore = store.appStore
+
+	// Handle splash screen & User agreement:
 	const [splashScreenOpen, setSplashScreenOpen] = useState(false)
+	const [userAgreementScreenOpen, setUserAgreementScreenOpen] = useState(false)
 	/** Will be set to true after appStore.version has been set and initially checked*/
 	const splashScreenInitial = useRef(false)
 	useEffect(() => {
 		// Check upon startup if the splash screen should be displayed:
 		if (appStore.version && splashScreenInitial.current === false) {
+			// The initial data has been set
 			splashScreenInitial.current = true
 
 			if (!appStore.version.seenVersion || appStore.version.seenVersion !== appStore.version.currentVersion) {
 				setSplashScreenOpen(true)
 			}
+			if (appStore.userAgreement !== USER_AGREEMENT_VERSION) {
+				setUserAgreementScreenOpen(true)
+			}
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [appStore.version])
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
 			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
+	}
+	function onUserAgreement(agreementVersion: string): void {
+		setUserAgreementScreenOpen(false)
+		appStore.serverAPI.acknowledgeUserAgreement(agreementVersion).catch(logger.error)
 	}
 
 	// Handle using the Delete key to delete timeline objs
@@ -452,13 +558,25 @@ export const App = observer(function App() {
 							<div className="app" onClick={handleClickAnywhere}>
 								<HeaderBar />
 
-								{splashScreenOpen && (
-									<SplashScreen
-										seenVersion={appStore.version?.seenVersion}
-										currentVersion={appStore.version?.currentVersion}
-										onClose={onSplashScreenClose}
-									/>
-								)}
+								{
+									// Splash screens:
+									splashScreenOpen ? (
+										<SplashScreen
+											seenVersion={appStore.version?.seenVersion}
+											currentVersion={appStore.version?.currentVersion}
+											onClose={onSplashScreenClose}
+										/>
+									) : userAgreementScreenOpen ? (
+										<UserAgreementScreen
+											onAgree={(agreementVersion: string) => {
+												onUserAgreement(agreementVersion)
+											}}
+											onDisagree={() => {
+												window.close()
+											}}
+										/>
+									) : null
+								}
 
 								{store.guiStore.isNewRundownSelected() ? (
 									<NewRundownPage />
@@ -489,6 +607,8 @@ export const App = observer(function App() {
 								>
 									<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
 								</ConfirmationDialog>
+
+								<ErrorBoundary>{debugMode && <DebugTestErrors />}</ErrorBoundary>
 							</div>
 						</ErrorHandlerContext.Provider>
 					</ProjectContext.Provider>
