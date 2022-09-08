@@ -8,7 +8,7 @@ import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
-import { ActiveTrigger, ActiveTriggers, ProjectTrigger, RundownTrigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
 import { MoveTarget } from '../lib/util'
 import { CurrentSelectionAny } from '../lib/GUI'
@@ -49,7 +49,7 @@ export const enum ActionDescription {
 	UpdatePeripheralArea = 'Update button area',
 	RemovePeripheralArea = 'Remove button area',
 	AssignAreaToGroup = 'Assign Area to Group',
-	SetProjectTrigger = 'Assign trigger',
+	SetApplicationTrigger = 'Assign trigger',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -212,9 +212,9 @@ export interface IPCServerMethods {
 
 	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
 	finishDefiningArea: () => void
-	setProjectTrigger: (arg: {
-		triggerAction: ProjectTrigger['action']
-		trigger: ProjectTrigger | null
+	setApplicationTrigger: (arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
 		triggerIndex: number | null
 	}) => void
 }

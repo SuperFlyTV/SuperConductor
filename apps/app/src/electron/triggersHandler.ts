@@ -8,10 +8,10 @@ import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
 import {
 	ActionAny,
-	getAllProjectActions,
+	getAllApplicationActions,
 	getPartsWithRefInRundowns,
 	getAllActionsInParts,
-	ProjectAction,
+	ApplicationAction,
 } from '../lib/triggers/action'
 import {
 	DefiningArea,
@@ -125,9 +125,10 @@ export class TriggersHandler {
 		const allRundowns = this.storage.getAllRundowns()
 		const allParts = getPartsWithRefInRundowns(allRundowns)
 		const project = this.storage.getProject()
-		const rundownActions = getAllActionsInParts(allParts, project, undefined)
+		const appData = this.storage.getAppData()
 
-		const projectActions = getAllProjectActions(this.session.getSelection(), allParts, project)
+		const rundownActions = getAllActionsInParts(allParts, project, undefined)
+		const appActions = getAllApplicationActions(this.session.getSelection(), allParts, appData)
 
 		return [
 			...rundownActions.map((action) =>
@@ -136,9 +137,9 @@ export class TriggersHandler {
 					...action,
 				})
 			),
-			...projectActions.map((action) =>
+			...appActions.map((action) =>
 				literal<ActionAny>({
-					type: 'project',
+					type: 'application',
 					...action,
 				})
 			),
@@ -263,21 +264,21 @@ export class TriggersHandler {
 						} else {
 							assertNever(action.trigger.action)
 						}
-					} else if (action.type === 'project') {
+					} else if (action.type === 'application') {
 						if (action.trigger.action === 'play') {
-							this._projectActionPlay(action)
+							this._appActionPlay(action)
 						} else if (action.trigger.action === 'stop') {
-							this._projectActionStop(action)
+							this._appActionStop(action)
 						} else if (action.trigger.action === 'playStop') {
-							this._projectActionPlayStop(action)
+							this._appActionPlayStop(action)
 						} else if (action.trigger.action === 'pause') {
-							this._projectActionPause(action)
+							this._appActionPause(action)
 						} else if (action.trigger.action === 'delete') {
-							this._projectActionDelete(action)
+							this._appActionDelete(action)
 						} else if (action.trigger.action === 'next') {
-							this._projectActionNext(action)
+							this._appActionNext(action)
 						} else if (action.trigger.action === 'previous') {
-							this._projectActionPrevious(action)
+							this._appActionPrevious(action)
 						} else {
 							assertNever(action.trigger.action)
 						}
@@ -326,7 +327,7 @@ export class TriggersHandler {
 			this.storage.updateProject(project)
 		}
 	}
-	private _projectActionPlay(action: ProjectAction) {
+	private _appActionPlay(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer
@@ -346,7 +347,7 @@ export class TriggersHandler {
 			} else assertNever(selected)
 		}
 	}
-	private _projectActionStop(action: ProjectAction) {
+	private _appActionStop(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer
@@ -366,8 +367,7 @@ export class TriggersHandler {
 			} else assertNever(selected)
 		}
 	}
-	private _projectActionPlayStop(action: ProjectAction) {
-		console.log('_projectActionPlayStop')
+	private _appActionPlayStop(action: ApplicationAction) {
 		// First, check if any is playing:
 		let isAnyPlaying = false
 		const groupIds = new Set<string>()
@@ -390,14 +390,13 @@ export class TriggersHandler {
 			}
 		}
 
-		console.log('isAnyPlaying', isAnyPlaying)
 		if (isAnyPlaying) {
-			this._projectActionStop(action)
+			this._appActionStop(action)
 		} else {
-			this._projectActionPlay(action)
+			this._appActionPlay(action)
 		}
 	}
-	private _projectActionPause(action: ProjectAction) {
+	private _appActionPause(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer
@@ -417,7 +416,7 @@ export class TriggersHandler {
 			} else assertNever(selected)
 		}
 	}
-	private _projectActionDelete(action: ProjectAction) {
+	private _appActionDelete(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer
@@ -437,7 +436,7 @@ export class TriggersHandler {
 			} else assertNever(selected)
 		}
 	}
-	private _projectActionNext(action: ProjectAction) {
+	private _appActionNext(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer
@@ -456,7 +455,7 @@ export class TriggersHandler {
 			} else assertNever(selected)
 		}
 	}
-	private _projectActionPrevious(action: ProjectAction) {
+	private _appActionPrevious(action: ApplicationAction) {
 		for (const selected of action.selected) {
 			if (selected.type === 'group') {
 				this.ipcServer

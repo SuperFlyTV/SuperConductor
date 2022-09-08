@@ -205,7 +205,7 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
 	}
-	setProjectTrigger(...args: ServerArgs<'setProjectTrigger'>) {
-		return this.invokeServerMethod('setProjectTrigger', ...args)
+	setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>) {
+		return this.invokeServerMethod('setApplicationTrigger', ...args)
 	}
 }

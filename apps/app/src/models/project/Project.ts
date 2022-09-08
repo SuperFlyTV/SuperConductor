@@ -1,5 +1,4 @@
 import { Mappings } from 'timeline-state-resolver-types'
-import { ProjectTrigger } from '../rundown/Trigger'
 import { Bridge } from './Bridge'
 
 export interface Project {
@@ -16,10 +15,6 @@ export interface Project {
 	settings: Settings
 
 	autoRefreshInterval?: number
-
-	triggers: {
-		[Key in ProjectTrigger['action']]?: ProjectTrigger[]
-	}
 }
 
 export interface Settings {

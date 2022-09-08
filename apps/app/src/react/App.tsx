@@ -33,10 +33,9 @@ import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
-import { useMemoComputedValue } from './mobx/lib'
-import { RundownAction, getAllActionsInParts, ActionAny, getAllProjectActions } from '../lib/triggers/action'
-import { PartWithRef } from '../lib/util'
-import { assertNever } from '@shared/lib'
+import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
+import { getAllActionsInParts, ActionAny, getAllApplicationActions } from '../lib/triggers/action'
+import { assertNever, deepClone } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
 import { UserAgreementScreen } from './components/UserAgreementScreen'
@@ -300,21 +299,22 @@ export const App = observer(function App() {
 	const [userAgreementScreenOpen, setUserAgreementScreenOpen] = useState(false)
 	/** Will be set to true after appStore.version has been set and initially checked*/
 	const splashScreenInitial = useRef(false)
-	useEffect(() => {
+	useMemoComputedValue(() => {
+		const appData = appStore.appData
 		// Check upon startup if the splash screen should be displayed:
-		if (appStore.version && splashScreenInitial.current === false) {
+		if (appData && splashScreenInitial.current === false) {
 			// The initial data has been set
 			splashScreenInitial.current = true
 
-			if (!appStore.version.seenVersion || appStore.version.seenVersion !== appStore.version.currentVersion) {
+			if (!appData.version.seenVersion || appData.version.seenVersion !== appData.version.currentVersion) {
 				setSplashScreenOpen(true)
 			}
-			if (appStore.userAgreement !== USER_AGREEMENT_VERSION) {
+			if (appData.userAgreement !== USER_AGREEMENT_VERSION) {
 				setUserAgreementScreenOpen(true)
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [appStore.version])
+	}, [appStore])
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
@@ -513,13 +513,14 @@ export const App = observer(function App() {
 		store.rundownsStore.updateRundownButtonActions(buttonActions)
 	}, [project])
 	useMemoComputedValue(() => {
-		if (!project) return
+		const appData = store.appStore.appData
+		if (!appData) return
 
 		/** All Parts in all open rundowns */
 		const allParts = store.rundownsStore.allPartsWithRefs
 
 		const buttonActions = new Map<string, ActionAny[]>()
-		for (const action of getAllProjectActions(gui.selected, allParts, project)) {
+		for (const action of getAllApplicationActions(gui.selected, allParts, appData)) {
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
 				let newButtonAction = buttonActions.get(fullIdentifier)
 				if (!newButtonAction) {
@@ -527,14 +528,14 @@ export const App = observer(function App() {
 					buttonActions.set(fullIdentifier, newButtonAction)
 				}
 				newButtonAction.push({
-					type: 'project',
+					type: 'application',
 					...action,
 				})
 			}
 		}
 
 		store.rundownsStore.updateProjectButtonActions(buttonActions)
-	}, [project])
+	}, [])
 
 	const clipBoardContext = useRef<ClipBoardContext>({
 		handleError,
@@ -553,6 +554,13 @@ export const App = observer(function App() {
 			triggers,
 		}
 	}, [triggers])
+	const appDataVersion = useMemoComputedObject(
+		() => {
+			return deepClone(appStore.appData?.version)
+		},
+		[appStore],
+		true
+	)
 
 	if (!project || !sorensenInitialized) {
 		return (
@@ -575,8 +583,8 @@ export const App = observer(function App() {
 									// Splash screens:
 									splashScreenOpen ? (
 										<SplashScreen
-											seenVersion={appStore.version?.seenVersion}
-											currentVersion={appStore.version?.currentVersion}
+											seenVersion={appDataVersion?.seenVersion}
+											currentVersion={appDataVersion?.currentVersion}
 											onClose={onSplashScreenClose}
 										/>
 									) : userAgreementScreenOpen ? (

@@ -1,7 +1,8 @@
 import { Rundown } from '../../models/rundown/Rundown'
 import { GroupBase } from '../../models/rundown/Group'
 import { PartBase } from '../../models/rundown/Part'
-import { ActiveTrigger, activeTriggersToString, RundownTrigger, ProjectTrigger } from '../../models/rundown/Trigger'
+import { AppData } from '../../models/App/AppData'
+import { ActiveTrigger, activeTriggersToString, RundownTrigger, ApplicationTrigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { GroupWithShallowParts, PartWithRef } from '../util'
@@ -13,8 +14,8 @@ export type ActionAny =
 			type: 'rundown'
 	  } & RundownAction)
 	| ({
-			type: 'project'
-	  } & ProjectAction)
+			type: 'application'
+	  } & ApplicationAction)
 
 export interface RundownActionLight {
 	trigger: RundownTrigger
@@ -25,7 +26,7 @@ export interface RundownAction extends RundownActionLight {
 	group: GroupBase
 }
 
-export type ProjectActionSelected =
+export type ApplicationActionSelected =
 	| {
 			type: 'group'
 			rundownId: string
@@ -37,9 +38,9 @@ export type ProjectActionSelected =
 			group: GroupBase
 			part: PartBase
 	  }
-export interface ProjectAction {
-	selected: ProjectActionSelected[]
-	trigger: ProjectTrigger
+export interface ApplicationAction {
+	selected: ApplicationActionSelected[]
+	trigger: ApplicationTrigger
 }
 
 export function getPartsWithRefInRundowns(rundowns: Rundown[]): PartWithRef[] {
@@ -136,12 +137,12 @@ export function getAllActionsInParts(
 	return actions
 }
 
-export function getAllProjectActions(
+export function getAllApplicationActions(
 	currentSelections: Readonly<CurrentSelectionAny[]>,
 	allParts: PartWithRef[],
-	project: Project
-): ProjectAction[] {
-	const selected: ProjectActionSelected[] = []
+	appData: AppData
+): ApplicationAction[] {
+	const selected: ApplicationActionSelected[] = []
 
 	const selectedGroupIds = new Set<string>()
 	const selectedPartIds = new Set<string>()
@@ -198,8 +199,8 @@ export function getAllProjectActions(
 		} else assertNever(currentSelection)
 	}
 
-	const actions: ProjectAction[] = []
-	for (const triggers of Object.values(project.triggers)) {
+	const actions: ApplicationAction[] = []
+	for (const triggers of Object.values(appData.triggers)) {
 		if (triggers) {
 			for (const trigger of triggers) {
 				actions.push({

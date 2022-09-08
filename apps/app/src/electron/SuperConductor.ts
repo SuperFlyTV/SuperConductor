@@ -10,7 +10,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
-import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
+import { BridgeHandler } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
@@ -74,18 +74,7 @@ export class SuperConductor {
 			this.triggers?.triggerUpdatePeripherals()
 		})
 
-		this.storage = new StorageHandler(
-			log,
-			{
-				// Default window position:
-				y: undefined,
-				x: undefined,
-				width: 1200,
-				height: 600,
-				maximized: false,
-			},
-			CURRENT_VERSION
-		)
+		this.storage = new StorageHandler(log)
 		this.storage.on('appData', (appData: AppData) => {
 			this.ipcClient?.updateAppData(appData)
 		})

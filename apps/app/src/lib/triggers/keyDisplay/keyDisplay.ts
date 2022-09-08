@@ -6,13 +6,14 @@ import { Project } from '../../../models/project/Project'
 import { ActiveTrigger } from '../../../models/rundown/Trigger'
 import { keyDisplayRundownPlay, keyDisplayRundownPlayStop, keyDisplayRundownStop } from './rundownAction'
 import {
-	keyDisplayProjectNext,
-	keyDisplayProjectPause,
-	keyDisplayProjectPlay,
-	keyDisplayProjectPlayStop,
-	keyDisplayProjectPrevious,
-	keyDisplayProjectStop,
-} from './projectAction'
+	keyDisplayApplicationDelete,
+	keyDisplayApplicationNext,
+	keyDisplayApplicationPause,
+	keyDisplayApplicationPlay,
+	keyDisplayApplicationPlayStop,
+	keyDisplayApplicationPrevious,
+	keyDisplayApplicationStop,
+} from './applicationAction'
 import { TriggerArea, TriggersAreaMap, triggersAreaToArea } from './lib'
 
 export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
@@ -102,22 +103,22 @@ export function getKeyDisplayForButtonActions(
 					assertNever(firstAction.trigger.action)
 					return []
 				}
-			} else if (firstAction.type === 'project') {
+			} else if (firstAction.type === 'application') {
 				// TODO
 				if (firstAction.trigger.action === 'play') {
-					return keyDisplayProjectPlay(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationPlay(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'stop') {
-					return keyDisplayProjectStop(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationStop(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'playStop') {
-					return keyDisplayProjectPlayStop(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationPlayStop(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'pause') {
-					return keyDisplayProjectPause(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationPause(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'delete') {
-					return [] // TODO
+					return keyDisplayApplicationDelete(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'next') {
-					return keyDisplayProjectNext(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationNext(firstAction, actionsOnButton, triggerArea)
 				} else if (firstAction.trigger.action === 'previous') {
-					return keyDisplayProjectPrevious(firstAction, actionsOnButton, triggerArea)
+					return keyDisplayApplicationPrevious(firstAction, actionsOnButton, triggerArea)
 				} else {
 					assertNever(firstAction.trigger.action)
 					return []

@@ -7,7 +7,7 @@ import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
-import { ActionAny, RundownAction } from '../../../../../lib/triggers/action'
+import { ActionAny } from '../../../../../lib/triggers/action'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,

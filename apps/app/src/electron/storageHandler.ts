@@ -5,13 +5,14 @@ import { LoggerLike } from '@shared/api'
 import { omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
-import { AppData, WindowPosition } from '../models/App/AppData'
-import { getDefaultGroup, getDefaultProject, getDefaultRundown } from './defaults'
+import { AppData } from '../models/App/AppData'
+import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from './defaults'
 import { ResourceAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
 import { getPartLabel } from '../lib/util'
+import { CURRENT_VERSION } from './bridgeHandler'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -52,9 +53,9 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition, appVersion: string) {
+	constructor(private log: LoggerLike) {
 		super()
-		this.appData = this.loadAppData(defaultWindowPosition, appVersion)
+		this.appData = this.loadAppData()
 
 		this.project = this.loadProject()
 		this.rundowns = this.loadRundowns()
@@ -267,7 +268,7 @@ export class StorageHandler extends EventEmitter {
 	restoreRundown(rundown: Rundown) {
 		const fileName = convertToFilename(rundown.id)
 		this.rundowns[fileName] = {
-			version: CURRENT_VERSION,
+			version: CURRENT_STORAGE_VERSION,
 			id: rundown.id,
 			rundown: {
 				...omit(rundown, 'id'),
@@ -386,7 +387,7 @@ export class StorageHandler extends EventEmitter {
 
 			if (hasChanged) {
 				this.resources[id] = {
-					version: CURRENT_VERSION,
+					version: CURRENT_STORAGE_VERSION,
 					id,
 					resource,
 				}
@@ -484,7 +485,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 
-	private loadAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
+	private loadAppData(): FileAppData {
 		let appData: FileAppData | undefined = undefined
 		try {
 			const read = fs.readFileSync(this.appDataPath, 'utf8')
@@ -514,22 +515,16 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 
-		const defaultAppData = this.getDefaultAppData(defaultWindowPosition, appVersion)
 		if (!appData) {
 			// Default:
 			this.appDataNeedsWrite = true
-			appData = defaultAppData
+			appData = this.getDefaultAppData()
 		} else {
-			// Migrate old data:
-			if (!appData.appData.version) {
-				// Added 2022-03-25:
-				this.appDataNeedsWrite = true
-				appData.appData.version = defaultAppData.appData.version
-			}
+			this.ensureCompatibilityAppData(appData)
 		}
 		// Update the currentVersion to the apps' version:
-		if (appData.appData.version.currentVersion !== appVersion) {
-			appData.appData.version.currentVersion = appVersion
+		appData.appData.version.currentVersion = CURRENT_VERSION
+		if (appData.appData.version.currentVersion !== CURRENT_VERSION) {
 			this.appDataNeedsWrite = true
 		}
 		return appData
@@ -705,7 +700,7 @@ export class StorageHandler extends EventEmitter {
 					(oldResource.version === undefined || oldResource.resource === undefined)
 				) {
 					const newResource: FileResource = {
-						version: CURRENT_VERSION,
+						version: CURRENT_STORAGE_VERSION,
 						id: id,
 						resource: oldResource,
 					}
@@ -721,32 +716,24 @@ export class StorageHandler extends EventEmitter {
 		return resources
 	}
 
-	private getDefaultAppData(defaultWindowPosition: WindowPosition, appVersion: string): FileAppData {
+	private getDefaultAppData(): FileAppData {
 		return {
-			version: CURRENT_VERSION,
+			version: CURRENT_STORAGE_VERSION,
 			appData: {
-				windowPosition: defaultWindowPosition,
-				version: {
-					seenVersion: null,
-					currentVersion: appVersion,
-				},
-				project: {
-					id: 'default',
-				},
-				rundowns: {},
+				...getDefaultAppData(CURRENT_VERSION),
 			},
 		}
 	}
 	static getDefaultProject(newName?: string): FileProject {
 		return {
-			version: CURRENT_VERSION,
+			version: CURRENT_STORAGE_VERSION,
 			id: 'default',
 			project: getDefaultProject(newName),
 		}
 	}
 	static getDefaultRundown(newName?: string): FileRundown {
 		return {
-			version: CURRENT_VERSION,
+			version: CURRENT_STORAGE_VERSION,
 			id: newName ? convertToFilename(newName) : 'default',
 			rundown: getDefaultRundown(newName),
 		}
@@ -844,12 +831,24 @@ export class StorageHandler extends EventEmitter {
 		await fsRename(tmpPath, filePath)
 	}
 
+	private ensureCompatibilityAppData(appData: FileAppData) {
+		const defaultAppData = getDefaultAppData(CURRENT_VERSION)
+
+		if (!appData.appData.version) {
+			// Added 2022-03-25:
+			this.appDataNeedsWrite = true
+			appData.appData.version = defaultAppData.version
+		}
+		if (!appData.appData.triggers) {
+			// Added 2022-09-07:
+			appData.appData.triggers = defaultAppData.triggers
+		}
+	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
 		for (const bridge of Object.values(project.bridges)) {
 			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
 		}
 		if (!project.deviceNames) project.deviceNames = {}
-		if (!project.triggers) project.triggers = {}
 	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
 		for (const group of rundown.groups) {
@@ -956,7 +955,7 @@ interface FileResource {
 	resource: ResourceAny
 }
 /** Current version, used to migrate old data structures into new ones */
-const CURRENT_VERSION = 0
+const CURRENT_STORAGE_VERSION = 0
 
 function convertToFilename(str: string): string {
 	return str.toLowerCase().replace(/[^a-z0-9]/g, '-')

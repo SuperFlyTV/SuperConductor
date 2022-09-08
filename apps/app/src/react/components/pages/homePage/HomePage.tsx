@@ -9,6 +9,7 @@ import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
 import { HomePageId } from 'src/react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
 import { LayersPage } from './layersPage/LayersPage'
+import { ApplicationActionsPage } from './ApplicationActionsPage/ApplicationActionsPage'
 
 export const HomePage: React.FC<{ project: Project }> = observer(function HomePage(props) {
 	const activeHomePageId = store.guiStore.activeHomePageId
@@ -35,6 +36,10 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 						],
 					},
 					{
+						groupId: 'application',
+						items: [{ id: 'applicationActions', label: 'Application triggers' }],
+					},
+					{
 						groupId: 'project',
 						items: [
 							{ id: 'project', label: 'Project' },
@@ -50,6 +55,7 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 					},
 				]}
 			/>
+			{activeHomePageId === 'applicationActions' && <ApplicationActionsPage />}
 			{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
 			{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}
 			{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}

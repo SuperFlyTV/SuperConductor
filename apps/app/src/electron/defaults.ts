@@ -7,7 +7,78 @@ import { literal } from '@shared/lib'
 import { shortID } from '../lib/util'
 import { Part } from '../models/rundown/Part'
 import { RepeatingType } from '../lib/timeLib'
+import { AppData } from '../models/App/AppData'
 
+export function getDefaultAppData(currentVersion: string): AppData {
+	return {
+		windowPosition: {
+			// Default window position:
+			y: undefined,
+			x: undefined,
+			width: 1200,
+			height: 600,
+			maximized: false,
+		},
+		version: {
+			seenVersion: null,
+			currentVersion: currentVersion,
+		},
+		project: {
+			id: 'default',
+		},
+		rundowns: {},
+		triggers: {
+			// These defaults are inspired by the default keyboard shortcuts in CasparCG:
+			// Stop: F1
+			// Play: F2
+			// Load: F3
+			// Pause/Resume: F4
+			// Next: F5
+			// Update: F6
+			// Invoke: F7
+			// Preview: F8
+			// Clear: F10
+			// Clear Video layer: F11
+			// Clear Channel: F12
+			// Play Now: Shift+F2
+			stop: [
+				{
+					label: 'F1',
+					fullIdentifiers: ['keyboard-F1'],
+					action: 'stop',
+				},
+			],
+			play: [
+				{
+					label: 'F2',
+					fullIdentifiers: ['keyboard-F2'],
+					action: 'play',
+				},
+			],
+			pause: [
+				{
+					label: 'F3',
+					fullIdentifiers: ['keyboard-F3'],
+					action: 'pause',
+				},
+			],
+			next: [
+				{
+					label: 'F5',
+					fullIdentifiers: ['keyboard-F5'],
+					action: 'pause',
+				},
+			],
+			previous: [
+				{
+					label: 'F6',
+					fullIdentifiers: ['keyboard-F6'],
+					action: 'pause',
+				},
+			],
+		},
+	}
+}
 export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'id'> {
 	return {
 		name: newName,
@@ -81,56 +152,6 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 
 		settings: {
 			enableInternalBridge: true,
-		},
-		triggers: {
-			// These defaults are inspired by the default keyboard shortcuts in CasparCG:
-			// Stop: F1
-			// Play: F2
-			// Load: F3
-			// Pause/Resume: F4
-			// Next: F5
-			// Update: F6
-			// Invoke: F7
-			// Preview: F8
-			// Clear: F10
-			// Clear Video layer: F11
-			// Clear Channel: F12
-			// Play Now: Shift+F2
-			stop: [
-				{
-					label: 'Stop',
-					fullIdentifiers: ['keyboard-F1'],
-					action: 'stop',
-				},
-			],
-			play: [
-				{
-					label: 'Play',
-					fullIdentifiers: ['keyboard-F2'],
-					action: 'play',
-				},
-			],
-			pause: [
-				{
-					label: 'Pause',
-					fullIdentifiers: ['keyboard-F3'], //
-					action: 'pause',
-				},
-			],
-			next: [
-				{
-					label: 'Pause',
-					fullIdentifiers: ['keyboard-F5'], //
-					action: 'pause',
-				},
-			],
-			previous: [
-				{
-					label: 'Pause',
-					fullIdentifiers: ['keyboard-F6'], //
-					action: 'pause',
-				},
-			],
 		},
 	}
 }

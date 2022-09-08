@@ -32,11 +32,11 @@ export function keyDisplayRundownPlay(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart, playingPart }) => {
+		paused: ({ action, currentPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -56,7 +56,7 @@ export function keyDisplayRundownPlay(
 		},
 		playing: ({ action, currentPart }) => {
 			// if (action.type === 'rundown') {
-			// } else if (action.type === 'project') {
+			// } else if (action.type === 'application') {
 			// } else {
 			// 	assertNever(action)
 			// 	return null
@@ -64,7 +64,7 @@ export function keyDisplayRundownPlay(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -108,7 +108,7 @@ export function keyDisplayRundownStop(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (!group.oneAtATime && action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!group.oneAtATime && !partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -148,11 +148,11 @@ export function keyDisplayRundownPlayStop(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart, playingPart }) => {
+		paused: ({ action, currentPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -175,7 +175,7 @@ export function keyDisplayRundownPlayStop(
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
 				// if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -205,7 +205,7 @@ function getLabel(actions: ActionAny[], part: PartBase) {
 		const actionGroups: GroupBase[] = []
 		if (action.type === 'rundown') {
 			actionGroups.push(action.group)
-		} else if (action.type === 'project') {
+		} else if (action.type === 'application') {
 			for (const selected of action.selected) {
 				actionGroups.push(selected.group)
 			}

@@ -37,6 +37,7 @@ import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
+import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import {
@@ -46,7 +47,7 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, ProjectTrigger, RundownTrigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
@@ -2300,16 +2301,16 @@ export class IPCServer
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
-	async setProjectTrigger(arg: {
-		triggerAction: ProjectTrigger['action']
-		trigger: ProjectTrigger | null
+	async setApplicationTrigger(arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
 		triggerIndex: number | null
 	}): Promise<UndoableResult<void> | undefined> {
-		const project = this.getProject()
+		const appData = this.storage.getAppData()
 
-		const originalTriggers = deepClone(project.triggers)
+		const originalTriggers = deepClone(appData.triggers)
 
-		let triggers: ProjectTrigger[] = project.triggers[arg.triggerAction] ?? []
+		let triggers: ApplicationTrigger[] = appData.triggers[arg.triggerAction] ?? []
 
 		if (arg.triggerIndex === null) {
 			// Replace any existing triggers:
@@ -2329,16 +2330,16 @@ export class IPCServer
 			}
 		}
 		// Save changes:
-		project.triggers[arg.triggerAction] = triggers
+		appData.triggers[arg.triggerAction] = triggers
 
-		this._saveUpdates({ project, noEffectOnPlayout: true })
+		this._saveUpdates({ appData, noEffectOnPlayout: true })
 		return {
 			undo: () => {
-				const project = this.getProject()
-				project.triggers = originalTriggers
-				this._saveUpdates({ project, noEffectOnPlayout: true })
+				const appData = this.storage.getAppData()
+				appData.triggers = originalTriggers
+				this._saveUpdates({ appData, noEffectOnPlayout: true })
 			},
-			description: ActionDescription.SetProjectTrigger,
+			description: ActionDescription.SetApplicationTrigger,
 		}
 	}
 
@@ -2347,6 +2348,8 @@ export class IPCServer
 	 * This will also trigger updates of the playout (timeline), perihperals etc..
 	 */
 	private _saveUpdates(updates: {
+		appData?: AppData
+
 		project?: Project
 
 		rundownId?: string
@@ -2358,6 +2361,9 @@ export class IPCServer
 
 		noEffectOnPlayout?: boolean
 	}) {
+		if (updates.appData) {
+			this.storage.updateAppData(updates.appData)
+		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)
 		}

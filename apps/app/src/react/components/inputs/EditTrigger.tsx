@@ -2,7 +2,7 @@ import { Button, ButtonGroup } from '@mui/material'
 
 import React from 'react'
 
-import { ProjectTrigger, RundownTrigger } from '../../../models/rundown/Trigger'
+import { ApplicationTrigger, RundownTrigger } from '../../../models/rundown/Trigger'
 import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import classNames from 'classnames'
@@ -52,8 +52,6 @@ export const EditRundownTrigger: React.FC<{
 	onEdit: (index: number, trigger: RundownTrigger | null) => void
 	locked?: boolean
 }> = ({ trigger, index, onEdit, locked }) => {
-	const labelParts = trigger.label.split('+')
-
 	return (
 		<div className={classNames('trigger', { 'trigger--locked': locked })}>
 			<div className="field">
@@ -110,123 +108,56 @@ export const EditRundownTrigger: React.FC<{
 				</ButtonGroup>
 			</div>
 
-			<div className="field label">
-				{/* <span className="label__action">
-					{trigger.action === 'play' ? (
-						<MdPlayArrow size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'stop' ? (
-						<MdStop size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'playStop' ? (
-						<>
-							<MdPlayArrow size={ACTION_ICON_SIZE} />
-							<MdStop size={ACTION_ICON_SIZE} />
-						</>
-					) : null}
-				</span> */}
-				{labelParts.map((part, index) => {
-					const isKeyboard = trigger.fullIdentifiers[index]?.startsWith('keyboard')
-					return (
-						<React.Fragment key={index}>
-							<div className={classNames('label__key', { 'label__key--keyboard': isKeyboard })}>
-								<span className="label__key__text">{part}</span>
-							</div>
-							<span className="label__plus">+</span>
-						</React.Fragment>
-					)
-				})}
-			</div>
+			<TriggerPill trigger={trigger} />
 		</div>
 	)
 }
 
-export const EditProjectTrigger: React.FC<{
-	trigger: ProjectTrigger
+export const EditApplicationTrigger: React.FC<{
+	trigger: ApplicationTrigger
 	index: number
-	onEdit: (index: number, trigger: ProjectTrigger | null) => void
+	onEdit?: (index: number, trigger: ApplicationTrigger | null) => void
 }> = ({ trigger, index, onEdit }) => {
+	return (
+		<div className={classNames('trigger')}>
+			{onEdit && (
+				<div className="field">
+					<Button
+						variant="contained"
+						onClick={() => {
+							onEdit(index, null)
+						}}
+						color="error"
+						title="Delete Trigger"
+						size="small"
+					>
+						<BsTrash size={ACTION_ICON_SIZE} />
+					</Button>
+				</div>
+			)}
+
+			<TriggerPill trigger={trigger} />
+		</div>
+	)
+}
+export const TriggerPill: React.FC<{
+	trigger: ApplicationTrigger
+}> = ({ trigger }) => {
 	const labelParts = trigger.label.split('+')
 
 	return (
-		<div className={classNames('trigger')}>
-			<div className="field">
-				<Button
-					variant="contained"
-					// disabled={locked}
-					onClick={() => {
-						// handleClose()
-						onEdit(index, null)
-					}}
-					color="error"
-					title="Delete Trigger"
-					size="small"
-				>
-					<BsTrash size={ACTION_ICON_SIZE} />
-				</Button>
-			</div>
-			{/* <div className="field">
-				<ButtonGroup className="trigger__buttons__triggerType">
-					<Button
-						variant="contained"
-						onClick={() => {
-							onEdit(index, { ...trigger, action: 'play' })
-						}}
-						color={trigger.action === 'play' ? 'primary' : 'inherit'}
-						title={(trigger.action === 'play' ? '' : 'Set trigger to ') + 'Play-mode'}
-						size="small"
-					>
-						<MdPlayArrow size={ACTION_ICON_SIZE} />
-					</Button>
-					<Button
-						variant="contained"
-						onClick={() => {
-							onEdit(index, { ...trigger, action: 'stop' })
-						}}
-						color={trigger.action === 'stop' ? 'primary' : 'inherit'}
-						title={(trigger.action === 'stop' ? '' : 'Set trigger to ') + 'Stop-mode'}
-						size="small"
-					>
-						<MdStop size={ACTION_ICON_SIZE} />
-					</Button>
-					<Button
-						variant="contained"
-						onClick={() => {
-							onEdit(index, { ...trigger, action: 'playStop' })
-						}}
-						color={trigger.action === 'playStop' ? 'primary' : 'inherit'}
-						title={(trigger.action === 'playStop' ? '' : 'Set trigger to ') + 'Play/Stop-mode'}
-						size="small"
-					>
-						<MdPlayArrow size={ACTION_ICON_SIZE} />
-						<MdStop size={ACTION_ICON_SIZE} />
-					</Button>
-				</ButtonGroup>
-			</div> */}
-
-			<div className="field label">
-				{/* <span className="label__action">
-					{trigger.action === 'play' ? (
-						<MdPlayArrow size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'stop' ? (
-						<MdStop size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'playStop' ? (
-						<>
-							<MdPlayArrow size={ACTION_ICON_SIZE} />
-							<MdStop size={ACTION_ICON_SIZE} />
-						</>
-					) : null}
-				</span> */}
-				{labelParts.map((part, index) => {
-					const isKeyboard = trigger.fullIdentifiers[index]?.startsWith('keyboard')
-					return (
-						<React.Fragment key={index}>
-							<div className={classNames('label__key', { 'label__key--keyboard': isKeyboard })}>
-								<span className="label__key__text">{part}</span>
-							</div>
-							<span className="label__plus">+</span>
-						</React.Fragment>
-					)
-				})}
-			</div>
+		<div className="trigger-pill">
+			{labelParts.map((part, index) => {
+				const isKeyboard = trigger.fullIdentifiers[index]?.startsWith('keyboard')
+				return (
+					<React.Fragment key={index}>
+						<div className={classNames('label-part', { keyboard: isKeyboard })}>
+							<span className="label">{part}</span>
+						</div>
+						<span className="connect-labels">+</span>
+					</React.Fragment>
+				)
+			})}
 		</div>
 	)
 }

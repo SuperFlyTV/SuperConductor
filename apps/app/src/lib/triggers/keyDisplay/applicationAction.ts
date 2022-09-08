@@ -1,6 +1,6 @@
 import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { ActionAny, ProjectAction } from '../action'
+import { ActionAny, ApplicationAction } from '../action'
 import {
 	formatKeyDuration,
 	formatKeyTimeToEnd,
@@ -12,8 +12,8 @@ import {
 	_getKeyDisplay,
 } from './lib'
 
-export function keyDisplayProjectPlay(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationPlay(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -33,11 +33,11 @@ export function keyDisplayProjectPlay(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart, playingPart }) => {
+		paused: ({ action, currentPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -58,7 +58,7 @@ export function keyDisplayProjectPlay(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -78,8 +78,8 @@ export function keyDisplayProjectPlay(
 		},
 	})
 }
-export function keyDisplayProjectStop(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationStop(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -103,7 +103,7 @@ export function keyDisplayProjectStop(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (!group.oneAtATime && action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!group.oneAtATime && !partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -122,8 +122,8 @@ export function keyDisplayProjectStop(
 		},
 	})
 }
-export function keyDisplayProjectPlayStop(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationPlayStop(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -143,11 +143,11 @@ export function keyDisplayProjectPlayStop(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart, playingPart }) => {
+		paused: ({ action, currentPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -169,7 +169,7 @@ export function keyDisplayProjectPlayStop(
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
 				// if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -188,8 +188,8 @@ export function keyDisplayProjectPlayStop(
 		},
 	})
 }
-export function keyDisplayProjectPause(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationPause(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -213,7 +213,7 @@ export function keyDisplayProjectPause(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!group.oneAtATime && !groupIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -234,7 +234,7 @@ export function keyDisplayProjectPause(
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
 				if (!group.oneAtATime && action.part.id !== currentPart.id) return null // Display idle
-			} else if (action.type === 'project') {
+			} else if (action.type === 'application') {
 				if (!group.oneAtATime && !partIsSelected(action.selected, currentPart.id)) return null // Display idle
 			} else assertNever(action)
 
@@ -253,8 +253,8 @@ export function keyDisplayProjectPause(
 		},
 	})
 }
-export function keyDisplayProjectNext(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationNext(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -286,8 +286,8 @@ export function keyDisplayProjectNext(
 		},
 	})
 }
-export function keyDisplayProjectPrevious(
-	firstAction: ProjectAction,
+export function keyDisplayApplicationPrevious(
+	firstAction: ApplicationAction,
 	actions: ActionAny[],
 	triggerArea: TriggerArea | undefined
 ): KeyDisplayTimeline {
@@ -319,9 +319,30 @@ export function keyDisplayProjectPrevious(
 		},
 	})
 }
+export function keyDisplayApplicationDelete(
+	firstAction: ApplicationAction,
+	actions: ActionAny[],
+	triggerArea: TriggerArea | undefined
+): KeyDisplayTimeline {
+	const label = getSelectionLabel(firstAction)
 
-function getSelectionLabel(firstAction: ProjectAction): string {
-	let labels: string[] = []
+	return _getKeyDisplay(actions, {
+		idle: {
+			attentionLevel: AttentionLevel.NEUTRAL,
+			area: triggersAreaToArea(triggerArea, false),
+			header: {
+				long: `Delete ${label}`,
+				short: `🗑${label}`,
+			},
+		},
+		playing: () => {
+			return null
+		},
+	})
+}
+
+function getSelectionLabel(firstAction: ApplicationAction): string {
+	const labels: string[] = []
 	let partCount = 0
 	let groupCount = 0
 

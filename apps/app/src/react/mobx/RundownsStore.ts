@@ -19,11 +19,10 @@ import {
 import { Part, PartGUI } from '../../models/rundown/Part'
 import { deepClone, literal, omit } from '@shared/lib'
 import { ClientSideLogger } from '../api/logger'
-import { ActionAny, RundownAction, RundownActionLight } from '../../lib/triggers/action'
+import { ActionAny, RundownActionLight } from '../../lib/triggers/action'
 import _ from 'lodash'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { assertNever } from '@shared/lib'
-import { Project } from '../../models/project/Project'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
@@ -109,8 +108,7 @@ export class RundownsStore {
 				  }
 				| undefined
 
-			console.log()
-			// if (firstRundown) this.setCurrentRundown(firstRundown.rundownId) // TMP!!!!!!!!!!!!
+			if (firstRundown) this.setCurrentRundown(firstRundown.rundownId)
 		}
 	}
 
@@ -743,8 +741,8 @@ export class RundownsStore {
 		this._updateRundown(rundownId, this._rundownsClean.get(rundownId) ?? null)
 	}
 
-	private _projectButtonActions: Map<string, ActionAny[]> = new Map()
-	private _rundownButtonActions: Map<string, ActionAny[]> = new Map()
+	private _projectButtonActions?: Map<string, ActionAny[]> // No initial value to avoid this being autoObservable
+	private _rundownButtonActions?: Map<string, ActionAny[]> // No initial value to avoid this being autoObservable
 	private _allButtonActions: Map<string, ActionAny[]> = new Map()
 	get allButtonActions() {
 		return this._allButtonActions as Readonly<typeof this._allButtonActions>
@@ -765,12 +763,16 @@ export class RundownsStore {
 	private updateAllButtonActions(): void {
 		runInAction(() => {
 			const allActions = new Map()
-			this._projectButtonActions.forEach((action, key) => {
-				allActions.set(key, action)
-			})
-			this._rundownButtonActions.forEach((action, key) => {
-				allActions.set(key, action)
-			})
+			if (this._projectButtonActions) {
+				this._projectButtonActions.forEach((action, key) => {
+					allActions.set(key, action)
+				})
+			}
+			if (this._rundownButtonActions) {
+				this._rundownButtonActions.forEach((action, key) => {
+					allActions.set(key, action)
+				})
+			}
 			this._allButtonActions = allActions
 		})
 	}

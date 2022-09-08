@@ -3,18 +3,17 @@ import _ from 'lodash'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
 import { RundownActionLight } from '../../../../../../lib/triggers/action'
-import { Project } from '../../../../../../models/project/Project'
 import { PartGUI } from '../../../../../../models/rundown/Part'
 import {
 	ActiveTriggers,
 	activeTriggersToString,
-	ProjectTrigger,
+	ApplicationTrigger,
 	RundownTrigger,
 } from '../../../../../../models/rundown/Trigger'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 import { HotkeyContext } from '../../../../../contexts/Hotkey'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { EditProjectTrigger, EditRundownTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger'
+import { EditApplicationTrigger, EditRundownTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger'
 
 export const RundownTriggersSubmenu: React.FC<{
 	rundownId: string
@@ -146,9 +145,9 @@ export const RundownTriggersSubmenu: React.FC<{
 	)
 }
 
-export const ProjectTriggersSubmenu: React.FC<{
-	triggerAction: ProjectTrigger['action']
-	triggers: ProjectTrigger[]
+export const ApplicationTriggersSubmenu: React.FC<{
+	triggerAction: ApplicationTrigger['action']
+	triggers: ApplicationTrigger[]
 }> = ({ triggerAction, triggers }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -157,9 +156,9 @@ export const ProjectTriggersSubmenu: React.FC<{
 	const actionCount = triggers.length
 
 	const onEditTrigger = useCallback(
-		(index: number, trigger: ProjectTrigger | null) => {
+		(index: number, trigger: ApplicationTrigger | null) => {
 			ipcServer
-				.setProjectTrigger({
+				.setApplicationTrigger({
 					triggerAction,
 					trigger,
 					triggerIndex: index,
@@ -184,14 +183,14 @@ export const ProjectTriggersSubmenu: React.FC<{
 			} else if (triggerLength < prevTriggers.current.length) {
 				// The length is shorter; ie a button was released.
 
-				const trigger: ProjectTrigger = {
+				const trigger: ApplicationTrigger = {
 					label: activeTriggersToString(prevTriggers.current),
 					fullIdentifiers: prevTriggers.current.map((t) => t.fullIdentifier),
 					action: triggerAction,
 				}
 
 				ipcServer
-					.setProjectTrigger({
+					.setApplicationTrigger({
 						triggerAction,
 						trigger,
 						triggerIndex: 9999, // Add a trigger
@@ -229,7 +228,7 @@ export const ProjectTriggersSubmenu: React.FC<{
 			{actionCount > 0 && (
 				<div className="triggers">
 					{triggers.map((trigger, index) => (
-						<EditProjectTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
+						<EditApplicationTrigger key={index} trigger={trigger} index={index} onEdit={onEditTrigger} />
 					))}
 				</div>
 			)}

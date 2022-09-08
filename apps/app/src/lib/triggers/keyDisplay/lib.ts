@@ -1,6 +1,6 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { ActionAny, ProjectActionSelected } from '../action'
+import { ActionAny, ApplicationActionSelected } from '../action'
 import { PartBase } from '../../../models/rundown/Part'
 import { getTimelineForGroup } from '../../../electron/timeline'
 import { GroupBase } from '../../../models/rundown/Group'
@@ -26,7 +26,7 @@ export function getLongestActionDuration(actions: ActionAny[]): number | null {
 			} else {
 				maxDuration = Math.max(maxDuration, duration)
 			}
-		} else if (action.type === 'project') {
+		} else if (action.type === 'application') {
 			for (const selected of action.selected) {
 				let duration: number | null | undefined = undefined
 				if (selected.type === 'group') {
@@ -82,7 +82,7 @@ export function _getKeyDisplay(
 		const actionGroups: GroupBase[] = []
 		if (action.type === 'rundown') {
 			actionGroups.push(action.group)
-		} else if (action.type === 'project') {
+		} else if (action.type === 'application') {
 			for (const selected of action.selected) {
 				actionGroups.push(selected.group)
 			}
@@ -194,13 +194,13 @@ export function triggersAreaToArea(
 		color: triggerArea.areaColor,
 	}
 }
-export function partIsSelected(selected: ProjectActionSelected[], partId: string): boolean {
+export function partIsSelected(selected: ApplicationActionSelected[], partId: string): boolean {
 	for (const s of selected) {
 		if (s.type === 'part' && s.part.id === partId) return true
 	}
 	return false
 }
-export function groupIsSelected(selected: ProjectActionSelected[], groupId: string): boolean {
+export function groupIsSelected(selected: ApplicationActionSelected[], groupId: string): boolean {
 	for (const s of selected) {
 		if (s.type === 'group' && s.group.id === groupId) return true
 		if (s.type === 'part' && s.group.id === groupId) return true
