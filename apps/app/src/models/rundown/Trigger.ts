@@ -1,3 +1,8 @@
+/*
+	A Trigger defines something that invokes an Action.
+	So it could be a keyboard key, a streamdeck button etc (- or a key-combination).
+*/
+
 export interface AnyTrigger {
 	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
 	fullIdentifiers: string[]

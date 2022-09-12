@@ -47,22 +47,25 @@ export function getLongestActionDuration(actions: ActionAny[]): number | null {
 	}
 	return maxDuration
 }
-
+/**
+ * This function is used to return a Timeline for a Key.
+ * The Timeline is used to present current (and possibly future) content on a certain Key.
+ */
 export function _getKeyDisplay(
+	/** The actions contain a list of all of the actions that the key is assigned to */
 	actions: ActionAny[],
 	labels: {
+		/** Return content for when nothing related to the action(s) is playing */
 		idle: KeyDisplay
 		/** Return content for when the playingPart is PAUSED */
 		paused?: (data: {
 			group: GroupBase
-			currentPart: PartBase
 			action: ActionAny
-			playingPart: GroupPreparedPlayDataPart
+			pausedPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
 		/** Return content for when the playingPart is PLAYING */
 		playing: (data: {
 			group: GroupBase
-			currentPart: PartBase
 			action: ActionAny
 			playingPart: GroupPreparedPlayDataPart
 		}) => KeyDisplay | null
@@ -83,6 +86,8 @@ export function _getKeyDisplay(
 		if (action.type === 'rundown') {
 			actionGroups.push(action.group)
 		} else if (action.type === 'application') {
+			// In the case of an application-action,
+			// several things could have been selected in the GUI
 			for (const selected of action.selected) {
 				actionGroups.push(selected.group)
 			}
@@ -106,22 +111,18 @@ export function _getKeyDisplay(
 					) => {
 						// return content for the part
 
-						const currentPart: PartBase = playingPart.part
-
 						let content: KeyDisplay | null = null
 						if (isPaused) {
 							// The part is paused
 							content =
 								labels.paused?.({
 									group: currentGroup,
-									currentPart: currentPart,
 									action: action,
-									playingPart,
+									pausedPart: playingPart,
 								}) ?? labels.idle
 						} else {
 							content = labels.playing({
 								group: currentGroup,
-								currentPart: currentPart,
 								action: action,
 								playingPart,
 							})
@@ -171,6 +172,8 @@ export function _getKeyDisplay(
 		}
 	}
 
+	// Also add a timeline-object with lowest priority,
+	// which will be used whenever nothing else plays:
 	keyTimeline.push({
 		id: 'idle',
 		layer: 'KEY',
@@ -203,7 +206,7 @@ export function partIsSelected(selected: ApplicationActionSelected[], partId: st
 export function groupIsSelected(selected: ApplicationActionSelected[], groupId: string): boolean {
 	for (const s of selected) {
 		if (s.type === 'group' && s.group.id === groupId) return true
-		if (s.type === 'part' && s.group.id === groupId) return true
+		// Note: If a Part is selected, it is ignored
 	}
 	return false
 }
@@ -213,6 +216,6 @@ export function formatKeyDuration(duration: number | null | undefined) {
 	return `#duration(${duration})`
 }
 export function formatKeyTimeToEnd(duration: number | null | undefined) {
-	if (duration === null) return ''
-	return '\n#timeToEnd'
+	if (duration === null) return '∞'
+	return '#timeToEnd'
 }

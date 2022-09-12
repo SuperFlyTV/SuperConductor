@@ -5,6 +5,7 @@ import { PartBase } from '../../../models/rundown/Part'
 import { ActionAny, RundownAction } from '../action'
 import {
 	formatKeyDuration,
+	formatKeyTimeToEnd,
 	getLongestActionDuration,
 	partIsSelected,
 	TriggerArea,
@@ -32,12 +33,12 @@ export function keyDisplayRundownPlay(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart }) => {
+		paused: ({ action, pausedPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
-				if (action.part.id !== currentPart.id) return null // Display idle
+				if (action.part.id !== pausedPart.part.id) return null // Display idle
 			} else if (action.type === 'application') {
-				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
+				if (!partIsSelected(action.selected, pausedPart.part.id)) return null // Display idle
 			} else assertNever(action)
 
 			const label = firstAction.part.resolved.label
@@ -46,15 +47,15 @@ export function keyDisplayRundownPlay(
 				area: triggersAreaToArea(triggerArea, false),
 
 				header: {
-					long: `Play ${label}`,
-					short: `▶${label}`,
+					long: `Restart ${label}`,
+					short: `↺${label}`,
 				},
 				info: {
 					long: formatKeyDuration(longestDuration),
 				},
 			}
 		},
-		playing: ({ action, currentPart }) => {
+		playing: ({ action, playingPart }) => {
 			// if (action.type === 'rundown') {
 			// } else if (action.type === 'application') {
 			// } else {
@@ -63,9 +64,9 @@ export function keyDisplayRundownPlay(
 			// }
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
-				if (action.part.id !== currentPart.id) return null // Display idle
+				if (action.part.id !== playingPart.part.id) return null // Display idle
 			} else if (action.type === 'application') {
-				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
+				if (!partIsSelected(action.selected, playingPart.part.id)) return null // Display idle
 			} else assertNever(action)
 
 			const label = firstAction.part.resolved.label
@@ -74,11 +75,11 @@ export function keyDisplayRundownPlay(
 				area: triggersAreaToArea(triggerArea, false),
 
 				header: {
-					long: `Play ${label}`,
-					short: `▶${label}`,
+					long: `Restart ${label}`,
+					short: `↺${label}`,
 				},
 				info: {
-					long: longestDuration === null ? '-' : `#timeToEnd`,
+					long: formatKeyTimeToEnd(longestDuration),
 				},
 			}
 		},
@@ -104,15 +105,15 @@ export function keyDisplayRundownStop(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		playing: ({ action, group, currentPart }) => {
+		playing: ({ action, group, playingPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
-				if (!group.oneAtATime && action.part.id !== currentPart.id) return null // Display idle
+				if (!group.oneAtATime && action.part.id !== playingPart.part.id) return null // Display idle
 			} else if (action.type === 'application') {
-				if (!group.oneAtATime && !partIsSelected(action.selected, currentPart.id)) return null // Display idle
+				if (!group.oneAtATime && !partIsSelected(action.selected, playingPart.part.id)) return null // Display idle
 			} else assertNever(action)
 
-			const label = getLabel(actions, currentPart)
+			const label = getLabel(actions, playingPart.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
 				area: triggersAreaToArea(triggerArea, false),
@@ -122,7 +123,7 @@ export function keyDisplayRundownStop(
 					short: `⏹${label}`,
 				},
 				info: {
-					long: `${currentPart.resolved.label}` + (longestDuration === null ? '' : '\n#timeToEnd'),
+					long: [playingPart.part.resolved.label, formatKeyTimeToEnd(longestDuration)].join('\n'),
 				},
 			}
 		},
@@ -148,12 +149,12 @@ export function keyDisplayRundownPlayStop(
 				long: formatKeyDuration(longestDuration),
 			},
 		},
-		paused: ({ action, currentPart }) => {
+		paused: ({ action, pausedPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
-				if (action.part.id !== currentPart.id) return null // Display idle
+				if (action.part.id !== pausedPart.part.id) return null // Display idle
 			} else if (action.type === 'application') {
-				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
+				if (!partIsSelected(action.selected, pausedPart.part.id)) return null // Display idle
 			} else assertNever(action)
 
 			const label = firstAction.part.resolved.label
@@ -170,16 +171,16 @@ export function keyDisplayRundownPlayStop(
 				},
 			}
 		},
-		playing: ({ action, currentPart }) => {
+		playing: ({ action, playingPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (action.type === 'rundown') {
-				if (action.part.id !== currentPart.id) return null // Display idle
+				if (action.part.id !== playingPart.part.id) return null // Display idle
 				// if (!data.group.oneAtATime && data.action.part.id !== data.part.id) return null // Display idle
 			} else if (action.type === 'application') {
-				if (!partIsSelected(action.selected, currentPart.id)) return null // Display idle
+				if (!partIsSelected(action.selected, playingPart.part.id)) return null // Display idle
 			} else assertNever(action)
 
-			const label = getLabel(actions, currentPart)
+			const label = getLabel(actions, playingPart.part)
 			return {
 				attentionLevel: AttentionLevel.INFO,
 				area: triggersAreaToArea(triggerArea, false),
@@ -189,7 +190,7 @@ export function keyDisplayRundownPlayStop(
 					short: `⏹${label}`,
 				},
 				info: {
-					long: `${currentPart.resolved.label}` + (longestDuration === null ? '' : '\n#timeToEnd'),
+					long: [playingPart.part.resolved.label, formatKeyTimeToEnd(longestDuration)].join('\n'),
 				},
 			}
 		},

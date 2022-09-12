@@ -170,6 +170,7 @@ export function getTimelineForGroup(
 				timeline.push(timelineGroup)
 			}
 		}
+		// console.log('prepared', JSON.stringify(prepared, null, 2))
 		// console.log('timeline', JSON.stringify(timeline, null, 2))
 		return timeline
 	} else {
