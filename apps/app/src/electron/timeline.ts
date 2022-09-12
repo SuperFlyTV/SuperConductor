@@ -269,7 +269,7 @@ function partToTimelineObj(
 	const timelineObj: TimelineObjEmpty = {
 		id: objId,
 		enable,
-		layer: '',
+		layer: objId,
 		content: {
 			deviceType: DeviceType.ABSTRACT,
 			type: 'empty',
