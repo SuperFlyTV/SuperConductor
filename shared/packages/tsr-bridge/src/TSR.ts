@@ -83,7 +83,9 @@ export class TSR {
 					// Create the device, but don't initialize it:
 					const device = await this.conductor.createDevice(deviceId, newDevice)
 
-					await device.device.on('connectionChanged', (status: DeviceStatus) => {
+					await device.device.on('connectionChanged', (...args) => {
+						// TODO: figure out why the arguments to this event callback lost the correct typings
+						const status = args[0] as DeviceStatus
 						this.onDeviceStatus(deviceId, status)
 					})
 					// await device.device.on('commandError', onCommandError)
