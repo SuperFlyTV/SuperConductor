@@ -137,8 +137,8 @@ export const GroupView: React.FC<{
 
 		if (
 			targetEl.closest('.part') ||
-			targetEl.closest('.controls-left') ||
-			targetEl.closest('.controls-right') ||
+			targetEl.closest('.controls-left>*') ||
+			targetEl.closest('.controls-right>*') ||
 			targetEl.closest('button') ||
 			targetEl.closest('input') ||
 			targetEl.closest('.editable') ||
