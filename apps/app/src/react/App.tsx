@@ -139,7 +139,7 @@ export const App = observer(function App() {
 				// Don't send sever-errors back to server:
 				if (!message.match(ErrorCruftRegex)) {
 					// eslint-disable-next-line no-console
-					serverAPI.handleClientError(message, stack).catch(console.error)
+					serverAPI.handleClientError({ error: message, stack }).catch(console.error)
 				}
 			}
 			// }
@@ -193,9 +193,9 @@ export const App = observer(function App() {
 			if (timeSinceLast < 1000) {
 				debugKeyPresses.current++
 				if (debugKeyPresses.current === 5) {
-					serverAPI.debugThrowError('sync').catch(handleError)
-					serverAPI.debugThrowError('async').catch(handleError)
-					serverAPI.debugThrowError('setTimeout').catch(handleError)
+					serverAPI.debugThrowError({ type: 'sync' }).catch(handleError)
+					serverAPI.debugThrowError({ type: 'async' }).catch(handleError)
+					serverAPI.debugThrowError({ type: 'setTimeout' }).catch(handleError)
 
 					setTimeout(() => {
 						throw new Error('This is a client-side error in a setTimeout')
@@ -317,7 +317,7 @@ export const App = observer(function App() {
 	}
 	function onUserAgreement(agreementVersion: string): void {
 		setUserAgreementScreenOpen(false)
-		appStore.serverAPI.acknowledgeUserAgreement(agreementVersion).catch(logger.error)
+		appStore.serverAPI.acknowledgeUserAgreement({ agreementVersion }).catch(logger.error)
 	}
 
 	// Handle using the Delete key to delete timeline objs

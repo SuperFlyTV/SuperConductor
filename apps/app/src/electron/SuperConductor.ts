@@ -27,11 +27,13 @@ import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { HTTPAPI, HTTP_API_PORT } from './HTTPAPI'
 
 export class SuperConductor {
 	mainWindow?: BrowserWindow
 	ipcServer?: IPCServer
 	ipcClient?: IPCClient
+	httpAPI?: HTTPAPI
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -401,6 +403,7 @@ export class SuperConductor {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
+		this.httpAPI = new HTTPAPI(HTTP_API_PORT, this.ipcServer)
 	}
 	private refreshResources(): void {
 		// Remove resources of devices we don't have anymore:

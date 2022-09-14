@@ -141,7 +141,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 
 	const handleRefreshAuto = useCallback(
 		(interval: number) => {
-			ipcServer.refreshResourcesSetAuto(interval).catch(handleError)
+			ipcServer.refreshResourcesSetAuto({ interval }).catch(handleError)
 		},
 		[ipcServer, handleError]
 	)
