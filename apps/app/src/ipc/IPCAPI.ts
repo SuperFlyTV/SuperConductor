@@ -64,6 +64,9 @@ export interface Action {
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
+	// Note: All these methods must only accept a single parameter.
+	// This is so they can properly be exposed to the REST API.
+
 	log: (arg: { level: LogLevel; params: any[] }) => void
 	handleClientError: (arg: { error: string; stack?: string }) => void
 	debugThrowError: (arg: { type: 'sync' | 'async' | 'setTimeout' }) => void

@@ -88,7 +88,7 @@ export function isUndoable(result: unknown): result is UndoableResult<any> {
 }
 
 type ConvertToServerSide<T> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => any
+	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
 		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
@@ -163,36 +163,36 @@ export class IPCServer
 			}
 		}
 	}
-	private getProject(): Project {
+	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	private getRundown(arg: { rundownId: string }): { rundown: Rundown } {
+	public getRundown(arg: { rundownId: string }): { rundown: Rundown } {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) throw new Error(`Rundown "${arg.rundownId}" not found.`)
 
 		return { rundown }
 	}
-	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
+	public getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
-		return this.getGroupOfRundown(rundown, arg.groupId)
+		return this._getGroupOfRundown(rundown, arg.groupId)
 	}
-	private getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
+	private _getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
 		const group = findGroup(rundown, groupId)
 		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
 
-	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
+	public getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-		return this.getPartOfGroup(rundown, group, arg.partId)
+		return this._getPartOfGroup(rundown, group, arg.partId)
 	}
-	private getPartOfGroup(
+	private _getPartOfGroup(
 		rundown: Rundown,
 		group: Group,
 		partId: string
@@ -305,7 +305,7 @@ export class IPCServer
 			groupId: arg.groupId,
 		})
 		for (const partId of arg.partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
 			this._playPart(group, part, now)
 		}
@@ -346,7 +346,7 @@ export class IPCServer
 		})
 		updateGroupPlayingParts(group)
 		for (const partId of arg.partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
 			this._pausePart(group, part, arg.time, now)
 
@@ -1106,7 +1106,7 @@ export class IPCServer
 				movePart.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
 
 			if (arg.to.groupId) {
-				toGroup = this.getGroupOfRundown(toRundown, arg.to.groupId).group
+				toGroup = this._getGroupOfRundown(toRundown, arg.to.groupId).group
 			} else {
 				// toRundown = arg.to.rundownId === movePart.rundownId ? fromRundown : this.getRundown(arg.to).rundown
 				if (isTransparentGroupMove) {
@@ -1321,7 +1321,7 @@ export class IPCServer
 		for (const groupId of arg.groupIds) {
 			// Remove the group from the groups array and re-insert it at its new position
 
-			const group = this.getGroupOfRundown(rundown, groupId).group
+			const group = this._getGroupOfRundown(rundown, groupId).group
 
 			// Remove the group from the groups array and re-insert it at its new position
 			rundown.groups = rundown.groups.filter((g) => g.id !== group.id)
