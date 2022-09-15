@@ -27,7 +27,7 @@ import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
-import { HTTPAPI, HTTP_API_PORT } from './HTTPAPI'
+import { HTTPAPI } from './HTTPAPI'
 
 export class SuperConductor {
 	mainWindow?: BrowserWindow
@@ -51,6 +51,8 @@ export class SuperConductor {
 	private refreshStatus: { [deviceId: string]: number } = {}
 
 	private hasStoredStartupUserStatistics = false
+
+	private internalHttpApiPort = 5500
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -102,12 +104,14 @@ export class SuperConductor {
 			this.triggerHandleAutoFill()
 		})
 
-		for (const argv of process.argv) {
-			if (argv === '--disable-telemetry') {
+		process.argv.forEach((value, index) => {
+			if (value === '--disable-telemetry') {
 				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
+			} else if (value === '--internal-http-api-port') {
+				this.internalHttpApiPort = parseInt(process.argv[index + 1], 10)
 			}
-		}
+		})
 
 		const appData = this.storage.getAppData()
 		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
@@ -403,7 +407,7 @@ export class SuperConductor {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
-		this.httpAPI = new HTTPAPI(HTTP_API_PORT, this.ipcServer)
+		this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 	}
 	private refreshResources(): void {
 		// Remove resources of devices we don't have anymore:

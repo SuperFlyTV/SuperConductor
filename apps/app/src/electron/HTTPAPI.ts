@@ -2,8 +2,7 @@ import Koa from 'koa'
 import Router from '@koa/router'
 import { IPCServer, isUndoable } from './IPCServer'
 import { stringifyError } from '@shared/lib'
-
-export const HTTP_API_PORT = 5500
+import { LoggerLike } from '@shared/api'
 
 export class HTTPAPI {
 	private app = new Koa()
@@ -16,7 +15,7 @@ export class HTTPAPI {
 		}
 	} = {}
 
-	constructor(port: number, ipcServer: IPCServer) {
+	constructor(port: number, ipcServer: IPCServer, log: LoggerLike) {
 		this.router.get(`/`, async (ctx) => {
 			ctx.response.body = `<html><body>
 			<a href="/api/internal">Internal API (unstable)</a>
@@ -130,5 +129,6 @@ export class HTTPAPI {
 
 		this.app.use(this.router.routes()).use(this.router.allowedMethods())
 		this.app.listen(port)
+		log.info(`Internal HTTP API available at http://localhost:${port}/api/internal`)
 	}
 }
