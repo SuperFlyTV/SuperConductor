@@ -100,7 +100,7 @@
 		"react-visibility-sensor": "^5.1.1",
 		"short-uuid": "^4.2.0",
 		"superfly-timeline": "^8.2.1",
-		"timeline-state-resolver-types": "^7.3.0-release44.0",
+		"timeline-state-resolver-types": "7.4.0-nightly-release46-20220915-075618-de36c07ee.0",
 		"type-fest": "^2.17.0",
 		"utf-8-validate": "^5.0.2",
 		"winston": "^3.7.2",

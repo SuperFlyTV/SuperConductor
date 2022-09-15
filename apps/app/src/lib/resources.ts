@@ -594,6 +594,24 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				status: TransportStatus.PREVIEW,
 			},
 		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_CLIP) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.PLAY,
+				speed: 100,
+				singleClip: true,
+				loop: false,
+				clipId: resource.clipId,
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -610,6 +628,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.CASPARCG_MEDIA:
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.HYPERDECK_PLAY:
+		case ResourceType.HYPERDECK_CLIP:
 			return 'Media'
 		case ResourceType.CASPARCG_TEMPLATE:
 			return 'Graphics'
