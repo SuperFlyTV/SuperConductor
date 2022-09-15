@@ -166,6 +166,10 @@ export class IPCServer
 	public getProject(): Project {
 		return this.storage.getProject()
 	}
+	public getRundowns(): { rundownIds: string[] } {
+		const rundowns = this.storage.getAllRundowns()
+		return { rundownIds: rundowns.map((r) => r.id) }
+	}
 	public getRundown(arg: { rundownId: string }): { rundown: Rundown } {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) throw new Error(`Rundown "${arg.rundownId}" not found.`)
