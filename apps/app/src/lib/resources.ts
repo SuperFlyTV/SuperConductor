@@ -75,7 +75,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				templateType: 'html',
 				name: resource.name,
 				data: JSON.stringify(resource.data ?? {}),
-				useStopCommand: true,
+				useStopCommand: resource.useStopCommand ?? true,
 			},
 		}
 
