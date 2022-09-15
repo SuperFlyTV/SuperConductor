@@ -19,14 +19,14 @@ export class HTTPAPI {
 	constructor(port: number, ipcServer: IPCServer) {
 		this.router.get(`/`, async (ctx) => {
 			ctx.response.body = `<html><body>
-			<a href="/api">API</a>
+			<a href="/api/internal">Internal API (unstable)</a>
 			</body></html>`
 			ctx.response.status = 200
 		})
-		this.router.get(`/api`, async (ctx) => {
+		this.router.get(`/api/internal`, async (ctx) => {
 			const methods = Object.entries(this.methodSignatures)
 				.map(([_fullEndpoint, e]) => {
-					const url = `/api/${e.endpoint}/?`
+					const url = `/api/internal/${e.endpoint}/?`
 
 					return `<a href="${url}">${e.type} ${url}</a>`
 				})
@@ -55,7 +55,7 @@ export class HTTPAPI {
 
 				endpoint = methodName.charAt(3).toLocaleLowerCase() + methodName.substring(4)
 				endpointType = 'GET'
-				this.router.get(`/api/${endpoint}`, async (ctx) => {
+				this.router.get(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
 						const result = await fcn(ctx.request.query)
 						ctx.response.body = result
@@ -74,7 +74,7 @@ export class HTTPAPI {
 
 				endpoint = methodName.charAt(6).toLocaleLowerCase() + methodName.substring(7)
 				endpointType = 'DELETE'
-				this.router.delete(`/api/${endpoint}`, async (ctx) => {
+				this.router.delete(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
 						const result = await fcn(ctx.request.query)
 						if (isUndoable(result)) {
@@ -97,7 +97,7 @@ export class HTTPAPI {
 
 				endpoint = methodName
 				endpointType = 'POST'
-				this.router.post(`/api/${endpoint}`, async (ctx) => {
+				this.router.post(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
 						const result = await fcn(ctx.request.query)
 						if (isUndoable(result)) {
