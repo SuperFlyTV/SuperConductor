@@ -10,6 +10,7 @@ import {
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { stringifyError } from '@shared/lib'
 
 export class HyperdeckSideload implements SideLoadDevice {
 	private hyperdeck: Hyperdeck
@@ -25,6 +26,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 
 		this.hyperdeck.on('disconnected', () => {
 			this.log.info(`HyperDeck ${deviceId}: Sideload connection disconnected`)
+		})
+
+		this.hyperdeck.on('error', (error) => {
+			this.log.error(`HyperDeck ${deviceId}: ${stringifyError(error)}`)
 		})
 
 		if (deviceOptions.options?.host) {
