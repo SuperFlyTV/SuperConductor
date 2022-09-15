@@ -10,6 +10,7 @@ import { assertNever } from '@shared/lib'
 import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
 import { SideBarEditPart } from './editPart/SideBarEditPart'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
+import { ErrorBoundary } from '../util/ErrorBoundary'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
 	const currentRundownId = useMemoComputedValue(() => {
@@ -82,29 +83,41 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	}
 	if (!editing) {
 		// Not editing
-		return <SidebarResourceLibrary />
+		return (
+			<ErrorBoundary>
+				<SidebarResourceLibrary />
+			</ErrorBoundary>
+		)
 	} else if (editing.type === 'group') {
-		return <SideBarEditGroup rundownId={currentRundownId} groupId={editing.groupId} />
+		return (
+			<ErrorBoundary>
+				<SideBarEditGroup rundownId={currentRundownId} groupId={editing.groupId} />
+			</ErrorBoundary>
+		)
 	} else if (editing.type === 'part') {
 		return (
-			<SideBarEditPart
-				rundownId={currentRundownId}
-				groupId={editing.groupId}
-				partId={editing.partId}
-				groupLocked={!!editing.groupLocked}
-			/>
+			<ErrorBoundary>
+				<SideBarEditPart
+					rundownId={currentRundownId}
+					groupId={editing.groupId}
+					partId={editing.partId}
+					groupLocked={!!editing.groupLocked}
+				/>
+			</ErrorBoundary>
 		)
 	} else if (editing.type === 'timelineObj') {
 		const groupOrPartLocked = editing.groupLocked || editing.partLocked
 		return (
-			<SideBarEditTimelineObject
-				rundownId={currentRundownId}
-				groupId={editing.groupId}
-				partId={editing.partId}
-				timelineObj={editing.timelineObj}
-				mappings={props.mappings}
-				disabled={groupOrPartLocked}
-			/>
+			<ErrorBoundary>
+				<SideBarEditTimelineObject
+					rundownId={currentRundownId}
+					groupId={editing.groupId}
+					partId={editing.partId}
+					timelineObj={editing.timelineObj}
+					mappings={props.mappings}
+					disabled={groupOrPartLocked}
+				/>
+			</ErrorBoundary>
 		)
 	} else {
 		assertNever(editing)
