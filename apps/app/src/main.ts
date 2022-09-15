@@ -8,14 +8,9 @@ import { SuperConductor } from './electron/SuperConductor'
 import { createLoggers } from './lib/logging'
 import { baseFolder } from './lib/baseFolder'
 import path from 'path'
+import winston from 'winston'
 
-const createWindow = (): void => {
-	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
-
-	log.info('Starting up...')
-
-	const superConductor = new SuperConductor(log, rendererLogger)
-
+function createWindow(log: winston.Logger, superConductor: SuperConductor): void {
 	const appData = superConductor.storage.getAppData()
 
 	const win = new BrowserWindow({
@@ -48,8 +43,10 @@ const createWindow = (): void => {
 	if (appData.windowPosition.maximized) {
 		win.maximize()
 	}
-
-	superConductor.initWindow(win)
+	const handler = superConductor.onNewWindow(win)
+	win.on('closed', () => {
+		handler.close()
+	})
 
 	if (isDev) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
@@ -63,21 +60,19 @@ const createWindow = (): void => {
 	}
 	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
 
-	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
-
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',
 		undoEnabled: false,
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return superConductor.ipcServer?.undo().catch(log.error)
+			return superConductor.ipcServer.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return superConductor.ipcServer?.redo().catch(log.error)
+			return superConductor.ipcServer.redo().catch(log.error)
 		},
 		onAboutClick: () => {
-			superConductor.ipcClient?.displayAboutDialog()
+			handler.ipcClient.displayAboutDialog()
 		},
 		onUpdateClick: async () => {
 			try {
@@ -111,7 +106,7 @@ const createWindow = (): void => {
 	const menu = generateMenu(menuOpts)
 	Menu.setApplicationMenu(menu)
 
-	superConductor.ipcServer?.on('updatedUndoLedger', (undoLedger, undoPointer) => {
+	superConductor.ipcServer.on('updatedUndoLedger', (undoLedger, undoPointer) => {
 		const undoAction = undoLedger[undoPointer]
 		const redoAction = undoLedger[undoPointer + 1]
 		menuOpts.undoLabel = undoAction ? `Undo ${undoAction.description}` : 'Undo'
@@ -121,56 +116,6 @@ const createWindow = (): void => {
 		const menu = generateMenu(menuOpts)
 		Menu.setApplicationMenu(menu)
 	})
-
-	app.on('window-all-closed', () => {
-		log.info('Shutting down...')
-		Promise.resolve()
-			.then(() => {
-				superConductor.isShuttingDown()
-			})
-			.then(async () => {
-				await Promise.race([
-					Promise.all([
-						// Write any changes to disk:
-						superConductor.storage.writeChangesNow(),
-					]),
-					// Add a timeout, in case the above doesn't finish:
-					new Promise((resolve) => setTimeout(resolve, 1000)),
-				])
-			})
-
-			.then(async () => {
-				await Promise.race([
-					Promise.all([
-						// Gracefully shut down the internal TSR-Bridge:
-						superConductor.bridgeHandler?.onClose(),
-					]),
-					// Add a timeout, in case the above doesn't finish:
-					new Promise((resolve) => setTimeout(resolve, 1000)),
-				])
-			})
-			.then(() => {
-				superConductor.terminate()
-				log.info('Shut down successfully.')
-			})
-			.catch((err) => {
-				log.error(err)
-			})
-			.finally(() => {
-				// Wait for the logger to finish writing logs:
-
-				log.on('error', (_err) => {
-					// Supress error
-					// eslint-disable-next-line no-console
-					console.error(_err)
-				})
-				log.on('finish', () => {
-					app.quit()
-				})
-				log.end()
-			})
-	})
-
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:
 	const updateSizeAndPosition = () => {
 		const newBounds = win.getBounds()
@@ -223,4 +168,69 @@ const createWindow = (): void => {
 	})
 }
 
-app.on('ready', createWindow)
+function onAppReady(): void {
+	const { electronLogger: log, rendererLogger } = createLoggers(path.join(baseFolder(), 'Logs'))
+
+	log.info('Starting up...')
+
+	const superConductor = new SuperConductor(log, rendererLogger)
+
+	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+
+	app.on('window-all-closed', () => {
+		shutDownApplication()
+	})
+
+	const shutDownApplication = () => {
+		log.info('Shutting down...')
+		Promise.resolve()
+			.then(() => {
+				superConductor.isShuttingDown()
+			})
+			.then(async () => {
+				await Promise.race([
+					Promise.all([
+						// Write any changes to disk:
+						superConductor.storage.writeChangesNow(),
+					]),
+					// Add a timeout, in case the above doesn't finish:
+					new Promise((resolve) => setTimeout(resolve, 1000)),
+				])
+			})
+
+			.then(async () => {
+				await Promise.race([
+					Promise.all([
+						// Gracefully shut down the internal TSR-Bridge:
+						superConductor.bridgeHandler?.onClose(),
+					]),
+					// Add a timeout, in case the above doesn't finish:
+					new Promise((resolve) => setTimeout(resolve, 1000)),
+				])
+			})
+			.then(() => {
+				superConductor.terminate()
+				log.info('Shut down successfully.')
+			})
+			.catch((err) => {
+				log.error(err)
+			})
+			.finally(() => {
+				// Wait for the logger to finish writing logs:
+
+				log.on('error', (_err) => {
+					// Supress error
+					// eslint-disable-next-line no-console
+					console.error(_err)
+				})
+				log.on('finish', () => {
+					app.quit()
+				})
+				log.end()
+			})
+	}
+	// Create the
+	createWindow(log, superConductor)
+}
+
+app.on('ready', onAppReady)
