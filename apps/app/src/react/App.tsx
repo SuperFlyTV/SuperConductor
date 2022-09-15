@@ -36,7 +36,7 @@ import { ClientSideLogger } from './api/logger'
 import { useMemoComputedValue } from './mobx/lib'
 import { Action, getAllActionsInParts } from '../lib/triggers/action'
 import { PartWithRef } from '../lib/util'
-import { assertNever } from '@shared/lib'
+import { assertNever, stringifyErrorInner } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
 import { UserAgreementScreen } from './components/UserAgreementScreen'
@@ -108,41 +108,23 @@ export const App = observer(function App() {
 	}, [triggers, logger])
 
 	const handleError = useCallback(
-		(error: any) => {
-			logger.error(error)
+		(...args: any[]) => {
+			console.log('HandleError --------------')
+			for (const error of args) {
+				logger.error(args)
+				const { message, stack } = stringifyErrorInner(error)
 
-			let message: string
-			let stack = undefined
-			if (typeof error === 'string') {
-				message = error
-			} else if (error === null) {
-				message = ''
-			} else if (typeof error === 'object' && 'message' in error) {
-				message = error.message ?? ''
-			} else if (typeof error === 'object' && typeof error.reason === 'object' && error.reason.message) {
-				message = error.reason.message
-				stack = error.reason.stack || error.reason.reason
-			} else if (typeof error === 'object' && typeof error.error === 'object' && error.error.message) {
-				message = error.error.message
-				stack = error.error.stack
-			} else if (typeof error === 'object' && error.message) {
-				message = 'error message: ' + error.message
-			} else if (typeof error === 'object') {
-				message = 'error object: ' + error.toString()
-			} else {
-				message = `Unknown error, see console for details. (${error})`
-			}
+				if (message) {
+					enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 
-			if (message) {
-				enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
-
-				// Don't send sever-errors back to server:
-				if (!message.match(ErrorCruftRegex)) {
-					// eslint-disable-next-line no-console
-					serverAPI.handleClientError(message, stack).catch(console.error)
+					// Don't send sever-errors back to server:
+					if (!message.match(ErrorCruftRegex)) {
+						// eslint-disable-next-line no-console
+						serverAPI.handleClientError(message, stack).catch(console.error)
+					}
 				}
 			}
-			// }
+			return true
 		},
 		[enqueueSnackbar, logger, serverAPI]
 	)
