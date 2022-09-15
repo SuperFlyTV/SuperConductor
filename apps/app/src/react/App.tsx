@@ -44,6 +44,7 @@ import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { DebugTestErrors } from './components/util/Debug'
 import { ErrorBoundary } from './components/util/ErrorBoundary'
 import { Spinner } from './components/util/Spinner'
+import { CB } from './lib/errorHandling'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -237,8 +238,14 @@ export const App = observer(function App() {
 				serverAPI.setKeyboardKeys({ activeKeys }).catch(handleError)
 			}
 		}
-		document.addEventListener('keydown', (e) => handleKey(e))
-		document.addEventListener('keyup', (e) => handleKey(e))
+		document.addEventListener(
+			'keydown',
+			CB((e) => handleKey(e))
+		)
+		document.addEventListener(
+			'keyup',
+			CB((e) => handleKey(e))
+		)
 	}, [handleError, triggers, serverAPI])
 
 	const gui = store.guiStore
