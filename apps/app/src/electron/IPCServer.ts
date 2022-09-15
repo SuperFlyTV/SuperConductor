@@ -241,7 +241,7 @@ export class IPCServer
 	}
 	async handleClientError(error: string, stack?: string): Promise<void> {
 		// Handle an error thrown in the client
-		this.callbacks.handleError(error, stack)
+		this.callbacks.handleError('Client error: ' + error, stack)
 	}
 	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
 		// This method is used for development-purposes only, to check how error reporting works.

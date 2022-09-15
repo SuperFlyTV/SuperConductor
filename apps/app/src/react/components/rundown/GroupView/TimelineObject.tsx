@@ -15,6 +15,7 @@ import { shortID } from '../../../../lib/util'
 import { computed } from 'mobx'
 import { millisecondsToTime } from '../../../../lib/timeLib'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
+import { CB } from '../../../lib/errorHandling'
 
 const HANDLE_WIDTH = 8
 
@@ -199,7 +200,10 @@ export const TimelineObject: React.FC<{
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 
 			// Debounce to let setAllowDuplicate update:
-			setTimeout(() => move.updateMove(), 1)
+			setTimeout(
+				CB(() => move.updateMove()),
+				1
+			)
 		}
 		onKey()
 
@@ -226,6 +230,7 @@ export const TimelineObject: React.FC<{
 		return () => {
 			sorensen.unbind('Shift', onKey)
 			sorensen.unbind('Alt', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext, move])
 

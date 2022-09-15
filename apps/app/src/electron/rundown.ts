@@ -1,13 +1,21 @@
-import { Resolver } from 'superfly-timeline'
+import { ResolvedTimeline, Resolver } from 'superfly-timeline'
 import { getPartLabel, getResolvedTimelineTotalDuration } from '../lib/util'
 import { Part } from '../models/rundown/Part'
 import { TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
 
 export function postProcessPart(part: Part, noModify?: boolean): void {
-	const resolvedTimeline = Resolver.resolveTimeline(
-		part.timeline.map((o) => o.obj),
-		{ time: 0 }
-	)
+	let resolvedTimeline: ResolvedTimeline
+
+	const partTimeline = part.timeline.map((o) => o.obj)
+	try {
+		resolvedTimeline = Resolver.resolveTimeline(partTimeline, { time: 0 })
+	} catch (err) {
+		if (err && (err as Error).stack) {
+			// Also add the timeline, this is useful when troubleshooting:
+			;(err as Error).stack += '\n ' + JSON.stringify(partTimeline)
+		}
+		throw err
+	}
 	let modified = false
 
 	for (const o of part.timeline) {
