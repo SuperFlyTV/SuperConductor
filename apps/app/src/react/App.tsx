@@ -110,7 +110,6 @@ export const App = observer(function App() {
 
 	const handleError = useCallback(
 		(...args: any[]) => {
-			console.log('HandleError --------------')
 			for (const error of args) {
 				logger.error(args)
 				const { message, stack } = stringifyErrorInner(error)
@@ -545,57 +544,70 @@ export const App = observer(function App() {
 					<ProjectContext.Provider value={project}>
 						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 							<div className="app" onClick={handleClickAnywhere}>
-								<HeaderBar />
+								<ErrorBoundary>
+									<HeaderBar />
+								</ErrorBoundary>
 
-								{
-									// Splash screens:
-									splashScreenOpen ? (
-										<SplashScreen
-											seenVersion={appStore.version?.seenVersion}
-											currentVersion={appStore.version?.currentVersion}
-											onClose={onSplashScreenClose}
-										/>
-									) : userAgreementScreenOpen ? (
-										<UserAgreementScreen
-											onAgree={(agreementVersion: string) => {
-												onUserAgreement(agreementVersion)
-											}}
-											onDisagree={() => {
-												window.close()
-											}}
-										/>
-									) : null
-								}
+								<ErrorBoundary>
+									{
+										// Splash screens:
+										splashScreenOpen ? (
+											<SplashScreen
+												seenVersion={appStore.version?.seenVersion}
+												currentVersion={appStore.version?.currentVersion}
+												onClose={onSplashScreenClose}
+											/>
+										) : userAgreementScreenOpen ? (
+											<UserAgreementScreen
+												onAgree={(agreementVersion: string) => {
+													onUserAgreement(agreementVersion)
+												}}
+												onDisagree={() => {
+													window.close()
+												}}
+											/>
+										) : null
+									}
+								</ErrorBoundary>
 
 								{store.guiStore.isNewRundownSelected() ? (
-									<NewRundownPage />
+									<ErrorBoundary>
+										<NewRundownPage />
+									</ErrorBoundary>
 								) : store.guiStore.isHomeSelected() ? (
-									<HomePage project={project} />
+									<ErrorBoundary>
+										<HomePage project={project} />
+									</ErrorBoundary>
 								) : (
 									<>
 										<div className="main-area">
-											<RundownView mappings={project.mappings} />
+											<ErrorBoundary>
+												<RundownView mappings={project.mappings} />
+											</ErrorBoundary>
 										</div>
 										<div className="side-bar">
-											<Sidebar mappings={project.mappings} />
+											<ErrorBoundary>
+												<Sidebar mappings={project.mappings} />
+											</ErrorBoundary>
 										</div>
 									</>
 								)}
-
-								<ConfirmationDialog
-									open={!!showDeleteConfirmationDialog}
-									title="Delete"
-									acceptLabel="Delete"
-									onDiscarded={() => {
-										setShowDeleteConfirmationDialog(undefined)
-									}}
-									onAccepted={() => {
-										deleteSelectedTimelineObjs()
-										setShowDeleteConfirmationDialog(undefined)
-									}}
-								>
-									<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
-								</ConfirmationDialog>
+								<ErrorBoundary>
+									<ConfirmationDialog
+										open={!!showDeleteConfirmationDialog}
+										title="Delete"
+										acceptLabel="Delete"
+										onDiscarded={() => {
+											setShowDeleteConfirmationDialog(undefined)
+										}}
+										onAccepted={() => {
+											deleteSelectedTimelineObjs()
+											setShowDeleteConfirmationDialog(undefined)
+										}}
+									>
+										<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
+									</ConfirmationDialog>
+								</ErrorBoundary>
 
 								<ErrorBoundary>{debugMode && <DebugTestErrors />}</ErrorBoundary>
 							</div>
