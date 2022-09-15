@@ -178,7 +178,20 @@ function onAppReady(): void {
 	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
 
 	app.on('window-all-closed', () => {
+		// On macOS it is common for applications and their menu bar
+		// to stay active until the user quits explicitly with Cmd + Q
+		if (process.platform !== 'darwin') {
+			// will close all the windows and then emit the 'will-quit' event:
+			app.quit()
+		}
+	})
+	app.on('will-quit', (event) => {
+		event.preventDefault()
 		shutDownApplication()
+	})
+	app.on('activate', () => {
+		// This happens on macOS when user re-opens a window
+		if (BrowserWindow.getAllWindows().length === 0) createWindow(log, superConductor)
 	})
 
 	const shutDownApplication = () => {
@@ -224,7 +237,9 @@ function onAppReady(): void {
 					console.error(_err)
 				})
 				log.on('finish', () => {
-					app.quit()
+					// eslint-disable-next-line no-process-exit
+					process.exit(0)
+					// app.quit()
 				})
 				log.end()
 			})
