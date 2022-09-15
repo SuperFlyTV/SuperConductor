@@ -62,7 +62,7 @@ export class HTTPAPI {
 						ctx.response.status = 200
 					} catch (error) {
 						const stringifiedError = stringifyError(error)
-						if (stringifiedError.includes('not found')) {
+						if (stringifiedError.match(/not found/i)) {
 							ctx.response.status = 404
 						} else {
 							ctx.response.status = 500
@@ -85,7 +85,7 @@ export class HTTPAPI {
 						ctx.response.status = 200
 					} catch (error) {
 						const stringifiedError = stringifyError(error)
-						if (stringifiedError.includes('not found')) {
+						if (stringifiedError.match(/not found/i)) {
 							ctx.response.status = 404
 						} else {
 							ctx.response.status = 500
@@ -108,7 +108,7 @@ export class HTTPAPI {
 						ctx.response.status = 200
 					} catch (error) {
 						const stringifiedError = stringifyError(error)
-						if (stringifiedError.includes('not found')) {
+						if (stringifiedError.match(/not found/i)) {
 							ctx.response.status = 404
 						} else {
 							ctx.response.status = 500
