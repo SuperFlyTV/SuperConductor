@@ -230,6 +230,7 @@ export const TimelineObject: React.FC<{
 		return () => {
 			sorensen.unbind('Shift', onKey)
 			sorensen.unbind('Alt', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext, move])
 

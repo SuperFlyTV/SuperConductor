@@ -586,6 +586,7 @@ export const PartView: React.FC<{
 
 		return () => {
 			sorensen.unbind('Shift', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext])
 
