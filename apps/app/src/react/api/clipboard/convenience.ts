@@ -1,5 +1,5 @@
 import { literal } from '@shared/lib'
-import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
+import { CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultPart } from '../../../electron/defaults'
 import { sortMappings } from '../../../lib/TSRMappings'
@@ -64,6 +64,6 @@ export async function handleURL(context: ClipBoardContext, str: string): Promise
 
 function matchHTTPUrl(str: string) {
 	return str.match(
-		/https?:\/\/(www\.)?([-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6})\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
+		/https?:\/\/(www\.)?([-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6})\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/
 	)
 }
