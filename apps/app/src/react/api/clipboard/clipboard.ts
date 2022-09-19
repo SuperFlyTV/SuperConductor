@@ -2,6 +2,7 @@ import { assertNever, compact } from '@shared/lib'
 import { CB } from '../../lib/errorHandling'
 import { store } from '../../mobx/store'
 import { handleCasparCGClient } from './casparCGClient'
+import { handleConvenience } from './convenience'
 import { ClipBoardInternal, ClipBoardInternalAny, handleInternal } from './internal'
 import { ClipBoardContext } from './lib'
 
@@ -50,6 +51,7 @@ export function setupClipboard(context: ClipBoardContext) {
 
 							if (await handleInternal(context, str)) return
 							if (await handleCasparCGClient(context, str)) return
+							if (await handleConvenience(context, str)) return
 
 							// eslint-disable-next-line no-console
 							console.error('Unhandled paste:', str)

@@ -34,6 +34,7 @@ export interface CasparCGTemplate extends ResourceBase {
 	changed: number
 
 	// prefilled data:
+	useStopCommand?: boolean
 	duration?: number
 	data?: any
 	sendDataAsXML?: boolean
