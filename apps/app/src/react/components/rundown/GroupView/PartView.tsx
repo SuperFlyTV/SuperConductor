@@ -17,7 +17,7 @@ import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
 import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
 import { TimelineObj, DEFAULT_DURATION } from '../../../../models/rundown/TimelineObj'
-import { compact } from '@shared/lib'
+import { compact, stringifyError } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
@@ -413,10 +413,7 @@ export const PartView: React.FC<{
 					// If there was an error applying the movement (for example a circular dependency),
 					// reset the movement to the original state:
 
-					log.error('Error when resolving the moved timeline, reverting to original state.')
-					log.error(e)
-
-					handleError('There was an error when trying to move')
+					handleError('There was an error when trying to move: ' + stringifyError(e))
 
 					modifiedTimeline = partTimeline
 					resolvedTimeline = orgResolvedTimeline
@@ -589,6 +586,7 @@ export const PartView: React.FC<{
 
 		return () => {
 			sorensen.unbind('Shift', onKey)
+			sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext])
 

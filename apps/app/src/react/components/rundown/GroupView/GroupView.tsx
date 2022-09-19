@@ -51,6 +51,7 @@ import { Btn } from '../../inputs/Btn/Btn'
 import { sortSelected } from '../../../lib/clientUtil'
 import _ from 'lodash'
 import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
+import { ErrorBoundary } from '../../util/ErrorBoundary'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -549,7 +550,9 @@ export const GroupView: React.FC<{
 					dragging: isDragging,
 				})}
 			>
-				<PartView rundownId={rundownId} partId={firstPartId} parentGroupId={group.id} mappings={mappings} />
+				<ErrorBoundary>
+					<PartView rundownId={rundownId} partId={firstPartId} parentGroupId={group.id} mappings={mappings} />
+				</ErrorBoundary>
 			</div>
 		) : null
 	} else {

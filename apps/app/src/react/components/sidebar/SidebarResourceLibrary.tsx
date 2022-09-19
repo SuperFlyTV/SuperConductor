@@ -37,6 +37,7 @@ import classNames from 'classnames'
 import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
 import { computed } from 'mobx'
 import sorensen from '@sofie-automation/sorensen'
+import { CB } from '../../lib/errorHandling'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -248,12 +249,15 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	}, [allListItems.length, listItemsLimit])
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const loadMoreItems = useCallback(
-		rateLimitIgnore(() => {
-			setListItemsLimit((value) => {
-				const newLimit = Math.max(MIN_LIMIT, Math.min(listLength.current, value + 10))
-				return newLimit
-			})
-		}, 100),
+		rateLimitIgnore(
+			CB(() => {
+				setListItemsLimit((value) => {
+					const newLimit = Math.max(MIN_LIMIT, Math.min(listLength.current, value + 10))
+					return newLimit
+				})
+			}),
+			100
+		),
 		[]
 	)
 

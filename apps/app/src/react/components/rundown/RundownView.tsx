@@ -14,6 +14,7 @@ import { useMemoComputedObject } from '../../mobx/lib'
 import { Btn } from '../inputs/Btn/Btn'
 import { getClassNameFromResource } from '../../../lib/resources'
 import { MoveTarget } from '../../../lib/util'
+import { ErrorBoundary } from '../util/ErrorBoundary'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	// Drag n' Drop:
@@ -85,10 +86,16 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 	return (
 		<div className="group-list" ref={wrapperRef} data-drop-handler-id={handlerId}>
 			{currentRundown.groupIds.map((groupId) => {
-				return <GroupView key={groupId} groupId={groupId} rundownId={currentRundown.id} mappings={mappings} />
+				return (
+					<ErrorBoundary key={groupId}>
+						<GroupView groupId={groupId} rundownId={currentRundown.id} mappings={mappings} />
+					</ErrorBoundary>
+				)
 			})}
 
-			<GroupListOptions rundownId={currentRundown.id} />
+			<ErrorBoundary>
+				<GroupListOptions rundownId={currentRundown.id} />
+			</ErrorBoundary>
 		</div>
 	)
 })

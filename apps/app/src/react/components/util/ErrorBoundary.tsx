@@ -122,6 +122,25 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 			border: 'none',
 			cursor: 'pointer',
 		} as React.CSSProperties,
+		link: {
+			display: 'block',
+			position: 'static',
+			margin: '0 0 0 0',
+			padding: '0',
+			fontSize: '10px',
+			lineHeight: '1.2em',
+			fontFamily: 'Roboto, sans-serif',
+			fontWeight: 600,
+			fontStyle: 'italic',
+			width: '100%',
+			height: 'auto',
+			overflow: 'visible',
+			background: 'white',
+			textDecoration: 'underline',
+			color: 'red',
+			border: 'none',
+			cursor: 'pointer',
+		} as React.CSSProperties,
 	}
 
 	constructor(props: any) {
@@ -140,7 +159,13 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 		// @ts-expect-error hack
 		if (window.handleError) {
 			// @ts-expect-error hack
-			window.handleError('React error: ' + error.message, `${error.stack} ${info.componentStack}`)
+			window.handleError({
+				message: 'React error: ' + error.message,
+				stack: `${error.stack} ${info.componentStack}`,
+			})
+		} else {
+			// eslint-disable-next-line no-console
+			console.error(error, info)
 		}
 	}
 
@@ -162,7 +187,17 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 				<div style={ErrorBoundary.style.box}>
 					{this.state.error && (
 						<React.Fragment>
-							<h5 style={ErrorBoundary.style.header}>{this.state.error.name}</h5>
+							<h5 style={ErrorBoundary.style.header}>Something went wrong!</h5>
+							<p>
+								<a
+									style={ErrorBoundary.style.link}
+									href="https://github.com/SuperFlyTV/SuperConductor/issues/new/choose"
+									target="_blank"
+									rel="noreferrer"
+								>
+									Please click here to go to GitHub and report the bug!
+								</a>
+							</p>
 							{this.state.info && (
 								<p
 									style={{
@@ -171,7 +206,7 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 									}}
 									onClick={this.toggleComponentStack}
 								>
-									{this.state.info.componentStack}
+									<b>{this.state.error.name}</b> {this.state.info.componentStack}
 								</p>
 							)}
 							<p style={ErrorBoundary.style.message}>{this.state.error.message}</p>
@@ -189,7 +224,7 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 						</React.Fragment>
 					)}
 					<div style={ErrorBoundary.style.resetButton} onClick={this.resetComponent}>
-						Try to restart component
+						Click here to try to restart the component
 					</div>
 				</div>
 			)
