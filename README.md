@@ -67,7 +67,7 @@ Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
 ## HTTP API
 
-SuperConductor currently has a limited, internal, and unstable HTTP API. We plan to add a public and stable HTTP API with proper documentation in the future, but for now this internal API is available by default at `http://localhost:5500/api/internal`. The port can be changed by passing an `--internal-http-api-port XXXX` as an argument to SuperConductor.
+SuperConductor currently has a limited, internal, and unstable HTTP API. We plan to add a public and stable HTTP API with proper documentation in the future, but for now this internal API is available by default at `http://localhost:5500/api/internal`. The port can be changed by passing an `--internal-http-api-port XXXX` as an argument to SuperConductor. This API can be disabled by passing the `--disable-internal-http-api` argument.
 
 Please be aware that, because this is an internal API, it may change at any time without notice.
 

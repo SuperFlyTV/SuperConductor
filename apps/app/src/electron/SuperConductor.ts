@@ -53,6 +53,7 @@ export class SuperConductor {
 	private hasStoredStartupUserStatistics = false
 
 	private internalHttpApiPort = 5500
+	private disableInternalHttpApi = false
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -108,6 +109,8 @@ export class SuperConductor {
 			if (value === '--disable-telemetry') {
 				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
+			} else if (value === '--disable-internal-http-api') {
+				this.disableInternalHttpApi = true
 			} else if (value === '--internal-http-api-port') {
 				this.internalHttpApiPort = parseInt(process.argv[index + 1], 10)
 			}
@@ -407,7 +410,11 @@ export class SuperConductor {
 		})
 		this.ipcClient = new IPCClient(this.mainWindow)
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
-		this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+		if (this.disableInternalHttpApi) {
+			this.log.info(`Internal HTTP API disabled`)
+		} else {
+			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+		}
 	}
 	private refreshResources(): void {
 		// Remove resources of devices we don't have anymore:
