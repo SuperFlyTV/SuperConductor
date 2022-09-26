@@ -1,5 +1,5 @@
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
-import { VMix } from 'timeline-state-resolver/dist/devices/vmixAPI'
+import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection'
 import {
 	ResourceAny,
 	ResourceType,

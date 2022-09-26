@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, BMD&nbsp;_HyperDeck_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
@@ -77,11 +77,11 @@ _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-t
 
 - **[CasparCG&nbsp;Server](https://casparcg.com/)** Video and graphics playout software
 - **[Blackmagic Design ATEM](https://www.blackmagicdesign.com/products)** Vision mixers
+- **[Blackmagic Design HyperDeck](https://www.blackmagicdesign.com/products)** record/playback devices
 - **[OBS Studio](https://obsproject.com/)** Live video production software
 - **[vMix](https://www.vmix.com/)** software vision mixer
 - Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
 - Arbitrary HTTP ([REST](https://en.wikipedia.org/wiki/Representational_state_transfer#Semantics_of_HTTP_methods)) compatible devices
-- (GUI not implemented yet) **Blackmagic Design HyperDeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
 - (GUI not implemented yet) **Pharos** light control devices

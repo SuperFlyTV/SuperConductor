@@ -4,14 +4,16 @@ import {
 	MediaSourceType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
+	TimelineContentTypeHyperdeck,
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
 	TimelineTransition,
 	Transition,
+	TransportStatus,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { assertNever } from '@shared/lib'
+import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
@@ -212,6 +214,16 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 		}
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
+	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
+		if (obj.content.status === TransportStatus.PLAY) {
+			if (obj.content.clipId === null) {
+				label = 'Play Last Clip/Continue Current Clip'
+			} else {
+				label = `Play Clip #${obj.content.clipId}`
+			}
+		} else {
+			label = `${capitalizeFirstLetter(obj.content.status)}`
+		}
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)
@@ -304,6 +316,15 @@ export function modifyTimelineObjectForPlayout(
 			if (isPaused) {
 				obj.content.playing = false
 				// obj.content.pauseTime = playingPart.startTime - pauseTime
+			}
+		}
+	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
+		if (
+			obj.content.type === TimelineContentTypeHyperdeck.TRANSPORT &&
+			obj.content.status === TransportStatus.PLAY
+		) {
+			if (isPaused) {
+				obj.content.speed = 0
 			}
 		}
 	}

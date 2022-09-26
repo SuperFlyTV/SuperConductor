@@ -164,6 +164,7 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 				stack: `${error.stack} ${info.componentStack}`,
 			})
 		} else {
+			// eslint-disable-next-line no-console
 			console.error(error, info)
 		}
 	}

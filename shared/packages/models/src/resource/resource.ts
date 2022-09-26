@@ -1,11 +1,12 @@
 import { AtemAny } from './Atem'
 import { CasparCGAny } from './CasparCG'
 import { HTTPSendAny } from './HTTPSend'
+import { HyperdeckAny } from './Hyperdeck'
 import { OBSAny } from './OBS'
 import { OSCAny } from './OSC'
 import { VMixAny } from './VMix'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny
+export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny | HyperdeckAny
 
 export interface ResourceBase {
 	resourceType: ResourceType
@@ -62,4 +63,9 @@ export enum ResourceType {
 	OSC_MESSAGE = 'OSC_MESSAGE',
 
 	HTTP_REQUEST = 'HTTP_REQUEST',
+
+	HYPERDECK_PLAY = 'HYPERDECK_PLAY',
+	HYPERDECK_RECORD = 'HYPERDECK_RECORD',
+	HYPERDECK_PREVIEW = 'HYPERDECK_PREVIEW',
+	HYPERDECK_CLIP = 'HYPERDECK_CLIP',
 }
