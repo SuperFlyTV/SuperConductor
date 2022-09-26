@@ -47,7 +47,7 @@
 		"@shared/models": "^0.9.1",
 		"@shared/peripherals": "^0.9.1",
 		"lodash": "^4.17.21",
-		"timeline-state-resolver": "^7.3.0-release44.0",
+		"timeline-state-resolver": "7.4.0-nightly-release46-20220915-075618-de36c07ee.0",
 		"winston": "^3.7.2"
 	},
 	"devDependencies": {

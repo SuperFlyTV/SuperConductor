@@ -38,7 +38,10 @@ import {
 	TimelineContentTypeOSC,
 	TimelineObjHTTPRequest,
 	TimelineContentTypeHTTP,
+	TimelineContentTypeHyperdeck,
 	TimelineObjCCGTemplate,
+	TimelineObjHyperdeckTransport,
+	TransportStatus,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -545,6 +548,70 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				params: {},
 			},
 		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PLAY) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.PLAY,
+				speed: 100,
+				singleClip: true,
+				loop: false,
+				clipId: null,
+			},
+		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_RECORD) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.RECORD,
+			},
+		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PREVIEW) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.PREVIEW,
+			},
+		})
+	} else if (resource.resourceType === ResourceType.HYPERDECK_CLIP) {
+		return literal<TimelineObjHyperdeckTransport>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.HYPERDECK,
+				type: TimelineContentTypeHyperdeck.TRANSPORT,
+				status: TransportStatus.PLAY,
+				speed: 100,
+				singleClip: true,
+				loop: false,
+				clipId: resource.clipId,
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -560,6 +627,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 	switch (resource.resourceType) {
 		case ResourceType.CASPARCG_MEDIA:
 		case ResourceType.ATEM_MEDIA_PLAYER:
+		case ResourceType.HYPERDECK_PLAY:
+		case ResourceType.HYPERDECK_CLIP:
 			return 'Media'
 		case ResourceType.CASPARCG_TEMPLATE:
 			return 'Graphics'
@@ -585,6 +654,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'Transitions'
 		case ResourceType.OBS_RECORDING:
 		case ResourceType.VMIX_RECORDING:
+		case ResourceType.HYPERDECK_RECORD:
 			return 'Recordings'
 		case ResourceType.OBS_STREAMING:
 		case ResourceType.VMIX_STREAMING:
@@ -598,6 +668,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_INPUT:
 			return 'Inputs'
 		case ResourceType.VMIX_PREVIEW:
+		case ResourceType.HYPERDECK_PREVIEW:
 			return 'Preview'
 		case ResourceType.VMIX_INPUT_SETTINGS:
 			return 'Input'
