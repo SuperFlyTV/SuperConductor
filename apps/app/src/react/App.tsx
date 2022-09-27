@@ -35,7 +35,7 @@ import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
 import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
 import { getAllActionsInParts, ActionAny, getAllApplicationActions } from '../lib/triggers/action'
-import { assertNever, deepClone } from '@shared/lib'
+import { assertNever, deepClone, stringifyErrorInner } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
 import { UserAgreementScreen } from './components/UserAgreementScreen'
@@ -43,6 +43,7 @@ import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { DebugTestErrors } from './components/util/Debug'
 import { ErrorBoundary } from './components/util/ErrorBoundary'
 import { Spinner } from './components/util/Spinner'
+import { CB } from './lib/errorHandling'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -107,41 +108,22 @@ export const App = observer(function App() {
 	}, [triggers, logger])
 
 	const handleError = useCallback(
-		(error: any) => {
-			logger.error(error)
+		(...args: any[]) => {
+			for (const error of args) {
+				logger.error(args)
+				const { message, stack } = stringifyErrorInner(error)
 
-			let message: string
-			let stack = undefined
-			if (typeof error === 'string') {
-				message = error
-			} else if (error === null) {
-				message = ''
-			} else if (typeof error === 'object' && 'message' in error) {
-				message = error.message ?? ''
-			} else if (typeof error === 'object' && typeof error.reason === 'object' && error.reason.message) {
-				message = error.reason.message
-				stack = error.reason.stack || error.reason.reason
-			} else if (typeof error === 'object' && typeof error.error === 'object' && error.error.message) {
-				message = error.error.message
-				stack = error.error.stack
-			} else if (typeof error === 'object' && error.message) {
-				message = 'error message: ' + error.message
-			} else if (typeof error === 'object') {
-				message = 'error object: ' + error.toString()
-			} else {
-				message = `Unknown error, see console for details. (${error})`
-			}
+				if (message) {
+					enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
 
-			if (message) {
-				enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
-
-				// Don't send sever-errors back to server:
-				if (!message.match(ErrorCruftRegex)) {
-					// eslint-disable-next-line no-console
-					serverAPI.handleClientError(message, stack).catch(console.error)
+					// Don't send sever-errors back to server:
+					if (!message.match(ErrorCruftRegex)) {
+						// eslint-disable-next-line no-console
+						serverAPI.handleClientError(message, stack).catch(console.error)
+					}
 				}
 			}
-			// }
+			return true
 		},
 		[enqueueSnackbar, logger, serverAPI]
 	)
@@ -254,8 +236,14 @@ export const App = observer(function App() {
 				serverAPI.setKeyboardKeys({ activeKeys }).catch(handleError)
 			}
 		}
-		document.addEventListener('keydown', (e) => handleKey(e))
-		document.addEventListener('keyup', (e) => handleKey(e))
+		document.addEventListener(
+			'keydown',
+			CB((e) => handleKey(e))
+		)
+		document.addEventListener(
+			'keyup',
+			CB((e) => handleKey(e))
+		)
 	}, [handleError, triggers, serverAPI])
 
 	const gui = store.guiStore
@@ -577,57 +565,70 @@ export const App = observer(function App() {
 					<ProjectContext.Provider value={project}>
 						<ErrorHandlerContext.Provider value={errorHandlerContextValue}>
 							<div className="app" onClick={handleClickAnywhere}>
-								<HeaderBar />
+								<ErrorBoundary>
+									<HeaderBar />
+								</ErrorBoundary>
 
-								{
-									// Splash screens:
-									splashScreenOpen ? (
-										<SplashScreen
-											seenVersion={appDataVersion?.seenVersion}
-											currentVersion={appDataVersion?.currentVersion}
-											onClose={onSplashScreenClose}
-										/>
-									) : userAgreementScreenOpen ? (
-										<UserAgreementScreen
-											onAgree={(agreementVersion: string) => {
-												onUserAgreement(agreementVersion)
-											}}
-											onDisagree={() => {
-												window.close()
-											}}
-										/>
-									) : null
-								}
+								<ErrorBoundary>
+									{
+										// Splash screens:
+										splashScreenOpen ? (
+											<SplashScreen
+												seenVersion={appDataVersion?.seenVersion}
+												currentVersion={appDataVersion?.currentVersion}
+												onClose={onSplashScreenClose}
+											/>
+										) : userAgreementScreenOpen ? (
+											<UserAgreementScreen
+												onAgree={(agreementVersion: string) => {
+													onUserAgreement(agreementVersion)
+												}}
+												onDisagree={() => {
+													window.close()
+												}}
+											/>
+										) : null
+									}
+								</ErrorBoundary>
 
 								{store.guiStore.isNewRundownSelected() ? (
-									<NewRundownPage />
+									<ErrorBoundary>
+										<NewRundownPage />
+									</ErrorBoundary>
 								) : store.guiStore.isHomeSelected() ? (
-									<HomePage project={project} />
+									<ErrorBoundary>
+										<HomePage project={project} />
+									</ErrorBoundary>
 								) : (
 									<>
 										<div className="main-area">
-											<RundownView mappings={project.mappings} />
+											<ErrorBoundary>
+												<RundownView mappings={project.mappings} />
+											</ErrorBoundary>
 										</div>
 										<div className="side-bar">
-											<Sidebar mappings={project.mappings} />
+											<ErrorBoundary>
+												<Sidebar mappings={project.mappings} />
+											</ErrorBoundary>
 										</div>
 									</>
 								)}
-
-								<ConfirmationDialog
-									open={!!showDeleteConfirmationDialog}
-									title="Delete"
-									acceptLabel="Delete"
-									onDiscarded={() => {
-										setShowDeleteConfirmationDialog(undefined)
-									}}
-									onAccepted={() => {
-										deleteSelectedTimelineObjs()
-										setShowDeleteConfirmationDialog(undefined)
-									}}
-								>
-									<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
-								</ConfirmationDialog>
+								<ErrorBoundary>
+									<ConfirmationDialog
+										open={!!showDeleteConfirmationDialog}
+										title="Delete"
+										acceptLabel="Delete"
+										onDiscarded={() => {
+											setShowDeleteConfirmationDialog(undefined)
+										}}
+										onAccepted={() => {
+											deleteSelectedTimelineObjs()
+											setShowDeleteConfirmationDialog(undefined)
+										}}
+									>
+										<p>Do you want to delete {showDeleteConfirmationDialog}?</p>
+									</ConfirmationDialog>
+								</ErrorBoundary>
 
 								<ErrorBoundary>{debugMode && <DebugTestErrors />}</ErrorBoundary>
 							</div>

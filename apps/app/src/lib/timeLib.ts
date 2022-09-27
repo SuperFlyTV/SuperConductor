@@ -428,7 +428,7 @@ export interface RepeatingSettingsNoRepeat extends RepeatingSettingsBase {
 }
 export interface RepeatingSettingsDaily extends RepeatingSettingsBase {
 	type: RepeatingType.DAILY
-	/** Repeat every X day */
+	/** Repeat every X day, defaults to 1 */
 	interval: number | undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
@@ -452,7 +452,7 @@ export interface RepeatingSettingsWeekly extends RepeatingSettingsBase {
 }
 export interface RepeatingSettingsMonthly extends RepeatingSettingsBase {
 	type: RepeatingType.MONTHLY
-	/** Repeat every X month */
+	/** Repeat every X month, defaults to 1 */
 	interval: number | undefined
 	/** Stop repeating after this timestamp */
 	repeatUntil: DateTimeObject | undefined
@@ -483,9 +483,10 @@ export function repeatTime(
 	} else if (settings.type === RepeatingType.DAILY) {
 		const filterStart = options.now
 		const filterEnd = options.end
+		const interval = settings.interval ?? 1
 
 		let days = Math.max(0, Math.floor((filterStart - start) / 24 / 3600 / 1000))
-		days = days - (days % (settings.interval ?? 1))
+		days = days - (days % interval)
 
 		let prevTime = _.clone(startTime)
 		const startTimes: number[] = []
@@ -509,8 +510,8 @@ export function repeatTime(
 				}
 				prevTime = time
 			}
-			if (!settings.interval) break
-			days += settings.interval
+			if (!interval) break
+			days += interval
 		}
 		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {
 			validUntil = undefined
@@ -555,6 +556,7 @@ export function repeatTime(
 		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.MONTHLY) {
 		let prevTime = _.clone(startTime)
+		const interval = settings.interval ?? 1
 
 		let months = 0
 		const startTimes: number[] = []
@@ -577,8 +579,8 @@ export function repeatTime(
 				}
 				prevTime = time
 			}
-			if (!settings.interval) break
-			months += settings.interval
+			if (!interval) break
+			months += interval
 		}
 
 		if (validUntil && validUntil >= (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) {

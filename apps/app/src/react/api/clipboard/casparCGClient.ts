@@ -2,11 +2,11 @@ import { assertNever, literal } from '@shared/lib'
 import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultGroup, getDefaultPart } from '../../../electron/defaults'
-import { findDeviceOfType, MoveTarget, shortID } from '../../../lib/util'
+import { findDeviceOfType, shortID } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { store } from '../../mobx/store'
-import { ClipBoardContext } from './lib'
+import { ClipBoardContext, insertGroups, insertParts } from './lib'
 
 const parser = new DOMParser()
 
@@ -16,8 +16,6 @@ const parser = new DOMParser()
  */
 export async function handleCasparCGClient(context: ClipBoardContext, str: string): Promise<boolean> {
 	if (!str.startsWith('<?xml version="1.0"?><items><item><type>')) return false
-	const currentRundownId = store.rundownsStore.currentRundownId
-	if (!currentRundownId) return false
 
 	let xml: Document
 	try {
@@ -53,72 +51,10 @@ export async function handleCasparCGClient(context: ClipBoardContext, str: strin
 	}
 
 	if (groups.length) {
-		let target: MoveTarget
-		const selected = store.guiStore.mainSelected
-		if (selected) {
-			target = {
-				type: 'after',
-				id: selected.groupId,
-			}
-		} else {
-			target = {
-				type: 'last',
-			}
-		}
-		const insertedGroups = await context.serverAPI.insertGroups({
-			rundownId: currentRundownId,
-			groups,
-			target,
-		})
-		if (insertedGroups.length) {
-			store.guiStore.clearSelected()
-			for (const insert of insertedGroups) {
-				store.guiStore.addSelected({
-					type: 'group',
-					groupId: insert.groupId,
-				})
-			}
-		}
+		await insertGroups(context, groups)
 	}
 	if (parts.length) {
-		let target: MoveTarget
-		let insertGroupId: string | null
-		const selected = store.guiStore.mainSelected
-		if (selected) {
-			insertGroupId = selected.groupId
-			if (selected.type === 'part' || selected.type === 'timelineObj') {
-				target = {
-					type: 'after',
-					id: selected.partId,
-				}
-			} else {
-				target = {
-					type: 'last',
-				}
-			}
-		} else {
-			insertGroupId = null
-			target = {
-				type: 'last',
-			}
-		}
-
-		const insertedParts = await context.serverAPI.insertParts({
-			rundownId: currentRundownId,
-			groupId: insertGroupId,
-			parts: parts,
-			target,
-		})
-		if (insertedParts.length) {
-			store.guiStore.clearSelected()
-			for (const insert of insertedParts) {
-				store.guiStore.addSelected({
-					type: 'part',
-					groupId: insert.groupId,
-					partId: insert.partId,
-				})
-			}
-		}
+		await insertParts(context, parts)
 	}
 	return true
 }

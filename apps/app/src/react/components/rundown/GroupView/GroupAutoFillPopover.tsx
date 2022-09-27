@@ -15,6 +15,7 @@ import { findAutoFillResources } from '../../../../lib/autoFill'
 import { Message } from '../../pages/homePage/message/Message'
 import { HelpButton } from '../../inputs/HelpButton/HelpButton'
 import { Box } from '@mui/material'
+import { CB } from '../../../lib/errorHandling'
 
 export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI }> = observer(
 	function GroupButtonAreaPopover({ rundownId, group }) {
@@ -25,9 +26,12 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 		const [showHelp, setShowHelp] = useState(false)
 
 		const triggerHandleAutoFill = useMemo(() => {
-			return rateLimitIgnore(() => {
-				ipcServer.triggerHandleAutoFill().catch(handleError)
-			}, 1000)
+			return rateLimitIgnore(
+				CB(() => {
+					ipcServer.triggerHandleAutoFill().catch(handleError)
+				}),
+				1000
+			)
 
 			// eslint-disable-next-line react-hooks/exhaustive-deps
 		}, [])

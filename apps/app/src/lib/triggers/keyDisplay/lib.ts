@@ -1,7 +1,6 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { ActionAny, ApplicationActionSelected } from '../action'
-import { PartBase } from '../../../models/rundown/Part'
 import { getTimelineForGroup } from '../../../electron/timeline'
 import { GroupBase } from '../../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'

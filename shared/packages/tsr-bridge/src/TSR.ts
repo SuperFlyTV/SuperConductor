@@ -8,6 +8,7 @@ import { OBSSideload } from './sideload/OBS'
 import { VMixSideload } from './sideload/VMix'
 import { OSCSideload } from './sideload/OSC'
 import { HTTPSendSideload } from './sideload/HTTPSend'
+import { HyperdeckSideload } from './sideload/Hyperdeck'
 import { SideLoadDevice } from './sideload/sideload'
 
 export class TSR {
@@ -83,7 +84,9 @@ export class TSR {
 					// Create the device, but don't initialize it:
 					const device = await this.conductor.createDevice(deviceId, newDevice)
 
-					await device.device.on('connectionChanged', (status: DeviceStatus) => {
+					await device.device.on('connectionChanged', (...args: unknown[]) => {
+						// TODO: figure out why the arguments to this event callback lost the correct typings
+						const status = args[0] as DeviceStatus
 						this.onDeviceStatus(deviceId, status)
 					})
 					// await device.device.on('commandError', onCommandError)
@@ -184,6 +187,8 @@ export class TSR {
 			this.sideLoadedDevices[deviceId] = new OSCSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.HTTPSEND) {
 			this.sideLoadedDevices[deviceId] = new HTTPSendSideload(deviceId, deviceOptions, this.log)
+		} else if (deviceOptions.type === DeviceType.HYPERDECK) {
+			this.sideLoadedDevices[deviceId] = new HyperdeckSideload(deviceId, deviceOptions, this.log)
 		}
 	}
 	private onDeviceStatus(deviceId: string, status: DeviceStatus) {
