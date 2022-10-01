@@ -20,6 +20,7 @@ export const BridgeItemHeader: React.FC<{
 	const bridgeStatus: BridgeStatus = props.bridgeStatus || {
 		connected: false,
 		devices: {},
+		peripherals: {},
 	}
 	return (
 		<div className="bridge-item-header">

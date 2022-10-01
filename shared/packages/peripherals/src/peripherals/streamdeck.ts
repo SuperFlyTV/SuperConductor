@@ -9,7 +9,7 @@ import PQueue from 'p-queue'
 
 export class PeripheralStreamDeck extends Peripheral {
 	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralStreamDeck) => void) {
-		const seenDevices = new Map<string, PeripheralStreamDeck>()
+		const seenDevices = PeripheralStreamDeck.SeenDevices
 
 		const interval = setInterval(() => {
 			const streamDecks = listStreamDecks()
@@ -17,7 +17,9 @@ export class PeripheralStreamDeck extends Peripheral {
 			for (const streamDeck of streamDecks) {
 				// Create a locally unique identifier for the device:
 
-				const id = streamDeck.serialNumber ? `serial_${streamDeck.serialNumber}` : `path_${streamDeck.path}`
+				const id = streamDeck.serialNumber
+					? `streamdeck-serial_${streamDeck.serialNumber}`
+					: `streamdeck-path_${streamDeck.path}`
 
 				const existingDevice = seenDevices.get(id)
 				if (!existingDevice) {
@@ -25,10 +27,12 @@ export class PeripheralStreamDeck extends Peripheral {
 
 					seenDevices.set(id, newDevice)
 
-					newDevice
-						.init()
-						.then(() => onDevice(newDevice))
-						.catch(log.error)
+					if (PeripheralStreamDeck.AutoConnectToAll || PeripheralStreamDeck.ShouldConnectToSpecific.get(id)) {
+						newDevice
+							.init()
+							.then(() => onDevice(newDevice))
+							.catch(log.error)
+					}
 				} else {
 					if (existingDevice && !existingDevice.connected && !existingDevice.initializing) {
 						existingDevice
@@ -47,9 +51,6 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 
-	public initializing = false
-	/** True if connected to the StreamDeck */
-	public connected = false
 	private streamDeck?: StreamDeck
 	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}

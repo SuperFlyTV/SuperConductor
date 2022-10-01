@@ -1,9 +1,9 @@
 import EventEmitter from 'events'
-import { BridgeStatus } from '../models/project/Bridge'
+import { BridgePeripheral, BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { PeripheralInfo } from '@shared/api'
+import { AvailablePeripheral, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay'
 
 /** This class handles all non-persistant data */
@@ -87,6 +87,29 @@ export class SessionHandler extends EventEmitter {
 		if (!_.isEqual(newDevice, this.peripherals[peripheralId])) {
 			this.peripherals[peripheralId] = newDevice
 			this.peripheralsHasChanged[peripheralId] = true
+		}
+
+		this.triggerUpdate()
+	}
+	updateAvailablePeripherals(
+		bridgeId: string,
+		availablePeripherals: {
+			[peripheralId: string]: AvailablePeripheral
+		}
+	) {
+		const bridgeStatus = this.bridgeStatuses[bridgeId]
+		if (!bridgeStatus) {
+			return
+		}
+
+		const bridgePeripheralsWithPrefixedIds: { [peripheralId: string]: BridgePeripheral } = {}
+		for (const peripheralId of Object.keys(availablePeripherals)) {
+			const prefixedPeripheralId = `${bridgeId}-${peripheralId}`
+			bridgePeripheralsWithPrefixedIds[prefixedPeripheralId] = availablePeripherals[peripheralId]
+		}
+		if (!_.isEqual(bridgePeripheralsWithPrefixedIds, bridgeStatus.peripherals)) {
+			bridgeStatus.peripherals = bridgePeripheralsWithPrefixedIds
+			this.bridgeStatusesHasChanged[bridgeId] = true
 		}
 
 		this.triggerUpdate()

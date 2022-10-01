@@ -249,7 +249,7 @@ export class TriggersHandler {
 		// Check if the trigger is already in another
 
 		let found = false
-		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
 			if (found) break
 
 			if (peripheralId === definingArea.deviceId) {
@@ -264,7 +264,7 @@ export class TriggersHandler {
 
 		if (!found) {
 			// Add the trigger to the area:
-			const peripheralSettings = bridge.peripheralSettings[definingArea.deviceId]
+			const peripheralSettings = bridge.clientSidePeripheralSettings[definingArea.deviceId]
 			if (!peripheralSettings) return
 			const area = peripheralSettings.areas[definingArea.areaId]
 			if (!area) return

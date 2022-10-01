@@ -1,5 +1,12 @@
 import EventEmitter from 'events'
-import { KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
+import {
+	KeyDisplay,
+	KeyDisplayTimeline,
+	LoggerLike,
+	PeripheralInfo,
+	AvailablePeripheral,
+	PeripheralSettings_Any,
+} from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
@@ -40,6 +47,37 @@ export class PeripheralsHandler extends EventEmitter {
 		if (!device) throw new Error(`Device "${deviceId}" not found`)
 
 		device.setKeyDisplay(identifier, keyDisplay)
+	}
+	getAvailablePeripherals() {
+		const availablePeripherals = new Map<string, AvailablePeripheral>()
+		for (const [peripheralId, peripheral] of Peripheral.SeenDevices) {
+			availablePeripherals.set(peripheralId, {
+				status: peripheral.connected ? 'connected' : 'disconnected',
+				info: peripheral.info,
+			})
+		}
+		return Object.fromEntries(availablePeripherals)
+	}
+	async updatePeripheralsSettings(
+		settings: { [peripheralId: string]: PeripheralSettings_Any },
+		autoConnect: boolean
+	) {
+		// Do this before handling the per-peripheral settings.
+		// This is because the behavior of SetSpecificDeviceConnectionPreference
+		// depends on the value of the auto connect setting on the Peripheral class.
+		if (autoConnect) {
+			await Peripheral.EnableAutoConnectToAll()
+		} else {
+			await Peripheral.DisableAutoConnectToAll()
+		}
+
+		const specificPeripheralPromises: Promise<void>[] = []
+		for (const [peripheralId, setting] of Object.entries(settings)) {
+			specificPeripheralPromises.push(
+				Peripheral.SetSpecificDeviceConnectionPreference(peripheralId, setting.manualConnect)
+			)
+		}
+		await Promise.all(specificPeripheralPromises)
 	}
 	async setConnectedToParent(connected: boolean): Promise<void> {
 		this.connectedToParent = connected

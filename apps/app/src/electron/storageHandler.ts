@@ -846,7 +846,17 @@ export class StorageHandler extends EventEmitter {
 
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
 		for (const bridge of Object.values(project.bridges)) {
-			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
+			// This object was renamed to avoid confusion.
+			if (!bridge.clientSidePeripheralSettings) {
+				if ((bridge as any).peripheralSettings) {
+					bridge.clientSidePeripheralSettings = (bridge as any).peripheralSettings
+				} else {
+					bridge.clientSidePeripheralSettings = {}
+				}
+			}
+			delete (bridge as any).peripheralSettings
+
+			if (!bridge.settings.peripherals) bridge.settings.peripherals = {}
 		}
 		if (!project.deviceNames) project.deviceNames = {}
 	}

@@ -1,4 +1,5 @@
 import { ResourceAny } from '@shared/models'
+import { AvailablePeripheral, PeripheralSettings_Any } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
@@ -15,6 +16,7 @@ export namespace BridgeAPI {
 			| PeripheralStatus
 			| PeripheralTrigger
 			| DeviceRefreshStatus
+			| AvailablePeripherals
 
 		/** Bridge starts by sending this upon connection (if it is a server). SuperConductor replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -79,6 +81,13 @@ export namespace BridgeAPI {
 			deviceId: string
 			refreshing: boolean
 		}
+		export interface AvailablePeripherals extends MessageBase {
+			type: 'AvailablePeripherals'
+			peripherals: {
+				[peripheralId: string]: AvailablePeripheral
+			}
+			// A reply to GetAvailablePeripherals
+		}
 	}
 
 	export namespace FromSuperConductor {
@@ -91,6 +100,7 @@ export namespace BridgeAPI {
 			| SetMappings
 			| RefreshResources
 			| PeripheralSetKeyDisplay
+			| GetAvailablePeripherals
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
@@ -102,6 +112,10 @@ export namespace BridgeAPI {
 			devices: {
 				[deviceId: string]: DeviceOptionsAny
 			}
+			peripherals: {
+				[deviceId: string]: PeripheralSettings_Any
+			}
+			autoConnectToAllPeripherals: boolean
 		}
 		export interface AddTimeline extends MessageBase {
 			type: 'addTimeline'
@@ -134,6 +148,10 @@ export namespace BridgeAPI {
 			deviceId: string
 			identifier: string
 			keyDisplay: KeyDisplay | KeyDisplayTimeline
+		}
+		export interface GetAvailablePeripherals extends MessageBase {
+			type: 'getAvailablePeripherals'
+			// Bridge will reply with "AvailablePeripherals"
 		}
 	}
 

@@ -36,10 +36,18 @@ export class BaseBridge {
 
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
+			this.peripheralsHandlerSend({
+				type: 'AvailablePeripherals',
+				peripherals: peripheralsHandler.getAvailablePeripherals(),
+			})
 		})
-		peripheralsHandler.on('disconnected', (deviceId, info) =>
+		peripheralsHandler.on('disconnected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'disconnected' })
-		)
+			this.peripheralsHandlerSend({
+				type: 'AvailablePeripherals',
+				peripherals: peripheralsHandler.getAvailablePeripherals(),
+			})
+		})
 		peripheralsHandler.on('keyDown', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
 		})
@@ -129,7 +137,12 @@ export class BaseBridge {
 		} else if (msg.type === 'setMappings') {
 			this.updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
+			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
+
 			this.tsr.updateDevices(msg.devices).catch((e) => this.log?.error(e))
+			this.peripheralsHandler
+				.updatePeripheralsSettings(msg.peripherals, msg.autoConnectToAllPeripherals)
+				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'refreshResources') {
 			this.tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
 				this.send({
@@ -142,6 +155,10 @@ export class BaseBridge {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
 			this.peripheralsHandler.setKeyDisplay(msg.deviceId, msg.identifier, msg.keyDisplay)
+		} else if (msg.type === 'getAvailablePeripherals') {
+			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
+
+			this.send({ type: 'AvailablePeripherals', peripherals: this.peripheralsHandler.getAvailablePeripherals() })
 		} else {
 			assertNever(msg)
 		}

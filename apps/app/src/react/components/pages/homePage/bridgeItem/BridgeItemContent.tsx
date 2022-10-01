@@ -6,10 +6,14 @@ import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { TextField } from '@mui/material'
+import { Stack, TextField } from '@mui/material'
 
 import './style.scss'
 import { NewDeviceDialog } from '../bridgesPage/NewDeviceDialog'
+
+import Toggle from 'react-toggle'
+import 'react-toggle/style.css'
+import { PeripheralSettings_Any } from '@shared/api'
 
 export const BridgeItemContent: React.FC<{
 	id: string
@@ -56,7 +60,22 @@ export const BridgeItemContent: React.FC<{
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
 
+	const toggleAutoConnectToAllPeripherals = useCallback(() => {
+		props.bridge.settings.autoConnectToAllPeripherals = !props.bridge.settings.autoConnectToAllPeripherals
+		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+	}, [handleError, ipcServer, project, props.bridge.settings])
+
+	const togglePeripheralManualConnect = useCallback(
+		(peripheralSettings?: PeripheralSettings_Any) => {
+			if (!peripheralSettings) return
+			peripheralSettings.manualConnect = !peripheralSettings.manualConnect
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[handleError, ipcServer, project]
+	)
+
 	const outgoingBridge: boolean = props.bridge.outgoing
+	console.log(props)
 
 	return (
 		<div className="content">
@@ -114,6 +133,37 @@ export const BridgeItemContent: React.FC<{
 					devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
 					newlyCreatedDeviceId={newlyCreatedDeviceId}
 				/>
+			</RoundedSection>
+
+			<RoundedSection
+				title="Panels"
+				controls={
+					<Stack direction="row" spacing={1}>
+						<label>Auto-connect to all panels</label>
+						<div className="sc-switch">
+							<Toggle
+								defaultChecked={props.bridge.settings.autoConnectToAllPeripherals}
+								onChange={toggleAutoConnectToAllPeripherals}
+							/>
+						</div>
+					</Stack>
+				}
+			>
+				{Object.entries(props.bridgeStatus.peripherals).map(([peripheralId, peripheral]) => (
+					<Stack direction="row" spacing={1} key={peripheralId}>
+						<div>{peripheral.info.name}</div>
+						<div>{peripheral.status}</div>
+						<label>Connect</label>
+						<div className="sc-switch">
+							<Toggle
+								defaultChecked={!!props.bridge.settings.peripherals[peripheralId]?.manualConnect}
+								onChange={() => {
+									togglePeripheralManualConnect(props.bridge.settings.peripherals[peripheralId])
+								}}
+							/>
+						</div>
+					</Stack>
+				))}
 			</RoundedSection>
 
 			<NewDeviceDialog

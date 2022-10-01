@@ -85,3 +85,15 @@ export interface PeripheralInfo_XKeys {
 	rowCount: number
 	layout: XKeysInfo['layout']
 }
+
+export type PeripheralSettings_Any = PeripheralSettings_StreamDeck | PeripheralSettings_XKeys
+export interface PeripheralSettings_Base {
+	manualConnect: boolean
+}
+export type PeripheralSettings_StreamDeck = PeripheralSettings_Base
+export type PeripheralSettings_XKeys = PeripheralSettings_Base
+
+export interface AvailablePeripheral {
+	info: PeripheralInfo
+	status: 'connected' | 'disconnected'
+}

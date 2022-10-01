@@ -1,4 +1,4 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike, AvailablePeripheral } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
@@ -128,6 +128,7 @@ export class BridgeHandler {
 					this.session.updateBridgeStatus(bridge.id, {
 						connected: false,
 						devices: {},
+						peripherals: {},
 					})
 
 					this.outgoingBridges[bridge.id] = {
@@ -273,6 +274,11 @@ abstract class AbstractBridgeConnection {
 		// The bridge will reply with its timelineIds, and we'll pipe them into this._syncTimelineIds()
 		this.send({ type: 'getTimelineIds' })
 	}
+	getAvailablePeripherals() {
+		// Request a list of the currently available peripherals from the Bridge.
+		// The bridge will reply with a message handled elsewhere.
+		this.send({ type: 'getAvailablePeripherals' })
+	}
 	protected getCurrentTime() {
 		return Date.now()
 	}
@@ -316,6 +322,8 @@ abstract class AbstractBridgeConnection {
 		// Sync timelineIds:
 		this.getTimelineIds()
 		this.session.resetPeripheralTriggerStatuses(this.bridgeId)
+		// Sync available peripherals
+		this.getAvailablePeripherals()
 	}
 	protected onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')
@@ -372,6 +380,10 @@ abstract class AbstractBridgeConnection {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
+	protected _onAvailablePeripherals(availablePeripherals: { [peripheralId: string]: AvailablePeripheral }) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updateAvailablePeripherals(this.bridgeId, availablePeripherals)
+	}
 	protected handleMessage(msg: BridgeAPI.FromBridge.Any) {
 		if (msg.type === 'initRequestId') {
 			if (this.onInitRequestId) this.onInitRequestId()
@@ -393,6 +405,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 		} else if (msg.type === 'DeviceRefreshStatus') {
 			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
+		} else if (msg.type === 'AvailablePeripherals') {
+			this._onAvailablePeripherals(msg.peripherals)
 		} else {
 			assertNever(msg)
 		}
@@ -413,8 +427,10 @@ abstract class AbstractBridgeConnection {
 				url: '',
 				settings: {
 					devices: {},
+					peripherals: {},
+					autoConnectToAllPeripherals: true,
 				},
-				peripheralSettings: {},
+				clientSidePeripheralSettings: {},
 			}
 			this.storage.updateProject(project)
 		}
@@ -425,6 +441,7 @@ abstract class AbstractBridgeConnection {
 			status = {
 				connected: false,
 				devices: {},
+				peripherals: {},
 			}
 		}
 		status.connected = true

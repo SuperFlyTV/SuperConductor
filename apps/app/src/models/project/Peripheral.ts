@@ -13,13 +13,6 @@ export interface PeripheralStatus {
 		lastConnected: number
 	}
 }
-export interface PeripheralSettings {
-	// overrideName?: string
-
-	areas: {
-		[areaId: string]: PeripheralArea
-	}
-}
 
 export interface PeripheralArea {
 	name: string

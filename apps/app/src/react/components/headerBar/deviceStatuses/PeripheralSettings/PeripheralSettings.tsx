@@ -54,7 +54,7 @@ export const PeripheralSettings: React.FC<{
 	const bridge = project.bridges[bridgeId]
 	if (!bridge) return null
 
-	const peripheralSettings = bridge.peripheralSettings[deviceId]
+	const peripheralSettings = bridge.clientSidePeripheralSettings[deviceId]
 
 	return (
 		<div className="peripheral-settings">

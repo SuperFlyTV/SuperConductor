@@ -49,12 +49,13 @@ import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
-import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
-import { DefiningArea } from '..//lib/triggers/keyDisplay'
+import { PeripheralArea } from '../models/project/Peripheral'
+import { DefiningArea } from '../lib/triggers/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
+import { BridgePeripheralSettings } from '../models/project/Bridge'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -2121,9 +2122,11 @@ export class IPCServer
 		const bridge = project.bridges[data.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		let peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (!peripheralSettings) {
-			bridge.peripheralSettings[data.deviceId] = peripheralSettings = {
+			bridge.clientSidePeripheralSettings[data.deviceId] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2144,8 +2147,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 					delete peripheralSettings.areas[newAreaId]
@@ -2167,7 +2170,9 @@ export class IPCServer
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
@@ -2181,8 +2186,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2206,7 +2211,9 @@ export class IPCServer
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			orgArea = deepClone(peripheralSettings.areas[data.areaId])
 
@@ -2224,8 +2231,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2247,7 +2254,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2262,7 +2269,7 @@ export class IPCServer
 
 				const bridge = project.bridges[arg.bridgeId]
 				if (!bridge) return
-				const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+				const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 				if (!peripheralSettings) return
 				const area = peripheralSettings.areas[arg.areaId]
 				if (!area) return
@@ -2278,7 +2285,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return

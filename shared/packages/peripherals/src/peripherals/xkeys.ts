@@ -43,8 +43,6 @@ export class PeripheralXkeys extends Peripheral {
 		}
 	}
 
-	public initializing = false
-	public connected = false
 	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private sentFrequency = 0
@@ -102,6 +100,7 @@ export class PeripheralXkeys extends Peripheral {
 				if (value) this.ignoreKeys.add(keyIndex)
 			})
 
+			this.connected = true
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false

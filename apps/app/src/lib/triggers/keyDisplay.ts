@@ -33,7 +33,7 @@ export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 		}
 	>()
 	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+		for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
 			let iArea = -1
 			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				iArea++
