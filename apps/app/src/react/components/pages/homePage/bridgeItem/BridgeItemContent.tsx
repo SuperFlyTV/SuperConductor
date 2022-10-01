@@ -75,6 +75,7 @@ export const BridgeItemContent: React.FC<{
 	)
 
 	const outgoingBridge: boolean = props.bridge.outgoing
+	const autoConnectPanels = props.bridge.settings.autoConnectToAllPeripherals
 
 	return (
 		<div className="content">
@@ -140,10 +141,7 @@ export const BridgeItemContent: React.FC<{
 					<Stack direction="row" spacing={1}>
 						<label>Auto-connect to all panels</label>
 						<div className="sc-switch">
-							<Toggle
-								defaultChecked={props.bridge.settings.autoConnectToAllPeripherals}
-								onChange={toggleAutoConnectToAllPeripherals}
-							/>
+							<Toggle defaultChecked={autoConnectPanels} onChange={toggleAutoConnectToAllPeripherals} />
 						</div>
 					</Stack>
 				}
@@ -153,15 +151,18 @@ export const BridgeItemContent: React.FC<{
 					return (
 						<Stack direction="row" spacing={1} key={peripheralId}>
 							<div>{peripheralId}</div>
-							<label>Connect</label>
-							<div className="sc-switch">
-								<Toggle
-									defaultChecked={!!peripheralSettings?.manualConnect}
-									onChange={() => {
-										togglePeripheralManualConnect(peripheralSettings)
-									}}
-								/>
-							</div>
+							<Stack direction="row" spacing={1}>
+								<label>Connect</label>
+								<div className="sc-switch">
+									<Toggle
+										disabled={autoConnectPanels}
+										defaultChecked={!!peripheralSettings?.manualConnect}
+										onChange={() => {
+											togglePeripheralManualConnect(peripheralSettings)
+										}}
+									/>
+								</div>
+							</Stack>
 						</Stack>
 					)
 				})}
