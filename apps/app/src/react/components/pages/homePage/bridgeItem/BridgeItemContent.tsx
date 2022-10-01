@@ -146,11 +146,11 @@ export const BridgeItemContent: React.FC<{
 					</Stack>
 				}
 			>
-				{Object.entries(props.bridgeStatus.peripherals).map(([peripheralId, _peripheral]) => {
+				{Object.entries(props.bridgeStatus.peripherals).map(([peripheralId, peripheral]) => {
 					const peripheralSettings = props.bridge.settings.peripherals[peripheralId]
 					return (
 						<Stack direction="row" spacing={1} key={peripheralId}>
-							<div>{peripheralId}</div>
+							<div>{peripheral.name}</div>
 							<Stack direction="row" spacing={1}>
 								<label>Connect</label>
 								<div className="sc-switch">

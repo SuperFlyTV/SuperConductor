@@ -95,4 +95,6 @@ export type PeripheralSettings_XKeys = PeripheralSettings_Base
 
 // @TODO: Figure out what data we can put in this interface.
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AvailablePeripheral {}
+export interface AvailablePeripheral {
+	name: string
+}

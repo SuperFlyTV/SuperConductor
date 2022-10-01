@@ -6,6 +6,7 @@ import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elg
 import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
+import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
 export type OnDeviceCallback = (peripheral: PeripheralStreamDeck) => void
 
@@ -30,7 +31,9 @@ export class PeripheralStreamDeck extends Peripheral {
 					? `streamdeck-serial_${streamDeck.serialNumber}`
 					: `streamdeck-path_${streamDeck.path}`
 
-				Peripheral.AddAvailableDevice(id)
+				Peripheral.AddAvailableDevice(id, {
+					name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
+				})
 				const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
 
 				const existingDevice = Peripheral.Instances.get(id)
@@ -68,6 +71,14 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 
+	static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
+		const model = 'model' in streamDeck ? streamDeck.model : streamDeck.MODEL
+		let name = 'Stream Deck'
+		if (model === DeviceModelId.MINI) name += ' Mini'
+		else if (model === DeviceModelId.XL) name += ' XL'
+		return name
+	}
+
 	private streamDeck?: StreamDeck
 	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
@@ -84,9 +95,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 			this.streamDeck = openStreamDeck(this.path)
 
-			let name = 'Stream Deck'
-			if (this.streamDeck.MODEL === DeviceModelId.MINI) name += ' Mini'
-			else if (this.streamDeck.MODEL === DeviceModelId.XL) name += ' XL'
+			const name = PeripheralStreamDeck.GetStreamDeckName(this.streamDeck)
 
 			this._info = {
 				name: name,

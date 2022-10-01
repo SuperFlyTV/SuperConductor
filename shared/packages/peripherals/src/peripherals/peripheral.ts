@@ -123,11 +123,11 @@ export abstract class Peripheral extends EventEmitter {
 		return !!Peripheral.ShouldConnectToSpecific.get(deviceId)
 	}
 
-	protected static AddAvailableDevice(peripheralId: string): void {
+	protected static AddAvailableDevice(peripheralId: string, info: AvailablePeripheral): void {
 		if (Peripheral.AvailablePeripherals.has(peripheralId)) {
 			return
 		}
-		Peripheral.AvailablePeripherals.set(peripheralId, {})
+		Peripheral.AvailablePeripherals.set(peripheralId, info)
 		Peripheral.AvailablePeripheralsCallbacks.forEach((cb) => cb(Peripheral.GetAvailableDevices()))
 	}
 
