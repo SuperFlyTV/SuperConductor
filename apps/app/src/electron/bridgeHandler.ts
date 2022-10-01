@@ -383,6 +383,19 @@ abstract class AbstractBridgeConnection {
 	protected _onAvailablePeripherals(availablePeripherals: { [peripheralId: string]: AvailablePeripheral }) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updateAvailablePeripherals(this.bridgeId, availablePeripherals)
+		const project = this.storage.getProject()
+		const bridge = project.bridges[this.bridgeId]
+		if (bridge) {
+			for (const peripheralId of Object.keys(availablePeripherals)) {
+				if (!bridge.settings.peripherals[peripheralId]) {
+					// Initalize with defaults
+					bridge.settings.peripherals[peripheralId] = {
+						manualConnect: true,
+					}
+				}
+			}
+		}
+		this.storage.updateProject(project)
 	}
 	protected handleMessage(msg: BridgeAPI.FromBridge.Any) {
 		if (msg.type === 'initRequestId') {

@@ -1,10 +1,10 @@
 import EventEmitter from 'events'
 import {
+	AvailablePeripheral,
 	KeyDisplay,
 	KeyDisplayTimeline,
 	LoggerLike,
 	PeripheralInfo,
-	AvailablePeripheral,
 	PeripheralSettings_Any,
 } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
@@ -17,6 +17,8 @@ export interface PeripheralsHandlerEvents {
 
 	keyDown: (deviceId: string, identifier: string) => void
 	keyUp: (deviceId: string, identifier: string) => void
+
+	availablePeripherals: (peripherals: { [peripheralId: string]: AvailablePeripheral }) => void
 }
 export interface PeripheralsHandler {
 	on<U extends keyof PeripheralsHandlerEvents>(event: U, listener: PeripheralsHandlerEvents[U]): this
@@ -38,6 +40,11 @@ export class PeripheralsHandler extends EventEmitter {
 		super()
 	}
 	init() {
+		// Set up callbacks:
+		Peripheral.AddAvailableDeviceCallback((peripherals: { [peripheralId: string]: AvailablePeripheral }) => {
+			this.emit('availablePeripherals', peripherals)
+		})
+
 		// Set up watchers:
 		this.watchers.push(PeripheralStreamDeck.Watch(this.log, (device) => this.handleNewPeripheral(device)))
 		this.watchers.push(PeripheralXkeys.Watch(this.log, (device) => this.handleNewPeripheral(device)))
@@ -49,14 +56,7 @@ export class PeripheralsHandler extends EventEmitter {
 		device.setKeyDisplay(identifier, keyDisplay)
 	}
 	getAvailablePeripherals() {
-		const availablePeripherals = new Map<string, AvailablePeripheral>()
-		for (const [peripheralId, peripheral] of Peripheral.SeenDevices) {
-			availablePeripherals.set(peripheralId, {
-				status: peripheral.connected ? 'connected' : 'disconnected',
-				info: peripheral.info,
-			})
-		}
-		return Object.fromEntries(availablePeripherals)
+		return Peripheral.GetAvailableDevices()
 	}
 	async updatePeripheralsSettings(
 		settings: { [peripheralId: string]: PeripheralSettings_Any },
@@ -112,7 +112,7 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 
 	private handleNewPeripheral(device: Peripheral) {
-		// This is called when a new devices has been discovered
+		// This is called when a new device has been connected to
 
 		this.devices.set(device.id, device)
 		// We know at this point that the device is connected:

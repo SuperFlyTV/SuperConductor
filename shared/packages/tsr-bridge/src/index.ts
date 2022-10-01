@@ -54,6 +54,9 @@ export class BaseBridge {
 		peripheralsHandler.on('keyUp', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
 		})
+		peripheralsHandler.on('availablePeripherals', (peripherals) => {
+			this.peripheralsHandlerSend({ type: 'AvailablePeripherals', peripherals })
+		})
 
 		peripheralsHandler.init()
 
@@ -124,10 +127,11 @@ export class BaseBridge {
 
 	handleMessage(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (msg.type === 'setId') {
-			// Reply to SuperConductor with our id:
-			this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false })
-
-			this.onReceivedBridgeId(msg.id).catch((e) => this.log?.error(e))
+			this.onReceivedBridgeId(msg.id)
+				// Wait until after the initialization of things like the peripherals handler
+				// before telling SuperConductor that the bridge is ready.
+				.then(() => this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false }))
+				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'addTimeline') {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {

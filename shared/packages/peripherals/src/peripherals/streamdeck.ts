@@ -7,9 +7,18 @@ import { Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 
+export type OnDeviceCallback = (peripheral: PeripheralStreamDeck) => void
+
 export class PeripheralStreamDeck extends Peripheral {
-	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralStreamDeck) => void) {
-		const seenDevices = PeripheralStreamDeck.SeenDevices
+	private static Watching = false
+	protected static OnDevice: OnDeviceCallback
+	static Watch(log: LoggerLike, onDevice: OnDeviceCallback) {
+		if (PeripheralStreamDeck.Watching) {
+			throw new Error('Already watching')
+		}
+
+		PeripheralStreamDeck.Watching = true
+		PeripheralStreamDeck.OnDevice = onDevice
 
 		const interval = setInterval(() => {
 			const streamDecks = listStreamDecks()
@@ -21,20 +30,26 @@ export class PeripheralStreamDeck extends Peripheral {
 					? `streamdeck-serial_${streamDeck.serialNumber}`
 					: `streamdeck-path_${streamDeck.path}`
 
-				const existingDevice = seenDevices.get(id)
+				Peripheral.AddAvailableDevice(id)
+				const shouldConnect =
+					PeripheralStreamDeck.AutoConnectToAll || PeripheralStreamDeck.ShouldConnectToSpecific.get(id)
+
+				const existingDevice = Peripheral.Instances.get(id)
 				if (!existingDevice) {
 					const newDevice = new PeripheralStreamDeck(log, id, streamDeck.path)
+					Peripheral.Instances.set(id, newDevice)
 
-					seenDevices.set(id, newDevice)
-
-					if (PeripheralStreamDeck.AutoConnectToAll || PeripheralStreamDeck.ShouldConnectToSpecific.get(id)) {
+					if (shouldConnect) {
 						newDevice
 							.init()
-							.then(() => onDevice(newDevice))
+							.then(() => {
+								newDevice.hasConnected = true
+								onDevice(newDevice)
+							})
 							.catch(log.error)
 					}
 				} else {
-					if (existingDevice && !existingDevice.connected && !existingDevice.initializing) {
+					if (existingDevice && !existingDevice.connected && !existingDevice.initializing && shouldConnect) {
 						existingDevice
 							.init()
 							.then(() => {
@@ -47,7 +62,10 @@ export class PeripheralStreamDeck extends Peripheral {
 		}, 1000)
 
 		return {
-			stop: () => clearInterval(interval),
+			stop: () => {
+				clearInterval(interval)
+				PeripheralStreamDeck.Watching = false
+			},
 		}
 	}
 
@@ -212,6 +230,9 @@ export class PeripheralStreamDeck extends Peripheral {
 		if (this.streamDeck) {
 			await this.streamDeck.close()
 		}
+		this.connected = false
+		this.emit('disconnected')
+		this.streamDeck = undefined
 	}
 
 	private emitAllKeys() {

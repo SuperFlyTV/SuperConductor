@@ -93,7 +93,6 @@ export interface PeripheralSettings_Base {
 export type PeripheralSettings_StreamDeck = PeripheralSettings_Base
 export type PeripheralSettings_XKeys = PeripheralSettings_Base
 
-export interface AvailablePeripheral {
-	info: PeripheralInfo
-	status: 'connected' | 'disconnected'
-}
+// @TODO: Figure out what data we can put in this interface.
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface AvailablePeripheral {}

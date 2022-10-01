@@ -30,7 +30,10 @@ export class PeripheralXkeys extends Peripheral {
 		watcher.on('connected', (xkeysPanel) => {
 			const id = `xkeys-${xkeysPanel.uniqueId}`
 
+			Peripheral.AddAvailableDevice(id)
+
 			const newDevice = new PeripheralXkeys(log, id, xkeysPanel)
+			Peripheral.Instances.set(id, newDevice)
 
 			newDevice
 				.init()

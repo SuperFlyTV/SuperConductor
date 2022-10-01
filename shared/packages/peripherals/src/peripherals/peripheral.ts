@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
+import { AvailablePeripheral, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
 
 export interface PeripheralEvents {
@@ -13,10 +13,13 @@ export declare interface Peripheral {
 	on<U extends keyof PeripheralEvents>(event: U, listener: PeripheralEvents[U]): this
 	emit<U extends keyof PeripheralEvents>(event: U, ...args: Parameters<PeripheralEvents[U]>): boolean
 }
+export type AvailablePeripheralCallback = (peripherals: { [peripheralId: string]: AvailablePeripheral }) => void
 export abstract class Peripheral extends EventEmitter {
-	static SeenDevices = new Map<string, Peripheral>()
 	protected static ShouldConnectToSpecific = new Map<string, boolean>()
 	protected static AutoConnectToAll = true
+	protected static Instances = new Map<string, Peripheral>()
+	private static AvailablePeripherals = new Map<string, AvailablePeripheral>()
+	private static AvailablePeripheralsCallbacks: AvailablePeripheralCallback[] = []
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
 		protected log: LoggerLike,
@@ -31,6 +34,8 @@ export abstract class Peripheral extends EventEmitter {
 	public connected = false
 	/** True if in the process of connecting to the peripheral */
 	public initializing = false
+	/** True if the peripheral has connected at least once before */
+	protected hasConnected = false
 
 	/**
 	 * Tells the Peripheral class to auto connect to all peripherals.
@@ -45,12 +50,12 @@ export abstract class Peripheral extends EventEmitter {
 		Peripheral.AutoConnectToAll = true
 
 		const initPromises: Promise<void>[] = []
-		for (const device of Peripheral._getSeenDevices().values()) {
+		for (const device of Peripheral.Instances.values()) {
 			if (!device.initializing && !device.connected) {
 				initPromises.push(device.init())
 			}
 		}
-		await Promise.allSettled(initPromises)
+		await Promise.all(initPromises)
 	}
 
 	/**
@@ -67,17 +72,12 @@ export abstract class Peripheral extends EventEmitter {
 		Peripheral.AutoConnectToAll = false
 
 		const closePromises: Promise<void>[] = []
-		for (const device of Peripheral._getSeenDevices().values()) {
+		for (const device of Peripheral.Instances.values()) {
 			if (device.connected && !Peripheral.ShouldConnectToSpecific.get(device.id)) {
 				closePromises.push(device.close())
 			}
 		}
-		await Promise.allSettled(closePromises)
-	}
-
-	private static _getSeenDevices() {
-		const ctor = this.prototype.constructor as typeof Peripheral
-		return ctor.SeenDevices
+		await Promise.all(closePromises)
 	}
 
 	/**
@@ -93,16 +93,41 @@ export abstract class Peripheral extends EventEmitter {
 			return
 		}
 
-		const device = Peripheral.SeenDevices.get(deviceId)
-		if (device?.connected && !shouldConnect) {
-			await device.close()
-		} else if (!device?.connected && shouldConnect) {
-			await device?.init()
+		const device = Peripheral.Instances.get(deviceId)
+		if (device) {
+			if (device?.connected && !shouldConnect) {
+				await device.close()
+			} else if (!device?.connected && shouldConnect) {
+				await device?.init().then(() => {
+					if (device.hasConnected) {
+						device.emit('connected')
+					} else {
+						// Hack
+						;(device as any).prototype.constructor.OnDevice(device)
+					}
+				})
+			}
 		}
 	}
 
 	static GetSpecificDeviceConnectionPreference(deviceId: string): boolean {
 		return !!Peripheral.ShouldConnectToSpecific.get(deviceId)
+	}
+
+	protected static AddAvailableDevice(peripheralId: string): void {
+		if (Peripheral.AvailablePeripherals.has(peripheralId)) {
+			return
+		}
+		Peripheral.AvailablePeripherals.set(peripheralId, {})
+		Peripheral.AvailablePeripheralsCallbacks.forEach((cb) => cb(Peripheral.GetAvailableDevices()))
+	}
+
+	static GetAvailableDevices() {
+		return Object.fromEntries(Peripheral.AvailablePeripherals.entries())
+	}
+
+	static AddAvailableDeviceCallback(cb: AvailablePeripheralCallback) {
+		Peripheral.AvailablePeripheralsCallbacks.push(cb)
 	}
 
 	public setKeyDisplay(identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {

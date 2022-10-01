@@ -75,7 +75,6 @@ export const BridgeItemContent: React.FC<{
 	)
 
 	const outgoingBridge: boolean = props.bridge.outgoing
-	console.log(props)
 
 	return (
 		<div className="content">
@@ -149,21 +148,23 @@ export const BridgeItemContent: React.FC<{
 					</Stack>
 				}
 			>
-				{Object.entries(props.bridgeStatus.peripherals).map(([peripheralId, peripheral]) => (
-					<Stack direction="row" spacing={1} key={peripheralId}>
-						<div>{peripheral.info.name}</div>
-						<div>{peripheral.status}</div>
-						<label>Connect</label>
-						<div className="sc-switch">
-							<Toggle
-								defaultChecked={!!props.bridge.settings.peripherals[peripheralId]?.manualConnect}
-								onChange={() => {
-									togglePeripheralManualConnect(props.bridge.settings.peripherals[peripheralId])
-								}}
-							/>
-						</div>
-					</Stack>
-				))}
+				{Object.entries(props.bridgeStatus.peripherals).map(([peripheralId, _peripheral]) => {
+					const peripheralSettings = props.bridge.settings.peripherals[peripheralId]
+					return (
+						<Stack direction="row" spacing={1} key={peripheralId}>
+							<div>{peripheralId}</div>
+							<label>Connect</label>
+							<div className="sc-switch">
+								<Toggle
+									defaultChecked={!!peripheralSettings?.manualConnect}
+									onChange={() => {
+										togglePeripheralManualConnect(peripheralSettings)
+									}}
+								/>
+							</div>
+						</Stack>
+					)
+				})}
 			</RoundedSection>
 
 			<NewDeviceDialog

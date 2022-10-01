@@ -1,5 +1,5 @@
 import EventEmitter from 'events'
-import { BridgePeripheral, BridgeStatus } from '../models/project/Bridge'
+import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
@@ -102,13 +102,8 @@ export class SessionHandler extends EventEmitter {
 			return
 		}
 
-		const bridgePeripheralsWithPrefixedIds: { [peripheralId: string]: BridgePeripheral } = {}
-		for (const peripheralId of Object.keys(availablePeripherals)) {
-			const prefixedPeripheralId = `${bridgeId}-${peripheralId}`
-			bridgePeripheralsWithPrefixedIds[prefixedPeripheralId] = availablePeripherals[peripheralId]
-		}
-		if (!_.isEqual(bridgePeripheralsWithPrefixedIds, bridgeStatus.peripherals)) {
-			bridgeStatus.peripherals = bridgePeripheralsWithPrefixedIds
+		if (!_.isEqual(availablePeripherals, bridgeStatus.peripherals)) {
+			bridgeStatus.peripherals = availablePeripherals
 			this.bridgeStatusesHasChanged[bridgeId] = true
 		}
 
