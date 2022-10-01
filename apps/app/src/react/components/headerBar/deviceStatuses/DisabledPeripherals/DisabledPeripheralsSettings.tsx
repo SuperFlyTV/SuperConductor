@@ -1,0 +1,49 @@
+import { Stack } from '@mui/material'
+import { AvailablePeripheral } from '@shared/api'
+import React, { useCallback, useContext } from 'react'
+import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { ProjectContext } from '../../../../contexts/Project'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+
+import './style.scss'
+
+export interface DisabledPeripheralInfo {
+	bridgeId: string
+	deviceId: string
+	info: AvailablePeripheral
+}
+
+export const DisabledPeripheralsSettings: React.FC<{
+	peripherals: DisabledPeripheralInfo[]
+	onPeripheralClicked?: () => void
+}> = function DeviceStatuses({ peripherals, onPeripheralClicked }) {
+	const ipcServer = useContext(IPCServerContext)
+	const project = useContext(ProjectContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const enableManualConnect = useCallback(
+		(peripheral?: DisabledPeripheralInfo) => {
+			if (!peripheral) return
+			const peripheralSettings = project.bridges[peripheral.bridgeId].settings.peripherals[peripheral.deviceId]
+			peripheralSettings.manualConnect = !peripheralSettings.manualConnect
+			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+		},
+		[handleError, ipcServer, project]
+	)
+
+	return (
+		<Stack className="disabled-peripherals">
+			{peripherals.map((peripheral) => (
+				<a
+					key={`${peripheral.bridgeId}-${peripheral.deviceId}`}
+					onClick={() => {
+						enableManualConnect(peripheral)
+						onPeripheralClicked && onPeripheralClicked()
+					}}
+				>
+					{peripheral.info.name}
+				</a>
+			))}
+		</Stack>
+	)
+}
