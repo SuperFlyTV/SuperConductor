@@ -10,8 +10,8 @@ import PQueue from 'p-queue'
 export type OnDeviceCallback = (peripheral: PeripheralStreamDeck) => void
 
 export class PeripheralStreamDeck extends Peripheral {
-	private static Watching = false
 	protected static OnDevice: OnDeviceCallback
+	private static Watching = false
 	static Watch(log: LoggerLike, onDevice: OnDeviceCallback) {
 		if (PeripheralStreamDeck.Watching) {
 			throw new Error('Already watching')
@@ -31,8 +31,7 @@ export class PeripheralStreamDeck extends Peripheral {
 					: `streamdeck-path_${streamDeck.path}`
 
 				Peripheral.AddAvailableDevice(id)
-				const shouldConnect =
-					PeripheralStreamDeck.AutoConnectToAll || PeripheralStreamDeck.ShouldConnectToSpecific.get(id)
+				const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
 
 				const existingDevice = Peripheral.Instances.get(id)
 				if (!existingDevice) {

@@ -52,7 +52,16 @@ export abstract class Peripheral extends EventEmitter {
 		const initPromises: Promise<void>[] = []
 		for (const device of Peripheral.Instances.values()) {
 			if (!device.initializing && !device.connected) {
-				initPromises.push(device.init())
+				initPromises.push(
+					device.init().then(() => {
+						if (device.hasConnected) {
+							device.emit('connected')
+						} else {
+							// Hack
+							Object.getPrototypeOf(device).constructor.OnDevice(device)
+						}
+					})
+				)
 			}
 		}
 		await Promise.all(initPromises)
@@ -103,7 +112,7 @@ export abstract class Peripheral extends EventEmitter {
 						device.emit('connected')
 					} else {
 						// Hack
-						;(device as any).prototype.constructor.OnDevice(device)
+						Object.getPrototypeOf(device).constructor.OnDevice(device)
 					}
 				})
 			}

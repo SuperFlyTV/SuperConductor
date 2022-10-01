@@ -8,9 +8,20 @@ const FLASH_FAST = 7
 /** An X-keys value for how fast the keys should flash, when flashing Slowly */
 const FLASH_NORMAL = 30
 
+export type OnDeviceCallback = (peripheral: PeripheralXkeys) => void
+
 export class PeripheralXkeys extends Peripheral {
+	protected static OnDevice: OnDeviceCallback
+	private static Watching = false
 	private connectedToParent = false
-	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralXkeys) => void) {
+	static Watch(log: LoggerLike, onDevice: OnDeviceCallback) {
+		if (PeripheralXkeys.Watching) {
+			throw new Error('Already watching')
+		}
+
+		PeripheralXkeys.Watching = true
+		PeripheralXkeys.OnDevice = onDevice
+
 		let usePolling = false
 		// Check if usb-detection is installed:
 		try {
@@ -31,14 +42,17 @@ export class PeripheralXkeys extends Peripheral {
 			const id = `xkeys-${xkeysPanel.uniqueId}`
 
 			Peripheral.AddAvailableDevice(id)
+			const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
 
 			const newDevice = new PeripheralXkeys(log, id, xkeysPanel)
 			Peripheral.Instances.set(id, newDevice)
 
-			newDevice
-				.init()
-				.then(() => onDevice(newDevice))
-				.catch(log.error)
+			if (shouldConnect) {
+				newDevice
+					.init()
+					.then(() => onDevice(newDevice))
+					.catch(log.error)
+			}
 		})
 
 		return {
