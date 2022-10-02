@@ -57,6 +57,7 @@ export abstract class Peripheral extends EventEmitter {
 						if (device.hasConnected) {
 							device.emit('connected')
 						} else {
+							device.hasConnected = true
 							// Hack
 							Object.getPrototypeOf(device).constructor.OnDevice(device)
 						}

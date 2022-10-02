@@ -50,7 +50,10 @@ export class PeripheralXkeys extends Peripheral {
 			if (shouldConnect) {
 				newDevice
 					.init()
-					.then(() => onDevice(newDevice))
+					.then(() => {
+						newDevice.hasConnected = true
+						onDevice(newDevice)
+					})
 					.catch(log.error)
 			}
 		})
