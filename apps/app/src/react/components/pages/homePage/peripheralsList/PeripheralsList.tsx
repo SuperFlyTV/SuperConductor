@@ -10,7 +10,7 @@ import { store } from '../../../../mobx/store'
 
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
-import { PeripheralSettings_Any } from '@shared/api'
+import { PeripheralSettingsAny } from '@shared/api'
 import { StatusCircle } from '../scList/StatusCircle'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
@@ -27,7 +27,7 @@ export const PeripheralsList: React.FC<{
 	const appStore = store.appStore
 
 	const togglePeripheralManualConnect = useCallback(
-		(peripheralSettings?: PeripheralSettings_Any) => {
+		(peripheralSettings?: PeripheralSettingsAny) => {
 			if (!peripheralSettings) return
 			peripheralSettings.manualConnect = !peripheralSettings.manualConnect
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)

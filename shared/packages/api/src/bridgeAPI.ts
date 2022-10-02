@@ -1,5 +1,5 @@
 import { ResourceAny } from '@shared/models'
-import { AvailablePeripheral, PeripheralSettings_Any } from './peripherals'
+import { AvailablePeripheral, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
@@ -113,7 +113,7 @@ export namespace BridgeAPI {
 				[deviceId: string]: DeviceOptionsAny
 			}
 			peripherals: {
-				[deviceId: string]: PeripheralSettings_Any
+				[deviceId: string]: PeripheralSettingsAny
 			}
 			autoConnectToAllPeripherals: boolean
 		}

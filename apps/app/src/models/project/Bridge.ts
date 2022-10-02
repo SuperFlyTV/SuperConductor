@@ -1,4 +1,4 @@
-import { AvailablePeripheral, PeripheralSettings_Any } from '@shared/api'
+import { AvailablePeripheral, PeripheralSettingsAny } from '@shared/api'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { PeripheralArea } from './Peripheral'
 
@@ -15,7 +15,7 @@ export interface Bridge {
 			[deviceId: string]: DeviceOptionsAny
 		}
 		peripherals: {
-			[peripheralId: string]: PeripheralSettings_Any
+			[peripheralId: string]: PeripheralSettingsAny
 		}
 		autoConnectToAllPeripherals: boolean
 	}

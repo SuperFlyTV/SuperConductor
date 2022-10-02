@@ -94,7 +94,7 @@ export class SessionHandler extends EventEmitter {
 	removePeripheral(bridgeId: string, deviceId: string) {
 		const peripheralId = `${bridgeId}-${deviceId}`
 		delete this.peripherals[peripheralId]
-		this.peripheralsHasChanged[peripheralId]
+		this.peripheralsHasChanged[peripheralId] = true
 		this.triggerUpdate()
 	}
 	updateAvailablePeripherals(

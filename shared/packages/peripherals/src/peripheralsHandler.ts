@@ -5,7 +5,7 @@ import {
 	KeyDisplayTimeline,
 	LoggerLike,
 	PeripheralInfo,
-	PeripheralSettings_Any,
+	PeripheralSettingsAny,
 } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
@@ -58,10 +58,7 @@ export class PeripheralsHandler extends EventEmitter {
 	getAvailablePeripherals() {
 		return Peripheral.GetAvailableDevices()
 	}
-	async updatePeripheralsSettings(
-		settings: { [peripheralId: string]: PeripheralSettings_Any },
-		autoConnect: boolean
-	) {
+	async updatePeripheralsSettings(settings: { [peripheralId: string]: PeripheralSettingsAny }, autoConnect: boolean) {
 		// Do this before handling the per-peripheral settings.
 		// This is because the behavior of SetSpecificDeviceConnectionPreference
 		// depends on the value of the auto connect setting on the Peripheral class.

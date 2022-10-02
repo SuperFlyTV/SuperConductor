@@ -86,12 +86,12 @@ export interface PeripheralInfo_XKeys {
 	layout: XKeysInfo['layout']
 }
 
-export type PeripheralSettings_Any = PeripheralSettings_StreamDeck | PeripheralSettings_XKeys
-export interface PeripheralSettings_Base {
+export type PeripheralSettingsAny = PeripheralSettingsStreamDeck | PeripheralSettingsXKeys
+export interface PeripheralSettingsBase {
 	manualConnect: boolean
 }
-export type PeripheralSettings_StreamDeck = PeripheralSettings_Base
-export type PeripheralSettings_XKeys = PeripheralSettings_Base
+export type PeripheralSettingsStreamDeck = PeripheralSettingsBase
+export type PeripheralSettingsXKeys = PeripheralSettingsBase
 
 // @TODO: Figure out what data we can put in this interface.
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
