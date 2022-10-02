@@ -93,8 +93,6 @@ export interface PeripheralSettingsBase {
 export type PeripheralSettingsStreamDeck = PeripheralSettingsBase
 export type PeripheralSettingsXKeys = PeripheralSettingsBase
 
-// @TODO: Figure out what data we can put in this interface.
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface AvailablePeripheral {
 	name: string
 }
