@@ -13,6 +13,7 @@ import 'react-toggle/style.css'
 import { PeripheralSettings_Any } from '@shared/api'
 import { StatusCircle } from '../scList/StatusCircle'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
+import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 
 export const PeripheralsList: React.FC<{
 	disableToggles: boolean
@@ -43,7 +44,9 @@ export const PeripheralsList: React.FC<{
 			<ScList
 				list={Object.entries(props.statuses).map(([peripheralId, peripheral]) => {
 					const peripheralSettings = props.settings[peripheralId]
-					const otherStatus = appStore.peripherals[`${props.bridgeId}-${peripheralId}`]
+					const otherStatus = appStore.peripherals[`${props.bridgeId}-${peripheralId}`] as
+						| PeripheralStatus
+						| undefined
 					if (!peripheralSettings)
 						return {
 							id: peripheralId,
@@ -55,7 +58,9 @@ export const PeripheralsList: React.FC<{
 						id: peripheralId,
 						header: (
 							<Stack direction="row" spacing={1} key={peripheralId} alignItems="center">
-								<StatusCircle status={otherStatus.status.connected ? 'connected' : 'disconnected'} />
+								<StatusCircle
+									status={otherStatus && otherStatus.status.connected ? 'connected' : 'disconnected'}
+								/>
 								<ScListItemLabel title={peripheral.name} />
 								<label style={{ marginLeft: '2rem' }}>Connect</label>
 								<div className="sc-switch">

@@ -393,6 +393,12 @@ abstract class AbstractBridgeConnection {
 						manualConnect: true,
 					}
 				}
+				if (
+					!bridge.settings.autoConnectToAllPeripherals &&
+					!bridge.settings.peripherals[peripheralId].manualConnect
+				) {
+					this.session.removePeripheral(this.bridgeId, peripheralId)
+				}
 			}
 		}
 		this.storage.updateProject(project)

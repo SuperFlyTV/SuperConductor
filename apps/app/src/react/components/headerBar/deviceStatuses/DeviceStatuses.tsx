@@ -172,6 +172,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 						bridgeId={submenuPopover.bridgeId}
 						deviceId={submenuPopover.deviceId}
 						peripheral={appStore.peripherals[`${submenuPopover.bridgeId}-${submenuPopover.deviceId}`]}
+						onDisconnect={closeSubMenu}
 					/>
 				) : null}
 			</Popover>
