@@ -156,7 +156,7 @@ export const BridgeItemContent: React.FC<{
 								<div className="sc-switch">
 									<Toggle
 										disabled={autoConnectPanels}
-										defaultChecked={!!peripheralSettings?.manualConnect}
+										checked={!!peripheralSettings?.manualConnect}
 										onChange={() => {
 											togglePeripheralManualConnect(peripheralSettings)
 										}}
