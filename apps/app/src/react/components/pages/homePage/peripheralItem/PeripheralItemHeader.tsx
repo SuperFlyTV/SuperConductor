@@ -4,11 +4,11 @@ import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 import { StatusCircle } from '../scList/StatusCircle'
-import { Stack } from '@mui/material'
 import { AvailablePeripheral, PeripheralSettingsAny } from '@shared/api'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
+import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 
 export const PeripheralItemHeader: React.FC<{
 	disableManualConnectToggle: boolean
@@ -30,10 +30,16 @@ export const PeripheralItemHeader: React.FC<{
 	)
 
 	return (
-		<Stack direction="row" spacing={1} alignItems="center">
-			<StatusCircle status={otherStatus && otherStatus.status.connected ? 'connected' : 'disconnected'} />
+		<div className="device-item-header">
+			<div
+				className="device-shortcut"
+				title={otherStatus && otherStatus.status.connected ? 'Connected' : 'Disconnected'}
+			>
+				<StatusCircle status={otherStatus && otherStatus.status.connected ? 'connected' : 'disconnected'} />
+				<DeviceIcon type={status.type} />
+			</div>
 			<ScListItemLabel title={status.name} />
-			<label style={{ marginLeft: '2rem' }}>Connect</label>
+			<label>Connect&nbsp;&nbsp;</label>
 			<div className="sc-switch">
 				<Toggle
 					disabled={disableManualConnectToggle}
@@ -43,6 +49,6 @@ export const PeripheralItemHeader: React.FC<{
 					}}
 				/>
 			</div>
-		</Stack>
+		</div>
 	)
 }

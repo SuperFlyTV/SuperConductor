@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import sharp from 'sharp'
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { Peripheral } from './peripheral'
@@ -33,6 +33,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 				Peripheral.AddAvailableDevice(id, {
 					name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
+					type: PeripheralType.STREAMDECK,
 				})
 				const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
 

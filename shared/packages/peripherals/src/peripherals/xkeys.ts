@@ -1,4 +1,4 @@
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import { XKeysWatcher, XKeys } from 'xkeys'
 import { Peripheral } from './peripheral'
@@ -41,7 +41,7 @@ export class PeripheralXkeys extends Peripheral {
 		watcher.on('connected', (xkeysPanel) => {
 			const id = `xkeys-${xkeysPanel.uniqueId}`
 
-			Peripheral.AddAvailableDevice(id, { name: xkeysPanel.info.name })
+			Peripheral.AddAvailableDevice(id, { name: xkeysPanel.info.name, type: PeripheralType.XKEYS })
 			const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
 
 			const newDevice = new PeripheralXkeys(log, id, xkeysPanel)

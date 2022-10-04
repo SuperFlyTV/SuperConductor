@@ -71,7 +71,7 @@ export interface PeripheralInfo {
 }
 
 export interface PeripheralInfo_StreamDeck {
-	type: 'streamdeck'
+	type: PeripheralType.STREAMDECK
 
 	layout: {
 		width: number
@@ -79,7 +79,7 @@ export interface PeripheralInfo_StreamDeck {
 	}
 }
 export interface PeripheralInfo_XKeys {
-	type: 'xkeys'
+	type: PeripheralType.XKEYS
 
 	colCount: number
 	rowCount: number
@@ -95,4 +95,10 @@ export type PeripheralSettingsXKeys = PeripheralSettingsBase
 
 export interface AvailablePeripheral {
 	name: string
+	type: PeripheralType
+}
+
+export enum PeripheralType {
+	STREAMDECK = 'streamdeck',
+	XKEYS = 'xkeys',
 }
