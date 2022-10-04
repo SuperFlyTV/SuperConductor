@@ -1,4 +1,4 @@
-import { Stack } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { AvailablePeripheral } from '@shared/api'
 import React, { useCallback, useContext } from 'react'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -34,6 +34,7 @@ export const DisabledPeripheralsSettings: React.FC<{
 
 	return (
 		<Stack className="disabled-peripherals">
+			<Typography>Select a panel to connect to:</Typography>
 			{peripherals.map((peripheral) => (
 				<a
 					key={`${peripheral.bridgeId}-${peripheral.deviceId}`}

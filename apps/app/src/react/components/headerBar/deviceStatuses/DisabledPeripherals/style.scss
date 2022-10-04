@@ -1,12 +1,15 @@
 .disabled-peripherals {
 	min-width: 20rem;
 
+	> * {
+		padding: 1rem;
+	}
+
 	a {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
 		color: white;
-		padding: 1rem;
 		cursor: pointer;
 
 		&:hover {
