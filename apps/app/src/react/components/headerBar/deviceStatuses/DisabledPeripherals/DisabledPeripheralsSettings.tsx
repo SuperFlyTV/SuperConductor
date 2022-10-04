@@ -6,6 +6,7 @@ import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 
 import './style.scss'
+import { DeviceIcon } from '../../../pages/homePage/deviceIcon/DeviceIcon'
 
 export interface DisabledPeripheralInfo {
 	bridgeId: string
@@ -41,6 +42,7 @@ export const DisabledPeripheralsSettings: React.FC<{
 						onPeripheralClicked && onPeripheralClicked()
 					}}
 				>
+					<DeviceIcon type={peripheral.info.type} />
 					{peripheral.info.name}
 				</a>
 			))}

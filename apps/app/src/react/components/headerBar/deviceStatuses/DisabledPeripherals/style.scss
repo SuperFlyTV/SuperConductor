@@ -2,7 +2,9 @@
 	min-width: 20rem;
 
 	a {
-		display: block;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
 		color: white;
 		padding: 1rem;
 		cursor: pointer;
