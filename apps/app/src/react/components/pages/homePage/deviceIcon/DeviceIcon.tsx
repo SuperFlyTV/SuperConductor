@@ -41,7 +41,7 @@ export const DeviceIcon: React.FC<{ type: DeviceType | PeripheralType | undefine
 			iconElement = <img src={streamdeck} alt="Stream Deck" />
 			break
 		case PeripheralType.XKEYS:
-			iconElement = <img src={xkeys} alt="XKeys" />
+			iconElement = <img src={xkeys} alt="X-keys" />
 			break
 		case undefined:
 			iconElement = <span>?</span>
