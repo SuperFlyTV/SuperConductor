@@ -85,7 +85,7 @@ export class PeripheralXkeys extends Peripheral {
 			this._info = {
 				name: this.xkeysPanel.info.name,
 				gui: {
-					type: 'xkeys',
+					type: PeripheralType.XKEYS,
 					colCount: this.xkeysPanel.info.colCount,
 					rowCount: this.xkeysPanel.info.rowCount,
 					layout: this.xkeysPanel.info.layout,

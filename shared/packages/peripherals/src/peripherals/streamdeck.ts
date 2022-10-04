@@ -101,7 +101,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			this._info = {
 				name: name,
 				gui: {
-					type: 'streamdeck',
+					type: PeripheralType.STREAMDECK,
 					layout: {
 						height: this.streamDeck.KEY_ROWS,
 						width: this.streamDeck.KEY_COLUMNS,
