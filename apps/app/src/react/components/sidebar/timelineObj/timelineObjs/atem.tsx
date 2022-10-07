@@ -58,7 +58,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 							onSave(obj)
 						}}
 						allowUndefined={true}
-						caps={[0, 99]}
+						caps={[0, Number.POSITIVE_INFINITY]}
 					/>
 				</div>
 				<div className="setting">

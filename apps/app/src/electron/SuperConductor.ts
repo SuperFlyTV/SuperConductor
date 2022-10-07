@@ -27,10 +27,12 @@ import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { HTTPAPI } from './HTTPAPI'
 
 export class SuperConductor {
 	ipcServer: IPCServer
 	clients: { ipcClient: IPCClient; window: BrowserWindow }[] = []
+	httpAPI?: HTTPAPI
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -48,6 +50,9 @@ export class SuperConductor {
 	private refreshStatus: { [deviceId: string]: number } = {}
 
 	private hasStoredStartupUserStatistics = false
+
+	private internalHttpApiPort = 5500
+	private disableInternalHttpApi = false
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -93,12 +98,16 @@ export class SuperConductor {
 
 		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
 
-		for (const argv of process.argv) {
-			if (argv === '--disable-telemetry') {
+		process.argv.forEach((value, index) => {
+			if (value === '--disable-telemetry') {
 				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
+			} else if (value === '--disable-internal-http-api') {
+				this.disableInternalHttpApi = true
+			} else if (value === '--internal-http-api-port') {
+				this.internalHttpApiPort = parseInt(process.argv[index + 1], 10)
 			}
-		}
+		})
 
 		const appData = this.storage.getAppData()
 		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
@@ -205,6 +214,11 @@ export class SuperConductor {
 			},
 		})
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		if (this.disableInternalHttpApi) {
+			this.log.info(`Internal HTTP API disabled`)
+		} else {
+			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+		}
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.

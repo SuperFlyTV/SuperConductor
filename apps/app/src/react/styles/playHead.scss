@@ -4,7 +4,7 @@ $line-width: 0.2rem;
 	position: absolute;
 	top: 0;
 	left: 0;
-	z-index: 5;
+	z-index: 999;
 	height: 100%;
 	right: $line-width;
 	pointer-events: none;
