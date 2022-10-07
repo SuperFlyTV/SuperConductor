@@ -65,6 +65,12 @@ Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
 ![Stream Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream Deck](/doc/img/streamdeck.gif)
 
+## HTTP API
+
+SuperConductor currently has a limited, internal, and unstable HTTP API. We plan to add a public and stable HTTP API with proper documentation in the future, but for now this internal API is available by default at `http://localhost:5500/api/internal`. The port can be changed by passing `--internal-http-api-port XXXX` as an argument to SuperConductor. This API can be disabled by passing the `--disable-internal-http-api` argument.
+
+Please be aware that, because this is an internal API, it may change at any time without notice.
+
 ### Supported Devices
 
 _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-timeline-state-resolver) used in the [Sofie Automation system](https://www.sofieautomation.com/), so it can play anything that TSR can play._

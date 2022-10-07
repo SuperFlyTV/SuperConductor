@@ -64,16 +64,19 @@ export interface Action {
 
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
-	log: (method: LogLevel, ...args: any[]) => void
-	handleClientError: (error: string, stack?: string) => void
-	debugThrowError: (type: 'sync' | 'async' | 'setTimeout') => void
+	// Note: All these methods must only accept a single parameter.
+	// This is so they can properly be exposed to the REST API.
+
+	log: (arg: { level: LogLevel; params: any[] }) => void
+	handleClientError: (arg: { error: string; stack?: string }) => void
+	debugThrowError: (arg: { type: 'sync' | 'async' | 'setTimeout' }) => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
 	makeDevData(): void
 
 	acknowledgeSeenVersion: () => void
-	acknowledgeUserAgreement: (agreementVersion: string) => void
+	acknowledgeUserAgreement: (arg: { agreementVersion: string }) => void
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
 	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
 	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => void
@@ -126,9 +129,9 @@ export interface IPCServerMethods {
 		parts: { rundownId: string; partId: string }[]
 		to: { rundownId: string; groupId: string | null; target: MoveTarget }
 	}) => { partId: string; groupId: string; rundownId: string }[]
-	duplicatePart: (data: { rundownId: string; groupId: string; partId: string }) => void
-	moveGroups: (data: { rundownId: string; groupIds: string[]; target: MoveTarget }) => void
-	duplicateGroup: (data: { rundownId: string; groupId: string }) => void
+	duplicatePart: (arg: { rundownId: string; groupId: string; partId: string }) => void
+	moveGroups: (arg: { rundownId: string; groupIds: string[]; target: MoveTarget }) => void
+	duplicateGroup: (arg: { rundownId: string; groupId: string }) => void
 
 	updateTimelineObj: (arg: {
 		rundownId: string
@@ -173,7 +176,7 @@ export interface IPCServerMethods {
 	toggleGroupDisable: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	refreshResources: () => void
-	refreshResourcesSetAuto: (interval: number) => void
+	refreshResourcesSetAuto: (arg: { interval: number }) => void
 	triggerHandleAutoFill: () => void
 
 	updateProject: (arg: { id: string; project: Project }) => void
