@@ -12,6 +12,7 @@ import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
 import { getPartLabel } from '../lib/util'
+import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -882,6 +883,25 @@ export class StorageHandler extends EventEmitter {
 					part.triggers = []
 				}
 				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
+				for (const obj of part.timeline) {
+					// Guard against bad data which can crash the UI
+					// @TODO: Figure out how this bad data gets there in the first place.
+					if (obj.obj.content.deviceType === DeviceType.CASPARCG) {
+						if (obj.obj.content.type == TimelineContentTypeCasparCg.TEMPLATE) {
+							if (!obj.obj.content.data) {
+								obj.obj.content.data = {}
+							}
+						}
+					} else if (obj.obj.content.deviceType === DeviceType.HTTPSEND) {
+						if (!obj.obj.content.params) {
+							obj.obj.content.params = {}
+						}
+					} else if (obj.obj.content.deviceType === DeviceType.OSC) {
+						if (!obj.obj.content.values) {
+							obj.obj.content.values = []
+						}
+					}
+				}
 			}
 		}
 	}
