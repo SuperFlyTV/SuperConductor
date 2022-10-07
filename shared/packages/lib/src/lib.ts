@@ -43,37 +43,66 @@ export function flatten<T>(arr: (T | T[])[]): T[] {
 }
 /** Make a string out of an error (or other equivalents), including any additional data such as stack trace if available */
 export function stringifyError(error: unknown, noStack = false): string {
-	let str: string | undefined = undefined
-
-	if (error && typeof error === 'object') {
-		if ((error as Error).message) {
-			// Is an Error
-			str = `${(error as Error).message}`
+	const o = stringifyErrorInner(error)
+	if (noStack || !o.stack) {
+		return o.message
+	} else {
+		return `${o.message}, ${o.stack}`
+	}
+}
+export function stringifyErrorInner(error: unknown): {
+	message: string
+	stack: string | undefined
+} {
+	let message: string | undefined = undefined
+	let stack: string | undefined = undefined
+	if (typeof error === 'string') {
+		message = error
+	} else if (error === null) {
+		message = 'null'
+	} else if (error === undefined) {
+		message = 'undefined'
+	} else if (error && typeof error === 'object') {
+		if (typeof (error as any).error === 'object' && (error as any).error.message) {
+			message = (error as any).error.message
+			stack = (error as any).error.stack
 		} else if ((error as any).reason) {
-			// Is a Meteor.Error
-			str = `${(error as any).reason}`
+			if ((error as any).reason.message) {
+				message = (error as any).reason.message
+				stack = (error as any).reason.stack || (error as any).reason.reason
+			} else {
+				// Is a Meteor.Error
+				message = (error as any).reason
+				stack = (error as Error).stack
+			}
+		} else if ((error as Error).message) {
+			// Is an Error
+			message = (error as Error).message
+			stack = (error as Error).stack
 		} else if ((error as any).details) {
-			str = `${(error as any).details}`
+			message = (error as any).details
 		} else {
 			try {
 				// Try to stringify the object:
-				str = JSON.stringify(error)
+				message = JSON.stringify(error)
 			} catch (e) {
-				str = `${error} (stringifyError: ${e})`
+				message = `${error} (stringifyError: ${e})`
 			}
 		}
 	} else {
-		str = `${error}`
+		message = `${error}`
 	}
+	message = `${message}`
 
-	if (!noStack) {
-		if (error && typeof error === 'object' && (error as any).stack) {
-			str += ', ' + (error as any).stack
-		}
+	return {
+		message,
+		stack,
 	}
-
-	return str
 }
 export function ensureArray<T>(v: T | T[]): T[] {
 	return Array.isArray(v) ? v : [v]
+}
+/** Capitalizes the first letter of a string */
+export function capitalizeFirstLetter(input: string) {
+	return input.charAt(0).toUpperCase() + input.slice(1)
 }

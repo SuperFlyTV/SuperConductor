@@ -5,7 +5,7 @@ import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { store } from '../../mobx/store'
-import { ClipBoardContext } from './lib'
+import { ClipBoardContext, insertGroups, insertParts } from './lib'
 
 /**
  * Handle pasted data from the SuperConductor
@@ -44,78 +44,24 @@ export async function handleInternal(context: ClipBoardContext, str: string): Pr
 	}
 
 	if (groups.length) {
-		let target: MoveTarget
-		const selected = store.guiStore.mainSelected
-		if (selected) {
-			target = {
-				type: 'after',
-				id: selected.groupId,
-			}
-		} else {
-			target = {
-				type: 'last',
-			}
-		}
-		const insertedGroups = await context.serverAPI.insertGroups({
-			rundownId: currentRundownId,
-			groups: groups.map((g) => ({
+		await insertGroups(
+			context,
+
+			groups.map((g) => ({
 				group: g,
 				resources: {},
-			})),
-			target,
-		})
-		if (insertedGroups.length) {
-			store.guiStore.clearSelected()
-			for (const insert of insertedGroups) {
-				store.guiStore.addSelected({
-					type: 'group',
-					groupId: insert.groupId,
-				})
-			}
-		}
+			}))
+		)
 	}
 	if (parts.length) {
-		let target: MoveTarget
-		let insertGroupId: string | null
-		const selected = store.guiStore.mainSelected
-		if (selected) {
-			insertGroupId = selected.groupId
-			if (selected.type === 'part' || selected.type === 'timelineObj') {
-				target = {
-					type: 'after',
-					id: selected.partId,
-				}
-			} else {
-				target = {
-					type: 'last',
-				}
-			}
-		} else {
-			insertGroupId = null
-			target = {
-				type: 'last',
-			}
-		}
+		await insertParts(
+			context,
 
-		const insertedParts = await context.serverAPI.insertParts({
-			rundownId: currentRundownId,
-			groupId: insertGroupId,
-			parts: parts.map((p) => ({
+			parts.map((p) => ({
 				part: p,
 				resources: [],
-			})),
-			target,
-		})
-		if (insertedParts.length) {
-			store.guiStore.clearSelected()
-			for (const insert of insertedParts) {
-				store.guiStore.addSelected({
-					type: 'part',
-					groupId: insert.groupId,
-					partId: insert.partId,
-				})
-			}
-		}
+			}))
+		)
 	}
 	if (timelineObjs.length) {
 		let insertGroupId: string | null

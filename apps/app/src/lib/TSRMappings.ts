@@ -370,7 +370,7 @@ export function getMappingFromTimelineObject(
 				return literal<MappingHyperdeck>({
 					device: DeviceType.HYPERDECK,
 					deviceId: deviceId,
-					layerName: 'Hyperdeck 1',
+					layerName: 'HyperDeck 1',
 					mappingType: MappingHyperdeckType.TRANSPORT,
 					index: 0,
 				})
@@ -679,7 +679,7 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 		case DeviceType.TCPSEND:
 			return 'TCP Send'
 		case DeviceType.HYPERDECK:
-			return 'Hyperdeck'
+			return 'HyperDeck'
 		case DeviceType.PHAROS:
 			return 'Pharos'
 		case DeviceType.OSC:
@@ -897,7 +897,7 @@ export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId:
 			deviceId,
 			mappingType: MappingHyperdeckType.TRANSPORT,
 			index,
-			layerName: `Hyperdeck ${index + 1}`,
+			layerName: `HyperDeck ${index + 1}`,
 		})
 	} else if (deviceType === DeviceType.PHAROS) {
 		return literal<MappingPharos>({

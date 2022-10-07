@@ -13,6 +13,10 @@ import { DefiningArea } from '../lib/triggers/keyDisplay'
 export class IPCClient implements IPCClientMethods {
 	constructor(private mainWindow: BrowserWindow) {}
 
+	close() {
+		// Nothing here
+	}
+
 	updateAppData(appData: AppData): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateAppData', appData)
 	}

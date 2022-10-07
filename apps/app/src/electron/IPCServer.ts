@@ -73,7 +73,7 @@ type IPCServerEvents = {
 	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
 }
 
-function isUndoable(result: unknown): result is UndoableResult<any> {
+export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
 		return false
 	}
@@ -90,7 +90,7 @@ function isUndoable(result: unknown): result is UndoableResult<any> {
 }
 
 type ConvertToServerSide<T> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => any
+	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
 		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
@@ -165,36 +165,40 @@ export class IPCServer
 			}
 		}
 	}
-	private getProject(): Project {
+	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	private getRundown(arg: { rundownId: string }): { rundown: Rundown } {
+	public getRundowns(): { rundownIds: string[] } {
+		const rundowns = this.storage.getAllRundowns()
+		return { rundownIds: rundowns.map((r) => r.id) }
+	}
+	public getRundown(arg: { rundownId: string }): { rundown: Rundown } {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) throw new Error(`Rundown "${arg.rundownId}" not found.`)
 
 		return { rundown }
 	}
-	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
+	public getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
-		return this.getGroupOfRundown(rundown, arg.groupId)
+		return this._getGroupOfRundown(rundown, arg.groupId)
 	}
-	private getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
+	private _getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
 		const group = findGroup(rundown, groupId)
 		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
 
-	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
+	public getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-		return this.getPartOfGroup(rundown, group, arg.partId)
+		return this._getPartOfGroup(rundown, group, arg.partId)
 	}
-	private getPartOfGroup(
+	private _getPartOfGroup(
 		rundown: Rundown,
 		group: Group,
 		partId: string
@@ -238,30 +242,30 @@ export class IPCServer
 		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 	}
 
-	async log(method: LogLevel, ...args: any[]): Promise<void> {
-		this._renderLog[method](args[0], ...args.slice(1))
+	async log(arg: { level: LogLevel; params: any[] }): Promise<void> {
+		this._renderLog[arg.level](arg.params[0], ...arg.params.slice(1))
 	}
-	async handleClientError(error: string, stack?: string): Promise<void> {
+	async handleClientError(arg: { error: string; stack?: string }): Promise<void> {
 		// Handle an error thrown in the client
-		this.callbacks.handleError(error, stack)
+		this.callbacks.handleError('Client error: ' + arg.error, arg.stack)
 	}
-	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
+	async debugThrowError(arg: { type: 'sync' | 'async' | 'setTimeout' }): Promise<void> {
 		// This method is used for development-purposes only, to check how error reporting works.
 
-		if (type === 'sync') {
+		if (arg.type === 'sync') {
 			throw new Error('This is an error in an IPC method')
-		} else if (type === 'async') {
+		} else if (arg.type === 'async') {
 			await new Promise((_, reject) => {
 				setTimeout(() => {
 					reject(new Error('This is an error in a promise'))
 				}, 10)
 			})
-		} else if (type === 'setTimeout') {
+		} else if (arg.type === 'setTimeout') {
 			setTimeout(() => {
 				throw new Error('This is an error in a setTImeout')
 			}, 10)
 		} else {
-			assertNever(type)
+			assertNever(arg.type)
 		}
 	}
 	async triggerSendAll(): Promise<void> {
@@ -271,8 +275,8 @@ export class IPCServer
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
-	async setKeyboardKeys(data: { activeKeys: ActiveTrigger[] }): Promise<void> {
-		this.callbacks.setKeyboardKeys(data.activeKeys)
+	async setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): Promise<void> {
+		this.callbacks.setKeyboardKeys(arg.activeKeys)
 	}
 	async makeDevData(): Promise<void> {
 		await this.callbacks.makeDevData()
@@ -283,12 +287,12 @@ export class IPCServer
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
 	}
-	async acknowledgeUserAgreement(agreementVersion: string): Promise<void> {
+	async acknowledgeUserAgreement(arg: { agreementVersion: string }): Promise<void> {
 		const appData = this.storage.getAppData()
-		appData.userAgreement = agreementVersion
+		appData.userAgreement = arg.agreementVersion
 
 		this.storage.updateAppData(appData)
-		if (agreementVersion) {
+		if (arg.agreementVersion) {
 			this.callbacks.onAgreeToUserAgreement()
 		}
 	}
@@ -357,19 +361,19 @@ export class IPCServer
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	private async playParts(rundownId: string, groupId: string, partIds: string[]): Promise<void> {
+	private async playParts(arg: { rundownId: string; groupId: string; partIds: string[] }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup({
-			rundownId,
-			groupId,
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
 		})
-		for (const partId of partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+		for (const partId of arg.partIds) {
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
 			this._playPart(group, part, now)
 		}
 
-		this._saveUpdates({ rundownId, rundown, group })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	private _playPart(group: Group, part: Part, now: number): void {
 		if (part.disabled) {
@@ -397,22 +401,22 @@ export class IPCServer
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	async pauseParts(rundownId: string, groupId: string, partIds: string[], time?: number): Promise<void> {
+	async pauseParts(arg: { rundownId: string; groupId: string; partIds: string[]; time?: number }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup({
-			rundownId,
-			groupId,
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
 		})
 		updateGroupPlayingParts(group)
-		for (const partId of partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+		for (const partId of arg.partIds) {
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
-			this._pausePart(group, part, time, now)
+			this._pausePart(group, part, arg.time, now)
 
 			// group.preparedPlayData
 		}
 
-		this._saveUpdates({ rundownId, rundown, group })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
 		if (part.disabled) {
@@ -552,11 +556,11 @@ export class IPCServer
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
-			this.playParts(
-				arg.rundownId,
-				arg.groupId,
-				group.parts.map((part) => part.id)
-			).catch(this._log.error)
+			this.playParts({
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+				partIds: group.parts.map((part) => part.id),
+			}).catch(this._log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -591,14 +595,18 @@ export class IPCServer
 			const playingPartIds = Object.keys(group.playout.playingParts)
 			if (playingPartIds.length === 0) {
 				// Cue all parts
-				this.pauseParts(
-					arg.rundownId,
-					arg.groupId,
-					group.parts.map((part) => part.id)
-				).catch(this._log.error)
+				this.pauseParts({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					partIds: group.parts.map((part) => part.id),
+				}).catch(this._log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this._log.error)
+				this.pauseParts({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					partIds: playingPartIds,
+				}).catch(this._log.error)
 			}
 		}
 	}
@@ -1161,7 +1169,7 @@ export class IPCServer
 				movePart.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
 
 			if (arg.to.groupId) {
-				toGroup = this.getGroupOfRundown(toRundown, arg.to.groupId).group
+				toGroup = this._getGroupOfRundown(toRundown, arg.to.groupId).group
 			} else {
 				// toRundown = arg.to.rundownId === movePart.rundownId ? fromRundown : this.getRundown(arg.to).rundown
 				if (isTransparentGroupMove) {
@@ -1376,7 +1384,7 @@ export class IPCServer
 		for (const groupId of arg.groupIds) {
 			// Remove the group from the groups array and re-insert it at its new position
 
-			const group = this.getGroupOfRundown(rundown, groupId).group
+			const group = this._getGroupOfRundown(rundown, groupId).group
 
 			// Remove the group from the groups array and re-insert it at its new position
 			rundown.groups = rundown.groups.filter((g) => g.id !== group.id)
@@ -1969,17 +1977,17 @@ export class IPCServer
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}
-	async refreshResourcesSetAuto(interval: number): Promise<void> {
-		this.callbacks.refreshResourcesSetAuto(interval)
+	async refreshResourcesSetAuto(arg: { interval: number }): Promise<void> {
+		this.callbacks.refreshResourcesSetAuto(arg.interval)
 	}
 	async triggerHandleAutoFill(): Promise<void> {
 		this.callbacks.triggerHandleAutoFill()
 	}
-	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		this._saveUpdates({ project: data.project })
+	async updateProject(arg: { id: string; project: Project }): Promise<void> {
+		this._saveUpdates({ project: arg.project })
 	}
-	async newRundown(data: { name: string }): Promise<UndoableResult<string>> {
-		const fileName = this.storage.newRundown(data.name)
+	async newRundown(arg: { name: string }): Promise<UndoableResult<string>> {
+		const fileName = this.storage.newRundown(arg.name)
 		this._saveUpdates({})
 
 		return {
@@ -1991,66 +1999,68 @@ export class IPCServer
 			result: fileName,
 		}
 	}
-	async deleteRundown(data: { rundownId: string }): Promise<void> {
-		const rundown = this.storage.getRundown(data.rundownId)
+	async deleteRundown(arg: { rundownId: string }): Promise<void> {
+		const { rundown } = this.getRundown(arg)
 
-		if (rundown) {
-			// If the rundown is open:
-
-			// Stop all groups, to trigger relevant timeline-updates:
-			for (const group of rundown.groups) {
-				await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
-			}
+		// Stop all groups, to trigger relevant timeline-updates:
+		for (const group of rundown.groups) {
+			await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
 		}
 
-		const rundownFileName = data.rundownId // this.storage.getRundownFilename(data.rundownId)
+		const rundownFileName = arg.rundownId // this.storage.getRundownFilename(arg.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
 		this._saveUpdates({})
 
 		// Note: This is not undoable
 	}
-	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		this.storage.openRundown(data.rundownId)
+	async openRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
+		this.storage.openRundown(arg.rundownId)
 		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				await this.storage.closeRundown(data.rundownId)
+				await this.storage.closeRundown(arg.rundownId)
 				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
 		}
 	}
-	async closeRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		const { rundown } = this.getRundown(data)
+	async closeRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		// Stop playout
 		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+			await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
 		}
 
-		await this.storage.closeRundown(data.rundownId)
+		await this.storage.closeRundown(arg.rundownId)
 		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				this.storage.openRundown(data.rundownId)
+				this.storage.openRundown(arg.rundownId)
 				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
 		}
 	}
-	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
-		const rundown = this.storage.getRundown(data.rundownId)
+	async listRundowns(arg: {
+		projectId: string
+	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
+		return this.storage.listRundownsInProject(arg.projectId)
+	}
+
+	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
+		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		const originalName = rundown.name
-		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+		const newRundownId = await this.storage.renameRundown(arg.rundownId, arg.newName)
 		this._saveUpdates({})
 
 		return {
@@ -2062,8 +2072,8 @@ export class IPCServer
 			result: newRundownId,
 		}
 	}
-	async isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
-		const { rundown } = this.getRundown(data)
+	async isRundownPlaying(arg: { rundownId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(arg)
 
 		for (const group of rundown.groups) {
 			const playData = getGroupPlayData(group.preparedPlayData)
@@ -2074,9 +2084,9 @@ export class IPCServer
 
 		return false
 	}
-	async isTimelineObjPlaying(data: { rundownId: string; timelineObjId: string }): Promise<boolean> {
-		const { rundown } = this.getRundown(data)
-		const findResult = findTimelineObjInRundown(rundown, data.timelineObjId)
+	async isTimelineObjPlaying(arg: { rundownId: string; timelineObjId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(arg)
+		const findResult = findTimelineObjInRundown(rundown, arg.timelineObjId)
 
 		if (!findResult) {
 			return false
@@ -2087,11 +2097,11 @@ export class IPCServer
 		const playData = getGroupPlayData(group.preparedPlayData)
 		return Boolean(playData.playheads[part.id])
 	}
-	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
+	async createMissingMapping(arg: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()
-		const rundown = this.storage.getRundown(data.rundownId)
+		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		// Find all timeline objects which reside on the missing layer.
@@ -2100,7 +2110,7 @@ export class IPCServer
 		for (const group of rundown.groups) {
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
-					if (timelineObj.obj.layer === data.mappingId) {
+					if (timelineObj.obj.layer === arg.mappingId) {
 						if (!timelineObj.resourceId)
 							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
 
@@ -2126,7 +2136,7 @@ export class IPCServer
 
 						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId, undefined)
 						if (newMapping) {
-							createdMappings[data.mappingId] = newMapping
+							createdMappings[arg.mappingId] = newMapping
 						}
 					}
 				}
@@ -2171,14 +2181,14 @@ export class IPCServer
 		}
 	}
 
-	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
+	async addPeripheralArea(arg: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
-		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		let peripheralSettings = bridge.peripheralSettings[arg.deviceId] as PeripheralSettings | undefined
 		if (!peripheralSettings) {
-			bridge.peripheralSettings[data.deviceId] = peripheralSettings = {
+			bridge.peripheralSettings[arg.deviceId] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2197,11 +2207,9 @@ export class IPCServer
 			undo: async () => {
 				if (newAreaId) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[arg.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
-						| undefined
+					const peripheralSettings = bridge.peripheralSettings[arg.deviceId] as PeripheralSettings | undefined
 					if (!peripheralSettings) return
 					delete peripheralSettings.areas[newAreaId]
 

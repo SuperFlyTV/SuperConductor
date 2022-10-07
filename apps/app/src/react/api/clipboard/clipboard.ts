@@ -1,52 +1,66 @@
 import { assertNever, compact } from '@shared/lib'
+import { CB } from '../../lib/errorHandling'
 import { store } from '../../mobx/store'
 import { handleCasparCGClient } from './casparCGClient'
+import { handleConvenience } from './convenience'
 import { ClipBoardInternal, ClipBoardInternalAny, handleInternal } from './internal'
 import { ClipBoardContext } from './lib'
 
 export function setupClipboard(context: ClipBoardContext) {
 	// This function is called once, when the app is started.
 
-	document.addEventListener('cut', (e: ClipboardEvent) => {
-		const copied = copySelectionToClipboard(e, context)
-		if (copied) {
-			removeCopied(copied, context).catch(context.handleError)
+	document.addEventListener(
+		'cut',
+		CB((e: ClipboardEvent) => {
+			const copied = copySelectionToClipboard(e, context)
+			if (copied) {
+				removeCopied(copied, context).catch(context.handleError)
 
-			e.preventDefault()
-		}
-	})
-	document.addEventListener('copy', (e: ClipboardEvent) => {
-		if (copySelectionToClipboard(e, context)) {
-			e.preventDefault()
-		}
-	})
-	document.addEventListener('paste', () => {
-		navigator.clipboard
-			.read()
-			.then(async (clipboardContents) => {
-				for (const item of clipboardContents) {
-					if (!item.types.includes('image/png')) {
-						// const blob = await item.getType('image/png')
-						// destinationImage.src = URL.createObjectURL(blob)
-						// return
-					}
-					if (!item.types.includes('text/html')) {
-						// return
-					}
-					if (item.types.includes('text/plain')) {
-						const blob = await item.getType('text/plain')
-						const str = await blob.text()
+				e.preventDefault()
+			}
+		})
+	)
+	document.addEventListener(
+		'copy',
+		CB((e: ClipboardEvent) => {
+			if (copySelectionToClipboard(e, context)) {
+				e.preventDefault()
+			}
+		})
+	)
+	document.addEventListener(
+		'paste',
+		CB(() => {
+			if (!document.hasFocus()) return
 
-						if (await handleInternal(context, str)) return
-						if (await handleCasparCGClient(context, str)) return
+			navigator.clipboard
+				.read()
+				.then(async (clipboardContents) => {
+					for (const item of clipboardContents) {
+						if (!item.types.includes('image/png')) {
+							// const blob = await item.getType('image/png')
+							// destinationImage.src = URL.createObjectURL(blob)
+							// return
+						}
+						if (!item.types.includes('text/html')) {
+							// return
+						}
+						if (item.types.includes('text/plain')) {
+							const blob = await item.getType('text/plain')
+							const str = await blob.text()
 
-						// eslint-disable-next-line no-console
-						console.error('Unhandled paste', str)
+							if (await handleInternal(context, str)) return
+							if (await handleCasparCGClient(context, str)) return
+							if (await handleConvenience(context, str)) return
+
+							// eslint-disable-next-line no-console
+							console.error('Unhandled paste:', str)
+						}
 					}
-				}
-			})
-			.catch(context.handleError)
-	})
+				})
+				.catch(context.handleError)
+		})
+	)
 }
 
 function copySelectionToClipboard(e: ClipboardEvent, context: ClipBoardContext): ClipBoardInternal | null {

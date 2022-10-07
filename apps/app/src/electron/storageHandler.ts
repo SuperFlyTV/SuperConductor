@@ -105,7 +105,7 @@ export class StorageHandler extends EventEmitter {
 	}
 
 	/** Returns a list of available rundowns */
-	private listRundownsInProject(
+	public listRundownsInProject(
 		projectId: string
 	): { fileName: string; version: number; name: string; open: boolean }[] {
 		// list all files in the rundowns folder
