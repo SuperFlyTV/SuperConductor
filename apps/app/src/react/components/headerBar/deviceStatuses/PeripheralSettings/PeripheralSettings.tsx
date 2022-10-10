@@ -11,6 +11,7 @@ import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 import { StreamdeckSettings } from './streamdeck'
 import { XKeysSettings } from './xkeys'
+import { MIDISettings } from './midi'
 import { TrashBtn } from '../../../../components/inputs/TrashBtn'
 
 export const PeripheralSettings: React.FC<{
@@ -71,6 +72,14 @@ export const PeripheralSettings: React.FC<{
 				)}
 				{peripheral.info.gui.type === 'xkeys' && (
 					<XKeysSettings
+						bridgeId={bridgeId}
+						deviceId={deviceId}
+						peripheral={peripheral}
+						definingArea={definingArea}
+					/>
+				)}
+				{peripheral.info.gui.type === 'midi' && (
+					<MIDISettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
 						peripheral={peripheral}

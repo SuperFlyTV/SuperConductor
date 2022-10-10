@@ -3,6 +3,7 @@ import { KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@sha
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
+import { PeripheralMIDI } from './peripherals/midi'
 
 export interface PeripheralsHandlerEvents {
 	connected: (deviceId: string, peripheralInfo: PeripheralInfo) => void
@@ -34,6 +35,7 @@ export class PeripheralsHandler extends EventEmitter {
 		// Set up watchers:
 		this.watchers.push(PeripheralStreamDeck.Watch(this.log, (device) => this.handleNewPeripheral(device)))
 		this.watchers.push(PeripheralXkeys.Watch(this.log, (device) => this.handleNewPeripheral(device)))
+		this.watchers.push(PeripheralMIDI.Watch(this.log, (device) => this.handleNewPeripheral(device)))
 	}
 	setKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
 		const device = this.devices.get(deviceId)

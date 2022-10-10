@@ -67,7 +67,7 @@ export interface PeripheralInfo {
 	name: string
 
 	/** Other info about the peripheral device, to be used in GUI*/
-	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys
+	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys | PeripheralInfo_MIDI
 }
 
 export interface PeripheralInfo_StreamDeck {
@@ -84,4 +84,7 @@ export interface PeripheralInfo_XKeys {
 	colCount: number
 	rowCount: number
 	layout: XKeysInfo['layout']
+}
+export interface PeripheralInfo_MIDI {
+	type: 'midi'
 }
