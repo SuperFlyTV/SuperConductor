@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog, globalShortcut, ipcMain } from 'electron'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -28,6 +28,7 @@ import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { HTTPAPI } from './HTTPAPI'
+import { ActionAny } from '../lib/triggers/action'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -53,6 +54,9 @@ export class SuperConductor {
 
 	private internalHttpApiPort = 5500
 	private disableInternalHttpApi = false
+
+	private lastGlobalKeyboardActions: { [key: string]: ActionAny[] } = {}
+	private readonly registeredGlobalShortcuts: Set<string> = new Set()
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
@@ -80,9 +84,11 @@ export class SuperConductor {
 
 		this.storage = new StorageHandler(log)
 		this.storage.on('appData', (appData: AppData) => {
+			this.registerGlobalKeyboardTriggers()
 			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
 		})
 		this.storage.on('project', (project: Project) => {
+			this.registerGlobalKeyboardTriggers()
 			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
 			this.handleAutoRefresh()
 		})
@@ -442,6 +448,46 @@ export class SuperConductor {
 		if (!this.bridgeHandler) throw new Error('Internal Error: No bridgeHandler set')
 
 		return updateTimeline(this.storage, this.bridgeHandler, group)
+	}
+
+	private registerGlobalKeyboardTriggers() {
+		const actionsGroupedByIdentifier = this.triggers.getGlobalActionsGroupedByIdentifier()
+
+		// Don't thrash the registration of hotkeys if nothing has changed.
+		if (_.isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
+			return
+		}
+
+		// Unregister any shortcuts which no longer correspond to any actions.
+		for (const identifier in this.registeredGlobalShortcuts) {
+			if (!(identifier in actionsGroupedByIdentifier)) {
+				globalShortcut.unregister(identifier)
+				this.registeredGlobalShortcuts.delete(identifier)
+			}
+		}
+
+		// Register all necessary global shortcuts.
+		for (const identifier in actionsGroupedByIdentifier) {
+			// A given global shortcut can only have one callback registered.
+			// So if we already have one registered, we must unregister it first.
+			if (this.registeredGlobalShortcuts.has(identifier)) {
+				globalShortcut.unregister(identifier)
+			}
+
+			// (Re)register the shortcut.
+			globalShortcut.register(identifier, () => {
+				// We have to re-fetch the actions here because things like current selection
+				// are computed at the time that the actions are retrieved.
+				const actionsGroupedByIdentifier = this.triggers.getGlobalActionsGroupedByIdentifier()
+				const actions = actionsGroupedByIdentifier[identifier]
+				for (const action of actions) {
+					this.triggers.executeAction(action)
+				}
+			})
+			this.registeredGlobalShortcuts.add(identifier)
+		}
+
+		this.lastGlobalKeyboardActions = actionsGroupedByIdentifier
 	}
 
 	/**

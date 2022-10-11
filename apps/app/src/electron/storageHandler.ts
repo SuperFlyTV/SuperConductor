@@ -843,6 +843,18 @@ export class StorageHandler extends EventEmitter {
 			// Added 2022-09-07:
 			appData.appData.triggers = defaultAppData.triggers
 		}
+
+		let triggerType: keyof AppData['triggers']
+		for (triggerType in appData.appData.triggers) {
+			const triggers = appData.appData.triggers[triggerType]
+			if (!triggers) continue
+			for (const trigger of triggers) {
+				// Added 2022-19-11
+				if (!('isGlobalKeyboard' in trigger)) {
+					trigger.isGlobalKeyboard = false
+				}
+			}
+		}
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
 		for (const bridge of Object.values(project.bridges)) {
@@ -880,6 +892,12 @@ export class StorageHandler extends EventEmitter {
 			for (const part of group.parts) {
 				if (!part.triggers) {
 					part.triggers = []
+				}
+				for (const trigger of part.triggers) {
+					// Added 2022-19-11
+					if (!('isGlobalKeyboard' in trigger)) {
+						trigger.isGlobalKeyboard = false
+					}
 				}
 				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
 			}

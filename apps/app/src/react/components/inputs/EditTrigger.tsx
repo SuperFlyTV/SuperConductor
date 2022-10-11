@@ -7,6 +7,9 @@ import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import classNames from 'classnames'
 
+import Toggle from 'react-toggle'
+import 'react-toggle/style.css'
+
 const ACTION_ICON_SIZE = 12
 
 export const NoEditTrigger: React.FC<{
@@ -70,6 +73,19 @@ export const EditRundownTrigger: React.FC<{
 				</Button>
 			</div>
 			<div className="field">
+				<div className="sc-switch">
+					<Toggle
+						checked={trigger.isGlobalKeyboard}
+						onChange={() => {
+							onEdit(index, {
+								...trigger,
+								isGlobalKeyboard: !trigger.isGlobalKeyboard,
+							})
+						}}
+					/>
+				</div>
+			</div>
+			<div className="field">
 				<ButtonGroup className="trigger__buttons__triggerType">
 					<Button
 						variant="contained"
@@ -121,19 +137,35 @@ export const EditApplicationTrigger: React.FC<{
 	return (
 		<div className={classNames('trigger')}>
 			{onEdit && (
-				<div className="field">
-					<Button
-						variant="contained"
-						onClick={() => {
-							onEdit(index, null)
-						}}
-						color="error"
-						title="Delete Trigger"
-						size="small"
-					>
-						<BsTrash size={ACTION_ICON_SIZE} />
-					</Button>
-				</div>
+				<>
+					<div className="field">
+						<Button
+							variant="contained"
+							onClick={() => {
+								onEdit(index, null)
+							}}
+							color="error"
+							title="Delete Trigger"
+							size="small"
+						>
+							<BsTrash size={ACTION_ICON_SIZE} />
+						</Button>
+					</div>
+
+					<div className="field">
+						<div className="sc-switch">
+							<Toggle
+								checked={trigger.isGlobalKeyboard}
+								onChange={() => {
+									onEdit(index, {
+										...trigger,
+										isGlobalKeyboard: !trigger.isGlobalKeyboard,
+									})
+								}}
+							/>
+						</div>
+					</div>
+				</>
 			)}
 
 			<TriggerPill trigger={trigger} />

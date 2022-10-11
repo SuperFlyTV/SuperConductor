@@ -119,6 +119,7 @@ export function getAllActionsInParts(
 									fullIdentifiers: [fullIdentifier],
 									action: area.action || 'playStop',
 									label: activeTriggersToString([activeTrigger]),
+									isGlobalKeyboard: false, // Peripheral triggers are always global
 								}
 								actions.push({
 									trigger,

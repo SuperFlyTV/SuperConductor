@@ -46,6 +46,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 					label: 'F1',
 					fullIdentifiers: ['keyboard-F1'],
 					action: 'stop',
+					isGlobalKeyboard: false,
 				},
 			],
 			play: [
@@ -53,6 +54,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 					label: 'F2',
 					fullIdentifiers: ['keyboard-F2'],
 					action: 'play',
+					isGlobalKeyboard: false,
 				},
 			],
 			pause: [
@@ -60,6 +62,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 					label: 'F3',
 					fullIdentifiers: ['keyboard-F3'],
 					action: 'pause',
+					isGlobalKeyboard: false,
 				},
 			],
 			next: [
@@ -67,6 +70,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 					label: 'F5',
 					fullIdentifiers: ['keyboard-F5'],
 					action: 'pause',
+					isGlobalKeyboard: false,
 				},
 			],
 			previous: [
@@ -74,6 +78,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 					label: 'F6',
 					fullIdentifiers: ['keyboard-F6'],
 					action: 'pause',
+					isGlobalKeyboard: false,
 				},
 			],
 		},

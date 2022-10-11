@@ -19,6 +19,7 @@ import {
 	prepareTriggersAreaMap,
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
+import { convertSorensenToElectron } from '../lib/util'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -120,7 +121,29 @@ export class TriggersHandler {
 			}
 		}
 	}
-	/** Returns all Actions in all Rundowns */
+	/** Returns all global keyboard actions, grouped by their Electron key combination */
+	getGlobalActionsGroupedByIdentifier(): { [key: string]: ActionAny[] } {
+		const allActions = this.getActions()
+		const actionsGroupedByIdentifier: { [key: string]: ActionAny[] } = {}
+
+		for (const action of allActions) {
+			// If this trigger is not global, it gets handled elsewhere.
+			if (!action.trigger.isGlobalKeyboard) {
+				continue
+			}
+
+			const translatedIdentifier = action.trigger.fullIdentifiers.map(convertSorensenToElectron).join('+')
+
+			if (!(translatedIdentifier in actionsGroupedByIdentifier)) {
+				actionsGroupedByIdentifier[translatedIdentifier] = []
+			}
+
+			actionsGroupedByIdentifier[translatedIdentifier].push(action)
+		}
+
+		return actionsGroupedByIdentifier
+	}
+	/** Returns all Actions in AppData and all Rundowns */
 	private getActions(): ActionAny[] {
 		const allRundowns = this.storage.getAllRundowns()
 		const allParts = getPartsWithRefInRundowns(allRundowns)
@@ -144,6 +167,82 @@ export class TriggersHandler {
 				})
 			),
 		]
+	}
+	/** Executes a given action immediately */
+	executeAction(action: ActionAny) {
+		if (action.type === 'rundown') {
+			if (action.trigger.action === 'play') {
+				this.ipcServer
+					.playPart({
+						rundownId: action.rundownId,
+						groupId: action.group.id,
+						partId: action.part.id,
+					})
+					.catch(this.log.error)
+			} else if (action.trigger.action === 'stop') {
+				this.ipcServer
+					.stopPart({
+						rundownId: action.rundownId,
+						groupId: action.group.id,
+						partId: action.part.id,
+					})
+					.catch(this.log.error)
+			} else if (action.trigger.action === 'playStop') {
+				const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
+				const myPlayhead = playData.playheads[action.part.id]
+
+				let isPlaying: boolean
+				if (!myPlayhead) {
+					// The part is not playing
+					isPlaying = false
+				} else if (myPlayhead.partPauseTime !== undefined) {
+					// The part is paused, so we need to resume it:
+					isPlaying = false
+				} else {
+					isPlaying = true
+				}
+
+				if (isPlaying) {
+					this.ipcServer
+						.stopPart({
+							rundownId: action.rundownId,
+							groupId: action.group.id,
+							partId: action.part.id,
+						})
+						.catch(this.log.error)
+				} else {
+					this.ipcServer
+						.playPart({
+							rundownId: action.rundownId,
+							groupId: action.group.id,
+							partId: action.part.id,
+						})
+						.catch(this.log.error)
+				}
+			} else {
+				assertNever(action.trigger.action)
+			}
+		} else if (action.type === 'application') {
+			if (action.trigger.action === 'play') {
+				this._appActionPlay(action)
+			} else if (action.trigger.action === 'stop') {
+				this._appActionStop(action)
+			} else if (action.trigger.action === 'playStop') {
+				this._appActionPlayStop(action)
+			} else if (action.trigger.action === 'pause') {
+				this._appActionPause(action)
+			} else if (action.trigger.action === 'delete') {
+				this._appActionDelete(action)
+			} else if (action.trigger.action === 'next') {
+				this._appActionNext(action)
+			} else if (action.trigger.action === 'previous') {
+				this._appActionPrevious(action)
+			} else {
+				assertNever(action.trigger.action)
+			}
+		} else {
+			assertNever(action)
+		}
 	}
 
 	private handleUpdate() {
@@ -187,8 +286,13 @@ export class TriggersHandler {
 		if (!intercepted) {
 			// Go through the actions
 			for (const action of actions) {
-				// This a little bit unintuitive, but our first step here is to filter out actions
-				// that correspone only to _newly active_ triggers.
+				// If the trigger is a global keyboard trigger, it gets handled elsewhere.
+				if (action.trigger.isGlobalKeyboard) {
+					continue
+				}
+
+				// This a little bit unintuitive, but our next step here is to filter out actions
+				// that correspond only to _newly active_ triggers.
 
 				let allMatching = false
 				/** If the action has a newly pressed */
@@ -212,79 +316,7 @@ export class TriggersHandler {
 					// We've found a match!
 
 					// Execute the action:
-					if (action.type === 'rundown') {
-						if (action.trigger.action === 'play') {
-							this.ipcServer
-								.playPart({
-									rundownId: action.rundownId,
-									groupId: action.group.id,
-									partId: action.part.id,
-								})
-								.catch(this.log.error)
-						} else if (action.trigger.action === 'stop') {
-							this.ipcServer
-								.stopPart({
-									rundownId: action.rundownId,
-									groupId: action.group.id,
-									partId: action.part.id,
-								})
-								.catch(this.log.error)
-						} else if (action.trigger.action === 'playStop') {
-							const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
-							const myPlayhead = playData.playheads[action.part.id]
-
-							let isPlaying: boolean
-							if (!myPlayhead) {
-								// The part is not playing
-								isPlaying = false
-							} else if (myPlayhead.partPauseTime !== undefined) {
-								// The part is paused, so we need to resume it:
-								isPlaying = false
-							} else {
-								isPlaying = true
-							}
-
-							if (isPlaying) {
-								this.ipcServer
-									.stopPart({
-										rundownId: action.rundownId,
-										groupId: action.group.id,
-										partId: action.part.id,
-									})
-									.catch(this.log.error)
-							} else {
-								this.ipcServer
-									.playPart({
-										rundownId: action.rundownId,
-										groupId: action.group.id,
-										partId: action.part.id,
-									})
-									.catch(this.log.error)
-							}
-						} else {
-							assertNever(action.trigger.action)
-						}
-					} else if (action.type === 'application') {
-						if (action.trigger.action === 'play') {
-							this._appActionPlay(action)
-						} else if (action.trigger.action === 'stop') {
-							this._appActionStop(action)
-						} else if (action.trigger.action === 'playStop') {
-							this._appActionPlayStop(action)
-						} else if (action.trigger.action === 'pause') {
-							this._appActionPause(action)
-						} else if (action.trigger.action === 'delete') {
-							this._appActionDelete(action)
-						} else if (action.trigger.action === 'next') {
-							this._appActionNext(action)
-						} else if (action.trigger.action === 'previous') {
-							this._appActionPrevious(action)
-						} else {
-							assertNever(action.trigger.action)
-						}
-					} else {
-						assertNever(action)
-					}
+					this.executeAction(action)
 				}
 			}
 		}
