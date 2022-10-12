@@ -1,14 +1,13 @@
-import { Button, ButtonGroup } from '@mui/material'
+import { Button, ButtonGroup, ToggleButton } from '@mui/material'
 
 import React from 'react'
 
 import { ApplicationTrigger, RundownTrigger } from '../../../models/rundown/Trigger'
 import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
+import { IoMdGlobe } from 'react-icons/io'
 import classNames from 'classnames'
-
-import Toggle from 'react-toggle'
-import 'react-toggle/style.css'
+import { convertSorensenToElectron } from '../../../lib/util'
 
 const ACTION_ICON_SIZE = 12
 
@@ -73,17 +72,15 @@ export const EditRundownTrigger: React.FC<{
 				</Button>
 			</div>
 			<div className="field">
-				<div className="sc-switch">
-					<Toggle
-						checked={trigger.isGlobalKeyboard}
-						onChange={() => {
-							onEdit(index, {
-								...trigger,
-								isGlobalKeyboard: !trigger.isGlobalKeyboard,
-							})
-						}}
-					/>
-				</div>
+				<TriggerGlobalToggle
+					isGlobal={trigger.isGlobalKeyboard}
+					onChange={() => {
+						onEdit(index, {
+							...trigger,
+							isGlobalKeyboard: !trigger.isGlobalKeyboard,
+						})
+					}}
+				/>
 			</div>
 			<div className="field">
 				<ButtonGroup className="trigger__buttons__triggerType">
@@ -153,17 +150,15 @@ export const EditApplicationTrigger: React.FC<{
 					</div>
 
 					<div className="field">
-						<div className="sc-switch">
-							<Toggle
-								checked={trigger.isGlobalKeyboard}
-								onChange={() => {
-									onEdit(index, {
-										...trigger,
-										isGlobalKeyboard: !trigger.isGlobalKeyboard,
-									})
-								}}
-							/>
-						</div>
+						<TriggerGlobalToggle
+							isGlobal={trigger.isGlobalKeyboard}
+							onChange={() => {
+								onEdit(index, {
+									...trigger,
+									isGlobalKeyboard: !trigger.isGlobalKeyboard,
+								})
+							}}
+						/>
 					</div>
 				</>
 			)}
@@ -175,7 +170,7 @@ export const EditApplicationTrigger: React.FC<{
 export const TriggerPill: React.FC<{
 	trigger: ApplicationTrigger
 }> = ({ trigger }) => {
-	const labelParts = trigger.label.split('+')
+	const labelParts = trigger.label.trim().split('+')
 
 	return (
 		<div className="trigger-pill">
@@ -184,12 +179,36 @@ export const TriggerPill: React.FC<{
 				return (
 					<React.Fragment key={index}>
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>
-							<span className="label">{part}</span>
+							<span className="label">
+								{trigger.isGlobalKeyboard ? convertSorensenToElectron(part) : part}
+							</span>
 						</div>
 						<span className="connect-labels">+</span>
 					</React.Fragment>
 				)
 			})}
 		</div>
+	)
+}
+export const TriggerGlobalToggle: React.FC<{
+	isGlobal: boolean
+	onChange: () => void
+}> = ({ isGlobal, onChange }) => {
+	return (
+		<ToggleButton
+			title={
+				isGlobal
+					? 'This shortcut is global and will work even when SuperConductor is not in focus.\nGlobal shortcuts cannot differentiate between left and right modifier keys (Ctrl, Shift, etc).\n\nWARNING: Global shortcuts will silently fail if another application has already registered this key combination.\n\nClick to make local.'
+					: 'This shortcut is local and will only work when SuperConductor has focus.\n\nClick to make global.'
+			}
+			value="isGlobalKeyboard"
+			selected={isGlobal}
+			size="small"
+			onChange={() => {
+				onChange()
+			}}
+		>
+			<IoMdGlobe size={18} />
+		</ToggleButton>
 	)
 }

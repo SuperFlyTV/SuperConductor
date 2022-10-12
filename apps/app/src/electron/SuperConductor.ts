@@ -88,11 +88,11 @@ export class SuperConductor {
 			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
 		})
 		this.storage.on('project', (project: Project) => {
-			this.registerGlobalKeyboardTriggers()
 			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
 			this.handleAutoRefresh()
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
+			this.registerGlobalKeyboardTriggers()
 			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {

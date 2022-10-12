@@ -806,7 +806,7 @@ export function convertSorensenToElectron(identifier: string): string {
 			return 'Shift'
 		case 'ControlLeft':
 		case 'ControlRight':
-			return 'Ctrl'
+			return 'Control'
 		case 'MetaLeft':
 		case 'MetaRight':
 			return 'Meta'
