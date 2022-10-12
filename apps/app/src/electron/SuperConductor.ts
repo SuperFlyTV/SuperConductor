@@ -468,13 +468,13 @@ export class SuperConductor {
 
 		// Register all necessary global shortcuts.
 		for (const identifier in actionsGroupedByIdentifier) {
-			// A given global shortcut can only have one callback registered.
-			// So if we already have one registered, we must unregister it first.
+			// A given global shortcut can only have one callback registered,
+			// and the structure of this code only requires one to be registered.
 			if (this.registeredGlobalShortcuts.has(identifier)) {
-				globalShortcut.unregister(identifier)
+				continue
 			}
 
-			// (Re)register the shortcut.
+			// Register the shortcut.
 			globalShortcut.register(identifier, () => {
 				// We have to re-fetch the actions here because things like current selection
 				// are computed at the time that the actions are retrieved.
