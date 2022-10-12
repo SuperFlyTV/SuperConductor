@@ -849,7 +849,7 @@ export class StorageHandler extends EventEmitter {
 			const triggers = appData.appData.triggers[triggerType]
 			if (!triggers) continue
 			for (const trigger of triggers) {
-				// Added 2022-19-11
+				// Added 2022-10-11
 				if (!('isGlobalKeyboard' in trigger)) {
 					trigger.isGlobalKeyboard = false
 				}
@@ -894,7 +894,7 @@ export class StorageHandler extends EventEmitter {
 					part.triggers = []
 				}
 				for (const trigger of part.triggers) {
-					// Added 2022-19-11
+					// Added 2022-10-11
 					if (!('isGlobalKeyboard' in trigger)) {
 						trigger.isGlobalKeyboard = false
 					}
