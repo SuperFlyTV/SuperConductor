@@ -22,8 +22,13 @@ import { SessionHandler } from './sessionHandler'
 import { convertSorensenToElectron } from '../lib/util'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
+import TypedEmitter from 'typed-emitter'
 
-export class TriggersHandler extends EventEmitter {
+type TriggersHandlerEvents = {
+	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
+}
+
+export class TriggersHandler extends (EventEmitter as new () => TypedEmitter<TriggersHandlerEvents>) {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	/** Contains a collection of the currently active (pressed) keys on the keyboard */

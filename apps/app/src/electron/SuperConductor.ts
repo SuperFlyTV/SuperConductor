@@ -217,7 +217,7 @@ export class SuperConductor {
 		})
 
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
-		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers: Set<string>) => {
+		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
 			this.clients.forEach((client) =>
 				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
 			)
