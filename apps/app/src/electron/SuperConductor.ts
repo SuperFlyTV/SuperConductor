@@ -459,7 +459,7 @@ export class SuperConductor {
 		}
 
 		// Unregister any shortcuts which no longer correspond to any actions.
-		for (const identifier in this.registeredGlobalShortcuts) {
+		for (const identifier of this.registeredGlobalShortcuts) {
 			if (!(identifier in actionsGroupedByIdentifier)) {
 				globalShortcut.unregister(identifier)
 				this.registeredGlobalShortcuts.delete(identifier)
