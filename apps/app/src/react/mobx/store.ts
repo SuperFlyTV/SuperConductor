@@ -4,6 +4,7 @@ import { ResourcesStore } from './ResourcesStore'
 import { RundownsStore } from './RundownsStore'
 import { GroupPlayDataStore } from './GroupPlayDataStore'
 import { ProjectStore } from './ProjectStore'
+import { TriggersStore } from './TriggersStore'
 
 export const store = {
 	guiStore: new GuiStore(),
@@ -12,4 +13,5 @@ export const store = {
 	rundownsStore: new RundownsStore(),
 	resourcesStore: new ResourcesStore(),
 	groupPlayDataStore: new GroupPlayDataStore(),
+	triggersStore: new TriggersStore(),
 }

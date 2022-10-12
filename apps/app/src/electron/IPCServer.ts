@@ -57,6 +57,7 @@ import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
+import { TriggersHandler } from './triggersHandler'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -102,6 +103,7 @@ export class IPCServer
 	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
 	implements ConvertToServerSide<IPCServerMethods>
 {
+	public triggers?: TriggersHandler
 	private undoLedger: UndoLedger = []
 	private undoPointer: UndoPointer = -1
 
@@ -271,6 +273,7 @@ export class IPCServer
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
+		this.triggers?.triggerEmitAll()
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)

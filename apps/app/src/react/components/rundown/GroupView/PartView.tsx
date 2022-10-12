@@ -6,6 +6,7 @@ import { Layer, LayerEmpty } from './Layer'
 import { ResolvedTimeline, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import {
 	allowMovingPartIntoGroup,
+	convertSorensenToElectron,
 	EMPTY_LAYER_ID_PREFIX,
 	getResolvedTimelineTotalDuration,
 	MoveTarget,
@@ -865,6 +866,15 @@ export const PartView: React.FC<{
 
 	const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, modifiedTimeline)
 
+	const failedGlobalShortcuts = useMemoComputedObject(() => {
+		return store.triggersStore.failedGlobalTriggers
+	}, [store.triggersStore.failedGlobalTriggers])
+	const anyGlobalTriggerFailed = useMemo(() => {
+		return allActionsForPart.some((action) =>
+			failedGlobalShortcuts.has(action.trigger.fullIdentifiers.map(convertSorensenToElectron).join('+'))
+		)
+	}, [allActionsForPart, failedGlobalShortcuts])
+
 	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
 	const [renderEverything, setRenderEverything] = useState(false)
 	const onChange = useCallback((isVisible: boolean) => {
@@ -995,9 +1005,9 @@ export const PartView: React.FC<{
 										</ToggleBtn>
 										<TriggerBtn
 											onTrigger={handleTriggerBtn}
-											title="Open Triggers Submenu"
 											locked={groupOrPartLocked}
 											triggerCount={allActionsForPart.length}
+											anyGlobalTriggerFailed={anyGlobalTriggerFailed}
 										/>
 									</>
 								)}

@@ -6,20 +6,27 @@ import './style.scss'
 export const TriggerBtn: React.FC<{
 	className?: string
 	onTrigger: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void
-	title: string
 	disabled?: boolean
 	triggerCount: number
 	locked: boolean
+	anyGlobalTriggerFailed: boolean
 }> = (props) => {
 	const handleOnClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		props.onTrigger(e)
 	}
 
+	const color = props.anyGlobalTriggerFailed ? 'red' : 'white'
+
 	if (props.locked && props.triggerCount === 0) return null
 
 	return (
 		<ToggleBtn
-			title={'Assign triggers'}
+			title={
+				'Assign triggers' +
+				(props.anyGlobalTriggerFailed
+					? '\n\nWARNING: One or more global triggers failed to register and will not work! This is likely because another application has already registered the same hotkey. Click this button to view the list of triggers and see which trigger(s) failed.'
+					: '')
+			}
 			disabled={false}
 			selected={props.triggerCount > 0}
 			size="small"
@@ -27,11 +34,11 @@ export const TriggerBtn: React.FC<{
 		>
 			{props.triggerCount > 0 ? (
 				<>
-					<BsKeyboardFill color="white" size={24} />
+					<BsKeyboardFill color={color} size={24} />
 					<div className="triggercount">{props.triggerCount}</div>
 				</>
 			) : (
-				<BsKeyboard color="white" size={24} />
+				<BsKeyboard color={color} size={24} />
 			)}
 		</ToggleBtn>
 	)

@@ -20,8 +20,10 @@ import {
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
 import { convertSorensenToElectron } from '../lib/util'
+import { globalShortcut } from 'electron'
+import EventEmitter from 'events'
 
-export class TriggersHandler {
+export class TriggersHandler extends EventEmitter {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	/** Contains a collection of the currently active (pressed) keys on the keyboard */
@@ -38,13 +40,19 @@ export class TriggersHandler {
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 	private definingArea: DefiningArea | null = null
 
+	private lastGlobalKeyboardActions: { [key: string]: ActionAny[] } = {}
+	private readonly registeredGlobalTriggers: Set<string> = new Set()
+	private readonly failedGlobalTriggers: Set<string> = new Set()
+
 	constructor(
 		private log: LoggerLike,
 		private storage: StorageHandler,
 		private ipcServer: IPCServer,
 		private bridgeHandler: BridgeHandler,
 		private session: SessionHandler
-	) {}
+	) {
+		super()
+	}
 
 	setKeyboardKeys(activeKeys: ActiveTriggers) {
 		this.activeKeys = activeKeys
@@ -122,7 +130,7 @@ export class TriggersHandler {
 		}
 	}
 	/** Returns all global keyboard actions, grouped by their Electron key combination */
-	getGlobalActionsGroupedByIdentifier(): { [key: string]: ActionAny[] } {
+	private getGlobalActionsGroupedByIdentifier(): { [key: string]: ActionAny[] } {
 		const allActions = this.getActions()
 		const actionsGroupedByIdentifier: { [key: string]: ActionAny[] } = {}
 
@@ -169,7 +177,7 @@ export class TriggersHandler {
 		]
 	}
 	/** Executes a given action immediately */
-	executeAction(action: ActionAny) {
+	private executeAction(action: ActionAny) {
 		if (action.type === 'rundown') {
 			if (action.trigger.action === 'play') {
 				this.ipcServer
@@ -243,6 +251,70 @@ export class TriggersHandler {
 		} else {
 			assertNever(action)
 		}
+	}
+
+	registerGlobalKeyboardTriggers() {
+		const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
+
+		// Don't thrash the registration of hotkeys if nothing has changed.
+		if (_.isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
+			return
+		}
+
+		// Unregister any shortcuts which no longer correspond to any actions.
+		for (const identifier of this.registeredGlobalTriggers) {
+			if (!(identifier in actionsGroupedByIdentifier)) {
+				globalShortcut.unregister(identifier)
+				this.registeredGlobalTriggers.delete(identifier)
+			}
+		}
+		for (const identifier of this.failedGlobalTriggers) {
+			if (!(identifier in actionsGroupedByIdentifier)) {
+				this.failedGlobalTriggers.delete(identifier)
+			}
+		}
+
+		// Register all necessary global shortcuts.
+		for (const identifier in actionsGroupedByIdentifier) {
+			// A given global shortcut can only have one callback registered,
+			// and the structure of this code only requires one to be registered.
+			if (this.registeredGlobalTriggers.has(identifier)) {
+				continue
+			}
+
+			// Register the shortcut.
+			const success = globalShortcut.register(identifier, () => {
+				// We have to re-fetch the actions here because things like current selection
+				// are computed at the time that the actions are retrieved.
+				const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
+				const actions = actionsGroupedByIdentifier[identifier]
+				for (const action of actions) {
+					this.executeAction(action)
+				}
+			})
+
+			// Registration of the hotkey will fail if another application has registered
+			// the same hotkey via the same OS APIs (such as RegisterHotKey on Windows).
+			// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
+			//
+			// Applications which listen to all keys to determine their hotkeys and don't use
+			// these same OS APIs will not conflict with Electron's globalShortcut implementation.
+			// OBS is one such application which will work alongside SuperConductor's global hotkeys.
+			if (success) {
+				this.failedGlobalTriggers.delete(identifier)
+				this.registeredGlobalTriggers.add(identifier)
+			} else {
+				this.registeredGlobalTriggers.delete(identifier)
+				this.failedGlobalTriggers.add(identifier)
+			}
+		}
+
+		this.lastGlobalKeyboardActions = actionsGroupedByIdentifier
+		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
+	}
+
+	triggerEmitAll() {
+		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
 	}
 
 	private handleUpdate() {
