@@ -23,6 +23,7 @@ import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
 import { describeTimelineObject } from './TimelineObj'
+import { AnyTrigger } from '../models/rundown/Trigger'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -821,4 +822,7 @@ export function convertSorensenToElectron(identifier: string): string {
 		default:
 			return cleanedIdentifier
 	}
+}
+export function triggerIsKeyboard(trigger: AnyTrigger, index: number): boolean {
+	return trigger.fullIdentifiers[index]?.startsWith('keyboard')
 }

@@ -7,7 +7,7 @@ import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import { IoMdGlobe } from 'react-icons/io'
 import classNames from 'classnames'
-import { convertSorensenToElectron } from '../../../lib/util'
+import { convertSorensenToElectron, triggerIsKeyboard } from '../../../lib/util'
 
 const ACTION_ICON_SIZE = 12
 
@@ -33,7 +33,7 @@ export const NoEditTrigger: React.FC<{
 					) : null}
 				</span>
 				{labelParts.map((part, index) => {
-					const isKeyboard = trigger.fullIdentifiers[index]?.startsWith('keyboard')
+					const isKeyboard = triggerIsKeyboard(trigger, index)
 					return (
 						<React.Fragment key={index}>
 							<div className={classNames('label__key', { 'label__key--keyboard': isKeyboard })}>
@@ -54,6 +54,7 @@ export const EditRundownTrigger: React.FC<{
 	onEdit: (index: number, trigger: RundownTrigger | null) => void
 	locked?: boolean
 }> = ({ trigger, index, onEdit, locked }) => {
+	const isKeyboard = triggerIsKeyboard(trigger, index)
 	return (
 		<div className={classNames('trigger', { 'trigger--locked': locked })}>
 			<div className="field">
@@ -71,17 +72,19 @@ export const EditRundownTrigger: React.FC<{
 					<BsTrash size={ACTION_ICON_SIZE} />
 				</Button>
 			</div>
-			<div className="field">
-				<TriggerGlobalToggle
-					isGlobal={trigger.isGlobalKeyboard}
-					onChange={() => {
-						onEdit(index, {
-							...trigger,
-							isGlobalKeyboard: !trigger.isGlobalKeyboard,
-						})
-					}}
-				/>
-			</div>
+			{isKeyboard && (
+				<div className="field">
+					<TriggerGlobalToggle
+						isGlobal={trigger.isGlobalKeyboard}
+						onChange={() => {
+							onEdit(index, {
+								...trigger,
+								isGlobalKeyboard: !trigger.isGlobalKeyboard,
+							})
+						}}
+					/>
+				</div>
+			)}
 			<div className="field">
 				<ButtonGroup className="trigger__buttons__triggerType">
 					<Button
@@ -131,6 +134,7 @@ export const EditApplicationTrigger: React.FC<{
 	index: number
 	onEdit?: (index: number, trigger: ApplicationTrigger | null) => void
 }> = ({ trigger, index, onEdit }) => {
+	const isKeyboard = triggerIsKeyboard(trigger, index)
 	return (
 		<div className={classNames('trigger')}>
 			{onEdit && (
@@ -149,17 +153,19 @@ export const EditApplicationTrigger: React.FC<{
 						</Button>
 					</div>
 
-					<div className="field">
-						<TriggerGlobalToggle
-							isGlobal={trigger.isGlobalKeyboard}
-							onChange={() => {
-								onEdit(index, {
-									...trigger,
-									isGlobalKeyboard: !trigger.isGlobalKeyboard,
-								})
-							}}
-						/>
-					</div>
+					{isKeyboard && (
+						<div className="field">
+							<TriggerGlobalToggle
+								isGlobal={trigger.isGlobalKeyboard}
+								onChange={() => {
+									onEdit(index, {
+										...trigger,
+										isGlobalKeyboard: !trigger.isGlobalKeyboard,
+									})
+								}}
+							/>
+						</div>
+					)}
 				</>
 			)}
 
@@ -175,7 +181,7 @@ export const TriggerPill: React.FC<{
 	return (
 		<div className="trigger-pill">
 			{labelParts.map((part, index) => {
-				const isKeyboard = trigger.fullIdentifiers[index]?.startsWith('keyboard')
+				const isKeyboard = triggerIsKeyboard(trigger, index)
 				return (
 					<React.Fragment key={index}>
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>
