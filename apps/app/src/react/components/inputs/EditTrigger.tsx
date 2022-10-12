@@ -221,12 +221,12 @@ export const TriggerGlobalToggle: React.FC<{
 	onChange: () => void
 }> = ({ isGlobal, failedToRegister, onChange }) => {
 	let title = isGlobal
-		? 'This trigger is global and will work even when SuperConductor is not in focus.\nGlobal triggers cannot differentiate between left and right modifier keys (Ctrl, Shift, etc), nor can they differentiate between NumpadEnter and regular Enter.\n\nWARNING: Global triggers may silently fail if another application has already registered this key combination.\n\nClick to make local.'
+		? 'This trigger is global and will work even when SuperConductor is not in focus.\nGlobal triggers cannot differentiate between left and right modifier keys (Ctrl, Shift, etc), nor can they differentiate between NumpadEnter and regular Enter.\n\nThis global trigger has successfully registered.\n\nClick to make local.'
 		: 'This trigger is local and will only work when SuperConductor has focus.\n\nClick to make global.\n\nWARNING: Global triggers may fail to register if another application has already registered this key combination. Failed global triggers will have their globe icon turn red.'
 
 	if (isGlobal && failedToRegister) {
 		title =
-			'WARNING: This global trigger failed to register and will not work! This is likely because another application has already registered the same hotkey.'
+			'WARNING: This global trigger failed to register and will not work! This is likely because another application has already registered the same hotkey.\n\nClick to make local. Click again to try re-registering the global trigger.'
 	}
 
 	return (

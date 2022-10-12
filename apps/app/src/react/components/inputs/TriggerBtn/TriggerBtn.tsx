@@ -24,7 +24,7 @@ export const TriggerBtn: React.FC<{
 			title={
 				'Assign triggers' +
 				(props.anyGlobalTriggerFailed
-					? '\n\nWARNING: One or more global triggers failed to register and will not work! This is likely because another application has already registered the same hotkey. Click this button to view the list of triggers and see which trigger(s) failed.'
+					? '\n\nWARNING: One or more global triggers failed to register and will not work! This is likely because another application has already registered the same hotkey. Click this button to see which ones failed (their globe icons will be red).'
 					: '')
 			}
 			disabled={false}
