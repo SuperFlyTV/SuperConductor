@@ -198,8 +198,8 @@ export const TriggerGlobalToggle: React.FC<{
 		<ToggleButton
 			title={
 				isGlobal
-					? 'This shortcut is global and will work even when SuperConductor is not in focus.\nGlobal shortcuts cannot differentiate between left and right modifier keys (Ctrl, Shift, etc).\n\nWARNING: Global shortcuts will silently fail if another application has already registered this key combination.\n\nClick to make local.'
-					: 'This shortcut is local and will only work when SuperConductor has focus.\n\nClick to make global.'
+					? 'This shortcut is global and will work even when SuperConductor is not in focus.\nGlobal shortcuts cannot differentiate between left and right modifier keys (Ctrl, Shift, etc), nor can they differentiate between NumpadEnter and regular Enter.\n\nWARNING: Global shortcuts will silently fail if another application has already registered this key combination.\n\nClick to make local.'
+					: 'This shortcut is local and will only work when SuperConductor has focus.\n\nClick to make global.\n\nWARNING: Global shortcuts will silently fail if another application has already registered this key combination.'
 			}
 			value="isGlobalKeyboard"
 			selected={isGlobal}
