@@ -11,7 +11,7 @@ export interface AnyTrigger {
 	/** If true, this trigger works even when the window does not have focus.
 	 * Modifiers used on global triggers (Shift, Alt, Ctrl, Command, etc) may behave differently than on non-global triggers.
 	 * Only applies to keyboard triggers, peripheral triggers are always global.
-	 * Global triggers will silently fail to register if already taken by another application.
+	 * Global triggers may silently fail to register if already taken by another application.
 	 * See https://www.electronjs.org/docs/latest/api/global-shortcut for more information. */
 	isGlobalKeyboard: boolean
 }
