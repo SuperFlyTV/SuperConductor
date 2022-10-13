@@ -498,14 +498,13 @@ export const App = observer(function App() {
 
 		const allActions = getAllActionsInParts(allParts, project, store.appStore.peripherals)
 		for (const action of allActions) {
-			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				let newButtonAction = newButtonActions.get(fullIdentifier)
-				if (!newButtonAction) {
-					newButtonAction = []
-					newButtonActions.set(fullIdentifier, newButtonAction)
-				}
-				newButtonAction.push(action)
+			const joinedIdentifier = action.trigger.fullIdentifiers.join('+')
+			let newButtonAction = newButtonActions.get(joinedIdentifier)
+			if (!newButtonAction) {
+				newButtonAction = []
+				newButtonActions.set(joinedIdentifier, newButtonAction)
 			}
+			newButtonAction.push(action)
 		}
 
 		store.rundownsStore.updateAllButtonActions(newButtonActions)
