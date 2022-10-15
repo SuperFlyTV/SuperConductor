@@ -1,6 +1,8 @@
 import {
 	allowAddingResourceToLayer,
 	allowMovingPartIntoGroup,
+	copyGroup,
+	copyPart,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -10,7 +12,6 @@ import {
 	findTimelineObj,
 	findTimelineObjIndex,
 	findTimelineObjInRundown,
-	generateNewTimelineObjIds,
 	getMappingName,
 	getNextPartIndex,
 	getPositionFromTarget,
@@ -1264,9 +1265,7 @@ export class IPCServer
 		const { rundown, group, part } = this.getPart(arg)
 
 		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
-		const copy = deepClone(part)
-		copy.id = shortID()
-		copy.timeline = generateNewTimelineObjIds(copy.timeline)
+		const copy = copyPart(part)
 
 		let newGroup: Group | undefined = undefined
 		if (group.transparent) {
@@ -1358,12 +1357,7 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Make a copy of the group and give it and all its children unique IDs.
-		const groupCopy = deepClone(group)
-		groupCopy.id = shortID()
-		for (const part of groupCopy.parts) {
-			part.id = shortID()
-			part.timeline = generateNewTimelineObjIds(part.timeline)
-		}
+		const groupCopy = copyGroup(group)
 
 		// Insert the copy just below the original.
 		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
