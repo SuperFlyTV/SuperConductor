@@ -1,11 +1,11 @@
 import { observer } from 'mobx-react-lite'
-import React, { useContext, useState } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { store } from '../../../../mobx/store'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import * as Yup from 'yup'
-
+import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
 import { TextBtn } from '../../../inputs/textBtn/TextBtn'
 import { Project } from '../../../../../models/project/Project'
@@ -16,22 +16,65 @@ import { ScList } from '../scList/ScList'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 
 import './style.scss'
+import { ConfirmationDialog } from '../../../util/ConfirmationDialog'
 
 export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
-
 	const handleRenameRundownClose = () => {
 		setRenameProjectOpen(false)
+	}
+
+	const [listProjectsOpen, setListProjectsOpen] = useState<{ name: string; id: string }[] | false>(false)
+	const handleListProjectsClose = () => {
+		setListProjectsOpen(false)
 	}
 
 	return (
 		<ProjectPageLayout
 			title={props.project.name}
 			subtitle="Project"
-			controls={<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />}
+			controls={
+				<>
+					<div className="section">
+						<TextBtn label="Rename" onClick={() => setRenameProjectOpen(true)} />
+					</div>
+					<div className="section">
+						<TextBtn
+							label={
+								<>
+									<AiOutlinePlusCircle /> New project
+								</>
+							}
+							onClick={() => serverAPI.newProject().catch(handleError)}
+						/>
+						<TextBtn
+							label={
+								<>
+									<AiFillFolderOpen /> Open existing project
+								</>
+							}
+							onClick={() => {
+								serverAPI
+									.listProjects()
+									.then((projects) => {
+										setListProjectsOpen(projects)
+									})
+									.catch(handleError)
+							}}
+						/>
+					</div>
+					<div className="section">
+						<TextBtn label="Export to file" onClick={() => serverAPI.exportProject().catch(handleError)} />
+						<TextBtn
+							label="Import from file"
+							onClick={() => serverAPI.importProject().catch(handleError)}
+						/>
+					</div>
+				</>
+			}
 		>
 			<RundownArchive />
 
@@ -92,6 +135,57 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 					)
 				}}
 			</Formik>
+
+			{/* List Projects dialog */}
+			<Formik
+				initialValues={{ projectId: '' }}
+				// validationSchema={Yup.object({
+				// 	name: Yup.string().label('Project Name').required(),
+				// })}
+				enableReinitialize={true}
+				onSubmit={(values, actions) => {
+					serverAPI.openProject({ projectId: values.projectId }).catch(handleError)
+					handleListProjectsClose()
+					actions.setSubmitting(false)
+					actions.resetForm()
+				}}
+			>
+				{(formik) => {
+					return (
+						<Dialog open={listProjectsOpen !== false} onClose={handleListProjectsClose}>
+							<DialogTitle>Open existing Project</DialogTitle>
+							<DialogContent>
+								<table>
+									<tbody>
+										{listProjectsOpen &&
+											listProjectsOpen.map((project) => (
+												<tr key={project.id}>
+													<td>{project.name}</td>
+													<td>
+														<Button
+															variant="contained"
+															onClick={() => {
+																formik.values.projectId = project.id
+																formik.submitForm().catch(handleError)
+															}}
+														>
+															Open
+														</Button>
+													</td>
+												</tr>
+											))}
+									</tbody>
+								</table>
+							</DialogContent>
+							<DialogActions>
+								<Button variant="contained" onClick={handleListProjectsClose}>
+									Cancel
+								</Button>
+							</DialogActions>
+						</Dialog>
+					)
+				}}
+			</Formik>
 		</ProjectPageLayout>
 	)
 })
@@ -113,6 +207,17 @@ const RundownArchive: React.FC = observer(function RundownArchive() {
 		guiStore.activeTabId = rundownId
 	}
 
+	const [deleteRundownConfirmationOpen, setDeleteRundownConfirmationOpen] = useState<string | false>(false)
+	const handleDeleteRundown = useCallback(() => {
+		if (deleteRundownConfirmationOpen) {
+			serverAPI
+				.deleteRundown({
+					rundownId: deleteRundownConfirmationOpen,
+				})
+				.catch(handleError)
+		}
+	}, [handleError, serverAPI, deleteRundownConfirmationOpen])
+
 	return (
 		<RoundedSection
 			title="Rundown archive"
@@ -130,7 +235,9 @@ const RundownArchive: React.FC = observer(function RundownArchive() {
 									<TextBtn
 										label="Permanently delete"
 										style="danger"
-										onClick={() => alert('This feature is not implemented yet.')}
+										onClick={() => {
+											setDeleteRundownConfirmationOpen(closedRundown.rundownId)
+										}}
 									/>
 								</div>
 							</div>
@@ -139,6 +246,20 @@ const RundownArchive: React.FC = observer(function RundownArchive() {
 				})}
 			/>
 			{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
+			<ConfirmationDialog
+				open={!!deleteRundownConfirmationOpen}
+				title="Delete Rundown"
+				acceptLabel="Delete"
+				onAccepted={() => {
+					handleDeleteRundown()
+					setDeleteRundownConfirmationOpen(false)
+				}}
+				onDiscarded={() => {
+					setDeleteRundownConfirmationOpen(false)
+				}}
+			>
+				<div>Are you sure you want to delete the Rundown?</div>
+			</ConfirmationDialog>
 		</RoundedSection>
 	)
 })

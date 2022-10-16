@@ -1,10 +1,24 @@
 .connection-status {
 	display: flex;
+	justify-content: center;
 	align-items: center;
 	padding: 0 0.5rem;
 	color: $deviceOfflineColor;
 	font-size: 1.2rem;
 	text-decoration: none;
+
+	&__content {
+		display: flex;
+		align-items: center;
+		border-radius: 50px;
+		background-color: rgba(0, 0, 0, 0.75);
+		padding: 0 0.5rem;
+	}
+
+	&__label {
+		position: relative;
+		top: -1px;
+	}
 
 	&__dot {
 		margin-left: 0.35rem;

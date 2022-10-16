@@ -11,42 +11,38 @@ import { convertSorensenToElectron, triggerIsKeyboard } from '../../../lib/util'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 import { useMemoComputedObject } from '../../mobx/lib'
+import { assertNever } from '@shared/lib'
 
 const ACTION_ICON_SIZE = 12
 
 export const NoEditTrigger: React.FC<{
 	trigger: RundownTrigger
-}> = ({ trigger }) => {
-	const labelParts = trigger.label.split('+')
+	label?: string
+}> = ({ trigger, label }) => {
+	let triggerAction: JSX.Element
+	if (trigger.action === 'play') {
+		triggerAction = <MdPlayArrow size={ACTION_ICON_SIZE} />
+	} else if (trigger.action === 'stop') {
+		triggerAction = <MdStop size={ACTION_ICON_SIZE} />
+	} else if (trigger.action === 'playStop') {
+		triggerAction = (
+			<>
+				<MdPlayArrow size={ACTION_ICON_SIZE} />
+				<MdStop size={ACTION_ICON_SIZE} />
+			</>
+		)
+	} else {
+		assertNever(trigger.action)
+		triggerAction = <></>
+	}
 
 	return (
 		<div className={'trigger'}>
-			<div className="field">Button area</div>
-			<div className="field label">
-				<span className="label__action">
-					{trigger.action === 'play' ? (
-						<MdPlayArrow size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'stop' ? (
-						<MdStop size={ACTION_ICON_SIZE} />
-					) : trigger.action === 'playStop' ? (
-						<>
-							<MdPlayArrow size={ACTION_ICON_SIZE} />
-							<MdStop size={ACTION_ICON_SIZE} />
-						</>
-					) : null}
-				</span>
-				{labelParts.map((part, index) => {
-					const isKeyboard = triggerIsKeyboard(trigger, index)
-					return (
-						<React.Fragment key={index}>
-							<div className={classNames('label__key', { 'label__key--keyboard': isKeyboard })}>
-								<span className="label__key__text">{part}</span>
-							</div>
-							<span className="label__plus">+</span>
-						</React.Fragment>
-					)
-				})}
+			{label && <div className="field label">{label}</div>}
+			<div className="field">
+				<span className="label__action">{triggerAction}</span>
 			</div>
+			<TriggerPill trigger={trigger} />
 		</div>
 	)
 }

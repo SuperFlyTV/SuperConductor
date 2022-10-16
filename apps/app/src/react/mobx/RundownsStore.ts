@@ -419,13 +419,15 @@ export class RundownsStore {
 						if (!this.hasRundown(rundownId)) continue
 						const rundown = this.getRundown(rundownId)
 						for (const groupId of rundown.groupIds) {
-							const group = this.getGroupWithParts(groupId)
-							for (const part of group.parts) {
-								this._cacheAllParts.push({
-									rundown,
-									group,
-									part,
-								})
+							if (this.hasGroup(groupId)) {
+								const group = this.getGroupWithParts(groupId)
+								for (const part of group.parts) {
+									this._cacheAllParts.push({
+										rundown,
+										group,
+										part,
+									})
+								}
 							}
 						}
 					}

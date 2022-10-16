@@ -21,6 +21,10 @@ export interface RundownActionLight {
 	trigger: RundownTrigger
 	rundownId: string
 	part: PartBase
+	area: {
+		id: string
+		name: string
+	} | null
 }
 export interface RundownAction extends RundownActionLight {
 	group: GroupBase
@@ -85,6 +89,7 @@ export function getAllActionsInParts(
 				rundownId: p.rundown.id,
 				group: p.group,
 				part: p.part,
+				area: null,
 			})
 		}
 	}
@@ -94,7 +99,7 @@ export function getAllActionsInParts(
 		for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
 			const peripheralStatus: PeripheralStatus | undefined = peripherals?.[`${bridgeId}-${deviceId}`]
 
-			for (const [_areaId, area] of Object.entries(peripheralSettings.areas)) {
+			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
 					if (group && !group.group.disabled) {
@@ -126,6 +131,10 @@ export function getAllActionsInParts(
 									rundownId: group.rundownId,
 									group: group.group,
 									part,
+									area: {
+										id: areaId,
+										name: area.name,
+									},
 								})
 							}
 						}

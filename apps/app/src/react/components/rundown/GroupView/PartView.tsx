@@ -371,7 +371,8 @@ export const PartView: React.FC<{
 				let moveToLayerId = timelineObjMove.hoveredLayerId
 				if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
 					const newLayerMapping = mappings[moveToLayerId]
-					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+					// @TODO: Figure out how newLayerMapping can be undefined here.
+					if (!newLayerMapping || !filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
 					}
 				}

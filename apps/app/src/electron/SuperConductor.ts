@@ -10,7 +10,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny } from '@shared/models'
-import { BridgeHandler } from './bridgeHandler'
+import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
@@ -78,7 +78,7 @@ export class SuperConductor {
 			this.triggers?.triggerUpdatePeripherals()
 		})
 
-		this.storage = new StorageHandler(log)
+		this.storage = new StorageHandler(log, CURRENT_VERSION)
 		this.storage.on('appData', (appData: AppData) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
 			this.triggers.registerGlobalKeyboardTriggers()

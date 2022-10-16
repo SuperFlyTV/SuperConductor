@@ -3,8 +3,8 @@ import { IPCServer } from '../api/IPCServer'
 const { ipcRenderer } = window.require('electron')
 import { IPCClient } from '../api/IPCClient'
 import { ResourceAny } from '@shared/models'
-import _ from 'lodash'
 import { ClientSideLogger } from '../api/logger'
+import { hashObj } from '../../lib/util'
 
 export interface Resources {
 	[resourceId: string]: ResourceAny
@@ -22,6 +22,8 @@ export class ResourcesStore {
 	logger: ClientSideLogger
 	ipcClient: IPCClient
 
+	private resourceHashes: { [resourceId: string]: string } // Not defined here, this should not be an observable
+
 	constructor(init?: Resources) {
 		this.serverAPI = new IPCServer(ipcRenderer)
 		this.logger = new ClientSideLogger(this.serverAPI)
@@ -29,7 +31,10 @@ export class ResourcesStore {
 			updateResources: (resources) => this.updateResources(resources),
 			updateDeviceRefreshStatus: (deviceId, refreshing) => this._updateDeviceRefreshStatus(deviceId, refreshing),
 		})
+
 		makeAutoObservable(this)
+
+		this.resourceHashes = {}
 
 		if (init) {
 			this._update(init)
@@ -37,9 +42,25 @@ export class ResourcesStore {
 	}
 
 	public updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>) {
+		const newResources = { ...this.resources }
+
 		for (const { id, resource } of resources) {
-			this._updateResource(id, resource)
+			const resourceHash = hashObj(resource)
+
+			if (resource) {
+				const existingHash = this.resourceHashes[id]
+				if (existingHash !== resourceHash) {
+					newResources[id] = resource
+					this.resourceHashes[id] = resourceHash
+				}
+			} else {
+				if (this.resources[id]) {
+					delete newResources[id]
+					delete this.resourceHashes[id]
+				}
+			}
 		}
+		this.resources = newResources
 	}
 	public isAnyDeviceRefreshing(): boolean {
 		for (const deviceId in this.refreshStatuses) {
@@ -50,19 +71,6 @@ export class ResourcesStore {
 		}
 
 		return false
-	}
-	private _updateResource(resourceId: string, resource: ResourceAny | null) {
-		const newResources = { ...this.resources }
-		if (resource) {
-			if (!_.isEqual(this.resources[resourceId], resource)) {
-				newResources[resourceId] = resource
-			}
-		} else {
-			if (this.resources[resourceId]) {
-				delete newResources[resourceId]
-			}
-		}
-		this.resources = newResources
 	}
 
 	private _update(data: Resources) {
