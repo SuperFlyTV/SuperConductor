@@ -8,6 +8,8 @@
 	align-items: center;
 	width: 35rem;
 
+	cursor: pointer;
+
 	&:not(:last-child) {
 		margin-bottom: 2rem;
 	}

@@ -20,9 +20,11 @@ export const ConnectionStatus: React.FC<{
 			href={props.onClick ? '#' : undefined}
 			onClick={props.onClick}
 		>
-			{props.label}
+			<div className="connection-status__content">
+				<div className="connection-status__label">{props.label}</div>
 
-			<div className="connection-status__dot"></div>
+				<div className="connection-status__dot"></div>
+			</div>
 		</a>
 	)
 }

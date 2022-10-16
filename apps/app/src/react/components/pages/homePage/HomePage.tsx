@@ -4,7 +4,6 @@ import { Project } from 'src/models/project/Project'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { ProjectPage } from './projectPage/ProjectPage'
-import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
 import { HomePageId } from 'src/react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
@@ -29,20 +28,16 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 				}}
 				menubar={[
 					{
-						groupId: 'general',
-						items: [
-							{ id: 'newProject', label: 'New Project', icon: <AiOutlinePlusCircle /> },
-							{ id: 'openProject', label: 'Open Project', icon: <AiFillFolderOpen /> },
-						],
+						groupId: 'project',
+						items: [{ id: 'project', label: 'Project' }],
 					},
 					{
 						groupId: 'application',
 						items: [{ id: 'applicationActions', label: 'Application triggers' }],
 					},
 					{
-						groupId: 'project',
+						groupId: 'general',
 						items: [
-							{ id: 'project', label: 'Project' },
 							{
 								id: 'bridgesSettings',
 								label: 'Brigdes',

@@ -82,6 +82,11 @@ export interface IPCServerMethods {
 	acknowledgeUserAgreement: (arg: { agreementVersion: string }) => void
 
 	updateGUISelection: (arg: { selection: Readonly<CurrentSelectionAny[]> }) => void
+	exportProject: () => void
+	importProject: () => void
+	newProject: () => void
+	listProjects: () => { name: string; id: string }[]
+	openProject: (arg: { projectId: string }) => void
 
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
 	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
@@ -187,12 +192,11 @@ export interface IPCServerMethods {
 
 	updateProject: (arg: { id: string; project: Project }) => void
 
-	newRundown: (arg: { name: string }) => void
+	newRundown: (arg: { name: string }) => string
 	deleteRundown: (arg: { rundownId: string }) => void
 	openRundown: (arg: { rundownId: string }) => void
 	closeRundown: (arg: { rundownId: string }) => void
-	listRundowns: (arg: { projectId: string }) => { fileName: string; version: number; name: string; open: boolean }[]
-	renameRundown: (arg: { rundownId: string; newName: string }) => void
+	renameRundown: (arg: { rundownId: string; newName: string }) => string
 	isRundownPlaying: (arg: { rundownId: string }) => boolean
 	isTimelineObjPlaying: (arg: { rundownId: string; timelineObjId: string }) => boolean
 

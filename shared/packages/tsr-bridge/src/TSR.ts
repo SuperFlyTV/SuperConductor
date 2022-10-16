@@ -38,7 +38,7 @@ export class TSR {
 			log.info('TSR', msg, ...args)
 		})
 		this.conductor.on('warning', (msg, ...args) => {
-			log.warn('Warning: TSR', msg, ...args)
+			log.warn('TSR', msg, ...args)
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)

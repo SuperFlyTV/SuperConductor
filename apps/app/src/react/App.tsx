@@ -509,17 +509,16 @@ export const App = observer(function App() {
 
 		const buttonActions = new Map<string, ActionAny[]>()
 		for (const action of getAllApplicationActions(gui.selected, allParts, appData)) {
-			for (const fullIdentifier of action.trigger.fullIdentifiers) {
-				let newButtonAction = buttonActions.get(fullIdentifier)
-				if (!newButtonAction) {
-					newButtonAction = []
-					buttonActions.set(fullIdentifier, newButtonAction)
-				}
-				newButtonAction.push({
-					type: 'application',
-					...action,
-				})
+			const joinedIdentifier = action.trigger.fullIdentifiers.join('+')
+			let newButtonAction = buttonActions.get(joinedIdentifier)
+			if (!newButtonAction) {
+				newButtonAction = []
+				buttonActions.set(joinedIdentifier, newButtonAction)
 			}
+			newButtonAction.push({
+				type: 'application',
+				...action,
+			})
 		}
 
 		store.rundownsStore.updateProjectButtonActions(buttonActions)
