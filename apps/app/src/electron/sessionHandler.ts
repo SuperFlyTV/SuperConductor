@@ -6,6 +6,7 @@ import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { AvailablePeripheral, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { CurrentSelectionAny } from '../lib/GUI'
+import { getPeripheralId } from '@shared/lib'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -70,12 +71,12 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 	getPeripheralStatus(bridgeId: string, deviceId: string): PeripheralStatus | undefined {
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		return this.peripherals[peripheralId]
 	}
 	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean) {
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		const existing: PeripheralStatus | undefined = this.peripherals[peripheralId]
 
@@ -96,7 +97,7 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 	removePeripheral(bridgeId: string, deviceId: string) {
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 		delete this.peripherals[peripheralId]
 		this.peripheralsHasChanged[peripheralId] = true
 		this.triggerUpdate()
@@ -139,7 +140,7 @@ export class SessionHandler extends EventEmitter {
 		// This is called from a peripheral, when a key is pressed or released
 
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		const device = this.peripherals[peripheralId]
 		const trigger: ActiveTrigger = {
