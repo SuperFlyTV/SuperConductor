@@ -121,7 +121,7 @@ export const RundownTriggersSubmenu: React.FC<{
 						/>
 					))}
 					{otherActions.map((action, index) => (
-						<NoEditTrigger key={index} trigger={action.trigger} />
+						<NoEditTrigger key={index} trigger={action.trigger} label={action.area?.name} />
 					))}
 				</div>
 			)}
