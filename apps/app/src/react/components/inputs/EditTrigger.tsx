@@ -7,11 +7,11 @@ import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import { IoMdGlobe } from 'react-icons/io'
 import classNames from 'classnames'
-import { convertSorensenToElectron, triggerIsKeyboard } from '../../../lib/util'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../mobx/store'
 import { useMemoComputedObject } from '../../mobx/lib'
 import { assertNever } from '@shared/lib'
+import { convertSorensenToElectron, identifierIsKeyboard, triggerIsKeyboard } from '../../../lib/triggers/identifiers'
 
 const ACTION_ICON_SIZE = 12
 
@@ -53,7 +53,7 @@ export const EditRundownTrigger: React.FC<{
 	onEdit: (index: number, trigger: RundownTrigger | null) => void
 	locked?: boolean
 }> = observer(function EditRundownTrigger({ trigger, index, onEdit, locked }) {
-	const isKeyboard = triggerIsKeyboard(trigger, index)
+	const isKeyboard = triggerIsKeyboard(trigger)
 	const failedGlobalShortcuts = useMemoComputedObject(() => {
 		return store.triggersStore.failedGlobalTriggers
 	}, [store.triggersStore.failedGlobalTriggers])
@@ -141,7 +141,7 @@ export const EditApplicationTrigger: React.FC<{
 	index: number
 	onEdit?: (index: number, trigger: ApplicationTrigger | null) => void
 }> = observer(function EditApplicationTrigger({ trigger, index, onEdit }) {
-	const isKeyboard = triggerIsKeyboard(trigger, index)
+	const isKeyboard = triggerIsKeyboard(trigger)
 	const failedGlobalShortcuts = useMemoComputedObject(() => {
 		return store.triggersStore.failedGlobalTriggers
 	}, [store.triggersStore.failedGlobalTriggers])
@@ -196,7 +196,7 @@ export const TriggerPill: React.FC<{
 	return (
 		<div className="trigger-pill">
 			{labelParts.map((part, index) => {
-				const isKeyboard = triggerIsKeyboard(trigger, index)
+				const isKeyboard = identifierIsKeyboard(trigger.fullIdentifiers[index])
 				return (
 					<React.Fragment key={index}>
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>

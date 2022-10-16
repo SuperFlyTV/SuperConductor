@@ -6,7 +6,6 @@ import { Layer, LayerEmpty } from './Layer'
 import { ResolvedTimeline, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
 import {
 	allowMovingPartIntoGroup,
-	convertSorensenToElectron,
 	EMPTY_LAYER_ID_PREFIX,
 	getResolvedTimelineTotalDuration,
 	MoveTarget,
@@ -53,6 +52,7 @@ import { TrashBtn } from '../../inputs/TrashBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { sortSelected } from '../../../lib/clientUtil'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
+import { convertSorensenToElectron } from '../../../../lib/triggers/identifiers'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).

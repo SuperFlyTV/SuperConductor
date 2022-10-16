@@ -15,7 +15,7 @@ import { ApplicationTriggersSubmenu } from '../../../rundown/GroupView/part/Trig
 import { TriggerPill } from '../../../../components/inputs/EditTrigger'
 
 import './style.scss'
-import { convertSorensenToElectron } from '../../../../../lib/util'
+import { convertSorensenToElectron } from '../../../../../lib/triggers/identifiers'
 
 export const ApplicationActionsPage: React.FC = observer(function ProjectPage() {
 	return (
