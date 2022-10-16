@@ -298,8 +298,6 @@ export class IPCServer
 	}
 
 	async exportProject(): Promise<void> {
-		const exportData = JSON.stringify(this.storage.getProjectForExport())
-
 		const result = await dialog.showSaveDialog({
 			title: 'Export Project',
 			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
@@ -313,6 +311,8 @@ export class IPCServer
 
 		if (!result.canceled) {
 			if (result.filePath) {
+				const exportData = JSON.stringify(this.storage.getProjectForExport())
+
 				await fs.promises.writeFile(result.filePath, exportData, 'utf-8')
 			}
 		}
