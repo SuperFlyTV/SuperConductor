@@ -2000,11 +2000,14 @@ export class IPCServer
 		}
 	}
 	async deleteRundown(arg: { rundownId: string }): Promise<void> {
-		const { rundown } = this.getRundown(arg)
-
-		// Stop all groups, to trigger relevant timeline-updates:
-		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
+		const openRundown = this.storage.getRundown(arg.rundownId)
+		if (openRundown) {
+			// Stop all groups, to trigger relevant timeline-updates:
+			for (const group of openRundown.groups) {
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
+			}
+			this._saveUpdates({ rundownId: openRundown.id, rundown: openRundown })
+			await this.storage.writeChangesNow()
 		}
 
 		const rundownFileName = arg.rundownId // this.storage.getRundownFilename(arg.rundownId)
