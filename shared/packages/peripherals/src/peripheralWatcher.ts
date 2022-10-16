@@ -32,8 +32,8 @@ export class PeripheralWatcher extends EventEmitter {
 	/**
 	 * Updates the watcher's knowledge about a given peripheral.
 	 * If no prior info was present, availablePeripheralDiscovered will be emitted.
-	 * If prior info was present, availablePeripheralReconnected will be emitted.
-	 * If no info is provided, availablePeripheralDisconnected will be emitted.
+	 * If prior info was present and new info is provided, availablePeripheralReconnected will be emitted.
+	 * If prior info was present and info is now null, availablePeripheralDisconnected will be emitted.
 	 * In all cases, availablePeripheralsChanged will be emitted.
 	 */
 	private updateDiscoveredPeripheral(peripheralId: string, info: AvailablePeripheral | null): void {
