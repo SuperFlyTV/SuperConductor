@@ -748,7 +748,7 @@ export function copyPart(part: Part): Part {
 	const newPart = deepClone(part)
 	newPart.id = shortID()
 
-	newPart.timeline = part.timeline.map((o) => copyTimelineObj(o))
+	newPart.timeline = generateNewTimelineObjIds(part.timeline)
 	return newPart
 }
 export function copyTimelineObj(obj: TimelineObj): TimelineObj {
