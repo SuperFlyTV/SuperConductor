@@ -1,13 +1,13 @@
-import { AvailablePeripheral } from '@shared/api'
+import { KnownPeripheral } from '@shared/api'
 import EventEmitter from 'events'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 
 export interface PeripheralWatcherEvents {
-	availablePeripheralDiscovered: (peripheralId: string, info: AvailablePeripheral) => void
-	availablePeripheralReconnected: (peripheralId: string, info: AvailablePeripheral) => void
-	availablePeripheralDisconnected: (peripheralId: string) => void
-	availablePeripheralsChanged: (peripherals: { [peripheralId: string]: AvailablePeripheral }) => void
+	knownPeripheralDiscovered: (peripheralId: string, info: KnownPeripheral) => void
+	knownPeripheralReconnected: (peripheralId: string, info: KnownPeripheral) => void
+	knownPeripheralDisconnected: (peripheralId: string) => void
+	knownPeripheralsChanged: (peripherals: { [peripheralId: string]: KnownPeripheral }) => void
 }
 export interface PeripheralWatcher {
 	on<U extends keyof PeripheralWatcherEvents>(event: U, listener: PeripheralWatcherEvents[U]): this
@@ -15,7 +15,7 @@ export interface PeripheralWatcher {
 }
 
 export class PeripheralWatcher extends EventEmitter {
-	private availablePeripherals = new Map<string, AvailablePeripheral>()
+	private knownPeripherals = new Map<string, KnownPeripheral>()
 	private subwatchers: { stop: () => void }[] = []
 
 	constructor() {
@@ -31,27 +31,27 @@ export class PeripheralWatcher extends EventEmitter {
 
 	/**
 	 * Updates the watcher's knowledge about a given peripheral.
-	 * If no prior info was present, availablePeripheralDiscovered will be emitted.
-	 * If prior info was present and new info is provided, availablePeripheralReconnected will be emitted.
-	 * If prior info was present and info is now null, availablePeripheralDisconnected will be emitted.
-	 * In all cases, availablePeripheralsChanged will be emitted.
+	 * If no prior info was present, knownPeripheralDiscovered will be emitted.
+	 * If prior info was present and new info is provided, knownPeripheralReconnected will be emitted.
+	 * If prior info was present and info is now null, knownPeripheralDisconnected will be emitted.
+	 * In all cases, knownPeripheralsChanged will be emitted.
 	 */
-	private updateDiscoveredPeripheral(peripheralId: string, info: AvailablePeripheral | null): void {
-		if (this.availablePeripherals.has(peripheralId)) {
+	private updateDiscoveredPeripheral(peripheralId: string, info: KnownPeripheral | null): void {
+		if (this.knownPeripherals.has(peripheralId)) {
 			if (info) {
-				this.availablePeripherals.set(peripheralId, info)
-				this.emit('availablePeripheralReconnected', peripheralId, info)
+				this.knownPeripherals.set(peripheralId, info)
+				this.emit('knownPeripheralReconnected', peripheralId, info)
 			} else {
 				// We intentionally don't remove the info from the availablePeriphals set here
 				// because we need that information for UI purposes. We still display information
 				// about peripherals that were previously connected but are now disconnected.
-				this.emit('availablePeripheralDisconnected', peripheralId)
+				this.emit('knownPeripheralDisconnected', peripheralId)
 			}
 		} else if (info) {
-			this.availablePeripherals.set(peripheralId, info)
-			this.emit('availablePeripheralDiscovered', peripheralId, info)
+			this.knownPeripherals.set(peripheralId, info)
+			this.emit('knownPeripheralDiscovered', peripheralId, info)
 		}
-		this.emit('availablePeripheralsChanged', this.getAvailablePeripherals())
+		this.emit('knownPeripheralsChanged', this.getKnownPeripherals())
 	}
 
 	/**
@@ -65,7 +65,7 @@ export class PeripheralWatcher extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getAvailablePeripherals() {
-		return Object.fromEntries(this.availablePeripherals.entries())
+	getKnownPeripherals() {
+		return Object.fromEntries(this.knownPeripherals.entries())
 	}
 }

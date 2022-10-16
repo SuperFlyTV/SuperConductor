@@ -3,7 +3,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { AvailablePeripheral, PeripheralInfo } from '@shared/api'
+import { KnownPeripheral, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { getPeripheralId } from '@shared/lib'
@@ -102,10 +102,10 @@ export class SessionHandler extends EventEmitter {
 		this.peripheralsHasChanged[peripheralId] = true
 		this.triggerUpdate()
 	}
-	updateAvailablePeripherals(
+	updateKnownPeripherals(
 		bridgeId: string,
-		availablePeripherals: {
-			[peripheralId: string]: AvailablePeripheral
+		knownPeripherals: {
+			[peripheralId: string]: KnownPeripheral
 		}
 	) {
 		const bridgeStatus = this.bridgeStatuses[bridgeId]
@@ -113,8 +113,8 @@ export class SessionHandler extends EventEmitter {
 			return
 		}
 
-		if (!_.isEqual(availablePeripherals, bridgeStatus.peripherals)) {
-			bridgeStatus.peripherals = availablePeripherals
+		if (!_.isEqual(knownPeripherals, bridgeStatus.peripherals)) {
+			bridgeStatus.peripherals = knownPeripherals
 			this.bridgeStatusesHasChanged[bridgeId] = true
 		}
 

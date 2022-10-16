@@ -37,15 +37,15 @@ export class BaseBridge {
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
 			this.peripheralsHandlerSend({
-				type: 'AvailablePeripherals',
-				peripherals: peripheralsHandler.getAvailablePeripherals(),
+				type: 'KnownPeripherals',
+				peripherals: peripheralsHandler.getKnownPeripherals(),
 			})
 		})
 		peripheralsHandler.on('disconnected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'disconnected' })
 			this.peripheralsHandlerSend({
-				type: 'AvailablePeripherals',
-				peripherals: peripheralsHandler.getAvailablePeripherals(),
+				type: 'KnownPeripherals',
+				peripherals: peripheralsHandler.getKnownPeripherals(),
 			})
 		})
 		peripheralsHandler.on('keyDown', (deviceId, identifier) => {
@@ -54,8 +54,8 @@ export class BaseBridge {
 		peripheralsHandler.on('keyUp', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
 		})
-		peripheralsHandler.on('availablePeripherals', (peripherals) => {
-			this.peripheralsHandlerSend({ type: 'AvailablePeripherals', peripherals })
+		peripheralsHandler.on('knownPeripherals', (peripherals) => {
+			this.peripheralsHandlerSend({ type: 'KnownPeripherals', peripherals })
 		})
 
 		peripheralsHandler.init()
@@ -159,10 +159,10 @@ export class BaseBridge {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
 			this.peripheralsHandler.setKeyDisplay(msg.deviceId, msg.identifier, msg.keyDisplay)
-		} else if (msg.type === 'getAvailablePeripherals') {
+		} else if (msg.type === 'getKnownPeripherals') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
-			this.send({ type: 'AvailablePeripherals', peripherals: this.peripheralsHandler.getAvailablePeripherals() })
+			this.send({ type: 'KnownPeripherals', peripherals: this.peripheralsHandler.getKnownPeripherals() })
 		} else {
 			assertNever(msg)
 		}

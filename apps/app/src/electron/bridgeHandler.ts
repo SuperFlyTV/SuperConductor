@@ -1,4 +1,4 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike, AvailablePeripheral } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike, KnownPeripheral } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
@@ -274,10 +274,10 @@ abstract class AbstractBridgeConnection {
 		// The bridge will reply with its timelineIds, and we'll pipe them into this._syncTimelineIds()
 		this.send({ type: 'getTimelineIds' })
 	}
-	getAvailablePeripherals() {
-		// Request a list of the currently available peripherals from the Bridge.
+	getKnownPeripherals() {
+		// Request a list of the currently known (currently connected and previously connected) peripherals from the Bridge.
 		// The bridge will reply with a message handled elsewhere.
-		this.send({ type: 'getAvailablePeripherals' })
+		this.send({ type: 'getKnownPeripherals' })
 	}
 	protected getCurrentTime() {
 		return Date.now()
@@ -323,7 +323,7 @@ abstract class AbstractBridgeConnection {
 		this.getTimelineIds()
 		this.session.resetPeripheralTriggerStatuses(this.bridgeId)
 		// Sync available peripherals
-		this.getAvailablePeripherals()
+		this.getKnownPeripherals()
 	}
 	protected onInitRequestId() {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')
@@ -380,13 +380,13 @@ abstract class AbstractBridgeConnection {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
-	protected _onAvailablePeripherals(availablePeripherals: { [peripheralId: string]: AvailablePeripheral }) {
+	protected _onKnownPeripherals(knownPeripherals: { [peripheralId: string]: KnownPeripheral }) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
-		this.session.updateAvailablePeripherals(this.bridgeId, availablePeripherals)
+		this.session.updateKnownPeripherals(this.bridgeId, knownPeripherals)
 		const project = this.storage.getProject()
 		const bridge = project.bridges[this.bridgeId]
 		if (bridge) {
-			for (const peripheralId of Object.keys(availablePeripherals)) {
+			for (const peripheralId of Object.keys(knownPeripherals)) {
 				if (!bridge.settings.peripherals[peripheralId]) {
 					// Initalize with defaults
 					bridge.settings.peripherals[peripheralId] = {
@@ -424,8 +424,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
 		} else if (msg.type === 'DeviceRefreshStatus') {
 			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
-		} else if (msg.type === 'AvailablePeripherals') {
-			this._onAvailablePeripherals(msg.peripherals)
+		} else if (msg.type === 'KnownPeripherals') {
+			this._onKnownPeripherals(msg.peripherals)
 		} else {
 			assertNever(msg)
 		}

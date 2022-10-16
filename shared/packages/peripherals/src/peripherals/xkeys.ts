@@ -1,7 +1,7 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
-import { onDiscoveredPeripheralCallback, Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral } from './peripheral'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
@@ -12,7 +12,7 @@ export class PeripheralXkeys extends Peripheral {
 	private static Watching = false
 	private static AlreadySeenDeviceIds = new Set<string>()
 	private connectedToParent = false
-	static Watch(onDiscoveredPeripheral: onDiscoveredPeripheralCallback) {
+	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
 		if (PeripheralXkeys.Watching) {
 			throw new Error('Already watching')
 		}
@@ -52,7 +52,7 @@ export class PeripheralXkeys extends Peripheral {
 				const found = PeripheralXkeys.FindProduct(panelInfo)
 
 				// Tell the watcher about the discovered Xkeys panel.
-				onDiscoveredPeripheral(id, {
+				onKnownPeripheral(id, {
 					name: found.product.name,
 					type: PeripheralType.XKEYS,
 					devicePath: panelInfo.path,
@@ -61,7 +61,7 @@ export class PeripheralXkeys extends Peripheral {
 
 			// Tell the watcher about disconnected Xkeys panels.
 			for (const id of disconnectedXkeysPanelIds) {
-				onDiscoveredPeripheral(id, null)
+				onKnownPeripheral(id, null)
 			}
 
 			// Update for the next iteration.

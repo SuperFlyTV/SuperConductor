@@ -4,7 +4,7 @@ import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { ScListItemLabel } from '../scList/ScListItemLabel'
 import { StatusCircle } from '../scList/StatusCircle'
-import { AvailablePeripheral, PeripheralSettingsAny } from '@shared/api'
+import { KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
@@ -13,7 +13,7 @@ import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 export const PeripheralItemHeader: React.FC<{
 	disableManualConnectToggle: boolean
 	settings: PeripheralSettingsAny
-	status: AvailablePeripheral
+	status: KnownPeripheral
 	otherStatus?: PeripheralStatus
 }> = ({ disableManualConnectToggle, settings, status, otherStatus }) => {
 	const ipcServer = useContext(IPCServerContext)

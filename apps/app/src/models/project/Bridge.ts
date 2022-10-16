@@ -1,4 +1,4 @@
-import { AvailablePeripheral, PeripheralSettingsAny } from '@shared/api'
+import { KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { PeripheralArea } from './Peripheral'
 
@@ -43,7 +43,7 @@ export interface BridgeDevice {
 	message: string
 }
 
-export type BridgePeripheral = AvailablePeripheral
+export type BridgePeripheral = KnownPeripheral
 
 export interface BridgePeripheralSettings {
 	// overrideName?: string

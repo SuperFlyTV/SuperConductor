@@ -9,7 +9,7 @@ import { useMemoComputedObject } from '../../../mobx/lib'
 import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../contexts/Project'
-import { AvailablePeripheral } from '@shared/api'
+import { KnownPeripheral } from '@shared/api'
 import { MdAdd } from 'react-icons/md'
 import { DisabledPeripheralInfo, DisabledPeripheralsSettings } from './DisabledPeripherals/DisabledPeripheralsSettings'
 
@@ -71,7 +71,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 					// This peripheral is already one that the user has indicated they would like to connect to.
 					continue
 				}
-				const peripheralInfo = bridgeStatus.peripherals[peripheralId] as AvailablePeripheral | undefined
+				const peripheralInfo = bridgeStatus.peripherals[peripheralId] as KnownPeripheral | undefined
 				if (!peripheralInfo) continue
 				newDisabledPeripherals.push({
 					bridgeId,

@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material'
-import { AvailablePeripheral } from '@shared/api'
+import { KnownPeripheral } from '@shared/api'
 import React, { useCallback, useContext } from 'react'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
@@ -11,7 +11,7 @@ import { DeviceIcon } from '../../../pages/homePage/deviceIcon/DeviceIcon'
 export interface DisabledPeripheralInfo {
 	bridgeId: string
 	deviceId: string
-	info: AvailablePeripheral
+	info: KnownPeripheral
 }
 
 export const DisabledPeripheralsSettings: React.FC<{

@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import {
-	AvailablePeripheral,
+	KnownPeripheral,
 	KeyDisplay,
 	KeyDisplayTimeline,
 	LoggerLike,
@@ -21,7 +21,7 @@ export interface PeripheralsHandlerEvents {
 	keyDown: (peripheralId: string, identifier: string) => void
 	keyUp: (peripheralId: string, identifier: string) => void
 
-	availablePeripherals: (peripherals: { [peripheralId: string]: AvailablePeripheral }) => void
+	knownPeripherals: (peripherals: { [peripheralId: string]: KnownPeripheral }) => void
 }
 export interface PeripheralsHandler {
 	on<U extends keyof PeripheralsHandlerEvents>(event: U, listener: PeripheralsHandlerEvents[U]): this
@@ -46,13 +46,13 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 	init() {
 		this.watcher = new PeripheralWatcher()
-		this.watcher.on('availablePeripheralsChanged', (peripherals) => {
-			this.emit('availablePeripherals', peripherals)
+		this.watcher.on('knownPeripheralsChanged', (peripherals) => {
+			this.emit('knownPeripherals', peripherals)
 		})
-		this.watcher.on('availablePeripheralDiscovered', (id, info) => {
+		this.watcher.on('knownPeripheralDiscovered', (id, info) => {
 			this.maybeConnectToPeripheral(id, info).catch(this.log.error)
 		})
-		this.watcher.on('availablePeripheralReconnected', (id, info) => {
+		this.watcher.on('knownPeripheralReconnected', (id, info) => {
 			this.maybeConnectToPeripheral(id, info).catch(this.log.error)
 		})
 	}
@@ -65,8 +65,8 @@ export class PeripheralsHandler extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getAvailablePeripherals() {
-		return this.watcher?.getAvailablePeripherals() ?? {}
+	getKnownPeripherals() {
+		return this.watcher?.getKnownPeripherals() ?? {}
 	}
 	/**
 	 * Updates the settings for how peripherals should be handled.
@@ -179,7 +179,7 @@ export class PeripheralsHandler extends EventEmitter {
 		this.autoConnectToAll = true
 
 		const initPromises: Promise<void>[] = []
-		for (const [id, info] of Object.entries(this.getAvailablePeripherals())) {
+		for (const [id, info] of Object.entries(this.getKnownPeripherals())) {
 			if (this.peripherals.has(id)) {
 				// We already have a connected peripheral instance set up for this ID, so do nothing.
 				continue
@@ -232,14 +232,14 @@ export class PeripheralsHandler extends EventEmitter {
 		this.shouldConnectToSpecific.set(id, shouldConnect)
 
 		// If there's no available peripheral with this ID, do nothing.
-		const availablePeripheral = this.getAvailablePeripherals()[id] as AvailablePeripheral | undefined
-		if (!availablePeripheral) {
+		const knownPeripheral = this.getKnownPeripherals()[id] as KnownPeripheral | undefined
+		if (!knownPeripheral) {
 			return
 		}
 
 		if (this.autoConnectToAll || shouldConnect) {
 			// Try to connect to the peripheral.
-			await this.maybeConnectToPeripheral(id, availablePeripheral)
+			await this.maybeConnectToPeripheral(id, knownPeripheral)
 		} else {
 			// Close the peripheral.
 			const existingPeripheral = this.peripherals.get(id)
@@ -256,7 +256,7 @@ export class PeripheralsHandler extends EventEmitter {
 	 * or if the settings specify that this specific peripheral should be connected to.
 	 * Does nothing if already connected to a peripheral with the given ID.
 	 */
-	private async maybeConnectToPeripheral(id: string, info: AvailablePeripheral): Promise<void> {
+	private async maybeConnectToPeripheral(id: string, info: KnownPeripheral): Promise<void> {
 		// If we already have connected to this peripheral, do nothing.
 		const existingPeripheral = this.peripherals.get(id)
 		if (existingPeripheral) {
@@ -276,7 +276,7 @@ export class PeripheralsHandler extends EventEmitter {
 	 * Given info about an available peripheral, creates an actual connection to that peripheral
 	 * and returns the resulting Peripheral class instance.
 	 */
-	private createPeripheralFromAvailableInfo(id: string, info: AvailablePeripheral): Peripheral {
+	private createPeripheralFromAvailableInfo(id: string, info: KnownPeripheral): Peripheral {
 		switch (info.type) {
 			case PeripheralType.STREAMDECK:
 				return new PeripheralStreamDeck(this.log, id, info.devicePath)

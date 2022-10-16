@@ -3,14 +3,14 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
-import { onDiscoveredPeripheralCallback, Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
 export class PeripheralStreamDeck extends Peripheral {
 	private static Watching = false
-	static Watch(onDiscoveredPeripheral: onDiscoveredPeripheralCallback) {
+	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
 		if (PeripheralStreamDeck.Watching) {
 			throw new Error('Already watching')
 		}
@@ -48,7 +48,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				}
 
 				// Tell the watcher about the discovered Stream Deck.
-				onDiscoveredPeripheral(id, {
+				onKnownPeripheral(id, {
 					name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
 					type: PeripheralType.STREAMDECK,
 					devicePath: streamDeck.path,
@@ -57,7 +57,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 			// Tell the watcher about disconnected Stream Decks.
 			for (const id of disconnectedStreamDeckIds) {
-				onDiscoveredPeripheral(id, null)
+				onKnownPeripheral(id, null)
 			}
 
 			// Update for the next iteration.

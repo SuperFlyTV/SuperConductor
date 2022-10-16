@@ -93,7 +93,7 @@ export interface PeripheralSettingsBase {
 export type PeripheralSettingsStreamDeck = PeripheralSettingsBase
 export type PeripheralSettingsXKeys = PeripheralSettingsBase
 
-export interface AvailablePeripheral {
+export interface KnownPeripheral {
 	name: string
 	type: PeripheralType
 	devicePath: string

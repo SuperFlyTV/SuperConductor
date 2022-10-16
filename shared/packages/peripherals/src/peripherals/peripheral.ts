@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { AvailablePeripheral, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
+import { KnownPeripheral, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
 
 export interface PeripheralEvents {
@@ -14,7 +14,7 @@ export declare interface Peripheral {
 	on<U extends keyof PeripheralEvents>(event: U, listener: PeripheralEvents[U]): this
 	emit<U extends keyof PeripheralEvents>(event: U, ...args: Parameters<PeripheralEvents[U]>): boolean
 }
-export type onDiscoveredPeripheralCallback = (peripheralId: string, details: AvailablePeripheral | null) => void
+export type onKnownPeripheralCallback = (peripheralId: string, details: KnownPeripheral | null) => void
 export abstract class Peripheral extends EventEmitter {
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
