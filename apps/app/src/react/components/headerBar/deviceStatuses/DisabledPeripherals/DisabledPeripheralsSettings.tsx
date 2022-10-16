@@ -22,7 +22,7 @@ export const DisabledPeripheralsSettings: React.FC<{
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
-	const enableManualConnect = useCallback(
+	const toggleManualConnect = useCallback(
 		(peripheral?: DisabledPeripheralInfo) => {
 			if (!peripheral) return
 			const peripheralSettings = project.bridges[peripheral.bridgeId].settings.peripherals[peripheral.deviceId]
@@ -39,7 +39,7 @@ export const DisabledPeripheralsSettings: React.FC<{
 				<a
 					key={`${peripheral.bridgeId}-${peripheral.deviceId}`}
 					onClick={() => {
-						enableManualConnect(peripheral)
+						toggleManualConnect(peripheral)
 						onPeripheralClicked && onPeripheralClicked()
 					}}
 				>

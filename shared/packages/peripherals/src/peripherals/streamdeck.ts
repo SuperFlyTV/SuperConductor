@@ -3,65 +3,65 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
-import { Peripheral } from './peripheral'
+import { onDiscoveredPeripheralCallback, Peripheral } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
-export type OnDeviceCallback = (peripheral: PeripheralStreamDeck) => void
-
 export class PeripheralStreamDeck extends Peripheral {
-	protected static OnDevice: OnDeviceCallback
 	private static Watching = false
-	static Watch(log: LoggerLike, onDevice: OnDeviceCallback) {
+	static Watch(onDiscoveredPeripheral: onDiscoveredPeripheralCallback) {
 		if (PeripheralStreamDeck.Watching) {
 			throw new Error('Already watching')
 		}
 
 		PeripheralStreamDeck.Watching = true
-		PeripheralStreamDeck.OnDevice = onDevice
 
+		let lastSeenStreamDecks: StreamDeckDeviceInfo[] = []
+
+		// Check for new or removed Stream Decks every second.
 		const interval = setInterval(() => {
+			// List the connected Stream Decks.
 			const streamDecks = listStreamDecks()
 
+			// If the list has not changed since the last poll, do nothing.
+			if (_.isEqual(streamDecks, lastSeenStreamDecks)) {
+				return
+			}
+
+			// Figure out which Stream Decks have been unplugged since the last check.
+			const disconnectedStreamDeckIds = new Set(
+				lastSeenStreamDecks.map(PeripheralStreamDeck.GetStreamDeckId).filter((id) => {
+					return !streamDecks.some((sd) => PeripheralStreamDeck.GetStreamDeckId(sd) === id)
+				})
+			)
+
+			// Figure out which Stream Decks are being seen now that weren't seen in the last completed poll.
 			for (const streamDeck of streamDecks) {
-				// Create a locally unique identifier for the device:
+				const id = PeripheralStreamDeck.GetStreamDeckId(streamDeck)
+				const alreadySeen = lastSeenStreamDecks.some((sd) => {
+					return PeripheralStreamDeck.GetStreamDeckId(sd) === id
+				})
 
-				const id = streamDeck.serialNumber
-					? `streamdeck-serial_${streamDeck.serialNumber}`
-					: `streamdeck-path_${streamDeck.path}`
+				if (alreadySeen) {
+					continue
+				}
 
-				Peripheral.AddAvailableDevice(id, {
+				// Tell the watcher about the discovered Stream Deck.
+				onDiscoveredPeripheral(id, {
 					name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
 					type: PeripheralType.STREAMDECK,
+					devicePath: streamDeck.path,
 				})
-				const shouldConnect = Peripheral.AutoConnectToAll || Peripheral.ShouldConnectToSpecific.get(id)
-
-				const existingDevice = Peripheral.Instances.get(id)
-				if (!existingDevice) {
-					const newDevice = new PeripheralStreamDeck(log, id, streamDeck.path)
-					Peripheral.Instances.set(id, newDevice)
-
-					if (shouldConnect) {
-						newDevice
-							.init()
-							.then(() => {
-								newDevice.hasConnected = true
-								onDevice(newDevice)
-							})
-							.catch(log.error)
-					}
-				} else {
-					if (existingDevice && !existingDevice.connected && !existingDevice.initializing && shouldConnect) {
-						existingDevice
-							.init()
-							.then(() => {
-								existingDevice.emit('connected')
-							})
-							.catch(log.error)
-					}
-				}
 			}
+
+			// Tell the watcher about disconnected Stream Decks.
+			for (const id of disconnectedStreamDeckIds) {
+				onDiscoveredPeripheral(id, null)
+			}
+
+			// Update for the next iteration.
+			lastSeenStreamDecks = streamDecks
 		}, 1000)
 
 		return {
@@ -72,7 +72,13 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 
-	static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
+	private static GetStreamDeckId(streamDeck: StreamDeckDeviceInfo): string {
+		return streamDeck.serialNumber
+			? `streamdeck-serial_${streamDeck.serialNumber}`
+			: `streamdeck-path_${streamDeck.path}`
+	}
+
+	private static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
 		const model = 'model' in streamDeck ? streamDeck.model : streamDeck.MODEL
 		let name = 'Stream Deck'
 		if (model === DeviceModelId.MINI) name += ' Mini'
@@ -142,6 +148,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.initializing = false
 			throw e
 		}
+		this.emit('initialized')
 	}
 	get info(): PeripheralInfo {
 		if (!this._info) throw new Error('Peripheral not initialized')

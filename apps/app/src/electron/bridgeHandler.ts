@@ -390,7 +390,7 @@ abstract class AbstractBridgeConnection {
 				if (!bridge.settings.peripherals[peripheralId]) {
 					// Initalize with defaults
 					bridge.settings.peripherals[peripheralId] = {
-						manualConnect: true,
+						manualConnect: false,
 					}
 				}
 				if (

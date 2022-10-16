@@ -96,6 +96,7 @@ export type PeripheralSettingsXKeys = PeripheralSettingsBase
 export interface AvailablePeripheral {
 	name: string
 	type: PeripheralType
+	devicePath: string
 }
 
 export enum PeripheralType {
