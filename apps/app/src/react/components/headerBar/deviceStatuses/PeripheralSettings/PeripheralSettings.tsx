@@ -2,7 +2,7 @@ import React, { useCallback, useContext } from 'react'
 import { Box, Button, Grid } from '@mui/material'
 
 import { observer } from 'mobx-react-lite'
-import { DefiningArea } from '../../../../../lib/triggers/keyDisplay'
+import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'

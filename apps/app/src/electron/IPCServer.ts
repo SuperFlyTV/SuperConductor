@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import { dialog } from 'electron'
 import {
 	allowAddingResourceToLayer,
 	allowMovingPartIntoGroup,
@@ -30,13 +32,14 @@ import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { StorageHandler } from './storageHandler'
+import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
+import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import {
@@ -46,15 +49,16 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea } from '../models/project/Peripheral'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
+import { CurrentSelectionAny } from '../lib/GUI'
 import { BridgePeripheralSettings } from '../models/project/Bridge'
 
 type UndoLedger = Action[]
@@ -295,6 +299,66 @@ export class IPCServer
 			this.callbacks.onAgreeToUserAgreement()
 		}
 	}
+	async updateGUISelection(arg: { selection: Readonly<CurrentSelectionAny[]> }): Promise<void> {
+		this.session.updateSelection(arg.selection)
+	}
+
+	async exportProject(): Promise<void> {
+		const result = await dialog.showSaveDialog({
+			title: 'Export Project',
+			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
+			buttonLabel: 'Save',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['showOverwriteConfirmation'],
+		})
+
+		if (!result.canceled) {
+			if (result.filePath) {
+				const exportData = JSON.stringify(this.storage.getProjectForExport())
+
+				await fs.promises.writeFile(result.filePath, exportData, 'utf-8')
+			}
+		}
+	}
+	async importProject(): Promise<void> {
+		const result = await dialog.showOpenDialog({
+			title: 'Import Project',
+			buttonLabel: 'Import',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['openFile'],
+		})
+		if (!result.canceled) {
+			const filePath = result.filePaths[0]
+			if (filePath) {
+				const exportDataStr = await fs.promises.readFile(filePath, 'utf-8')
+				let exportData: ExportProjectData | undefined = undefined
+				try {
+					exportData = JSON.parse(exportDataStr)
+				} catch (err) {
+					throw new Error(`Invalid project file (error: ${err})`)
+				}
+				if (exportData) {
+					await this.storage.importProject(exportData)
+				}
+			}
+		}
+	}
+	async newProject(): Promise<void> {
+		await this.storage.newProject('New Project')
+	}
+	async listProjects(): Promise<{ name: string; id: string }[]> {
+		return this.storage.listProjects()
+	}
+	async openProject(arg: { projectId: string }): Promise<void> {
+		return this.storage.openProject(arg.projectId)
+	}
+
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
@@ -433,7 +497,7 @@ export class IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
@@ -1928,7 +1992,7 @@ export class IPCServer
 	async updateProject(arg: { id: string; project: Project }): Promise<void> {
 		this._saveUpdates({ project: arg.project })
 	}
-	async newRundown(arg: { name: string }): Promise<UndoableResult<void>> {
+	async newRundown(arg: { name: string }): Promise<UndoableResult<string>> {
 		const fileName = this.storage.newRundown(arg.name)
 		this._saveUpdates({})
 
@@ -1938,26 +2002,25 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
+			result: fileName,
 		}
 	}
-	async deleteRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
-		const { rundown } = this.getRundown(arg)
-
-		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
+	async deleteRundown(arg: { rundownId: string }): Promise<void> {
+		const openRundown = this.storage.getRundown(arg.rundownId)
+		if (openRundown) {
+			// Stop all groups, to trigger relevant timeline-updates:
+			for (const group of openRundown.groups) {
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
+			}
+			this._saveUpdates({ rundownId: openRundown.id, rundown: openRundown })
+			await this.storage.writeChangesNow()
 		}
 
-		const rundownFileName = this.storage.getRundownFilename(arg.rundownId)
+		const rundownFileName = arg.rundownId // this.storage.getRundownFilename(arg.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
 		this._saveUpdates({})
 
-		return {
-			undo: () => {
-				this.storage.restoreRundown(rundown)
-				this._saveUpdates({})
-			},
-			description: ActionDescription.DeleteRundown,
-		}
+		// Note: This is not undoable
 	}
 	async openRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
 		this.storage.openRundown(arg.rundownId)
@@ -1993,12 +2056,8 @@ export class IPCServer
 			description: ActionDescription.CloseRundown,
 		}
 	}
-	async listRundowns(arg: {
-		projectId: string
-	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
-		return this.storage.listRundownsInProject(arg.projectId)
-	}
-	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
+
+	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
 			throw new Error(`Rundown "${arg.rundownId}" not found`)
@@ -2014,6 +2073,7 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.RenameRundown,
+			result: newRundownId,
 		}
 	}
 	async isRundownPlaying(arg: { rundownId: string }): Promise<boolean> {
@@ -2204,7 +2264,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
 	async updatePeripheralArea(data: {
@@ -2249,7 +2309,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.UpdatePeripheralArea,
 		}
 	}
 	async assignAreaToGroup(arg: {
@@ -2311,12 +2371,55 @@ export class IPCServer
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
+	async setApplicationTrigger(arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
+		triggerIndex: number | null
+	}): Promise<UndoableResult<void> | undefined> {
+		const appData = this.storage.getAppData()
+
+		const originalTriggers = deepClone(appData.triggers)
+
+		let triggers: ApplicationTrigger[] = appData.triggers[arg.triggerAction] ?? []
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				// Remove
+				triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					triggers.push(arg.trigger)
+				}
+			}
+		}
+		// Save changes:
+		appData.triggers[arg.triggerAction] = triggers
+
+		this._saveUpdates({ appData, noEffectOnPlayout: true })
+		return {
+			undo: () => {
+				const appData = this.storage.getAppData()
+				appData.triggers = originalTriggers
+				this._saveUpdates({ appData, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.SetApplicationTrigger,
+		}
+	}
 
 	/** Save updates to various data sets.
 	 * Use this last when there has been any changes to data.
 	 * This will also trigger updates of the playout (timeline), perihperals etc..
 	 */
 	private _saveUpdates(updates: {
+		appData?: AppData
+
 		project?: Project
 
 		rundownId?: string
@@ -2328,6 +2431,9 @@ export class IPCServer
 
 		noEffectOnPlayout?: boolean
 	}) {
+		if (updates.appData) {
+			this.storage.updateAppData(updates.appData)
+		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)
 		}

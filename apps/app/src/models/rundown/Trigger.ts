@@ -1,8 +1,24 @@
-export interface Trigger {
+/*
+	A Trigger defines something that invokes an Action.
+	So it could be a keyboard key, a streamdeck button etc (- or a key-combination).
+*/
+
+export interface AnyTrigger {
 	/** The trigger(s) associated with this action. Multiple values indicate a "key-combination". */
 	fullIdentifiers: string[]
-	action: 'play' | 'stop' | 'playStop'
+	/** Label of the Trigger, for example "CTRL+F". Multiple labels are separated by "+" */
 	label: string
+}
+/** Defines a Trigger that is associated with a certain Part */
+export interface RundownTrigger extends AnyTrigger {
+	action: 'play' | 'stop' | 'playStop'
+}
+/**
+ * Defines a Trigger that is associated with whatever is selected
+ * in the current view (so it might be one or multiple Parts/Groups)
+ */
+export interface ApplicationTrigger extends AnyTrigger {
+	action: 'play' | 'stop' | 'playStop' | 'pause' | 'delete' | 'next' | 'previous'
 }
 
 export interface ActiveTrigger {

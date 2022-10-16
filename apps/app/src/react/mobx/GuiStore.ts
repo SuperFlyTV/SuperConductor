@@ -1,7 +1,13 @@
 import { deepClone } from '@shared/lib'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
-import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import {
+	CurrentSelectionAny,
+	CurrentSelectionGroup,
+	CurrentSelectionPart,
+	CurrentSelectionTimelineObj,
+} from '../../lib/GUI'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { IPCServer } from '../api/IPCServer'
 const { ipcRenderer } = window.require('electron')
 
@@ -43,25 +49,6 @@ export interface TimelineObjectMove {
 	moveId: null | string
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
-}
-export type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
-export interface CurrentSelectionBase {
-	type: 'group' | 'part' | 'timelineObj'
-}
-export interface CurrentSelectionGroup extends CurrentSelectionBase {
-	type: 'group'
-	groupId: string
-}
-export interface CurrentSelectionPart extends CurrentSelectionBase {
-	type: 'part'
-	groupId: string
-	partId: string
-}
-export interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
-	type: 'timelineObj'
-	groupId: string
-	partId: string
-	timelineObjId: string
 }
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'

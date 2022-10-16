@@ -1,13 +1,24 @@
 import { KeyDisplay, KeyDisplayTimeline, LoggerLike } from '@shared/api'
-import { assertNever } from '@shared/lib'
+import { assertNever, literal } from '@shared/lib'
 import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playhead'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
-import { Action, getAllActionsInRundowns } from '../lib/triggers/action'
-import { DefiningArea, getKeyDisplayForButtonActions, prepareTriggersAreaMap } from '../lib/triggers/keyDisplay'
+import {
+	ActionAny,
+	getAllApplicationActions,
+	getPartsWithRefInRundowns,
+	getAllActionsInParts,
+	ApplicationAction,
+} from '../lib/triggers/action'
+import {
+	DefiningArea,
+	getKeyDisplayForButtonActions,
+	prepareTriggersAreaMap,
+} from '../lib/triggers/keyDisplay/keyDisplay'
+import { SessionHandler } from './sessionHandler'
 
 export class TriggersHandler {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
@@ -30,7 +41,8 @@ export class TriggersHandler {
 		private log: LoggerLike,
 		private storage: StorageHandler,
 		private ipcServer: IPCServer,
-		private bridgeHandler: BridgeHandler
+		private bridgeHandler: BridgeHandler,
+		private session: SessionHandler
 	) {}
 
 	setKeyboardKeys(activeKeys: ActiveTriggers) {
@@ -72,7 +84,7 @@ export class TriggersHandler {
 
 		const usedTriggers: {
 			[fullIdentifier: string]: {
-				actions: Action[]
+				actions: ActionAny[]
 			}
 		} = {}
 
@@ -109,8 +121,29 @@ export class TriggersHandler {
 		}
 	}
 	/** Returns all Actions in all Rundowns */
-	private getActions(): Action[] {
-		return getAllActionsInRundowns(this.storage.getAllRundowns(), this.storage.getProject(), undefined)
+	private getActions(): ActionAny[] {
+		const allRundowns = this.storage.getAllRundowns()
+		const allParts = getPartsWithRefInRundowns(allRundowns)
+		const project = this.storage.getProject()
+		const appData = this.storage.getAppData()
+
+		const rundownActions = getAllActionsInParts(allParts, project, undefined)
+		const appActions = getAllApplicationActions(this.session.getSelection(), allParts, appData)
+
+		return [
+			...rundownActions.map((action) =>
+				literal<ActionAny>({
+					type: 'rundown',
+					...action,
+				})
+			),
+			...appActions.map((action) =>
+				literal<ActionAny>({
+					type: 'application',
+					...action,
+				})
+			),
+		]
 	}
 
 	private handleUpdate() {
@@ -179,46 +212,8 @@ export class TriggersHandler {
 					// We've found a match!
 
 					// Execute the action:
-					if (action.trigger.action === 'play') {
-						this.ipcServer
-							.playPart({
-								rundownId: action.rundownId,
-								groupId: action.group.id,
-								partId: action.part.id,
-							})
-							.catch(this.log.error)
-					} else if (action.trigger.action === 'stop') {
-						this.ipcServer
-							.stopPart({
-								rundownId: action.rundownId,
-								groupId: action.group.id,
-								partId: action.part.id,
-							})
-							.catch(this.log.error)
-					} else if (action.trigger.action === 'playStop') {
-						const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
-						const myPlayhead = playData.playheads[action.part.id]
-
-						let isPlaying: boolean
-						if (!myPlayhead) {
-							// The part is not playing
-							isPlaying = false
-						} else if (myPlayhead.partPauseTime !== undefined) {
-							// The part is paused, so we need to resume it:
-							isPlaying = false
-						} else {
-							isPlaying = true
-						}
-
-						if (isPlaying) {
-							this.ipcServer
-								.stopPart({
-									rundownId: action.rundownId,
-									groupId: action.group.id,
-									partId: action.part.id,
-								})
-								.catch(this.log.error)
-						} else {
+					if (action.type === 'rundown') {
+						if (action.trigger.action === 'play') {
 							this.ipcServer
 								.playPart({
 									rundownId: action.rundownId,
@@ -226,9 +221,69 @@ export class TriggersHandler {
 									partId: action.part.id,
 								})
 								.catch(this.log.error)
+						} else if (action.trigger.action === 'stop') {
+							this.ipcServer
+								.stopPart({
+									rundownId: action.rundownId,
+									groupId: action.group.id,
+									partId: action.part.id,
+								})
+								.catch(this.log.error)
+						} else if (action.trigger.action === 'playStop') {
+							const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
+							const myPlayhead = playData.playheads[action.part.id]
+
+							let isPlaying: boolean
+							if (!myPlayhead) {
+								// The part is not playing
+								isPlaying = false
+							} else if (myPlayhead.partPauseTime !== undefined) {
+								// The part is paused, so we need to resume it:
+								isPlaying = false
+							} else {
+								isPlaying = true
+							}
+
+							if (isPlaying) {
+								this.ipcServer
+									.stopPart({
+										rundownId: action.rundownId,
+										groupId: action.group.id,
+										partId: action.part.id,
+									})
+									.catch(this.log.error)
+							} else {
+								this.ipcServer
+									.playPart({
+										rundownId: action.rundownId,
+										groupId: action.group.id,
+										partId: action.part.id,
+									})
+									.catch(this.log.error)
+							}
+						} else {
+							assertNever(action.trigger.action)
+						}
+					} else if (action.type === 'application') {
+						if (action.trigger.action === 'play') {
+							this._appActionPlay(action)
+						} else if (action.trigger.action === 'stop') {
+							this._appActionStop(action)
+						} else if (action.trigger.action === 'playStop') {
+							this._appActionPlayStop(action)
+						} else if (action.trigger.action === 'pause') {
+							this._appActionPause(action)
+						} else if (action.trigger.action === 'delete') {
+							this._appActionDelete(action)
+						} else if (action.trigger.action === 'next') {
+							this._appActionNext(action)
+						} else if (action.trigger.action === 'previous') {
+							this._appActionPrevious(action)
+						} else {
+							assertNever(action.trigger.action)
 						}
 					} else {
-						assertNever(action.trigger.action)
+						assertNever(action)
 					}
 				}
 			}
@@ -270,6 +325,153 @@ export class TriggersHandler {
 			if (!area) return
 			area.identifiers.push(activeTrigger.identifier)
 			this.storage.updateProject(project)
+		}
+	}
+	private _appActionPlay(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.playGroup({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.playPart({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+						partId: selected.part.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
+		}
+	}
+	private _appActionStop(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.stopGroup({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.stopPart({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+						partId: selected.part.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
+		}
+	}
+	private _appActionPlayStop(action: ApplicationAction) {
+		// First, check if any is playing:
+		let isAnyPlaying = false
+		const groupIds = new Set<string>()
+		for (const selected of action.selected) {
+			if (!groupIds.has(selected.group.id)) {
+				groupIds.add(selected.group.id)
+
+				const playData = getGroupPlayData(selected.group.preparedPlayData ?? null)
+
+				if (selected.type === 'group') {
+					if (playData.anyPartIsPlaying && !playData.allPartsArePaused) {
+						isAnyPlaying = true
+					}
+				} else if (selected.type === 'part') {
+					const myPlayhead = playData.playheads[selected.part.id]
+					if (myPlayhead && !myPlayhead.partPauseTime) {
+						isAnyPlaying = true
+					}
+				} else assertNever(selected)
+			}
+		}
+
+		if (isAnyPlaying) {
+			this._appActionStop(action)
+		} else {
+			this._appActionPlay(action)
+		}
+	}
+	private _appActionPause(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.pauseGroup({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.pausePart({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+						partId: selected.part.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
+		}
+	}
+	private _appActionDelete(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.deleteGroup({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.deletePart({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+						partId: selected.part.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
+		}
+	}
+	private _appActionNext(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.playNext({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.playNext({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
+		}
+	}
+	private _appActionPrevious(action: ApplicationAction) {
+		for (const selected of action.selected) {
+			if (selected.type === 'group') {
+				this.ipcServer
+					.playPrev({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else if (selected.type === 'part') {
+				this.ipcServer
+					.playPrev({
+						rundownId: selected.rundownId,
+						groupId: selected.group.id,
+					})
+					.catch(this.log.error)
+			} else assertNever(selected)
 		}
 	}
 }

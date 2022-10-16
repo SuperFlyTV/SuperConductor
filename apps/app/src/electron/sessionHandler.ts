@@ -4,7 +4,8 @@ import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { AvailablePeripheral, PeripheralInfo } from '@shared/api'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { CurrentSelectionAny } from '../lib/GUI'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -23,6 +24,9 @@ export class SessionHandler extends EventEmitter {
 
 	private definingArea: DefiningArea | null = null
 	private definingAreaHasChanged = false
+
+	private selection: Readonly<CurrentSelectionAny[]> = [] // Not sent to GUI
+	private selectionHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
@@ -165,6 +169,16 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
+	updateSelection(selection: Readonly<CurrentSelectionAny[]>): void {
+		if (!_.isEqual(this.selection, selection)) {
+			this.selection = selection
+			this.selectionHasChanged = true
+			this.triggerUpdate()
+		}
+	}
+	getSelection(): Readonly<CurrentSelectionAny[]> {
+		return this.selection
+	}
 
 	private triggerUpdate() {
 		if (!this.emitTimeout) {
@@ -208,6 +222,10 @@ export class SessionHandler extends EventEmitter {
 		if (this.definingAreaHasChanged) {
 			this.emit('definingArea', this.definingArea)
 			this.definingAreaHasChanged = false
+		}
+		if (this.selectionHasChanged) {
+			this.emit('selection', this.selection)
+			this.selectionHasChanged = false
 		}
 	}
 }

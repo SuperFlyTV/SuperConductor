@@ -41,7 +41,7 @@ import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
 import { LoggerContext } from '../../../contexts/Logger'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
-import { TriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
+import { RundownTriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
 import { formatDuration } from '../../../../lib/timeLib'
@@ -370,7 +370,8 @@ export const PartView: React.FC<{
 				let moveToLayerId = timelineObjMove.hoveredLayerId
 				if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
 					const newLayerMapping = mappings[moveToLayerId]
-					if (!filterMapping(newLayerMapping, leaderObj?.obj)) {
+					// @TODO: Figure out how newLayerMapping can be undefined here.
+					if (!newLayerMapping || !filterMapping(newLayerMapping, leaderObj?.obj)) {
 						moveToLayerId = null
 					}
 				}
@@ -1141,7 +1142,7 @@ export const PartView: React.FC<{
 								horizontal: 'left',
 							}}
 						>
-							<TriggersSubmenu
+							<RundownTriggersSubmenu
 								rundownId={rundownId}
 								groupId={parentGroupId}
 								part={part}

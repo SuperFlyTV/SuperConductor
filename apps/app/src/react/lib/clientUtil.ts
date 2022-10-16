@@ -7,7 +7,7 @@ import {
 	CurrentSelectionPart,
 	CurrentSelectionTimelineObj,
 	CurrentSelectionAny,
-} from '../mobx/GuiStore'
+} from '../../lib/GUI'
 import { RundownsStore } from '../mobx/RundownsStore'
 
 export function sortSelected(
