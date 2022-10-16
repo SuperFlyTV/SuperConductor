@@ -1,3 +1,5 @@
+import { ApplicationTrigger } from '../rundown/Trigger'
+
 export interface AppData {
 	windowPosition: WindowPosition
 	version: {
@@ -16,6 +18,9 @@ export interface AppData {
 			name: string
 			open: boolean
 		}
+	}
+	triggers: {
+		[Key in ApplicationTrigger['action']]?: ApplicationTrigger[]
 	}
 }
 export type WindowPosition =

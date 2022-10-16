@@ -21,32 +21,16 @@ import { ConfirmationDialog } from '../../../util/ConfirmationDialog'
 export const ProjectPage: React.FC<{ project: Project }> = observer(function ProjectPage(props) {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
-	const rundownsStore = store.rundownsStore
 
 	const [renameProjectOpen, setRenameProjectOpen] = useState(false)
 	const handleRenameRundownClose = () => {
 		setRenameProjectOpen(false)
 	}
 
-	const handleReopen = (rundownId: string) => {
-		serverAPI.openRundown({ rundownId }).catch(handleError)
-	}
-
 	const [listProjectsOpen, setListProjectsOpen] = useState<{ name: string; id: string }[] | false>(false)
 	const handleListProjectsClose = () => {
 		setListProjectsOpen(false)
 	}
-
-	const [deleteRundownConfirmationOpen, setDeleteRundownConfirmationOpen] = useState<string | false>(false)
-	const handleDeleteRundown = useCallback(() => {
-		if (deleteRundownConfirmationOpen) {
-			serverAPI
-				.deleteRundown({
-					rundownId: deleteRundownConfirmationOpen,
-				})
-				.catch(handleError)
-		}
-	}, [handleError, serverAPI, deleteRundownConfirmationOpen])
 
 	return (
 		<ProjectPageLayout
@@ -92,48 +76,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 				</>
 			}
 		>
-			<RoundedSection title="Rundown archive">
-				<ScList
-					list={rundownsStore.closedRundowns.map((closedRundown) => {
-						return {
-							id: closedRundown.rundownId,
-							header: (
-								<div className="rundown-header-item">
-									<ScListItemLabel title={closedRundown.name} />
-									<div className="controls">
-										<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
-										<TextBtn
-											label="Permanently delete"
-											style="danger"
-											onClick={() => {
-												setDeleteRundownConfirmationOpen(closedRundown.rundownId)
-											}}
-										/>
-									</div>
-								</div>
-							),
-						}
-					})}
-				/>
-				{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
-			</RoundedSection>
-
-			<ConfirmationDialog
-				open={!!deleteRundownConfirmationOpen}
-				title="Delete Rundown"
-				acceptLabel="Delete"
-				onAccepted={() => {
-					handleDeleteRundown()
-					setDeleteRundownConfirmationOpen(false)
-				}}
-				onDiscarded={() => {
-					setDeleteRundownConfirmationOpen(false)
-				}}
-			>
-				<div>Are you sure you want to delete the Rundown?</div>
-			</ConfirmationDialog>
-
-			<div className="rundowns-page"></div>
+			<RundownArchive />
 
 			{/* Rename Project dialog */}
 			<Formik
@@ -201,7 +144,7 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 				// })}
 				enableReinitialize={true}
 				onSubmit={(values, actions) => {
-					serverAPI.openProject(values.projectId).catch(handleError)
+					serverAPI.openProject({ projectId: values.projectId }).catch(handleError)
 					handleListProjectsClose()
 					actions.setSubmitting(false)
 					actions.resetForm()
@@ -244,5 +187,79 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 				}}
 			</Formik>
 		</ProjectPageLayout>
+	)
+})
+
+const RundownArchive: React.FC = observer(function RundownArchive() {
+	const serverAPI = useContext(IPCServerContext)
+	const { handleError } = useContext(ErrorHandlerContext)
+
+	const guiStore = store.guiStore
+	const rundownsStore = store.rundownsStore
+
+	const handleReopen = (rundownId: string) => {
+		serverAPI
+			.openRundown({ rundownId })
+			.then(() => {
+				store.rundownsStore.setCurrentRundown(rundownId)
+			})
+			.catch(handleError)
+		guiStore.activeTabId = rundownId
+	}
+
+	const [deleteRundownConfirmationOpen, setDeleteRundownConfirmationOpen] = useState<string | false>(false)
+	const handleDeleteRundown = useCallback(() => {
+		if (deleteRundownConfirmationOpen) {
+			serverAPI
+				.deleteRundown({
+					rundownId: deleteRundownConfirmationOpen,
+				})
+				.catch(handleError)
+		}
+	}, [handleError, serverAPI, deleteRundownConfirmationOpen])
+
+	return (
+		<RoundedSection
+			title="Rundown archive"
+			help="When you close a Rundown Tab, the Rundown move into this list, to rest and sleep :)"
+		>
+			<ScList
+				list={rundownsStore.closedRundowns.map((closedRundown) => {
+					return {
+						id: closedRundown.rundownId,
+						header: (
+							<div className="rundown-header-item">
+								<ScListItemLabel title={closedRundown.name} />
+								<div className="controls">
+									<TextBtn label="Reopen" onClick={() => handleReopen(closedRundown.rundownId)} />
+									<TextBtn
+										label="Permanently delete"
+										style="danger"
+										onClick={() => {
+											setDeleteRundownConfirmationOpen(closedRundown.rundownId)
+										}}
+									/>
+								</div>
+							</div>
+						),
+					}
+				})}
+			/>
+			{rundownsStore.closedRundowns.length < 1 && <div className="central">No rundowns in archive.</div>}
+			<ConfirmationDialog
+				open={!!deleteRundownConfirmationOpen}
+				title="Delete Rundown"
+				acceptLabel="Delete"
+				onAccepted={() => {
+					handleDeleteRundown()
+					setDeleteRundownConfirmationOpen(false)
+				}}
+				onDiscarded={() => {
+					setDeleteRundownConfirmationOpen(false)
+				}}
+			>
+				<div>Are you sure you want to delete the Rundown?</div>
+			</ConfirmationDialog>
+		</RoundedSection>
 	)
 })

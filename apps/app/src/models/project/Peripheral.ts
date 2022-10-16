@@ -1,5 +1,5 @@
 import { PeripheralInfo } from '@shared/api'
-import { Trigger } from '../rundown/Trigger'
+import { RundownTrigger } from '../rundown/Trigger'
 
 export interface PeripheralStatus {
 	id: string
@@ -25,5 +25,5 @@ export interface PeripheralArea {
 	name: string
 	identifiers: string[]
 	assignedToGroupId: string | undefined
-	action: Trigger['action']
+	action: RundownTrigger['action']
 }

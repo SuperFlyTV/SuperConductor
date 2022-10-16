@@ -6,7 +6,7 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
-import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ClientSideLogger } from './logger'
 
 /** This class is used client-side, to handle messages from the server */

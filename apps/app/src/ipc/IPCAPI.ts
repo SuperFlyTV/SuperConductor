@@ -8,9 +8,10 @@ import { Part } from '../models/rundown/Part'
 import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
-import { ActiveTrigger, ActiveTriggers, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ActiveTriggers, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { LogLevel } from '@shared/api'
 import { MoveTarget } from '../lib/util'
+import { CurrentSelectionAny } from '../lib/GUI'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -35,7 +36,6 @@ export const enum ActionDescription {
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
 	ToggleGroupDisable = 'toggle group disable',
 	ToggleGroupLock = 'toggle group lock',
-	ToggleGroupCollapse = 'toggle group collapse',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -46,7 +46,10 @@ export const enum ActionDescription {
 	DuplicateGroup = 'duplicate group',
 	DuplicatePart = 'duplicate part',
 	AddPeripheralArea = 'Add button area',
+	UpdatePeripheralArea = 'Update button area',
+	RemovePeripheralArea = 'Remove button area',
 	AssignAreaToGroup = 'Assign Area to Group',
+	SetApplicationTrigger = 'Assign trigger',
 }
 
 export type UndoFunction = () => Promise<void> | void
@@ -78,11 +81,12 @@ export interface IPCServerMethods {
 	acknowledgeSeenVersion: () => void
 	acknowledgeUserAgreement: (arg: { agreementVersion: string }) => void
 
+	updateGUISelection: (arg: { selection: Readonly<CurrentSelectionAny[]> }) => void
 	exportProject: () => void
 	importProject: () => void
 	newProject: () => void
 	listProjects: () => { name: string; id: string }[]
-	openProject: (projectId: string) => void
+	openProject: (arg: { projectId: string }) => void
 
 	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
 	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
@@ -91,7 +95,7 @@ export interface IPCServerMethods {
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}) => void
 	stopGroup: (arg: { rundownId: string; groupId: string }) => void
@@ -215,6 +219,11 @@ export interface IPCServerMethods {
 
 	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
 	finishDefiningArea: () => void
+	setApplicationTrigger: (arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
+		triggerIndex: number | null
+	}) => void
 }
 export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void

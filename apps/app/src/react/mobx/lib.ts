@@ -36,7 +36,7 @@ export function gebugCustomMemos(enable = true) {
 export function useMemoComputedObject<T extends object | any[] | string | number | boolean | null | undefined>(
 	fcn: (prev: T | undefined) => T,
 	deps: React.DependencyList,
-	/** true: only update if the value has changed. false: update if identify changed */
+	/** true: only update if the value has changed. false: update if identity has changed */
 	equalValue?: boolean
 ): T {
 	const debug = DEBUG

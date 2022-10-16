@@ -29,14 +29,13 @@ import { store } from './mobx/store'
 import { HomePage } from './components/pages/homePage/HomePage'
 import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
 import { SplashScreen } from './components/SplashScreen'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { ConfirmationDialog } from './components/util/ConfirmationDialog'
 import { LoggerContext } from './contexts/Logger'
 import { ClientSideLogger } from './api/logger'
-import { useMemoComputedValue } from './mobx/lib'
-import { Action, getAllActionsInParts } from '../lib/triggers/action'
-import { PartWithRef } from '../lib/util'
-import { assertNever, stringifyErrorInner } from '@shared/lib'
+import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
+import { getAllActionsInParts, ActionAny, getAllApplicationActions } from '../lib/triggers/action'
+import { assertNever, deepClone, stringifyErrorInner } from '@shared/lib'
 import { setupClipboard } from './api/clipboard/clipboard'
 import { ClipBoardContext } from './api/clipboard/lib'
 import { UserAgreementScreen } from './components/UserAgreementScreen'
@@ -249,6 +248,12 @@ export const App = observer(function App() {
 
 	const gui = store.guiStore
 
+	useMemoComputedValue(() => {
+		// Report any changes to the selection to the backend,
+		// to that actions are handled properly:
+		serverAPI.updateGUISelection({ selection: gui.selected }).catch(handleError)
+	}, [gui.selected])
+
 	const handleClickAnywhere: React.MouseEventHandler<HTMLDivElement> = (e) => {
 		const tarEl = e.target as HTMLElement
 
@@ -282,21 +287,22 @@ export const App = observer(function App() {
 	const [userAgreementScreenOpen, setUserAgreementScreenOpen] = useState(false)
 	/** Will be set to true after appStore.version has been set and initially checked*/
 	const splashScreenInitial = useRef(false)
-	useEffect(() => {
+	useMemoComputedValue(() => {
+		const appData = appStore.appData
 		// Check upon startup if the splash screen should be displayed:
-		if (appStore.version && splashScreenInitial.current === false) {
+		if (appData && splashScreenInitial.current === false) {
 			// The initial data has been set
 			splashScreenInitial.current = true
 
-			if (!appStore.version.seenVersion || appStore.version.seenVersion !== appStore.version.currentVersion) {
+			if (!appData.version.seenVersion || appData.version.seenVersion !== appData.version.currentVersion) {
 				setSplashScreenOpen(true)
 			}
-			if (appStore.userAgreement !== USER_AGREEMENT_VERSION) {
+			if (appData.userAgreement !== USER_AGREEMENT_VERSION) {
 				setUserAgreementScreenOpen(true)
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [appStore.version])
+	}, [appStore])
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
@@ -475,42 +481,48 @@ export const App = observer(function App() {
 	useMemoComputedValue(() => {
 		if (!project) return
 
-		const newButtonActions = new Map<string, Action[]>()
+		/** All Parts in all open rundowns */
+		const allParts = store.rundownsStore.allPartsWithRefs
 
-		const allRundownIds = Object.keys(store.rundownsStore.rundowns ?? {})
+		const buttonActions = new Map<string, ActionAny[]>()
+		for (const action of getAllActionsInParts(allParts, project, store.appStore.peripherals)) {
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				let newButtonAction = buttonActions.get(fullIdentifier)
+				if (!newButtonAction) {
+					newButtonAction = []
+					buttonActions.set(fullIdentifier, newButtonAction)
+				}
+				newButtonAction.push({
+					type: 'rundown',
+					...action,
+				})
+			}
+		}
+		store.rundownsStore.updateRundownButtonActions(buttonActions)
+	}, [project])
+	useMemoComputedValue(() => {
+		const appData = store.appStore.appData
+		if (!appData) return
 
 		/** All Parts in all open rundowns */
-		const allParts: PartWithRef[] = []
-		for (const rundownId of allRundownIds) {
-			if (!store.rundownsStore.hasRundown(rundownId)) continue
-			const rundown = store.rundownsStore.getRundown(rundownId)
-			for (const groupId of rundown.groupIds) {
-				if (store.rundownsStore.hasGroup(groupId)) {
-					const group = store.rundownsStore.getGroupWithParts(groupId)
-					for (const part of group.parts) {
-						allParts.push({
-							rundown,
-							group,
-							part,
-						})
-					}
-				}
-			}
-		}
+		const allParts = store.rundownsStore.allPartsWithRefs
 
-		const allActions = getAllActionsInParts(allParts, project, store.appStore.peripherals)
-		for (const action of allActions) {
+		const buttonActions = new Map<string, ActionAny[]>()
+		for (const action of getAllApplicationActions(gui.selected, allParts, appData)) {
 			const joinedIdentifier = action.trigger.fullIdentifiers.join('+')
-			let newButtonAction = newButtonActions.get(joinedIdentifier)
+			let newButtonAction = buttonActions.get(joinedIdentifier)
 			if (!newButtonAction) {
 				newButtonAction = []
-				newButtonActions.set(joinedIdentifier, newButtonAction)
+				buttonActions.set(joinedIdentifier, newButtonAction)
 			}
-			newButtonAction.push(action)
+			newButtonAction.push({
+				type: 'application',
+				...action,
+			})
 		}
 
-		store.rundownsStore.updateAllButtonActions(newButtonActions)
-	}, [project])
+		store.rundownsStore.updateProjectButtonActions(buttonActions)
+	}, [])
 
 	const clipBoardContext = useRef<ClipBoardContext>({
 		handleError,
@@ -529,6 +541,13 @@ export const App = observer(function App() {
 			triggers,
 		}
 	}, [triggers])
+	const appDataVersion = useMemoComputedObject(
+		() => {
+			return deepClone(appStore.appData?.version)
+		},
+		[appStore],
+		true
+	)
 
 	if (!project || !sorensenInitialized) {
 		return (
@@ -554,8 +573,8 @@ export const App = observer(function App() {
 										// Splash screens:
 										splashScreenOpen ? (
 											<SplashScreen
-												seenVersion={appStore.version?.seenVersion}
-												currentVersion={appStore.version?.currentVersion}
+												seenVersion={appDataVersion?.seenVersion}
+												currentVersion={appDataVersion?.currentVersion}
 												onClose={onSplashScreenClose}
 											/>
 										) : userAgreementScreenOpen ? (

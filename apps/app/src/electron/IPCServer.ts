@@ -39,6 +39,7 @@ import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
+import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import {
@@ -48,15 +49,16 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
-import { DefiningArea } from '..//lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
+import { CurrentSelectionAny } from '../lib/GUI'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -296,6 +298,9 @@ export class IPCServer
 			this.callbacks.onAgreeToUserAgreement()
 		}
 	}
+	async updateGUISelection(arg: { selection: Readonly<CurrentSelectionAny[]> }): Promise<void> {
+		this.session.updateSelection(arg.selection)
+	}
 
 	async exportProject(): Promise<void> {
 		const result = await dialog.showSaveDialog({
@@ -349,8 +354,8 @@ export class IPCServer
 	async listProjects(): Promise<{ name: string; id: string }[]> {
 		return this.storage.listProjects()
 	}
-	async openProject(projectId: string): Promise<void> {
-		return this.storage.openProject(projectId)
+	async openProject(arg: { projectId: string }): Promise<void> {
+		return this.storage.openProject(arg.projectId)
 	}
 
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
@@ -491,7 +496,7 @@ export class IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
@@ -2050,11 +2055,6 @@ export class IPCServer
 			description: ActionDescription.CloseRundown,
 		}
 	}
-	async listRundowns(arg: {
-		projectId: string
-	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
-		return this.storage.listRundownsInProject(arg.projectId)
-	}
 
 	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
 		const rundown = this.storage.getRundown(arg.rundownId)
@@ -2257,7 +2257,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
 	async updatePeripheralArea(data: {
@@ -2300,7 +2300,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.UpdatePeripheralArea,
 		}
 	}
 	async assignAreaToGroup(arg: {
@@ -2362,12 +2362,55 @@ export class IPCServer
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
+	async setApplicationTrigger(arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
+		triggerIndex: number | null
+	}): Promise<UndoableResult<void> | undefined> {
+		const appData = this.storage.getAppData()
+
+		const originalTriggers = deepClone(appData.triggers)
+
+		let triggers: ApplicationTrigger[] = appData.triggers[arg.triggerAction] ?? []
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				// Remove
+				triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					triggers.push(arg.trigger)
+				}
+			}
+		}
+		// Save changes:
+		appData.triggers[arg.triggerAction] = triggers
+
+		this._saveUpdates({ appData, noEffectOnPlayout: true })
+		return {
+			undo: () => {
+				const appData = this.storage.getAppData()
+				appData.triggers = originalTriggers
+				this._saveUpdates({ appData, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.SetApplicationTrigger,
+		}
+	}
 
 	/** Save updates to various data sets.
 	 * Use this last when there has been any changes to data.
 	 * This will also trigger updates of the playout (timeline), perihperals etc..
 	 */
 	private _saveUpdates(updates: {
+		appData?: AppData
+
 		project?: Project
 
 		rundownId?: string
@@ -2379,6 +2422,9 @@ export class IPCServer
 
 		noEffectOnPlayout?: boolean
 	}) {
+		if (updates.appData) {
+			this.storage.updateAppData(updates.appData)
+		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)
 		}

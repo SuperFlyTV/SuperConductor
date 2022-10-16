@@ -49,6 +49,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	acknowledgeUserAgreement(...args: ServerArgs<'acknowledgeUserAgreement'>) {
 		return this.invokeServerMethod('acknowledgeUserAgreement', ...args)
 	}
+	updateGUISelection(...args: ServerArgs<'updateGUISelection'>) {
+		return this.invokeServerMethod('updateGUISelection', ...args)
+	}
 	exportProject(...args: ServerArgs<'exportProject'>) {
 		return this.invokeServerMethod('exportProject', ...args)
 	}
@@ -213,5 +216,8 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
+	}
+	setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>) {
+		return this.invokeServerMethod('setApplicationTrigger', ...args)
 	}
 }
