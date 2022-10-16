@@ -10,6 +10,7 @@ import { DeviceStatuses } from './deviceStatuses/DeviceStatuses'
 import { Tabs } from './tabs/Tabs'
 
 import './style.scss'
+import { store } from '../../mobx/store'
 
 export const HeaderBar: React.FC = observer(function HeaderBar() {
 	const serverAPI = useContext(IPCServerContext)
@@ -18,7 +19,15 @@ export const HeaderBar: React.FC = observer(function HeaderBar() {
 	const [rundownToRename, setRundownToRename] = useState<{ rundownId: string; name: string }>()
 
 	const handleRename = (rundownId: string, newName: string) => {
-		serverAPI.renameRundown({ rundownId, newName }).catch(handleError)
+		serverAPI
+			.renameRundown({ rundownId, newName })
+			.then((newRundownId) => {
+				setTimeout(() => {
+					store.rundownsStore.setCurrentRundown(newRundownId)
+				}, 100)
+			})
+			.catch(handleError)
+		// store.guiStore.activeTabId
 	}
 
 	const handleRenameRundownClose = () => {

@@ -20,7 +20,14 @@ export const NewRundownPage = () => {
 	const [newRundownOpen, setNewRundownOpen] = useState(false)
 
 	const handleCreateNewRundown = (rundownName: string) => {
-		serverAPI.newRundown({ name: rundownName }).catch(handleError)
+		serverAPI
+			.newRundown({ name: rundownName })
+			.then((rundownId) => {
+				setTimeout(() => {
+					store.rundownsStore.setCurrentRundown(rundownId)
+				}, 100)
+			})
+			.catch(handleError)
 	}
 
 	const handleCloseCreateNewRundown = () => setNewRundownOpen(false)
