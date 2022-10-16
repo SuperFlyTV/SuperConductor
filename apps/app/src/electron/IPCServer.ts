@@ -32,7 +32,7 @@ import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { ExportProjectData, StorageHandler } from './storageHandler'
+import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
@@ -302,7 +302,7 @@ export class IPCServer
 
 		const result = await dialog.showSaveDialog({
 			title: 'Export Project',
-			// defaultPath: 'abc.project.json',
+			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
 			buttonLabel: 'Save',
 			filters: [
 				{ name: 'Project files', extensions: ['project.json'] },
