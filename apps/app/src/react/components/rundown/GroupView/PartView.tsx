@@ -872,7 +872,9 @@ export const PartView: React.FC<{
 	}, [store.triggersStore.failedGlobalTriggers])
 	const anyGlobalTriggerFailed = useMemo(() => {
 		return allActionsForPart.some((action) =>
-			failedGlobalShortcuts.has(action.trigger.fullIdentifiers.map(convertSorensenToElectron).join('+'))
+			failedGlobalShortcuts.has(
+				action.trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
+			)
 		)
 	}, [allActionsForPart, failedGlobalShortcuts])
 

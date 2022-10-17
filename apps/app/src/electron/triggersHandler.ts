@@ -159,9 +159,9 @@ export class TriggersHandler extends EventEmitter {
 		}
 	}
 	/** Returns all global keyboard actions, grouped by their Electron key combination */
-	private getGlobalActionsGroupedByIdentifier(): { [key: string]: ActionAny[] } {
+	private getGlobalActionsGroupedByIdentifier(): { [identifier: string]: ActionAny[] } {
 		const allActions = this.getActions()
-		const actionsGroupedByIdentifier: { [key: string]: ActionAny[] } = {}
+		const actionsGroupedByIdentifier: { [identifier: string]: ActionAny[] } = {}
 
 		for (const action of allActions) {
 			// If this trigger is not global, it gets handled elsewhere.
@@ -169,7 +169,16 @@ export class TriggersHandler extends EventEmitter {
 				continue
 			}
 
-			const translatedIdentifier = action.trigger.fullIdentifiers.map(convertSorensenToElectron).join('+')
+			let isSupported = true
+			let translatedIdentifiers: string[] = []
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				const converted = convertSorensenToElectron(fullIdentifier)
+				if (converted === null) isSupported = false
+				else translatedIdentifiers.push(converted)
+			}
+			if (!isSupported) continue // If the trigger contains any unsupported keys, don't regirster it
+
+			const translatedIdentifier = translatedIdentifiers.join('+')
 
 			if (!(translatedIdentifier in actionsGroupedByIdentifier)) {
 				actionsGroupedByIdentifier[translatedIdentifier] = []

@@ -73,7 +73,9 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 				<ScList
 					list={Object.entries(appActions).map(([actionType, appAction]) => {
 						const anyGlobalTriggerFailed = appAction.triggers.some((trigger) =>
-							failedGlobalShortcuts.has(trigger.fullIdentifiers.map(convertSorensenToElectron).join('+'))
+							failedGlobalShortcuts.has(
+								trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
+							)
 						)
 						return {
 							id: actionType,

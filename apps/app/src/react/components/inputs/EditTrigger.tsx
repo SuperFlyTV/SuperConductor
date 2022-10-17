@@ -58,7 +58,7 @@ export const EditRundownTrigger: React.FC<{
 		return store.triggersStore.failedGlobalTriggers
 	}, [store.triggersStore.failedGlobalTriggers])
 	const electronAccelerator = useMemo(() => {
-		return trigger.fullIdentifiers.map(convertSorensenToElectron).join('+')
+		return trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
 	}, [trigger.fullIdentifiers])
 
 	return (
@@ -146,7 +146,7 @@ export const EditApplicationTrigger: React.FC<{
 		return store.triggersStore.failedGlobalTriggers
 	}, [store.triggersStore.failedGlobalTriggers])
 	const electronAccelerator = useMemo(() => {
-		return trigger.fullIdentifiers.map(convertSorensenToElectron).join('+')
+		return trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
 	}, [trigger.fullIdentifiers])
 
 	return (
