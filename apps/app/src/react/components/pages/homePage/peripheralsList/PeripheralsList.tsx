@@ -15,7 +15,13 @@ export const PeripheralsList: React.FC<{
 	const appStore = store.appStore
 
 	if (Object.keys(props.statuses).length === 0) {
-		return <div className="central">There are no peripherals.</div>
+		return (
+			<div className="central">
+				No panels connected.
+				<br />
+				Connected Streamdeck or X-keys panels will appear here.
+			</div>
+		)
 	}
 
 	return (

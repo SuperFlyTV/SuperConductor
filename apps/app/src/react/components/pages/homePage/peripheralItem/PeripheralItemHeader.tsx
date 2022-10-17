@@ -39,16 +39,23 @@ export const PeripheralItemHeader: React.FC<{
 				<DeviceIcon type={status.type} />
 			</div>
 			<ScListItemLabel title={status.name} />
-			<label>Connect&nbsp;&nbsp;</label>
-			<div className="sc-switch">
-				<Toggle
-					disabled={disableManualConnectToggle}
-					checked={!!settings?.manualConnect}
-					onChange={() => {
-						togglePeripheralManualConnect(settings)
-					}}
-				/>
-			</div>
+
+			{autoConnectToAllPeripherals ? (
+				<label>Auto-connected</label>
+			) : (
+				<>
+					<label>Connect&nbsp;&nbsp;</label>
+					<div className="sc-switch">
+						<Toggle
+							disabled={autoConnectToAllPeripherals}
+							checked={!!settings?.manualConnect}
+							onChange={() => {
+								togglePeripheralManualConnect(settings)
+							}}
+						/>
+					</div>
+				</>
+			)}
 		</div>
 	)
 }
