@@ -7,7 +7,7 @@ import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { PeripheralItemHeader } from '../peripheralItem/PeripheralItemHeader'
 
 export const PeripheralsList: React.FC<{
-	disableManualConnectToggles: boolean
+	autoConnectToAllPeripherals: boolean
 	bridgeId: string
 	statuses: BridgeStatus['peripherals']
 	settings: Bridge['settings']['peripherals']
@@ -38,7 +38,7 @@ export const PeripheralsList: React.FC<{
 						header: (
 							<PeripheralItemHeader
 								key={peripheralId}
-								disableManualConnectToggle={props.disableManualConnectToggles}
+								autoConnectToAllPeripherals={props.autoConnectToAllPeripherals}
 								settings={peripheralSettings}
 								status={status}
 								otherStatus={otherStatus}

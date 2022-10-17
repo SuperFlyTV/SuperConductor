@@ -11,11 +11,11 @@ import 'react-toggle/style.css'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 
 export const PeripheralItemHeader: React.FC<{
-	disableManualConnectToggle: boolean
+	autoConnectToAllPeripherals: boolean
 	settings: PeripheralSettingsAny
 	status: KnownPeripheral
 	otherStatus?: PeripheralStatus
-}> = ({ disableManualConnectToggle, settings, status, otherStatus }) => {
+}> = ({ autoConnectToAllPeripherals, settings, status, otherStatus }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
 	const { handleError } = useContext(ErrorHandlerContext)

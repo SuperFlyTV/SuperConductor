@@ -140,7 +140,7 @@ export const BridgeItemContent: React.FC<{
 				}
 			>
 				<PeripheralsList
-					disableManualConnectToggles={props.bridge.settings.autoConnectToAllPeripherals}
+					autoConnectToAllPeripherals={props.bridge.settings.autoConnectToAllPeripherals}
 					bridgeId={props.bridge.id}
 					statuses={props.bridgeStatus.peripherals}
 					settings={props.bridge.settings.peripherals}
