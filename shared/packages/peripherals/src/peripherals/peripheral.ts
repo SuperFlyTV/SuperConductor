@@ -30,8 +30,6 @@ export abstract class Peripheral extends EventEmitter {
 	public connected = false
 	/** True if in the process of connecting to the peripheral */
 	public initializing = false
-	/** True if the peripheral has connected at least once before */
-	public hasConnected = false
 
 	public setKeyDisplay(identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
 		if (this.trackers[identifier]) {

@@ -268,7 +268,6 @@ export class PeripheralsHandler extends EventEmitter {
 		if (shouldConnect) {
 			const newPeripheral = this.createPeripheralFromAvailableInfo(id, info)
 			await newPeripheral.init()
-			newPeripheral.hasConnected = true
 			this.handleNewlyConnectedPeripheral(newPeripheral)
 		}
 	}
