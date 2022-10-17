@@ -1,5 +1,6 @@
+import { KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
-import { PeripheralSettings } from './Peripheral'
+import { PeripheralArea } from './Peripheral'
 
 export interface Bridge {
 	id: string
@@ -13,10 +14,14 @@ export interface Bridge {
 		devices: {
 			[deviceId: string]: DeviceOptionsAny
 		}
+		peripherals: {
+			[peripheralId: string]: PeripheralSettingsAny
+		}
+		autoConnectToAllPeripherals: boolean
 	}
 
-	peripheralSettings: {
-		[peripheralId: string]: PeripheralSettings
+	clientSidePeripheralSettings: {
+		[peripheralId: string]: BridgePeripheralSettings
 	}
 }
 
@@ -25,13 +30,27 @@ export interface BridgeStatus {
 
 	devices: {
 		[deviceId: string]: BridgeDevice
-	} // todo: add device statuses?
+	}
+
+	peripherals: {
+		[peripheralId: string]: BridgePeripheral
+	}
 }
 
 export interface BridgeDevice {
 	connectionId: number
 	ok: boolean
 	message: string
+}
+
+export type BridgePeripheral = KnownPeripheral
+
+export interface BridgePeripheralSettings {
+	// overrideName?: string
+
+	areas: {
+		[areaId: string]: PeripheralArea
+	}
 }
 
 export const INTERNAL_BRIDGE_ID = '__INTERNAL__'

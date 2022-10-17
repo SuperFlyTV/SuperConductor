@@ -986,7 +986,23 @@ export class StorageHandler extends EventEmitter {
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
 		for (const bridge of Object.values(project.bridges)) {
-			if (!bridge.peripheralSettings) bridge.peripheralSettings = {}
+			// This object was renamed on 2022-10-16 to avoid confusion.
+			if (!bridge.clientSidePeripheralSettings) {
+				if ((bridge as any).peripheralSettings) {
+					bridge.clientSidePeripheralSettings = (bridge as any).peripheralSettings
+				} else {
+					bridge.clientSidePeripheralSettings = {}
+				}
+			}
+			delete (bridge as any).peripheralSettings
+
+			// Added on 2022-10-16
+			if (typeof bridge.settings.autoConnectToAllPeripherals !== 'boolean') {
+				bridge.settings.autoConnectToAllPeripherals = true
+			}
+
+			// Added on 2022-10-16
+			if (!bridge.settings.peripherals) bridge.settings.peripherals = {}
 		}
 		if (!project.deviceNames) project.deviceNames = {}
 	}

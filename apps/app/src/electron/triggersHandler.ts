@@ -19,6 +19,7 @@ import {
 	prepareTriggersAreaMap,
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
+import { PeripheralStatus } from '../models/project/Peripheral'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
 import { convertSorensenToElectron } from '../lib/triggers/identifiers'
@@ -95,6 +96,22 @@ export class TriggersHandler extends EventEmitter {
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 	}
+	onPeripheralStatus(peripheralId: string, peripheral: PeripheralStatus | null) {
+		if (!peripheral?.status.connected) {
+			// The peripheral has been disconnected
+
+			// Delete the sent keyDisplays for that device,
+			// so that updates will be sent later if it reconnects:
+			for (const fullIdentifier of Object.keys(this.sentkeyDisplays)) {
+				if (fullIdentifier.startsWith(peripheralId)) {
+					delete this.sentkeyDisplays[fullIdentifier]
+				}
+			}
+		} else {
+			// The device is connected
+			this.triggerUpdatePeripherals()
+		}
+	}
 	private updatePeripherals(): void {
 		const actions = this.getActions()
 		const project = this.storage.getProject()
@@ -124,16 +141,20 @@ export class TriggersHandler extends EventEmitter {
 		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
 			const used = usedTriggers[fullIdentifier]
 
-			const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForButtonActions(
-				trigger,
-				triggersAreaMap,
-				this.definingArea,
-				used?.actions
-			)
+			const peripheralStatus = this.session.getPeripheralStatus(trigger.bridgeId, trigger.deviceId)
 
-			if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
-				this.sentkeyDisplays[fullIdentifier] = keyDisplay
-				setKeyDisplay(this.bridgeHandler, trigger, keyDisplay)
+			if (peripheralStatus?.status.connected) {
+				const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForButtonActions(
+					trigger,
+					triggersAreaMap,
+					this.definingArea,
+					used?.actions
+				)
+
+				if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+					this.sentkeyDisplays[fullIdentifier] = keyDisplay
+					setKeyDisplay(this.bridgeHandler, trigger, keyDisplay)
+				}
 			}
 		}
 	}
@@ -416,7 +437,7 @@ export class TriggersHandler extends EventEmitter {
 		// Check if the trigger is already in another
 
 		let found = false
-		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
 			if (found) break
 
 			if (peripheralId === definingArea.deviceId) {
@@ -431,7 +452,7 @@ export class TriggersHandler extends EventEmitter {
 
 		if (!found) {
 			// Add the trigger to the area:
-			const peripheralSettings = bridge.peripheralSettings[definingArea.deviceId]
+			const peripheralSettings = bridge.clientSidePeripheralSettings[definingArea.deviceId]
 			if (!peripheralSettings) return
 			const area = peripheralSettings.areas[definingArea.areaId]
 			if (!area) return

@@ -3,6 +3,8 @@ import { dialog } from 'electron'
 import {
 	allowAddingResourceToLayer,
 	allowMovingPartIntoGroup,
+	copyGroup,
+	copyPart,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -12,7 +14,6 @@ import {
 	findTimelineObj,
 	findTimelineObjIndex,
 	findTimelineObjInRundown,
-	generateNewTimelineObjIds,
 	getMappingName,
 	getNextPartIndex,
 	getPositionFromTarget,
@@ -52,13 +53,14 @@ import { getDefaultGroup, getDefaultPart } from './defaults'
 import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
-import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
+import { PeripheralArea } from '../models/project/Peripheral'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
+import { BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
 
 type UndoLedger = Action[]
@@ -1331,9 +1333,7 @@ export class IPCServer
 		const { rundown, group, part } = this.getPart(arg)
 
 		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
-		const copy = deepClone(part)
-		copy.id = shortID()
-		copy.timeline = generateNewTimelineObjIds(copy.timeline)
+		const copy = copyPart(part)
 
 		let newGroup: Group | undefined = undefined
 		if (group.transparent) {
@@ -1425,12 +1425,7 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Make a copy of the group and give it and all its children unique IDs.
-		const groupCopy = deepClone(group)
-		groupCopy.id = shortID()
-		for (const part of groupCopy.parts) {
-			part.id = shortID()
-			part.timeline = generateNewTimelineObjIds(part.timeline)
-		}
+		const groupCopy = copyGroup(group)
 
 		// Insert the copy just below the original.
 		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
@@ -2192,9 +2187,11 @@ export class IPCServer
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.peripheralSettings[arg.deviceId] as PeripheralSettings | undefined
+		let peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (!peripheralSettings) {
-			bridge.peripheralSettings[arg.deviceId] = peripheralSettings = {
+			bridge.clientSidePeripheralSettings[arg.deviceId] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2215,7 +2212,9 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[arg.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[arg.deviceId] as PeripheralSettings | undefined
+					const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+						| BridgePeripheralSettings
+						| undefined
 					if (!peripheralSettings) return
 					delete peripheralSettings.areas[newAreaId]
 
@@ -2236,7 +2235,9 @@ export class IPCServer
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
@@ -2250,8 +2251,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2275,7 +2276,9 @@ export class IPCServer
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			orgArea = deepClone(peripheralSettings.areas[data.areaId])
 
@@ -2293,8 +2296,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2316,7 +2319,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2331,7 +2334,7 @@ export class IPCServer
 
 				const bridge = project.bridges[arg.bridgeId]
 				if (!bridge) return
-				const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+				const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 				if (!peripheralSettings) return
 				const area = peripheralSettings.areas[arg.areaId]
 				if (!area) return
@@ -2347,7 +2350,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
