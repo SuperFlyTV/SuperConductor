@@ -141,8 +141,10 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 							options: { host: '127.0.0.1', port: 5250 },
 						},
 					},
+					peripherals: {},
+					autoConnectToAllPeripherals: true,
 				},
-				peripheralSettings: {},
+				clientSidePeripheralSettings: {},
 			},
 		},
 

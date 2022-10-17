@@ -36,15 +36,26 @@ export class BaseBridge {
 
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
+			this.peripheralsHandlerSend({
+				type: 'KnownPeripherals',
+				peripherals: peripheralsHandler.getKnownPeripherals(),
+			})
 		})
-		peripheralsHandler.on('disconnected', (deviceId, info) =>
+		peripheralsHandler.on('disconnected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'disconnected' })
-		)
+			this.peripheralsHandlerSend({
+				type: 'KnownPeripherals',
+				peripherals: peripheralsHandler.getKnownPeripherals(),
+			})
+		})
 		peripheralsHandler.on('keyDown', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyDown', deviceId, identifier })
 		})
 		peripheralsHandler.on('keyUp', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
+		})
+		peripheralsHandler.on('knownPeripherals', (peripherals) => {
+			this.peripheralsHandlerSend({ type: 'KnownPeripherals', peripherals })
 		})
 
 		peripheralsHandler.init()
@@ -116,10 +127,11 @@ export class BaseBridge {
 
 	handleMessage(msg: BridgeAPI.FromSuperConductor.Any) {
 		if (msg.type === 'setId') {
-			// Reply to SuperConductor with our id:
-			this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false })
-
-			this.onReceivedBridgeId(msg.id).catch((e) => this.log?.error(e))
+			this.onReceivedBridgeId(msg.id)
+				// Wait until after the initialization of things like the peripherals handler
+				// before telling SuperConductor that the bridge is ready.
+				.then(() => this.send({ type: 'init', id: msg.id, version: CURRENT_VERSION, incoming: false }))
+				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'addTimeline') {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
@@ -129,7 +141,12 @@ export class BaseBridge {
 		} else if (msg.type === 'setMappings') {
 			this.updateMappings(msg.mappings, msg.currentTime)
 		} else if (msg.type === 'setSettings') {
+			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
+
 			this.tsr.updateDevices(msg.devices).catch((e) => this.log?.error(e))
+			this.peripheralsHandler
+				.updatePeripheralsSettings(msg.peripherals, msg.autoConnectToAllPeripherals)
+				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'refreshResources') {
 			this.tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
 				this.send({
@@ -142,6 +159,10 @@ export class BaseBridge {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
 			this.peripheralsHandler.setKeyDisplay(msg.deviceId, msg.identifier, msg.keyDisplay)
+		} else if (msg.type === 'getKnownPeripherals') {
+			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
+
+			this.send({ type: 'KnownPeripherals', peripherals: this.peripheralsHandler.getKnownPeripherals() })
 		} else {
 			assertNever(msg)
 		}
