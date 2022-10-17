@@ -65,7 +65,6 @@ export const RundownTriggersSubmenu: React.FC<{
 					label: activeTriggersToString(prevTriggers.current),
 					fullIdentifiers: prevTriggers.current.map((t) => t.fullIdentifier),
 					action: 'playStop',
-					isGlobalKeyboard: false,
 				}
 
 				ipcServer
@@ -188,7 +187,6 @@ export const ApplicationTriggersSubmenu: React.FC<{
 					label: activeTriggersToString(prevTriggers.current),
 					fullIdentifiers: prevTriggers.current.map((t) => t.fullIdentifier),
 					action: triggerAction,
-					isGlobalKeyboard: false,
 				}
 
 				ipcServer

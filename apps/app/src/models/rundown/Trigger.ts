@@ -12,8 +12,10 @@ export interface AnyTrigger {
 	 * Modifiers used on global triggers (Shift, Alt, Ctrl, Command, etc) may behave differently than on non-global triggers.
 	 * Only applies to keyboard triggers, peripheral triggers are always global.
 	 * Global triggers may silently fail to register if already taken by another application.
-	 * See https://www.electronjs.org/docs/latest/api/global-shortcut for more information. */
-	isGlobalKeyboard: boolean
+	 * See https://www.electronjs.org/docs/latest/api/global-shortcut for more information.
+	 * Defaults to false
+	 */
+	isGlobalKeyboard?: boolean
 }
 /** Defines a Trigger that is associated with a certain Part */
 export interface RundownTrigger extends AnyTrigger {

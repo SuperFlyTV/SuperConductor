@@ -976,12 +976,6 @@ export class StorageHandler extends EventEmitter {
 		for (triggerType in appData.appData.triggers) {
 			const triggers = appData.appData.triggers[triggerType]
 			if (!triggers) continue
-			for (const trigger of triggers) {
-				// Added 2022-10-11
-				if (!('isGlobalKeyboard' in trigger)) {
-					trigger.isGlobalKeyboard = false
-				}
-			}
 		}
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
@@ -1036,12 +1030,6 @@ export class StorageHandler extends EventEmitter {
 			for (const part of group.parts) {
 				if (!part.triggers) {
 					part.triggers = []
-				}
-				for (const trigger of part.triggers) {
-					// Added 2022-10-11
-					if (!('isGlobalKeyboard' in trigger)) {
-						trigger.isGlobalKeyboard = false
-					}
 				}
 				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
 				for (const obj of part.timeline) {

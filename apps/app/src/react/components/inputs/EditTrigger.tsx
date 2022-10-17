@@ -212,7 +212,7 @@ export const TriggerPill: React.FC<{
 	)
 }
 export const TriggerGlobalToggle: React.FC<{
-	isGlobal: boolean
+	isGlobal: boolean | undefined
 	failedToRegister: boolean
 	onChange: () => void
 }> = ({ isGlobal, failedToRegister, onChange }) => {
