@@ -195,13 +195,17 @@ export const TriggerPill: React.FC<{
 
 	return (
 		<div className="trigger-pill">
-			{labelParts.map((part, index) => {
-				const isKeyboard = identifierIsKeyboard(trigger.fullIdentifiers[index])
+			{labelParts.map((labelPart, index) => {
+				const fullIdentifier = trigger.fullIdentifiers[index] as string | undefined
+				const isKeyboard = fullIdentifier ? identifierIsKeyboard(fullIdentifier) : false
 				return (
 					<React.Fragment key={index}>
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>
 							<span className="label">
-								{trigger.isGlobalKeyboard ? convertSorensenToElectron(part) : part}
+								{trigger.isGlobalKeyboard
+									? convertSorensenToElectron(fullIdentifier ?? labelPart) ??
+									  `UNSUPPORTED: ${fullIdentifier ?? labelPart}`
+									: labelPart}
 							</span>
 						</div>
 						<span className="connect-labels">+</span>
