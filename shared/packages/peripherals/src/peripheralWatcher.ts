@@ -57,7 +57,7 @@ export class PeripheralWatcher extends EventEmitter {
 	/**
 	 * Stops watching for peripherals.
 	 */
-	stop() {
+	stop(): void {
 		this.subwatchers.forEach((subwatcher) => subwatcher.stop())
 		this.subwatchers = []
 	}
@@ -65,7 +65,10 @@ export class PeripheralWatcher extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getKnownPeripherals() {
+	getKnownPeripherals(): { [peripheralId: string]: KnownPeripheral } {
 		return Object.fromEntries(this.knownPeripherals.entries())
+	}
+	getKnownPeripheral(peripheralId: string): KnownPeripheral | undefined {
+		return this.knownPeripherals.get(peripheralId)
 	}
 }

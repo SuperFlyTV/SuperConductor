@@ -49,11 +49,11 @@ export class PeripheralsHandler extends EventEmitter {
 		this.watcher.on('knownPeripheralsChanged', (peripherals) => {
 			this.emit('knownPeripherals', peripherals)
 		})
-		this.watcher.on('knownPeripheralDiscovered', (id, info) => {
-			this.maybeConnectToPeripheral(id, info).catch(this.log.error)
+		this.watcher.on('knownPeripheralDiscovered', (peripheralId, info) => {
+			this.maybeConnectToPeripheral(peripheralId, info).catch(this.log.error)
 		})
-		this.watcher.on('knownPeripheralReconnected', (id, info) => {
-			this.maybeConnectToPeripheral(id, info).catch(this.log.error)
+		this.watcher.on('knownPeripheralReconnected', (peripheralId, info) => {
+			this.maybeConnectToPeripheral(peripheralId, info).catch(this.log.error)
 		})
 	}
 	setKeyDisplay(peripheralId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
@@ -65,8 +65,11 @@ export class PeripheralsHandler extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getKnownPeripherals() {
+	getKnownPeripherals(): { [peripheralId: string]: KnownPeripheral } {
 		return this.watcher?.getKnownPeripherals() ?? {}
+	}
+	getKnownPeripheral(peripheralId: string): KnownPeripheral | undefined {
+		return this.watcher?.getKnownPeripheral(peripheralId)
 	}
 	/**
 	 * Updates the settings for how peripherals should be handled.
@@ -232,7 +235,7 @@ export class PeripheralsHandler extends EventEmitter {
 		this.shouldConnectToSpecific.set(id, shouldConnect)
 
 		// If there's no available peripheral with this ID, do nothing.
-		const knownPeripheral = this.getKnownPeripherals()[id] as KnownPeripheral | undefined
+		const knownPeripheral = this.getKnownPeripheral(id)
 		if (!knownPeripheral) {
 			return
 		}
@@ -256,17 +259,17 @@ export class PeripheralsHandler extends EventEmitter {
 	 * or if the settings specify that this specific peripheral should be connected to.
 	 * Does nothing if already connected to a peripheral with the given ID.
 	 */
-	private async maybeConnectToPeripheral(id: string, info: KnownPeripheral): Promise<void> {
+	private async maybeConnectToPeripheral(peripheralId: string, info: KnownPeripheral): Promise<void> {
 		// If we already have connected to this peripheral, do nothing.
-		const existingPeripheral = this.peripherals.get(id)
+		const existingPeripheral = this.peripherals.get(peripheralId)
 		if (existingPeripheral) {
 			return
 		}
 
 		// Connect to the peripheral if the settings dictate that we should do so.
-		const shouldConnect = this.autoConnectToAll || this.shouldConnectToSpecific.get(id)
+		const shouldConnect = this.autoConnectToAll || this.shouldConnectToSpecific.get(peripheralId)
 		if (shouldConnect) {
-			const newPeripheral = this.createPeripheralFromAvailableInfo(id, info)
+			const newPeripheral = this.createPeripheralFromAvailableInfo(peripheralId, info)
 			await newPeripheral.init()
 			this.handleNewlyConnectedPeripheral(newPeripheral)
 		}
