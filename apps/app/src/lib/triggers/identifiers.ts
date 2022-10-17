@@ -60,8 +60,6 @@ export function convertSorensenToElectron(identifier: string): string | null {
 			return 'Home'
 		case 'End':
 			return 'End'
-		case 'End':
-			return 'End'
 		case 'PageUp':
 			return 'PageUp'
 		case 'PageDown':

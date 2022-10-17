@@ -170,7 +170,7 @@ export class TriggersHandler extends EventEmitter {
 			}
 
 			let isSupported = true
-			let translatedIdentifiers: string[] = []
+			const translatedIdentifiers: string[] = []
 			for (const fullIdentifier of action.trigger.fullIdentifiers) {
 				const converted = convertSorensenToElectron(fullIdentifier)
 				if (converted === null) isSupported = false
