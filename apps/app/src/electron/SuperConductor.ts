@@ -61,6 +61,7 @@ export class SuperConductor {
 			this.clients.forEach((clients) => clients.ipcClient.updateBridgeStatus(id, status))
 		})
 		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
+			this.triggers.onPeripheralStatus(peripheralId, peripheral)
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheral(peripheralId, peripheral))
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
