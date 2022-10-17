@@ -167,7 +167,7 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 
 	/**
-	 * Tells the Peripheral class to auto connect to all peripherals.
+	 * Tells the handler to auto connect to all peripherals.
 	 * Does nothing if already enabled.
 	 * @returns A promise that resolves once all peripheral initializers have finished.
 	 */
@@ -193,7 +193,7 @@ export class PeripheralsHandler extends EventEmitter {
 	}
 
 	/**
-	 * Tells the Peripheral class to not auto connect to all peripherals.
+	 * Tells the handler to not auto connect to all peripherals.
 	 * Closes any peripherals that aren't explictly marked as ones that should be connected to.
 	 * Does nothing if already disabled.
 	 * @returns A promise that resolves once all peripherals that should be closed have been closed.
