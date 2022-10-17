@@ -10,7 +10,6 @@ const FLASH_NORMAL = 30
 
 export class PeripheralXkeys extends Peripheral {
 	private static Watching = false
-	private static AlreadySeenDeviceIds = new Set<string>()
 	private connectedToParent = false
 	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
 		if (PeripheralXkeys.Watching) {
