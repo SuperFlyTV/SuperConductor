@@ -321,15 +321,20 @@ export class TriggersHandler extends EventEmitter {
 			}
 
 			// Register the shortcut.
-			const success = globalShortcut.register(identifier, () => {
-				// We have to re-fetch the actions here because things like current selection
-				// are computed at the time that the actions are retrieved.
-				const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
-				const actions = actionsGroupedByIdentifier[identifier]
-				for (const action of actions) {
-					this.executeAction(action)
-				}
-			})
+			let success = false
+			try {
+				success = globalShortcut.register(identifier, () => {
+					// We have to re-fetch the actions here because things like current selection
+					// are computed at the time that the actions are retrieved.
+					const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
+					const actions = actionsGroupedByIdentifier[identifier]
+					for (const action of actions) {
+						this.executeAction(action)
+					}
+				})
+			} catch (error) {
+				this.log.error(error)
+			}
 
 			// Registration of the hotkey will fail if another application has registered
 			// the same hotkey via the same OS APIs (such as RegisterHotKey on Windows).
