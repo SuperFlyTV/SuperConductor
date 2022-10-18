@@ -52,6 +52,7 @@ import { TrashBtn } from '../../inputs/TrashBtn'
 import { DuplicateBtn } from '../../inputs/DuplicateBtn'
 import { sortSelected } from '../../../lib/clientUtil'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
+import { convertSorensenToElectron } from '../../../../lib/triggers/identifiers'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -866,6 +867,17 @@ export const PartView: React.FC<{
 
 	const timelineLayerObjects = timelineObjsOntoLayers(sortedLayers, resolvedTimeline, modifiedTimeline)
 
+	const failedGlobalShortcuts = useMemoComputedObject(() => {
+		return store.triggersStore.failedGlobalTriggers
+	}, [store.triggersStore.failedGlobalTriggers])
+	const anyGlobalTriggerFailed = useMemo(() => {
+		return allActionsForPart.some((action) =>
+			failedGlobalShortcuts.has(
+				action.trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
+			)
+		)
+	}, [allActionsForPart, failedGlobalShortcuts])
+
 	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
 	const [renderEverything, setRenderEverything] = useState(false)
 	const onChange = useCallback((isVisible: boolean) => {
@@ -996,9 +1008,9 @@ export const PartView: React.FC<{
 										</ToggleBtn>
 										<TriggerBtn
 											onTrigger={handleTriggerBtn}
-											title="Open Triggers Submenu"
 											locked={groupOrPartLocked}
 											triggerCount={allActionsForPart.length}
+											anyGlobalTriggerFailed={anyGlobalTriggerFailed}
 										/>
 									</>
 								)}

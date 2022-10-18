@@ -20,8 +20,19 @@ import {
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
 import { PeripheralStatus } from '../models/project/Peripheral'
+import { globalShortcut } from 'electron'
+import EventEmitter from 'events'
+import { convertSorensenToElectron } from '../lib/triggers/identifiers'
 
-export class TriggersHandler {
+export interface TriggersHandlerEvents {
+	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
+}
+export interface TriggersHandler {
+	on<U extends keyof TriggersHandlerEvents>(event: U, listener: TriggersHandlerEvents[U]): this
+	emit<U extends keyof TriggersHandlerEvents>(event: U, ...args: Parameters<TriggersHandlerEvents[U]>): boolean
+}
+
+export class TriggersHandler extends EventEmitter {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	/** Contains a collection of the currently active (pressed) keys on the keyboard */
@@ -38,13 +49,19 @@ export class TriggersHandler {
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 	private definingArea: DefiningArea | null = null
 
+	private lastGlobalKeyboardActions: { [key: string]: ActionAny[] } = {}
+	private readonly registeredGlobalTriggers: Set<string> = new Set()
+	private readonly failedGlobalTriggers: Set<string> = new Set()
+
 	constructor(
 		private log: LoggerLike,
 		private storage: StorageHandler,
 		private ipcServer: IPCServer,
 		private bridgeHandler: BridgeHandler,
 		private session: SessionHandler
-	) {}
+	) {
+		super()
+	}
 
 	setKeyboardKeys(activeKeys: ActiveTriggers) {
 		this.activeKeys = activeKeys
@@ -141,7 +158,38 @@ export class TriggersHandler {
 			}
 		}
 	}
-	/** Returns all Actions in all Rundowns */
+	/** Returns all global keyboard actions, grouped by their Electron key combination */
+	private getGlobalActionsGroupedByIdentifier(): { [identifier: string]: ActionAny[] } {
+		const allActions = this.getActions()
+		const actionsGroupedByIdentifier: { [identifier: string]: ActionAny[] } = {}
+
+		for (const action of allActions) {
+			// If this trigger is not global, it gets handled elsewhere.
+			if (!action.trigger.isGlobalKeyboard) {
+				continue
+			}
+
+			let isSupported = true
+			const translatedIdentifiers: string[] = []
+			for (const fullIdentifier of action.trigger.fullIdentifiers) {
+				const converted = convertSorensenToElectron(fullIdentifier)
+				if (converted === null) isSupported = false
+				else translatedIdentifiers.push(converted)
+			}
+			if (!isSupported) continue // If the trigger contains any unsupported keys, don't regirster it
+
+			const translatedIdentifier = translatedIdentifiers.join('+')
+
+			if (!(translatedIdentifier in actionsGroupedByIdentifier)) {
+				actionsGroupedByIdentifier[translatedIdentifier] = []
+			}
+
+			actionsGroupedByIdentifier[translatedIdentifier].push(action)
+		}
+
+		return actionsGroupedByIdentifier
+	}
+	/** Returns all Actions in AppData and all Rundowns */
 	private getActions(): ActionAny[] {
 		const allRundowns = this.storage.getAllRundowns()
 		const allParts = getPartsWithRefInRundowns(allRundowns)
@@ -165,6 +213,151 @@ export class TriggersHandler {
 				})
 			),
 		]
+	}
+	/** Executes a given action immediately */
+	private executeAction(action: ActionAny) {
+		if (action.type === 'rundown') {
+			if (action.trigger.action === 'play') {
+				this.ipcServer
+					.playPart({
+						rundownId: action.rundownId,
+						groupId: action.group.id,
+						partId: action.part.id,
+					})
+					.catch(this.log.error)
+			} else if (action.trigger.action === 'stop') {
+				this.ipcServer
+					.stopPart({
+						rundownId: action.rundownId,
+						groupId: action.group.id,
+						partId: action.part.id,
+					})
+					.catch(this.log.error)
+			} else if (action.trigger.action === 'playStop') {
+				const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
+				const myPlayhead = playData.playheads[action.part.id]
+
+				let isPlaying: boolean
+				if (!myPlayhead) {
+					// The part is not playing
+					isPlaying = false
+				} else if (myPlayhead.partPauseTime !== undefined) {
+					// The part is paused, so we need to resume it:
+					isPlaying = false
+				} else {
+					isPlaying = true
+				}
+
+				if (isPlaying) {
+					this.ipcServer
+						.stopPart({
+							rundownId: action.rundownId,
+							groupId: action.group.id,
+							partId: action.part.id,
+						})
+						.catch(this.log.error)
+				} else {
+					this.ipcServer
+						.playPart({
+							rundownId: action.rundownId,
+							groupId: action.group.id,
+							partId: action.part.id,
+						})
+						.catch(this.log.error)
+				}
+			} else {
+				assertNever(action.trigger.action)
+			}
+		} else if (action.type === 'application') {
+			if (action.trigger.action === 'play') {
+				this._appActionPlay(action)
+			} else if (action.trigger.action === 'stop') {
+				this._appActionStop(action)
+			} else if (action.trigger.action === 'playStop') {
+				this._appActionPlayStop(action)
+			} else if (action.trigger.action === 'pause') {
+				this._appActionPause(action)
+			} else if (action.trigger.action === 'delete') {
+				this._appActionDelete(action)
+			} else if (action.trigger.action === 'next') {
+				this._appActionNext(action)
+			} else if (action.trigger.action === 'previous') {
+				this._appActionPrevious(action)
+			} else {
+				assertNever(action.trigger.action)
+			}
+		} else {
+			assertNever(action)
+		}
+	}
+
+	registerGlobalKeyboardTriggers() {
+		const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
+
+		// Don't thrash the registration of hotkeys if nothing has changed.
+		if (_.isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
+			return
+		}
+
+		// Unregister any shortcuts which no longer correspond to any actions.
+		for (const identifier of this.registeredGlobalTriggers) {
+			if (!(identifier in actionsGroupedByIdentifier)) {
+				globalShortcut.unregister(identifier)
+				this.registeredGlobalTriggers.delete(identifier)
+			}
+		}
+		for (const identifier of this.failedGlobalTriggers) {
+			if (!(identifier in actionsGroupedByIdentifier)) {
+				this.failedGlobalTriggers.delete(identifier)
+			}
+		}
+
+		// Register all necessary global shortcuts.
+		for (const identifier in actionsGroupedByIdentifier) {
+			// A given global shortcut can only have one callback registered,
+			// and the structure of this code only requires one to be registered.
+			if (this.registeredGlobalTriggers.has(identifier)) {
+				continue
+			}
+
+			// Register the shortcut.
+			let success = false
+			try {
+				success = globalShortcut.register(identifier, () => {
+					// We have to re-fetch the actions here because things like current selection
+					// are computed at the time that the actions are retrieved.
+					const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
+					const actions = actionsGroupedByIdentifier[identifier]
+					for (const action of actions) {
+						this.executeAction(action)
+					}
+				})
+			} catch (error) {
+				this.log.error(error)
+			}
+
+			// Registration of the hotkey will fail if another application has registered
+			// the same hotkey via the same OS APIs (such as RegisterHotKey on Windows).
+			// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
+			//
+			// Applications which listen to all keys to determine their hotkeys and don't use
+			// these same OS APIs will not conflict with Electron's globalShortcut implementation.
+			// OBS is one such application which will work alongside SuperConductor's global hotkeys.
+			if (success) {
+				this.failedGlobalTriggers.delete(identifier)
+				this.registeredGlobalTriggers.add(identifier)
+			} else {
+				this.registeredGlobalTriggers.delete(identifier)
+				this.failedGlobalTriggers.add(identifier)
+			}
+		}
+
+		this.lastGlobalKeyboardActions = actionsGroupedByIdentifier
+		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
+	}
+
+	triggerEmitAll() {
+		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
 	}
 
 	private handleUpdate() {
@@ -208,8 +401,13 @@ export class TriggersHandler {
 		if (!intercepted) {
 			// Go through the actions
 			for (const action of actions) {
-				// This a little bit unintuitive, but our first step here is to filter out actions
-				// that correspone only to _newly active_ triggers.
+				// If the trigger is a global keyboard trigger, it gets handled elsewhere.
+				if (action.trigger.isGlobalKeyboard) {
+					continue
+				}
+
+				// This a little bit unintuitive, but our next step here is to filter out actions
+				// that correspond only to _newly active_ triggers.
 
 				let allMatching = false
 				/** If the action has a newly pressed */
@@ -233,79 +431,7 @@ export class TriggersHandler {
 					// We've found a match!
 
 					// Execute the action:
-					if (action.type === 'rundown') {
-						if (action.trigger.action === 'play') {
-							this.ipcServer
-								.playPart({
-									rundownId: action.rundownId,
-									groupId: action.group.id,
-									partId: action.part.id,
-								})
-								.catch(this.log.error)
-						} else if (action.trigger.action === 'stop') {
-							this.ipcServer
-								.stopPart({
-									rundownId: action.rundownId,
-									groupId: action.group.id,
-									partId: action.part.id,
-								})
-								.catch(this.log.error)
-						} else if (action.trigger.action === 'playStop') {
-							const playData = getGroupPlayData(action.group.preparedPlayData ?? null)
-							const myPlayhead = playData.playheads[action.part.id]
-
-							let isPlaying: boolean
-							if (!myPlayhead) {
-								// The part is not playing
-								isPlaying = false
-							} else if (myPlayhead.partPauseTime !== undefined) {
-								// The part is paused, so we need to resume it:
-								isPlaying = false
-							} else {
-								isPlaying = true
-							}
-
-							if (isPlaying) {
-								this.ipcServer
-									.stopPart({
-										rundownId: action.rundownId,
-										groupId: action.group.id,
-										partId: action.part.id,
-									})
-									.catch(this.log.error)
-							} else {
-								this.ipcServer
-									.playPart({
-										rundownId: action.rundownId,
-										groupId: action.group.id,
-										partId: action.part.id,
-									})
-									.catch(this.log.error)
-							}
-						} else {
-							assertNever(action.trigger.action)
-						}
-					} else if (action.type === 'application') {
-						if (action.trigger.action === 'play') {
-							this._appActionPlay(action)
-						} else if (action.trigger.action === 'stop') {
-							this._appActionStop(action)
-						} else if (action.trigger.action === 'playStop') {
-							this._appActionPlayStop(action)
-						} else if (action.trigger.action === 'pause') {
-							this._appActionPause(action)
-						} else if (action.trigger.action === 'delete') {
-							this._appActionDelete(action)
-						} else if (action.trigger.action === 'next') {
-							this._appActionNext(action)
-						} else if (action.trigger.action === 'previous') {
-							this._appActionPrevious(action)
-						} else {
-							assertNever(action.trigger.action)
-						}
-					} else {
-						assertNever(action)
-					}
+					this.executeAction(action)
 				}
 			}
 		}

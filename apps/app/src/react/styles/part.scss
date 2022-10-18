@@ -464,6 +464,7 @@ $part_time_height: 16px;
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
+	align-items: center;
 
 	&:not(:last-child) {
 		margin-bottom: 0.1rem;
@@ -473,6 +474,14 @@ $part_time_height: 16px;
 		font-size: 80%;
 	}
 	.trigger-pill {
+	}
+
+	.field {
+		display: inline-flex; // Improves vertical centering.
+
+		&:not(:first-child) {
+			margin-left: 0.6rem;
+		}
 	}
 }
 
@@ -484,6 +493,6 @@ $part_time_height: 16px;
 	padding: 1rem;
 
 	&__triggerType {
-		margin-left: 0.5em;
+		margin-left: 0.6rem;
 	}
 }

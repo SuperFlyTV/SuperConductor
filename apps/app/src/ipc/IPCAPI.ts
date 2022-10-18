@@ -233,4 +233,5 @@ export interface IPCClientMethods {
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 	updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
+	updateFailedGlobalTriggers: (identifiers: string[]) => void
 }

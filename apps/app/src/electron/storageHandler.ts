@@ -971,6 +971,12 @@ export class StorageHandler extends EventEmitter {
 			// Added 2022-09-07:
 			appData.appData.triggers = defaultAppData.triggers
 		}
+
+		let triggerType: keyof AppData['triggers']
+		for (triggerType in appData.appData.triggers) {
+			const triggers = appData.appData.triggers[triggerType]
+			if (!triggers) continue
+		}
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
 		for (const bridge of Object.values(project.bridges)) {

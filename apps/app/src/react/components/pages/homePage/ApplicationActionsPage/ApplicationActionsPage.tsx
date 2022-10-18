@@ -15,6 +15,7 @@ import { ApplicationTriggersSubmenu } from '../../../rundown/GroupView/part/Trig
 import { TriggerPill } from '../../../../components/inputs/EditTrigger'
 
 import './style.scss'
+import { convertSorensenToElectron } from '../../../../../lib/triggers/identifiers'
 
 export const ApplicationActionsPage: React.FC = observer(function ProjectPage() {
 	return (
@@ -36,6 +37,10 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 	}, [])
 
 	const appDataTriggers = useMemoComputedObject(() => store.appStore.appData?.triggers ?? {}, [])
+
+	const failedGlobalShortcuts = useMemoComputedObject(() => {
+		return store.triggersStore.failedGlobalTriggers
+	}, [store.triggersStore.failedGlobalTriggers])
 
 	const appActions: {
 		[Key in ApplicationTrigger['action']]: {
@@ -67,6 +72,11 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 			>
 				<ScList
 					list={Object.entries(appActions).map(([actionType, appAction]) => {
+						const anyGlobalTriggerFailed = appAction.triggers.some((trigger) =>
+							failedGlobalShortcuts.has(
+								trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')
+							)
+						)
 						return {
 							id: actionType,
 							header: (
@@ -88,9 +98,9 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 													triggers: appAction.triggers,
 												})
 											}}
-											title="Open Triggers Submenu"
 											locked={false}
 											triggerCount={appAction.triggers.length}
+											anyGlobalTriggerFailed={anyGlobalTriggerFailed}
 										/>
 									</div>
 								</div>

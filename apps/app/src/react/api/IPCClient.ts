@@ -25,6 +25,7 @@ export class IPCClient implements IPCClientMethods {
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
+			updateFailedGlobalTriggers?: (identifiers: string[]) => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -69,6 +70,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.callbacks.updateDefiningArea?.(definingArea)
+	}
+	updateFailedGlobalTriggers(identifiers: string[]): void {
+		this.callbacks.updateFailedGlobalTriggers?.(identifiers)
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

@@ -82,6 +82,7 @@ export class SuperConductor {
 		this.storage = new StorageHandler(log, CURRENT_VERSION)
 		this.storage.on('appData', (appData: AppData) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('project', (project: Project) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
@@ -89,6 +90,7 @@ export class SuperConductor {
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
@@ -214,7 +216,15 @@ export class SuperConductor {
 				this.telemetryHandler.onError(error, stack)
 			},
 		})
+
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
+			this.clients.forEach((client) =>
+				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
+			)
+		})
+		this.ipcServer.triggers = this.triggers
+
 		if (this.disableInternalHttpApi) {
 			this.log.info(`Internal HTTP API disabled`)
 		} else {

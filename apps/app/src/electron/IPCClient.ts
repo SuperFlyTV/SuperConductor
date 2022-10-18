@@ -47,4 +47,7 @@ export class IPCClient implements IPCClientMethods {
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDefiningArea', definingArea)
 	}
+	updateFailedGlobalTriggers(identifiers: string[]): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateFailedGlobalTriggers', identifiers)
+	}
 }
