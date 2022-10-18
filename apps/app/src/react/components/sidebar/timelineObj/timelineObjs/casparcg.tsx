@@ -636,9 +636,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 
 				<CasparEditTemplateData obj={obj} onSave={onSave} />
 
-				{getSettingsTransitions(obj)}
-
-				{showAllButton}
+				{/* {showAllButton} */}
 			</>
 		)
 	} else if (obj.content.type === TimelineContentTypeCasparCg.HTMLPAGE) {
