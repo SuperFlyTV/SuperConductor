@@ -1,6 +1,6 @@
 import { MenuItem, TextField } from '@mui/material'
 import React, { useContext } from 'react'
-import { sortMappings } from '../../../../../lib/TSRMappings'
+import { filterMapping, sortMappings } from '../../../../../lib/TSRMappings'
 import { TimelineEnable } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
@@ -47,7 +47,7 @@ export const EditWrapper: React.FC<{
 						{project.mappings &&
 							sortMappings(project.mappings)
 								.filter(({ mapping }) => {
-									return mapping.device === obj.content.deviceType
+									return filterMapping(mapping, obj)
 								})
 								.map(({ layerId, mapping }) => (
 									<MenuItem key={layerId} value={layerId}>
