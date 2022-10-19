@@ -103,3 +103,8 @@ export enum PeripheralType {
 	STREAMDECK = 'streamdeck',
 	XKEYS = 'xkeys',
 }
+
+export interface AnalogValue {
+	absolute: number
+	relative: number
+}

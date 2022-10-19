@@ -8,6 +8,7 @@ import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
 import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ClientSideLogger } from './logger'
+import { ActiveAnalog } from '../../models/rundown/Analog'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -22,6 +23,7 @@ export class IPCClient implements IPCClientMethods {
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
+			updatePeripheralAnalog?: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
@@ -61,6 +63,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.callbacks.updatePeripheralTriggers?.(peripheralTriggers)
+	}
+	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
+		this.callbacks.updatePeripheralAnalog?.(fullIdentifier, analog)
 	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.callbacks.updateDeviceRefreshStatus?.(deviceId, refreshing)

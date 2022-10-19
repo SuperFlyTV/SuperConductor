@@ -137,13 +137,58 @@ export class PeripheralXkeys extends Peripheral {
 				},
 			}
 
+			// Buttons:
 			this.xkeysPanel.on('down', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
 			})
 			this.xkeysPanel.on('up', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyUp', `${keyIndex}`)
 			})
+			// Analog values:
+			this.xkeysPanel.on('jog', (keyIndex, deltaValue) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `jog-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: this.getAbsoluteValue(identifier, deltaValue),
+					relative: deltaValue,
+				})
+			})
+			this.xkeysPanel.on('shuttle', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `shuttle-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: value,
+					relative: this.getRelativeValue(identifier, value),
+				})
+			})
+			this.xkeysPanel.on('tbar', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `tbar-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: value,
+					relative: this.getRelativeValue(identifier, value),
+				})
+			})
+			this.xkeysPanel.on('joystick', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifierX = `joystick-${keyIndex}-x`
+				const identifierY = `joystick-${keyIndex}-y`
+				const identifierZ = `joystick-${keyIndex}-z`
+				this.emit('analog', identifierX, {
+					absolute: value.x,
+					relative: this.getRelativeValue(identifierX, value.x),
+				})
+				this.emit('analog', identifierY, {
+					absolute: value.y,
+					relative: this.getRelativeValue(identifierY, value.y),
+				})
+				this.emit('analog', identifierZ, {
+					absolute: value.z,
+					relative: value.deltaZ,
+				})
+			})
 
+			// Connection status:
 			this.xkeysPanel.on('disconnected', () => {
 				this.emit('disconnected')
 			})

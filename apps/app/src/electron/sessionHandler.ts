@@ -3,10 +3,11 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { KnownPeripheral, PeripheralInfo } from '@shared/api'
+import { AnalogValue, KnownPeripheral, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { getPeripheralId } from '@shared/lib'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -22,6 +23,10 @@ export class SessionHandler extends EventEmitter {
 	/** Contains a collection of the currently active (pressed) triggers/keys/buttons on all Panels */
 	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private activeTriggersHasChanged = false
+
+	/** Contains a collection of ALL analogs on all Panels */
+	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
+	private activeAnalogsHasChanged: { [fullIdentifier: string]: true } = {}
 
 	private definingArea: DefiningArea | null = null
 	private definingAreaHasChanged = false
@@ -170,6 +175,35 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
+	updatePeripheralAnalog(bridgeId: string, deviceId: string, identifier: string, value: AnalogValue) {
+		// This is called from a peripheral, when a key is pressed or released
+
+		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
+
+		const device = this.peripherals[peripheralId]
+		const analog: ActiveAnalog = {
+			fullIdentifier: fullIdentifier,
+			bridgeId: bridgeId,
+			deviceId: deviceId,
+			deviceName: device?.info.name ?? '',
+			identifier: identifier,
+			value: value,
+		}
+
+		const previousAnalog = this.activeAnalogs[fullIdentifier]
+		if (!previousAnalog) {
+			this.activeAnalogs[fullIdentifier] = analog
+			this.activeAnalogsHasChanged[fullIdentifier] = true
+		} else {
+			if (!_.isEqual(previousAnalog.value, analog.value)) {
+				this.activeAnalogs[fullIdentifier] = analog
+				this.activeAnalogsHasChanged[fullIdentifier] = true
+			}
+		}
+
+		this.triggerUpdate()
+	}
 	updateSelection(selection: Readonly<CurrentSelectionAny[]>): void {
 		if (!_.isEqual(this.selection, selection)) {
 			this.selection = selection
@@ -219,6 +253,10 @@ export class SessionHandler extends EventEmitter {
 			const activeTriggers: ActiveTriggers = Object.values(this.activeTriggers)
 			this.emit('activeTriggers', activeTriggers)
 			this.activeTriggersHasChanged = false
+		}
+		for (const fullIdentifier of Object.keys(this.activeAnalogsHasChanged)) {
+			this.emit('activeAnalog', fullIdentifier, this.activeAnalogs[fullIdentifier] ?? null)
+			delete this.activeAnalogsHasChanged[fullIdentifier]
 		}
 		if (this.definingAreaHasChanged) {
 			this.emit('definingArea', this.definingArea)

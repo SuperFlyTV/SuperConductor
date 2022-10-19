@@ -7,6 +7,7 @@ import {
 	PeripheralInfo,
 	PeripheralSettingsAny,
 	PeripheralType,
+	AnalogValue,
 } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralWatcher } from './peripheralWatcher'
@@ -20,6 +21,7 @@ export interface PeripheralsHandlerEvents {
 
 	keyDown: (peripheralId: string, identifier: string) => void
 	keyUp: (peripheralId: string, identifier: string) => void
+	analog: (peripheralId: string, identifier: string, value: AnalogValue) => void
 
 	knownPeripherals: (peripherals: { [peripheralId: string]: KnownPeripheral }) => void
 }
@@ -161,6 +163,9 @@ export class PeripheralsHandler extends EventEmitter {
 		})
 		peripheral.on('keyUp', (identifier) => {
 			if (this.connectedToParent) this.emit('keyUp', peripheral.id, identifier)
+		})
+		peripheral.on('analog', (identifier, value) => {
+			if (this.connectedToParent) this.emit('analog', peripheral.id, identifier, value)
 		})
 
 		peripheral.setConnectedToParent(this.connectedToParent).catch(this.log.error)

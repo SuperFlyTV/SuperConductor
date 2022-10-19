@@ -44,6 +44,7 @@ import { DebugTestErrors } from './components/util/Debug'
 import { ErrorBoundary } from './components/util/ErrorBoundary'
 import { Spinner } from './components/util/Spinner'
 import { CB } from './lib/errorHandling'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -93,6 +94,10 @@ export const App = observer(function App() {
 			},
 			updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => {
 				triggers.setPeripheralTriggers(peripheralTriggers)
+			},
+			updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => {
+				console.log('updatePeripheralAnalog!', fullIdentifier, analog?.value)
+				// triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			displayAboutDialog: () => {
 				setSplashScreenOpen(true)

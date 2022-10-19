@@ -28,6 +28,7 @@ import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { HTTPAPI } from './HTTPAPI'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -67,6 +68,10 @@ export class SuperConductor {
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralTriggers(activeTriggers))
+		})
+		this.session.on('activeAnalog', (fullIdentifier: string, analog: ActiveAnalog | null) => {
+			// this.triggers?.updateActiveAnalog(fullIdentifier, analog)
+			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralAnalog(fullIdentifier, analog))
 		})
 		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
 			this.triggers?.updateDefiningArea(definingArea)

@@ -410,6 +410,94 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		return el
 	}
 
+	const getSettingsMixer = (obj: TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase }) => {
+		if (!obj.content.mixer) obj.content.mixer = {}
+
+		const mixer = obj.content.mixer
+
+		const mixSettings: JSX.Element[] = []
+
+		if (showAll || mixer.fill !== undefined) {
+			const fill: {
+				x: number
+				y: number
+				xScale: number
+				yScale: number
+			} = (mixer.fill as any) ?? {
+				x: 0,
+				y: 0,
+				xScale: 1,
+				yScale: 1,
+			}
+			mixSettings.push(
+				<div className="setting" key="fill.x">
+					<FloatInput
+						label="Fill x"
+						fullWidth
+						currentValue={fill.x}
+						onChange={(v) => {
+							mixer.fill = fill
+							fill.x = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+						percentage={true}
+					/>
+				</div>
+			)
+			mixSettings.push(
+				<div className="setting" key="fill.y">
+					<FloatInput
+						label="Fill y"
+						fullWidth
+						currentValue={fill.y}
+						onChange={(v) => {
+							mixer.fill = fill
+							fill.y = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+						percentage={true}
+					/>
+				</div>
+			)
+			mixSettings.push(
+				<div className="setting" key="fill.xScale">
+					<FloatInput
+						label="Fill x-scale"
+						fullWidth
+						currentValue={fill.xScale}
+						onChange={(v) => {
+							mixer.fill = fill
+							fill.xScale = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+						percentage={true}
+					/>
+				</div>
+			)
+			mixSettings.push(
+				<div className="setting" key="fill.yScale">
+					<FloatInput
+						label="Fill Y-Scale"
+						fullWidth
+						currentValue={fill.yScale}
+						onChange={(v) => {
+							mixer.fill = fill
+							fill.yScale = v
+							onSave(obj)
+						}}
+						allowUndefined={false}
+						percentage={true}
+					/>
+				</div>
+			)
+		}
+
+		return <>{mixSettings}</>
+	}
+
 	const showAllButton = showAll ? (
 		<Link href="#" onClick={() => setShowAll(false)}>
 			Hide more settings
@@ -505,6 +593,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div> */}
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsMixer(obj)}
 				{getSettingsTransitions(obj)}
 
 				{showAllButton}

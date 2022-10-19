@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { KnownPeripheral, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo } from '@shared/api'
+import { KnownPeripheral, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralInfo, AnalogValue } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
 
 export interface PeripheralEvents {
@@ -9,6 +9,8 @@ export interface PeripheralEvents {
 
 	keyDown: (identifier: string) => void
 	keyUp: (identifier: string) => void
+
+	analog: (identifier: string, value: AnalogValue) => void
 }
 export declare interface Peripheral {
 	on<U extends keyof PeripheralEvents>(event: U, listener: PeripheralEvents[U]): this
@@ -53,6 +55,7 @@ export abstract class Peripheral extends EventEmitter {
 			tracker.stop()
 		}
 		this.trackers = {}
+		this.previousValuesForAbsolute.clear()
 
 		if (this.initializing) {
 			// We have to wait for the peripheral to finish initializing before we can close it.
@@ -77,4 +80,28 @@ export abstract class Peripheral extends EventEmitter {
 	abstract setConnectedToParent(connected: boolean): Promise<void>
 	abstract init(): Promise<void>
 	abstract close(): Promise<void>
+
+	private previousValuesForRelative = new Map<string, number>() // Stores previous absolute values
+	/** Compares a value with previous value and returns the delta */
+	protected getRelativeValue(identifier: string, absoluteValue: number): number {
+		const previousValue = this.previousValuesForRelative.get(identifier)
+		let deltaValue: number
+		if (previousValue === undefined) {
+			deltaValue = 0
+		} else {
+			deltaValue = absoluteValue - previousValue
+		}
+		this.previousValuesForRelative.set(identifier, absoluteValue)
+		return deltaValue
+	}
+	private previousValuesForAbsolute = new Map<string, number>() // Stores previous absolute values
+	/** Adds a value to previous value and returns an absolute value */
+	protected getAbsoluteValue(identifier: string, relativeValue: number): number {
+		const previousValue = this.previousValuesForAbsolute.get(identifier)
+
+		const absoluteValue = (previousValue ?? 0) + relativeValue
+		this.previousValuesForAbsolute.set(identifier, absoluteValue)
+
+		return absoluteValue
+	}
 }

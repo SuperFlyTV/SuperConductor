@@ -12,6 +12,7 @@ import { ActiveTrigger, ActiveTriggers, ApplicationTrigger, RundownTrigger } fro
 import { LogLevel } from '@shared/api'
 import { MoveTarget } from '../lib/util'
 import { CurrentSelectionAny } from '../lib/GUI'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -233,5 +234,6 @@ export interface IPCClientMethods {
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 	updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
+	updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 	updateFailedGlobalTriggers: (identifiers: string[]) => void
 }

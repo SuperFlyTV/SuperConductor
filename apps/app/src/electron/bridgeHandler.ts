@@ -1,4 +1,12 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike, KnownPeripheral } from '@shared/api'
+import {
+	KeyDisplay,
+	KeyDisplayTimeline,
+	PeripheralInfo,
+	BridgeAPI,
+	LoggerLike,
+	KnownPeripheral,
+	AnalogValue,
+} from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
@@ -9,6 +17,7 @@ import _ from 'lodash'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
+import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -179,6 +188,12 @@ export class BridgeHandler {
 		}
 	}
 	updateMappings(mappings: Mappings) {
+		// const fixedMappings: Mappings = {}
+		// for (const [layerName, mapping] of Object.entries(mappings)) {
+		// 	fixedMappings[ensureValidId(layerName)] = mapping
+		// }
+
+		// console.log('fixedMappings', fixedMappings)
 		if (!_.isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
@@ -188,6 +203,14 @@ export class BridgeHandler {
 		}
 	}
 	updateTimeline(timelineId: string, timeline: TSRTimeline | null) {
+		// if (timeline) {
+		// 	// fix timeline objects
+		// 	for (const obj of timeline) {
+		// 		ensureValidObject(obj)
+		// 	}
+		// }
+		// console.log('timeline', JSON.stringify(timeline))
+
 		if (!_.isEqual(this.timelines[timelineId], timeline)) {
 			if (timeline) {
 				this.timelines[timelineId] = timeline
@@ -380,6 +403,10 @@ abstract class AbstractBridgeConnection {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
+	protected _onPeripheralAnalog(deviceId: string, identifier: string, value: AnalogValue) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralAnalog(this.bridgeId, deviceId, identifier, value)
+	}
 	protected _onKnownPeripherals(knownPeripherals: { [peripheralId: string]: KnownPeripheral }) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updateKnownPeripherals(this.bridgeId, knownPeripherals)
@@ -422,6 +449,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralStatus(msg.deviceId, msg.info, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
+		} else if (msg.type === 'PeripheralAnalog') {
+			this._onPeripheralAnalog(msg.deviceId, msg.identifier, msg.value)
 		} else if (msg.type === 'DeviceRefreshStatus') {
 			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
 		} else if (msg.type === 'KnownPeripherals') {

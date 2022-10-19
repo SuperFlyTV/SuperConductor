@@ -14,6 +14,7 @@ import { makeDevData } from './makeDevData'
 import { getPartLabel, shortID } from '../lib/util'
 import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler'
+import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -999,6 +1000,16 @@ export class StorageHandler extends EventEmitter {
 			if (!bridge.settings.peripherals) bridge.settings.peripherals = {}
 		}
 		if (!project.deviceNames) project.deviceNames = {}
+
+		// Added on 2022-10-19:
+		if (!project.datastoreActions) project.datastoreActions = {}
+
+		// Ensure mapping id's are valid, Timeline-wise:
+		const mappings = project.mappings
+		project.mappings = {}
+		for (const [layerName, mapping] of Object.entries(mappings)) {
+			project.mappings[ensureValidId(layerName)] = mapping
+		}
 	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {
 		for (const group of rundown.groups) {
@@ -1050,6 +1061,9 @@ export class StorageHandler extends EventEmitter {
 							obj.obj.content.values = []
 						}
 					}
+
+					// Ensure layers id's are valid, Timeline-wise:
+					ensureValidObject(obj.obj)
 				}
 			}
 		}

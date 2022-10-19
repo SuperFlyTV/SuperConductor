@@ -1,5 +1,5 @@
 import { ResourceAny } from '@shared/models'
-import { KnownPeripheral, PeripheralSettingsAny } from './peripherals'
+import { AnalogValue, KnownPeripheral, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
@@ -15,6 +15,7 @@ export namespace BridgeAPI {
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
+			| PeripheralAnalog
 			| DeviceRefreshStatus
 			| KnownPeripherals
 
@@ -67,6 +68,12 @@ export namespace BridgeAPI {
 			deviceId: string
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
+		}
+		export interface PeripheralAnalog extends MessageBase {
+			type: 'PeripheralAnalog'
+			deviceId: string
+			identifier: string
+			value: AnalogValue
 		}
 
 		/**

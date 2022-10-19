@@ -17,7 +17,7 @@ import { TriggerPill } from '../../../../components/inputs/EditTrigger'
 import './style.scss'
 import { convertSorensenToElectron } from '../../../../../lib/triggers/identifiers'
 
-export const ApplicationActionsPage: React.FC = observer(function ProjectPage() {
+export const ApplicationActionsPage: React.FC = observer(function ApplicationActionsPage() {
 	return (
 		<ProjectPageLayout title="Triggers">
 			<ApplicationActions />

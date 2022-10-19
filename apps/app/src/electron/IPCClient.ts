@@ -8,6 +8,7 @@ import { IPCClientMethods } from '../ipc/IPCAPI'
 import { AppData } from '../models/App/AppData'
 import { ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {
@@ -37,6 +38,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralTriggers', peripheralTriggers)
+	}
+	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
+		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralAnalog', fullIdentifier, analog)
 	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDeviceRefreshStatus', deviceId, refreshing)
