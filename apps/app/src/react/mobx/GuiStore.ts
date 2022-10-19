@@ -59,6 +59,8 @@ interface ResourceLibrarySettings {
 	lastSelectedResourceId: string | null
 	nameFilterValue: string
 	deviceFilterValue: string[]
+	resourceTypeFilterValue: string[]
+	detailedFiltersExpanded: boolean
 }
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
@@ -70,6 +72,8 @@ export class GuiStore {
 		lastSelectedResourceId: null,
 		nameFilterValue: '',
 		deviceFilterValue: [],
+		resourceTypeFilterValue: [],
+		detailedFiltersExpanded: false,
 	}
 
 	definingArea: DefiningArea | null = null

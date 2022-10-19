@@ -619,6 +619,12 @@ export function getDeviceName(project: Project, deviceId: string) {
 export function getMappingName(mapping: Mapping, layerId: string): string {
 	return mapping.layerName ?? layerId
 }
+export function getResourceTypeName(resourceType: ResourceType): string {
+	if (!ResourceType[resourceType]) {
+		return 'Unknown type'
+	}
+	return ResourceType[resourceType] as string
+}
 /** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman", or null if it's not found */
 export function scatterMatchString(source: string, search: string): null | number {
 	search = search.toLowerCase()

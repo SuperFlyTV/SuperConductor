@@ -2,12 +2,12 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { SidebarContent } from './SidebarContent'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceType } from '@shared/models'
 import { flatten } from '@shared/lib'
 import { ResourceData } from './resource/ResourceData'
 import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
 import { Field, Form, Formik } from 'formik'
-import { getDeviceName, rateLimitIgnore, scatterMatchString } from '../../../lib/util'
+import { getDeviceName, getResourceTypeName, rateLimitIgnore, scatterMatchString } from '../../../lib/util'
 
 import {
 	Button,
@@ -19,17 +19,20 @@ import {
 	OutlinedInput,
 	TextField,
 	Typography,
-	Checkbox,
 	Select,
 	SelectChangeEvent,
 	Stack,
 	ButtonGroup,
+	Accordion,
+	AccordionSummary,
+	AccordionDetails,
+	Badge,
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
-import { HiRefresh } from 'react-icons/hi'
+import { HiRefresh, HiChevronDown } from 'react-icons/hi'
 import { useDebounce } from '../../lib/useDebounce'
 import { sortMappings } from '../../../lib/TSRMappings'
 import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
@@ -38,6 +41,7 @@ import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
 import { computed } from 'mobx'
 import sorensen from '@sofie-automation/sorensen'
 import { CB } from '../../lib/errorHandling'
+import { SmallCheckbox } from '../util/SmallCheckbox'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -63,9 +67,13 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		currentRundownId = undefined
 	}
 
-	const { selectedResourceIds, nameFilterValue, deviceFilterValue } = computed(
-		() => store.guiStore.resourceLibrary
-	).get()
+	const {
+		selectedResourceIds,
+		nameFilterValue,
+		deviceFilterValue,
+		resourceTypeFilterValue,
+		detailedFiltersExpanded,
+	} = computed(() => store.guiStore.resourceLibrary).get()
 	const selectedResource = useMemoComputedObject(
 		() => (selectedResourceIds.length === 1 ? store.resourcesStore.resources[selectedResourceIds[0]] : undefined),
 		[selectedResourceIds]
@@ -90,6 +98,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			return 0
 		})
 	}, [])
+
 	const resourcesFilteredByDevice = useMemo(() => {
 		if (deviceFilterValue.length <= 0) return sortedResources // fast path
 		return sortedResources.filter((resource) => {
@@ -97,14 +106,29 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		})
 	}, [deviceFilterValue, sortedResources])
 
-	const resourcesFilteredByDeviceAndName = useMemo(() => {
-		if (debouncedNameFilterValue.trim().length === 0) return resourcesFilteredByDevice // fast path
+	const resourceTypes = useMemo(() => {
+		const resourceTypeSet = new Set<ResourceType>()
+		resourcesFilteredByDevice.forEach((resource) => {
+			resourceTypeSet.add(resource.resourceType)
+		})
+		return Array.from(resourceTypeSet.values())
+	}, [resourcesFilteredByDevice])
+
+	const resourcesFilteredByType = useMemo(() => {
+		if (resourceTypeFilterValue.length <= 0) return resourcesFilteredByDevice
 		return resourcesFilteredByDevice.filter((resource) => {
+			return resourceTypeFilterValue.includes(resource.resourceType)
+		})
+	}, [resourcesFilteredByDevice, resourceTypeFilterValue])
+
+	const resourcesFilteredByDeviceAndName = useMemo(() => {
+		if (debouncedNameFilterValue.trim().length === 0) return resourcesFilteredByType // fast path
+		return resourcesFilteredByType.filter((resource) => {
 			return (
 				scatterMatchString(resource.displayName.toLowerCase(), debouncedNameFilterValue.toLowerCase()) !== null
 			)
 		})
-	}, [debouncedNameFilterValue, resourcesFilteredByDevice])
+	}, [debouncedNameFilterValue, resourcesFilteredByType])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
 		const ret: { [deviceId: string]: ResourceAny[] } = {}
@@ -130,6 +154,13 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		return Array.from(deviceIds)
 	}, [project.bridges])
 
+	const handleExpandDetailedFilter = useCallback((e: React.SyntheticEvent, expanded: boolean) => {
+		store.guiStore.updateResourceLibrary({
+			// On autofill we get a stringified value.
+			detailedFiltersExpanded: expanded,
+		})
+	}, [])
+
 	const handleDeviceFilterChange = useCallback((event: SelectChangeEvent<typeof deviceFilterValue>) => {
 		const {
 			target: { value },
@@ -137,6 +168,16 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		store.guiStore.updateResourceLibrary({
 			// On autofill we get a stringified value.
 			deviceFilterValue: typeof value === 'string' ? value.split(',') : value,
+		})
+	}, [])
+
+	const handleResourceTypeFilterChange = useCallback((event: SelectChangeEvent<typeof resourceTypeFilterValue>) => {
+		const {
+			target: { value },
+		} = event
+		store.guiStore.updateResourceLibrary({
+			// On autofill we get a stringified value.
+			resourceTypeFilterValue: typeof value === 'string' ? value.split(',') : value,
 		})
 	}, [])
 
@@ -261,6 +302,17 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		[]
 	)
 
+	const detailedFiltersCount = useMemo(
+		() =>
+			// count the amount of individual filters (not filter-elements) that are active
+			[deviceFilterValue.length > 0, resourceTypeFilterValue.length > 0].reduce(
+				(previous, current) => previous + (current ? 1 : 0),
+				0
+			),
+		[deviceFilterValue, resourceTypeFilterValue]
+	)
+	const hasDetailedFilters = detailedFiltersCount > 0
+
 	if (!currentRundownId) {
 		return null
 	}
@@ -308,29 +360,6 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				</div>
 			</div>
 
-			<FormControl margin="dense" size="small" fullWidth>
-				<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
-				<Select
-					labelId="resource-library-deviceid-filter-label"
-					id="resource-library-deviceid-filter"
-					multiple
-					value={deviceFilterValue}
-					onChange={handleDeviceFilterChange}
-					input={<OutlinedInput label="Filter Resources by Device" />}
-					renderValue={(selectedDeviceIds) =>
-						selectedDeviceIds.map((deviceId) => getDeviceName(project, deviceId)).join(', ')
-					}
-					MenuProps={MenuProps}
-				>
-					{deviceIds.map((deviceId) => (
-						<MenuItem key={deviceId} value={deviceId}>
-							<Checkbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
-							<ListItemText primary={getDeviceName(project, deviceId)} />
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
-
 			<TextField
 				size="small"
 				margin="normal"
@@ -340,12 +369,73 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				InputProps={{
 					type: 'search',
 				}}
+				sx={{ mt: 0 }}
 				onChange={(event) => {
 					store.guiStore.updateResourceLibrary({
 						nameFilterValue: event.target.value,
 					})
 				}}
 			/>
+
+			<Accordion expanded={detailedFiltersExpanded} onChange={handleExpandDetailedFilter}>
+				<AccordionSummary expandIcon={<HiChevronDown />} aria-controls="panel1bh-content" id="panel1bh-header">
+					<Typography>
+						<Badge badgeContent={detailedFiltersCount} color="primary" hidden={!hasDetailedFilters}>
+							Detailed filters
+						</Badge>
+					</Typography>
+				</AccordionSummary>
+				<AccordionDetails>
+					<FormControl margin="dense" size="small" fullWidth>
+						<InputLabel id="resource-library-deviceid-filter-label">Filter Resources by Device</InputLabel>
+						<Select
+							labelId="resource-library-deviceid-filter-label"
+							id="resource-library-deviceid-filter"
+							multiple
+							value={deviceFilterValue}
+							onChange={handleDeviceFilterChange}
+							input={<OutlinedInput label="Filter Resources by Device" />}
+							renderValue={(selectedDeviceIds) =>
+								selectedDeviceIds.map((deviceId) => getDeviceName(project, deviceId)).join(', ')
+							}
+							MenuProps={MenuProps}
+						>
+							{deviceIds.map((deviceId) => (
+								<MenuItem key={deviceId} value={deviceId} dense>
+									<SmallCheckbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
+									<ListItemText primary={getDeviceName(project, deviceId)} />
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<FormControl margin="dense" size="small" fullWidth>
+						<InputLabel id="resource-library-resource-type-filter-label">
+							Filter Resources by Type
+						</InputLabel>
+						<Select
+							labelId="resource-library-resource-type-filter-label"
+							id="resource-library-resource-type-filter"
+							multiple
+							value={resourceTypeFilterValue}
+							onChange={handleResourceTypeFilterChange}
+							input={<OutlinedInput label="Filter Resources by Type" />}
+							renderValue={(selectedResourceTypes) =>
+								selectedResourceTypes
+									.map((resourceType) => getResourceTypeName(resourceType as ResourceType))
+									.join(', ')
+							}
+							MenuProps={MenuProps}
+						>
+							{resourceTypes.map((resourceType) => (
+								<MenuItem key={resourceType} value={resourceType} dense>
+									<SmallCheckbox checked={resourceTypeFilterValue.indexOf(resourceType) > -1} />
+									<ListItemText primary={getResourceTypeName(resourceType as ResourceType)} />
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+				</AccordionDetails>
+			</Accordion>
 		</>
 	)
 	const displayItems = allListItems.slice(0, listItemsLimit)
