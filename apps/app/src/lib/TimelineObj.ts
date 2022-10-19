@@ -287,6 +287,10 @@ export function modifyTimelineObjectForPlayout(
 					obj.content.data = parametersToCasparXML(data)
 				}
 			}
+			// Templates doesn't support Transitions, so we remove them.
+			// This is a temporary fix for a but in TSR and can be removed later.
+			// (the bug is that a template is stopped with a PLAY "empty" instead of a CG STOP )
+			delete obj.content.transitions
 		}
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
 		if (obj.content.type === TimelineContentTypePharos.TIMELINE) {
