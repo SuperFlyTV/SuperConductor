@@ -13,6 +13,7 @@ import { Peripheral } from './peripherals/peripheral'
 import { PeripheralWatcher } from './peripheralWatcher'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
+import { PeripheralMIDI } from './peripherals/midi'
 import { assertNever } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {
@@ -289,6 +290,8 @@ export class PeripheralsHandler extends EventEmitter {
 				return new PeripheralStreamDeck(this.log, id, info.devicePath)
 			case PeripheralType.XKEYS:
 				return new PeripheralXkeys(this.log, id, info.devicePath)
+			case PeripheralType.MIDI:
+				return new PeripheralMIDI(this.log, id, info.devicePath)
 			default:
 				assertNever(info.type)
 		}

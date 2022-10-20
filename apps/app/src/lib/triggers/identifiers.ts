@@ -121,7 +121,7 @@ export function convertSorensenToElectron(identifier: string): string | null {
 			}
 			{
 				// Alphanumeric characters:
-				if (cleanedIdentifier.match(/^[a-zA-c0-9]$/)) {
+				if (cleanedIdentifier.match(/^[a-zA-Z0-9]$/)) {
 					return cleanedIdentifier
 				}
 			}

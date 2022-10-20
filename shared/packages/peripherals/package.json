@@ -43,6 +43,7 @@
 	},
 	"devDependencies": {
 		"@types/sharp": "^0.29.5",
+		"@types/midi": "^2.0.0",
 		"winston": "^3.7.2"
 	},
 	"dependencies": {
@@ -51,6 +52,7 @@
 		"@shared/api": "^0.9.3",
 		"@shared/lib": "^0.9.3",
 		"lodash": "^4.17.21",
+		"midi": "^2.0.0",
 		"p-queue": "^6.6.2",
 		"sharp": "^0.30.0",
 		"superfly-timeline": "^8.2.5",
