@@ -1,7 +1,7 @@
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import * as MIDI from 'midi'
-import { Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral } from './peripheral'
 
 /** An interval (ms) for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 250
@@ -9,9 +9,15 @@ const FLASH_FAST = 250
 const FLASH_NORMAL = 1000
 
 export class PeripheralMIDI extends Peripheral {
+	private static Watching = false
 	private connectedToParent = false
-	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralMIDI) => void) {
-		const seenDevices = new Map<string, PeripheralMIDI>()
+	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
+		if (PeripheralMIDI.Watching) {
+			throw new Error('Already watching')
+		}
+		PeripheralMIDI.Watching = true
+
+		const seenDevices = new Set<string>()
 
 		const Input = new MIDI.Input()
 
@@ -19,27 +25,19 @@ export class PeripheralMIDI extends Peripheral {
 			const inputCount = Input.getPortCount()
 			// const outputCount = Input.getPortCount()
 			for (let i = 0; i < inputCount; i++) {
-				const id = `${i}: ${Input.getPortName(i)}`
-				const existingDevice = seenDevices.get(id)
+				const name = Input.getPortName(i)
+				const id = `${i}: ${name}`
+				const existingDevice = seenDevices.has(id)
 				if (!existingDevice) {
-					const newDevice = new PeripheralMIDI(log, id, i)
-					seenDevices.set(id, newDevice)
-					newDevice
-						.init()
-						.then(() => onDevice(newDevice))
-						.catch(log.error)
-				} else {
-					if (existingDevice && !existingDevice.connected && !existingDevice.initializing) {
-						existingDevice
-							.init()
-							.then(() => {
-								existingDevice.emit('connected')
-							})
-							.catch(log.error)
-					}
+					seenDevices.add(id)
+
+					// Tell the watcher about the discovered Xkeys panel.
+					onKnownPeripheral(id, {
+						name: name,
+						type: PeripheralType.MIDI,
+						devicePath: `${i}`,
+					})
 				}
-				// Temporary (?) hack: only use one MIDI device for now.
-				break
 			}
 		}
 
@@ -49,9 +47,11 @@ export class PeripheralMIDI extends Peripheral {
 		return {
 			stop: () => {
 				clearInterval(interval)
+				PeripheralMIDI.Watching = false
 			},
 		}
 	}
+	private portIndex: number
 
 	public initializing = false
 	public connected = false
@@ -77,8 +77,9 @@ export class PeripheralMIDI extends Peripheral {
 		}
 	>()
 
-	constructor(log: LoggerLike, id: string, private portIndex: number) {
+	constructor(log: LoggerLike, id: string, portIndexString: string) {
 		super(log, id)
+		this.portIndex = parseInt(portIndexString, 10)
 	}
 
 	async init(): Promise<void> {

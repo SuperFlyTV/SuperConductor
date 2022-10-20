@@ -16,7 +16,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
@@ -27,10 +27,12 @@ import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { HTTPAPI } from './HTTPAPI'
 
 export class SuperConductor {
 	ipcServer: IPCServer
 	clients: { ipcClient: IPCClient; window: BrowserWindow }[] = []
+	httpAPI?: HTTPAPI
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -49,26 +51,17 @@ export class SuperConductor {
 
 	private hasStoredStartupUserStatistics = false
 
+	private internalHttpApiPort = 5500
+	private disableInternalHttpApi = false
+
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
-		this.storage = new StorageHandler(
-			log,
-			{
-				// Default window position:
-				y: undefined,
-				x: undefined,
-				width: 1200,
-				height: 600,
-				maximized: false,
-			},
-			CURRENT_VERSION
-		)
-		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
 
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateBridgeStatus(id, status))
 		})
 		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
+			this.triggers.onPeripheralStatus(peripheralId, peripheral)
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheral(peripheralId, peripheral))
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
@@ -82,8 +75,14 @@ export class SuperConductor {
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
 		})
+		this.session.on('selection', () => {
+			this.triggers?.triggerUpdatePeripherals()
+		})
+
+		this.storage = new StorageHandler(log, CURRENT_VERSION)
 		this.storage.on('appData', (appData: AppData) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('project', (project: Project) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
@@ -91,6 +90,7 @@ export class SuperConductor {
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
@@ -99,12 +99,18 @@ export class SuperConductor {
 			this.triggerHandleAutoFill()
 		})
 
-		for (const argv of process.argv) {
-			if (argv === '--disable-telemetry') {
+		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
+
+		process.argv.forEach((value, index) => {
+			if (value === '--disable-telemetry') {
 				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
+			} else if (value === '--disable-internal-http-api') {
+				this.disableInternalHttpApi = true
+			} else if (value === '--internal-http-api-port') {
+				this.internalHttpApiPort = parseInt(process.argv[index + 1], 10)
 			}
-		}
+		})
 
 		const appData = this.storage.getAppData()
 		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
@@ -210,7 +216,20 @@ export class SuperConductor {
 				this.telemetryHandler.onError(error, stack)
 			},
 		})
-		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
+
+		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
+			this.clients.forEach((client) =>
+				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
+			)
+		})
+		this.ipcServer.triggers = this.triggers
+
+		if (this.disableInternalHttpApi) {
+			this.log.info(`Internal HTTP API disabled`)
+		} else {
+			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+		}
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.

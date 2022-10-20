@@ -48,7 +48,7 @@ export class ProjectStore {
 		this.availableAreas = []
 
 		for (const [bridgeId, bridge] of Object.entries(this.project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+			for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
 				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 					this.availableAreas.push({
 						bridgeId,

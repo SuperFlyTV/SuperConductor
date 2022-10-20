@@ -6,10 +6,14 @@ import { TextBtn } from '../../../../components/inputs/textBtn/TextBtn'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { TextField } from '@mui/material'
+import { Stack, TextField } from '@mui/material'
+import { PeripheralsList } from '../peripheralsList/PeripheralsList'
 
 import './style.scss'
 import { NewDeviceDialog } from '../bridgesPage/NewDeviceDialog'
+
+import Toggle from 'react-toggle'
+import 'react-toggle/style.css'
 
 export const BridgeItemContent: React.FC<{
 	id: string
@@ -55,6 +59,11 @@ export const BridgeItemContent: React.FC<{
 		delete project.bridges[props.bridge.id]
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
+
+	const toggleAutoConnectToAllPeripherals = useCallback(() => {
+		props.bridge.settings.autoConnectToAllPeripherals = !props.bridge.settings.autoConnectToAllPeripherals
+		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+	}, [handleError, ipcServer, project, props.bridge.settings])
 
 	const outgoingBridge: boolean = props.bridge.outgoing
 
@@ -113,6 +122,28 @@ export const BridgeItemContent: React.FC<{
 					bridge={props.bridge}
 					devices={props.bridgeStatus ? props.bridgeStatus.devices : {}}
 					newlyCreatedDeviceId={newlyCreatedDeviceId}
+				/>
+			</RoundedSection>
+
+			<RoundedSection
+				title="Panels"
+				controls={
+					<Stack direction="row" spacing={1}>
+						<label>Auto-connect to all panels</label>
+						<div className="sc-switch">
+							<Toggle
+								checked={props.bridge.settings.autoConnectToAllPeripherals}
+								onChange={toggleAutoConnectToAllPeripherals}
+							/>
+						</div>
+					</Stack>
+				}
+			>
+				<PeripheralsList
+					autoConnectToAllPeripherals={props.bridge.settings.autoConnectToAllPeripherals}
+					bridgeId={props.bridge.id}
+					statuses={props.bridgeStatus.peripherals}
+					settings={props.bridge.settings.peripherals}
 				/>
 			</RoundedSection>
 

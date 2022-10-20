@@ -28,8 +28,10 @@ export const NewBridgeDialog: React.FC<{
 				url: url,
 				settings: {
 					devices: {},
+					peripherals: {},
+					autoConnectToAllPeripherals: true,
 				},
-				peripheralSettings: {},
+				clientSidePeripheralSettings: {},
 			})
 
 			project.bridges[newBridge.id] = newBridge

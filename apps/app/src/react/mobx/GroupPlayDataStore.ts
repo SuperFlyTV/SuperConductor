@@ -13,6 +13,8 @@ export class GroupPlayDataStore {
 	serverAPI: IPCServer
 	logger: ClientSideLogger
 	ipcClient: IPCClient
+	private updateGroupPlayDataLowLatency: boolean
+	private updateGroupPlayDataFrameCount: number
 
 	private rundown: Rundown | undefined = undefined
 
@@ -22,9 +24,13 @@ export class GroupPlayDataStore {
 		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
 			updateRundown: (_rundownId: string, rundown: Rundown) => {
 				this.rundown = rundown
+				this.updateGroupPlayDataLowLatency = true
 			},
 		})
 		makeAutoObservable(this)
+
+		this.updateGroupPlayDataLowLatency = true
+		this.updateGroupPlayDataFrameCount = 0
 
 		window.requestAnimationFrame(() => {
 			this.updateGroupPlayData()
@@ -33,18 +39,27 @@ export class GroupPlayDataStore {
 
 	private updateGroupPlayData() {
 		if (this.rundown) {
-			// Update the groups map with the latest groups from the rundown and fresh playhead data for them.
-			for (const group of this.rundown.groups) {
-				const newData = getGroupPlayData(group.preparedPlayData)
-				if (!_.isEqual(newData, this.groups.get(group.id))) {
-					this.groups.set(group.id, newData)
-				}
-			}
+			this.updateGroupPlayDataFrameCount++
+			if (this.updateGroupPlayDataLowLatency || this.updateGroupPlayDataFrameCount % 5 === 0) {
+				this.updateGroupPlayDataLowLatency = false
 
-			// Go through the groups map and remove any groups which no longer exist in the rundown.
-			for (const groupId in this.groups) {
-				if (!(groupId in this.rundown.groups)) {
-					this.groups.delete(groupId)
+				// Update the groups map with the latest groups from the rundown and fresh playhead data for them.
+				for (const group of this.rundown.groups) {
+					const newData = getGroupPlayData(group.preparedPlayData)
+					if (!_.isEqual(newData, this.groups.get(group.id))) {
+						this.groups.set(group.id, newData)
+
+						if (newData.anyPartIsPlaying) {
+							this.updateGroupPlayDataLowLatency = true
+						}
+					}
+				}
+
+				// Go through the groups map and remove any groups which no longer exist in the rundown.
+				for (const groupId in this.groups) {
+					if (!(groupId in this.rundown.groups)) {
+						this.groups.delete(groupId)
+					}
 				}
 			}
 		}

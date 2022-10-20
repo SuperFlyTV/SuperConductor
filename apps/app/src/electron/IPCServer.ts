@@ -1,6 +1,10 @@
+import * as fs from 'fs'
+import { dialog } from 'electron'
 import {
 	allowAddingResourceToLayer,
 	allowMovingPartIntoGroup,
+	copyGroup,
+	copyPart,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -10,7 +14,6 @@ import {
 	findTimelineObj,
 	findTimelineObjIndex,
 	findTimelineObjInRundown,
-	generateNewTimelineObjIds,
 	getMappingName,
 	getNextPartIndex,
 	getPositionFromTarget,
@@ -30,13 +33,14 @@ import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { StorageHandler } from './storageHandler'
+import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
+import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
 import {
@@ -46,15 +50,18 @@ import {
 	sortMappings,
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from './defaults'
-import { ActiveTrigger, Trigger } from '../models/rundown/Trigger'
+import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
-import { PeripheralArea, PeripheralSettings } from '..//models/project/Peripheral'
-import { DefiningArea } from '..//lib/triggers/keyDisplay'
+import { PeripheralArea } from '../models/project/Peripheral'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike, LogLevel } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
+import { CurrentSelectionAny } from '../lib/GUI'
+import { BridgePeripheralSettings } from '../models/project/Bridge'
+import { TriggersHandler } from './triggersHandler'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -71,7 +78,7 @@ type IPCServerEvents = {
 	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
 }
 
-function isUndoable(result: unknown): result is UndoableResult<any> {
+export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
 		return false
 	}
@@ -88,7 +95,7 @@ function isUndoable(result: unknown): result is UndoableResult<any> {
 }
 
 type ConvertToServerSide<T> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => any
+	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
 		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
@@ -100,6 +107,7 @@ export class IPCServer
 	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
 	implements ConvertToServerSide<IPCServerMethods>
 {
+	public triggers?: TriggersHandler
 	private undoLedger: UndoLedger = []
 	private undoPointer: UndoPointer = -1
 
@@ -163,36 +171,40 @@ export class IPCServer
 			}
 		}
 	}
-	private getProject(): Project {
+	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	private getRundown(arg: { rundownId: string }): { rundown: Rundown } {
+	public getRundowns(): { rundownIds: string[] } {
+		const rundowns = this.storage.getAllRundowns()
+		return { rundownIds: rundowns.map((r) => r.id) }
+	}
+	public getRundown(arg: { rundownId: string }): { rundown: Rundown } {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) throw new Error(`Rundown "${arg.rundownId}" not found.`)
 
 		return { rundown }
 	}
-	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
+	public getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
-		return this.getGroupOfRundown(rundown, arg.groupId)
+		return this._getGroupOfRundown(rundown, arg.groupId)
 	}
-	private getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
+	private _getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
 		const group = findGroup(rundown, groupId)
 		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
 
 		return { rundown, group }
 	}
 
-	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
+	public getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-		return this.getPartOfGroup(rundown, group, arg.partId)
+		return this._getPartOfGroup(rundown, group, arg.partId)
 	}
-	private getPartOfGroup(
+	private _getPartOfGroup(
 		rundown: Rundown,
 		group: Group,
 		partId: string
@@ -236,41 +248,42 @@ export class IPCServer
 		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
 	}
 
-	async log(method: LogLevel, ...args: any[]): Promise<void> {
-		this._renderLog[method](args[0], ...args.slice(1))
+	async log(arg: { level: LogLevel; params: any[] }): Promise<void> {
+		this._renderLog[arg.level](arg.params[0], ...arg.params.slice(1))
 	}
-	async handleClientError(error: string, stack?: string): Promise<void> {
+	async handleClientError(arg: { error: string; stack?: string }): Promise<void> {
 		// Handle an error thrown in the client
-		this.callbacks.handleError('Client error: ' + error, stack)
+		this.callbacks.handleError('Client error: ' + arg.error, arg.stack)
 	}
-	async debugThrowError(type: 'sync' | 'async' | 'setTimeout'): Promise<void> {
+	async debugThrowError(arg: { type: 'sync' | 'async' | 'setTimeout' }): Promise<void> {
 		// This method is used for development-purposes only, to check how error reporting works.
 
-		if (type === 'sync') {
+		if (arg.type === 'sync') {
 			throw new Error('This is an error in an IPC method')
-		} else if (type === 'async') {
+		} else if (arg.type === 'async') {
 			await new Promise((_, reject) => {
 				setTimeout(() => {
 					reject(new Error('This is an error in a promise'))
 				}, 10)
 			})
-		} else if (type === 'setTimeout') {
+		} else if (arg.type === 'setTimeout') {
 			setTimeout(() => {
 				throw new Error('This is an error in a setTImeout')
 			}, 10)
 		} else {
-			assertNever(type)
+			assertNever(arg.type)
 		}
 	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
+		this.triggers?.triggerEmitAll()
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
 	}
-	async setKeyboardKeys(data: { activeKeys: ActiveTrigger[] }): Promise<void> {
-		this.callbacks.setKeyboardKeys(data.activeKeys)
+	async setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): Promise<void> {
+		this.callbacks.setKeyboardKeys(arg.activeKeys)
 	}
 	async makeDevData(): Promise<void> {
 		await this.callbacks.makeDevData()
@@ -281,15 +294,75 @@ export class IPCServer
 		appData.version.seenVersion = appData.version.currentVersion
 		this.storage.updateAppData(appData)
 	}
-	async acknowledgeUserAgreement(agreementVersion: string): Promise<void> {
+	async acknowledgeUserAgreement(arg: { agreementVersion: string }): Promise<void> {
 		const appData = this.storage.getAppData()
-		appData.userAgreement = agreementVersion
+		appData.userAgreement = arg.agreementVersion
 
 		this.storage.updateAppData(appData)
-		if (agreementVersion) {
+		if (arg.agreementVersion) {
 			this.callbacks.onAgreeToUserAgreement()
 		}
 	}
+	async updateGUISelection(arg: { selection: Readonly<CurrentSelectionAny[]> }): Promise<void> {
+		this.session.updateSelection(arg.selection)
+	}
+
+	async exportProject(): Promise<void> {
+		const result = await dialog.showSaveDialog({
+			title: 'Export Project',
+			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
+			buttonLabel: 'Save',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['showOverwriteConfirmation'],
+		})
+
+		if (!result.canceled) {
+			if (result.filePath) {
+				const exportData = JSON.stringify(this.storage.getProjectForExport())
+
+				await fs.promises.writeFile(result.filePath, exportData, 'utf-8')
+			}
+		}
+	}
+	async importProject(): Promise<void> {
+		const result = await dialog.showOpenDialog({
+			title: 'Import Project',
+			buttonLabel: 'Import',
+			filters: [
+				{ name: 'Project files', extensions: ['project.json'] },
+				{ name: 'All Files', extensions: ['*'] },
+			],
+			properties: ['openFile'],
+		})
+		if (!result.canceled) {
+			const filePath = result.filePaths[0]
+			if (filePath) {
+				const exportDataStr = await fs.promises.readFile(filePath, 'utf-8')
+				let exportData: ExportProjectData | undefined = undefined
+				try {
+					exportData = JSON.parse(exportDataStr)
+				} catch (err) {
+					throw new Error(`Invalid project file (error: ${err})`)
+				}
+				if (exportData) {
+					await this.storage.importProject(exportData)
+				}
+			}
+		}
+	}
+	async newProject(): Promise<void> {
+		await this.storage.newProject('New Project')
+	}
+	async listProjects(): Promise<{ name: string; id: string }[]> {
+		return this.storage.listProjects()
+	}
+	async openProject(arg: { projectId: string }): Promise<void> {
+		return this.storage.openProject(arg.projectId)
+	}
+
 	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
@@ -298,19 +371,19 @@ export class IPCServer
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	private async playParts(rundownId: string, groupId: string, partIds: string[]): Promise<void> {
+	private async playParts(arg: { rundownId: string; groupId: string; partIds: string[] }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup({
-			rundownId,
-			groupId,
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
 		})
-		for (const partId of partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+		for (const partId of arg.partIds) {
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
 			this._playPart(group, part, now)
 		}
 
-		this._saveUpdates({ rundownId, rundown, group })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	private _playPart(group: Group, part: Part, now: number): void {
 		if (part.disabled) {
@@ -338,22 +411,22 @@ export class IPCServer
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	async pauseParts(rundownId: string, groupId: string, partIds: string[], time?: number): Promise<void> {
+	async pauseParts(arg: { rundownId: string; groupId: string; partIds: string[]; time?: number }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup({
-			rundownId,
-			groupId,
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
 		})
 		updateGroupPlayingParts(group)
-		for (const partId of partIds) {
-			const { part } = this.getPartOfGroup(rundown, group, partId)
+		for (const partId of arg.partIds) {
+			const { part } = this._getPartOfGroup(rundown, group, partId)
 
-			this._pausePart(group, part, time, now)
+			this._pausePart(group, part, arg.time, now)
 
 			// group.preparedPlayData
 		}
 
-		this._saveUpdates({ rundownId, rundown, group })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
 		if (part.disabled) {
@@ -428,7 +501,7 @@ export class IPCServer
 		rundownId: string
 		groupId: string
 		partId: string
-		trigger: Trigger | null
+		trigger: RundownTrigger | null
 		triggerIndex: number | null
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
@@ -493,11 +566,11 @@ export class IPCServer
 			}
 		} else {
 			// Play all parts (disabled parts won't get played)
-			this.playParts(
-				arg.rundownId,
-				arg.groupId,
-				group.parts.map((part) => part.id)
-			).catch(this._log.error)
+			this.playParts({
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+				partIds: group.parts.map((part) => part.id),
+			}).catch(this._log.error)
 		}
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -532,14 +605,18 @@ export class IPCServer
 			const playingPartIds = Object.keys(group.playout.playingParts)
 			if (playingPartIds.length === 0) {
 				// Cue all parts
-				this.pauseParts(
-					arg.rundownId,
-					arg.groupId,
-					group.parts.map((part) => part.id)
-				).catch(this._log.error)
+				this.pauseParts({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					partIds: group.parts.map((part) => part.id),
+				}).catch(this._log.error)
 			} else {
 				// Pause / resume all parts (disabled parts won't get played)
-				this.pauseParts(arg.rundownId, arg.groupId, playingPartIds).catch(this._log.error)
+				this.pauseParts({
+					rundownId: arg.rundownId,
+					groupId: arg.groupId,
+					partIds: playingPartIds,
+				}).catch(this._log.error)
 			}
 		}
 	}
@@ -1102,7 +1179,7 @@ export class IPCServer
 				movePart.rundownId === arg.to.rundownId && fromGroup.transparent && arg.to.groupId === null
 
 			if (arg.to.groupId) {
-				toGroup = this.getGroupOfRundown(toRundown, arg.to.groupId).group
+				toGroup = this._getGroupOfRundown(toRundown, arg.to.groupId).group
 			} else {
 				// toRundown = arg.to.rundownId === movePart.rundownId ? fromRundown : this.getRundown(arg.to).rundown
 				if (isTransparentGroupMove) {
@@ -1256,9 +1333,7 @@ export class IPCServer
 		const { rundown, group, part } = this.getPart(arg)
 
 		// Make a copy of the part, give it and all its children unique IDs, and leave it at the original position.
-		const copy = deepClone(part)
-		copy.id = shortID()
-		copy.timeline = generateNewTimelineObjIds(copy.timeline)
+		const copy = copyPart(part)
 
 		let newGroup: Group | undefined = undefined
 		if (group.transparent) {
@@ -1317,7 +1392,7 @@ export class IPCServer
 		for (const groupId of arg.groupIds) {
 			// Remove the group from the groups array and re-insert it at its new position
 
-			const group = this.getGroupOfRundown(rundown, groupId).group
+			const group = this._getGroupOfRundown(rundown, groupId).group
 
 			// Remove the group from the groups array and re-insert it at its new position
 			rundown.groups = rundown.groups.filter((g) => g.id !== group.id)
@@ -1350,12 +1425,7 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Make a copy of the group and give it and all its children unique IDs.
-		const groupCopy = deepClone(group)
-		groupCopy.id = shortID()
-		for (const part of groupCopy.parts) {
-			part.id = shortID()
-			part.timeline = generateNewTimelineObjIds(part.timeline)
-		}
+		const groupCopy = copyGroup(group)
 
 		// Insert the copy just below the original.
 		const originalPosition = rundown.groups.findIndex((g) => g.id === group.id)
@@ -1910,17 +1980,17 @@ export class IPCServer
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}
-	async refreshResourcesSetAuto(interval: number): Promise<void> {
-		this.callbacks.refreshResourcesSetAuto(interval)
+	async refreshResourcesSetAuto(arg: { interval: number }): Promise<void> {
+		this.callbacks.refreshResourcesSetAuto(arg.interval)
 	}
 	async triggerHandleAutoFill(): Promise<void> {
 		this.callbacks.triggerHandleAutoFill()
 	}
-	async updateProject(data: { id: string; project: Project }): Promise<void> {
-		this._saveUpdates({ project: data.project })
+	async updateProject(arg: { id: string; project: Project }): Promise<void> {
+		this._saveUpdates({ project: arg.project })
 	}
-	async newRundown(data: { name: string }): Promise<UndoableResult<void>> {
-		const fileName = this.storage.newRundown(data.name)
+	async newRundown(arg: { name: string }): Promise<UndoableResult<string>> {
+		const fileName = this.storage.newRundown(arg.name)
 		this._saveUpdates({})
 
 		return {
@@ -1929,74 +1999,69 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
+			result: fileName,
 		}
 	}
-	async deleteRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		const { rundown } = this.getRundown(data)
-
-		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+	async deleteRundown(arg: { rundownId: string }): Promise<void> {
+		const openRundown = this.storage.getRundown(arg.rundownId)
+		if (openRundown) {
+			// Stop all groups, to trigger relevant timeline-updates:
+			for (const group of openRundown.groups) {
+				await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
+			}
+			this._saveUpdates({ rundownId: openRundown.id, rundown: openRundown })
+			await this.storage.writeChangesNow()
 		}
 
-		const rundownFileName = this.storage.getRundownFilename(data.rundownId)
+		const rundownFileName = arg.rundownId // this.storage.getRundownFilename(arg.rundownId)
 		await this.storage.deleteRundown(rundownFileName)
 		this._saveUpdates({})
 
-		return {
-			undo: () => {
-				this.storage.restoreRundown(rundown)
-				this._saveUpdates({})
-			},
-			description: ActionDescription.DeleteRundown,
-		}
+		// Note: This is not undoable
 	}
-	async openRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		this.storage.openRundown(data.rundownId)
+	async openRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
+		this.storage.openRundown(arg.rundownId)
 		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				await this.storage.closeRundown(data.rundownId)
+				await this.storage.closeRundown(arg.rundownId)
 				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
 		}
 	}
-	async closeRundown(data: { rundownId: string }): Promise<UndoableResult<void>> {
-		const { rundown } = this.getRundown(data)
+	async closeRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		// Stop playout
 		for (const group of rundown.groups) {
-			await this.stopGroup({ rundownId: data.rundownId, groupId: group.id })
+			await this.stopGroup({ rundownId: arg.rundownId, groupId: group.id })
 		}
 
-		await this.storage.closeRundown(data.rundownId)
+		await this.storage.closeRundown(arg.rundownId)
 		this._saveUpdates({})
 
 		return {
 			undo: async () => {
-				this.storage.openRundown(data.rundownId)
+				this.storage.openRundown(arg.rundownId)
 				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
 		}
 	}
-	async listRundowns(data: {
-		projectId: string
-	}): Promise<{ fileName: string; version: number; name: string; open: boolean }[]> {
-		return this.storage.listRundownsInProject(data.projectId)
-	}
-	async renameRundown(data: { rundownId: string; newName: string }): Promise<UndoableResult<void>> {
-		const rundown = this.storage.getRundown(data.rundownId)
+
+	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
+		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		const originalName = rundown.name
-		const newRundownId = await this.storage.renameRundown(data.rundownId, data.newName)
+		const newRundownId = await this.storage.renameRundown(arg.rundownId, arg.newName)
 		this._saveUpdates({})
 
 		return {
@@ -2005,10 +2070,11 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.RenameRundown,
+			result: newRundownId,
 		}
 	}
-	async isRundownPlaying(data: { rundownId: string }): Promise<boolean> {
-		const { rundown } = this.getRundown(data)
+	async isRundownPlaying(arg: { rundownId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(arg)
 
 		for (const group of rundown.groups) {
 			const playData = getGroupPlayData(group.preparedPlayData)
@@ -2019,9 +2085,9 @@ export class IPCServer
 
 		return false
 	}
-	async isTimelineObjPlaying(data: { rundownId: string; timelineObjId: string }): Promise<boolean> {
-		const { rundown } = this.getRundown(data)
-		const findResult = findTimelineObjInRundown(rundown, data.timelineObjId)
+	async isTimelineObjPlaying(arg: { rundownId: string; timelineObjId: string }): Promise<boolean> {
+		const { rundown } = this.getRundown(arg)
+		const findResult = findTimelineObjInRundown(rundown, arg.timelineObjId)
 
 		if (!findResult) {
 			return false
@@ -2032,11 +2098,11 @@ export class IPCServer
 		const playData = getGroupPlayData(group.preparedPlayData)
 		return Boolean(playData.playheads[part.id])
 	}
-	async createMissingMapping(data: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
+	async createMissingMapping(arg: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()
-		const rundown = this.storage.getRundown(data.rundownId)
+		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
-			throw new Error(`Rundown "${data.rundownId}" not found`)
+			throw new Error(`Rundown "${arg.rundownId}" not found`)
 		}
 
 		// Find all timeline objects which reside on the missing layer.
@@ -2045,7 +2111,7 @@ export class IPCServer
 		for (const group of rundown.groups) {
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
-					if (timelineObj.obj.layer === data.mappingId) {
+					if (timelineObj.obj.layer === arg.mappingId) {
 						if (!timelineObj.resourceId)
 							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
 
@@ -2071,7 +2137,7 @@ export class IPCServer
 
 						const newMapping = getMappingFromTimelineObject(timelineObj.obj, deviceId, undefined)
 						if (newMapping) {
-							createdMappings[data.mappingId] = newMapping
+							createdMappings[arg.mappingId] = newMapping
 						}
 					}
 				}
@@ -2116,14 +2182,16 @@ export class IPCServer
 		}
 	}
 
-	async addPeripheralArea(data: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
+	async addPeripheralArea(arg: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
-		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+		const bridge = project.bridges[arg.bridgeId]
+		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		let peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (!peripheralSettings) {
-			bridge.peripheralSettings[data.deviceId] = peripheralSettings = {
+			bridge.clientSidePeripheralSettings[arg.deviceId] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2142,10 +2210,10 @@ export class IPCServer
 			undo: async () => {
 				if (newAreaId) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[arg.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 					delete peripheralSettings.areas[newAreaId]
@@ -2167,7 +2235,9 @@ export class IPCServer
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			removedArea = peripheralSettings.areas[data.areaId]
 			delete peripheralSettings.areas[data.areaId]
@@ -2181,8 +2251,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2191,7 +2261,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
 	async updatePeripheralArea(data: {
@@ -2206,7 +2276,9 @@ export class IPCServer
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.peripheralSettings[data.deviceId] as PeripheralSettings | undefined
+		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+			| BridgePeripheralSettings
+			| undefined
 		if (peripheralSettings) {
 			orgArea = deepClone(peripheralSettings.areas[data.areaId])
 
@@ -2224,8 +2296,8 @@ export class IPCServer
 					const project = this.storage.getProject()
 					const bridge = project.bridges[data.bridgeId]
 					if (!bridge) return
-					const peripheralSettings = bridge.peripheralSettings[data.deviceId] as
-						| PeripheralSettings
+					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
@@ -2234,7 +2306,7 @@ export class IPCServer
 					this._saveUpdates({ project })
 				}
 			},
-			description: ActionDescription.AddPeripheralArea,
+			description: ActionDescription.UpdatePeripheralArea,
 		}
 	}
 	async assignAreaToGroup(arg: {
@@ -2247,7 +2319,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2262,7 +2334,7 @@ export class IPCServer
 
 				const bridge = project.bridges[arg.bridgeId]
 				if (!bridge) return
-				const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+				const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 				if (!peripheralSettings) return
 				const area = peripheralSettings.areas[arg.areaId]
 				if (!area) return
@@ -2278,7 +2350,7 @@ export class IPCServer
 
 		const bridge = project.bridges[arg.bridgeId]
 		if (!bridge) return
-		const peripheralSettings = bridge.peripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2296,12 +2368,55 @@ export class IPCServer
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
+	async setApplicationTrigger(arg: {
+		triggerAction: ApplicationTrigger['action']
+		trigger: ApplicationTrigger | null
+		triggerIndex: number | null
+	}): Promise<UndoableResult<void> | undefined> {
+		const appData = this.storage.getAppData()
+
+		const originalTriggers = deepClone(appData.triggers)
+
+		let triggers: ApplicationTrigger[] = appData.triggers[arg.triggerAction] ?? []
+
+		if (arg.triggerIndex === null) {
+			// Replace any existing triggers:
+			triggers = arg.trigger ? [arg.trigger] : []
+		} else {
+			// Modify a trigger:
+			if (!arg.trigger) {
+				// Remove
+				triggers.splice(arg.triggerIndex, 1)
+			} else {
+				const triggerToEdit = triggers[arg.triggerIndex]
+				if (triggerToEdit) {
+					triggers[arg.triggerIndex] = arg.trigger
+				} else {
+					triggers.push(arg.trigger)
+				}
+			}
+		}
+		// Save changes:
+		appData.triggers[arg.triggerAction] = triggers
+
+		this._saveUpdates({ appData, noEffectOnPlayout: true })
+		return {
+			undo: () => {
+				const appData = this.storage.getAppData()
+				appData.triggers = originalTriggers
+				this._saveUpdates({ appData, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.SetApplicationTrigger,
+		}
+	}
 
 	/** Save updates to various data sets.
 	 * Use this last when there has been any changes to data.
 	 * This will also trigger updates of the playout (timeline), perihperals etc..
 	 */
 	private _saveUpdates(updates: {
+		appData?: AppData
+
 		project?: Project
 
 		rundownId?: string
@@ -2313,6 +2428,9 @@ export class IPCServer
 
 		noEffectOnPlayout?: boolean
 	}) {
+		if (updates.appData) {
+			this.storage.updateAppData(updates.appData)
+		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)
 		}

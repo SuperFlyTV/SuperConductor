@@ -3,7 +3,7 @@ import React from 'react'
 import './style.scss'
 
 export const TextBtn: React.FC<{
-	label: string
+	label: string | JSX.Element
 	style?: 'normal' | 'warning' | 'danger'
 	onClick?: React.MouseEventHandler<HTMLButtonElement>
 }> = (props) => {
