@@ -15,6 +15,7 @@ import { getPartLabel, shortID } from '../lib/util'
 import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
+import { AnalogInput } from '../models/project/AnalogInput'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -52,6 +53,10 @@ export class StorageHandler extends EventEmitter {
 	private emittedResources = new Set<string>()
 	private resourcesNeedsWrite = false
 
+	private analogInputs: { [fullIdentifier: string]: FileAnalogInput } = {}
+	private analogInputsHasChanged = new Set<string>()
+	private analogInputsNeedsWrite = false
+
 	private emitEverything = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
@@ -64,6 +69,7 @@ export class StorageHandler extends EventEmitter {
 		this.project = this.loadProject()
 		this.loadRundowns()
 		this.resources = this.loadResources()
+		this.analogInputs = this.loadAnalogInputs()
 
 		this.cleanUpData()
 	}
@@ -281,6 +287,7 @@ export class StorageHandler extends EventEmitter {
 
 		this.loadRundowns()
 		this.resources = this.loadResources()
+		this.analogInputs = this.loadAnalogInputs()
 
 		this.triggerUpdate({ project: true, appData: true })
 
@@ -296,6 +303,7 @@ export class StorageHandler extends EventEmitter {
 		this.project = this.loadProject()
 		this.loadRundowns()
 		this.resources = this.loadResources()
+		this.analogInputs = this.loadAnalogInputs()
 
 		this.triggerEmitAll()
 	}
@@ -542,6 +550,18 @@ export class StorageHandler extends EventEmitter {
 		await fsUnlink(this.telemetryPath)
 	}
 
+	getAnalogInput(fullIdentifier: string): AnalogInput | undefined {
+		return this.analogInputs[fullIdentifier]?.analogInput
+	}
+	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput) {
+		console.log('storage updateAnalogInput', analogInput)
+		this.analogInputs[fullIdentifier] = {
+			version: CURRENT_STORAGE_VERSION,
+			analogInput,
+		}
+		this.triggerUpdate({ analogInputs: { [fullIdentifier]: true } })
+	}
+
 	/** Triggered when the stored data has been updated */
 	private triggerUpdate(updates: {
 		appData?: true
@@ -549,6 +569,7 @@ export class StorageHandler extends EventEmitter {
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
 		resources?: { [resourceId: string]: true }
+		analogInputs?: { [fullIdentifier: string]: true }
 	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
@@ -568,6 +589,12 @@ export class StorageHandler extends EventEmitter {
 			for (const resourceId of Object.keys(updates.resources)) {
 				this.resourcesHasChanged.add(resourceId)
 				this.resourcesNeedsWrite = true
+			}
+		}
+		if (updates.analogInputs) {
+			for (const fullIdentifier of Object.keys(updates.analogInputs)) {
+				this.analogInputsHasChanged.add(fullIdentifier)
+				this.analogInputsNeedsWrite = true
 			}
 		}
 
@@ -816,6 +843,46 @@ export class StorageHandler extends EventEmitter {
 
 		return resources
 	}
+	private loadAnalogInputs(): { [fullIdentifier: string]: FileAnalogInput } {
+		let analogInputs: { [fullIdentifier: string]: FileAnalogInput } | undefined = {}
+
+		const analogInputPath = this.analogInputsPath(this._projectId)
+		try {
+			const read = fs.readFileSync(analogInputPath, 'utf8')
+			analogInputs = JSON.parse(read)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// not found
+				analogInputs = {}
+			} else {
+				throw new Error(`Unable to read Resources file "${analogInputPath}": ${error}`)
+			}
+		}
+
+		if (!analogInputs) {
+			// Second try; Check if there is a temporary file, to use instead?
+			const tmpPath = this.getTmpFilePath(analogInputPath)
+			try {
+				const read = fs.readFileSync(tmpPath, 'utf8')
+				analogInputs = JSON.parse(read)
+
+				// If we only have a temporary file, we should write to the real one asap:
+				this.analogInputsNeedsWrite = true
+			} catch (error) {
+				if ((error as any)?.code === 'ENOENT') {
+					// not found
+				} else {
+					throw new Error(`Unable to read temp AnalogInputs file "${tmpPath}": ${error}`)
+				}
+			}
+		}
+
+		if (!analogInputs) {
+			analogInputs = {}
+		}
+
+		return analogInputs
+	}
 
 	private getDefaultAppData(): FileAppData {
 		return {
@@ -858,6 +925,9 @@ export class StorageHandler extends EventEmitter {
 			for (const resourceId of this.emittedResources.keys()) {
 				this.resourcesHasChanged.add(resourceId)
 			}
+			for (const fullIdentifier of Object.keys(this.analogInputs)) {
+				this.analogInputsHasChanged.add(fullIdentifier)
+			}
 			this.emitEverything = false
 		}
 
@@ -899,6 +969,14 @@ export class StorageHandler extends EventEmitter {
 			if (emittedResource) this.emittedResources.add(resourceId)
 			else this.emittedResources.delete(resourceId)
 		}
+		for (const fullIdentifier of this.analogInputsHasChanged.keys()) {
+			let analogInput = this.analogInputs[fullIdentifier] as FileAnalogInput | undefined
+
+			const emittedAnalogInput = analogInput?.analogInput ?? null
+			this.emit('analogInput', fullIdentifier, emittedAnalogInput)
+
+			this.analogInputsHasChanged.delete(fullIdentifier)
+		}
 	}
 	private async writeChanges() {
 		await this._beforeWriteChanges()
@@ -928,7 +1006,12 @@ export class StorageHandler extends EventEmitter {
 		// Store Resources:
 		if (this.resourcesNeedsWrite) {
 			await this.writeFileSafe(this.resourcesPath(this._projectId), JSON.stringify(this.resources))
-			this.projectNeedsWrite = false
+			this.resourcesNeedsWrite = false
+		}
+		// Store AnalogInputs:
+		if (this.analogInputsNeedsWrite) {
+			await this.writeFileSafe(this.analogInputsPath(this._projectId), JSON.stringify(this.analogInputs))
+			this.analogInputsNeedsWrite = false
 		}
 	}
 	private async _beforeWriteChanges() {
@@ -1002,7 +1085,7 @@ export class StorageHandler extends EventEmitter {
 		if (!project.deviceNames) project.deviceNames = {}
 
 		// Added on 2022-10-19:
-		if (!project.datastoreActions) project.datastoreActions = {}
+		if (!project.analogInputSettings) project.analogInputSettings = {}
 
 		// Ensure mapping id's are valid, Timeline-wise:
 		const mappings = project.mappings
@@ -1093,6 +1176,9 @@ export class StorageHandler extends EventEmitter {
 	private resourcesPath(projectId: string): string {
 		return path.join(this.projectDir(projectId), 'resources.json')
 	}
+	private analogInputsPath(projectId: string): string {
+		return path.join(this.projectDir(projectId), 'analogInputs.json')
+	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')
 	}
@@ -1136,6 +1222,11 @@ interface FileResource {
 	 * Used to keep the resource around for some time, in case there is a "blip" where a resource is temporary removed (like on startups). */
 	deleted?: number
 	resource: ResourceAny
+}
+interface FileAnalogInput {
+	version: number
+
+	analogInput: AnalogInput
 }
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_STORAGE_VERSION = 0

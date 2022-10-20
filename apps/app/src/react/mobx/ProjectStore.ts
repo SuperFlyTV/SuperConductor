@@ -16,7 +16,7 @@ export class ProjectStore {
 			enableInternalBridge: false,
 		},
 		deviceNames: {},
-		datastoreActions: {},
+		analogInputSettings: {},
 	}
 
 	public assignedAreas: {

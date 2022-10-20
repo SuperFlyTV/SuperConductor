@@ -1,5 +1,5 @@
 import { Mappings, Datastore } from 'timeline-state-resolver-types'
-import { ActiveAnalog } from '../rundown/Analog'
+import { AnalogInput, AnalogInputs } from './AnalogInput'
 import { Bridge } from './Bridge'
 
 export interface Project {
@@ -10,7 +10,7 @@ export interface Project {
 	bridges: {
 		[bridgeId: string]: Bridge
 	}
-	datastoreActions: DatastoreActions
+	analogInputSettings: AnalogInputSettings
 
 	deviceNames: { [deviceId: string]: string }
 
@@ -23,26 +23,34 @@ export interface Settings {
 	enableInternalBridge: boolean
 }
 
-export interface DatastoreActions {
-	[datastoreKey: string]: DatastoreAction
+export interface AnalogInputSettings {
+	[datastoreKey: string]: AnalogInputSetting
 }
-export interface DatastoreAction {
+export interface AnalogInputSetting {
 	label: string
 
-	value: number
-	modified: number
+	/** Reference to an entry in the AnalogStore */
+	fullIdentifier: string | null
 
-	analog: ActiveAnalog | null
-	// TODO: relative vs absolute thing
+	/** Whether to update the analog value using the absolute or the relative analog value. */
+	updateUsingAbsolute?: boolean
+	scaleFactor?: number
+	relativeMinCap?: number
+	relativeMaxCap?: number
+	absoluteOffset?: number
 }
 
-function generateDatastore(project: Project): Datastore {
+function generateDatastore(project: Project, analogInputs: AnalogInputs): Datastore {
 	const datastore: Datastore = {}
 
-	for (const [datastoreKey, datastoreAction] of Object.entries(project.datastoreActions)) {
+	for (const [datastoreKey, analogInputSetting] of Object.entries(project.analogInputSettings)) {
+		if (!analogInputSetting.fullIdentifier) continue
+		const analogInput = analogInputs.analogs[analogInputSetting.fullIdentifier] as AnalogInput | undefined
+		if (!analogInput) continue
+
 		datastore[datastoreKey] = {
-			value: datastoreAction.value,
-			modified: datastoreAction.modified,
+			value: analogInput.value,
+			modified: analogInput.modified,
 		}
 	}
 	return datastore

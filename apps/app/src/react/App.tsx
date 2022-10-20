@@ -97,6 +97,9 @@ export const App = observer(function App() {
 			},
 			updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => {
 				console.log('updatePeripheralAnalog!', fullIdentifier, analog?.value)
+				if (analog) {
+					store.analogStore.updateActiveAnalog(analog)
+				}
 				// triggers.setPeripheralTriggers(peripheralTriggers)
 			},
 			displayAboutDialog: () => {

@@ -29,6 +29,8 @@ import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { HTTPAPI } from './HTTPAPI'
 import { ActiveAnalog } from '../models/rundown/Analog'
+import { AnalogHandler } from './analogHandler'
+import { AnalogInput } from '../models/project/AnalogInput'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -39,6 +41,7 @@ export class SuperConductor {
 	storage: StorageHandler
 	telemetryHandler: TelemetryHandler
 	triggers: TriggersHandler
+	analogHandler: AnalogHandler
 	bridgeHandler: BridgeHandler
 
 	private shuttingDown = false
@@ -70,7 +73,7 @@ export class SuperConductor {
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralTriggers(activeTriggers))
 		})
 		this.session.on('activeAnalog', (fullIdentifier: string, analog: ActiveAnalog | null) => {
-			// this.triggers?.updateActiveAnalog(fullIdentifier, analog)
+			this.analogHandler?.updateActiveAnalog(fullIdentifier, analog)
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralAnalog(fullIdentifier, analog))
 		})
 		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
@@ -102,6 +105,11 @@ export class SuperConductor {
 			this.resourceUpdatesToSend.push({ id, resource })
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
+		})
+		this.storage.on('analogInput', (fullIdentifier: string, analogInput: AnalogInput | null) => {
+			console.log('on analogInput', analogInput)
+			this.clients.forEach((clients) => clients.ipcClient.updateAnalogInput(fullIdentifier, analogInput))
+			this.analogHandler.updateAnalogInput(fullIdentifier, analogInput)
 		})
 
 		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
@@ -229,6 +237,8 @@ export class SuperConductor {
 			)
 		})
 		this.ipcServer.triggers = this.triggers
+
+		this.analogHandler = new AnalogHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
 
 		if (this.disableInternalHttpApi) {
 			this.log.info(`Internal HTTP API disabled`)
