@@ -17,7 +17,6 @@ import {
 	ListItemText,
 	MenuItem,
 	OutlinedInput,
-	TextField,
 	Typography,
 	Select,
 	SelectChangeEvent,
@@ -27,12 +26,14 @@ import {
 	AccordionSummary,
 	AccordionDetails,
 	Badge,
+	InputAdornment,
+	IconButton,
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
 import { store } from '../../mobx/store'
 import { observer } from 'mobx-react-lite'
-import { HiRefresh, HiChevronDown } from 'react-icons/hi'
+import { HiRefresh, HiChevronDown, HiOutlineX } from 'react-icons/hi'
 import { useDebounce } from '../../lib/useDebounce'
 import { sortMappings } from '../../../lib/TSRMappings'
 import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
@@ -158,6 +159,21 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		store.guiStore.updateResourceLibrary({
 			// On autofill we get a stringified value.
 			detailedFiltersExpanded: expanded,
+		})
+	}, [])
+
+	const handleClearNameFilter = useCallback(() => {
+		store.guiStore.updateResourceLibrary({
+			nameFilterValue: '',
+		})
+	}, [])
+
+	const handleClearDetailedFilter = useCallback((e: React.MouseEvent<HTMLElement>) => {
+		e.preventDefault()
+		e.stopPropagation()
+		store.guiStore.updateResourceLibrary({
+			deviceFilterValue: [],
+			resourceTypeFilterValue: [],
 		})
 	}, [])
 
@@ -312,6 +328,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		[deviceFilterValue, resourceTypeFilterValue]
 	)
 	const hasDetailedFilters = detailedFiltersCount > 0
+	const hasNameFilter = nameFilterValue !== ''
 
 	if (!currentRundownId) {
 		return null
@@ -360,22 +377,28 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				</div>
 			</div>
 
-			<TextField
-				size="small"
-				margin="normal"
-				fullWidth
-				label="Filter Resources by Name"
-				value={nameFilterValue}
-				InputProps={{
-					type: 'search',
-				}}
-				sx={{ mt: 0 }}
-				onChange={(event) => {
-					store.guiStore.updateResourceLibrary({
-						nameFilterValue: event.target.value,
-					})
-				}}
-			/>
+			<FormControl fullWidth size="small" sx={{ my: 1 }}>
+				<InputLabel htmlFor="resource-library-name-filter">Filter Resources by Name</InputLabel>
+				<OutlinedInput
+					id="resource-library-name-filter"
+					value={nameFilterValue}
+					onChange={(event) => {
+						store.guiStore.updateResourceLibrary({
+							nameFilterValue: event.target.value,
+						})
+					}}
+					endAdornment={
+						hasNameFilter && (
+							<InputAdornment position="end">
+								<IconButton aria-label="Clear name filter" edge="end" onClick={handleClearNameFilter}>
+									<HiOutlineX />
+								</IconButton>
+							</InputAdornment>
+						)
+					}
+					label="Filter Resources by Name"
+				/>
+			</FormControl>
 
 			<Accordion expanded={detailedFiltersExpanded} onChange={handleExpandDetailedFilter}>
 				<AccordionSummary expandIcon={<HiChevronDown />} aria-controls="panel1bh-content" id="panel1bh-header">
@@ -383,6 +406,16 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 						<Badge badgeContent={detailedFiltersCount} color="primary" hidden={!hasDetailedFilters}>
 							Detailed filters
 						</Badge>
+						{detailedFiltersCount > 0 && (
+							<IconButton
+								aria-label="Clear detailed filters"
+								edge="end"
+								onClick={handleClearDetailedFilter}
+								sx={{ m: 0, p: 0, ml: 3 }}
+							>
+								<HiOutlineX />
+							</IconButton>
+						)}
 					</Typography>
 				</AccordionSummary>
 				<AccordionDetails>
