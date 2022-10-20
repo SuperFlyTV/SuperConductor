@@ -1,3 +1,5 @@
+@import './../../../styles/foundation/variables';
+
 .btn {
 	cursor: pointer;
 	display: inline-flex;
@@ -10,7 +12,7 @@
 	margin: 0;
 	vertical-align: middle;
 
-	font-family: Barlow, sans-serif;
+	font-family: $mainFont;
 	font-weight: 500;
 	font-size: 1.3rem;
 	line-height: 1.75;
