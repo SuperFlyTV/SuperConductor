@@ -4,9 +4,10 @@ import React from 'react'
 export const BooleanInput: React.FC<{
 	currentValue: boolean | undefined
 	onChange: (newValue: boolean) => void
-	label: string
+	label: string | number | React.ReactElement<any, string | React.JSXElementConstructor<any>>
 	disabled?: boolean
-}> = ({ currentValue, onChange, label, disabled }) => {
+	endAdornment?: React.ReactNode
+}> = ({ currentValue, onChange, label, disabled, endAdornment }) => {
 	return (
 		<FormGroup>
 			<FormControlLabel
@@ -21,6 +22,7 @@ export const BooleanInput: React.FC<{
 				}
 				label={label}
 			/>
+			{endAdornment}
 		</FormGroup>
 	)
 }

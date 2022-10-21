@@ -37,6 +37,7 @@ import { FloatInput } from '../../../inputs/FloatInput'
 import { TextBtn } from '../../../inputs/textBtn/TextBtn'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
+import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -448,6 +449,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
+						endAdornment={<AnalogInputOverridePicker />}
 					/>
 				</div>
 			)
@@ -464,6 +466,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
+						endAdornment={<AnalogInputOverridePicker />}
 					/>
 				</div>
 			)
@@ -480,6 +483,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
+						endAdornment={<AnalogInputOverridePicker />}
 					/>
 				</div>
 			)
@@ -496,6 +500,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
+						endAdornment={<AnalogInputOverridePicker />}
 					/>
 				</div>
 			)
