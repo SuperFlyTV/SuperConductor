@@ -1,6 +1,4 @@
 import { LoggerLike } from '@shared/api'
-import _ from 'lodash'
-import { ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'
 import { StorageHandler } from './storageHandler'
@@ -22,13 +20,7 @@ export class AnalogHandler extends EventEmitter {
 	/** Contains a collection of the currently active analog values on all Panels */
 	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
 
-	constructor(
-		private log: LoggerLike,
-		private storage: StorageHandler,
-		private ipcServer: IPCServer,
-		private bridgeHandler: BridgeHandler,
-		private session: SessionHandler
-	) {
+	constructor(private storage: StorageHandler) {
 		super()
 	}
 
@@ -41,18 +33,15 @@ export class AnalogHandler extends EventEmitter {
 			delete this.activeAnalogs[fullIdentifier]
 		}
 	}
-	/** Called from the storage when an AnalogInput has been updated */
-	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput | null) {
-		// TODO: trigger datastore send
-	}
 
 	private handleUpdate(fullIdentifier: string, activeAnalog: ActiveAnalog) {
 		const project = this.storage.getProject()
 
-		for (const analogInputSetting of Object.values(project.analogInputSettings)) {
+		for (const [datastoreKey, analogInputSetting] of Object.entries(project.analogInputSettings)) {
 			if (analogInputSetting.fullIdentifier === fullIdentifier) {
 				const analogInput = this.calculateAnalogInput(
 					this.storage.getAnalogInput(fullIdentifier),
+					datastoreKey,
 					analogInputSetting,
 					activeAnalog
 				)
@@ -63,11 +52,13 @@ export class AnalogHandler extends EventEmitter {
 	}
 	private calculateAnalogInput(
 		analogInput: AnalogInput | undefined,
+		datastoreKey: string,
 		setting: AnalogInputSetting,
 		activeAnalog: ActiveAnalog
 	): AnalogInput {
 		if (!analogInput) {
 			analogInput = {
+				datastoreKey: 'N/A',
 				activeAnalog,
 				modified: 0,
 				value: 0,
@@ -75,6 +66,7 @@ export class AnalogHandler extends EventEmitter {
 		}
 
 		analogInput.activeAnalog = activeAnalog
+		analogInput.datastoreKey = datastoreKey
 
 		const scale = setting.scaleFactor ?? 1
 
@@ -89,7 +81,40 @@ export class AnalogHandler extends EventEmitter {
 			if (setting.relativeMaxCap !== undefined && analogInput.value >= setting.relativeMaxCap)
 				analogInput.value = setting.relativeMaxCap
 		}
+		// Round, to only keep the significant part (remove rogue decimals)
+		if (analogInput.value < 100) {
+			// For small numbers, we'll only round the mantissa-part of the number:
+			const exp = this.separateExp(analogInput.value)
+			analogInput.value = (Math.round(exp[0] * 1000) / 1000) * exp[1]
+			analogInput.value = Math.round(analogInput.value * 100000) / 100000 // Remove rogue decimals that might have been introduced in
+		} else {
+			// For large numbers, we simply remove decimals:
+			analogInput.value = Math.round(analogInput.value * 100) / 100
+		}
+
 		analogInput.modified = Date.now()
 		return analogInput
+	}
+	/** Separate a number into its mantissa and exponent, return [m, n] where m*n is equal to the original value */
+	private separateExp(value: number): [number, number] {
+		const sign = Math.sign(value)
+		let m = Math.abs(value)
+		let exp = 1
+
+		if (m !== 0) {
+			while (!Number.isNaN(m)) {
+				if (m >= 10) {
+					m /= 10
+					exp *= 10
+				} else if (m <= 0.1) {
+					m *= 10
+					exp /= 10
+				} else {
+					break
+				}
+			}
+		}
+
+		return [m * sign, exp]
 	}
 }

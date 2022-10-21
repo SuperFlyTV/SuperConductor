@@ -42,16 +42,13 @@ export class AnalogStore {
 
 	updateActiveAnalog(activeAnalog: ActiveAnalog): void {
 		for (const listener of this.activeAnalogListeners) {
-			console.log('listen!')
 			listener(activeAnalog)
 		}
 	}
 	listenToActiveAnalog(listener: (activeAnalog: ActiveAnalog) => void) {
-		console.log('listen..')
 		this.activeAnalogListeners.push(listener)
 		return {
 			stop: () => {
-				console.log('stop listen')
 				const index = this.activeAnalogListeners.indexOf(listener)
 				if (index !== -1) this.activeAnalogListeners.splice(index, 1)
 			},

@@ -1,4 +1,5 @@
 import React from 'react'
+import _ from 'lodash'
 import { assertNever, deepClone } from '@shared/lib'
 import {
 	ChannelFormat,
@@ -16,6 +17,8 @@ import {
 	TimelineObjCCGTemplate,
 	TimelineTransition,
 	Transition,
+	TSRTimelineObj,
+	TSRTimelineObjBase,
 	TSRTransitionOptions,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
@@ -31,6 +34,9 @@ import { AddBtn } from '../../../inputs/AddBtn'
 
 import './casparcg.scss'
 import { FloatInput } from '../../../inputs/FloatInput'
+import { TextBtn } from '../../../inputs/textBtn/TextBtn'
+import { store } from '../../../../mobx/store'
+import { useMemoComputedObject } from '../../../../mobx/lib'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -498,6 +504,102 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		return <>{mixSettings}</>
 	}
 
+	const analogInputOptions = useMemoComputedObject(() => {
+		const options: { [key: string]: string } = {}
+
+		for (const [datastoreKey, setting] of Object.entries(store.projectStore.project.analogInputSettings)) {
+			options[setting.label] = datastoreKey
+		}
+
+		return options
+	}, [])
+
+	const getSettingsReferences = (obj: TSRTimelineObj, analogInputOptions: { [key: string]: string }) => {
+		const settings: JSX.Element[] = []
+
+		const attributesOptions: { [key: string]: string } = {}
+		const gatherAttributes = (obj: any, path: string[]) => {
+			if (typeof obj === 'object') {
+				for (const [key, value] of Object.entries(obj)) {
+					gatherAttributes(value, [...path, key])
+				}
+			} else {
+				const pathStr = path.join('.')
+				attributesOptions[pathStr] = pathStr
+			}
+		}
+
+		const content = (obj as TSRTimelineObjBase).content
+
+		if (content.$references) {
+			gatherAttributes(_.omit(content, '$references', 'deviceType', 'type'), [])
+
+			const references = content.$references
+			for (const [localPath, ref] of Object.entries(references)) {
+				settings.push(
+					<div key={localPath} className="settings-group">
+						<div className="setting">
+							<SelectEnum
+								label="Attribute to override"
+								fullWidth
+								currentValue={localPath}
+								options={attributesOptions}
+								onChange={(v) => {
+									references[v] = references[localPath]
+									delete references[localPath]
+									onSave(obj)
+								}}
+							/>
+						</div>
+						<div className="setting">
+							<SelectEnum
+								label="Analog Input to use"
+								fullWidth
+								currentValue={ref.datastoreKey}
+								options={analogInputOptions}
+								onChange={(v) => {
+									references[localPath].datastoreKey = v
+									onSave(obj)
+								}}
+							/>
+						</div>
+						<div className="setting">
+							<TextBtn
+								label="Remove"
+								onClick={() => {
+									delete references[localPath]
+									onSave(obj)
+								}}
+							/>
+						</div>
+					</div>
+				)
+			}
+		}
+
+		return (
+			<>
+				{settings}
+				<div className="setting">
+					<TextBtn
+						label="Add Analog input reference"
+						onClick={() => {
+							if (!content.$references) {
+								content.$references = {}
+							}
+							content.$references['__attribute'] = {
+								datastoreKey: '',
+								overwrite: false,
+							}
+
+							onSave(obj)
+						}}
+					/>
+				</div>
+			</>
+		)
+	}
+
 	const showAllButton = showAll ? (
 		<Link href="#" onClick={() => setShowAll(false)}>
 			Hide more settings
@@ -595,6 +697,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				{getSettingsVideoAudioFilters(obj)}
 				{getSettingsMixer(obj)}
 				{getSettingsTransitions(obj)}
+				{getSettingsReferences(obj, analogInputOptions)}
 
 				{showAllButton}
 			</>

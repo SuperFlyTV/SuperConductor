@@ -103,6 +103,7 @@ export namespace BridgeAPI {
 			| SetSettings
 			| AddTimeline
 			| RemoveTimeline
+			| UpdateDatastore
 			| GetTimelineIds
 			| SetMappings
 			| RefreshResources
@@ -135,6 +136,16 @@ export namespace BridgeAPI {
 			type: 'removeTimeline'
 
 			timelineId: string
+			currentTime: number
+		}
+		export interface UpdateDatastore extends MessageBase {
+			type: 'updateDatastore'
+
+			updates: {
+				datastoreKey: string
+				value: any | null
+				modified: number
+			}[]
 			currentTime: number
 		}
 		export interface GetTimelineIds extends MessageBase {

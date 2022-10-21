@@ -84,11 +84,22 @@ export class BaseBridge {
 		delete this.storedTimelines[id]
 		this.updateTSR(currentTime)
 	}
-	private setDatastore(updates: { datastoreKey: string; datastoreValue: any }[], currentTime: number) {
+	private updateDatastore(
+		updates: {
+			datastoreKey: string
+			value: any | null
+			modified: number
+		}[],
+		currentTime: number
+	) {
 		for (const update of updates) {
-			this.dataStore[update.datastoreKey] = {
-				value: update.datastoreValue,
-				modified: Date.now(),
+			if (update.value === null) {
+				delete this.dataStore[update.datastoreKey]
+			} else {
+				this.dataStore[update.datastoreKey] = {
+					value: update.value,
+					modified: update.modified,
+				}
 			}
 		}
 		this.updateTSRDatastore(currentTime)
@@ -158,8 +169,8 @@ export class BaseBridge {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
 			this.stopTimeline(msg.timelineId, msg.currentTime)
-			// } else if (msg.type === 'setDatastore') {
-			// 	this.setDatastore(msg.datastore, msg.currentTime)
+		} else if (msg.type === 'updateDatastore') {
+			this.updateDatastore(msg.updates, msg.currentTime)
 		} else if (msg.type === 'getTimelineIds') {
 			this.send({ type: 'timelineIds', timelineIds: Object.keys(this.storedTimelines) })
 		} else if (msg.type === 'setMappings') {

@@ -7,6 +7,9 @@ export interface AnalogInputs {
 }
 
 export interface AnalogInput {
+	/** A reference to Project.analogInputSettings */
+	datastoreKey: string
+
 	value: number
 	modified: number
 

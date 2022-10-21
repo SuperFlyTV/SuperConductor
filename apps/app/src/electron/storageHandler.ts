@@ -554,7 +554,6 @@ export class StorageHandler extends EventEmitter {
 		return this.analogInputs[fullIdentifier]?.analogInput
 	}
 	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput) {
-		console.log('storage updateAnalogInput', analogInput)
 		this.analogInputs[fullIdentifier] = {
 			version: CURRENT_STORAGE_VERSION,
 			analogInput,

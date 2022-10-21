@@ -39,19 +39,3 @@ export interface AnalogInputSetting {
 	relativeMaxCap?: number
 	absoluteOffset?: number
 }
-
-function generateDatastore(project: Project, analogInputs: AnalogInputs): Datastore {
-	const datastore: Datastore = {}
-
-	for (const [datastoreKey, analogInputSetting] of Object.entries(project.analogInputSettings)) {
-		if (!analogInputSetting.fullIdentifier) continue
-		const analogInput = analogInputs.analogs[analogInputSetting.fullIdentifier] as AnalogInput | undefined
-		if (!analogInput) continue
-
-		datastore[datastoreKey] = {
-			value: analogInput.value,
-			modified: analogInput.modified,
-		}
-	}
-	return datastore
-}

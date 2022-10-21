@@ -23,7 +23,15 @@ import { FloatInput } from '../../../inputs/FloatInput'
 
 export const AnalogInputsPage: React.FC = observer(function AnalogInputsPage() {
 	return (
-		<ProjectPageLayout title="Analog References">
+		<ProjectPageLayout
+			title="Analog References"
+			help="Analog inputs are things like faders, knobs, jog wheels etc. The values from them can be used to modify properties of playing timeline-objects.
+			How to use:
+			(1) Connect a peripheral device, such as an X-keys or MIDI device (its settings are found in the Bridges page).
+			(2) Click 'Add new Analog input' to set it up.
+			(3) Go to the timeline-object you'd like to modify and click 'Add Analog input reference'.
+			"
+		>
 			<AnalogInputs />
 		</ProjectPageLayout>
 	)
@@ -39,7 +47,7 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 
 	return (
 		<>
-			<RoundedSection title="Analog Inputs" help="">
+			<RoundedSection title="Analog Inputs">
 				<ScList
 					list={Object.entries(project.analogInputSettings).map(([datastoreKey, analogInputSetting]) => {
 						const analogInput = analogInputSetting.fullIdentifier
@@ -52,26 +60,10 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 									<ScListItemLabel title={analogInputSetting.label} />
 
 									<div className="triggers ">
-										{/* {analogInput && <AnalogPill analog={analogInputSetting.analog} />} */}
 										{analogInput?.value}
 
-										{analogInputSetting.fullIdentifier}
+										{analogInput?.activeAnalog.identifier}
 									</div>
-
-									{/* <div className="controls">
-										<TriggerBtn
-											onTrigger={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-												setTriggersSubmenuPopover({
-													anchor: event.currentTarget,
-													triggerAction: actionType as ApplicationTrigger['action'],
-													triggers: appAction.triggers,
-												})
-											}}
-											locked={false}
-											triggerCount={appAction.triggers.length}
-											anyGlobalTriggerFailed={anyGlobalTriggerFailed}
-										/>
-									</div> */}
 								</div>
 							),
 							content: (

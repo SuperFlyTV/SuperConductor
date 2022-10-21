@@ -107,9 +107,8 @@ export class SuperConductor {
 			this.triggerHandleAutoFill()
 		})
 		this.storage.on('analogInput', (fullIdentifier: string, analogInput: AnalogInput | null) => {
-			console.log('on analogInput', analogInput)
 			this.clients.forEach((clients) => clients.ipcClient.updateAnalogInput(fullIdentifier, analogInput))
-			this.analogHandler.updateAnalogInput(fullIdentifier, analogInput)
+			this.bridgeHandler.updateAnalogInput(analogInput)
 		})
 
 		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
@@ -238,7 +237,7 @@ export class SuperConductor {
 		})
 		this.ipcServer.triggers = this.triggers
 
-		this.analogHandler = new AnalogHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		this.analogHandler = new AnalogHandler(this.storage)
 
 		if (this.disableInternalHttpApi) {
 			this.log.info(`Internal HTTP API disabled`)
