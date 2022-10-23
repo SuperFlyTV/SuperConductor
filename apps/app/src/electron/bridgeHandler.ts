@@ -17,9 +17,7 @@ import _ from 'lodash'
 import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogStore } from '../react/mobx/AnalogStore'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')

@@ -188,11 +188,11 @@ export class PeripheralMIDI extends Peripheral {
 							}, flashInterval)
 						}
 
-						setKeyValue()
 						this.intervals.set(identifier, {
 							hash,
 						})
 						const intervalTimer = setInterval(setKeyValue, flashInterval * 2)
+						setKeyValue()
 					}
 				} else {
 					if (interval) this.intervals.delete(identifier)

@@ -13,7 +13,6 @@ import { shortID } from '../../../../../lib/util'
 import { AnalogInputSetting, Project } from '../../../../../models/project/Project'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { AnalogInput, AnalogInputs } from '../../../../../models/project/AnalogInput'
 import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn'
@@ -87,7 +86,6 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 							content: (
 								<AnalogInputSettings
 									project={project}
-									datastoreKey={datastoreKey}
 									analogInputSetting={analogInputSetting}
 									analogInput={analogInput}
 								/>
@@ -138,10 +136,9 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 
 const AnalogInputSettings: React.FC<{
 	project: Project
-	datastoreKey: string
 	analogInputSetting: AnalogInputSetting
 	analogInput: AnalogInput | undefined
-}> = observer(function AnalogInputSettings({ project, datastoreKey, analogInputSetting, analogInput }) {
+}> = observer(function AnalogInputSettings({ project, analogInputSetting, analogInput }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
@@ -154,13 +151,6 @@ const AnalogInputSettings: React.FC<{
 	const closeTriggersSubmenu = useCallback(() => {
 		setTriggersSubmenuPopover(null)
 	}, [])
-
-	useEffect(() => {
-		if (triggersSubmenuPopover) {
-		}
-
-		return () => {}
-	}, [triggersSubmenuPopover])
 
 	useEffect(() => {
 		let listener:
