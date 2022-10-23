@@ -127,7 +127,7 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 			position: 'static',
 			margin: '0 0 0 0',
 			padding: '0',
-			fontSize: '10px',
+			fontSize: '14px',
 			lineHeight: '1.2em',
 			fontFamily: 'Roboto, sans-serif',
 			fontWeight: 600,
@@ -140,6 +140,7 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 			color: 'red',
 			border: 'none',
 			cursor: 'pointer',
+			backgroundColor: '#fdd',
 		} as React.CSSProperties,
 	}
 
@@ -183,6 +184,13 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 
 	render() {
 		if (this.state.hasError) {
+			const errorString = [
+				this.state.error?.name,
+				this.state.info?.componentStack,
+				this.state.error?.message,
+				this.state.error?.stack,
+			].join('\n')
+
 			return (
 				<div style={ErrorBoundary.style.box}>
 					{this.state.error && (
@@ -191,7 +199,10 @@ export class ErrorBoundary extends React.Component<unknown, IState> {
 							<p>
 								<a
 									style={ErrorBoundary.style.link}
-									href="https://github.com/SuperFlyTV/SuperConductor/issues/new/choose"
+									href={`https://github.com/SuperFlyTV/SuperConductor/issues/new?labels=bug&template=bug_report.md&title=Error+in+GUI&body=${encodeURIComponent(
+										'**To Reproduce**\nSteps to reproduce the behavior:\n\n\n\n\n\n**The Error**\n' +
+											errorString
+									)}`}
 									target="_blank"
 									rel="noreferrer"
 								>
