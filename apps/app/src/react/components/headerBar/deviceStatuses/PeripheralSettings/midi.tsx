@@ -9,7 +9,7 @@ export const MIDISettings: React.FC<{
 	deviceId: string
 	peripheral: PeripheralStatus
 	definingArea: DefiningArea | null
-}> = observer(function XKeysSettings({ peripheral }) {
+}> = observer(function MIDISettings({ peripheral }) {
 	if (peripheral.info.gui.type !== PeripheralType.MIDI) throw new Error('Wrong type, expected "midi"')
 
 	return null
