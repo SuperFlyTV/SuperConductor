@@ -86,7 +86,7 @@ export interface PeripheralInfo_XKeys {
 	layout: XKeysInfo['layout']
 }
 export interface PeripheralInfo_MIDI {
-	type: 'midi'
+	type: PeripheralType.MIDI
 }
 export type PeripheralSettingsAny = PeripheralSettingsStreamDeck | PeripheralSettingsXKeys
 export interface PeripheralSettingsBase {
