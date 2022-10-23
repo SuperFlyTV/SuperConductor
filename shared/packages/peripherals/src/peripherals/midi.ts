@@ -3,6 +3,8 @@ import _ from 'lodash'
 import * as MIDI from 'midi'
 import { onKnownPeripheralCallback, Peripheral } from './peripheral'
 
+export type DevicesMap = Map<string, { port: number; name: string }>
+
 /** An interval (ms) for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 250
 /** An interval (ms) for how fast the keys should flash, when flashing Slowly */
@@ -17,30 +19,63 @@ export class PeripheralMIDI extends Peripheral {
 		}
 		PeripheralMIDI.Watching = true
 
-		const seenDevices = new Set<string>()
+		let lastSeenDevices: DevicesMap = new Map<string, { port: number; name: string }>()
 
 		const Input = new MIDI.Input()
 
+		// Checks for new or removed MIDI devices.
 		const checkDevices = () => {
+			// Get the count of how many MIDI devices are connected.
 			const inputCount = Input.getPortCount()
+
+			// Build the map of IDs
+			const devices: DevicesMap = new Map<string, { port: number; name: string }>()
 			for (let i = 0; i < inputCount; i++) {
 				const name = Input.getPortName(i)
 				const id = `${i}: ${name}`
-				const existingDevice = seenDevices.has(id)
-				if (!existingDevice) {
-					seenDevices.add(id)
-
-					// Tell the watcher about the discovered MIDI panel.
-					onKnownPeripheral(id, {
-						name: name,
-						type: PeripheralType.MIDI,
-						devicePath: `${i}`,
-					})
-				}
+				devices.set(id, { port: i, name })
 			}
+
+			// If the set of IDs hasn't changed, do nothing.
+			if (_.isEqual(devices, lastSeenDevices)) {
+				return
+			}
+
+			// Figure out which MIDI devices have been unplugged since the last check.
+			const disconnectedDeviceIds = new Set(
+				Array.from(lastSeenDevices.keys()).filter((id) => {
+					return !devices.has(id)
+				})
+			)
+
+			// Figure out which MIDI devices are being seen now that weren't seen in the last completed poll.
+			for (const [id, { port, name }] of devices) {
+				const alreadySeen = lastSeenDevices.has(id)
+
+				if (alreadySeen) {
+					continue
+				}
+				// Tell the watcher about the discovered MIDI panel.
+				onKnownPeripheral(id, {
+					name: name,
+					type: PeripheralType.MIDI,
+					devicePath: `${port}`,
+				})
+			}
+
+			// Tell the watcher about disconnected MIDI devices.
+			for (const id of disconnectedDeviceIds) {
+				onKnownPeripheral(id, null)
+			}
+
+			// Update for the next iteration.
+			lastSeenDevices = devices
 		}
 
+		// Check for new or removed MIDI devices every 5 seconds.
 		const interval = setInterval(checkDevices, 5000)
+
+		// Do an initial check in 100 milliseconds.
 		setTimeout(checkDevices, 100)
 
 		return {
@@ -90,7 +125,7 @@ export class PeripheralMIDI extends Peripheral {
 			this._info = {
 				name: Input.getPortName(this.portIndex),
 				gui: {
-					type: 'midi',
+					type: PeripheralType.MIDI,
 				},
 			}
 			// MIDI devices connected:

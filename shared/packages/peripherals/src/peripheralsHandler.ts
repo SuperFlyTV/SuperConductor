@@ -13,7 +13,7 @@ import { PeripheralWatcher } from './peripheralWatcher'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 import { PeripheralMIDI } from './peripherals/midi'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {
 	connected: (peripheralId: string, peripheralInfo: PeripheralInfo) => void
@@ -54,7 +54,36 @@ export class PeripheralsHandler extends EventEmitter {
 			this.maybeConnectToPeripheral(peripheralId, info).catch(this.log.error)
 		})
 		this.watcher.on('knownPeripheralReconnected', (peripheralId, info) => {
-			this.maybeConnectToPeripheral(peripheralId, info).catch(this.log.error)
+			this.maybeConnectToPeripheral(peripheralId, info)
+				.then(() => {
+					// This is generally only useful for peripherals that can't emit their own
+					// connected and disconnected events, such as MIDI devices.
+					const existingStatus = this.peripheralStatuses.get(peripheralId)
+					if (!existingStatus) return
+					if (!existingStatus.connected) {
+						const clonedInfo = deepClone(existingStatus.info)
+						this.peripheralStatuses.set(peripheralId, {
+							connected: true,
+							info: clonedInfo,
+						})
+						if (this.connectedToParent) this.emit('connected', peripheralId, clonedInfo)
+					}
+				})
+				.catch(this.log.error)
+		})
+
+		// This is generally only useful for peripherals that can't emit their own
+		// connected and disconnected events, such as MIDI devices.
+		this.watcher.on('knownPeripheralDisconnected', (peripheralId) => {
+			const existingStatus = this.peripheralStatuses.get(peripheralId)
+			if (existingStatus && existingStatus.connected) {
+				const clonedInfo = deepClone(existingStatus.info)
+				this.peripheralStatuses.set(peripheralId, {
+					connected: false,
+					info: clonedInfo,
+				})
+				if (this.connectedToParent) this.emit('disconnected', peripheralId, clonedInfo)
+			}
 		})
 	}
 	setKeyDisplay(peripheralId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
