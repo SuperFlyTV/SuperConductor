@@ -23,7 +23,6 @@ export class PeripheralMIDI extends Peripheral {
 
 		const checkDevices = () => {
 			const inputCount = Input.getPortCount()
-			// const outputCount = Input.getPortCount()
 			for (let i = 0; i < inputCount; i++) {
 				const name = Input.getPortName(i)
 				const id = `${i}: ${name}`
