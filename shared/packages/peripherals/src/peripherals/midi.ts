@@ -30,7 +30,7 @@ export class PeripheralMIDI extends Peripheral {
 				if (!existingDevice) {
 					seenDevices.add(id)
 
-					// Tell the watcher about the discovered Xkeys panel.
+					// Tell the watcher about the discovered MIDI panel.
 					onKnownPeripheral(id, {
 						name: name,
 						type: PeripheralType.MIDI,
