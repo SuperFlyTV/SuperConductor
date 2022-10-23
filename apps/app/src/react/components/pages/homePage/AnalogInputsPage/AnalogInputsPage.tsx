@@ -20,6 +20,10 @@ import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn'
 import { Popover } from '@mui/material'
 import Toggle from 'react-toggle'
 import { FloatInput } from '../../../inputs/FloatInput'
+import { ActiveAnalog } from '../../../../../models/rundown/Analog'
+import { clone } from 'lodash'
+import { TrashBtn } from '../../../inputs/TrashBtn'
+import { ConfirmationDialog } from '../../../util/ConfirmationDialog'
 
 export const AnalogInputsPage: React.FC = observer(function AnalogInputsPage() {
 	return (
@@ -42,6 +46,7 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | undefined>()
+	const [showDeleteConfirmationDialog, setShowDeleteConfirmationDialog] = useState<string | undefined>(undefined)
 
 	const project = store.projectStore.project
 
@@ -56,13 +61,26 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 						return {
 							id: datastoreKey,
 							header: (
-								<div className="rundown-header-item datastore-action">
+								<div className="analog-input-header-item">
 									<ScListItemLabel title={analogInputSetting.label} />
 
-									<div className="triggers ">
-										{analogInput?.value}
+									<div className="identifier">{analogInput?.activeAnalog.identifier}</div>
 
-										{analogInput?.activeAnalog.identifier}
+									{analogInput?.value !== undefined && (
+										<div className="value">
+											Value:
+											<div className="content">{analogInput?.value}</div>
+										</div>
+									)}
+
+									<div className="trash">
+										<TrashBtn
+											className="delete"
+											title={'Delete'}
+											onClick={() => {
+												setShowDeleteConfirmationDialog(datastoreKey)
+											}}
+										/>
 									</div>
 								</div>
 							),
@@ -97,6 +115,23 @@ const AnalogInputs: React.FC = observer(function AnalogInputs() {
 					/>
 				</div>
 			</RoundedSection>
+			<ConfirmationDialog
+				open={!!showDeleteConfirmationDialog}
+				title="Delete"
+				acceptLabel="Delete"
+				onDiscarded={() => {
+					setShowDeleteConfirmationDialog(undefined)
+				}}
+				onAccepted={() => {
+					if (showDeleteConfirmationDialog) {
+						delete project.analogInputSettings[showDeleteConfirmationDialog]
+						ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+					}
+					setShowDeleteConfirmationDialog(undefined)
+				}}
+			>
+				<p>Do you want to delete {project.analogInputSettings[showDeleteConfirmationDialog ?? '']?.label}?</p>
+			</ConfirmationDialog>
 		</>
 	)
 })
@@ -109,6 +144,8 @@ const AnalogInputSettings: React.FC<{
 }> = observer(function AnalogInputSettings({ project, datastoreKey, analogInputSetting, analogInput }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
+
+	const [seenActiveAnalogs, setSeenActiveAnalogs] = React.useState<ActiveAnalog[]>([])
 
 	// Triggers Submenu
 	const [triggersSubmenuPopover, setTriggersSubmenuPopover] = React.useState<{
@@ -133,16 +170,16 @@ const AnalogInputSettings: React.FC<{
 			| undefined
 		if (triggersSubmenuPopover) {
 			listener = store.analogStore.listenToActiveAnalog((activeAnalog) => {
-				// Assign the analog to this setting:
-				analogInputSetting.fullIdentifier = activeAnalog.fullIdentifier
-				ipcServer
-					.updateProject({
-						id: project.id,
-						project,
-					})
-					.catch(handleError)
-
-				setTriggersSubmenuPopover(null)
+				setSeenActiveAnalogs((seen) => {
+					seen = clone(seen)
+					const existing = seen.find((v) => v.fullIdentifier === activeAnalog.fullIdentifier)
+					if (existing) {
+						existing.value = activeAnalog.value
+					} else {
+						seen.push(activeAnalog)
+					}
+					return seen
+				})
 			})
 		}
 		return () => {
@@ -151,58 +188,12 @@ const AnalogInputSettings: React.FC<{
 	}, [triggersSubmenuPopover])
 
 	return (
-		<>
-			<TextInput
-				currentValue={analogInputSetting.label}
-				onChange={(v) => {
-					analogInputSetting.label = v
-					ipcServer
-						.updateProject({
-							id: project.id,
-							project,
-						})
-						.catch(handleError)
-				}}
-				allowUndefined={false}
-				label="Label"
-			/>
-
-			<div>
-				<TriggerBtn
-					onTrigger={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-						setTriggersSubmenuPopover({
-							anchor: event.currentTarget,
-						})
-					}}
-					locked={false}
-					triggerCount={analogInputSetting.fullIdentifier ? 1 : 0}
-					anyGlobalTriggerFailed={false}
-				/>
-			</div>
-			<>
-				<label>Use Absolute values&nbsp;&nbsp;</label>
-				<div className="sc-switch">
-					<Toggle
-						checked={analogInputSetting.updateUsingAbsolute}
-						onChange={() => {
-							analogInputSetting.updateUsingAbsolute = !analogInputSetting.updateUsingAbsolute
-							ipcServer
-								.updateProject({
-									id: project.id,
-									project,
-								})
-								.catch(handleError)
-						}}
-					/>
-				</div>
-			</>
-			<div className="settings">
-				<FloatInput
-					label="Scale factor"
-					currentValue={analogInputSetting.scaleFactor}
-					emptyPlaceholder={'1'}
+		<div className="analog-input-settings">
+			<div className="main-settings">
+				<TextInput
+					currentValue={analogInputSetting.label}
 					onChange={(v) => {
-						analogInputSetting.scaleFactor = v
+						analogInputSetting.label = v
 						ipcServer
 							.updateProject({
 								id: project.id,
@@ -210,58 +201,134 @@ const AnalogInputSettings: React.FC<{
 							})
 							.catch(handleError)
 					}}
-					allowUndefined={true}
+					allowUndefined={false}
+					label="Label"
 				/>
-				{analogInputSetting.updateUsingAbsolute && (
-					<FloatInput
-						label="Offset"
-						currentValue={analogInputSetting.absoluteOffset}
-						emptyPlaceholder={'0'}
-						onChange={(v) => {
-							analogInputSetting.absoluteOffset = v
-							ipcServer
-								.updateProject({
-									id: project.id,
-									project,
+
+				<div className="analog-input">
+					<div className="trigger-button">
+						<TriggerBtn
+							onTrigger={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+								setTriggersSubmenuPopover({
+									anchor: event.currentTarget,
 								})
-								.catch(handleError)
-						}}
-						allowUndefined={true}
-					/>
-				)}
-				{!analogInputSetting.updateUsingAbsolute && (
-					<FloatInput
-						label="Minimum cap value"
-						currentValue={analogInputSetting.relativeMinCap}
-						onChange={(v) => {
-							analogInputSetting.relativeMinCap = v
-							ipcServer
-								.updateProject({
-									id: project.id,
-									project,
-								})
-								.catch(handleError)
-						}}
-						allowUndefined={true}
-					/>
-				)}
-				{!analogInputSetting.updateUsingAbsolute && (
-					<FloatInput
-						label="Maximum cap value"
-						currentValue={analogInputSetting.relativeMaxCap}
-						onChange={(v) => {
-							analogInputSetting.relativeMaxCap = v
-							ipcServer
-								.updateProject({
-									id: project.id,
-									project,
-								})
-								.catch(handleError)
-						}}
-						allowUndefined={true}
-					/>
-				)}
+							}}
+							locked={false}
+							triggerCount={analogInputSetting.fullIdentifier ? 1 : 0}
+							anyGlobalTriggerFailed={false}
+						/>
+					</div>
+					{analogInput && (
+						<div className="raw-input">
+							<label>Raw input:</label>
+
+							<table>
+								<tbody>
+									<tr>
+										<th>Identifier:</th>
+										<td>{analogInput.activeAnalog.identifier}</td>
+									</tr>
+									<tr>
+										<th>Absolute value:</th>
+										<td>{analogInput.activeAnalog.value.absolute}</td>
+									</tr>
+									<tr>
+										<th>Relative value:</th>
+										<td>{analogInput.activeAnalog.value.relative}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
 			</div>
+
+			{analogInputSetting.fullIdentifier && (
+				<div className="analog-settings">
+					<div>
+						<label>Use Absolute value&nbsp;&nbsp;</label>
+						<div className="sc-switch">
+							<Toggle
+								checked={analogInputSetting.updateUsingAbsolute}
+								onChange={() => {
+									analogInputSetting.updateUsingAbsolute = !analogInputSetting.updateUsingAbsolute
+									ipcServer
+										.updateProject({
+											id: project.id,
+											project,
+										})
+										.catch(handleError)
+								}}
+							/>
+						</div>
+					</div>
+
+					<FloatInput
+						label="Scale factor"
+						currentValue={analogInputSetting.scaleFactor}
+						emptyPlaceholder={'1'}
+						onChange={(v) => {
+							analogInputSetting.scaleFactor = v
+							ipcServer
+								.updateProject({
+									id: project.id,
+									project,
+								})
+								.catch(handleError)
+						}}
+						allowUndefined={true}
+					/>
+					{analogInputSetting.updateUsingAbsolute && (
+						<FloatInput
+							label="Offset"
+							currentValue={analogInputSetting.absoluteOffset}
+							emptyPlaceholder={'0'}
+							onChange={(v) => {
+								analogInputSetting.absoluteOffset = v
+								ipcServer
+									.updateProject({
+										id: project.id,
+										project,
+									})
+									.catch(handleError)
+							}}
+							allowUndefined={true}
+						/>
+					)}
+					{!analogInputSetting.updateUsingAbsolute && (
+						<FloatInput
+							label="Minimum cap value"
+							currentValue={analogInputSetting.relativeMinCap}
+							onChange={(v) => {
+								analogInputSetting.relativeMinCap = v
+								ipcServer
+									.updateProject({
+										id: project.id,
+										project,
+									})
+									.catch(handleError)
+							}}
+							allowUndefined={true}
+						/>
+					)}
+					{!analogInputSetting.updateUsingAbsolute && (
+						<FloatInput
+							label="Maximum cap value"
+							currentValue={analogInputSetting.relativeMaxCap}
+							onChange={(v) => {
+								analogInputSetting.relativeMaxCap = v
+								ipcServer
+									.updateProject({
+										id: project.id,
+										project,
+									})
+									.catch(handleError)
+							}}
+							allowUndefined={true}
+						/>
+					)}
+				</div>
+			)}
 			<Popover
 				open={!!triggersSubmenuPopover}
 				anchorEl={triggersSubmenuPopover?.anchor}
@@ -273,10 +340,45 @@ const AnalogInputSettings: React.FC<{
 			>
 				{triggersSubmenuPopover && (
 					<>
-						<div>{`Wiggle any Analog Input to assign it!`}</div>
+						<div className="message">{`Now wiggle any Analog Input!`}</div>
+						{seenActiveAnalogs.length > 0 && (
+							<table className="active-analog-list">
+								<tbody>
+									<tr>
+										<th>Identifier</th>
+										<th>Absolute value</th>
+										<th>Relative value</th>
+									</tr>
+									{seenActiveAnalogs.map((activeAnalog) => (
+										<tr key={activeAnalog.fullIdentifier}>
+											<td>{activeAnalog.identifier}</td>
+											<td>{activeAnalog.value.absolute}</td>
+											<td>{activeAnalog.value.relative}</td>
+											<td>
+												<TextBtn
+													label={'Select this Analog Input'}
+													onClick={() => {
+														// Assign the analog to this setting:
+														analogInputSetting.fullIdentifier = activeAnalog.fullIdentifier
+														ipcServer
+															.updateProject({
+																id: project.id,
+																project,
+															})
+															.catch(handleError)
+
+														setTriggersSubmenuPopover(null)
+													}}
+												/>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						)}
 					</>
 				)}
 			</Popover>
-		</>
+		</div>
 	)
 })
