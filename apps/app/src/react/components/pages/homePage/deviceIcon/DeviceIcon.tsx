@@ -9,6 +9,7 @@ import atem from '../../../../../img/atem.png'
 import hyperdeck from '../../../../../img/hyperdeck.png'
 import streamdeck from '../../../../../img/streamdeck.png'
 import xkeys from '../../../../../img/xkeys.png'
+import midi from '../../../../../img/midi.png'
 import './style.scss'
 
 export const DeviceIcon: React.FC<{ type: DeviceType | PeripheralType | undefined }> = (props) => {
@@ -42,6 +43,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType | PeripheralType | undefine
 			break
 		case PeripheralType.XKEYS:
 			iconElement = <img src={xkeys} alt="X-keys" />
+			break
+		case PeripheralType.MIDI:
+			iconElement = <img src={midi} alt="MIDI" />
 			break
 		case undefined:
 			iconElement = <span>?</span>
