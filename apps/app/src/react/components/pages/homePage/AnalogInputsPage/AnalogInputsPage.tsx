@@ -14,7 +14,7 @@ import { AnalogInputSetting, Project } from '../../../../../models/project/Proje
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { TextInput } from '../../../inputs/TextInput'
-import { AnalogInput, AnalogInputs } from '../../../../../models/project/AnalogInput'
+import { AnalogInput } from '../../../../../models/project/AnalogInput'
 import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn'
 import { Popover } from '@mui/material'
 import Toggle from 'react-toggle'
@@ -35,12 +35,12 @@ export const AnalogInputsPage: React.FC = observer(function AnalogInputsPage() {
 			(3) Go to the timeline-object you'd like to modify and click 'Add Analog input reference'.
 			"
 		>
-			<AnalogInputs />
+			<AnalogInputsPageContent />
 		</ProjectPageLayout>
 	)
 })
 
-const AnalogInputs: React.FC = observer(function AnalogInputs() {
+const AnalogInputsPageContent: React.FC = observer(function AnalogInputsPageContent() {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
