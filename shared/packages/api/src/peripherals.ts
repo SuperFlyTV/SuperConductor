@@ -67,7 +67,7 @@ export interface PeripheralInfo {
 	name: string
 
 	/** Other info about the peripheral device, to be used in GUI*/
-	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys
+	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys | PeripheralInfo_MIDI
 }
 
 export interface PeripheralInfo_StreamDeck {
@@ -85,7 +85,9 @@ export interface PeripheralInfo_XKeys {
 	rowCount: number
 	layout: XKeysInfo['layout']
 }
-
+export interface PeripheralInfo_MIDI {
+	type: PeripheralType.MIDI
+}
 export type PeripheralSettingsAny = PeripheralSettingsStreamDeck | PeripheralSettingsXKeys
 export interface PeripheralSettingsBase {
 	manualConnect: boolean
@@ -102,4 +104,5 @@ export interface KnownPeripheral {
 export enum PeripheralType {
 	STREAMDECK = 'streamdeck',
 	XKEYS = 'xkeys',
+	MIDI = 'midi',
 }
