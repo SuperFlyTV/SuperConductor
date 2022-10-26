@@ -1,9 +1,60 @@
-.datastore-action {
-	// .triggers {
-	//     display: flex;
-	//     flex-direction: row;
+.analog-input-header-item {
+	display: flex;
+	align-items: center;
+	width: 100%;
 
-	//     margin-right: 0.5em;
+	.value {
+		display: flex;
+		.content {
+			background-color: #17522c;
+			color: #fff;
+			padding: 0 0.5em;
+			font-weight: bold;
+			margin: 0 0.25em;
+		}
+		margin: 0 0.5em;
+	}
 
-	// }
+	.identifier {
+		margin: 0 0.5em;
+	}
+	.trash {
+		flex-grow: 1;
+		text-align: right;
+	}
+}
+.analog-input-settings {
+	display: flex;
+	flex-direction: column;
+	.main-settings {
+		display: flex;
+		flex-direction: column;
+
+		.trigger-button {
+			margin: 0 1em;
+			padding-top: 1em;
+		}
+	}
+	.analog-input {
+		display: flex;
+		flex-direction: row;
+
+		.raw-input {
+			border: 1px solid #999;
+			border-radius: 2px;
+			padding: 0.25em;
+			margin: 0.25em;
+
+			label {
+				font-weight: bold;
+				text-align: center;
+				width: 100%;
+			}
+		}
+	}
+	.analog-settings {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
 }

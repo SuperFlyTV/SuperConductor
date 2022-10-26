@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
+      - name: Install libasound2-dev
+        run: sudo apt-get install -y libasound2-dev
       - name: restore node_modules
         uses: actions/cache@v2
         with:
@@ -35,3 +37,47 @@ jobs:
       - name: Run license check
         run: |
           yarn license-validate
+  macos-build:
+    name: Install and build on macOS
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: restore node_modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build
+  windows-build:
+    name: Install and build on Windows
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: restore node_modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build

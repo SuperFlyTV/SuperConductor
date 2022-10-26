@@ -17,9 +17,7 @@ import _ from 'lodash'
 import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogStore } from '../react/mobx/AnalogStore'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -197,12 +195,6 @@ export class BridgeHandler {
 		}
 	}
 	updateMappings(mappings: Mappings) {
-		// const fixedMappings: Mappings = {}
-		// for (const [layerName, mapping] of Object.entries(mappings)) {
-		// 	fixedMappings[ensureValidId(layerName)] = mapping
-		// }
-
-		// console.log('fixedMappings', fixedMappings)
 		if (!_.isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
@@ -212,14 +204,6 @@ export class BridgeHandler {
 		}
 	}
 	updateTimeline(timelineId: string, timeline: TSRTimeline | null) {
-		// if (timeline) {
-		// 	// fix timeline objects
-		// 	for (const obj of timeline) {
-		// 		ensureValidObject(obj)
-		// 	}
-		// }
-		// console.log('timeline', JSON.stringify(timeline))
-
 		if (!_.isEqual(this.timelines[timelineId], timeline)) {
 			if (timeline) {
 				this.timelines[timelineId] = timeline

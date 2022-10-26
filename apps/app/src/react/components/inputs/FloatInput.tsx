@@ -48,7 +48,7 @@ export const FloatInput: React.FC<
 				// 100.0%
 				const parsedValue = parseFloat(str)
 				if (!isNaN(parsedValue)) value = parsedValue / 100
-			} else if (str.match(/^[\d./+\-/*]+$/)) {
+			} else if (str.match(/^[\d./+\-*]+$/)) {
 				// Expressions: 1/127
 
 				let parsedValue: number | undefined

@@ -969,7 +969,7 @@ export class StorageHandler extends EventEmitter {
 			else this.emittedResources.delete(resourceId)
 		}
 		for (const fullIdentifier of this.analogInputsHasChanged.keys()) {
-			let analogInput = this.analogInputs[fullIdentifier] as FileAnalogInput | undefined
+			const analogInput = this.analogInputs[fullIdentifier] as FileAnalogInput | undefined
 
 			const emittedAnalogInput = analogInput?.analogInput ?? null
 			this.emit('analogInput', fullIdentifier, emittedAnalogInput)

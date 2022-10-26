@@ -1,5 +1,4 @@
-import { Mappings, Datastore } from 'timeline-state-resolver-types'
-import { AnalogInput, AnalogInputs } from './AnalogInput'
+import { Mappings } from 'timeline-state-resolver-types'
 import { Bridge } from './Bridge'
 
 export interface Project {

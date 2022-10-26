@@ -23,7 +23,6 @@ export class PeripheralMIDI extends Peripheral {
 
 		const checkDevices = () => {
 			const inputCount = Input.getPortCount()
-			// const outputCount = Input.getPortCount()
 			for (let i = 0; i < inputCount; i++) {
 				const name = Input.getPortName(i)
 				const id = `${i}: ${name}`
@@ -188,11 +187,11 @@ export class PeripheralMIDI extends Peripheral {
 							}, flashInterval)
 						}
 
-						setKeyValue()
 						this.intervals.set(identifier, {
 							hash,
 						})
 						const intervalTimer = setInterval(setKeyValue, flashInterval * 2)
+						setKeyValue()
 					}
 				} else {
 					if (interval) this.intervals.delete(identifier)
