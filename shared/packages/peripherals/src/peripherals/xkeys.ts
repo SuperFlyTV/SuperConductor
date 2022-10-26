@@ -12,12 +12,12 @@ export class PeripheralXkeys extends Peripheral {
 	private connectedToParent = false
 	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralXkeys) => void) {
 		let usePolling = false
-		// Check if usb-detection is installed:
+		// Check if node-usb is installed:
 		try {
 			// eslint-disable-next-line node/no-missing-require, node/no-extraneous-require
-			require.resolve('usb-detection') // require.resolve() throws an error if module is not found
+			require.resolve('usb') // require.resolve() throws an error if module is not found
 		} catch (e) {
-			// usb-detection is not installed, fall back to polling:
+			// usb is not installed, fall back to polling:
 			usePolling = true
 		}
 
