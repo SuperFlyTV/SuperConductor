@@ -5,6 +5,21 @@ import { HiLink } from 'react-icons/hi'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { store } from '../../../mobx/store'
 
+const POPOVER_ANCHOR_ORIGIN: {
+	vertical: 'bottom'
+	horizontal: 'right'
+} = {
+	vertical: 'bottom',
+	horizontal: 'right',
+}
+const POPOVER_TRANSFORM_ORIGIN: {
+	vertical: 'top'
+	horizontal: 'right'
+} = {
+	vertical: 'top',
+	horizontal: 'right',
+}
+
 export function AnalogInputOverridePicker() {
 	const elementId = useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
@@ -47,14 +62,8 @@ export function AnalogInputOverridePicker() {
 				open={open}
 				anchorEl={anchorEl}
 				onClose={onClose}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'right',
-				}}
-				transformOrigin={{
-					vertical: 'top',
-					horizontal: 'right',
-				}}
+				anchorOrigin={POPOVER_ANCHOR_ORIGIN}
+				transformOrigin={POPOVER_TRANSFORM_ORIGIN}
 			>
 				<Typography sx={{ py: 1 }}>
 					<MenuItem onClick={onSelect} data-value="">
