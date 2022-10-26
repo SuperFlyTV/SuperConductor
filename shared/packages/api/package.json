@@ -47,6 +47,6 @@
 	"devDependencies": {
 		"@types/ws": "^8.2.2",
 		"superfly-timeline": "^8.2.5",
-		"xkeys": "^2.3.3"
+		"xkeys": "^2.4.0"
 	}
 }
