@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
+      - name: Install libudev-dev
+        run: sudo apt-get install -y libudev-dev
       - name: restore node_modules
         uses: actions/cache@v2
         with:
