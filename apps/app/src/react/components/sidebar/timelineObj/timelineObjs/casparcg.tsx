@@ -449,7 +449,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
-						endAdornment={<AnalogInputOverridePicker />}
+						endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.x" onSave={onSave} />}
 					/>
 				</div>
 			)
@@ -466,7 +466,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
-						endAdornment={<AnalogInputOverridePicker />}
+						endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.y" onSave={onSave} />}
 					/>
 				</div>
 			)
@@ -483,7 +483,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
-						endAdornment={<AnalogInputOverridePicker />}
+						endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.xScale" onSave={onSave} />}
 					/>
 				</div>
 			)
@@ -500,7 +500,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 						}}
 						allowUndefined={false}
 						percentage={true}
-						endAdornment={<AnalogInputOverridePicker />}
+						endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.yScale" onSave={onSave} />}
 					/>
 				</div>
 			)
