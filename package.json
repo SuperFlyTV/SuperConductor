@@ -42,7 +42,8 @@
 		"prebuild-install": "^7.0.0",
 		"threadedclass": "^1.0.1",
 		"node-hid": "github:julusian/node-hid#v2.1.2-1",
-		"casparcg-state": "2.1.1"
+		"casparcg-state": "2.1.1",
+		"serialport": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
 	},
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^1.0.0",
