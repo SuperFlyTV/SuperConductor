@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography } from '@mui/material'
 import useId from '@mui/material/utils/useId'
-import { HiLink } from 'react-icons/hi'
+import { HiLink, HiOutlineAdjustments, HiOutlineX } from 'react-icons/hi'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { store } from '../../../mobx/store'
-import { HiOutlineX } from 'react-icons/hi'
 import './style.css'
 import { TSRTimelineObj, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 
@@ -96,7 +95,7 @@ export function AnalogInputOverridePicker({
 						onClick={onClick}
 						color={currentLink ? 'warning' : 'default'}
 					>
-						<HiLink />
+						{currentLink ? <HiOutlineAdjustments /> : <HiLink />}
 					</IconButton>
 				</Tooltip>
 			</InputAdornment>
