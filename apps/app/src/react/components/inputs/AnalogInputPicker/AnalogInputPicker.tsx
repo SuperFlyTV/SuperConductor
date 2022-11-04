@@ -85,6 +85,10 @@ export function AnalogInputOverridePicker({
 	)
 	const currentAnalogInputLabel = currentAnalogInputLabelIdPair?.[0] ?? ''
 
+	if (Object.keys(analogInputOptions).length === 0) {
+		return null
+	}
+
 	return (
 		<>
 			<InputAdornment position="end">
