@@ -128,14 +128,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		if (!obj.content.transitions.inTransition) obj.content.transitions.inTransition = { type: Transition.CUT }
 		if (!obj.content.transitions.outTransition) obj.content.transitions.outTransition = { type: Transition.CUT }
 
-		return (
-			<>
-				<div className="setting-separator"></div>
-				{getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')}
-				<div className="setting-separator"></div>
-				{getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')}
-			</>
-		)
+		const inTransitions = getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')
+		const outTransitions = getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')
+
+		if (inTransitions.length || outTransitions.length) {
+			return (
+				<>
+					<div className="label">Transitions</div>
+					{inTransitions}
+					<div className="setting-separator"></div>
+					{outTransitions}
+				</>
+			)
+		}
 	}
 	const getSettingsTransitionInner = (obj: TimelineObjCasparCGAny, transition: TimelineTransition, label: string) => {
 		const el: JSX.Element[] = []
