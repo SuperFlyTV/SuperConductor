@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react'
 import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography } from '@mui/material'
 import useId from '@mui/material/utils/useId'
-import { HiLink, HiOutlineAdjustments, HiOutlineX } from 'react-icons/hi'
+import { HiLink, HiOutlineX } from 'react-icons/hi'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { store } from '../../../mobx/store'
-import './style.css'
 import { TSRTimelineObj, TSRTimelineObjBase } from 'timeline-state-resolver-types'
+import classNames from 'classnames'
+
+import './style.scss'
 
 const POPOVER_ANCHOR_ORIGIN: {
 	vertical: 'bottom'
@@ -92,14 +94,15 @@ export function AnalogInputOverridePicker({
 	return (
 		<>
 			<InputAdornment position="end">
-				<Tooltip title={currentLink ? `Linked to: ${currentAnalogInputLabel}` : `Set Analog Input link`}>
+				<Tooltip title={currentLink ? `Linked to: ${currentAnalogInputLabel}` : `Link to Analog Input`}>
 					<IconButton
 						aria-label="set analog input override"
 						edge="end"
 						onClick={onClick}
 						color={currentLink ? 'warning' : 'default'}
+						className={classNames('analog-input-picker', currentLink && 'linked')}
 					>
-						{currentLink ? <HiOutlineAdjustments /> : <HiLink />}
+						<HiLink />
 					</IconButton>
 				</Tooltip>
 			</InputAdornment>
