@@ -9,6 +9,7 @@ import { HomePageId } from 'src/react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
 import { LayersPage } from './layersPage/LayersPage'
 import { ApplicationActionsPage } from './ApplicationActionsPage/ApplicationActionsPage'
+import { AnalogInputsPage } from './AnalogInputsPage/AnalogInputsPage'
 import { ErrorBoundary } from '../../util/ErrorBoundary'
 
 export const HomePage: React.FC<{ project: Project }> = observer(function HomePage(props) {
@@ -34,7 +35,10 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 					},
 					{
 						groupId: 'application',
-						items: [{ id: 'applicationActions', label: 'Application triggers' }],
+						items: [
+							{ id: 'applicationActions', label: 'Application triggers' },
+							{ id: 'analogInputs', label: 'Analog inputs' },
+						],
 					},
 					{
 						groupId: 'general',
@@ -53,6 +57,7 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 			/>
 			<ErrorBoundary>
 				{activeHomePageId === 'applicationActions' && <ApplicationActionsPage />}
+				{activeHomePageId === 'analogInputs' && <AnalogInputsPage />}
 				{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
 				{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}
 				{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}

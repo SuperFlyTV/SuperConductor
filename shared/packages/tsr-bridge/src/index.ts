@@ -2,6 +2,8 @@ import { BridgeAPI, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { ResourceAny } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
+import { clone } from 'lodash'
+import { Datastore } from 'timeline-state-resolver'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { TSR } from './TSR'
 
@@ -15,7 +17,10 @@ export class BaseBridge {
 	private storedTimelines: {
 		[id: string]: TSRTimeline
 	} = {}
+
+	private dataStore: Datastore = {}
 	private mappings: Mappings | undefined = undefined
+
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
@@ -54,6 +59,9 @@ export class BaseBridge {
 		peripheralsHandler.on('keyUp', (deviceId, identifier) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralTrigger', trigger: 'keyUp', deviceId, identifier })
 		})
+		peripheralsHandler.on('analog', (deviceId, identifier, value) => {
+			this.peripheralsHandlerSend({ type: 'PeripheralAnalog', deviceId, identifier, value })
+		})
 		peripheralsHandler.on('knownPeripherals', (peripherals) => {
 			this.peripheralsHandlerSend({ type: 'KnownPeripherals', peripherals })
 		})
@@ -76,6 +84,26 @@ export class BaseBridge {
 		delete this.storedTimelines[id]
 		this.updateTSR(currentTime)
 	}
+	private updateDatastore(
+		updates: {
+			datastoreKey: string
+			value: any | null
+			modified: number
+		}[],
+		currentTime: number
+	) {
+		for (const update of updates) {
+			if (update.value === null) {
+				delete this.dataStore[update.datastoreKey]
+			} else {
+				this.dataStore[update.datastoreKey] = {
+					value: update.value,
+					modified: update.modified,
+				}
+			}
+		}
+		this.updateTSRDatastore(currentTime)
+	}
 
 	private updateTSR(currentTime: number) {
 		this.tsr.setCurrentTime(currentTime)
@@ -91,6 +119,11 @@ export class BaseBridge {
 		// log.info('mapping', JSON.stringify(mapping, undefined, 2))
 
 		this.tsr.conductor.setTimelineAndMappings(fullTimeline, this.mappings)
+	}
+	private updateTSRDatastore(currentTime: number) {
+		this.tsr.setCurrentTime(currentTime)
+
+		this.tsr.conductor.setDatastore(clone(this.dataStore)) // shallow clone
 	}
 
 	private updateMappings(newMappings: Mappings, currentTime: number) {
@@ -136,6 +169,8 @@ export class BaseBridge {
 			this.playTimeline(msg.timelineId, msg.timeline, msg.currentTime)
 		} else if (msg.type === 'removeTimeline') {
 			this.stopTimeline(msg.timelineId, msg.currentTime)
+		} else if (msg.type === 'updateDatastore') {
+			this.updateDatastore(msg.updates, msg.currentTime)
 		} else if (msg.type === 'getTimelineIds') {
 			this.send({ type: 'timelineIds', timelineIds: Object.keys(this.storedTimelines) })
 		} else if (msg.type === 'setMappings') {

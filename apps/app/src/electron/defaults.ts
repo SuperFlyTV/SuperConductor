@@ -155,6 +155,8 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		settings: {
 			enableInternalBridge: true,
 		},
+
+		analogInputSettings: {},
 	}
 }
 export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'id'> {

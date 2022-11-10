@@ -1,5 +1,5 @@
 import { ResourceAny } from '@shared/models'
-import { KnownPeripheral, PeripheralSettingsAny } from './peripherals'
+import { AnalogValue, KnownPeripheral, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
@@ -15,6 +15,7 @@ export namespace BridgeAPI {
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
+			| PeripheralAnalog
 			| DeviceRefreshStatus
 			| KnownPeripherals
 
@@ -68,6 +69,12 @@ export namespace BridgeAPI {
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
 		}
+		export interface PeripheralAnalog extends MessageBase {
+			type: 'PeripheralAnalog'
+			deviceId: string
+			identifier: string
+			value: AnalogValue
+		}
 
 		/**
 		 * Used to tell SuperConductor when a device is refreshing its resources.
@@ -96,6 +103,7 @@ export namespace BridgeAPI {
 			| SetSettings
 			| AddTimeline
 			| RemoveTimeline
+			| UpdateDatastore
 			| GetTimelineIds
 			| SetMappings
 			| RefreshResources
@@ -128,6 +136,16 @@ export namespace BridgeAPI {
 			type: 'removeTimeline'
 
 			timelineId: string
+			currentTime: number
+		}
+		export interface UpdateDatastore extends MessageBase {
+			type: 'updateDatastore'
+
+			updates: {
+				datastoreKey: string
+				value: any | null
+				modified: number
+			}[]
 			currentTime: number
 		}
 		export interface GetTimelineIds extends MessageBase {

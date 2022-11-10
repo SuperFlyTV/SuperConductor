@@ -1,6 +1,7 @@
-import { TextField } from '@mui/material'
+import { FormControl, InputLabel, OutlinedInput } from '@mui/material'
+import useId from '@mui/material/utils/useId'
 import _ from 'lodash'
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
 
 export function ParsedValueInput<V>(
 	currentValue: V,
@@ -8,7 +9,7 @@ export function ParsedValueInput<V>(
 	defaultValue: V,
 	parse: (str: string, isWriting: boolean) => V | undefined,
 	stringify: (val: V) => string,
-	label?: string,
+	label?: React.ReactNode,
 	emptyPlaceholder?: string,
 	inputType: React.HTMLInputTypeAttribute = 'text',
 	disabled?: boolean,
@@ -21,8 +22,10 @@ export function ParsedValueInput<V>(
 		str: string,
 		cursorStart: number | undefined,
 		cursorEnd: number | undefined
-	) => V
+	) => V,
+	endAdornment?: React.ReactNode
 ): JSX.Element {
+	const inputId = useId()
 	const [value, setValue] = useState<string>('')
 	const selectorPosition = useRef<number | null>(null)
 	const fieldRef = useRef<HTMLInputElement>(null)
@@ -32,39 +35,49 @@ export function ParsedValueInput<V>(
 		setValue(stringify(currentValue))
 	}, [currentValue, stringify])
 
-	const onSave = (str: string) => {
-		hasUnsavedChanges.current = false
+	const onSave = useCallback(
+		(str: string) => {
+			hasUnsavedChanges.current = false
 
-		if (!str) {
-			onChange(defaultValue)
-			setValue(stringify(currentValue))
-		} else {
-			const value = parse(str, false)
-			if (value !== undefined) onChange(value)
-			else setValue(stringify(currentValue)) // unable to parse, revert to previous value
-		}
-	}
-	const onChangeValue = (value: V) => {
-		setValue(stringify(value))
-		onChange(value)
-	}
-	const onEventChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-		const str: string = e.target.value
-		const v = parse(str, true)
-		if (v !== undefined) {
-			if (e.target.selectionStart !== null) {
-				const addedLength = str.length - value.length
-				// Handle a few special cases where we want to move the selector position:
-				if (e.target.selectionStart === 0 || (addedLength === 1 && e.target.selectionStart === 1)) {
-					selectorPosition.current = e.target.selectionStart
-				}
+			if (!str) {
+				onChange(defaultValue)
+				setValue(stringify(currentValue))
+			} else {
+				const value = parse(str, false)
+				if (value !== undefined) onChange(value)
+				else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 			}
-			setValue(stringify(v))
-			return
-		}
-		selectorPosition.current = null
-		setValue(str)
-	}
+		},
+		[onChange, currentValue, defaultValue, parse, stringify]
+	)
+	const onChangeValue = useCallback(
+		(value: V) => {
+			setValue(stringify(value))
+			onChange(value)
+		},
+		[stringify, onChange]
+	)
+
+	const onEventChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+			const str: string = e.target.value
+			const v = parse(str, true)
+			if (v !== undefined) {
+				if (e.target.selectionStart !== null) {
+					const addedLength = str.length - value.length
+					// Handle a few special cases where we want to move the selector position:
+					if (e.target.selectionStart === 0 || (addedLength === 1 && e.target.selectionStart === 1)) {
+						selectorPosition.current = e.target.selectionStart
+					}
+				}
+				setValue(stringify(v))
+				return
+			}
+			selectorPosition.current = null
+			setValue(str)
+		},
+		[parse, stringify, value.length]
+	)
 
 	useEffect(() => {
 		const input = fieldRef.current
@@ -92,68 +105,84 @@ export function ParsedValueInput<V>(
 		selectorPosition.current = null
 	}, [value])
 
-	return (
-		<TextField
-			type={inputType}
-			inputRef={fieldRef}
-			onBlur={(e) => {
+	const onKeyDown = useCallback(
+		(e: React.KeyboardEvent<HTMLInputElement>) => {
+			const target = e.target as EventTarget & HTMLInputElement
+
+			// @ts-expect-error selectionStart not found
+			const selectionStart: number = target.selectionStart
+			// @ts-expect-error selectionStart not found
+			const selectionEnd: number = target.selectionEnd
+
+			const str = target.value
+
+			hasUnsavedChanges.current = true
+
+			let incrementValue: number | undefined = undefined
+			if (e.key === 'Enter') {
+				// Select all text
+				;(document.activeElement as HTMLInputElement).setSelectionRange(0, target.value.length)
+
+				onSave(target.value)
+			} else if (e.key === 'Escape') {
+				// revert to previous value:
+				;(document.activeElement as HTMLInputElement).blur()
+				setValue(stringify(currentValue))
+			} else if (e.key === 'ArrowUp') {
+				if (e.ctrlKey) incrementValue = 100
+				else if (e.shiftKey) incrementValue = 10
+				else if (e.altKey) incrementValue = 0.1
+				else incrementValue = 1
+			} else if (e.key === 'ArrowDown') {
+				if (e.ctrlKey) incrementValue = -100
+				else if (e.shiftKey) incrementValue = -10
+				else if (e.altKey) incrementValue = -0.1
+				else incrementValue = -1
+			}
+			if (onIncrement && incrementValue !== undefined) {
+				onChangeValue(onIncrement(currentValue, incrementValue, str, selectionStart, selectionEnd))
+				selectorPosition.current = selectionStart
+				// ;(document.activeElement as HTMLInputElement).setSelectionRange(selectionStart, selectionEnd)
+			}
+		},
+		[onSave, onIncrement, onChangeValue, currentValue, stringify]
+	)
+
+	const onInputChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			if (changeOnKey) {
+				onEventChange(e)
 				onSave(e.target.value)
-			}}
-			onChange={(e) => {
-				if (changeOnKey) {
-					onEventChange(e)
-					onSave(e.target.value)
-				} else {
-					setValue(e.target.value)
-				}
-			}}
-			onKeyDown={(e) => {
-				const target = e.target as EventTarget & HTMLInputElement
+			} else {
+				setValue(e.target.value)
+			}
+		},
+		[onEventChange, onSave, changeOnKey]
+	)
 
-				// @ts-expect-error selectionStart not found
-				const selectionStart: number = target.selectionStart
-				// @ts-expect-error selectionStart not found
-				const selectionEnd: number = target.selectionEnd
+	const onBlur = useCallback(
+		(e: React.FocusEvent<HTMLInputElement>) => {
+			onSave(e.target.value)
+		},
+		[onSave]
+	)
 
-				const str = target.value
-
-				hasUnsavedChanges.current = true
-
-				let incrementValue: number | undefined = undefined
-				if (e.key === 'Enter') {
-					// Select all text
-					;(document.activeElement as HTMLInputElement).setSelectionRange(0, target.value.length)
-
-					onSave(target.value)
-				} else if (e.key === 'Escape') {
-					// revert to previous value:
-					;(document.activeElement as HTMLInputElement).blur()
-					setValue(stringify(currentValue))
-				} else if (e.key === 'ArrowUp') {
-					if (e.ctrlKey) incrementValue = 100
-					else if (e.shiftKey) incrementValue = 10
-					else if (e.altKey) incrementValue = 0.1
-					else incrementValue = 1
-				} else if (e.key === 'ArrowDown') {
-					if (e.ctrlKey) incrementValue = -100
-					else if (e.shiftKey) incrementValue = -10
-					else if (e.altKey) incrementValue = -0.1
-					else incrementValue = -1
-				}
-				if (onIncrement && incrementValue !== undefined) {
-					onChangeValue(onIncrement(currentValue, incrementValue, str, selectionStart, selectionEnd))
-					selectorPosition.current = selectionStart
-					// ;(document.activeElement as HTMLInputElement).setSelectionRange(selectionStart, selectionEnd)
-				}
-			}}
-			size="small"
-			fullWidth={fullWidth}
-			margin="dense"
-			label={label}
-			value={value}
-			disabled={disabled}
-			placeholder={emptyPlaceholder}
-			sx={{ width: width }}
-		/>
+	return (
+		<FormControl variant="outlined" margin="dense" size="small" fullWidth={fullWidth} sx={{ width: width }}>
+			<InputLabel htmlFor={inputId}>{label}</InputLabel>
+			<OutlinedInput
+				id={inputId}
+				type={inputType}
+				inputRef={fieldRef}
+				onBlur={onBlur}
+				onChange={onInputChange}
+				onKeyDown={onKeyDown}
+				label={label}
+				value={value}
+				disabled={disabled}
+				placeholder={emptyPlaceholder}
+				endAdornment={endAdornment}
+			/>
+		</FormControl>
 	)
 }

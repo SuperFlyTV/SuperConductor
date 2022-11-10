@@ -8,6 +8,8 @@ import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
 import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ClientSideLogger } from './logger'
+import { ActiveAnalog } from '../../models/rundown/Analog'
+import { AnalogInput } from '../../models/project/AnalogInput'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -22,10 +24,12 @@ export class IPCClient implements IPCClientMethods {
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
+			updatePeripheralAnalog?: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
 			updateFailedGlobalTriggers?: (identifiers: string[]) => void
+			updateAnalogInput?: (fullIdentifier: string, analogInput: AnalogInput | null) => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
@@ -62,6 +66,9 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.callbacks.updatePeripheralTriggers?.(peripheralTriggers)
 	}
+	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
+		this.callbacks.updatePeripheralAnalog?.(fullIdentifier, analog)
+	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.callbacks.updateDeviceRefreshStatus?.(deviceId, refreshing)
 	}
@@ -73,6 +80,9 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateFailedGlobalTriggers(identifiers: string[]): void {
 		this.callbacks.updateFailedGlobalTriggers?.(identifiers)
+	}
+	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput | null): void {
+		this.callbacks.updateAnalogInput?.(fullIdentifier, analogInput)
 	}
 	destroy(): void {
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)

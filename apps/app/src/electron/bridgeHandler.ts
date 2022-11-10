@@ -1,14 +1,23 @@
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo, BridgeAPI, LoggerLike, KnownPeripheral } from '@shared/api'
+import {
+	KeyDisplay,
+	KeyDisplayTimeline,
+	PeripheralInfo,
+	BridgeAPI,
+	LoggerLike,
+	KnownPeripheral,
+	AnalogValue,
+} from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
-import { Project } from '../models/project/Project'
+import { AnalogInputSetting, Project } from '../models/project/Project'
 import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
 import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
-import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
+import { AnalogInput } from '../models/project/AnalogInput'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
@@ -32,6 +41,13 @@ export class BridgeHandler {
 	private mappings: Mappings = {}
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
+	private analogInputs: {
+		[datastoreKey: string]: {
+			setting: AnalogInputSetting
+			analogInput: AnalogInput
+		}
+	} = {}
+	private datastore: Datastore = {}
 	private closed = false
 	reconnectToBridgesInterval: NodeJS.Timer
 
@@ -210,6 +226,67 @@ export class BridgeHandler {
 			bridgeConnection.setSettings(settings)
 		}
 	}
+	/** Called from the storage when an AnalogInput has been updated */
+	updateAnalogInput(analogInput: AnalogInput | null) {
+		const project = this.storage.getProject()
+
+		const changedDatastoreKeys: string[] = []
+		if (analogInput) {
+			// Fast path
+
+			const setting = project.analogInputSettings[analogInput.datastoreKey]
+			if (setting) {
+				this.datastore[analogInput.datastoreKey] = {
+					value: analogInput.value,
+					modified: analogInput.modified,
+				}
+			} else {
+				delete this.datastore[analogInput.datastoreKey]
+			}
+			changedDatastoreKeys.push(analogInput.datastoreKey)
+		} else {
+			// Slow path, regenerate whole datastore:
+
+			const datastore: Datastore = {}
+			for (const [datastoreKey, setting] of Object.entries(project.analogInputSettings)) {
+				if (!setting.fullIdentifier) continue
+				const storedAnalog = this.storage.getAnalogInput(setting.fullIdentifier)
+				if (!storedAnalog) continue
+
+				datastore[datastoreKey] = {
+					value: storedAnalog.value,
+					modified: storedAnalog.modified,
+				}
+				changedDatastoreKeys.push(datastoreKey)
+			}
+			this.datastore = datastore
+		}
+
+		const updates: {
+			datastoreKey: string
+			value: any | null
+			modified: number
+		}[] = []
+		for (const datastoreKey of changedDatastoreKeys) {
+			updates.push({
+				datastoreKey,
+				value: this.datastore[datastoreKey]?.value ?? null,
+				modified: this.datastore[datastoreKey]?.modified ?? 0,
+			})
+		}
+		this.sendUpdateDatastore(updates)
+	}
+	sendUpdateDatastore(
+		updates: {
+			datastoreKey: string
+			value: any | null
+			modified: number
+		}[]
+	) {
+		for (const bridgeConnection of this.connectedBridges) {
+			bridgeConnection.updateDatastore(updates)
+		}
+	}
 	refreshResources() {
 		for (const bridgeConnection of this.connectedBridges) {
 			bridgeConnection.refreshResources()
@@ -259,6 +336,15 @@ abstract class AbstractBridgeConnection {
 	}
 	refreshResources() {
 		this.send({ type: 'refreshResources' })
+	}
+	updateDatastore(
+		updates: {
+			datastoreKey: string
+			value: any | null
+			modified: number
+		}[]
+	) {
+		this.send({ type: 'updateDatastore', updates, currentTime: this.getCurrentTime() })
 	}
 	peripheralSetKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
 		this.send({
@@ -380,6 +466,10 @@ abstract class AbstractBridgeConnection {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
+	protected _onPeripheralAnalog(deviceId: string, identifier: string, value: AnalogValue) {
+		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+		this.session.updatePeripheralAnalog(this.bridgeId, deviceId, identifier, value)
+	}
 	protected _onKnownPeripherals(knownPeripherals: { [peripheralId: string]: KnownPeripheral }) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updateKnownPeripherals(this.bridgeId, knownPeripherals)
@@ -422,6 +512,8 @@ abstract class AbstractBridgeConnection {
 			this._onPeripheralStatus(msg.deviceId, msg.info, msg.status)
 		} else if (msg.type === 'PeripheralTrigger') {
 			this._onPeripheralTrigger(msg.deviceId, msg.trigger, msg.identifier)
+		} else if (msg.type === 'PeripheralAnalog') {
+			this._onPeripheralAnalog(msg.deviceId, msg.identifier, msg.value)
 		} else if (msg.type === 'DeviceRefreshStatus') {
 			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
 		} else if (msg.type === 'KnownPeripherals') {

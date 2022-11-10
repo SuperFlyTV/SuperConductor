@@ -6,22 +6,24 @@ export const TextInput: React.FC<
 			onChange: (newValue: string) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
 			changeOnKey?: boolean
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: string | undefined
 			onChange: (newValue: string | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
 			changeOnKey?: boolean
+			endAdornment?: React.ReactNode
 	  }
 > = (props) => {
 	const parse = useCallback((v: string) => v, [])
@@ -41,7 +43,9 @@ export const TextInput: React.FC<
 			props.disabled,
 			props.fullWidth,
 			props.width,
-			props.changeOnKey
+			props.changeOnKey,
+			undefined,
+			props.endAdornment
 		)
 	} else {
 		return ParsedValueInput<string>(
@@ -56,7 +60,9 @@ export const TextInput: React.FC<
 			props.disabled,
 			props.fullWidth,
 			props.width,
-			props.changeOnKey
+			props.changeOnKey,
+			undefined,
+			props.endAdornment
 		)
 	}
 }

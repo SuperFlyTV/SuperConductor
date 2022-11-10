@@ -106,3 +106,8 @@ export enum PeripheralType {
 	XKEYS = 'xkeys',
 	MIDI = 'midi',
 }
+
+export interface AnalogValue {
+	absolute: number
+	relative: number
+}

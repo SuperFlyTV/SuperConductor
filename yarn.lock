@@ -11518,10 +11518,10 @@ superfly-timeline@^8.2.5:
     tslib "^2.2.0"
     underscore "^1.13.1"
 
-superfly-timeline@^8.2.8:
-  version "8.2.8"
-  resolved "https://registry.yarnpkg.com/superfly-timeline/-/superfly-timeline-8.2.8.tgz#4f0df61494a0c5a7563c3745d066439d760f8a03"
-  integrity sha512-J9WXNHdyKGby1vp52Uv6BfEevXjBFPi01XyH6ts/mWcS56YdCftc1rmGoekLiIG5TBZ++XgtJdO1vwvCPfBaEQ==
+superfly-timeline@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/superfly-timeline/-/superfly-timeline-8.3.0.tgz#9ee7b396fb918c6a9aaf90a7fda426ec40b103cf"
+  integrity sha512-HrGnrCBY8HF33xyKdJL28mvO301VtKcFZ2QyhF3p4d6Or4QzfDmOZ9t/8HXa4CLIZ0G5JtcPX/Cwq61X7NozJw==
   dependencies:
     tslib "^2.3.1"
     underscore "^1.13.2"
@@ -11695,7 +11695,7 @@ thenify-all@^1.0.0:
   dependencies:
     any-promise "^1.0.0"
 
-threadedclass@^0.8.0, threadedclass@^1.0.1, threadedclass@^1.1.0:
+threadedclass@^0.8.0, threadedclass@^1.0.1, threadedclass@^1.1.1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/threadedclass/-/threadedclass-1.1.0.tgz#3f0e3e91d41098a9c9aa98635fa043530702e269"
   integrity sha512-+R9wHIHKMsmp0g1TKHZ9gcATD5Pohig4ZWqDqV2o1+VjKjw8KmUcTQZ0sJCj/G8hjFxXPp2QAZDHsmzTcqQJYQ==
@@ -11743,17 +11743,17 @@ timed-out@^4.0.1:
   resolved "https://registry.yarnpkg.com/timed-out/-/timed-out-4.0.1.tgz#f32eacac5a175bea25d7fab565ab3ed8741ef56f"
   integrity sha1-8y6srFoXW+ol1/q1Zas+2HQe9W8=
 
-timeline-state-resolver-types@7.4.0-nightly-release46-20220915-075618-de36c07ee.0:
-  version "7.4.0-nightly-release46-20220915-075618-de36c07ee.0"
-  resolved "https://registry.yarnpkg.com/timeline-state-resolver-types/-/timeline-state-resolver-types-7.4.0-nightly-release46-20220915-075618-de36c07ee.0.tgz#24f5f40f13a849e0c5bb8b5e0aa9fca3b09458d6"
-  integrity sha512-Zh3QOQcvXOolt8Mm9ATP/2k4SR2jLhpTb2fuwSJPVgtonGtFzyWwKUqUr+rgnlu4HO+JW+oBbr6imG30ZEotqg==
+timeline-state-resolver-types@7.5.0-nightly-release47-20221005-091131-abc856b2a.0:
+  version "7.5.0-nightly-release47-20221005-091131-abc856b2a.0"
+  resolved "https://registry.yarnpkg.com/timeline-state-resolver-types/-/timeline-state-resolver-types-7.5.0-nightly-release47-20221005-091131-abc856b2a.0.tgz#a32f2f1a99ff0646d2db0566e2a532ec13774107"
+  integrity sha512-F7VTv3D4WBN6EzEUM0VTAt4hZqwTuIrNGpnjx+pnW6jgueDRoHGuXqQwPG4nuNRUKgxNT92OgnqX58XiqNPG5A==
   dependencies:
     tslib "^2.3.1"
 
-timeline-state-resolver@7.4.0-nightly-release46-20220915-075618-de36c07ee.0:
-  version "7.4.0-nightly-release46-20220915-075618-de36c07ee.0"
-  resolved "https://registry.yarnpkg.com/timeline-state-resolver/-/timeline-state-resolver-7.4.0-nightly-release46-20220915-075618-de36c07ee.0.tgz#17b3c274815d849a7dfedf74396ecdd8b7fe8e3d"
-  integrity sha512-Kkg4xutHMEsBx854UY7ZupoSO2uGGF9VHUcnodmCosUVQFTSD3S1WWgWUZZZkfjuMiX7F0VZr9xWfj6yVfa1Ig==
+timeline-state-resolver@7.5.0-nightly-release47-20221005-091131-abc856b2a.0:
+  version "7.5.0-nightly-release47-20221005-091131-abc856b2a.0"
+  resolved "https://registry.yarnpkg.com/timeline-state-resolver/-/timeline-state-resolver-7.5.0-nightly-release47-20221005-091131-abc856b2a.0.tgz#82152ef799893e0ad64371f2a8b9aadfcef2b195"
+  integrity sha512-lbUagFzHcrt9CxBYHsVhmvogjFg4YJk5m1UfzgOMP0EOgHd9DdTYiYZE/XBp9dRHDQ4PYaVvRyzG1/gX6HpJug==
   dependencies:
     "@tv2media/v-connection" "^6.0.2"
     atem-connection "2.4.0"
@@ -11773,9 +11773,9 @@ timeline-state-resolver@7.4.0-nightly-release46-20220915-075618-de36c07ee.0:
     p-timeout "^3.2.0"
     request "^2.88.0"
     sprintf-js "^1.1.2"
-    superfly-timeline "^8.2.8"
-    threadedclass "^1.1.0"
-    timeline-state-resolver-types "7.4.0-nightly-release46-20220915-075618-de36c07ee.0"
+    superfly-timeline "^8.3.0"
+    threadedclass "^1.1.1"
+    timeline-state-resolver-types "7.5.0-nightly-release47-20221005-091131-abc856b2a.0"
     tslib "^2.3.1"
     tv-automation-quantel-gateway-client "^2.0.5"
     underscore "^1.13.4"

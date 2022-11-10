@@ -222,11 +222,11 @@ export class PeripheralMIDI extends Peripheral {
 							}, flashInterval)
 						}
 
-						setKeyValue()
 						this.intervals.set(identifier, {
 							hash,
 						})
 						const intervalTimer = setInterval(setKeyValue, flashInterval * 2)
+						setKeyValue()
 					}
 				} else {
 					if (interval) this.intervals.delete(identifier)
@@ -299,12 +299,15 @@ export class PeripheralMIDI extends Peripheral {
 					// Not supported
 				} else if (fcn === 3) {
 					// Control change
-					// const channel = data[0] & 15 // Second nibble
-					// const controllerNumber = data[1]
-					// const value = data[2]
-					// const identifier = `${channel}_${controllerNumber}`
-					// this.seenKeys.set(identifier, false)
-					// this.emit('analog', identifier)
+					const channel = data[0] & 15 // Second nibble
+					const controllerNumber = data[1]
+					const value = data[2]
+					const identifier = `${channel}_${controllerNumber}`
+
+					this.emit('analog', identifier, {
+						absolute: value,
+						relative: this.getRelativeValue(identifier, value),
+					})
 				} else if (fcn === 4) {
 					// Program Change
 					// Not supported
