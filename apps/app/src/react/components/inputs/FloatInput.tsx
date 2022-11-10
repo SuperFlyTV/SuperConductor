@@ -6,7 +6,7 @@ export const FloatInput: React.FC<
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
-			label: string
+			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
@@ -14,13 +14,14 @@ export const FloatInput: React.FC<
 			percentage?: boolean
 			/** min, max */
 			caps?: [number, number]
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: number | undefined
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
-			label: string
+			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
@@ -28,6 +29,7 @@ export const FloatInput: React.FC<
 			percentage?: boolean
 			/** min, max */
 			caps?: [number, number]
+			endAdornment?: React.ReactNode
 	  }
 > = (props) => {
 	const parse = useCallback(
@@ -102,7 +104,8 @@ export const FloatInput: React.FC<
 			props.fullWidth,
 			props.width,
 			props.changeOnKey,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -118,7 +121,8 @@ export const FloatInput: React.FC<
 			props.fullWidth,
 			props.width,
 			props.changeOnKey,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	}
 }

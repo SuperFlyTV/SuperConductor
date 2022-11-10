@@ -8,10 +8,11 @@ export const DurationInput: React.FC<
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: number
@@ -20,10 +21,11 @@ export const DurationInput: React.FC<
 			allowNull: false
 			emptyPlaceholder?: string
 			defaultValue: number
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: number | null
@@ -32,10 +34,11 @@ export const DurationInput: React.FC<
 			allowNull: true
 			emptyPlaceholder?: string
 			defaultValue: number | null
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 > = (props) => {
 	const onIncrement = useCallback((value: number | undefined | null, inc: number) => {
@@ -68,7 +71,8 @@ export const DurationInput: React.FC<
 			props.fullWidth,
 			props.width,
 			undefined,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	} else if (props.allowNull) {
 		return ParsedValueInput<number | null>(
@@ -84,7 +88,8 @@ export const DurationInput: React.FC<
 			props.fullWidth,
 			props.width,
 			undefined,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -100,7 +105,8 @@ export const DurationInput: React.FC<
 			props.fullWidth,
 			props.width,
 			undefined,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	}
 }

@@ -1,0 +1,21 @@
+.analog-input-picker-popover li.MuiMenuItem-root > svg {
+	margin-right: 0.5em;
+	margin-top: 0.1em;
+}
+.analog-input-picker {
+	opacity: 0.6;
+
+	>svg {
+		/* Just outline the icon: */
+		fill: none;
+		stroke: white;
+		stroke-width: 0.5px;
+	}
+
+	&.linked {
+		opacity: 1;
+		>svg {
+			fill: white;
+		}
+	}
+}

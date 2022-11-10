@@ -1,12 +1,11 @@
 .analog-input-header-item {
 	display: flex;
-    align-items: center;
-    width: 100%;
+	align-items: center;
+	width: 100%;
 
 	.value {
 		display: flex;
 		.content {
-
 			background-color: #17522c;
 			color: #fff;
 			padding: 0 0.5em;
@@ -18,13 +17,11 @@
 
 	.identifier {
 		margin: 0 0.5em;
-
 	}
 	.trash {
 		flex-grow: 1;
 		text-align: right;
 	}
-
 }
 .analog-input-settings {
 	display: flex;
