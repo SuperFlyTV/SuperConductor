@@ -4,13 +4,13 @@
 	left: 0;
 	right: 0;
 	bottom: 0;
+	display: grid;
+	grid-template-columns: 100%;
+	grid-template-rows: min-content auto;
 
 	> .sidebar__header {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		// height is set programatically
+		grid-row: 1;
+		grid-column: 1;
 
 		padding: 0.5em;
 
@@ -19,7 +19,6 @@
 		.title {
 			font-size: 1.2rem;
 			text-transform: uppercase;
-			margin-bottom: 0.5rem;
 			font-weight: bold;
 			display: flex;
 			justify-content: space-between;
@@ -27,10 +26,9 @@
 		}
 	}
 	> .sidebar__content {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
+		position: relative;
+		grid-row: 2;
+		grid-column: 1;
 		// top is set programatically
 
 		z-index: 1;

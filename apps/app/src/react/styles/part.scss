@@ -255,7 +255,7 @@ $part_time_height: 16px;
 		background: $emptyLayerColor;
 		display: flex;
 		flex-direction: column;
-		font-family: 'Barlow Condensed';
+		font-family: $mainFontCondensed;
 		max-width: 100px;
 		border-right: 1px;
 		border-color: black;
@@ -298,7 +298,7 @@ $part_time_height: 16px;
 		grid-area: time;
 		display: flex;
 		font-size: 14px;
-		font-family: 'Barlow Semi Condensed';
+		font-family: $mainFontSemiCondensed;
 		font-weight: 400;
 		font-variant-numeric: tabular-nums;
 		// overflow: hidden;
@@ -326,7 +326,7 @@ $part_time_height: 16px;
 			padding-right: 4px;
 
 			line-height: 1;
-			font-family: 'Barlow Condensed';
+			font-family: $mainFontCondensed;
 			font-weight: 300;
 			text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
 				0px 0px 3px rgba(0, 0, 0, 0.75);

@@ -1,37 +1,35 @@
 .trigger-pill {
+	display: flex;
+	align-items: center;
+	font-family: $mainFontSemiCondensed;
+	font-weight: 600;
+	font-size: 12px;
+	// line-height: 12px;
 
-    display: flex;
-    align-items: center;
-    font-family: 'Barlow Semi Condensed';
-    font-weight: 600;
-    font-size: 12px;
-    // line-height: 12px;
+	margin-left: 0.5em;
 
-    margin-left: 0.5em;
+	> .label-part {
+		color: black;
+		background: #49d3ff;
+		box-shadow: inset 0px -2px 0px rgba(0, 0, 0, 0.25);
+		border-radius: 2px;
+		padding: 0 0.3rem;
 
-    >.label-part {
-        color: black;
-        background: #49d3ff;
-        box-shadow: inset 0px -2px 0px rgba(0, 0, 0, 0.25);
-        border-radius: 2px;
-        padding: 0 0.3rem;
+		&.keyboard {
+			background: #aaa99e;
+		}
 
-        &.keyboard {
-            background: #aaa99e;
-        }
+		> .label {
+			display: block;
+			transform: translateY(-1px);
+		}
+	}
 
-        >.label {
-            display: block;
-            transform: translateY(-1px);
-        }
-    }
+	.connect-labels {
+		margin: 0 0.2rem;
 
-    .connect-labels {
-        margin: 0 0.2rem;
-
-        &:last-child {
-            display: none;
-        }
-    }
-
+		&:last-child {
+			display: none;
+		}
+	}
 }
