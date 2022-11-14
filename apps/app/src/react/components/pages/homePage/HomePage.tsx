@@ -40,7 +40,7 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 							{ id: 'project', label: 'Project' },
 							{
 								id: 'bridgesSettings',
-								label: 'Brigdes',
+								label: 'Bridges',
 							},
 							{
 								id: 'mappingsSettings',
