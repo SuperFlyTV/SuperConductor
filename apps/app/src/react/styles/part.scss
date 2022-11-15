@@ -307,9 +307,10 @@ $part_time_height: 16px;
 		&__current-time {
 			margin-left: 3px;
 			position: relative;
-			top: -2px;
+			top: 0px;
 			font-family: 'Barlow Condensed';
 			font-weight: 300;
+			line-height: 1;
 
 			&__value {
 				font-family: 'Barlow Semi Condensed';
@@ -321,9 +322,10 @@ $part_time_height: 16px;
 			margin-left: auto;
 			margin-right: 88px;
 			position: relative;
-			top: -2px;
+			top: 0px;
 			font-family: 'Barlow Condensed';
 			font-weight: 300;
+			line-height: 1;
 
 			&__value {
 				font-family: 'Barlow Semi Condensed';
