@@ -307,14 +307,42 @@ $part_time_height: 16px;
 		&__current-time {
 			margin-left: 3px;
 			position: relative;
-			top: -2px;
+			top: 0px;
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+			line-height: 1;
+
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
+
+			&__value {
+				font-family: 'Barlow Semi Condensed';
+				font-weight: 400;				
+			}
 		}
 
 		&__remaining-time {
 			margin-left: auto;
-			margin-right: 88px;
+			margin-right: 100px;
 			position: relative;
-			top: -2px;
+			top: 0px;
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+			line-height: 1;
+
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
+
+			&__value {
+				font-family: 'Barlow Semi Condensed';
+				font-weight: 400;				
+			}
 		}
 
 		&__duration {
@@ -333,6 +361,10 @@ $part_time_height: 16px;
 			z-index: 1;
 
 			background: linear-gradient(90deg, transparent, black);
+
+			&__value {
+				font-weight: 700;
+			}
 		}
 	}
 

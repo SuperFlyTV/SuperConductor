@@ -24,5 +24,10 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 
 	if (!countDownTimeString) return null
 
-	return <>{countDownTimeString}</>
+	return (
+		<>
+			<span className="part__time__remaining-time__label">REMAINING</span>{' '}
+			<span className="part__time__remaining-time__value">{countDownTimeString}</span>
+		</>
+	)
 })
