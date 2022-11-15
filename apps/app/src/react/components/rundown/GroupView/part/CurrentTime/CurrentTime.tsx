@@ -22,5 +22,12 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 		const playheadTime = playhead.playheadTime
 		return typeof playheadTime === 'number' ? formatDuration(playheadTime, DISPLAY_DECIMAL_COUNT) : null
 	}, [props.groupId, props.partId])
-	return <>{playheadTimeString}</>
+
+	if (!playheadTimeString) return null
+
+	return (
+		<>
+			ELAPSED <span style={{ fontWeight: 400, fontFamily: 'Barlow Semi Condensed' }}>{playheadTimeString}</span>
+		</>
+	)
 })

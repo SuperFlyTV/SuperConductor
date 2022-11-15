@@ -24,5 +24,10 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 
 	if (!countDownTimeString) return null
 
-	return <>{countDownTimeString}</>
+	return (
+		<>
+			REMAINING{' '}
+			<span style={{ fontWeight: 400, fontFamily: 'Barlow Semi Condensed' }}>{countDownTimeString}</span>
+		</>
+	)
 })
