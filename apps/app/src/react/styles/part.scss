@@ -312,6 +312,12 @@ $part_time_height: 16px;
 			font-weight: 300;
 			line-height: 1;
 
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
+
 			&__value {
 				font-family: 'Barlow Semi Condensed';
 				font-weight: 400;				
@@ -326,6 +332,12 @@ $part_time_height: 16px;
 			font-family: 'Barlow Condensed';
 			font-weight: 300;
 			line-height: 1;
+
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
 
 			&__value {
 				font-family: 'Barlow Semi Condensed';

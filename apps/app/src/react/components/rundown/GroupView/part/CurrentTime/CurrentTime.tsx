@@ -27,7 +27,8 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 
 	return (
 		<>
-			ELAPSED <span className="part__time__current-time__value">{playheadTimeString}</span>
+			<span className="part__time__current-time__label">ELAPSED</span>{' '}
+			<span className="part__time__current-time__value">{playheadTimeString}</span>
 		</>
 	)
 })
