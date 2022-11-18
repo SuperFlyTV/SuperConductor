@@ -27,6 +27,7 @@ import {
 	MappingSingularLive,
 	MappingSisyfos,
 	MappingSisyfosType,
+	MappingSofieChef,
 	MappingTCPSend,
 	MappingVizMSE,
 	MappingVMix,
@@ -213,6 +214,11 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 		}
 	} else if (obj.content.deviceType === DeviceType.VIZMSE) {
 		// MappingVizMSE
+		return true
+	} else if (obj.content.deviceType === DeviceType.SOFIE_CHEF) {
+		// MappingSofieChef
+		return true
+	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return true
 	} else {
 		assertNever(obj.content)
@@ -657,6 +663,19 @@ export function getMappingFromTimelineObject(
 			deviceId: deviceId,
 			layerName: 'VizMSE',
 		})
+	} else if (obj.content.deviceType === DeviceType.SOFIE_CHEF) {
+		return literal<MappingSofieChef>({
+			device: DeviceType.SOFIE_CHEF,
+			deviceId: deviceId,
+			layerName: 'Chef window',
+			windowId: 'default',
+		})
+	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
+		return literal<Mapping>({
+			device: DeviceType.TELEMETRICS,
+			deviceId: deviceId,
+			layerName: 'Telemetrics',
+		})
 	} else {
 		assertNever(obj.content)
 	}
@@ -700,6 +719,10 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 			return 'VMix'
 		case DeviceType.OBS:
 			return 'OBS'
+		case DeviceType.SOFIE_CHEF:
+			return 'Sofie Chef'
+		case DeviceType.TELEMETRICS:
+			return 'Telemetrics'
 		default:
 			assertNever(deviceType)
 	}
@@ -824,6 +847,13 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 					// assertNever(typedMapping.mappingType)
 					return ''
 			}
+		}
+		case DeviceType.SOFIE_CHEF: {
+			const typedMapping = mapping as MappingSofieChef
+			return `Window ${typedMapping.windowId}`
+		}
+		case DeviceType.TELEMETRICS: {
+			return ''
 		}
 		default:
 			assertNever(mapping.device)
@@ -974,6 +1004,19 @@ export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId:
 			deviceId,
 			mappingType: MappingOBSType.CurrentScene,
 			layerName: `OBS Scene`,
+		})
+	} else if (deviceType === DeviceType.SOFIE_CHEF) {
+		return literal<MappingSofieChef>({
+			device: deviceType,
+			deviceId,
+			layerName: `Chef window`,
+			windowId: 'default',
+		})
+	} else if (deviceType === DeviceType.TELEMETRICS) {
+		return literal<Mapping>({
+			device: deviceType,
+			deviceId,
+			layerName: `Telemetrics`,
 		})
 	} else {
 		assertNever(deviceType)
@@ -1151,6 +1194,13 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 				const _b = b.mapping as MappingOBSAny
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
+			} else if (device === DeviceType.SOFIE_CHEF) {
+				const _a = a.mapping as MappingSofieChef
+				const _b = b.mapping as MappingSofieChef
+				if (_a.windowId > _b.windowId) return 1
+				if (_a.windowId < _b.windowId) return -1
+			} else if (device === DeviceType.TELEMETRICS) {
+				// Nothing
 			} else {
 				assertNever(device)
 			}

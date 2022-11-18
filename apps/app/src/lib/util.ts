@@ -498,6 +498,12 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else {
 			assertNever(mapping0.mappingType)
 		}
+	} else if (mapping.device === DeviceType.SOFIE_CHEF) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.TELEMETRICS) {
+		// @TODO
+		return false
 	} else {
 		assertNever(mapping.device)
 	}
