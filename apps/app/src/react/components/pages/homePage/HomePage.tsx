@@ -56,11 +56,11 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 				]}
 			/>
 			<ErrorBoundary>
-				{activeHomePageId === 'applicationActions' && <ApplicationActionsPage />}
-				{activeHomePageId === 'analogInputs' && <AnalogInputsPage />}
-				{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
-				{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}
-				{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}
+				<>{activeHomePageId === 'applicationActions' && <ApplicationActionsPage />}</>
+				<>{activeHomePageId === 'analogInputs' && <AnalogInputsPage />}</>
+				<>{activeHomePageId === 'project' && <ProjectPage project={props.project} />}</>
+				<>{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}</>
+				<>{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}</>
 			</ErrorBoundary>
 		</div>
 	)

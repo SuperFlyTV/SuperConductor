@@ -22,7 +22,6 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		webPreferences: {
 			nodeIntegration: true,
 			contextIsolation: false,
-			nativeWindowOpen: false,
 		},
 		title: 'SuperConductor',
 	})

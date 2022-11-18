@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 
-interface DeltaPosition {
+export interface DeltaPosition {
 	x: number
 	y: number
 }
-interface Position {
+export interface Position {
 	clientX: number
 	clientY: number
 }

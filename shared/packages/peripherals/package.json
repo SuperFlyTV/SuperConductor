@@ -42,7 +42,7 @@
 		]
 	},
 	"devDependencies": {
-		"@types/sharp": "^0.29.5",
+		"@types/sharp": "^0.31.0",
 		"@types/midi": "^2.0.0",
 		"winston": "^3.7.2"
 	},
@@ -54,7 +54,7 @@
 		"lodash": "^4.17.21",
 		"midi": "^2.0.0",
 		"p-queue": "^6.6.2",
-		"sharp": "^0.30.0",
+		"sharp": "^0.31.2",
 		"superfly-timeline": "^8.2.5",
 		"xkeys": "^2.4.0"
 	}

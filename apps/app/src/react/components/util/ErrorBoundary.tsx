@@ -8,7 +8,12 @@ interface IState {
 	expandedComponentStack?: boolean
 }
 
-export class ErrorBoundary extends React.Component<unknown, IState> {
+export class ErrorBoundary extends React.Component<
+	{
+		children: React.ReactNode
+	},
+	IState
+> {
 	static style = {
 		box: {
 			display: 'block',

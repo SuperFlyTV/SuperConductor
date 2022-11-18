@@ -1,6 +1,6 @@
 import sorensen from '@sofie-automation/sorensen'
 import { describeTimelineObject } from '../../../../lib/TimelineObj'
-import { useMovable } from '../../../../lib/useMovable'
+import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
@@ -108,7 +108,7 @@ export const TimelineObject: React.FC<{
 			saving: false,
 		})
 	}, [])
-	const onDragMove = useCallback((delta, position) => {
+	const onDragMove = useCallback((delta: DeltaPosition, position: Position) => {
 		const dd = dragData.current
 
 		const update: Partial<TimelineObjectMove> = {
@@ -129,7 +129,7 @@ export const TimelineObject: React.FC<{
 		}
 		store.guiStore.updateTimelineObjMove(update)
 	}, [])
-	const onDragEnd = useCallback((_delta, _position) => {
+	const onDragEnd = useCallback((_delta: DeltaPosition, _position: Position) => {
 		// A move has completed.
 
 		const dd = dragData.current
