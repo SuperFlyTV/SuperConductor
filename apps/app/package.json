@@ -5,7 +5,7 @@
 	"description": "A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!",
 	"main": "dist/main.js",
 	"engines": {
-		"node": "^12.20 || ^14.15.3 || 16"
+		"node": "^16.16.0 || 18"
 	},
 	"scripts": {
 		"build": "rimraf ./dist && tsc && webpack",
@@ -47,7 +47,7 @@
 		"@welldone-software/why-did-you-render": "^7.0.1",
 		"concurrently": "^7.5.0",
 		"css-loader": "^6.7.2",
-		"electron": "^15.1.0",
+		"electron": "^19.1.6",
 		"electron-builder": "^23.6.0",
 		"electron-notarize": "^1.2.2",
 		"html-webpack-plugin": "^5.5.0",
@@ -171,7 +171,7 @@
 			"artifactName": "SuperConductor ${version} Linux Executable.${ext}"
 		},
 		"afterSign": "tools/notarize.js",
-		"electronVersion": "15.3.5",
+		"electronVersion": "19.1.6",
 		"files": [
 			"dist/**/*"
 		]
