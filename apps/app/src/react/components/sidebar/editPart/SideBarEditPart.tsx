@@ -56,7 +56,7 @@ export const SideBarEditPart: React.FC<{
 						onClick={() => {
 							setDeleteConfirmationOpen(true)
 						}}
-						title="Delete Group"
+						title="Delete Part"
 					/>
 				</div>
 			</div>
@@ -89,7 +89,7 @@ export const SideBarEditPart: React.FC<{
 				</div>
 				<div className="setting">
 					<BooleanInput
-						label="Lock group for editing"
+						label="Lock part for editing"
 						currentValue={part.locked}
 						disabled={groupLocked}
 						onChange={(value) => {
