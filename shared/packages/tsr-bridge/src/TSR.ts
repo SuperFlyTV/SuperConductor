@@ -52,14 +52,14 @@ export class TSR {
 	 * Syncs the currentTime, this is useful when TSR-Bridge runs on another computer than SuperConductor,
 	 * where the local time might differ from the SuperConductor.
 	 */
-	public setCurrentTime(currentTime: number) {
+	public setCurrentTime(currentTime: number): void {
 		if (currentTime) this.currentTimeDiff = currentTime - Date.now()
 	}
 	public getCurrentTime(): number {
 		return Date.now() + this.currentTimeDiff
 	}
 
-	public async updateDevices(newDevices: { [deviceId: string]: DeviceOptionsAny }) {
+	public async updateDevices(newDevices: { [deviceId: string]: DeviceOptionsAny }): Promise<void> {
 		// Added/updated:
 		for (const deviceId in newDevices) {
 			const newDevice = newDevices[deviceId]
@@ -125,7 +125,7 @@ export class TSR {
 
 		this.newConnection = false
 	}
-	public refreshResources(cb: (deviceId: string, resources: ResourceAny[]) => void) {
+	public refreshResources(cb: (deviceId: string, resources: ResourceAny[]) => void): void {
 		for (const [deviceId, sideload] of Object.entries(this.sideLoadedDevices)) {
 			let timedOut = false
 			this.send({
@@ -161,7 +161,7 @@ export class TSR {
 				})
 		}
 	}
-	public reportAllStatuses() {
+	public reportAllStatuses(): void {
 		for (const deviceId of Object.keys(this.deviceStatus)) {
 			this.reportDeviceStatus(deviceId)
 		}

@@ -1,4 +1,5 @@
 import { app, Menu, shell } from 'electron'
+import winston from 'winston'
 
 const isMac = process.platform === 'darwin'
 
@@ -13,16 +14,19 @@ export interface GenerateMenuArgs {
 	onUpdateClick: () => void
 }
 
-export function generateMenu({
-	undoLabel,
-	undoEnabled,
-	redoLabel,
-	redoEnabled,
-	onUndoClick,
-	onRedoClick,
-	onAboutClick,
-	onUpdateClick,
-}: GenerateMenuArgs) {
+export function generateMenu(
+	{
+		undoLabel,
+		undoEnabled,
+		redoLabel,
+		redoEnabled,
+		onUndoClick,
+		onRedoClick,
+		onAboutClick,
+		onUpdateClick,
+	}: GenerateMenuArgs,
+	log: winston.Logger
+) {
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
 	if (isMac) {
@@ -117,14 +121,14 @@ export function generateMenu({
 		submenu: [
 			{
 				label: 'Documentation',
-				click: async () => {
-					await shell.openExternal('https://github.com/SuperFlyTV/SuperConductor')
+				click: () => {
+					shell.openExternal('https://github.com/SuperFlyTV/SuperConductor').catch(log.error)
 				},
 			},
 			{
 				label: 'Search Issues',
-				click: async () => {
-					await shell.openExternal('https://github.com/SuperFlyTV/SuperConductor/issues')
+				click: () => {
+					shell.openExternal('https://github.com/SuperFlyTV/SuperConductor/issues').catch(log.error)
 				},
 			},
 			{

@@ -3,14 +3,14 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
-import { onKnownPeripheralCallback, Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
 export class PeripheralStreamDeck extends Peripheral {
 	private static Watching = false
-	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
 		if (PeripheralStreamDeck.Watching) {
 			throw new Error('Already watching')
 		}
@@ -72,7 +72,7 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 
-	private static GetStreamDeckId(streamDeck: StreamDeckDeviceInfo): string {
+	private static GetStreamDeckId(this: void, streamDeck: StreamDeckDeviceInfo): string {
 		return streamDeck.serialNumber
 			? `streamdeck-serial_${streamDeck.serialNumber}`
 			: `streamdeck-path_${streamDeck.path}`
@@ -237,7 +237,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			}, 1)
 		}
 	}
-	async close() {
+	async close(): Promise<void> {
 		if (this.streamDeck) {
 			this.connectedToParent = false
 			await this._updateAllKeys('Closed')
@@ -668,6 +668,6 @@ function keyIndexToIdentifier(keyIndex: number): string {
 function identifierToKeyIndex(identifier: string): number {
 	return parseInt(identifier)
 }
-function sleep(ms: number) {
+async function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }

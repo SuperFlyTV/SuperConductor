@@ -27,17 +27,17 @@ export class StorageHandler extends EventEmitter {
 		this.appData = this.loadAppData(defaultWindowPosition)
 	}
 
-	init() {
+	init(): void {
 		// Nothing here yet
 	}
-	terminate() {
+	terminate(): void {
 		this.removeAllListeners()
 	}
 
 	getAppData(): AppData {
 		return this.appData.appData
 	}
-	updateAppData(appData: AppData) {
+	updateAppData(appData: AppData): void {
 		this.appData.appData = appData
 
 		const settings = this.appData.appData.settings
@@ -57,11 +57,11 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({ appData: true })
 	}
 
-	triggerEmitAll() {
+	triggerEmitAll(): void {
 		this.emitEverything = true
 		this.triggerUpdate({})
 	}
-	async writeChangesNow() {
+	async writeChangesNow(): Promise<void> {
 		if (this.writeTimeout) {
 			clearTimeout(this.writeTimeout)
 			this.writeTimeout = null

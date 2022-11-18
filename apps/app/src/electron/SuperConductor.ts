@@ -431,7 +431,10 @@ export class SuperConductor {
 		}
 	}
 
-	onNewWindow(window: BrowserWindow) {
+	onNewWindow(window: BrowserWindow): {
+		ipcClient: IPCClient
+		close: () => void
+	} {
 		const ipcClient = new IPCClient(window)
 
 		const client = {

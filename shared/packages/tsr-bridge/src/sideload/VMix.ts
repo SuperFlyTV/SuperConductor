@@ -42,10 +42,10 @@ export class VMixSideload implements SideLoadDevice {
 				.catch((error) => this.log.error(error))
 		}
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		return this.vmix.dispose()
 	}
 	private async _refreshResources() {

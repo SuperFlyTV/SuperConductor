@@ -102,7 +102,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 			}
 		},
 	})
-	const menu = generateMenu(menuOpts)
+	const menu = generateMenu(menuOpts, log)
 	Menu.setApplicationMenu(menu)
 
 	superConductor.ipcServer.on('updatedUndoLedger', (undoLedger, undoPointer) => {
@@ -112,7 +112,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		menuOpts.undoEnabled = Boolean(undoAction)
 		menuOpts.redoLabel = redoAction ? `Redo ${redoAction.description}` : 'Redo'
 		menuOpts.redoEnabled = Boolean(redoAction)
-		const menu = generateMenu(menuOpts)
+		const menu = generateMenu(menuOpts, log)
 		Menu.setApplicationMenu(menu)
 	})
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:

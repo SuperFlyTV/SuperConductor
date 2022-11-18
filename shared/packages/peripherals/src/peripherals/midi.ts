@@ -1,7 +1,7 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import * as MIDI from 'midi'
-import { onKnownPeripheralCallback, Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 
 export type DevicesMap = Map<string, { port: number; name: string }>
 
@@ -13,7 +13,7 @@ const FLASH_NORMAL = 1000
 export class PeripheralMIDI extends Peripheral {
 	private static Watching = false
 	private connectedToParent = false
-	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
 		if (PeripheralMIDI.Watching) {
 			throw new Error('Already watching')
 		}
@@ -244,7 +244,7 @@ export class PeripheralMIDI extends Peripheral {
 			}, 1)
 		}
 	}
-	async close() {
+	async close(): Promise<void> {
 		this.connected = false
 		this.intervals.clear()
 		this.Input?.closePort()

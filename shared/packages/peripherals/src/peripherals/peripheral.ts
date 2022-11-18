@@ -17,6 +17,11 @@ export declare interface Peripheral {
 	emit<U extends keyof PeripheralEvents>(event: U, ...args: Parameters<PeripheralEvents[U]>): boolean
 }
 export type onKnownPeripheralCallback = (peripheralId: string, details: KnownPeripheral | null) => void
+
+export interface WatchReturnType {
+	stop: () => void
+}
+
 export abstract class Peripheral extends EventEmitter {
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(

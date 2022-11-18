@@ -14,18 +14,18 @@ export class CasparCGSideload implements SideLoadDevice {
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,
 			autoConnect: true,
-			onConnected: async () => {
+			onConnected: (): void => {
 				this.log.info(`CasparCG ${this.deviceId}: Sideload connection initialized`)
 			},
-			onDisconnected: () => {
+			onDisconnected: (): void => {
 				this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
 			},
 		})
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		return this.ccg.disconnect()
 	}
 

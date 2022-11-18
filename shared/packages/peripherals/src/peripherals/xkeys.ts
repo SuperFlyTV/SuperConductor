@@ -1,7 +1,7 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
-import { onKnownPeripheralCallback, Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
@@ -11,7 +11,7 @@ const FLASH_NORMAL = 30
 export class PeripheralXkeys extends Peripheral {
 	private static Watching = false
 	private connectedToParent = false
-	static Watch(onKnownPeripheral: onKnownPeripheralCallback) {
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
 		if (PeripheralXkeys.Watching) {
 			throw new Error('Already watching')
 		}
@@ -80,7 +80,10 @@ export class PeripheralXkeys extends Peripheral {
 	 *	Copied from xkeys/packages/core/src/xkeys.ts
 	 *	https://github.com/SuperFlyTV/xkeys/blob/615db0c740d1a19b33217c94c1c280066cb9688c/packages/core/src/xkeys.ts#L53-L73
 	 */
-	private static FindProduct(panelInfo: HID_Device): { product: Product; productId: number; interface: number } {
+	private static FindProduct(
+		this: void,
+		panelInfo: HID_Device
+	): { product: Product; productId: number; interface: number } {
 		for (const product of Object.values(PRODUCTS)) {
 			for (const hidDevice of product.hidDevices) {
 				if (
@@ -101,7 +104,7 @@ export class PeripheralXkeys extends Peripheral {
 		)
 	}
 
-	private static GetXkeysId(panelInfo: HID_Device): string {
+	private static GetXkeysId(this: void, panelInfo: HID_Device): string {
 		return panelInfo.serialNumber ? `xkeys-serial_${panelInfo.serialNumber}` : `xkeys-path_${panelInfo.path}`
 	}
 
@@ -319,7 +322,7 @@ export class PeripheralXkeys extends Peripheral {
 			}, 1)
 		}
 	}
-	async close() {
+	async close(): Promise<void> {
 		if (this.xkeysPanel) {
 			this.xkeysPanel.setAllBacklights(null) // set all backlights to black
 

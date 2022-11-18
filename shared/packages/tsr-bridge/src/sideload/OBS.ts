@@ -41,10 +41,10 @@ export class OBSSideload implements SideLoadDevice {
 
 		this._connect().catch((error) => this.log.error(error))
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		return this.obs.disconnect()
 	}
 	private async _connect() {

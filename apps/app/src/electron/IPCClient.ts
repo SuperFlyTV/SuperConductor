@@ -15,7 +15,7 @@ import { AnalogInput } from '../models/project/AnalogInput'
 export class IPCClient implements IPCClientMethods {
 	constructor(private mainWindow: BrowserWindow) {}
 
-	close() {
+	close(): void {
 		// Nothing here
 	}
 

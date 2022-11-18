@@ -23,12 +23,12 @@ export class PeripheralWatcher extends EventEmitter {
 		super()
 
 		// Make javascript happy:
-		this.updateDiscoveredPeripheral = this.updateDiscoveredPeripheral.bind(this)
+		const boundUpdateDiscoveredPeripheral = this.updateDiscoveredPeripheral.bind(this)
 
 		// Set up subwatchers:
-		this.subwatchers.push(PeripheralStreamDeck.Watch(this.updateDiscoveredPeripheral))
-		this.subwatchers.push(PeripheralXkeys.Watch(this.updateDiscoveredPeripheral))
-		this.subwatchers.push(PeripheralMIDI.Watch(this.updateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralXkeys.Watch(boundUpdateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralMIDI.Watch(boundUpdateDiscoveredPeripheral))
 	}
 
 	/**
