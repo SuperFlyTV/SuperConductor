@@ -44,11 +44,14 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 										partId: part.id,
 									}
 							})
-							.filter((p) => typeof p !== 'undefined') as {
+							.filter((p) => typeof p !== 'undefined'),
+					} as {
+						type: 'part'
+						items: {
 							groupId: string
 							groupLocked: boolean
 							partId: string
-						}[],
+						}[]
 					}
 				} else if (mainSelected.type === 'timelineObj') {
 					const group =
