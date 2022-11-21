@@ -28,19 +28,28 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 						store.rundownsStore.getGroup(mainSelected.groupId)
 					if (group) return { type: 'group', groupId: group.id } as { type: 'group'; groupId: string }
 				} else if (mainSelected.type === 'part') {
-					const group =
-						store.rundownsStore.hasGroup(mainSelected.groupId) &&
-						store.rundownsStore.getGroup(mainSelected.groupId)
-					const part =
-						store.rundownsStore.hasPart(mainSelected.partId) &&
-						store.rundownsStore.getPart(mainSelected.partId)
-					if (group && part)
-						return { type: 'part', groupId: group.id, groupLocked: group.locked, partId: part.id } as {
-							type: 'part'
+					return {
+						type: 'part',
+						items: store.guiStore
+							.getSelectedOfType('part')
+							.map((p) => {
+								const group =
+									store.rundownsStore.hasGroup(p.groupId) && store.rundownsStore.getGroup(p.groupId)
+								const part =
+									store.rundownsStore.hasPart(p.partId) && store.rundownsStore.getPart(p.partId)
+								if (group && part)
+									return {
+										groupId: group.id,
+										groupLocked: group.locked,
+										partId: part.id,
+									}
+							})
+							.filter((p) => typeof p !== 'undefined') as {
 							groupId: string
 							groupLocked: boolean
 							partId: string
-						}
+						}[],
+					}
 				} else if (mainSelected.type === 'timelineObj') {
 					const group =
 						store.rundownsStore.hasGroup(mainSelected.groupId) &&
@@ -97,12 +106,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	} else if (editing.type === 'part') {
 		return (
 			<ErrorBoundary>
-				<SideBarEditPart
-					rundownId={currentRundownId}
-					groupId={editing.groupId}
-					partId={editing.partId}
-					groupLocked={!!editing.groupLocked}
-				/>
+				<SideBarEditPart rundownId={currentRundownId} parts={editing.items} />
 			</ErrorBoundary>
 		)
 	} else if (editing.type === 'timelineObj') {
