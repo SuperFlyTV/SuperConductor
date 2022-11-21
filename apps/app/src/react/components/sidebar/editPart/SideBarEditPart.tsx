@@ -15,12 +15,11 @@ type LockState = 'all' | 'some' | 'none'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
-	parts:
-		| {
-				groupId: string
-				partId: string
-				groupLocked: boolean
-		  }[]
+	parts: {
+		groupId: string
+		partId: string
+		groupLocked: boolean
+	}[]
 }> = observer(function SideBarEditPart({ rundownId, parts }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
