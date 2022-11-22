@@ -37,7 +37,7 @@ export const SideBarEditPart: React.FC<{
 	).get()
 
 	const handleDelete = useCallback(
-		(groupId, partId) => {
+		(groupId: string, partId: string) => {
 			ipcServer
 				.deletePart({
 					rundownId,
