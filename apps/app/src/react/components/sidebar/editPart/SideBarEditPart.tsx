@@ -73,7 +73,7 @@ export const SideBarEditPart: React.FC<{
 	const header = (
 		<>
 			<div className="title">
-				<span>{parts.length > 1 ? 'Multiple parts' : `Part: ${fullParts[0].partGUI.resolved.label}`}</span>
+				<span>{fullParts.length > 1 ? 'Multiple parts' : `Part: ${fullParts[0].partGUI.resolved.label}`}</span>
 				<div>
 					<TrashBtn
 						disabled={partsLocked === 'all' || groupsLocked === 'all'}
@@ -89,7 +89,7 @@ export const SideBarEditPart: React.FC<{
 
 	return (
 		<SidebarContent title={header} className="edit-group">
-			<DataRow label="ID" value={parts.length > 1 ? 'Multiple IDs' : parts[0].partId} />
+			<DataRow label="ID" value={fullParts.length > 1 ? 'Multiple IDs' : fullParts[0].partId} />
 
 			<div className="settings">
 				<div className="setting">
@@ -211,7 +211,7 @@ export const SideBarEditPart: React.FC<{
 			>
 				<p>
 					Are you sure you want to delete{' '}
-					{parts.length > 1 ? 'multiple parts' : <>&quot;{parts[0].partId}&quot;</>}?
+					{fullParts.length > 1 ? 'multiple parts' : <>&quot;{fullParts[0].partGUI.resolved.label}&quot;</>}?
 				</p>
 			</ConfirmationDialog>
 		</SidebarContent>
