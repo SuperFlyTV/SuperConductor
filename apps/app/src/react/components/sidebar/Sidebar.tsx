@@ -23,10 +23,25 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 
 			if (mainSelected && currentRundownId) {
 				if (mainSelected.type === 'group') {
-					const group =
-						store.rundownsStore.hasGroup(mainSelected.groupId) &&
-						store.rundownsStore.getGroup(mainSelected.groupId)
-					if (group) return { type: 'group', groupId: group.id } as { type: 'group'; groupId: string }
+					return {
+						type: 'group',
+						items: store.guiStore
+							.getSelectedOfType('group')
+							.map((g) => {
+								const group =
+									store.rundownsStore.hasGroup(g.groupId) && store.rundownsStore.getGroup(g.groupId)
+								if (group)
+									return {
+										groupId: group.id,
+									}
+							})
+							.filter((p) => typeof p !== 'undefined'),
+					} as {
+						type: 'group'
+						items: {
+							groupId: string
+						}[]
+					}
 				} else if (mainSelected.type === 'part') {
 					return {
 						type: 'part',
@@ -103,7 +118,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 	} else if (editing.type === 'group') {
 		return (
 			<ErrorBoundary>
-				<SideBarEditGroup rundownId={currentRundownId} groupId={editing.groupId} />
+				<SideBarEditGroup rundownId={currentRundownId} groups={editing.items} />
 			</ErrorBoundary>
 		)
 	} else if (editing.type === 'part') {

@@ -22,42 +22,61 @@ import Toggle from 'react-toggle'
 import { FormLabel, Grid } from '@mui/material'
 import { shortID } from '../../../../lib/util'
 
+type LockState = 'all' | 'some' | 'none'
+
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
-	groupId: string
-}> = observer(function SideBarEditGroup({ rundownId, groupId }) {
+	groups: {
+		groupId: string
+	}[]
+}> = observer(function SideBarEditGroup({ rundownId, groups }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 
-	const group = computed(
-		() => (store.rundownsStore.hasGroup(groupId) && store.rundownsStore.getGroup(groupId)) || null
+	const fullGroups = computed(() =>
+		groups
+			.filter((g) => store.rundownsStore.hasGroup(g.groupId))
+			.map((g) => store.rundownsStore.getGroup(g.groupId))
 	).get()
 
-	const handleDelete = useCallback(() => {
-		ipcServer
-			.deleteGroup({
-				rundownId,
-				groupId,
-			})
-			.then(() => {
-				store.guiStore.removeSelected({
-					type: 'group',
+	const handleDelete = useCallback(
+		(groupId: string) => {
+			ipcServer
+				.deleteGroup({
+					rundownId,
 					groupId,
 				})
-			})
-			.catch(handleError)
-	}, [handleError, ipcServer, rundownId, groupId])
+				.then(() => {
+					store.guiStore.removeSelected({
+						type: 'group',
+						groupId,
+					})
+				})
+				.catch(handleError)
+		},
+		[handleError, ipcServer, rundownId]
+	)
 
 	const toggleId = useMemo(() => `toggle_${shortID()}`, [])
+
+	if (!fullGroups.length) return null
+
+	let locked: LockState = 'none'
+	if (fullGroups.every((g) => g.locked)) locked = 'all'
+	else if (fullGroups.some((g) => g.locked)) locked = 'some'
+
+	let oneAtATime: LockState = 'none'
+	if (fullGroups.every((g) => g.oneAtATime)) oneAtATime = 'all'
+	else if (fullGroups.some((g) => g.oneAtATime)) oneAtATime = 'some'
 
 	const header = (
 		<>
 			<div className="title">
-				<span>{`Group: ${group?.name}`}</span>
+				<span>{fullGroups.length > 1 ? 'Multiple groups' : `Group: ${fullGroups[0].name}`}</span>
 				<div>
 					<TrashBtn
-						disabled={group?.locked}
+						disabled={fullGroups.every((g) => g.locked)}
 						onClick={() => {
 							setDeleteConfirmationOpen(true)
 						}}
@@ -67,203 +86,236 @@ export const SideBarEditGroup: React.FC<{
 			</div>
 		</>
 	)
-	if (!group) return null
+
 	return (
 		<SidebarContent title={header} className="edit-group">
-			<DataRow label="ID" value={group.id} />
+			<DataRow label="ID" value={fullGroups.length > 1 ? 'Multiple IDs' : fullGroups[0].id} />
 
 			<div className="settings">
-				<div className="setting">
-					<SelectEnum
-						label="Playout mode"
-						currentValue={group.playoutMode}
-						disabled={group.locked}
-						fullWidth
-						options={PlayoutMode}
-						onChange={(value) => {
-							ipcServer
-								.updateGroup({
-									rundownId,
-									groupId,
-									group: {
-										playoutMode: value,
-									},
-								})
-								.catch(handleError)
-						}}
-					/>
-				</div>
-				{group.playoutMode === PlayoutMode.SCHEDULE && (
-					<div className="settings-group">
+				{fullGroups.length === 1 && (
+					<>
 						<div className="setting">
-							<Grid container>
-								<Grid item sx={{ mr: 1 }}>
-									<Toggle
-										id={toggleId}
-										onChange={(e) => {
+							<SelectEnum
+								label="Playout mode"
+								currentValue={fullGroups[0].playoutMode}
+								disabled={locked === 'all'}
+								fullWidth
+								options={PlayoutMode}
+								onChange={(value) => {
+									ipcServer
+										.updateGroup({
+											rundownId,
+											groupId: fullGroups[0].id,
+											group: {
+												playoutMode: value,
+											},
+										})
+										.catch(handleError)
+								}}
+							/>
+						</div>
+						{fullGroups[0].playoutMode === PlayoutMode.SCHEDULE && (
+							<div className="settings-group">
+								<div className="setting">
+									<Grid container>
+										<Grid item sx={{ mr: 1 }}>
+											<Toggle
+												id={toggleId}
+												onChange={(e) => {
+													ipcServer
+														.updateGroup({
+															rundownId,
+															groupId: fullGroups[0].id,
+															group: { schedule: { activate: e.target.checked } },
+														})
+														.catch(handleError)
+												}}
+												checked={!!fullGroups[0].schedule.activate}
+												title={
+													fullGroups[0].schedule.activate
+														? 'Click to disable schedule'
+														: 'Click to activate schedule'
+												}
+											/>
+										</Grid>
+										<Grid item>
+											<FormLabel htmlFor={toggleId}>
+												{fullGroups[0].schedule.activate
+													? 'Schedule active'
+													: 'Schedule disabled'}
+											</FormLabel>
+										</Grid>
+									</Grid>
+								</div>
+								<div className="setting">
+									<DateTimeInput
+										label="Start Time"
+										currentValue={fullGroups[0].schedule.startTime}
+										allowUndefined={true}
+										disabled={locked === 'all'}
+										fullWidth
+										onChange={(value) => {
 											ipcServer
 												.updateGroup({
 													rundownId,
-													groupId,
-													group: { schedule: { activate: e.target.checked } },
+													groupId: fullGroups[0].id,
+													group: {
+														schedule: {
+															startTime: value,
+														},
+													},
 												})
 												.catch(handleError)
 										}}
-										checked={!!group.schedule.activate}
-										title={
-											group.schedule.activate
-												? 'Click to disable schedule'
-												: 'Click to activate schedule'
-										}
 									/>
-								</Grid>
-								<Grid item>
-									<FormLabel htmlFor={toggleId}>
-										{group.schedule.activate ? 'Schedule active' : 'Schedule disabled'}
-									</FormLabel>
-								</Grid>
-							</Grid>
-						</div>
-						<div className="setting">
-							<DateTimeInput
-								label="Start Time"
-								currentValue={group.schedule.startTime}
-								allowUndefined={true}
-								disabled={group.locked}
-								fullWidth
-								onChange={(value) => {
-									ipcServer
-										.updateGroup({
-											rundownId,
-											groupId,
-											group: {
-												schedule: {
-													startTime: value,
-												},
-											},
-										})
-										.catch(handleError)
-								}}
-							/>
-						</div>
-						<div className="setting">
-							<SelectEnum
-								label="Repeating"
-								currentValue={group.schedule.repeating.type}
-								disabled={group.locked}
-								fullWidth
-								options={RepeatingType}
-								onChange={(value) => {
-									ipcServer
-										.updateGroup({
-											rundownId,
-											groupId,
-											group: {
-												schedule: {
-													repeating: {
-														type: value,
+								</div>
+								<div className="setting">
+									<SelectEnum
+										label="Repeating"
+										currentValue={fullGroups[0].schedule.repeating.type}
+										disabled={locked === 'all'}
+										fullWidth
+										options={RepeatingType}
+										onChange={(value) => {
+											ipcServer
+												.updateGroup({
+													rundownId,
+													groupId: fullGroups[0].id,
+													group: {
+														schedule: {
+															repeating: {
+																type: value,
+															},
+														},
 													},
-												},
-											},
-										})
-										.catch(handleError)
-								}}
-							/>
-						</div>
-						<GroupScheduleRepeatingSettings
-							settings={group.schedule}
-							locked={group.locked}
-							onChange={(groupUpdate) => {
-								ipcServer
-									.updateGroup({
-										rundownId,
-										groupId,
-										group: groupUpdate,
-									})
-									.catch(handleError)
-							}}
-						/>
-					</div>
+												})
+												.catch(handleError)
+										}}
+									/>
+								</div>
+								<GroupScheduleRepeatingSettings
+									settings={fullGroups[0].schedule}
+									locked={locked === 'all'}
+									onChange={(groupUpdate) => {
+										ipcServer
+											.updateGroup({
+												rundownId,
+												groupId: fullGroups[0].id,
+												group: groupUpdate,
+											})
+											.catch(handleError)
+									}}
+								/>
+							</div>
+						)}
+					</>
 				)}
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"
-						currentValue={group.disabled}
-						disabled={group.locked}
+						currentValue={fullGroups.every((g) => g.disabled)}
+						indeterminate={fullGroups.some((g) => g.disabled !== fullGroups[0].disabled)}
+						disabled={locked === 'all'}
 						onChange={(value) => {
-							ipcServer
-								.toggleGroupDisable({
-									rundownId,
-									groupId,
-									value,
-								})
-								.catch(handleError)
+							fullGroups
+								.filter((g) => !g.locked)
+								.forEach((g) =>
+									ipcServer
+										.toggleGroupDisable({
+											rundownId,
+											groupId: g.id,
+											value,
+										})
+										.catch(handleError)
+								)
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Lock group for editing"
-						currentValue={group.locked}
+						currentValue={locked === 'all'}
+						indeterminate={locked === 'some'}
 						onChange={(value) => {
-							ipcServer
-								.toggleGroupLock({
-									rundownId,
-									groupId,
-									value,
-								})
-								.catch(handleError)
+							fullGroups.forEach((g) =>
+								ipcServer
+									.toggleGroupLock({
+										rundownId,
+										groupId: g.id,
+										value,
+									})
+									.catch(handleError)
+							)
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Play one Part at a time"
-						currentValue={group.oneAtATime}
-						disabled={group.locked}
+						currentValue={oneAtATime === 'all'}
+						indeterminate={oneAtATime === 'some'}
+						disabled={locked === 'all'}
 						onChange={(value) => {
-							ipcServer
-								.toggleGroupOneAtATime({
-									rundownId,
-									groupId,
-									value,
-								})
-								.catch(handleError)
+							fullGroups
+								.filter((g) => !g.locked)
+								.forEach((g) =>
+									ipcServer
+										.toggleGroupOneAtATime({
+											rundownId,
+											groupId: g.id,
+											value,
+										})
+										.catch(handleError)
+								)
 						}}
 					/>
 				</div>
-				{group.oneAtATime && (
+				{oneAtATime !== 'none' && (
 					<div className="setting">
 						<BooleanInput
 							label="Loop"
-							currentValue={group.loop}
-							disabled={group.locked}
+							currentValue={fullGroups.filter((g) => g.oneAtATime).every((g) => g.loop)}
+							indeterminate={fullGroups
+								.filter((g) => g.oneAtATime)
+								.some((g, _i, all) => g.loop !== all[0].loop)}
+							disabled={locked === 'all'}
 							onChange={(value) => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId,
-										value,
-									})
-									.catch(handleError)
+								fullGroups
+									.filter((g) => !g.locked && g.oneAtATime)
+									.forEach((g) =>
+										ipcServer
+											.toggleGroupLoop({
+												rundownId,
+												groupId: g.id,
+												value,
+											})
+											.catch(handleError)
+									)
 							}}
 						/>
 					</div>
 				)}
-				{group.oneAtATime && (
+				{oneAtATime !== 'none' && (
 					<div className="setting">
 						<BooleanInput
 							label="Auto-step"
-							currentValue={group.autoPlay}
-							disabled={group.locked}
+							currentValue={fullGroups.filter((g) => g.oneAtATime).every((g) => g.autoPlay)}
+							indeterminate={fullGroups
+								.filter((g) => g.oneAtATime)
+								.some((g, _i, all) => g.autoPlay !== all[0].autoPlay)}
+							disabled={locked === 'all'}
 							onChange={(value) => {
-								ipcServer
-									.toggleGroupAutoplay({
-										rundownId,
-										groupId,
-										value,
-									})
-									.catch(handleError)
+								fullGroups
+									.filter((g) => !g.locked && g.oneAtATime)
+									.forEach((g) =>
+										ipcServer
+											.toggleGroupAutoplay({
+												rundownId,
+												groupId: g.id,
+												value,
+											})
+											.catch(handleError)
+									)
 							}}
 						/>
 					</div>
@@ -275,14 +327,17 @@ export const SideBarEditGroup: React.FC<{
 				title="Delete Group"
 				acceptLabel="Delete"
 				onAccepted={() => {
-					handleDelete()
+					fullGroups.filter((g) => !g.locked).forEach((g) => handleDelete(g.id))
 					setDeleteConfirmationOpen(false)
 				}}
 				onDiscarded={() => {
 					setDeleteConfirmationOpen(false)
 				}}
 			>
-				<p>Are you sure you want to delete &quot;{group.name}&quot;?</p>
+				<p>
+					Are you sure you want to delete{' '}
+					{fullGroups.length > 1 ? 'multiple groups' : <>&quot;{fullGroups[0].name}&quot;</>}?
+				</p>
 			</ConfirmationDialog>
 		</SidebarContent>
 	)
