@@ -10,6 +10,7 @@ export interface AppData {
 	}
 	/** Which version of the user agreement the user has agreed to  */
 	userAgreement?: string
+	preReleaseAutoUpdate?: boolean
 	project: {
 		id: string
 	}

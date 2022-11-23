@@ -29,6 +29,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	debugThrowError(...args: ServerArgs<'debugThrowError'>) {
 		return this.invokeServerMethod('debugThrowError', ...args)
 	}
+	installUpdate(...args: ServerArgs<'installUpdate'>) {
+		return this.invokeServerMethod('installUpdate', ...args)
+	}
 	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
@@ -171,6 +174,9 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	}
 	triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>) {
 		return this.invokeServerMethod('triggerHandleAutoFill', ...args)
+	}
+	updateAppData(...args: ServerArgs<'updateAppData'>) {
+		return this.invokeServerMethod('updateAppData', ...args)
 	}
 	updateProject(...args: ServerArgs<'updateProject'>) {
 		return this.invokeServerMethod('updateProject', ...args)

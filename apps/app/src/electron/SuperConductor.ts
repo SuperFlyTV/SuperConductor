@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -31,6 +32,7 @@ import { HTTPAPI } from './HTTPAPI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
+import { SystemMessageOptions } from '../ipc/IPCAPI'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -199,6 +201,14 @@ export class SuperConductor {
 				project.autoRefreshInterval = interval
 				this.storage.updateProject(project)
 			},
+			onClientConnected: () => {
+				// Nothing here yet
+			},
+			installUpdate: () => {
+				// @ts-expect-error future feature
+				autoUpdater.autoRunAppAfterInstall = true
+				autoUpdater.quitAndInstall()
+			},
 			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 				return this.updateTimeline(group)
 			},
@@ -244,6 +254,9 @@ export class SuperConductor {
 		} else {
 			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 		}
+	}
+	sendSystemMessage(message: string, options: SystemMessageOptions) {
+		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.

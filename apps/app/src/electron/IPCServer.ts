@@ -31,7 +31,13 @@ import deepExtend from 'deep-extend'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
-import { ActionDescription, IPCServerMethods, MAX_UNDO_LEDGER_LENGTH, UndoableResult } from '../ipc/IPCAPI'
+import {
+	ActionDescription,
+	IPCServerMethods,
+	MAX_UNDO_LEDGER_LENGTH,
+	UndoableResult,
+	UpdateAppDataOptions,
+} from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
@@ -62,6 +68,7 @@ import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
+import { autoUpdater } from 'electron-updater'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -118,6 +125,8 @@ export class IPCServer
 		private storage: StorageHandler,
 		private session: SessionHandler,
 		private callbacks: {
+			onClientConnected: () => void
+			installUpdate: () => void
 			updateTimeline: (group: Group) => GroupPreparedPlayData | null
 			updatePeripherals: () => void
 			refreshResources: () => void
@@ -274,10 +283,15 @@ export class IPCServer
 			assertNever(arg.type)
 		}
 	}
+	async installUpdate(): Promise<void> {
+		this.callbacks.installUpdate()
+	}
 	async triggerSendAll(): Promise<void> {
 		this.storage.triggerEmitAll()
 		this.session.triggerEmitAll()
 		this.triggers?.triggerEmitAll()
+
+		this.callbacks.onClientConnected()
 	}
 	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
 		this.storage.triggerEmitRundown(arg.rundownId)
@@ -1985,6 +1999,18 @@ export class IPCServer
 	}
 	async triggerHandleAutoFill(): Promise<void> {
 		this.callbacks.triggerHandleAutoFill()
+	}
+	async updateAppData(arg: UpdateAppDataOptions): Promise<void> {
+		const appData = this.storage.getAppData()
+
+		if (arg.preReleaseAutoUpdate !== undefined) {
+			appData.preReleaseAutoUpdate = arg.preReleaseAutoUpdate
+			setTimeout(() => {
+				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
+			}, 1000)
+		}
+
+		this._saveUpdates({ appData })
 	}
 	async updateProject(arg: { id: string; project: Project }): Promise<void> {
 		this._saveUpdates({ project: arg.project })
