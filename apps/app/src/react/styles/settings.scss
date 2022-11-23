@@ -17,8 +17,17 @@
 			height: 1em;
 		}
 		.settings-group {
-			padding: 0.5em 0 0.5em 0.5em;
+			padding: 0 0 0 0.5em;
+			margin: 0.25em 0;
 			border-left: 2px solid rgba(255, 255, 255, 0.25);
+		}
+		.header {
+			font-size: 125%;
+		}
+		.label {
+			button.btn {
+				float: right;
+			}
 		}
 	}
 }

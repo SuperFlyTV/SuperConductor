@@ -32,7 +32,13 @@ export function ParsedValueInput<V>(
 	const hasUnsavedChanges = useRef<boolean>(false)
 
 	useEffect(() => {
-		setValue(stringify(currentValue))
+		let newValue: string
+		if (currentValue === undefined && defaultValue !== undefined) {
+			newValue = stringify(defaultValue)
+		} else {
+			newValue = stringify(currentValue)
+		}
+		setValue(newValue)
 	}, [currentValue, stringify])
 
 	const onSave = useCallback(
