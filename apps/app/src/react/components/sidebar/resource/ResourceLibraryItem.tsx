@@ -110,7 +110,8 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.HYPERDECK_PLAY ||
 			resource.resourceType === ResourceType.HYPERDECK_RECORD ||
 			resource.resourceType === ResourceType.HYPERDECK_PREVIEW ||
-			resource.resourceType === ResourceType.HYPERDECK_CLIP
+			resource.resourceType === ResourceType.HYPERDECK_CLIP ||
+			resource.resourceType === ResourceType.TCP_REQUEST
 		) {
 			return (
 				<>

@@ -10,6 +10,7 @@ import { OSCSideload } from './sideload/OSC'
 import { HTTPSendSideload } from './sideload/HTTPSend'
 import { HyperdeckSideload } from './sideload/Hyperdeck'
 import { SideLoadDevice } from './sideload/sideload'
+import { TCPSendSideload } from './sideload/TCPSend'
 
 export class TSR {
 	public newConnection = false
@@ -189,6 +190,8 @@ export class TSR {
 			this.sideLoadedDevices[deviceId] = new HTTPSendSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.HYPERDECK) {
 			this.sideLoadedDevices[deviceId] = new HyperdeckSideload(deviceId, deviceOptions, this.log)
+		} else if (deviceOptions.type === DeviceType.TCPSEND) {
+			this.sideLoadedDevices[deviceId] = new TCPSendSideload(deviceId, deviceOptions, this.log)
 		}
 	}
 	private onDeviceStatus(deviceId: string, status: DeviceStatus) {

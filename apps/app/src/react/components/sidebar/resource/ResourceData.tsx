@@ -169,6 +169,8 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				{universalRows}
 			</ResourceDataInner>
 		)
+	} else if (resource.resourceType === ResourceType.TCP_REQUEST) {
+		return <ResourceDataInner title="TCP Request">{universalRows}</ResourceDataInner>
 	} else {
 		assertNever(resource)
 		return null
