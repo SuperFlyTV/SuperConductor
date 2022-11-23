@@ -6,6 +6,7 @@ export const FloatInput: React.FC<
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
+			defaultValue?: number
 			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
@@ -111,7 +112,7 @@ export const FloatInput: React.FC<
 		return ParsedValueInput<number>(
 			props.currentValue,
 			props.onChange,
-			0,
+			props.defaultValue ?? 0,
 			parse,
 			stringify,
 			props.label,
