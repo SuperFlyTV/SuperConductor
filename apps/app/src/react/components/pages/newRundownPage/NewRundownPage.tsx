@@ -12,7 +12,7 @@ import { store } from '../../../mobx/store'
 
 import './newRundownPage.scss'
 
-export const NewRundownPage = () => {
+export const NewRundownPage = (): JSX.Element => {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const rundownsStore = store.rundownsStore

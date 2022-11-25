@@ -26,7 +26,7 @@ export function generateMenu(
 		onUpdateClick,
 	}: GenerateMenuArgs,
 	log: winston.Logger
-) {
+): Electron.Menu {
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
 	if (isMac) {

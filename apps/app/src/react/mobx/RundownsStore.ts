@@ -94,7 +94,7 @@ export class RundownsStore {
 		makeAutoObservable(this)
 	}
 
-	update(rundowns: IRundownsItems | undefined) {
+	update(rundowns: IRundownsItems | undefined): void {
 		this.rundowns = rundowns
 
 		if (this.initializing) {
@@ -393,7 +393,7 @@ export class RundownsStore {
 	/**
 	 * Id of the currently opened rundown
 	 */
-	get currentRundownId() {
+	get currentRundownId(): string | undefined {
 		return this._currentRundownId
 	}
 
@@ -450,7 +450,7 @@ export class RundownsStore {
 	 * Method triggers rundown update with the new rundown id.
 	 * @param rundownId ID of the new current rundown
 	 */
-	setCurrentRundown(rundownId: string | undefined) {
+	setCurrentRundown(rundownId: string | undefined): void {
 		if (rundownId) {
 			this._currentRundownId = rundownId
 			store.guiStore.activeTabId = rundownId
@@ -472,7 +472,7 @@ export class RundownsStore {
 	/**
 	 * Returns all opened rundowns
 	 */
-	get openRundowns() {
+	get openRundowns(): Array<{ rundownId: string; name: string }> {
 		if (!this.rundowns) {
 			return []
 		}
@@ -490,7 +490,7 @@ export class RundownsStore {
 	/**
 	 * Returns all closed rundowns
 	 */
-	get closedRundowns() {
+	get closedRundowns(): Array<{ rundownId: string; name: string }> {
 		if (!this.rundowns) {
 			return []
 		}
@@ -560,7 +560,7 @@ export class RundownsStore {
 		return nextTarget
 	}
 
-	commitMoveGroupInCurrentRundown() {
+	async commitMoveGroupInCurrentRundown(): Promise<void> {
 		if (!this._commitMoveGroupFn) return
 		if (!this.currentRundownId) return
 		const currentRundownId = this.currentRundownId
@@ -721,7 +721,7 @@ export class RundownsStore {
 		return nextTarget
 	}
 
-	commitMovePartInCurrentRundown() {
+	async commitMovePartInCurrentRundown(): Promise<void> {
 		if (!this._commitMovePartFn) return
 		if (!this.currentRundownId) return
 
@@ -746,7 +746,7 @@ export class RundownsStore {
 	private _projectButtonActions?: Map<string, ActionAny[]> // No initial value to avoid this being autoObservable
 	private _rundownButtonActions?: Map<string, ActionAny[]> // No initial value to avoid this being autoObservable
 	private _allButtonActions: Map<string, ActionAny[]> = new Map()
-	get allButtonActions() {
+	get allButtonActions(): Readonly<typeof this._allButtonActions> {
 		return this._allButtonActions as Readonly<typeof this._allButtonActions>
 	}
 

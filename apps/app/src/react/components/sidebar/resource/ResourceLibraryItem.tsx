@@ -14,7 +14,7 @@ type IProps = {
 	onSelect?: (resource: ResourceAny) => void
 }
 
-export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onSelect }: IProps) {
+export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onSelect }: IProps): JSX.Element {
 	const [{ dragged }, dragRef] = useDrag(
 		() => ({
 			type: DragItemTypes.RESOURCE_ITEM,

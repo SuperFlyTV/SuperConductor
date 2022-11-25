@@ -45,7 +45,7 @@ export class AnalogStore {
 			listener(activeAnalog)
 		}
 	}
-	listenToActiveAnalog(listener: (activeAnalog: ActiveAnalog) => void) {
+	listenToActiveAnalog(listener: (activeAnalog: ActiveAnalog) => void): { stop: () => void } {
 		this.activeAnalogListeners.push(listener)
 		return {
 			stop: () => {

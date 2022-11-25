@@ -65,14 +65,15 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return superConductor.ipcServer.undo().catch(log.error)
+			superConductor.ipcServer.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return superConductor.ipcServer.redo().catch(log.error)
+			superConductor.ipcServer.redo().catch(log.error)
 		},
 		onAboutClick: () => {
 			handler.ipcClient.displayAboutDialog()
 		},
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		onUpdateClick: async () => {
 			try {
 				const result = await autoUpdater.checkForUpdatesAndNotify()

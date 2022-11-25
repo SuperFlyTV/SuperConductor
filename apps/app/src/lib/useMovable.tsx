@@ -25,7 +25,7 @@ export function useMovable(
 		/** Called upon drag end */
 		onDragEnd: (delta: DeltaPosition, position: Position) => void
 	}
-) {
+): { onStartMoving: (takeOver?: { clientX: number; clientY: number }) => void; updateMove: () => void } {
 	const originPointerPosition = useRef<{ clientX: number; clientY: number } | undefined>(undefined)
 	const isDragging = useRef<boolean>(false)
 	const delta = useRef<DeltaPosition>({ x: 0, y: 0 })

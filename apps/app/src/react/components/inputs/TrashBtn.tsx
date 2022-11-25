@@ -9,7 +9,7 @@ type PropsType = {
 	onClick: () => void
 }
 
-export const TrashBtn = (props: PropsType) => {
+export const TrashBtn = (props: PropsType): JSX.Element => {
 	return (
 		<Button
 			className={props.className}

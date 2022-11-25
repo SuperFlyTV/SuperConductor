@@ -278,6 +278,7 @@ export const App = observer(function App() {
 		}
 	}
 
+	/* eslint-disable @typescript-eslint/unbound-method */
 	useEffect(() => {
 		sorensen
 			.init()
@@ -286,6 +287,7 @@ export const App = observer(function App() {
 			})
 			.catch(logger.error)
 	}, [logger.error, serverAPI])
+	/* eslint-enable @typescript-eslint/unbound-method */
 
 	const appStore = store.appStore
 
@@ -313,11 +315,13 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
 	}
 	function onUserAgreement(agreementVersion: string): void {
 		setUserAgreementScreenOpen(false)
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		appStore.serverAPI.acknowledgeUserAgreement({ agreementVersion }).catch(logger.error)
 	}
 

@@ -4,7 +4,7 @@ import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 import './style.scss'
 
-export const DataRow = (props: { label: string; value: any }) => {
+export const DataRow = (props: { label: string; value: any }): JSX.Element => {
 	const { handleError } = useContext(ErrorHandlerContext)
 	const { enqueueSnackbar } = useSnackbar()
 
@@ -25,7 +25,9 @@ export const DataRow = (props: { label: string; value: any }) => {
 			<div
 				className="value copy-to-clipboard"
 				title={`${props.value} (Click to copy)`}
-				onClick={copyValueToClipboard}
+				onClick={() => {
+					void copyValueToClipboard()
+				}}
 			>
 				{props.value}
 			</div>
@@ -33,6 +35,6 @@ export const DataRow = (props: { label: string; value: any }) => {
 	)
 }
 
-export const FormRow = (props: { children: React.ReactNode }) => {
+export const FormRow = (props: { children: React.ReactNode }): JSX.Element => {
 	return <div className="row">{props.children}</div>
 }

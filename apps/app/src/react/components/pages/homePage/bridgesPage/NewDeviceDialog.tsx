@@ -28,7 +28,7 @@ interface INewDeviceDialogProps {
 	bridge: Bridge
 }
 
-export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewDeviceDialogProps) {
+export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewDeviceDialogProps): JSX.Element {
 	const [deviceType, setDeviceType] = useState(DeviceType.CASPARCG)
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)

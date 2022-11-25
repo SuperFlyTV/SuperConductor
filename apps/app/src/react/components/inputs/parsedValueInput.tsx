@@ -39,7 +39,7 @@ export function ParsedValueInput<V>(
 			newValue = stringify(currentValue)
 		}
 		setValue(newValue)
-	}, [currentValue, stringify])
+	}, [currentValue, defaultValue, stringify])
 
 	const onSave = useCallback(
 		(str: string) => {

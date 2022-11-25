@@ -209,12 +209,12 @@ export function groupIsSelected(selected: ApplicationActionSelected[], groupId: 
 	}
 	return false
 }
-export function formatKeyDuration(duration: number | null | undefined) {
+export function formatKeyDuration(duration: number | null | undefined): string {
 	if (duration === null) return '∞'
 	if (!duration) return ''
 	return `#duration(${duration})`
 }
-export function formatKeyTimeToEnd(duration: number | null | undefined) {
+export function formatKeyTimeToEnd(duration: number | null | undefined): string {
 	if (duration === null) return '∞'
 	return '#timeToEnd'
 }

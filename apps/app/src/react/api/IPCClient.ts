@@ -33,6 +33,7 @@ export class IPCClient implements IPCClientMethods {
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		this.ipcRenderer.on('callMethod', this.handleCallMethod)
 	}
 
@@ -85,6 +86,7 @@ export class IPCClient implements IPCClientMethods {
 		this.callbacks.updateAnalogInput?.(fullIdentifier, analogInput)
 	}
 	destroy(): void {
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 }

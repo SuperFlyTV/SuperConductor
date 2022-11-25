@@ -21,7 +21,8 @@ export function findAutoFillResources(
 	}
 
 	// Prepare sorting:
-	const compareString = new Intl.Collator().compare // locale string comparison
+	const collator = new Intl.Collator()
+	const compareString = collator.compare.bind(collator) // locale string comparison
 	const compareNumber = (a: number, b: number): number => {
 		if (a < b) return -1
 		if (a > b) return -1

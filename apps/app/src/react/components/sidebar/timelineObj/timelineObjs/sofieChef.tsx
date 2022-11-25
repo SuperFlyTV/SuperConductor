@@ -1,10 +1,6 @@
 import { assertNever } from '@shared/lib'
 import React from 'react'
-import {
-	TimelineContentTypeSofieChef,
-	TimelineObjSofieChefAny,
-	TimelineObjSofieChefScene,
-} from 'timeline-state-resolver-types'
+import { TimelineContentTypeSofieChef, TimelineObjSofieChefAny } from 'timeline-state-resolver-types'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { EditWrapper, OnSave } from './lib'
@@ -16,16 +12,15 @@ export const EditTimelineObjSofieChefAny: React.FC<{ obj: TimelineObjSofieChefAn
 	let settings: JSX.Element = <></>
 
 	if (obj.content.type === TimelineContentTypeSofieChef.URL) {
-		const typedObj = obj as TimelineObjSofieChefScene
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="URL"
 						fullWidth
-						currentValue={typedObj.content.url}
+						currentValue={obj.content.url}
 						onChange={(v) => {
-							typedObj.content.url = v
+							obj.content.url = v
 							onSave(obj)
 						}}
 						allowUndefined={false}

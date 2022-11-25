@@ -149,6 +149,7 @@ export class ErrorBoundary extends React.Component<
 		} as React.CSSProperties,
 	}
 
+	// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 	constructor(props: any) {
 		super(props)
 		this.state = {
@@ -156,7 +157,7 @@ export class ErrorBoundary extends React.Component<
 		}
 	}
 
-	componentDidCatch(error: Error, info: React.ErrorInfo) {
+	componentDidCatch(error: Error, info: React.ErrorInfo): void {
 		this.setState({
 			hasError: true,
 			error: error,
@@ -175,19 +176,19 @@ export class ErrorBoundary extends React.Component<
 		}
 	}
 
-	toggleComponentStack = () => {
+	toggleComponentStack = (): void => {
 		this.setState({ expandedComponentStack: !this.state.expandedComponentStack })
 	}
 
-	toggleStack = () => {
+	toggleStack = (): void => {
 		this.setState({ expandedStack: !this.state.expandedStack })
 	}
 
-	resetComponent = () => {
+	resetComponent = (): void => {
 		this.setState({ hasError: false })
 	}
 
-	render() {
+	render(): JSX.Element | React.ReactFragment | number | string | true | null {
 		if (this.state.hasError) {
 			const errorString = [
 				this.state.error?.name,

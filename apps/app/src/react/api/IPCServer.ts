@@ -20,204 +20,214 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 		return this.ipcRenderer.invoke(methodname, replaceUndefined(args))
 	}
 
-	log(...args: ServerArgs<'log'>) {
+	async log(...args: ServerArgs<'log'>): ServerReturn<'log'> {
 		return this.invokeServerMethod('log', ...args)
 	}
-	handleClientError(...args: ServerArgs<'handleClientError'>) {
+	async handleClientError(...args: ServerArgs<'handleClientError'>): ServerReturn<'handleClientError'> {
 		return this.invokeServerMethod('handleClientError', ...args)
 	}
-	debugThrowError(...args: ServerArgs<'debugThrowError'>) {
+	async debugThrowError(...args: ServerArgs<'debugThrowError'>): ServerReturn<'debugThrowError'> {
 		return this.invokeServerMethod('debugThrowError', ...args)
 	}
-	triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
+	async triggerSendAll(...args: ServerArgs<'triggerSendAll'>): ServerReturn<'triggerSendAll'> {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
-	triggerSendRundown(...args: ServerArgs<'triggerSendRundown'>) {
+	async triggerSendRundown(...args: ServerArgs<'triggerSendRundown'>): ServerReturn<'triggerSendRundown'> {
 		return this.invokeServerMethod('triggerSendRundown', ...args)
 	}
 
-	setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>) {
+	async setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>): ServerReturn<'setKeyboardKeys'> {
 		return this.invokeServerMethod('setKeyboardKeys', ...args)
 	}
-	makeDevData(...args: ServerArgs<'makeDevData'>) {
+	async makeDevData(...args: ServerArgs<'makeDevData'>): ServerReturn<'makeDevData'> {
 		return this.invokeServerMethod('makeDevData', ...args)
 	}
 
-	acknowledgeSeenVersion(...args: ServerArgs<'acknowledgeSeenVersion'>) {
+	async acknowledgeSeenVersion(
+		...args: ServerArgs<'acknowledgeSeenVersion'>
+	): ServerReturn<'acknowledgeSeenVersion'> {
 		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
 	}
-	acknowledgeUserAgreement(...args: ServerArgs<'acknowledgeUserAgreement'>) {
+	async acknowledgeUserAgreement(
+		...args: ServerArgs<'acknowledgeUserAgreement'>
+	): ServerReturn<'acknowledgeUserAgreement'> {
 		return this.invokeServerMethod('acknowledgeUserAgreement', ...args)
 	}
-	updateGUISelection(...args: ServerArgs<'updateGUISelection'>) {
+	async updateGUISelection(...args: ServerArgs<'updateGUISelection'>): ServerReturn<'updateGUISelection'> {
 		return this.invokeServerMethod('updateGUISelection', ...args)
 	}
-	exportProject(...args: ServerArgs<'exportProject'>) {
+	async exportProject(...args: ServerArgs<'exportProject'>): ServerReturn<'exportProject'> {
 		return this.invokeServerMethod('exportProject', ...args)
 	}
-	importProject(...args: ServerArgs<'importProject'>) {
+	async importProject(...args: ServerArgs<'importProject'>): ServerReturn<'importProject'> {
 		return this.invokeServerMethod('importProject', ...args)
 	}
-	newProject(...args: ServerArgs<'newProject'>) {
+	async newProject(...args: ServerArgs<'newProject'>): ServerReturn<'newProject'> {
 		return this.invokeServerMethod('newProject', ...args)
 	}
-	listProjects(...args: ServerArgs<'listProjects'>) {
+	async listProjects(...args: ServerArgs<'listProjects'>): ServerReturn<'listProjects'> {
 		return this.invokeServerMethod('listProjects', ...args)
 	}
-	openProject(...args: ServerArgs<'openProject'>) {
+	async openProject(...args: ServerArgs<'openProject'>): ServerReturn<'openProject'> {
 		return this.invokeServerMethod('openProject', ...args)
 	}
-	playPart(...args: ServerArgs<'playPart'>) {
+	async playPart(...args: ServerArgs<'playPart'>): ServerReturn<'playPart'> {
 		return this.invokeServerMethod('playPart', ...args)
 	}
-	pausePart(...args: ServerArgs<'pausePart'>) {
+	async pausePart(...args: ServerArgs<'pausePart'>): ServerReturn<'pausePart'> {
 		return this.invokeServerMethod('pausePart', ...args)
 	}
-	stopPart(...args: ServerArgs<'stopPart'>) {
+	async stopPart(...args: ServerArgs<'stopPart'>): ServerReturn<'stopPart'> {
 		return this.invokeServerMethod('stopPart', ...args)
 	}
-	setPartTrigger(...args: ServerArgs<'setPartTrigger'>) {
+	async setPartTrigger(...args: ServerArgs<'setPartTrigger'>): ServerReturn<'setPartTrigger'> {
 		return this.invokeServerMethod('setPartTrigger', ...args)
 	}
-	stopGroup(...args: ServerArgs<'stopGroup'>) {
+	async stopGroup(...args: ServerArgs<'stopGroup'>): ServerReturn<'stopGroup'> {
 		return this.invokeServerMethod('stopGroup', ...args)
 	}
-	playGroup(...args: ServerArgs<'playGroup'>) {
+	async playGroup(...args: ServerArgs<'playGroup'>): ServerReturn<'playGroup'> {
 		return this.invokeServerMethod('playGroup', ...args)
 	}
-	pauseGroup(...args: ServerArgs<'pauseGroup'>) {
+	async pauseGroup(...args: ServerArgs<'pauseGroup'>): ServerReturn<'pauseGroup'> {
 		return this.invokeServerMethod('pauseGroup', ...args)
 	}
-	playNext(...args: ServerArgs<'playNext'>) {
+	async playNext(...args: ServerArgs<'playNext'>): ServerReturn<'playNext'> {
 		return this.invokeServerMethod('playNext', ...args)
 	}
-	playPrev(...args: ServerArgs<'playPrev'>) {
+	async playPrev(...args: ServerArgs<'playPrev'>): ServerReturn<'playPrev'> {
 		return this.invokeServerMethod('playPrev', ...args)
 	}
-	updateTimelineObj(...args: ServerArgs<'updateTimelineObj'>) {
+	async updateTimelineObj(...args: ServerArgs<'updateTimelineObj'>): ServerReturn<'updateTimelineObj'> {
 		return this.invokeServerMethod('updateTimelineObj', ...args)
 	}
-	moveTimelineObjToNewLayer(...args: ServerArgs<'moveTimelineObjToNewLayer'>) {
+	async moveTimelineObjToNewLayer(
+		...args: ServerArgs<'moveTimelineObjToNewLayer'>
+	): ServerReturn<'moveTimelineObjToNewLayer'> {
 		return this.invokeServerMethod('moveTimelineObjToNewLayer', ...args)
 	}
 	/**
 	 * @returns An object containing the ID of the new part and, conditionally, the ID of the new group (if one was created).
 	 */
-	newPart(...args: ServerArgs<'newPart'>) {
+	async newPart(...args: ServerArgs<'newPart'>): ServerReturn<'newPart'> {
 		return this.invokeServerMethod('newPart', ...args)
 	}
-	insertParts(...args: ServerArgs<'insertParts'>) {
+	async insertParts(...args: ServerArgs<'insertParts'>): ServerReturn<'insertParts'> {
 		return this.invokeServerMethod('insertParts', ...args)
 	}
-	updatePart(...args: ServerArgs<'updatePart'>) {
+	async updatePart(...args: ServerArgs<'updatePart'>): ServerReturn<'updatePart'> {
 		return this.invokeServerMethod('updatePart', ...args)
 	}
-	newGroup(...args: ServerArgs<'newGroup'>) {
+	async newGroup(...args: ServerArgs<'newGroup'>): ServerReturn<'newGroup'> {
 		return this.invokeServerMethod('newGroup', ...args)
 	}
-	insertGroups(...args: ServerArgs<'insertGroups'>) {
+	async insertGroups(...args: ServerArgs<'insertGroups'>): ServerReturn<'insertGroups'> {
 		return this.invokeServerMethod('insertGroups', ...args)
 	}
-	updateGroup(...args: ServerArgs<'updateGroup'>) {
+	async updateGroup(...args: ServerArgs<'updateGroup'>): ServerReturn<'updateGroup'> {
 		return this.invokeServerMethod('updateGroup', ...args)
 	}
-	deletePart(...args: ServerArgs<'deletePart'>) {
+	async deletePart(...args: ServerArgs<'deletePart'>): ServerReturn<'deletePart'> {
 		return this.invokeServerMethod('deletePart', ...args)
 	}
-	deleteGroup(...args: ServerArgs<'deleteGroup'>) {
+	async deleteGroup(...args: ServerArgs<'deleteGroup'>): ServerReturn<'deleteGroup'> {
 		return this.invokeServerMethod('deleteGroup', ...args)
 	}
-	moveParts(...args: ServerArgs<'moveParts'>) {
+	async moveParts(...args: ServerArgs<'moveParts'>): ServerReturn<'moveParts'> {
 		return this.invokeServerMethod('moveParts', ...args)
 	}
-	duplicatePart(...args: ServerArgs<'duplicatePart'>) {
+	async duplicatePart(...args: ServerArgs<'duplicatePart'>): ServerReturn<'duplicatePart'> {
 		return this.invokeServerMethod('duplicatePart', ...args)
 	}
-	moveGroups(...args: ServerArgs<'moveGroups'>) {
+	async moveGroups(...args: ServerArgs<'moveGroups'>): ServerReturn<'moveGroups'> {
 		return this.invokeServerMethod('moveGroups', ...args)
 	}
-	duplicateGroup(...args: ServerArgs<'duplicateGroup'>) {
+	async duplicateGroup(...args: ServerArgs<'duplicateGroup'>): ServerReturn<'duplicateGroup'> {
 		return this.invokeServerMethod('duplicateGroup', ...args)
 	}
-	deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>) {
+	async deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>): ServerReturn<'deleteTimelineObj'> {
 		return this.invokeServerMethod('deleteTimelineObj', ...args)
 	}
-	insertTimelineObjs(...args: ServerArgs<'insertTimelineObjs'>) {
+	async insertTimelineObjs(...args: ServerArgs<'insertTimelineObjs'>): ServerReturn<'insertTimelineObjs'> {
 		return this.invokeServerMethod('insertTimelineObjs', ...args)
 	}
-	addResourcesToTimeline(...args: ServerArgs<'addResourcesToTimeline'>) {
+	async addResourcesToTimeline(
+		...args: ServerArgs<'addResourcesToTimeline'>
+	): ServerReturn<'addResourcesToTimeline'> {
 		return this.invokeServerMethod('addResourcesToTimeline', ...args)
 	}
-	toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>) {
+	async toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>): ServerReturn<'toggleGroupLoop'> {
 		return this.invokeServerMethod('toggleGroupLoop', ...args)
 	}
-	toggleGroupAutoplay(...args: ServerArgs<'toggleGroupAutoplay'>) {
+	async toggleGroupAutoplay(...args: ServerArgs<'toggleGroupAutoplay'>): ServerReturn<'toggleGroupAutoplay'> {
 		return this.invokeServerMethod('toggleGroupAutoplay', ...args)
 	}
-	toggleGroupOneAtATime(...args: ServerArgs<'toggleGroupOneAtATime'>) {
+	async toggleGroupOneAtATime(...args: ServerArgs<'toggleGroupOneAtATime'>): ServerReturn<'toggleGroupOneAtATime'> {
 		return this.invokeServerMethod('toggleGroupOneAtATime', ...args)
 	}
-	toggleGroupDisable(...args: ServerArgs<'toggleGroupDisable'>) {
+	async toggleGroupDisable(...args: ServerArgs<'toggleGroupDisable'>): ServerReturn<'toggleGroupDisable'> {
 		return this.invokeServerMethod('toggleGroupDisable', ...args)
 	}
-	toggleGroupLock(...args: ServerArgs<'toggleGroupLock'>) {
+	async toggleGroupLock(...args: ServerArgs<'toggleGroupLock'>): ServerReturn<'toggleGroupLock'> {
 		return this.invokeServerMethod('toggleGroupLock', ...args)
 	}
-	refreshResources(...args: ServerArgs<'refreshResources'>) {
+	async refreshResources(...args: ServerArgs<'refreshResources'>): ServerReturn<'refreshResources'> {
 		return this.invokeServerMethod('refreshResources', ...args)
 	}
-	refreshResourcesSetAuto(...args: ServerArgs<'refreshResourcesSetAuto'>) {
+	async refreshResourcesSetAuto(
+		...args: ServerArgs<'refreshResourcesSetAuto'>
+	): ServerReturn<'refreshResourcesSetAuto'> {
 		return this.invokeServerMethod('refreshResourcesSetAuto', ...args)
 	}
-	triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>) {
+	async triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>): ServerReturn<'triggerHandleAutoFill'> {
 		return this.invokeServerMethod('triggerHandleAutoFill', ...args)
 	}
-	updateProject(...args: ServerArgs<'updateProject'>) {
+	async updateProject(...args: ServerArgs<'updateProject'>): ServerReturn<'updateProject'> {
 		return this.invokeServerMethod('updateProject', ...args)
 	}
-	newRundown(...args: ServerArgs<'newRundown'>) {
+	async newRundown(...args: ServerArgs<'newRundown'>): ServerReturn<'newRundown'> {
 		return this.invokeServerMethod('newRundown', ...args)
 	}
-	deleteRundown(...args: ServerArgs<'deleteRundown'>) {
+	async deleteRundown(...args: ServerArgs<'deleteRundown'>): ServerReturn<'deleteRundown'> {
 		return this.invokeServerMethod('deleteRundown', ...args)
 	}
-	openRundown(...args: ServerArgs<'openRundown'>) {
+	async openRundown(...args: ServerArgs<'openRundown'>): ServerReturn<'openRundown'> {
 		return this.invokeServerMethod('openRundown', ...args)
 	}
-	closeRundown(...args: ServerArgs<'closeRundown'>) {
+	async closeRundown(...args: ServerArgs<'closeRundown'>): ServerReturn<'closeRundown'> {
 		return this.invokeServerMethod('closeRundown', ...args)
 	}
-	renameRundown(...args: ServerArgs<'renameRundown'>) {
+	async renameRundown(...args: ServerArgs<'renameRundown'>): ServerReturn<'renameRundown'> {
 		return this.invokeServerMethod('renameRundown', ...args)
 	}
-	isRundownPlaying(...args: ServerArgs<'isRundownPlaying'>) {
+	async isRundownPlaying(...args: ServerArgs<'isRundownPlaying'>): ServerReturn<'isRundownPlaying'> {
 		return this.invokeServerMethod('isRundownPlaying', ...args)
 	}
-	createMissingMapping(...args: ServerArgs<'createMissingMapping'>) {
+	async createMissingMapping(...args: ServerArgs<'createMissingMapping'>): ServerReturn<'createMissingMapping'> {
 		return this.invokeServerMethod('createMissingMapping', ...args)
 	}
-	isTimelineObjPlaying(...args: ServerArgs<'isTimelineObjPlaying'>) {
+	async isTimelineObjPlaying(...args: ServerArgs<'isTimelineObjPlaying'>): ServerReturn<'isTimelineObjPlaying'> {
 		return this.invokeServerMethod('isTimelineObjPlaying', ...args)
 	}
-	addPeripheralArea(...args: ServerArgs<'addPeripheralArea'>) {
+	async addPeripheralArea(...args: ServerArgs<'addPeripheralArea'>): ServerReturn<'addPeripheralArea'> {
 		return this.invokeServerMethod('addPeripheralArea', ...args)
 	}
-	removePeripheralArea(...args: ServerArgs<'removePeripheralArea'>) {
+	async removePeripheralArea(...args: ServerArgs<'removePeripheralArea'>): ServerReturn<'removePeripheralArea'> {
 		return this.invokeServerMethod('removePeripheralArea', ...args)
 	}
-	updatePeripheralArea(...args: ServerArgs<'updatePeripheralArea'>) {
+	async updatePeripheralArea(...args: ServerArgs<'updatePeripheralArea'>): ServerReturn<'updatePeripheralArea'> {
 		return this.invokeServerMethod('updatePeripheralArea', ...args)
 	}
-	assignAreaToGroup(...args: ServerArgs<'assignAreaToGroup'>) {
+	async assignAreaToGroup(...args: ServerArgs<'assignAreaToGroup'>): ServerReturn<'assignAreaToGroup'> {
 		return this.invokeServerMethod('assignAreaToGroup', ...args)
 	}
-	startDefiningArea(...args: ServerArgs<'startDefiningArea'>) {
+	async startDefiningArea(...args: ServerArgs<'startDefiningArea'>): ServerReturn<'startDefiningArea'> {
 		return this.invokeServerMethod('startDefiningArea', ...args)
 	}
-	finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>) {
+	async finishDefiningArea(...args: ServerArgs<'finishDefiningArea'>): ServerReturn<'finishDefiningArea'> {
 		return this.invokeServerMethod('finishDefiningArea', ...args)
 	}
-	setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>) {
+	async setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>): ServerReturn<'setApplicationTrigger'> {
 		return this.invokeServerMethod('setApplicationTrigger', ...args)
 	}
 }

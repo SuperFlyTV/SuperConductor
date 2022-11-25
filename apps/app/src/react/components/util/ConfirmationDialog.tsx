@@ -10,7 +10,14 @@ interface IProps {
 	children: JSX.Element
 }
 
-export function ConfirmationDialog({ open, title, children, acceptLabel, onAccepted, onDiscarded }: IProps) {
+export function ConfirmationDialog({
+	open,
+	title,
+	children,
+	acceptLabel,
+	onAccepted,
+	onDiscarded,
+}: IProps): JSX.Element {
 	return (
 		<Dialog
 			open={open}

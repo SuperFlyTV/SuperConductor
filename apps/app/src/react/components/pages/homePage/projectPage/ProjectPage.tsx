@@ -48,7 +48,9 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 									<AiOutlinePlusCircle /> New project
 								</>
 							}
-							onClick={() => serverAPI.newProject().catch(handleError)}
+							onClick={() => {
+								serverAPI.newProject().catch(handleError)
+							}}
 						/>
 						<TextBtn
 							label={
@@ -67,10 +69,17 @@ export const ProjectPage: React.FC<{ project: Project }> = observer(function Pro
 						/>
 					</div>
 					<div className="section">
-						<TextBtn label="Export to file" onClick={() => serverAPI.exportProject().catch(handleError)} />
+						<TextBtn
+							label="Export to file"
+							onClick={() => {
+								serverAPI.exportProject().catch(handleError)
+							}}
+						/>
 						<TextBtn
 							label="Import from file"
-							onClick={() => serverAPI.importProject().catch(handleError)}
+							onClick={() => {
+								serverAPI.importProject().catch(handleError)
+							}}
 						/>
 					</div>
 				</>

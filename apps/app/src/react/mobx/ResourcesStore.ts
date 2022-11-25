@@ -41,7 +41,7 @@ export class ResourcesStore {
 		}
 	}
 
-	public updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>) {
+	public updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
 		const newResources = { ...this.resources }
 
 		for (const { id, resource } of resources) {

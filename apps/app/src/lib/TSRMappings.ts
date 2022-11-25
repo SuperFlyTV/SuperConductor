@@ -861,7 +861,11 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 	}
 }
 
-export function getDefaultMappingForDeviceType(deviceType: DeviceType, deviceId: string, allMappings: Mappings) {
+export function getDefaultMappingForDeviceType(
+	deviceType: DeviceType,
+	deviceId: string,
+	allMappings: Mappings
+): Mapping {
 	// Filter mapping for deviceId:
 	const mappings: Mappings = {}
 	for (const [id, mapping] of Object.entries(allMappings)) {

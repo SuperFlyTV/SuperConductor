@@ -476,7 +476,7 @@ export class SuperConductor {
 	 * Is called when the app is starting to shut down.
 	 * After this has been called, the client window has closed.
 	 */
-	isShuttingDown() {
+	isShuttingDown(): void {
 		this.shuttingDown = true
 		this.session.terminate()
 	}
@@ -484,7 +484,7 @@ export class SuperConductor {
 	 * Is called when the app is shutting down.
 	 * Shut down everything
 	 */
-	terminate() {
+	terminate(): void {
 		this.storage.terminate()
 		this.triggerHandleAutoFill.clear()
 	}

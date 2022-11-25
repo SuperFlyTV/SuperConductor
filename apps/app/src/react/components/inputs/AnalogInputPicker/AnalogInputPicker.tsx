@@ -32,7 +32,7 @@ export function AnalogInputOverridePicker({
 	obj: TSRTimelineObj
 	path: string
 	onSave: (newObj: TSRTimelineObj) => void
-}) {
+}): JSX.Element | null {
 	const elementId = useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 

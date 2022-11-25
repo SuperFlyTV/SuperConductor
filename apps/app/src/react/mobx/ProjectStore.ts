@@ -38,7 +38,7 @@ export class ProjectStore {
 		makeAutoObservable(this)
 	}
 
-	update(project: Project) {
+	update(project: Project): void {
 		this.project = project
 
 		this._updateAssignedAreas()

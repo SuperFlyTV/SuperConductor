@@ -368,7 +368,9 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 
 						<Button
 							className={classNames('refresh', { active: isAnyDeviceRefreshing })}
-							onClick={() => ipcServer.refreshResources().catch(handleError)}
+							onClick={(): void => {
+								ipcServer.refreshResources().catch(handleError)
+							}}
 							title="Refresh all resources"
 						>
 							<HiRefresh size={15} color="white" />
@@ -462,7 +464,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 							{resourceTypes.map((resourceType) => (
 								<MenuItem key={resourceType} value={resourceType} dense>
 									<SmallCheckbox checked={resourceTypeFilterValue.indexOf(resourceType) > -1} />
-									<ListItemText primary={getResourceTypeName(resourceType as ResourceType)} />
+									<ListItemText primary={getResourceTypeName(resourceType)} />
 								</MenuItem>
 							))}
 						</Select>
