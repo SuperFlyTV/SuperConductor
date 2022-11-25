@@ -28,10 +28,10 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
       - name: restore node_modules
         uses: actions/cache@v3
         with:
@@ -74,10 +74,10 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
       - name: Install libudev-dev
         run: sudo apt-get install -y libudev-dev
       - name: restore node_modules
@@ -118,10 +118,10 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
       - name: restore node_modules
         uses: actions/cache@v3
         with:
