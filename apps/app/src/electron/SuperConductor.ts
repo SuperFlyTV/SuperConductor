@@ -254,7 +254,7 @@ export class SuperConductor {
 			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 		}
 	}
-	sendSystemMessage(message: string, options: SystemMessageOptions) {
+	sendSystemMessage(message: string, options: SystemMessageOptions): void {
 		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
 	}
 	private _triggerBatchSendResources() {

@@ -29,10 +29,10 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	async debugThrowError(...args: ServerArgs<'debugThrowError'>): ServerReturn<'debugThrowError'> {
 		return this.invokeServerMethod('debugThrowError', ...args)
 	}
-	async installUpdate(...args: ServerArgs<'installUpdate'>) {
+	async installUpdate(...args: ServerArgs<'installUpdate'>): ServerReturn<'installUpdate'> {
 		return this.invokeServerMethod('installUpdate', ...args)
 	}
-	async triggerSendAll(...args: ServerArgs<'triggerSendAll'>) {
+	async triggerSendAll(...args: ServerArgs<'triggerSendAll'>): ServerReturn<'triggerSendAll'> {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
 	async triggerSendRundown(...args: ServerArgs<'triggerSendRundown'>): ServerReturn<'triggerSendRundown'> {
@@ -185,10 +185,10 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	async triggerHandleAutoFill(...args: ServerArgs<'triggerHandleAutoFill'>): ServerReturn<'triggerHandleAutoFill'> {
 		return this.invokeServerMethod('triggerHandleAutoFill', ...args)
 	}
-	async updateAppData(...args: ServerArgs<'updateAppData'>) {
+	async updateAppData(...args: ServerArgs<'updateAppData'>): ServerReturn<'updateAppData'> {
 		return this.invokeServerMethod('updateAppData', ...args)
 	}
-	async updateProject(...args: ServerArgs<'updateProject'>) {
+	async updateProject(...args: ServerArgs<'updateProject'>): ServerReturn<'updateProject'> {
 		return this.invokeServerMethod('updateProject', ...args)
 	}
 	async newRundown(...args: ServerArgs<'newRundown'>): ServerReturn<'newRundown'> {
