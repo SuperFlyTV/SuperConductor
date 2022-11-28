@@ -1,6 +1,6 @@
 {
 	"name": "@shared/peripherals",
-	"version": "0.9.6",
+	"version": "0.10.0-alpha.0",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -42,15 +42,15 @@
 		]
 	},
 	"devDependencies": {
-		"@types/sharp": "^0.31.0",
 		"@types/midi": "^2.0.0",
+		"@types/sharp": "^0.31.0",
 		"winston": "^3.7.2"
 	},
 	"dependencies": {
 		"@elgato-stream-deck/node": "^5.6.0",
 		"@julusian/jpeg-turbo": "^1.1.1",
-		"@shared/api": "^0.9.6",
-		"@shared/lib": "^0.9.6",
+		"@shared/api": "^0.10.0-alpha.0",
+		"@shared/lib": "^0.10.0-alpha.0",
 		"lodash": "^4.17.21",
 		"midi": "^2.0.0",
 		"p-queue": "^6.6.2",
