@@ -307,6 +307,7 @@ export class PeripheralMIDI extends Peripheral {
 					this.emit('analog', identifier, {
 						absolute: value,
 						relative: this.getRelativeValue(identifier, value),
+						rAbs: true,
 					})
 				} else if (fcn === 4) {
 					// Program Change

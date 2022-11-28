@@ -350,6 +350,11 @@ const AnalogInputSettings: React.FC<{
 													onClick={() => {
 														// Assign the analog to this setting:
 														analogInputSetting.fullIdentifier = activeAnalog.fullIdentifier
+														if (activeAnalog.value.rAbs === true) {
+															analogInputSetting.updateUsingAbsolute = true
+														} else if (activeAnalog.value.rAbs === false) {
+															analogInputSetting.updateUsingAbsolute = false
+														}
 														ipcServer
 															.updateProject({
 																id: project.id,

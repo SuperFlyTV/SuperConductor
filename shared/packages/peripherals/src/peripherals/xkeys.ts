@@ -154,6 +154,7 @@ export class PeripheralXkeys extends Peripheral {
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, deltaValue),
 					relative: deltaValue,
+					rAbs: false,
 				})
 			})
 			this.xkeysPanel.on('shuttle', (keyIndex, value) => {
@@ -162,6 +163,7 @@ export class PeripheralXkeys extends Peripheral {
 				this.emit('analog', identifier, {
 					absolute: value,
 					relative: this.getRelativeValue(identifier, value),
+					rAbs: true,
 				})
 			})
 			this.xkeysPanel.on('tbar', (keyIndex, value) => {
@@ -170,6 +172,7 @@ export class PeripheralXkeys extends Peripheral {
 				this.emit('analog', identifier, {
 					absolute: value,
 					relative: this.getRelativeValue(identifier, value),
+					rAbs: true,
 				})
 			})
 			this.xkeysPanel.on('joystick', (keyIndex, value) => {
@@ -180,14 +183,17 @@ export class PeripheralXkeys extends Peripheral {
 				this.emit('analog', identifierX, {
 					absolute: value.x,
 					relative: this.getRelativeValue(identifierX, value.x),
+					rAbs: true,
 				})
 				this.emit('analog', identifierY, {
 					absolute: value.y,
 					relative: this.getRelativeValue(identifierY, value.y),
+					rAbs: true,
 				})
 				this.emit('analog', identifierZ, {
 					absolute: value.z,
 					relative: value.deltaZ,
+					rAbs: false,
 				})
 			})
 
