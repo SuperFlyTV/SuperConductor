@@ -98,12 +98,12 @@ export class StorageHandler extends EventEmitter {
 			try {
 				const read = fs.readFileSync(projectPath, 'utf8')
 				project = JSON.parse(read)
-				if (project) this.ensureCompatibilityProject(project?.project)
 			} catch (error) {
 				// ignore
 			}
 
 			if (project) {
+				this.ensureCompatibilityProject(project.project)
 				projects.push({
 					name: project.project.name,
 					id: project.id,
@@ -647,9 +647,9 @@ export class StorageHandler extends EventEmitter {
 			// Default:
 			this.appDataNeedsWrite = true
 			appData = this.getDefaultAppData()
-		} else {
-			this.ensureCompatibilityAppData(appData)
 		}
+		this.ensureCompatibilityAppData(appData)
+
 		// Update the currentVersion to the apps' version:
 		appData.appData.version.currentVersion = CURRENT_VERSION
 		if (appData.appData.version.currentVersion !== CURRENT_VERSION) {
@@ -663,7 +663,6 @@ export class StorageHandler extends EventEmitter {
 		try {
 			const read = fs.readFileSync(projectPath, 'utf8')
 			project = JSON.parse(read)
-			if (project) this.ensureCompatibilityProject(project?.project)
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
@@ -679,7 +678,6 @@ export class StorageHandler extends EventEmitter {
 			try {
 				const read = fs.readFileSync(tmpPath, 'utf8')
 				project = JSON.parse(read)
-				if (project) this.ensureCompatibilityProject(project?.project)
 
 				// If we only have a temporary file, we should write to the real one asap:
 				this.projectNeedsWrite = true
@@ -696,6 +694,7 @@ export class StorageHandler extends EventEmitter {
 			this.projectNeedsWrite = true
 			project = StorageHandler.getDefaultProject(newName, this._projectId)
 		}
+		this.ensureCompatibilityProject(project.project)
 
 		return project
 	}
@@ -782,7 +781,7 @@ export class StorageHandler extends EventEmitter {
 		if (!rundown) {
 			// Create a default rundown then:
 			this.rundownsNeedsWrite.add(fileName)
-			return StorageHandler.getDefaultRundown(newName)
+			rundown = StorageHandler.getDefaultRundown(newName)
 		}
 		this.ensureCompatibilityRundown(rundown.rundown)
 
