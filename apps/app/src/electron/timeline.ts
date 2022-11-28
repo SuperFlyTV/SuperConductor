@@ -6,7 +6,7 @@ import {
 	GroupPreparedPlayDataSection,
 } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
-import { TimelineEnable, TimelineObject } from 'superfly-timeline'
+import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import { StorageHandler } from './storageHandler'
 import { BridgeHandler } from './bridgeHandler'
@@ -290,28 +290,82 @@ function partToTimelineObj(
 	return timelineObj
 }
 function changeTimelineId(obj: TSRTimelineObjBase, changeId: (id: string) => string) {
+	/** Maps old id -> new id */
 	const changedIds = new Map<string, string>()
 
-	changeTimelineIdInner(changedIds, obj, changeId)
+	changeTimelineIdInnerObj(changedIds, obj, changeId)
 
-	// TODO: step 2: update references in the timeline
-	// TODO....
+	updateTimelineReferences(changedIds, obj)
 }
-function changeTimelineIdInner(changedIds: Map<string, string>, obj: TimelineObject, changeId: (id: string) => string) {
-	const newId = changeId(obj.id)
-	obj.id = newId
-	changedIds.set(obj.id, newId)
+function changeTimelineIdInnerObj(
+	changedIds: Map<string, string>,
+	obj: TimelineObject,
+	changeId: (id: string) => string
+) {
+	const oldId = obj.id
+	obj.id = changeId(oldId)
+	changedIds.set(oldId, obj.id)
 
 	if (obj.children) {
 		for (const child of obj.children) {
-			changeTimelineIdInner(changedIds, child, changeId)
+			changeTimelineIdInnerObj(changedIds, child, changeId)
 		}
 	}
-	// if (obj.keyframes) {
-	// 	for (const keyframe of obj.keyframes) {
-	// 		changeTimelineIdInner(changedIds, keyframe, changeId)
-	// 	}
-	// }
+	if (obj.keyframes) {
+		for (const keyframe of obj.keyframes) {
+			changeTimelineIdInnerKeyframe(changedIds, keyframe, changeId)
+		}
+	}
+}
+function changeTimelineIdInnerKeyframe(
+	changedIds: Map<string, string>,
+	obj: TimelineKeyframe,
+	changeId: (id: string) => string
+) {
+	const newId = changeId(obj.id)
+	obj.id = newId
+	changedIds.set(obj.id, newId)
+}
+function updateTimelineReferences(changedIds: Map<string, string>, obj: TimelineObject) {
+	updateTimelineEnable(changedIds, obj)
+
+	if (obj.children) {
+		for (const child of obj.children) {
+			updateTimelineReferences(changedIds, child)
+		}
+	}
+	if (obj.keyframes) {
+		for (const keyframe of obj.keyframes) {
+			updateTimelineEnable(changedIds, keyframe)
+		}
+	}
+}
+function updateTimelineEnable(changedIds: Map<string, string>, obj: TimelineObject | TimelineKeyframe) {
+	for (const enable of ensureArray(obj.enable)) {
+		enable.start = updateTimelineExpression(changedIds, enable.start)
+		enable.end = updateTimelineExpression(changedIds, enable.end)
+		enable.duration = updateTimelineExpression(changedIds, enable.duration)
+		enable.repeating = updateTimelineExpression(changedIds, enable.repeating)
+		enable.while = updateTimelineExpression(changedIds, enable.while)
+	}
+}
+function updateTimelineExpression<T extends Expression | undefined>(changedIds: Map<string, string>, expr: T): T {
+	if (!expr) return expr
+
+	if (typeof expr === 'number') {
+		return expr
+	} else if (typeof expr === 'string') {
+		let str: string = expr
+		for (const [oldId, newId] of changedIds.entries()) {
+			str = str.replace(new RegExp(oldId, 'g'), newId)
+		}
+		return str as T
+	} else {
+		expr.l = updateTimelineExpression(changedIds, expr.l)
+		expr.r = updateTimelineExpression(changedIds, expr.r)
+
+		return expr
+	}
 }
 
 type CustomPartContent = (
