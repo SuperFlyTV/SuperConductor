@@ -994,7 +994,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				<div className="settings-group" key="keyer">
 					<div className="label">
 						Keyer
-						{mixer.fill !== undefined && (
+						{mixer.keyer !== undefined && (
 							<Btn
 								className="size-small"
 								onClick={() => {
