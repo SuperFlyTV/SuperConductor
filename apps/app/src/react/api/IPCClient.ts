@@ -1,4 +1,4 @@
-import { IPCClientMethods } from '../../ipc/IPCAPI'
+import { IPCClientMethods, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
@@ -17,6 +17,8 @@ export class IPCClient implements IPCClientMethods {
 		private logger: ClientSideLogger,
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
+			systemMessage?: (message: string, options: SystemMessageOptions) => void
+
 			updateAppData?: (appData: AppData) => void
 			updateProject?: (project: Project) => void
 			updateRundown?: (fileName: string, rundown: Rundown) => void
@@ -46,6 +48,9 @@ export class IPCClient implements IPCClientMethods {
 		}
 	}
 
+	systemMessage(message: string, options: SystemMessageOptions): void {
+		this.callbacks.systemMessage?.(message, options)
+	}
 	updateAppData(appData: AppData): void {
 		this.callbacks.updateAppData?.(appData)
 	}

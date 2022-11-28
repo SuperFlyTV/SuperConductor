@@ -1,4 +1,4 @@
-import { literal } from '@shared/lib'
+import { literal, stringifyError } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu, shell, screen } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
@@ -97,6 +97,12 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 						title: 'Up-to-date',
 						message: `You have the latest version of SuperConductor (v${CURRENT_VERSION}).`,
 					})
+				} else {
+					await dialog.showMessageBox(win, {
+						type: 'info',
+						title: 'New version available',
+						message: `A new version (${result.updateInfo.version}) will download automatically.`,
+					})
 				}
 			} catch (error) {
 				log.error(error)
@@ -174,6 +180,47 @@ function onAppReady(): void {
 	log.info('Starting up...')
 
 	const superConductor = new SuperConductor(log, rendererLogger)
+
+	autoUpdater.on('update-available', (info) => {
+		// Notify:
+
+		if (autoUpdater.autoDownload) {
+			superConductor.sendSystemMessage(
+				`A new version (${info.version}) is available. It will automatically be downloaded and installed next time you restart SuperConductor.`,
+				{
+					key: 'update-available',
+				}
+			)
+		} else {
+			superConductor.sendSystemMessage(`A new version (${info.version}) is available.`, {
+				key: 'update-available',
+			})
+		}
+	})
+	autoUpdater.on('update-downloaded', (info) => {
+		superConductor.sendSystemMessage(
+			`A new version (${info.version}) has been downloaded. Restart SuperConductor to install it.`,
+			{
+				key: 'update-downloaded',
+				persist: true,
+				displayRestartButton: true,
+			}
+		)
+	})
+	autoUpdater.on('error', (error, message) => {
+		log.error(stringifyError(error) + message ? ` ${message}` : '')
+
+		superConductor.sendSystemMessage(
+			`There was an error when auto-updating, please <a href="https://github.com/SuperFlyTV/SuperConductor/releases/latest" target="_blank">download the latest</a> version manually.\nError message: ${stringifyError(
+				error,
+				true
+			)}`,
+			{
+				variant: 'error',
+				key: 'update-error',
+			}
+		)
+	})
 
 	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
 
