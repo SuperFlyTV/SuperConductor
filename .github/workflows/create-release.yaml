@@ -92,7 +92,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |
           yarn build
@@ -115,8 +115,8 @@ jobs:
           yarn build:binary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  build-macos-binaries:
-    name: Build MacOS Binaries
+  build-macos-binary-TSR-bridge:
+    name: Build MacOS Binary - TSR-Bridge
     runs-on: macos-latest
     needs: create-release
     continue-on-error: true
@@ -155,6 +155,29 @@ jobs:
         with:
           release_id: ${{ needs.create-release.outputs.release_id }}
           asset_name: latest-mac.yml
+  build-macos-binary-superconductor:
+    name: Build MacOS Binary - SuperConductor
+    runs-on: macos-latest
+    needs: [create-release, build-macos-binary-TSR-bridge]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: restore node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+      - name: Build
+        run: |
+          yarn build
       - name: Build SuperConductor binary
         run: |
           cd apps/app
