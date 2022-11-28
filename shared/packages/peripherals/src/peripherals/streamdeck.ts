@@ -117,17 +117,50 @@ export class PeripheralStreamDeck extends Peripheral {
 
 			this.connected = true
 
+			// Press / Release of the buttons:
 			this.streamDeck.on('down', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex)
+				const identifier = keyIndexToIdentifier(keyIndex, 'button')
 				this.keys[identifier] = true
 				this.emit('keyDown', identifier)
 			})
 
 			this.streamDeck.on('up', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex)
+				const identifier = keyIndexToIdentifier(keyIndex, 'button')
 				this.keys[identifier] = false
 				this.emit('keyUp', identifier)
 			})
+
+			// Press / Release the knobs on Streamdeck plus:
+			this.streamDeck.on('encoderDown', (keyIndex) => {
+				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				this.keys[identifier] = false
+				this.emit('keyDown', identifier)
+			})
+			this.streamDeck.on('encoderUp', (keyIndex) => {
+				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				this.keys[identifier] = false
+				this.emit('keyUp', identifier)
+			})
+			// Rotate the knobs on Streamdeck plus:
+			this.streamDeck.on('rotateRight', (keyIndex, deltaValue) => {
+				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				this.emit('analog', identifier, {
+					absolute: this.getAbsoluteValue(identifier, deltaValue),
+					relative: deltaValue,
+					rAbs: false,
+				})
+			})
+			this.streamDeck.on('rotateLeft', (keyIndex, deltaValue) => {
+				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				this.emit('analog', identifier, {
+					absolute: this.getAbsoluteValue(identifier, -deltaValue),
+					relative: -deltaValue,
+					rAbs: false,
+				})
+			})
+			// lcdShortPress
+			// lcdLongPress
+			// lcdSwipe
 
 			this.streamDeck.on('error', (error) => {
 				if (`${error}`.match(/could not read from/)) {
@@ -187,7 +220,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 				for (const keyIndex of Object.values(adjacentButtons)) {
 					if (keyIndex !== null) {
-						const identifier = keyIndexToIdentifier(keyIndex)
+						const identifier = keyIndexToIdentifier(keyIndex, 'button')
 						await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
 					}
 				}
@@ -205,7 +238,7 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_KEYS; keyIndex++) {
-			const identifier = keyIndexToIdentifier(keyIndex)
+			const identifier = keyIndexToIdentifier(keyIndex, 'button')
 			let keyDisplay = this.sentKeyDisplay[identifier]
 
 			if (keyIndex === 0 && !this.connectedToParent) {
@@ -254,9 +287,9 @@ export class PeripheralStreamDeck extends Peripheral {
 	private emitAllKeys() {
 		if (!this.streamDeck) return
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_KEYS; keyIndex++) {
-			const identifier = keyIndexToIdentifier(keyIndex)
-			if (this.keys[identifier]) this.emit('keyDown', keyIndexToIdentifier(keyIndex))
-			else this.emit('keyUp', keyIndexToIdentifier(keyIndex))
+			const identifier = keyIndexToIdentifier(keyIndex, 'button')
+			if (this.keys[identifier]) this.emit('keyDown', keyIndexToIdentifier(keyIndex, 'button'))
+			else this.emit('keyUp', keyIndexToIdentifier(keyIndex, 'button'))
 		}
 	}
 	private async drawKeyDisplay(
@@ -411,22 +444,22 @@ export class PeripheralStreamDeck extends Peripheral {
 						const adjacentKeys = this.getAdjacentKeys(keyIndex)
 						borders.top = !(
 							adjacentKeys.top !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.top)]?.area?.areaId ===
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.top, 'button')]?.area?.areaId ===
 								keyDisplay.area.areaId
 						)
 						borders.bottom = !(
 							adjacentKeys.bottom !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.bottom)]?.area?.areaId ===
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.bottom, 'button')]?.area?.areaId ===
 								keyDisplay.area.areaId
 						)
 						borders.left = !(
 							adjacentKeys.left !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.left)]?.area?.areaId ===
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.left, 'button')]?.area?.areaId ===
 								keyDisplay.area.areaId
 						)
 						borders.right = !(
 							adjacentKeys.right !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.right)]?.area?.areaId ===
+							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.right, 'button')]?.area?.areaId ===
 								keyDisplay.area.areaId
 						)
 					}
@@ -662,8 +695,9 @@ export class PeripheralStreamDeck extends Peripheral {
 		return rowColumn.row * columns + rowColumn.column
 	}
 }
-function keyIndexToIdentifier(keyIndex: number): string {
-	return `${keyIndex}`
+function keyIndexToIdentifier(keyIndex: number, type: 'button' | 'knob'): string {
+	if (type === 'knob') return `knob-${keyIndex}`
+	else return `${keyIndex}`
 }
 function identifierToKeyIndex(identifier: string): number {
 	return parseInt(identifier)
