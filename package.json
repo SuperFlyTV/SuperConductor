@@ -35,8 +35,8 @@
 		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
 		"postinstall": "electron-rebuild --force --version 19.1.6 --module-dir apps/tsr-bridge",
 		"license-validate": "node scripts/license-check.js",
-		"release:release": "lerna version --force-publish --no-push",
-		"release": "yarn release:release"
+		"release": "lerna version --force-publish --no-push",
+		"prerelease": "lerna version prerelease --force-publish --no-push"
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",
