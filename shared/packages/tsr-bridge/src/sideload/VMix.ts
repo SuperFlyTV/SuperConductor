@@ -17,6 +17,7 @@ import {
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { stringifyError } from '@shared/lib'
 
 export class VMixSideload implements SideLoadDevice {
 	private vmix: VMix
@@ -39,7 +40,7 @@ export class VMixSideload implements SideLoadDevice {
 					host: deviceOptions.options.host,
 					port: deviceOptions.options.port,
 				})
-				.catch((error) => this.log.error(error))
+				.catch((error) => this.log.error('VMix Connect error: ' + stringifyError(error)))
 		}
 	}
 	public async refreshResources(): Promise<ResourceAny[]> {

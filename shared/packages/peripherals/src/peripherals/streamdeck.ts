@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
-import { stringToRGB, RGBToString } from '@shared/lib'
+import { stringToRGB, RGBToString, stringifyError } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
@@ -137,7 +137,7 @@ export class PeripheralStreamDeck extends Peripheral {
 					this.streamDeck?.close().catch(this.log.error)
 					delete this.streamDeck
 				} else {
-					this.log.error(error)
+					this.log.error('Streamdeck error: ' + stringifyError(error))
 				}
 			})
 			await sleep(10) // to avoid an common initial "unable to write to HID device" error.

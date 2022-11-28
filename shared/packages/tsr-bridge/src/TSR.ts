@@ -10,6 +10,7 @@ import { OSCSideload } from './sideload/OSC'
 import { HTTPSendSideload } from './sideload/HTTPSend'
 import { HyperdeckSideload } from './sideload/Hyperdeck'
 import { SideLoadDevice } from './sideload/sideload'
+import { stringifyError } from '@shared/lib'
 
 export class TSR {
 	public newConnection = false
@@ -98,7 +99,7 @@ export class TSR {
 					await this.conductor.initDevice(deviceId, newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
-				})().catch((error) => this.log.error(error))
+				})().catch((error) => this.log.error('TSR sideload error: ' + stringifyError(error)))
 			}
 		}
 		// Removed:

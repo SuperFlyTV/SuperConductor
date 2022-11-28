@@ -133,7 +133,7 @@ export class PeripheralMIDI extends Peripheral {
 				this.onMidiMessage(message)
 			})
 			// @ts-expect-error error event not in typings
-			Input.on('error', (err) => this.log.error(err))
+			Input.on('error', (error) => this.log.error('Midi input error: ' + stringifyError(error)))
 
 			Input.openPort(this.portIndex)
 			this.Input = Input
