@@ -15,16 +15,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18.x
+      - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: '18'
+      - name: apt-get update
+        run: sudo apt-get update
       - name: Install libasound2-dev
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+        run: sudo apt-get install -y libasound2-dev
       - name: Install libudev-dev
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
+        run: sudo apt-get install -y libudev-dev
       - name: restore node_modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             node_modules
