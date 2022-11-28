@@ -2005,6 +2005,9 @@ export class IPCServer
 
 		if (arg.preReleaseAutoUpdate !== undefined) {
 			appData.preReleaseAutoUpdate = arg.preReleaseAutoUpdate
+
+			autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
+
 			setTimeout(() => {
 				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
 			}, 1000)

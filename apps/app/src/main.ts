@@ -221,8 +221,14 @@ function onAppReady(): void {
 			}
 		)
 	})
+	{
+		const appData = superConductor.storage.getAppData()
+		autoUpdater.autoDownload = true
+		autoUpdater.allowDowngrade = true
 
-	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+		autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
+		autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+	}
 
 	app.on('window-all-closed', () => {
 		// On macOS it is common for applications and their menu bar
