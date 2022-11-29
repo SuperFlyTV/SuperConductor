@@ -14,8 +14,9 @@ jobs:
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
-      - uses: ncipollo/release-action@v1
+      - id: create_release
         name: Create Release
+        uses: ncipollo/release-action@v1
         with:
           name: Release ${{ github.ref_name }}
           draft: true
