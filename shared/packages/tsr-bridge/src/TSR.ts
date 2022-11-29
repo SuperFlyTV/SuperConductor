@@ -99,7 +99,7 @@ export class TSR {
 					await this.conductor.initDevice(deviceId, newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
-				})().catch((error) => this.log.error('TSR sideload error: ' + stringifyError(error)))
+				})().catch((error) => this.log.error('TSR device error: ' + stringifyError(error)))
 			}
 		}
 		// Removed:
