@@ -14,7 +14,7 @@ jobs:
     steps:
       - id: create_release
         name: Create Release
-        run: gh release create ${{ github.ref }} --draft --title "Release ${{ github.ref }}"
+        run: gh release create ${{ github.ref_name }} --draft --title "Release ${{ github.ref_name }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-windows-binaries:
