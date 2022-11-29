@@ -3,8 +3,11 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { PeripheralInfo } from '@shared/api'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { AnalogValue, KnownPeripheral, PeripheralInfo } from '@shared/api'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { CurrentSelectionAny } from '../lib/GUI'
+import { getPeripheralId } from '@shared/lib'
+import { ActiveAnalog } from '../models/rundown/Analog'
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
@@ -21,18 +24,25 @@ export class SessionHandler extends EventEmitter {
 	private activeTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
 	private activeTriggersHasChanged = false
 
+	/** Contains a collection of ALL analogs on all Panels */
+	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
+	private activeAnalogsHasChanged: { [fullIdentifier: string]: true } = {}
+
 	private definingArea: DefiningArea | null = null
 	private definingAreaHasChanged = false
+
+	private selection: Readonly<CurrentSelectionAny[]> = [] // Not sent to GUI
+	private selectionHasChanged = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
 
 	private emitEverything = false
 
-	terminate() {
+	terminate(): void {
 		this.removeAllListeners()
 	}
 
-	triggerEmitAll() {
+	triggerEmitAll(): void {
 		this.emitEverything = true
 		this.triggerUpdate()
 	}
@@ -46,13 +56,15 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 
-	getBridgeStatuses() {
+	getBridgeStatuses(): {
+		[bridgeId: string]: BridgeStatus
+	} {
 		return this.bridgeStatuses
 	}
 	getBridgeStatus(id: string): BridgeStatus | undefined {
 		return this.bridgeStatuses[id]
 	}
-	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null) {
+	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
 		if (bridgeStatus) {
 			this.bridgeStatuses[id] = bridgeStatus
 			this.bridgeStatusesHasChanged[id] = true
@@ -66,12 +78,12 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 	getPeripheralStatus(bridgeId: string, deviceId: string): PeripheralStatus | undefined {
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		return this.peripherals[peripheralId]
 	}
-	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean) {
-		const peripheralId = `${bridgeId}-${deviceId}`
+	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean): void {
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		const existing: PeripheralStatus | undefined = this.peripherals[peripheralId]
 
@@ -91,7 +103,31 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
-	resetPeripheralTriggerStatuses(bridgeId: string) {
+	removePeripheral(bridgeId: string, deviceId: string): void {
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
+		delete this.peripherals[peripheralId]
+		this.peripheralsHasChanged[peripheralId] = true
+		this.triggerUpdate()
+	}
+	updateKnownPeripherals(
+		bridgeId: string,
+		knownPeripherals: {
+			[peripheralId: string]: KnownPeripheral
+		}
+	): void {
+		const bridgeStatus = this.bridgeStatuses[bridgeId]
+		if (!bridgeStatus) {
+			return
+		}
+
+		if (!_.isEqual(knownPeripherals, bridgeStatus.peripherals)) {
+			bridgeStatus.peripherals = knownPeripherals
+			this.bridgeStatusesHasChanged[bridgeId] = true
+		}
+
+		this.triggerUpdate()
+	}
+	resetPeripheralTriggerStatuses(bridgeId: string): void {
 		// Reset all peripheralStatuses for a bridge (like when a bridge is reconnected)
 
 		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
@@ -107,11 +143,11 @@ export class SessionHandler extends EventEmitter {
 			}
 		}
 	}
-	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean) {
+	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean): void {
 		// This is called from a peripheral, when a key is pressed or released
 
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
-		const peripheralId = `${bridgeId}-${deviceId}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 		const device = this.peripherals[peripheralId]
 		const trigger: ActiveTrigger = {
@@ -140,6 +176,45 @@ export class SessionHandler extends EventEmitter {
 		}
 
 		this.triggerUpdate()
+	}
+	updatePeripheralAnalog(bridgeId: string, deviceId: string, identifier: string, value: AnalogValue): void {
+		// This is called from a peripheral, when a key is pressed or released
+
+		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
+		const peripheralId = getPeripheralId(bridgeId, deviceId)
+
+		const device = this.peripherals[peripheralId]
+		const analog: ActiveAnalog = {
+			fullIdentifier: fullIdentifier,
+			bridgeId: bridgeId,
+			deviceId: deviceId,
+			deviceName: device?.info.name ?? '',
+			identifier: identifier,
+			value: value,
+		}
+
+		const previousAnalog = this.activeAnalogs[fullIdentifier]
+		if (!previousAnalog) {
+			this.activeAnalogs[fullIdentifier] = analog
+			this.activeAnalogsHasChanged[fullIdentifier] = true
+		} else {
+			if (!_.isEqual(previousAnalog.value, analog.value)) {
+				this.activeAnalogs[fullIdentifier] = analog
+				this.activeAnalogsHasChanged[fullIdentifier] = true
+			}
+		}
+
+		this.triggerUpdate()
+	}
+	updateSelection(selection: Readonly<CurrentSelectionAny[]>): void {
+		if (!_.isEqual(this.selection, selection)) {
+			this.selection = selection
+			this.selectionHasChanged = true
+			this.triggerUpdate()
+		}
+	}
+	getSelection(): Readonly<CurrentSelectionAny[]> {
+		return this.selection
 	}
 
 	private triggerUpdate() {
@@ -181,9 +256,17 @@ export class SessionHandler extends EventEmitter {
 			this.emit('activeTriggers', activeTriggers)
 			this.activeTriggersHasChanged = false
 		}
+		for (const fullIdentifier of Object.keys(this.activeAnalogsHasChanged)) {
+			this.emit('activeAnalog', fullIdentifier, this.activeAnalogs[fullIdentifier] ?? null)
+			delete this.activeAnalogsHasChanged[fullIdentifier]
+		}
 		if (this.definingAreaHasChanged) {
 			this.emit('definingArea', this.definingArea)
 			this.definingAreaHasChanged = false
+		}
+		if (this.selectionHasChanged) {
+			this.emit('selection', this.selection)
+			this.selectionHasChanged = false
 		}
 	}
 }

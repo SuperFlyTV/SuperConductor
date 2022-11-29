@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -16,7 +17,7 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
@@ -27,17 +28,23 @@ import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { HTTPAPI } from './HTTPAPI'
+import { ActiveAnalog } from '../models/rundown/Analog'
+import { AnalogHandler } from './analogHandler'
+import { AnalogInput } from '../models/project/AnalogInput'
+import { SystemMessageOptions } from '../ipc/IPCAPI'
 
 export class SuperConductor {
-	mainWindow?: BrowserWindow
-	ipcServer?: IPCServer
-	ipcClient?: IPCClient
+	ipcServer: IPCServer
+	clients: { ipcClient: IPCClient; window: BrowserWindow }[] = []
+	httpAPI?: HTTPAPI
 
 	session: SessionHandler
 	storage: StorageHandler
 	telemetryHandler: TelemetryHandler
-	triggers?: TriggersHandler
-	bridgeHandler?: BridgeHandler
+	triggers: TriggersHandler
+	analogHandler: AnalogHandler
+	bridgeHandler: BridgeHandler
 
 	private shuttingDown = false
 	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
@@ -50,48 +57,50 @@ export class SuperConductor {
 
 	private hasStoredStartupUserStatistics = false
 
+	private internalHttpApiPort = 5500
+	private disableInternalHttpApi = false
+
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
-		this.storage = new StorageHandler(
-			log,
-			{
-				// Default window position:
-				y: undefined,
-				x: undefined,
-				width: 1200,
-				height: 600,
-				maximized: false,
-			},
-			CURRENT_VERSION
-		)
-		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
 
 		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
-			this.ipcClient?.updateBridgeStatus(id, status)
+			this.clients.forEach((clients) => clients.ipcClient.updateBridgeStatus(id, status))
 		})
 		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
-			this.ipcClient?.updatePeripheral(peripheralId, peripheral)
+			this.triggers.onPeripheralStatus(peripheralId, peripheral)
+			this.clients.forEach((clients) => clients.ipcClient.updatePeripheral(peripheralId, peripheral))
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
-			this.ipcClient?.updatePeripheralTriggers(activeTriggers)
+			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralTriggers(activeTriggers))
+		})
+		this.session.on('activeAnalog', (fullIdentifier: string, analog: ActiveAnalog | null) => {
+			this.analogHandler?.updateActiveAnalog(fullIdentifier, analog)
+			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralAnalog(fullIdentifier, analog))
 		})
 		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
 			this.triggers?.updateDefiningArea(definingArea)
-			this.ipcClient?.updateDefiningArea(definingArea)
+			this.clients.forEach((clients) => clients.ipcClient.updateDefiningArea(definingArea))
 		})
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
 		})
+		this.session.on('selection', () => {
+			this.triggers?.triggerUpdatePeripherals()
+		})
+
+		this.storage = new StorageHandler(log, CURRENT_VERSION)
 		this.storage.on('appData', (appData: AppData) => {
-			this.ipcClient?.updateAppData(appData)
+			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('project', (project: Project) => {
-			this.ipcClient?.updateProject(project)
+			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
 			this.handleAutoRefresh()
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-			this.ipcClient?.updateRundown(fileName, rundown)
+			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
+			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
@@ -99,13 +108,23 @@ export class SuperConductor {
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
 		})
+		this.storage.on('analogInput', (fullIdentifier: string, analogInput: AnalogInput | null) => {
+			this.clients.forEach((clients) => clients.ipcClient.updateAnalogInput(fullIdentifier, analogInput))
+			this.bridgeHandler.updateAnalogInput(analogInput)
+		})
 
-		for (const argv of process.argv) {
-			if (argv === '--disable-telemetry') {
+		this.telemetryHandler = new TelemetryHandler(this.log, this.storage)
+
+		process.argv.forEach((value, index) => {
+			if (value === '--disable-telemetry') {
 				this.log.info('Telemetry disabled')
 				this.telemetryHandler.disableTelemetry()
+			} else if (value === '--disable-internal-http-api') {
+				this.disableInternalHttpApi = true
+			} else if (value === '--internal-http-api-port') {
+				this.internalHttpApiPort = parseInt(process.argv[index + 1], 10)
 			}
-		}
+		})
 
 		const appData = this.storage.getAppData()
 		if (appData.userAgreement === USER_AGREEMENT_VERSION) {
@@ -131,6 +150,112 @@ export class SuperConductor {
 			this.telemetryHandler.onError(`Warning: ${warning.name}: ${warning.message}`, warning.stack)
 			this.log.warn(`Warning: ${warning.name}: ${warning.message} \nStack: ${warning.stack}`)
 		})
+
+		this.bridgeHandler = new BridgeHandler(this.log, this.session, this.storage, {
+			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
+				if (this.shuttingDown) return
+				// Added/Updated:
+				const newResouceIds = new Set<string>()
+				for (const resource of resources) {
+					newResouceIds.add(resource.id)
+					if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
+						this.storage.updateResource(resource.id, resource)
+					}
+				}
+				// Removed:
+				for (const id of this.storage.getResourceIds(deviceId)) {
+					if (!newResouceIds.has(id)) this.storage.updateResource(id, null)
+				}
+			},
+			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {
+				this.clients.forEach((client) => {
+					dialog
+						.showMessageBox(client.window, {
+							type: 'warning',
+							title: 'Bridge version mismatch',
+							message: `The connected bridge "${bridgeId}" is of a different version than SuperConductor.
+							\nBridge version: v${bridgeVersion}
+							SuperConductor version: v${ourVersion}
+							\nThis is likely to result in errors and unexpected behavior. Please ensure that both SuperConductor and tsr-bridge are up-to-date.`,
+						})
+						.catch(this.log.error)
+				})
+			},
+			onDeviceRefreshStatus: (deviceId, refreshing) => {
+				if (this.shuttingDown) return
+				if (refreshing) {
+					this.refreshStatus[deviceId] = Date.now()
+				} else {
+					delete this.refreshStatus[deviceId]
+				}
+				this.clients.forEach((clients) => clients.ipcClient.updateDeviceRefreshStatus(deviceId, refreshing))
+			},
+		})
+
+		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
+			refreshResources: () => {
+				this.refreshResources()
+			},
+			refreshResourcesSetAuto: (interval: number) => {
+				const project = this.storage.getProject()
+				project.autoRefreshInterval = interval
+				this.storage.updateProject(project)
+			},
+			onClientConnected: () => {
+				// Nothing here yet
+			},
+			installUpdate: () => {
+				autoUpdater.autoRunAppAfterInstall = true
+				autoUpdater.quitAndInstall()
+			},
+			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
+				return this.updateTimeline(group)
+			},
+			updatePeripherals: (): void => {
+				this.triggers?.triggerUpdatePeripherals()
+			},
+			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
+				this.triggers?.setKeyboardKeys(activeKeys)
+			},
+			triggerHandleAutoFill: () => {
+				this.triggerHandleAutoFill()
+			},
+			makeDevData: async () => {
+				await this.storage.makeDevData()
+			},
+			onAgreeToUserAgreement: () => {
+				this.telemetryHandler.setUserHasAgreed()
+				this.telemetryHandler.onAcceptUserAgreement()
+
+				if (!this.hasStoredStartupUserStatistics) {
+					this.hasStoredStartupUserStatistics = true
+					this.telemetryHandler.onStartup()
+				}
+			},
+			handleError: (error: string, stack?: string) => {
+				this.log.error(error, stack)
+				this.telemetryHandler.onError(error, stack)
+			},
+		})
+
+		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
+			this.clients.forEach((client) =>
+				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
+			)
+		})
+		this.ipcServer.triggers = this.triggers
+
+		this.analogHandler = new AnalogHandler(this.storage)
+
+		if (this.disableInternalHttpApi) {
+			this.log.info(`Internal HTTP API disabled`)
+		} else {
+			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+		}
+	}
+	sendSystemMessage(message: string, options: SystemMessageOptions): void {
+		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
@@ -139,7 +264,7 @@ export class SuperConductor {
 		if (!this.__triggerBatchSendResourcesTimeout) {
 			this.__triggerBatchSendResourcesTimeout = setTimeout(() => {
 				this.__triggerBatchSendResourcesTimeout = null
-				this.ipcClient?.updateResources(this.resourceUpdatesToSend)
+				this.clients.forEach((clients) => clients.ipcClient.updateResources(this.resourceUpdatesToSend))
 				this.resourceUpdatesToSend = []
 			}, 100)
 		}
@@ -318,89 +443,27 @@ export class SuperConductor {
 		}
 	}
 
-	initWindow(mainWindow: BrowserWindow) {
-		this.mainWindow = mainWindow
+	onNewWindow(window: BrowserWindow): {
+		ipcClient: IPCClient
+		close: () => void
+	} {
+		const ipcClient = new IPCClient(window)
 
-		const bridgeHandler = new BridgeHandler(this.log, this.session, this.storage, {
-			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
-				if (this.shuttingDown) return
-				// Added/Updated:
-				const newResouceIds = new Set<string>()
-				for (const resource of resources) {
-					newResouceIds.add(resource.id)
-					if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
-						this.storage.updateResource(resource.id, resource)
-					}
-				}
-				// Removed:
-				for (const id of this.storage.getResourceIds(deviceId)) {
-					if (!newResouceIds.has(id)) this.storage.updateResource(id, null)
-				}
-			},
-			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {
-				dialog
-					.showMessageBox(mainWindow, {
-						type: 'warning',
-						title: 'Bridge version mismatch',
-						message: `The connected bridge "${bridgeId}" is of a different version than SuperConductor.
-						\nBridge version: v${bridgeVersion}
-						SuperConductor version: v${ourVersion}
-						\nThis is likely to result in errors and unexpected behavior. Please ensure that both SuperConductor and tsr-bridge are up-to-date.`,
-					})
-					.catch(this.log.error)
-			},
-			onDeviceRefreshStatus: (deviceId, refreshing) => {
-				if (this.shuttingDown) return
-				if (refreshing) {
-					this.refreshStatus[deviceId] = Date.now()
-				} else {
-					delete this.refreshStatus[deviceId]
-				}
-				this.ipcClient?.updateDeviceRefreshStatus(deviceId, refreshing)
-			},
-		})
-		this.bridgeHandler = bridgeHandler
+		const client = {
+			window,
+			ipcClient,
+		}
 
-		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
-			refreshResources: () => {
-				this.refreshResources()
-			},
-			refreshResourcesSetAuto: (interval: number) => {
-				const project = this.storage.getProject()
-				project.autoRefreshInterval = interval
-				this.storage.updateProject(project)
-			},
-			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
-				return this.updateTimeline(group)
-			},
-			updatePeripherals: (): void => {
-				this.triggers?.triggerUpdatePeripherals()
-			},
-			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
-				this.triggers?.setKeyboardKeys(activeKeys)
-			},
-			triggerHandleAutoFill: () => {
-				this.triggerHandleAutoFill()
-			},
-			makeDevData: async () => {
-				await this.storage.makeDevData()
-			},
-			onAgreeToUserAgreement: () => {
-				this.telemetryHandler.setUserHasAgreed()
-				this.telemetryHandler.onAcceptUserAgreement()
+		this.clients.push(client)
 
-				if (!this.hasStoredStartupUserStatistics) {
-					this.hasStoredStartupUserStatistics = true
-					this.telemetryHandler.onStartup()
-				}
+		return {
+			ipcClient,
+			close: () => {
+				ipcClient.close()
+				const index = this.clients.findIndex((c) => c === client)
+				if (index >= 0) this.clients.splice(index)
 			},
-			handleError: (error: string, stack?: string) => {
-				this.log.error(error, stack)
-				this.telemetryHandler.onError(error, stack)
-			},
-		})
-		this.ipcClient = new IPCClient(this.mainWindow)
-		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler)
+		}
 	}
 	private refreshResources(): void {
 		// Remove resources of devices we don't have anymore:
@@ -425,7 +488,7 @@ export class SuperConductor {
 	 * Is called when the app is starting to shut down.
 	 * After this has been called, the client window has closed.
 	 */
-	isShuttingDown() {
+	isShuttingDown(): void {
 		this.shuttingDown = true
 		this.session.terminate()
 	}
@@ -433,7 +496,7 @@ export class SuperConductor {
 	 * Is called when the app is shutting down.
 	 * Shut down everything
 	 */
-	terminate() {
+	terminate(): void {
 		this.storage.terminate()
 		this.triggerHandleAutoFill.clear()
 	}

@@ -1,7 +1,13 @@
 import { deepClone } from '@shared/lib'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
-import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import {
+	CurrentSelectionAny,
+	CurrentSelectionGroup,
+	CurrentSelectionPart,
+	CurrentSelectionTimelineObj,
+} from '../../lib/GUI'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { IPCServer } from '../api/IPCServer'
 const { ipcRenderer } = window.require('electron')
 
@@ -44,25 +50,6 @@ export interface TimelineObjectMove {
 	/** Set to true when a move has completed and is being saved */
 	saving?: boolean
 }
-export type CurrentSelectionAny = CurrentSelectionGroup | CurrentSelectionPart | CurrentSelectionTimelineObj
-export interface CurrentSelectionBase {
-	type: 'group' | 'part' | 'timelineObj'
-}
-export interface CurrentSelectionGroup extends CurrentSelectionBase {
-	type: 'group'
-	groupId: string
-}
-export interface CurrentSelectionPart extends CurrentSelectionBase {
-	type: 'part'
-	groupId: string
-	partId: string
-}
-export interface CurrentSelectionTimelineObj extends CurrentSelectionBase {
-	type: 'timelineObj'
-	groupId: string
-	partId: string
-	timelineObjId: string
-}
 
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 interface ResourceLibrarySettings {
@@ -72,6 +59,8 @@ interface ResourceLibrarySettings {
 	lastSelectedResourceId: string | null
 	nameFilterValue: string
 	deviceFilterValue: string[]
+	resourceTypeFilterValue: string[]
+	detailedFiltersExpanded: boolean
 }
 export class GuiStore {
 	serverAPI = new IPCServer(ipcRenderer)
@@ -83,6 +72,8 @@ export class GuiStore {
 		lastSelectedResourceId: null,
 		nameFilterValue: '',
 		deviceFilterValue: [],
+		resourceTypeFilterValue: [],
+		detailedFiltersExpanded: false,
 	}
 
 	definingArea: DefiningArea | null = null
@@ -90,7 +81,7 @@ export class GuiStore {
 	private groupSettings = new Map<string, GroupSettings>()
 
 	private _activeTabId = 'home'
-	get activeTabId() {
+	get activeTabId(): string {
 		return this._activeTabId
 	}
 	set activeTabId(id: string) {
@@ -109,7 +100,7 @@ export class GuiStore {
 	getSelectedOfType(type: 'group'): CurrentSelectionGroup[]
 	getSelectedOfType(type: 'part'): CurrentSelectionPart[]
 	getSelectedOfType(type: 'timelineObj'): CurrentSelectionTimelineObj[]
-	getSelectedOfType(type: string) {
+	getSelectedOfType(type: string): CurrentSelectionAny[] {
 		return this._selected.filter((s) => s.type === type)
 	}
 	/** Add item to selection */
@@ -189,31 +180,31 @@ export class GuiStore {
 		moveId: null,
 	}
 
-	goToHome(pageId?: HomePageId) {
+	goToHome(pageId?: HomePageId): void {
 		this.activeTabId = 'home'
 		if (pageId) this.activeHomePageId = pageId
 	}
 
-	isHomeSelected() {
+	isHomeSelected(): boolean {
 		return this.activeTabId === 'home'
 	}
 
-	goToNewRundown() {
+	goToNewRundown(): void {
 		this.activeTabId = 'new-rundown'
 	}
 
-	isNewRundownSelected() {
+	isNewRundownSelected(): boolean {
 		return this.activeTabId === 'new-rundown'
 	}
 
-	updateTimelineObjMove(data: Partial<TimelineObjectMove>) {
+	updateTimelineObjMove(data: Partial<TimelineObjectMove>): void {
 		this.timelineObjMove = {
 			...this.timelineObjMove,
 			...data,
 		}
 	}
 
-	updateDefiningArea(definingArea: DefiningArea | null) {
+	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 	}
 
@@ -233,7 +224,7 @@ export class GuiStore {
 	get resourceLibrary(): Readonly<ResourceLibrarySettings> {
 		return deepClone(this._resourceLibrary)
 	}
-	updateResourceLibrary(update: Partial<ResourceLibrarySettings>) {
+	updateResourceLibrary(update: Partial<ResourceLibrarySettings>): void {
 		this._resourceLibrary = {
 			...this._resourceLibrary,
 			...update,

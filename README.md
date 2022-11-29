@@ -1,6 +1,6 @@
 # SuperConductor
 
-A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
+A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&nbsp;Server_, BMD&nbsp;_ATEM_, BMD&nbsp;_HyperDeck_, _OBS&nbsp;Studio_, _vMix_, _OSC_-compatible devices, _HTTP&nbsp;(REST)_-compatible devices, and more!
 
 ![Screenshot](/doc/img/screenshot0.png)
 
@@ -65,17 +65,23 @@ Assign keys on Stream&nbsp;Deck or X-keys to playout actions.
 
 ![Stream Deck GUI](/doc/img/streamdeck-GUI.gif) ![Stream Deck](/doc/img/streamdeck.gif)
 
+## HTTP API
+
+SuperConductor currently has a limited, internal, and unstable HTTP API. We plan to add a public and stable HTTP API with proper documentation in the future, but for now this internal API is available by default at `http://localhost:5500/api/internal`. The port can be changed by passing `--internal-http-api-port XXXX` as an argument to SuperConductor. This API can be disabled by passing the `--disable-internal-http-api` argument.
+
+Please be aware that, because this is an internal API, it may change at any time without notice.
+
 ### Supported Devices
 
 _SuperConductor is powered by the [TSR library](https://github.com/nrkno/sofie-timeline-state-resolver) used in the [Sofie Automation system](https://www.sofieautomation.com/), so it can play anything that TSR can play._
 
 - **[CasparCG&nbsp;Server](https://casparcg.com/)** Video and graphics playout software
 - **[Blackmagic Design ATEM](https://www.blackmagicdesign.com/products)** Vision mixers
+- **[Blackmagic Design HyperDeck](https://www.blackmagicdesign.com/products)** record/playback devices
 - **[OBS Studio](https://obsproject.com/)** Live video production software
 - **[vMix](https://www.vmix.com/)** software vision mixer
 - Arbitrary [OSC](https://en.wikipedia.org/wiki/Open_Sound_Control) compatible devices
 - Arbitrary HTTP ([REST](https://en.wikipedia.org/wiki/Representational_state_transfer#Semantics_of_HTTP_methods)) compatible devices
-- (GUI not implemented yet) **Blackmagic Design HyperDeck** record/playback devices
 - (GUI not implemented yet) **Lawo** audio mixers
 - (GUI not implemented yet) **Panasoniz PTZ** cameras
 - (GUI not implemented yet) **Pharos** light control devices

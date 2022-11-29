@@ -4,11 +4,14 @@ import { Project } from 'src/models/project/Project'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { ProjectPage } from './projectPage/ProjectPage'
-import { AiFillFolderOpen, AiOutlinePlusCircle } from 'react-icons/ai'
 import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
 import { HomePageId } from 'src/react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
 import { LayersPage } from './layersPage/LayersPage'
+import { ApplicationActionsPage } from './ApplicationActionsPage/ApplicationActionsPage'
+import { AnalogInputsPage } from './AnalogInputsPage/AnalogInputsPage'
+import { ErrorBoundary } from '../../util/ErrorBoundary'
+import { ApplicationPage } from './applicationPage/ApplicationPage'
 
 export const HomePage: React.FC<{ project: Project }> = observer(function HomePage(props) {
 	const activeHomePageId = store.guiStore.activeHomePageId
@@ -28,16 +31,20 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 				}}
 				menubar={[
 					{
-						groupId: 'general',
+						groupId: 'project',
+						items: [{ id: 'project', label: 'Project' }],
+					},
+					{
+						groupId: 'application',
 						items: [
-							{ id: 'newProject', label: 'New Project', icon: <AiOutlinePlusCircle /> },
-							{ id: 'openProject', label: 'Open Project', icon: <AiFillFolderOpen /> },
+							{ id: 'applicationSettings', label: 'Application settings' },
+							{ id: 'applicationActions', label: 'Application triggers' },
+							{ id: 'analogInputs', label: 'Analog inputs' },
 						],
 					},
 					{
-						groupId: 'project',
+						groupId: 'general',
 						items: [
-							{ id: 'project', label: 'Project' },
 							{
 								id: 'bridgesSettings',
 								label: 'Bridges',
@@ -50,9 +57,14 @@ export const HomePage: React.FC<{ project: Project }> = observer(function HomePa
 					},
 				]}
 			/>
-			{activeHomePageId === 'project' && <ProjectPage project={props.project} />}
-			{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}
-			{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}
+			<ErrorBoundary>
+				<>{activeHomePageId === 'applicationActions' && <ApplicationActionsPage />}</>
+				<>{activeHomePageId === 'analogInputs' && <AnalogInputsPage />}</>
+				<>{activeHomePageId === 'project' && <ProjectPage project={props.project} />}</>
+				<>{activeHomePageId === 'applicationSettings' && <ApplicationPage />}</>
+				<>{activeHomePageId === 'bridgesSettings' && <BridgesPage project={props.project} />}</>
+				<>{activeHomePageId === 'mappingsSettings' && <LayersPage project={props.project} />}</>
+			</ErrorBoundary>
 		</div>
 	)
 })

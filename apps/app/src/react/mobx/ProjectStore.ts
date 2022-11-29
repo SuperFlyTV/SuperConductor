@@ -16,6 +16,7 @@ export class ProjectStore {
 			enableInternalBridge: false,
 		},
 		deviceNames: {},
+		analogInputSettings: {},
 	}
 
 	public assignedAreas: {
@@ -37,7 +38,7 @@ export class ProjectStore {
 		makeAutoObservable(this)
 	}
 
-	update(project: Project) {
+	update(project: Project): void {
 		this.project = project
 
 		this._updateAssignedAreas()
@@ -48,7 +49,7 @@ export class ProjectStore {
 		this.availableAreas = []
 
 		for (const [bridgeId, bridge] of Object.entries(this.project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.peripheralSettings)) {
+			for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
 				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 					this.availableAreas.push({
 						bridgeId,

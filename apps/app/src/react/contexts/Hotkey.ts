@@ -10,25 +10,25 @@ export class TriggersEmitter extends EventEmitter {
 	private peripheralTriggers: ActiveTriggers = []
 	private activeKeys: ActiveTriggers = []
 
-	setPeripheralTriggers(peripheralTriggers: ActiveTriggers) {
+	setPeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.peripheralTriggers = peripheralTriggers
 		this.emit('peripheralTriggers', this.peripheralTriggers)
 		this.handleUpdates()
 	}
-	setActiveKeys(activeKeys: ActiveTriggers) {
+	setActiveKeys(activeKeys: ActiveTriggers): void {
 		this.activeKeys = activeKeys
 		this.emit('activeKeys', this.activeKeys)
 		this.handleUpdates()
 	}
-	getAllTriggers() {
+	getAllTriggers(): ActiveTriggers {
 		// All triggers combined, both from peripherals and keyboard:
 		return [...this.activeKeys, ...this.peripheralTriggers]
 	}
-	handleUpdates() {
+	handleUpdates(): void {
 		// Emit them, so that the GUI can listen to them and tie them to triggers:
 		this.emit('trigger', this.getAllTriggers())
 	}
-	isAnyoneListening() {
+	isAnyoneListening(): boolean {
 		return this.listenerCount('trigger') > 0
 	}
 }

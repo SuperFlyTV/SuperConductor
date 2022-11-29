@@ -1,11 +1,10 @@
 import { MenuItem, TextField } from '@mui/material'
 import React, { useContext } from 'react'
-import { sortMappings } from '../../../../../lib/TSRMappings'
+import { filterMapping, sortMappings } from '../../../../../lib/TSRMappings'
 import { TimelineEnable } from 'superfly-timeline'
-import { DeviceType, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
 import { DurationInput } from '../../../inputs/DurationInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { getMappingName } from '../../../../../lib/util'
 
@@ -14,6 +13,7 @@ export type OnSave = (newObj: TSRTimelineObj) => void
 export const EditWrapper: React.FC<{
 	obj: TSRTimelineObj
 	onSave: OnSave
+	children: JSX.Element | JSX.Element[]
 }> = ({ obj, onSave, children }) => {
 	const project = useContext(ProjectContext)
 
@@ -31,17 +31,6 @@ export const EditWrapper: React.FC<{
 		<div className="edit-timeline-obj">
 			<div className="settings">
 				<div className="setting">
-					<SelectEnum
-						label={'Device Type'}
-						fullWidth
-						currentValue={obj.content.deviceType}
-						options={DeviceType}
-						onChange={(newValue) => {
-							obj.content.deviceType = newValue
-							onSave(obj)
-						}}
-					/>
-
 					<TextField
 						select
 						fullWidth
@@ -59,7 +48,7 @@ export const EditWrapper: React.FC<{
 						{project.mappings &&
 							sortMappings(project.mappings)
 								.filter(({ mapping }) => {
-									return mapping.device === obj.content.deviceType
+									return filterMapping(mapping, obj)
 								})
 								.map(({ layerId, mapping }) => (
 									<MenuItem key={layerId} value={layerId}>

@@ -6,7 +6,8 @@ export const FloatInput: React.FC<
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
-			label: string
+			defaultValue?: number
+			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
@@ -14,13 +15,16 @@ export const FloatInput: React.FC<
 			percentage?: boolean
 			/** min, max */
 			caps?: [number, number]
+			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 	| {
 			currentValue: number | undefined
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
-			label: string
+			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
@@ -28,6 +32,9 @@ export const FloatInput: React.FC<
 			percentage?: boolean
 			/** min, max */
 			caps?: [number, number]
+			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 > = (props) => {
 	const parse = useCallback(
@@ -36,14 +43,26 @@ export const FloatInput: React.FC<
 
 			let value: number | undefined = undefined
 			if (str.match(/^\d+(\.\d+)?$/)) {
+				// 100.0
 				const parsedValue = parseFloat(str)
 				if (!isNaN(parsedValue)) {
 					value = parsedValue
 					if (props.percentage) value /= 100
 				}
 			} else if (str.match(/^\d+(\.\d+)?%$/)) {
+				// 100.0%
 				const parsedValue = parseFloat(str)
 				if (!isNaN(parsedValue)) value = parsedValue / 100
+			} else if (str.match(/^[\d./+\-*]+$/)) {
+				// Expressions: 1/127
+
+				let parsedValue: number | undefined
+				try {
+					parsedValue = eval(str)
+				} catch (_) {
+					parsedValue = undefined
+				}
+				if (parsedValue !== undefined && !isNaN(parsedValue)) value = parsedValue
 			}
 			if (value !== undefined && props.caps) value = Math.max(props.caps[0], Math.min(props.caps[1], value))
 			return value
@@ -90,13 +109,16 @@ export const FloatInput: React.FC<
 			props.fullWidth,
 			props.width,
 			props.changeOnKey,
-			onIncrement
+			onIncrement,
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<number>(
 			props.currentValue,
 			props.onChange,
-			0,
+			props.defaultValue ?? 0,
 			parse,
 			stringify,
 			props.label,
@@ -106,7 +128,10 @@ export const FloatInput: React.FC<
 			props.fullWidth,
 			props.width,
 			props.changeOnKey,
-			onIncrement
+			onIncrement,
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

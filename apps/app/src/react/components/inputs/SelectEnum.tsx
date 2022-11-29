@@ -2,7 +2,7 @@ import { MenuItem, TextField } from '@mui/material'
 import React from 'react'
 
 export const SelectEnum: React.FC<{
-	label: string
+	label: React.ReactNode
 	currentValue: any
 	options: { [key: string]: any }
 	onChange: (newValue: any) => void

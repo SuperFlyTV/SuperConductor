@@ -32,12 +32,12 @@ export class TelemetryHandler {
 		)
 	}
 	/** This is called when the user has agreed to the user agreement */
-	setUserHasAgreed() {
+	setUserHasAgreed(): void {
 		this.userHasAgreed = true
 
 		this.triggerSendTelemetry()
 	}
-	disableTelemetry() {
+	disableTelemetry(): void {
 		this._disableTelemetry = true
 	}
 

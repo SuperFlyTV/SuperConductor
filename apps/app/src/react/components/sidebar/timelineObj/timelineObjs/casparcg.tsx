@@ -17,6 +17,8 @@ import {
 	TimelineTransition,
 	Transition,
 	TSRTransitionOptions,
+	BlendMode,
+	Chroma,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
@@ -31,6 +33,8 @@ import { AddBtn } from '../../../inputs/AddBtn'
 
 import './casparcg.scss'
 import { FloatInput } from '../../../inputs/FloatInput'
+import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
+import { HiOutlineX } from 'react-icons/hi'
 
 export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
 	obj,
@@ -124,14 +128,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		if (!obj.content.transitions.inTransition) obj.content.transitions.inTransition = { type: Transition.CUT }
 		if (!obj.content.transitions.outTransition) obj.content.transitions.outTransition = { type: Transition.CUT }
 
-		return (
-			<>
-				<div className="setting-separator"></div>
-				{getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')}
-				<div className="setting-separator"></div>
-				{getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')}
-			</>
-		)
+		const inTransitions = getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')
+		const outTransitions = getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')
+
+		if (inTransitions.length || outTransitions.length) {
+			return (
+				<>
+					<div className="label">Transitions</div>
+					{inTransitions}
+					<div className="setting-separator"></div>
+					{outTransitions}
+				</>
+			)
+		}
 	}
 	const getSettingsTransitionInner = (obj: TimelineObjCasparCGAny, transition: TimelineTransition, label: string) => {
 		const el: JSX.Element[] = []
@@ -410,6 +419,1161 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 		return el
 	}
 
+	const getSettingsMixer = (obj: TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase }) => {
+		if (!obj.content.mixer) obj.content.mixer = {}
+
+		const mixer = obj.content.mixer
+
+		const mixSettings: JSX.Element[] = []
+
+		if (showAll || mixer.anchor !== undefined) {
+			const anchor: {
+				x: number
+				y: number
+			} = (mixer.anchor as any) ?? {
+				x: 0,
+				y: 0,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="anchor">
+					<div className="label">
+						Anchor
+						{mixer.anchor !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.anchor
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Anchor x"
+							fullWidth
+							currentValue={anchor.x}
+							onChange={(v) => {
+								mixer.anchor = anchor
+								anchor.x = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.anchor.x" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="anchor y"
+							fullWidth
+							currentValue={anchor.y}
+							onChange={(v) => {
+								mixer.anchor = anchor
+								anchor.y = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.anchor.y" onSave={onSave} />}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.blend !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="blend">
+					<div className="label">
+						Blend
+						{mixer.blend !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.blend
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<SelectEnum
+							label="Blend mode"
+							fullWidth
+							currentValue={mixer.blend}
+							onChange={(v) => {
+								mixer.blend = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							options={BlendMode}
+							defaultValue={BlendMode.NORMAL}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.brightness !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="brightness">
+					<div className="label">
+						Brightness
+						{mixer.brightness !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.brightness
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Brightness"
+							fullWidth
+							currentValue={mixer.brightness as any}
+							onChange={(v) => {
+								mixer.brightness = v
+								onSave(obj)
+							}}
+							caps={[0, 1]}
+							percentage={true}
+							allowUndefined={false}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.brightness" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.chroma !== undefined) {
+			const chroma: {
+				keyer: Chroma
+				threshold: number
+				softness: number
+				spill: number
+			} = (mixer.chroma as any) ?? {
+				keyer: Chroma.NONE,
+				threshold: 0,
+				softness: 0,
+				spill: 0,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="chroma">
+					<div className="label">
+						Chroma
+						{mixer.chroma !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.chroma
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<SelectEnum
+							label="Keyer"
+							fullWidth
+							currentValue={chroma.keyer}
+							onChange={(v) => {
+								mixer.chroma = chroma
+								chroma.keyer = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							options={Chroma}
+							defaultValue={Chroma.NONE}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Threshold"
+							fullWidth
+							currentValue={chroma.threshold}
+							onChange={(v) => {
+								mixer.chroma = chroma
+								chroma.threshold = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.threshold" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Softness"
+							fullWidth
+							currentValue={chroma.softness}
+							onChange={(v) => {
+								mixer.chroma = chroma
+								chroma.softness = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.softness" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Spill"
+							fullWidth
+							currentValue={chroma.spill}
+							onChange={(v) => {
+								mixer.chroma = chroma
+								chroma.spill = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.spill" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.clip !== undefined) {
+			const clip: {
+				x: number
+				y: number
+				width: number
+				height: number
+			} = (mixer.clip as any) ?? {
+				x: 0,
+				y: 0,
+				width: 1,
+				height: 1,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="clip">
+					<div className="label">
+						Mixer clip
+						{mixer.clip !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.clip
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Clip x"
+							fullWidth
+							currentValue={clip.x}
+							onChange={(v) => {
+								mixer.clip = clip
+								clip.x = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.clip.x" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Clip y"
+							fullWidth
+							currentValue={clip.y}
+							onChange={(v) => {
+								mixer.clip = clip
+								clip.y = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.clip.y" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Clip width"
+							fullWidth
+							currentValue={clip.width}
+							onChange={(v) => {
+								mixer.clip = clip
+								clip.width = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.clip.width" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Clip height"
+							fullWidth
+							currentValue={clip.height}
+							onChange={(v) => {
+								mixer.clip = clip
+								clip.height = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.clip.height" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.contrast !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="contrast">
+					<div className="label">
+						Contrast
+						{mixer.contrast !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.contrast
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Contrast"
+							fullWidth
+							currentValue={mixer.contrast as any}
+							onChange={(v) => {
+								mixer.contrast = v
+								onSave(obj)
+							}}
+							caps={[0, 1]}
+							percentage={true}
+							allowUndefined={false}
+							defaultValue={1}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.contrast" onSave={onSave} />}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.crop !== undefined) {
+			const crop: {
+				left: number
+				top: number
+				right: number
+				bottom: number
+			} = (mixer.crop as any) ?? {
+				left: 0,
+				top: 0,
+				right: 1,
+				bottom: 1,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="crop">
+					<div className="label">
+						Mixer crop
+						{mixer.crop !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.crop
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Crop left"
+							fullWidth
+							currentValue={crop.left}
+							onChange={(v) => {
+								mixer.crop = crop
+								crop.left = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.crop.left" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Crop top"
+							fullWidth
+							currentValue={crop.top}
+							onChange={(v) => {
+								mixer.crop = crop
+								crop.top = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.crop.top" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="crop right"
+							fullWidth
+							currentValue={crop.right}
+							onChange={(v) => {
+								mixer.crop = crop
+								crop.right = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.crop.right" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="crop bottom"
+							fullWidth
+							currentValue={crop.bottom}
+							onChange={(v) => {
+								mixer.crop = crop
+								crop.bottom = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							caps={[0, 1]}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.crop.bottom" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.fill !== undefined) {
+			const fill: {
+				x: number
+				y: number
+				xScale: number
+				yScale: number
+			} = (mixer.fill as any) ?? {
+				x: 0,
+				y: 0,
+				xScale: 1,
+				yScale: 1,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="fill">
+					<div className="label">
+						Mixer Fill
+						{mixer.fill !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.fill
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Fill x"
+							fullWidth
+							currentValue={fill.x}
+							onChange={(v) => {
+								mixer.fill = fill
+								fill.x = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.x" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Fill y"
+							fullWidth
+							currentValue={fill.y}
+							onChange={(v) => {
+								mixer.fill = fill
+								fill.y = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.y" onSave={onSave} />}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Fill x-scale"
+							fullWidth
+							currentValue={fill.xScale}
+							onChange={(v) => {
+								mixer.fill = fill
+								fill.xScale = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.fill.xScale" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Fill Y-Scale"
+							fullWidth
+							currentValue={fill.yScale}
+							onChange={(v) => {
+								mixer.fill = fill
+								fill.yScale = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.fill.yScale" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.keyer !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="keyer">
+					<div className="label">
+						Keyer
+						{mixer.keyer !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.keyer
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<BooleanInput
+							label="Keyer"
+							currentValue={mixer.keyer as any}
+							onChange={(v) => {
+								mixer.keyer = v
+								onSave(obj)
+							}}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.levels !== undefined) {
+			const levels: {
+				minInput: number
+				maxInput: number
+				gamma: number
+				minOutput: number
+				maxOutput: number
+			} = (mixer.levels as any) ?? {
+				minInput: 0,
+				maxInput: 1,
+				gamma: 1,
+				minOutput: 0,
+				maxOutput: 1,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="levels">
+					<div className="label">
+						Mixer levels
+						{mixer.levels !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.levels
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="levels minInput"
+							fullWidth
+							currentValue={levels.minInput}
+							onChange={(v) => {
+								mixer.levels = levels
+								levels.minInput = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.levels.minInput" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="levels maxInput"
+							fullWidth
+							currentValue={levels.maxInput}
+							onChange={(v) => {
+								mixer.levels = levels
+								levels.maxInput = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.levels.maxInput" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="levels gamma"
+							fullWidth
+							currentValue={levels.gamma}
+							onChange={(v) => {
+								mixer.levels = levels
+								levels.gamma = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.levels.gamma" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="levels minOutput"
+							fullWidth
+							currentValue={levels.minOutput}
+							onChange={(v) => {
+								mixer.levels = levels
+								levels.minOutput = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.levels.minOutput" onSave={onSave} />
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="levels maxOutput"
+							fullWidth
+							currentValue={levels.maxOutput}
+							onChange={(v) => {
+								mixer.levels = levels
+								levels.maxOutput = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.levels.maxOutput" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.mastervolume !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="mastervolume">
+					<div className="label">
+						Master Volume
+						{mixer.mastervolume !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.mastervolume
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Master Volume"
+							fullWidth
+							currentValue={mixer.mastervolume as any}
+							onChange={(v) => {
+								mixer.mastervolume = v
+								onSave(obj)
+							}}
+							percentage={true}
+							allowUndefined={false}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.mastervolume" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.opacity !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="opacity">
+					<div className="label">
+						Opacity
+						{mixer.opacity !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.opacity
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Opacity"
+							fullWidth
+							currentValue={mixer.opacity as any}
+							onChange={(v) => {
+								mixer.opacity = v
+								onSave(obj)
+							}}
+							percentage={true}
+							allowUndefined={false}
+							caps={[0, 1]}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.opacity" onSave={onSave} />}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.perspective !== undefined) {
+			const perspective: {
+				topLeftX: number
+				topLeftY: number
+				topRightX: number
+				topRightY: number
+				bottomRightX: number
+				bottomRightY: number
+				bottomLeftX: number
+				bottomLeftY: number
+			} = (mixer.perspective as any) ?? {
+				topLeftX: 0,
+				topLeftY: 0,
+				topRightX: 1,
+				topRightY: 0,
+				bottomRightX: 1,
+				bottomRightY: 1,
+				bottomLeftX: 0,
+				bottomLeftY: 1,
+			}
+			mixSettings.push(
+				<div className="settings-group" key="perspective">
+					<div className="label">
+						Mixer perspective
+						{mixer.perspective !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.perspective
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="topLeftX"
+							fullWidth
+							currentValue={perspective.topLeftX}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.topLeftX = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.topLeftX"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="topLeftY"
+							fullWidth
+							currentValue={perspective.topLeftY}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.topLeftY = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.topLeftY"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="topRightX"
+							fullWidth
+							currentValue={perspective.topRightX}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.topRightX = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.topRightX"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="topRightY"
+							fullWidth
+							currentValue={perspective.topRightY}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.topRightY = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.topRightY"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="bottomRightX"
+							fullWidth
+							currentValue={perspective.bottomRightX}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.bottomRightX = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.bottomRightX"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="bottomRightY"
+							fullWidth
+							currentValue={perspective.bottomRightY}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.bottomRightY = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.bottomRightY"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="bottomLeftX"
+							fullWidth
+							currentValue={perspective.bottomLeftX}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.bottomLeftX = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={0}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.bottomLeftX"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="bottomLeftY"
+							fullWidth
+							currentValue={perspective.bottomLeftY}
+							onChange={(v) => {
+								mixer.perspective = perspective
+								perspective.bottomLeftY = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={
+								<AnalogInputOverridePicker
+									obj={obj}
+									path="mixer.perspective.bottomLeftY"
+									onSave={onSave}
+								/>
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.rotation !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="rotation">
+					<div className="label">
+						Rotation
+						{mixer.rotation !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.rotation
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="rotation"
+							fullWidth
+							currentValue={mixer.rotation as any}
+							onChange={(v) => {
+								mixer.rotation = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							defaultValue={0}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.rotation" onSave={onSave} />}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.saturation !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="saturation">
+					<div className="label">
+						Saturation
+						{mixer.saturation !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.saturation
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="saturation"
+							fullWidth
+							currentValue={(mixer.saturation as any) ?? 1}
+							onChange={(v) => {
+								mixer.saturation = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							caps={[0, 1]}
+							endAdornment={
+								<AnalogInputOverridePicker obj={obj} path="mixer.saturation" onSave={onSave} />
+							}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.straightAlpha !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="straightAlpha">
+					<div className="label">
+						Straight Alpha
+						{mixer.straightAlpha !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.straightAlpha
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<BooleanInput
+							label="Straight Alpha"
+							currentValue={mixer.straightAlpha as any}
+							onChange={(v) => {
+								mixer.straightAlpha = v
+								onSave(obj)
+							}}
+						/>
+					</div>
+				</div>
+			)
+		}
+		if (showAll || mixer.volume !== undefined) {
+			mixSettings.push(
+				<div className="settings-group" key="volume">
+					<div className="label">
+						Volume
+						{mixer.volume !== undefined && (
+							<Btn
+								className="size-small"
+								onClick={() => {
+									delete mixer.volume
+									onSave(obj)
+								}}
+							>
+								<HiOutlineX />
+							</Btn>
+						)}
+					</div>
+					<div className="setting">
+						<FloatInput
+							label="Volume"
+							fullWidth
+							currentValue={mixer.volume as any}
+							onChange={(v) => {
+								mixer.volume = v
+								onSave(obj)
+							}}
+							allowUndefined={false}
+							percentage={true}
+							defaultValue={1}
+							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.volume" onSave={onSave} />}
+						/>
+					</div>
+				</div>
+			)
+		}
+
+		return <>{mixSettings}</>
+	}
+
 	const showAllButton = showAll ? (
 		<Link href="#" onClick={() => setShowAll(false)}>
 			Hide more settings
@@ -505,6 +1669,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 				</div> */}
 				{getSettingsChannelLayout(obj)}
 				{getSettingsVideoAudioFilters(obj)}
+				{getSettingsMixer(obj)}
 				{getSettingsTransitions(obj)}
 
 				{showAllButton}

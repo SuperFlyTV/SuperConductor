@@ -8,10 +8,11 @@ export const DateTimeInput: React.FC<
 			onChange: (newValue: DateTimeObject | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: DateTimeObject
@@ -20,10 +21,11 @@ export const DateTimeInput: React.FC<
 			allowNull: false
 			emptyPlaceholder?: string
 			defaultValue: DateTimeObject
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 	| {
 			currentValue: DateTimeObject | null
@@ -32,10 +34,11 @@ export const DateTimeInput: React.FC<
 			allowNull: true
 			emptyPlaceholder?: string
 			defaultValue: DateTimeObject | null
-			label?: string
+			label?: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			endAdornment?: React.ReactNode
 	  }
 > = (props) => {
 	if (props.allowUndefined) {
@@ -52,7 +55,8 @@ export const DateTimeInput: React.FC<
 			props.fullWidth,
 			props.width,
 			false,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	} else if (props.allowNull) {
 		return ParsedValueInput<DateTimeObject | null>(
@@ -68,7 +72,8 @@ export const DateTimeInput: React.FC<
 			props.fullWidth,
 			props.width,
 			false,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	} else {
 		return ParsedValueInput<DateTimeObject>(
@@ -84,7 +89,8 @@ export const DateTimeInput: React.FC<
 			props.fullWidth,
 			props.width,
 			false,
-			onIncrement
+			onIncrement,
+			props.endAdornment
 		)
 	}
 }

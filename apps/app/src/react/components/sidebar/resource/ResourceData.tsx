@@ -154,6 +154,21 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <ResourceDataInner title="OSC Message">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
 		return <ResourceDataInner title="HTTP Request">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PLAY) {
+		return <ResourceDataInner title="HyperDeck Play">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_RECORD) {
+		return <ResourceDataInner title="HyperDeck Record">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_PREVIEW) {
+		return <ResourceDataInner title="HyperDeck Record">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.HYPERDECK_CLIP) {
+		return (
+			<ResourceDataInner title="HyperDeck Clip">
+				<DataRow label="Slot ID" value={resource.slotId} />
+				<DataRow label="Clip ID" value={resource.clipId} />
+				<DataRow label="Clip Name" value={resource.clipName} />
+				{universalRows}
+			</ResourceDataInner>
+		)
 	} else {
 		assertNever(resource)
 		return null

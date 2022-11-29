@@ -2,17 +2,18 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import classNames from 'classnames'
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, PeripheralInfo_XKeys } from '@shared/api'
+import { getPeripheralId } from '@shared/lib'
 import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { HotkeyContext } from '../../../../contexts/Hotkey'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
-import { Action } from '../../../../../lib/triggers/action'
+import { ActionAny } from '../../../../../lib/triggers/action'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
 	prepareTriggersAreaMap,
-} from '../../../../../lib/triggers/keyDisplay'
+} from '../../../../../lib/triggers/keyDisplay/keyDisplay'
 import { TimelineDisplay } from './TimelineDisplay'
 
 export const XKeysSettings: React.FC<{
@@ -26,7 +27,7 @@ export const XKeysSettings: React.FC<{
 	const gui: PeripheralInfo_XKeys = peripheral.info.gui
 	const project = store.projectStore.project
 
-	const peripheralId = `${bridgeId}-${deviceId}`
+	const peripheralId = getPeripheralId(bridgeId, deviceId)
 
 	const [pressedKeys, setPressedKeys] = useState<{ [fullIdentifier: string]: true }>({})
 	const handleTrigger = useCallback(
@@ -58,7 +59,7 @@ export const XKeysSettings: React.FC<{
 		label: string
 		iCol: number
 		iRow: number
-		actions: Action[]
+		actions: ActionAny[]
 		keyDisplay: KeyDisplay | KeyDisplayTimeline
 	}[] = []
 

@@ -4,18 +4,21 @@ import {
 	MediaSourceType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
+	TimelineContentTypeHyperdeck,
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
 	TimelineTransition,
 	Transition,
+	TransportStatus,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { assertNever } from '@shared/lib'
+import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
 import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
+import { TimelineObject } from 'superfly-timeline'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -212,6 +215,16 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 		}
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		label = `${obj.content.type.toUpperCase()} ${obj.content.url}`
+	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
+		if (obj.content.status === TransportStatus.PLAY) {
+			if (obj.content.clipId === null) {
+				label = 'Play Last Clip/Continue Current Clip'
+			} else {
+				label = `Play Clip #${obj.content.clipId}`
+			}
+		} else {
+			label = `${capitalizeFirstLetter(obj.content.status)}`
+		}
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)
@@ -310,6 +323,15 @@ export function modifyTimelineObjectForPlayout(
 				// obj.content.pauseTime = playingPart.startTime - pauseTime
 			}
 		}
+	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
+		if (
+			obj.content.type === TimelineContentTypeHyperdeck.TRANSPORT &&
+			obj.content.status === TransportStatus.PLAY
+		) {
+			if (isPaused) {
+				obj.content.speed = 0
+			}
+		}
 	}
 }
 function escapeHtml(unsafe: any) {
@@ -330,4 +352,30 @@ function parametersToCasparXML(params: { [key: string]: string }): string {
 	}
 
 	return `<templateData>${xml}</templateData>`
+}
+
+// Note: These are copied from the Timeline repo:
+const OPERATORS = ['&', '|', '+', '-', '*', '/', '%', '!']
+const RESERVED_CHARACTERS = '[#.$]'
+const FUTURE_RESERVED_CHARACTERS = '[=?@{}[]^§]'
+
+/** Replaces any invalid ids with underscore */
+export function ensureValidId(id: string): string {
+	return id.replace(
+		new RegExp(
+			`[${OPERATORS.map((o) => '\\' + o).join('')}]|${RESERVED_CHARACTERS}|${FUTURE_RESERVED_CHARACTERS}|[ ]`,
+			'g'
+		),
+		'_'
+	)
+}
+
+export function ensureValidObject(obj: TimelineObject): void {
+	obj.layer = ensureValidId(`${obj.layer}`)
+
+	if (obj.children) {
+		for (const child of obj.children) {
+			ensureValidObject(child)
+		}
+	}
 }

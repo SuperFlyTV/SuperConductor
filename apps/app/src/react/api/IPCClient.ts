@@ -1,4 +1,4 @@
-import { IPCClientMethods } from '../../ipc/IPCAPI'
+import { IPCClientMethods, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
@@ -6,8 +6,10 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
-import { DefiningArea } from '../../lib/triggers/keyDisplay'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ClientSideLogger } from './logger'
+import { ActiveAnalog } from '../../models/rundown/Analog'
+import { AnalogInput } from '../../models/project/AnalogInput'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -15,6 +17,8 @@ export class IPCClient implements IPCClientMethods {
 		private logger: ClientSideLogger,
 		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
+			systemMessage?: (message: string, options: SystemMessageOptions) => void
+
 			updateAppData?: (appData: AppData) => void
 			updateProject?: (project: Project) => void
 			updateRundown?: (fileName: string, rundown: Rundown) => void
@@ -22,12 +26,16 @@ export class IPCClient implements IPCClientMethods {
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
+			updatePeripheralAnalog?: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
 			displayAboutDialog?: () => void
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
+			updateFailedGlobalTriggers?: (identifiers: string[]) => void
+			updateAnalogInput?: (fullIdentifier: string, analogInput: AnalogInput | null) => void
 		}
 	) {
 		this.handleCallMethod = this.handleCallMethod.bind(this)
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		this.ipcRenderer.on('callMethod', this.handleCallMethod)
 	}
 
@@ -40,6 +48,9 @@ export class IPCClient implements IPCClientMethods {
 		}
 	}
 
+	systemMessage(message: string, options: SystemMessageOptions): void {
+		this.callbacks.systemMessage?.(message, options)
+	}
 	updateAppData(appData: AppData): void {
 		this.callbacks.updateAppData?.(appData)
 	}
@@ -61,6 +72,9 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.callbacks.updatePeripheralTriggers?.(peripheralTriggers)
 	}
+	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
+		this.callbacks.updatePeripheralAnalog?.(fullIdentifier, analog)
+	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.callbacks.updateDeviceRefreshStatus?.(deviceId, refreshing)
 	}
@@ -70,7 +84,14 @@ export class IPCClient implements IPCClientMethods {
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.callbacks.updateDefiningArea?.(definingArea)
 	}
+	updateFailedGlobalTriggers(identifiers: string[]): void {
+		this.callbacks.updateFailedGlobalTriggers?.(identifiers)
+	}
+	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput | null): void {
+		this.callbacks.updateAnalogInput?.(fullIdentifier, analogInput)
+	}
 	destroy(): void {
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 }

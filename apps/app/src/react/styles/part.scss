@@ -255,7 +255,7 @@ $part_time_height: 16px;
 		background: $emptyLayerColor;
 		display: flex;
 		flex-direction: column;
-		font-family: 'Barlow Condensed';
+		font-family: $mainFontCondensed;
 		max-width: 100px;
 		border-right: 1px;
 		border-color: black;
@@ -298,7 +298,7 @@ $part_time_height: 16px;
 		grid-area: time;
 		display: flex;
 		font-size: 14px;
-		font-family: 'Barlow Semi Condensed';
+		font-family: $mainFontSemiCondensed;
 		font-weight: 400;
 		font-variant-numeric: tabular-nums;
 		// overflow: hidden;
@@ -307,14 +307,42 @@ $part_time_height: 16px;
 		&__current-time {
 			margin-left: 3px;
 			position: relative;
-			top: -2px;
+			top: 0px;
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+			line-height: 1;
+
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
+
+			&__value {
+				font-family: 'Barlow Semi Condensed';
+				font-weight: 400;				
+			}
 		}
 
 		&__remaining-time {
 			margin-left: auto;
-			margin-right: 88px;
+			margin-right: 100px;
 			position: relative;
-			top: -2px;
+			top: 0px;
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+			line-height: 1;
+
+			&__label {
+				@media screen and (max-width: 1023px) {
+					display: none;
+				}
+			}
+
+			&__value {
+				font-family: 'Barlow Semi Condensed';
+				font-weight: 400;				
+			}
 		}
 
 		&__duration {
@@ -326,13 +354,17 @@ $part_time_height: 16px;
 			padding-right: 4px;
 
 			line-height: 1;
-			font-family: 'Barlow Condensed';
+			font-family: $mainFontCondensed;
 			font-weight: 300;
 			text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
 				0px 0px 3px rgba(0, 0, 0, 0.75);
 			z-index: 1;
 
 			background: linear-gradient(90deg, transparent, black);
+
+			&__value {
+				font-weight: 700;
+			}
 		}
 	}
 
@@ -464,44 +496,23 @@ $part_time_height: 16px;
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
+	align-items: center;
 
 	&:not(:last-child) {
 		margin-bottom: 0.1rem;
 	}
 
 	.label {
-		display: flex;
-		align-items: center;
-		font-family: 'Barlow Semi Condensed';
-		font-weight: 600;
-		font-size: 12px;
-		// line-height: 12px;
+		font-size: 80%;
+	}
+	.trigger-pill {
+	}
 
-		margin-left: 0.5em;
+	.field {
+		display: inline-flex; // Improves vertical centering.
 
-		&__key {
-			color: black;
-			background: #49d3ff;
-			box-shadow: inset 0px -2px 0px rgba(0, 0, 0, 0.25);
-			border-radius: 2px;
-			padding: 0 0.3rem;
-
-			&--keyboard {
-				background: #aaa99e;
-			}
-
-			&__text {
-				display: block;
-				transform: translateY(-1px);
-			}
-		}
-
-		&__plus {
-			margin: 0 0.2rem;
-
-			&:last-child {
-				display: none;
-			}
+		&:not(:first-child) {
+			margin-left: 0.6rem;
 		}
 	}
 }
@@ -514,6 +525,6 @@ $part_time_height: 16px;
 	padding: 1rem;
 
 	&__triggerType {
-		margin-left: 0.5em;
+		margin-left: 0.6rem;
 	}
 }

@@ -4,15 +4,24 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { BrowserWindow } from 'electron'
-import { IPCClientMethods } from '../ipc/IPCAPI'
+import { IPCClientMethods, SystemMessageOptions } from '../ipc/IPCAPI'
 import { AppData } from '../models/App/AppData'
 import { ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { ActiveAnalog } from '../models/rundown/Analog'
+import { AnalogInput } from '../models/project/AnalogInput'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {
 	constructor(private mainWindow: BrowserWindow) {}
 
+	close(): void {
+		// Nothing here
+	}
+
+	systemMessage(message: string, options: SystemMessageOptions): void {
+		this.mainWindow?.webContents.send('callMethod', 'systemMessage', message, options)
+	}
 	updateAppData(appData: AppData): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateAppData', appData)
 	}
@@ -34,6 +43,9 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
 		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralTriggers', peripheralTriggers)
 	}
+	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
+		this.mainWindow?.webContents.send('callMethod', 'updatePeripheralAnalog', fullIdentifier, analog)
+	}
 	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDeviceRefreshStatus', deviceId, refreshing)
 	}
@@ -42,5 +54,11 @@ export class IPCClient implements IPCClientMethods {
 	}
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateDefiningArea', definingArea)
+	}
+	updateFailedGlobalTriggers(identifiers: string[]): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateFailedGlobalTriggers', identifiers)
+	}
+	updateAnalogInput(fullIdentifier: string, analogInput: AnalogInput | null): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateAnalogInput', fullIdentifier, analogInput)
 	}
 }

@@ -58,7 +58,7 @@ export class WebsocketServer extends EventEmitter {
 		})
 		return bridge
 	}
-	close() {
+	close(): void {
 		this.wss.close()
 		this._onServerClose() // Call this in case of the wss close event not firing.
 	}
@@ -117,7 +117,7 @@ export class WebsocketConnection extends EventEmitter {
 		return this._connected
 	}
 
-	terminate() {
+	terminate(): void {
 		this.emit('disconnected')
 
 		this.ws?.close()
@@ -131,7 +131,7 @@ export class WebsocketConnection extends EventEmitter {
 		}
 		this.removeAllListeners()
 	}
-	send(message: any) {
+	send(message: unknown): void {
 		if (!this._connected) throw new Error('Not connected')
 		if (!this.ws) throw new Error('No ws connection')
 

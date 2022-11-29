@@ -1,55 +1,91 @@
 import _ from 'lodash'
 import sharp from 'sharp'
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
-import { stringToRGB, RGBToString } from '@shared/lib'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
+import { stringToRGB, RGBToString, stringifyError } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
-import { Peripheral } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
+import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
 export class PeripheralStreamDeck extends Peripheral {
-	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralStreamDeck) => void) {
-		const seenDevices = new Map<string, PeripheralStreamDeck>()
+	private static Watching = false
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
+		if (PeripheralStreamDeck.Watching) {
+			throw new Error('Already watching')
+		}
 
+		PeripheralStreamDeck.Watching = true
+
+		let lastSeenStreamDecks: StreamDeckDeviceInfo[] = []
+
+		// Check for new or removed Stream Decks every second.
 		const interval = setInterval(() => {
+			// List the connected Stream Decks.
 			const streamDecks = listStreamDecks()
 
-			for (const streamDeck of streamDecks) {
-				// Create a locally unique identifier for the device:
-
-				const id = streamDeck.serialNumber ? `serial_${streamDeck.serialNumber}` : `path_${streamDeck.path}`
-
-				const existingDevice = seenDevices.get(id)
-				if (!existingDevice) {
-					const newDevice = new PeripheralStreamDeck(log, id, streamDeck.path)
-
-					seenDevices.set(id, newDevice)
-
-					newDevice
-						.init()
-						.then(() => onDevice(newDevice))
-						.catch(log.error)
-				} else {
-					if (existingDevice && !existingDevice.connected && !existingDevice.initializing) {
-						existingDevice
-							.init()
-							.then(() => {
-								existingDevice.emit('connected')
-							})
-							.catch(log.error)
-					}
-				}
+			// If the list has not changed since the last poll, do nothing.
+			if (_.isEqual(streamDecks, lastSeenStreamDecks)) {
+				return
 			}
+
+			// Figure out which Stream Decks have been unplugged since the last check.
+			const disconnectedStreamDeckIds = new Set(
+				lastSeenStreamDecks.map(PeripheralStreamDeck.GetStreamDeckId).filter((id) => {
+					return !streamDecks.some((sd) => PeripheralStreamDeck.GetStreamDeckId(sd) === id)
+				})
+			)
+
+			// Figure out which Stream Decks are being seen now that weren't seen in the last completed poll.
+			for (const streamDeck of streamDecks) {
+				const id = PeripheralStreamDeck.GetStreamDeckId(streamDeck)
+				const alreadySeen = lastSeenStreamDecks.some((sd) => {
+					return PeripheralStreamDeck.GetStreamDeckId(sd) === id
+				})
+
+				if (alreadySeen) {
+					continue
+				}
+
+				// Tell the watcher about the discovered Stream Deck.
+				onKnownPeripheral(id, {
+					name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
+					type: PeripheralType.STREAMDECK,
+					devicePath: streamDeck.path,
+				})
+			}
+
+			// Tell the watcher about disconnected Stream Decks.
+			for (const id of disconnectedStreamDeckIds) {
+				onKnownPeripheral(id, null)
+			}
+
+			// Update for the next iteration.
+			lastSeenStreamDecks = streamDecks
 		}, 1000)
 
 		return {
-			stop: () => clearInterval(interval),
+			stop: () => {
+				clearInterval(interval)
+				PeripheralStreamDeck.Watching = false
+			},
 		}
 	}
 
-	public initializing = false
-	/** True if connected to the StreamDeck */
-	public connected = false
+	private static GetStreamDeckId(this: void, streamDeck: StreamDeckDeviceInfo): string {
+		return streamDeck.serialNumber
+			? `streamdeck-serial_${streamDeck.serialNumber}`
+			: `streamdeck-path_${streamDeck.path}`
+	}
+
+	private static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
+		const model = 'model' in streamDeck ? streamDeck.model : streamDeck.MODEL
+		let name = 'Stream Deck'
+		if (model === DeviceModelId.MINI) name += ' Mini'
+		else if (model === DeviceModelId.XL) name += ' XL'
+		return name
+	}
+
 	private streamDeck?: StreamDeck
 	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
@@ -66,14 +102,12 @@ export class PeripheralStreamDeck extends Peripheral {
 
 			this.streamDeck = openStreamDeck(this.path)
 
-			let name = 'Stream Deck'
-			if (this.streamDeck.MODEL === DeviceModelId.MINI) name += ' Mini'
-			else if (this.streamDeck.MODEL === DeviceModelId.XL) name += ' XL'
+			const name = PeripheralStreamDeck.GetStreamDeckName(this.streamDeck)
 
 			this._info = {
 				name: name,
 				gui: {
-					type: 'streamdeck',
+					type: PeripheralType.STREAMDECK,
 					layout: {
 						height: this.streamDeck.KEY_ROWS,
 						width: this.streamDeck.KEY_COLUMNS,
@@ -103,7 +137,7 @@ export class PeripheralStreamDeck extends Peripheral {
 					this.streamDeck?.close().catch(this.log.error)
 					delete this.streamDeck
 				} else {
-					this.log.error(error)
+					this.log.error('Streamdeck error: ' + stringifyError(error))
 				}
 			})
 			await sleep(10) // to avoid an common initial "unable to write to HID device" error.
@@ -114,6 +148,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			this.initializing = false
 			throw e
 		}
+		this.emit('initialized')
 	}
 	get info(): PeripheralInfo {
 		if (!this._info) throw new Error('Peripheral not initialized')
@@ -202,7 +237,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			}, 1)
 		}
 	}
-	async close() {
+	async close(): Promise<void> {
 		if (this.streamDeck) {
 			this.connectedToParent = false
 			await this._updateAllKeys('Closed')
@@ -211,6 +246,9 @@ export class PeripheralStreamDeck extends Peripheral {
 		if (this.streamDeck) {
 			await this.streamDeck.close()
 		}
+		this.connected = false
+		this.emit('disconnected')
+		this.streamDeck = undefined
 	}
 
 	private emitAllKeys() {
@@ -630,6 +668,6 @@ function keyIndexToIdentifier(keyIndex: number): string {
 function identifierToKeyIndex(identifier: string): number {
 	return parseInt(identifier)
 }
-function sleep(ms: number) {
+async function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }

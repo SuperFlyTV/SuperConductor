@@ -105,7 +105,7 @@ export class TimelineTracker {
 			this._update(nextResolveTime + 1)
 		}, timeUntilNextTime)
 	}
-	stop() {
+	stop(): void {
 		if (this.timeout) {
 			clearTimeout(this.timeout)
 		}

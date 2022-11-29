@@ -9,7 +9,7 @@ type PropsType = {
 	onClick: () => void
 }
 
-export const DuplicateBtn = function DuplicateBtn(props: PropsType) {
+export const DuplicateBtn = function DuplicateBtn(props: PropsType): JSX.Element {
 	return (
 		<Button
 			className={props.className}

@@ -3,7 +3,7 @@ import util from 'util'
 import { SPLAT } from 'triple-beam'
 import { deepClone, stringifyError } from '@shared/lib'
 
-export function utilFormatter() {
+export function utilFormatter(): { transform(info: any): any } {
 	return {
 		transform: (info: any) => {
 			const args = info[SPLAT]

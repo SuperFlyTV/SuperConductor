@@ -1,5 +1,6 @@
 export * from './bytesToSize'
 export * from './color'
 export * from './lib'
+export * from './peripheral'
 export * from './Resources'
 export * from './TimelineTracker'

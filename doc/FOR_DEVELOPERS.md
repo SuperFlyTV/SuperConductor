@@ -4,11 +4,11 @@
 
 SuperConductor has some native dependencies which need to be (re)built from source. This requires a full Node.js native module compiler toolchain, including Python 3.
 
-On Windows, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required. If you have issues with Python, install [Python 3](https://www.python.org/downloads/).
+**On Windows**, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required. If you have issues with Python, install [Python 3](https://www.python.org/downloads/).
 
-On Linux, install the `build-essential` package and then install Python 3.
+**On Linux**, install the `build-essential` package and then install Python 3. Also do a `sudo apt-get install libasound2-dev`
 
-On macOS, install XCode and its optional tools `xcode-select --install` and then install Python 3.
+**On macOS**, install XCode and its optional tools `xcode-select --install` and then install Python 3.
 
 ## Quick start
 
@@ -58,3 +58,9 @@ yarn build:binary
 1. Run `yarn release` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
 2. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish.
 3. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release.
+
+### Pre-releases
+
+- On the `develop` branch, run `yarn preminor` first time after a release: `1.5.4` -> `1.6.0-alpha.0`
+  - Then run `yarn prerelease` to bump the prerelease version: `1.6.0-alpha.0` -> `1.6.0-alpha.1`
+- On `master` branch, if a bugfix needs to be tested, run `yarn prerelease`: `1.5.4` -> `1.5.5-alpha.0`

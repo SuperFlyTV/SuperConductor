@@ -11,6 +11,8 @@ import {
 	Mapping,
 	MappingAtem,
 	MappingAtemType,
+	MappingHyperdeck,
+	MappingHyperdeckType,
 	MappingOBS,
 	MappingOBSType,
 	MappingVMix,
@@ -162,7 +164,7 @@ export function allowMovingPartIntoGroup(
  * Update Group playing properties, so that they reflect the current playing status
  * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
  */
-export function updateGroupPlayingParts(group: Group) {
+export function updateGroupPlayingParts(group: Group): void {
 	const now = Date.now()
 	const playData = getGroupPlayData(group.preparedPlayData, now)
 
@@ -413,8 +415,14 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.HYPERDECK) {
-		// @TODO
-		return false
+		const mapping0 = mapping as MappingHyperdeck
+		if (mapping0.mappingType === MappingHyperdeckType.TRANSPORT) {
+			return (
+				resource.resourceType === ResourceType.HYPERDECK_PLAY ||
+				resource.resourceType === ResourceType.HYPERDECK_RECORD ||
+				resource.resourceType === ResourceType.HYPERDECK_PREVIEW
+			)
+		}
 	} else if (mapping.device === DeviceType.LAWO) {
 		// @TODO
 		return false
@@ -490,6 +498,12 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else {
 			assertNever(mapping0.mappingType)
 		}
+	} else if (mapping.device === DeviceType.SOFIE_CHEF) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.TELEMETRICS) {
+		// @TODO
+		return false
 	} else {
 		assertNever(mapping.device)
 	}
@@ -569,7 +583,7 @@ export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Pa
  * arrayToBeSorted.sort(sortOn((x) => [x.rank, x.id]))
  */
 export function sortOn<A>(getSortValue: (value: A) => number | string | undefined | (number | string | undefined)[]) {
-	return (a: A, b: A) => {
+	return (a: A, b: A): number => {
 		const valA = getSortValue(a)
 		const valB = getSortValue(b)
 
@@ -605,11 +619,17 @@ export function shortID(): string {
 	return shortUUID.generate().slice(0, 8)
 }
 
-export function getDeviceName(project: Project, deviceId: string) {
+export function getDeviceName(project: Project, deviceId: string): string {
 	return project.deviceNames?.[deviceId] || deviceId
 }
 export function getMappingName(mapping: Mapping, layerId: string): string {
 	return mapping.layerName ?? layerId
+}
+export function getResourceTypeName(resourceType: ResourceType): string {
+	if (!ResourceType[resourceType]) {
+		return 'Unknown type'
+	}
+	return ResourceType[resourceType] as string
 }
 /** Returns a number it the search is somewhere in source, for example "johny" matches "Johan Nyman", or null if it's not found */
 export function scatterMatchString(source: string, search: string): null | number {
@@ -740,7 +760,7 @@ export function copyPart(part: Part): Part {
 	const newPart = deepClone(part)
 	newPart.id = shortID()
 
-	newPart.timeline = part.timeline.map((o) => copyTimelineObj(o))
+	newPart.timeline = generateNewTimelineObjIds(part.timeline)
 	return newPart
 }
 export function copyTimelineObj(obj: TimelineObj): TimelineObj {
@@ -769,9 +789,11 @@ export function getPartLabel(part: Part): string {
  * This is useful because undefined values are not supported by JSON
  * To restore the original object, use unReplaceUndefined()
  */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function replaceUndefined(obj: any): any {
 	return JSON.parse(JSON.stringify(obj, (_k, v) => (v === undefined ? '__undefined__' : v)))
 }
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function unReplaceUndefined(obj: any): any {
 	if (obj === '__undefined__') return undefined
 	if (obj === null) return null

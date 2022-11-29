@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 import { BridgeDevice, BridgeStatus } from '../../models/project/Bridge'
-import { AppData, WindowPosition } from '../../models/App/AppData'
+import { AppData } from '../../models/App/AppData'
 import { IPCServer } from '../api/IPCServer'
 import { IPCClient } from '../api/IPCClient'
 import { PeripheralStatus } from '../../models/project/Peripheral'
@@ -8,15 +8,6 @@ import { ClientSideLogger } from '../api/logger'
 const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
-	windowPosition?: WindowPosition = undefined
-
-	version?: {
-		seenVersion: string | null
-		currentVersion: string
-	} = undefined
-
-	userAgreement?: string
-
 	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
 	peripherals: { [peripheralId: string]: PeripheralStatus } = {}
 
@@ -25,6 +16,8 @@ export class AppStore {
 	ipcClient: IPCClient
 
 	allDeviceStatuses: { [deviceId: string]: BridgeDevice } = {}
+
+	private _data?: AppData = undefined
 
 	constructor(init?: AppData) {
 		this.serverAPI = new IPCServer(ipcRenderer)
@@ -42,14 +35,15 @@ export class AppStore {
 			this.update(init)
 		}
 	}
-
-	update(data: AppData) {
-		this.windowPosition = data.windowPosition
-		this.version = data.version
-		this.userAgreement = data.userAgreement
+	get appData(): AppData | undefined {
+		return this._data
 	}
 
-	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null) {
+	update(data: AppData): void {
+		this._data = data
+	}
+
+	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null): void {
 		const newStatuses = { ...this.bridgeStatuses }
 		if (status) {
 			newStatuses[bridgeId] = status
@@ -61,7 +55,7 @@ export class AppStore {
 		this._updateAllDeviceStatuses()
 	}
 
-	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null) {
+	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
 		const newPeripherals = { ...this.peripherals }
 		if (peripheral) {
 			newPeripherals[peripheralId] = peripheral

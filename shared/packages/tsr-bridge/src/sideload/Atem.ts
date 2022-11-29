@@ -35,10 +35,10 @@ export class AtemSideload implements SideLoadDevice {
 			this.atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(log.error)
 		}
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		return this.atem.destroy()
 	}
 	private async _refreshResources() {

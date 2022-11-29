@@ -22,5 +22,13 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 		const playheadTime = playhead.playheadTime
 		return typeof playheadTime === 'number' ? formatDuration(playheadTime, DISPLAY_DECIMAL_COUNT) : null
 	}, [props.groupId, props.partId])
-	return <>{playheadTimeString}</>
+
+	if (!playheadTimeString) return null
+
+	return (
+		<>
+			<span className="part__time__current-time__label">ELAPSED</span>{' '}
+			<span className="part__time__current-time__value">{playheadTimeString}</span>
+		</>
+	)
 })

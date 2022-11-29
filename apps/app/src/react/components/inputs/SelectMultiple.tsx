@@ -2,7 +2,7 @@ import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@m
 import React from 'react'
 
 export interface SelectEnumMultipleProps<T extends string | number> {
-	label: string
+	label: React.ReactNode
 	currentValues: T[]
 	options: { [key: string]: T } | { value: T; label: string }[]
 	onChange: (newValue: T[]) => void

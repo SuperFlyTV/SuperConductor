@@ -65,6 +65,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 						active={isThisSelected}
 						onClick={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => props.onTabDoubleClick(rundown)}
+						// eslint-disable-next-line @typescript-eslint/no-misused-promises
 						onClose={async () => {
 							try {
 								setRundownToClose(rundown)

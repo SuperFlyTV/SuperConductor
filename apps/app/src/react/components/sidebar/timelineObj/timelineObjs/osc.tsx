@@ -127,22 +127,24 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 				/>
 			</div>
 
-			{obj.content.values.map((oscValue, index) => (
-				<React.Fragment key={index}>
-					<Stack direction="row" justifyContent="space-between">
-						<Typography variant="body2">Value #{index}</Typography>
-						<TrashBtn
-							onClick={() => {
-								obj.content.values.splice(index, 1)
-								onSave(obj)
-							}}
-							title="Delete value"
-						/>
-					</Stack>
+			<>
+				{obj.content.values.map((oscValue, index) => (
+					<React.Fragment key={index}>
+						<Stack direction="row" justifyContent="space-between">
+							<Typography variant="body2">Value #{index}</Typography>
+							<TrashBtn
+								onClick={() => {
+									obj.content.values.splice(index, 1)
+									onSave(obj)
+								}}
+								title="Delete value"
+							/>
+						</Stack>
 
-					<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
-				</React.Fragment>
-			))}
+						<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
+					</React.Fragment>
+				))}
+			</>
 
 			<Button
 				style={{ marginBottom: '1rem' }}
@@ -157,116 +159,118 @@ export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: O
 			>
 				Add Value
 			</Button>
-
-			{!obj.content.transition && (
-				<Box>
-					<Button
-						style={{ marginBottom: '1rem' }}
-						variant="contained"
-						onClick={() => {
-							obj.content.transition = DEFAULT_TRANSITION
-							onSave(obj)
-						}}
-					>
-						Add Transition
-					</Button>
-				</Box>
-			)}
-
-			{obj.content.transition && (
-				<>
-					<Stack direction="row" justifyContent="space-between">
-						<Typography variant="body2">Transition Settings</Typography>
-						<TrashBtn
+			<>
+				{!obj.content.transition && (
+					<Box>
+						<Button
+							style={{ marginBottom: '1rem' }}
+							variant="contained"
 							onClick={() => {
-								delete obj.content.transition
+								obj.content.transition = DEFAULT_TRANSITION
 								onSave(obj)
 							}}
-							title="Delete transition"
-						/>
-					</Stack>
+						>
+							Add Transition
+						</Button>
+					</Box>
+				)}
+			</>
+			<>
+				{obj.content.transition && (
+					<>
+						<Stack direction="row" justifyContent="space-between">
+							<Typography variant="body2">Transition Settings</Typography>
+							<TrashBtn
+								onClick={() => {
+									delete obj.content.transition
+									onSave(obj)
+								}}
+								title="Delete transition"
+							/>
+						</Stack>
 
-					<div className="setting">
-						<DurationInput
-							label="Transition Duration (milliseconds)"
-							fullWidth
-							currentValue={obj.content.transition.duration}
-							defaultValue={0}
-							onChange={(v) => {
-								if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-								obj.content.transition.duration = v
+						<div className="setting">
+							<DurationInput
+								label="Transition Duration (milliseconds)"
+								fullWidth
+								currentValue={obj.content.transition.duration}
+								defaultValue={0}
+								onChange={(v) => {
+									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
+									obj.content.transition.duration = v
+									onSave(obj)
+								}}
+								allowUndefined={false}
+								allowNull={false}
+							/>
+						</div>
+
+						<div className="setting">
+							<SelectEnum
+								label="Transition Easing Type"
+								fullWidth
+								currentValue={obj.content.transition.type}
+								options={OSCEasingType}
+								onChange={(v: OSCEasingType) => {
+									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
+									obj.content.transition.type = v
+									onSave(obj)
+								}}
+								allowUndefined={false}
+							/>
+						</div>
+
+						<div className="setting">
+							<SelectEnum
+								label="Transition Easing Type"
+								fullWidth
+								currentValue={obj.content.transition.direction}
+								options={OSCTransitionDirection}
+								onChange={(v: OSCTransitionDirection) => {
+									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
+									obj.content.transition.direction = v
+									onSave(obj)
+								}}
+								allowUndefined={false}
+							/>
+						</div>
+
+						{obj.content.from &&
+							obj.content.from.map((oscValue, index) => (
+								<React.Fragment key={index}>
+									<Stack direction="row" justifyContent="space-between">
+										<Typography variant="body2">From Value #{index}</Typography>
+										<TrashBtn
+											onClick={() => {
+												if (!obj.content.from) return
+												obj.content.from.splice(index, 1)
+												onSave(obj)
+											}}
+											title="Delete value"
+										/>
+									</Stack>
+
+									<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
+								</React.Fragment>
+							))}
+
+						<Button
+							style={{ marginBottom: '1rem' }}
+							variant="contained"
+							onClick={() => {
+								if (!obj.content.from) obj.content.from = []
+								obj.content.from.push({
+									type: OSCValueType.INT,
+									value: 0,
+								})
 								onSave(obj)
 							}}
-							allowUndefined={false}
-							allowNull={false}
-						/>
-					</div>
-
-					<div className="setting">
-						<SelectEnum
-							label="Transition Easing Type"
-							fullWidth
-							currentValue={obj.content.transition.type}
-							options={OSCEasingType}
-							onChange={(v: OSCEasingType) => {
-								if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-								obj.content.transition.type = v
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-
-					<div className="setting">
-						<SelectEnum
-							label="Transition Easing Type"
-							fullWidth
-							currentValue={obj.content.transition.direction}
-							options={OSCTransitionDirection}
-							onChange={(v: OSCTransitionDirection) => {
-								if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-								obj.content.transition.direction = v
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-
-					{obj.content.from &&
-						obj.content.from.map((oscValue, index) => (
-							<React.Fragment key={index}>
-								<Stack direction="row" justifyContent="space-between">
-									<Typography variant="body2">From Value #{index}</Typography>
-									<TrashBtn
-										onClick={() => {
-											if (!obj.content.from) return
-											obj.content.from.splice(index, 1)
-											onSave(obj)
-										}}
-										title="Delete value"
-									/>
-								</Stack>
-
-								<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
-							</React.Fragment>
-						))}
-
-					<Button
-						style={{ marginBottom: '1rem' }}
-						variant="contained"
-						onClick={() => {
-							if (!obj.content.from) obj.content.from = []
-							obj.content.from.push({
-								type: OSCValueType.INT,
-								value: 0,
-							})
-							onSave(obj)
-						}}
-					>
-						Add From Value
-					</Button>
-				</>
-			)}
+						>
+							Add From Value
+						</Button>
+					</>
+				)}
+			</>
 		</EditWrapper>
 	)
 }

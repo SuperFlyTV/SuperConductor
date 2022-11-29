@@ -67,11 +67,11 @@ export interface PeripheralInfo {
 	name: string
 
 	/** Other info about the peripheral device, to be used in GUI*/
-	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys
+	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys | PeripheralInfo_MIDI
 }
 
 export interface PeripheralInfo_StreamDeck {
-	type: 'streamdeck'
+	type: PeripheralType.STREAMDECK
 
 	layout: {
 		width: number
@@ -79,9 +79,39 @@ export interface PeripheralInfo_StreamDeck {
 	}
 }
 export interface PeripheralInfo_XKeys {
-	type: 'xkeys'
+	type: PeripheralType.XKEYS
 
 	colCount: number
 	rowCount: number
 	layout: XKeysInfo['layout']
+}
+export interface PeripheralInfo_MIDI {
+	type: PeripheralType.MIDI
+}
+export type PeripheralSettingsAny = PeripheralSettingsStreamDeck | PeripheralSettingsXKeys
+export interface PeripheralSettingsBase {
+	manualConnect: boolean
+}
+export type PeripheralSettingsStreamDeck = PeripheralSettingsBase
+export type PeripheralSettingsXKeys = PeripheralSettingsBase
+
+export interface KnownPeripheral {
+	name: string
+	type: PeripheralType
+	devicePath: string
+}
+
+export enum PeripheralType {
+	STREAMDECK = 'streamdeck',
+	XKEYS = 'xkeys',
+	MIDI = 'midi',
+}
+
+export interface AnalogValue {
+	/** An absolute value */
+	absolute: number
+	/** A relative value */
+	relative: number
+	/** Recommendation on what value to use. true=use absolute, false= use relative */
+	rAbs: boolean | undefined
 }

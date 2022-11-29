@@ -1,7 +1,7 @@
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
-import { XKeysWatcher, XKeys } from 'xkeys'
-import { Peripheral } from './peripheral'
+import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
@@ -9,42 +9,105 @@ const FLASH_FAST = 7
 const FLASH_NORMAL = 30
 
 export class PeripheralXkeys extends Peripheral {
+	private static Watching = false
 	private connectedToParent = false
-	static Watch(log: LoggerLike, onDevice: (peripheral: PeripheralXkeys) => void) {
-		let usePolling = false
-		// Check if node-usb is installed:
-		try {
-			// eslint-disable-next-line node/no-missing-require, node/no-extraneous-require
-			require.resolve('usb') // require.resolve() throws an error if module is not found
-		} catch (e) {
-			// usb is not installed, fall back to polling:
-			usePolling = true
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
+		if (PeripheralXkeys.Watching) {
+			throw new Error('Already watching')
 		}
 
-		const watcher = new XKeysWatcher({
-			automaticUnitIdMode: true,
-			usePolling,
-			// pollingInterval: 1000,
-		})
+		PeripheralXkeys.Watching = true
 
-		watcher.on('connected', (xkeysPanel) => {
-			const id = `xkeys-${xkeysPanel.uniqueId}`
+		let lastSeenXkeysPanels: HID_Device[] = []
 
-			const newDevice = new PeripheralXkeys(log, id, xkeysPanel)
+		// Check for new or removed Xkeys panels every second.
+		const interval = setInterval(() => {
+			// List the connected Xkeys panels.
+			const connectedPanelInfos = listAllConnectedPanels()
 
-			newDevice
-				.init()
-				.then(() => onDevice(newDevice))
-				.catch(log.error)
-		})
+			// If the list has not changed since the last poll, do nothing.
+			if (_.isEqual(connectedPanelInfos, lastSeenXkeysPanels)) {
+				return
+			}
+
+			// Figure out which Xkeys panels have been unplugged since the last check.
+			const disconnectedXkeysPanelIds = new Set(
+				lastSeenXkeysPanels.map(PeripheralXkeys.GetXkeysId).filter((id) => {
+					return !connectedPanelInfos.some((p) => PeripheralXkeys.GetXkeysId(p) === id)
+				})
+			)
+
+			// Figure out which Xkeys panels are being seen now that weren't seen in the last completed poll.
+			for (const panelInfo of connectedPanelInfos) {
+				const id = PeripheralXkeys.GetXkeysId(panelInfo)
+				const alreadySeen = lastSeenXkeysPanels.some((sd) => {
+					return PeripheralXkeys.GetXkeysId(sd) === id
+				})
+
+				if (alreadySeen) {
+					continue
+				}
+
+				const found = PeripheralXkeys.FindProduct(panelInfo)
+
+				// Tell the watcher about the discovered Xkeys panel.
+				onKnownPeripheral(id, {
+					name: found.product.name,
+					type: PeripheralType.XKEYS,
+					devicePath: panelInfo.path,
+				})
+			}
+
+			// Tell the watcher about disconnected Xkeys panels.
+			for (const id of disconnectedXkeysPanelIds) {
+				onKnownPeripheral(id, null)
+			}
+
+			// Update for the next iteration.
+			lastSeenXkeysPanels = connectedPanelInfos
+		}, 1000)
 
 		return {
-			stop: () => watcher.stop().catch(log.error),
+			stop: () => {
+				clearInterval(interval)
+				PeripheralXkeys.Watching = false
+			},
 		}
 	}
 
-	public initializing = false
-	public connected = false
+	/**
+	 *  Used to get the human-readable name of the panel without actually connecting to it.
+	 *	Copied from xkeys/packages/core/src/xkeys.ts
+	 *	https://github.com/SuperFlyTV/xkeys/blob/615db0c740d1a19b33217c94c1c280066cb9688c/packages/core/src/xkeys.ts#L53-L73
+	 */
+	private static FindProduct(
+		this: void,
+		panelInfo: HID_Device
+	): { product: Product; productId: number; interface: number } {
+		for (const product of Object.values(PRODUCTS)) {
+			for (const hidDevice of product.hidDevices) {
+				if (
+					hidDevice[0] === panelInfo.productId &&
+					(panelInfo.interface === null || hidDevice[1] === panelInfo.interface)
+				) {
+					return {
+						product,
+						productId: hidDevice[0],
+						interface: hidDevice[1],
+					} // Return & break out of the loops
+				}
+			}
+		}
+		// else:
+		throw new Error(
+			`Unknown/Unsupported X-keys: "${panelInfo.product}" (productId: "${panelInfo.productId}", interface: "${panelInfo.interface}").\nPlease report this as an issue on our github page!`
+		)
+	}
+
+	private static GetXkeysId(this: void, panelInfo: HID_Device): string {
+		return panelInfo.serialNumber ? `xkeys-serial_${panelInfo.serialNumber}` : `xkeys-path_${panelInfo.path}`
+	}
+
 	private _info: PeripheralInfo | undefined
 	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private sentFrequency = 0
@@ -55,8 +118,9 @@ export class PeripheralXkeys extends Peripheral {
 		}
 	} = {}
 	private ignoreKeys = new Set<number>()
+	private xkeysPanel?: XKeys
 
-	constructor(log: LoggerLike, id: string, private xkeysPanel: XKeys) {
+	constructor(log: LoggerLike, id: string, private path: string) {
 		super(log, id)
 	}
 
@@ -64,23 +128,76 @@ export class PeripheralXkeys extends Peripheral {
 		try {
 			this.initializing = true
 
+			this.xkeysPanel = await setupXkeysPanel(this.path)
+
 			this._info = {
 				name: this.xkeysPanel.info.name,
 				gui: {
-					type: 'xkeys',
+					type: PeripheralType.XKEYS,
 					colCount: this.xkeysPanel.info.colCount,
 					rowCount: this.xkeysPanel.info.rowCount,
 					layout: this.xkeysPanel.info.layout,
 				},
 			}
 
+			// Buttons:
 			this.xkeysPanel.on('down', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
 			})
 			this.xkeysPanel.on('up', (keyIndex) => {
 				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyUp', `${keyIndex}`)
 			})
+			// Analog values:
+			this.xkeysPanel.on('jog', (keyIndex, deltaValue) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `jog-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: this.getAbsoluteValue(identifier, deltaValue),
+					relative: deltaValue,
+					rAbs: false,
+				})
+			})
+			this.xkeysPanel.on('shuttle', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `shuttle-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: value,
+					relative: this.getRelativeValue(identifier, value),
+					rAbs: true,
+				})
+			})
+			this.xkeysPanel.on('tbar', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifier = `tbar-${keyIndex}`
+				this.emit('analog', identifier, {
+					absolute: value,
+					relative: this.getRelativeValue(identifier, value),
+					rAbs: true,
+				})
+			})
+			this.xkeysPanel.on('joystick', (keyIndex, value) => {
+				if (this.ignoreKeys.has(keyIndex)) return
+				const identifierX = `joystick-${keyIndex}-x`
+				const identifierY = `joystick-${keyIndex}-y`
+				const identifierZ = `joystick-${keyIndex}-z`
+				this.emit('analog', identifierX, {
+					absolute: value.x,
+					relative: this.getRelativeValue(identifierX, value.x),
+					rAbs: true,
+				})
+				this.emit('analog', identifierY, {
+					absolute: value.y,
+					relative: this.getRelativeValue(identifierY, value.y),
+					rAbs: true,
+				})
+				this.emit('analog', identifierZ, {
+					absolute: value.z,
+					relative: value.deltaZ,
+					rAbs: false,
+				})
+			})
 
+			// Connection status:
 			this.xkeysPanel.on('disconnected', () => {
 				this.emit('disconnected')
 			})
@@ -102,11 +219,13 @@ export class PeripheralXkeys extends Peripheral {
 				if (value) this.ignoreKeys.add(keyIndex)
 			})
 
+			this.connected = true
 			this.initializing = false
 		} catch (e) {
 			this.initializing = false
 			throw e
 		}
+		this.emit('initialized')
 	}
 	get info(): PeripheralInfo {
 		if (!this._info) throw new Error('Peripheral not initialized')
@@ -209,7 +328,7 @@ export class PeripheralXkeys extends Peripheral {
 			}, 1)
 		}
 	}
-	async close() {
+	async close(): Promise<void> {
 		if (this.xkeysPanel) {
 			this.xkeysPanel.setAllBacklights(null) // set all backlights to black
 
@@ -223,11 +342,11 @@ export class PeripheralXkeys extends Peripheral {
 	}
 	private async _updateAllKeys(): Promise<void> {
 		if (this.connectedToParent) {
-			this.xkeysPanel.setIndicatorLED(1, true) // green
-			this.xkeysPanel.setIndicatorLED(2, false) // red
+			this.xkeysPanel?.setIndicatorLED(1, true) // green
+			this.xkeysPanel?.setIndicatorLED(2, false) // red
 		} else {
-			this.xkeysPanel.setIndicatorLED(1, false) // green
-			this.xkeysPanel.setIndicatorLED(2, true) // red
+			this.xkeysPanel?.setIndicatorLED(1, false) // green
+			this.xkeysPanel?.setIndicatorLED(2, true) // red
 		}
 
 		for (const [identifier, keyDisplay] of Object.entries(this.sentKeyDisplay)) {

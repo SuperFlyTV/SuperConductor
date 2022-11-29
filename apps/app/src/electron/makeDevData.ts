@@ -44,9 +44,11 @@ export function makeDevData(): {
 			url: '',
 			settings: {
 				devices: {},
+				peripherals: {},
+				autoConnectToAllPeripherals: true,
 			},
 
-			peripheralSettings: {},
+			clientSidePeripheralSettings: {},
 		}))
 
 		// Devices:

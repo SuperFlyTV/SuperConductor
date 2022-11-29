@@ -14,9 +14,11 @@ function cmd(command) {
 	})
 }
 
-; (async () => {
+;(async () => {
 	const lernaPackage = require('../lerna.json')
 	const currentVersion = lernaPackage.version
+
+	if (isPrerelease(currentVersion)) return // Don't update links for pre-release versions...
 
 	console.log(`Updating links in README to ${currentVersion}...`)
 
@@ -36,3 +38,7 @@ function cmd(command) {
 		console.log('no change')
 	}
 })().catch(console.error)
+
+function isPrerelease(version) {
+	return !version.match(/^\d+\.\d+\.\d+$/)
+}

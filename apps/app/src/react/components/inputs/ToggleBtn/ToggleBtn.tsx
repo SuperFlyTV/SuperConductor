@@ -10,6 +10,7 @@ export const ToggleBtn: React.FC<{
 	selected?: boolean
 	disabled?: boolean
 	size?: string
+	children: React.ReactNode
 }> = (props) => {
 	return (
 		<button

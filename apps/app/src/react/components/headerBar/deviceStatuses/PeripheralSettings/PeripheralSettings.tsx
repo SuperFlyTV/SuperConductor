@@ -2,7 +2,7 @@ import React, { useCallback, useContext } from 'react'
 import { Box, Button, Grid } from '@mui/material'
 
 import { observer } from 'mobx-react-lite'
-import { DefiningArea } from '../../../../../lib/triggers/keyDisplay'
+import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
@@ -11,13 +11,15 @@ import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 import { StreamdeckSettings } from './streamdeck'
 import { XKeysSettings } from './xkeys'
+import { MIDISettings } from './midi'
 import { TrashBtn } from '../../../../components/inputs/TrashBtn'
 
 export const PeripheralSettings: React.FC<{
 	bridgeId: string
 	deviceId: string
 	peripheral: PeripheralStatus
-}> = observer(function PeripheralSettings({ bridgeId, deviceId, peripheral }) {
+	onDisconnect: () => void
+}> = observer(function PeripheralSettings({ bridgeId, deviceId, peripheral, onDisconnect }) {
 	const { handleError } = useContext(ErrorHandlerContext)
 	const serverAPI = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
@@ -52,9 +54,16 @@ export const PeripheralSettings: React.FC<{
 	}, [handleError, serverAPI])
 
 	const bridge = project.bridges[bridgeId]
+
+	const disconnect = useCallback(() => {
+		bridge.settings.peripherals[deviceId].manualConnect = false
+		serverAPI.updateProject({ id: project.id, project }).catch(handleError)
+		onDisconnect()
+	}, [bridge.settings.peripherals, deviceId, handleError, onDisconnect, project, serverAPI])
+
 	if (!bridge) return null
 
-	const peripheralSettings = bridge.peripheralSettings[deviceId]
+	const peripheralSettings = bridge.clientSidePeripheralSettings[deviceId]
 
 	return (
 		<div className="peripheral-settings">
@@ -71,6 +80,14 @@ export const PeripheralSettings: React.FC<{
 				)}
 				{peripheral.info.gui.type === 'xkeys' && (
 					<XKeysSettings
+						bridgeId={bridgeId}
+						deviceId={deviceId}
+						peripheral={peripheral}
+						definingArea={definingArea}
+					/>
+				)}
+				{peripheral.info.gui.type === 'midi' && (
+					<MIDISettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
 						peripheral={peripheral}
@@ -130,6 +147,17 @@ export const PeripheralSettings: React.FC<{
 				<Box sx={{ mt: 1 }}>
 					<Button className="btn" variant="contained" color="primary" onClick={() => createNewArea()}>
 						Create new button Area
+					</Button>
+				</Box>
+				<Box sx={{ mt: 1 }}>
+					<Button
+						className="btn"
+						variant="contained"
+						color="primary"
+						onClick={() => disconnect()}
+						disabled={bridge.settings.autoConnectToAllPeripherals}
+					>
+						{bridge.settings.autoConnectToAllPeripherals ? 'Auto-connect is on' : 'Disconnect'}
 					</Button>
 				</Box>
 			</div>

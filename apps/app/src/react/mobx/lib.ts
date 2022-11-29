@@ -9,7 +9,7 @@ let DEBUG = false
  *
  * @returns
  */
-export function gebugCustomMemos(enable = true) {
+export function gebugCustomMemos(enable = true): { end: () => void } {
 	DEBUG = enable
 
 	const stackPrepare = new Error('')
@@ -36,7 +36,7 @@ export function gebugCustomMemos(enable = true) {
 export function useMemoComputedObject<T extends object | any[] | string | number | boolean | null | undefined>(
 	fcn: (prev: T | undefined) => T,
 	deps: React.DependencyList,
-	/** true: only update if the value has changed. false: update if identify changed */
+	/** true: only update if the value has changed. false: update if identity has changed */
 	equalValue?: boolean
 ): T {
 	const debug = DEBUG
@@ -267,7 +267,7 @@ export function assignPartial<T extends { [key: string]: any }, K extends keyof 
  * @returns an array corresponding to the resulting array, containing information about the changes.
  */
 export function assignArray<T>(org: T[], apply: T[], isEqual?: (a: T, b: T) => boolean): AssignOperation<T>[] {
-	if (!isEqual) isEqual = _.isEqual
+	if (!isEqual) isEqual = _.isEqual.bind(_)
 	const results: AssignOperation<T>[] = []
 
 	for (let i = 0; i < apply.length; i++) {

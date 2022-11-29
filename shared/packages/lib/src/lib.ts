@@ -25,7 +25,7 @@ export function omit<T, K extends keyof T>(obj: T, arg: K): Omit<T, K> {
 export function deepClone<T>(data: T): T {
 	return copy(data)
 }
-export function literal<T>(o: T) {
+export function literal<T>(o: T): T {
 	return o
 }
 export function flatten<T>(arr: (T | T[])[]): T[] {
@@ -101,4 +101,8 @@ export function stringifyErrorInner(error: unknown): {
 }
 export function ensureArray<T>(v: T | T[]): T[] {
 	return Array.isArray(v) ? v : [v]
+}
+/** Capitalizes the first letter of a string */
+export function capitalizeFirstLetter(input: string): string {
+	return input.charAt(0).toUpperCase() + input.slice(1)
 }

@@ -65,7 +65,7 @@ $margin-v: 2rem;
 			.title,
 			.edit-title {
 				margin-right: 1rem;
-				font-family: 'Barlow';
+				font-family: $mainFont;
 				font-weight: 700;
 				max-width: 10.8rem;
 			}
@@ -89,7 +89,7 @@ $margin-v: 2rem;
 				margin-right: 0.6rem;
 			}
 			&.controls-left {
-				cursor: initial;
+				// cursor: initial;
 				.playback {
 					flex-shrink: 0;
 

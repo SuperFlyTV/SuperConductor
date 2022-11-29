@@ -1,4 +1,5 @@
 import { ResourceAny } from '@shared/models'
+import { AnalogValue, KnownPeripheral, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
 
@@ -14,7 +15,9 @@ export namespace BridgeAPI {
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
+			| PeripheralAnalog
 			| DeviceRefreshStatus
+			| KnownPeripherals
 
 		/** Bridge starts by sending this upon connection (if it is a server). SuperConductor replies with SetId */
 		export interface InitRequestId extends MessageBase {
@@ -66,6 +69,12 @@ export namespace BridgeAPI {
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
 		}
+		export interface PeripheralAnalog extends MessageBase {
+			type: 'PeripheralAnalog'
+			deviceId: string
+			identifier: string
+			value: AnalogValue
+		}
 
 		/**
 		 * Used to tell SuperConductor when a device is refreshing its resources.
@@ -79,6 +88,13 @@ export namespace BridgeAPI {
 			deviceId: string
 			refreshing: boolean
 		}
+		export interface KnownPeripherals extends MessageBase {
+			type: 'KnownPeripherals'
+			peripherals: {
+				[peripheralId: string]: KnownPeripheral
+			}
+			// A reply to GetKnownPeripherals
+		}
 	}
 
 	export namespace FromSuperConductor {
@@ -87,10 +103,12 @@ export namespace BridgeAPI {
 			| SetSettings
 			| AddTimeline
 			| RemoveTimeline
+			| UpdateDatastore
 			| GetTimelineIds
 			| SetMappings
 			| RefreshResources
 			| PeripheralSetKeyDisplay
+			| GetKnownPeripherals
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
@@ -102,6 +120,10 @@ export namespace BridgeAPI {
 			devices: {
 				[deviceId: string]: DeviceOptionsAny
 			}
+			peripherals: {
+				[deviceId: string]: PeripheralSettingsAny
+			}
+			autoConnectToAllPeripherals: boolean
 		}
 		export interface AddTimeline extends MessageBase {
 			type: 'addTimeline'
@@ -114,6 +136,16 @@ export namespace BridgeAPI {
 			type: 'removeTimeline'
 
 			timelineId: string
+			currentTime: number
+		}
+		export interface UpdateDatastore extends MessageBase {
+			type: 'updateDatastore'
+
+			updates: {
+				datastoreKey: string
+				value: any | null
+				modified: number
+			}[]
 			currentTime: number
 		}
 		export interface GetTimelineIds extends MessageBase {
@@ -134,6 +166,10 @@ export namespace BridgeAPI {
 			deviceId: string
 			identifier: string
 			keyDisplay: KeyDisplay | KeyDisplayTimeline
+		}
+		export interface GetKnownPeripherals extends MessageBase {
+			type: 'getKnownPeripherals'
+			// Bridge will reply with "KnownPeripherals"
 		}
 	}
 

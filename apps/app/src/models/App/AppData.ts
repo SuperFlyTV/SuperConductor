@@ -1,3 +1,5 @@
+import { ApplicationTrigger } from '../rundown/Trigger'
+
 export interface AppData {
 	windowPosition: WindowPosition
 	version: {
@@ -8,6 +10,7 @@ export interface AppData {
 	}
 	/** Which version of the user agreement the user has agreed to  */
 	userAgreement?: string
+	preReleaseAutoUpdate?: boolean
 	project: {
 		id: string
 	}
@@ -16,6 +19,9 @@ export interface AppData {
 			name: string
 			open: boolean
 		}
+	}
+	triggers: {
+		[Key in ApplicationTrigger['action']]?: ApplicationTrigger[]
 	}
 }
 export type WindowPosition =

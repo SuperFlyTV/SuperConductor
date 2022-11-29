@@ -14,7 +14,7 @@ type IProps = {
 	onSelect?: (resource: ResourceAny) => void
 }
 
-export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onSelect }: IProps) {
+export const ResourceLibraryItem = function ResourceLibraryItem({ resource, selected, onSelect }: IProps): JSX.Element {
 	const [{ dragged }, dragRef] = useDrag(
 		() => ({
 			type: DragItemTypes.RESOURCE_ITEM,
@@ -106,7 +106,11 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.ATEM_DSK ||
 			resource.resourceType === ResourceType.ATEM_ME ||
 			resource.resourceType === ResourceType.CASPARCG_TEMPLATE ||
-			resource.resourceType === ResourceType.HTTP_REQUEST
+			resource.resourceType === ResourceType.HTTP_REQUEST ||
+			resource.resourceType === ResourceType.HYPERDECK_PLAY ||
+			resource.resourceType === ResourceType.HYPERDECK_RECORD ||
+			resource.resourceType === ResourceType.HYPERDECK_PREVIEW ||
+			resource.resourceType === ResourceType.HYPERDECK_CLIP
 		) {
 			return (
 				<>
