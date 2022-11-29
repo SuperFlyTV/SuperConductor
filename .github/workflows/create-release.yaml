@@ -9,14 +9,16 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       release_id: ${{ steps.create_release.outputs.id }}
     steps:
-      - id: create_release
+      - uses: ncipollo/release-action@v1
         name: Create Release
-        run: gh release create ${{ github.ref_name }} --draft --title "Release ${{ github.ref_name }}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: true
   build-windows-binaries:
     name: Build Windows Binaries
     runs-on: windows-latest
