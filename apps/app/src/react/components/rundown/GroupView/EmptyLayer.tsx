@@ -41,7 +41,7 @@ export const EmptyLayer: React.FC<{
 	)
 
 	const layerId = useMemo(() => {
-		return `${EMPTY_LAYER_ID_PREFIX}-${EMPTY_LAYER_ID_COUNTER++}`
+		return `${EMPTY_LAYER_ID_PREFIX}_${EMPTY_LAYER_ID_COUNTER++}`
 	}, [])
 
 	const canMoveTimelineObjToThisEmptyLayer = useMemoComputedValue(() => {
