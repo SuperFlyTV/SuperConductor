@@ -17,7 +17,7 @@ import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getDefaultGroup, getDefaultPart } from './defaults'
+import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
 import { postProcessPart } from './rundown'
 import { StorageHandler } from './storageHandler'
 

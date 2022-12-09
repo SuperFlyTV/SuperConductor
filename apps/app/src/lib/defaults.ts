@@ -4,9 +4,9 @@ import { AutoFillMode, AutoFillSortMode, Group, PlayoutMode } from '../models/ru
 import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
-import { shortID } from '../lib/util'
+import { shortID } from './util'
 import { Part } from '../models/rundown/Part'
-import { RepeatingType } from '../lib/timeLib'
+import { RepeatingType } from './timeLib'
 import { AppData } from '../models/App/AppData'
 
 export function getDefaultAppData(currentVersion: string): AppData {

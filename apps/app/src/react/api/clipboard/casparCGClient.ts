@@ -1,7 +1,7 @@
 import { assertNever, literal } from '@shared/lib'
 import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
-import { getDefaultGroup, getDefaultPart } from '../../../electron/defaults'
+import { getDefaultGroup, getDefaultPart } from '../../../lib/defaults'
 import { findDeviceOfType, shortID } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'

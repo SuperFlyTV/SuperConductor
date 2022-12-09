@@ -55,7 +55,7 @@ import {
 	guessDeviceIdFromTimelineObject,
 	sortMappings,
 } from '../lib/TSRMappings'
-import { getDefaultGroup, getDefaultPart } from './defaults'
+import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
 import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
