@@ -19,6 +19,7 @@ import {
 	TSRTransitionOptions,
 	BlendMode,
 	Chroma,
+	DeviceType,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
@@ -55,6 +56,79 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					options={TimelineContentTypeCasparCg}
 					onChange={(newValue) => {
 						obj.content.type = newValue
+
+						const sharedContentProps = <T extends TimelineContentTypeCasparCg>(
+							type: T
+						): {
+							deviceType: DeviceType.CASPARCG
+							type: T
+						} => {
+							return {
+								deviceType: DeviceType.CASPARCG,
+								type,
+							}
+						}
+
+						// Create new content that is appropriate for the new CCG timelineObj type
+						switch (obj.content.type) {
+							case TimelineContentTypeCasparCg.HTMLPAGE: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									url: '',
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.INPUT: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									inputType: '',
+									device: 0,
+									deviceFormat: ChannelFormat.HD_1080P2500,
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.IP: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									uri: '',
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.MEDIA: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									file: '',
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.RECORD: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									file: '',
+									encoderOptions: '',
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.ROUTE: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+								}
+								break
+							}
+							case TimelineContentTypeCasparCg.TEMPLATE: {
+								obj.content = {
+									...sharedContentProps(obj.content.type),
+									templateType: 'html',
+									name: '',
+									useStopCommand: false,
+									data: {},
+								}
+								break
+							}
+							default:
+								assertNever(obj.content)
+						}
+
 						onSave(obj)
 					}}
 				/>
