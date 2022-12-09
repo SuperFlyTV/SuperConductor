@@ -1,10 +1,10 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import { ActionAny, ApplicationActionSelected } from '../action'
-import { getTimelineForGroup } from '../../../electron/timeline'
 import { GroupBase } from '../../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../../models/project/Peripheral'
+import { getTimelineForGroup } from '../../timeline'
 
 export type TriggersAreaMap = Map<string, TriggerArea>
 export interface TriggerArea {
