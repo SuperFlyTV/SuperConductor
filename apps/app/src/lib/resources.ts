@@ -46,7 +46,7 @@ import {
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
 import { shortID } from './util'
-import { GDDSchema } from 'graphics-data-definition'
+import { GDDSchema, getDefaultDataFromSchema } from 'graphics-data-definition'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj {
 	const INFINITE_DURATION = null
@@ -73,6 +73,10 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		else if (gdd?.gddPlayoutOptions?.client?.duration === null) duration = null // null means infinite
 		if (resource.duration) duration = resource.duration
 
+		let contentData = {} // default
+		if (gdd) contentData = getDefaultDataFromSchema(gdd)
+		if (resource.data) contentData = resource.data
+
 		const obj: TimelineObjCCGTemplate = {
 			id: shortID(),
 			layer: '', // set later
@@ -85,7 +89,7 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				type: TimelineContentTypeCasparCg.TEMPLATE,
 				templateType: 'html',
 				name: resource.name,
-				data: JSON.stringify(resource.data ?? {}),
+				data: contentData ?? {},
 				useStopCommand: resource.useStopCommand ?? true,
 				// @ts-expect-error sendDataAsXML is loosely typed..
 				sendDataAsXML: gdd?.gddPlayoutOptions?.client?.dataformat === 'casparcg-xml',
