@@ -29,8 +29,8 @@ export const basicPropertyBoolean: React.FC<PropertyProps<GDDSchemaPropertyBoole
 				checked={data}
 				onChange={(e) => {
 					props.setData(e.target.checked)
+					props.onSave()
 				}}
-				onBlur={props.onSave}
 			/>
 		</EditProperty>
 	)
@@ -51,7 +51,7 @@ export const basicPropertyString: React.FC<PropertyProps<GDDSchemaPropertyString
 	)
 }
 export const basicPropertyNumber: React.FC<PropertyProps<GDDSchemaPropertyNumber>> = (props) => {
-	const data = props.data || ''
+	const data = props.data ?? ''
 	return (
 		<EditProperty className="gdd-edit-data__number" {...props}>
 			<input
@@ -66,7 +66,7 @@ export const basicPropertyNumber: React.FC<PropertyProps<GDDSchemaPropertyNumber
 	)
 }
 export const basicPropertyInteger: React.FC<PropertyProps<GDDSchemaPropertyInteger>> = (props) => {
-	const data = props.data || ''
+	const data = props.data ?? ''
 	return (
 		<EditProperty className="gdd-edit-data__integer" {...props}>
 			<input
