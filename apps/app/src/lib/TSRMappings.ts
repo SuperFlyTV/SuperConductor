@@ -1,5 +1,6 @@
 import { assertNever, literal } from '@shared/lib'
 import { ResourceAny, ResourceType } from '@shared/models'
+import { GDDSchema } from 'graphics-data-definition'
 import {
 	DeviceType,
 	Mapping,
@@ -333,20 +334,41 @@ export function getMappingFromTimelineObject(
 		}
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
 		// MappingCasparCG
-		let channel = 1
-		if (
-			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
-				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
-			resource.channel
-		)
-			channel = resource.channel
-		let layer = 1
-		if (
-			(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
-				resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
-			resource.layer
-		)
-			layer = resource.layer
+
+		let channel: number | undefined = undefined
+		{
+			if (resource?.resourceType === ResourceType.CASPARCG_TEMPLATE && resource.gdd) {
+				const gdd: GDDSchema = resource.gdd
+				const gddChannel = gdd.gddPlayoutOptions?.playout?.casparcg?.channel
+				if (gddChannel !== undefined) channel = gddChannel
+			}
+			if (
+				(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+					resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+				resource.channel
+			)
+				channel = resource.channel
+
+			if (!channel) channel = 1 // Default
+		}
+
+		let layer: number | undefined = undefined
+		{
+			if (resource?.resourceType === ResourceType.CASPARCG_TEMPLATE && resource.gdd) {
+				const gdd: GDDSchema = resource.gdd
+				const gddLayer = gdd.gddPlayoutOptions?.playout?.casparcg?.layer
+				if (gddLayer !== undefined) layer = gddLayer
+			}
+
+			if (
+				(resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+					resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
+				resource.layer
+			)
+				layer = resource.layer
+
+			if (!layer) layer = 1 // Default
+		}
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceId,

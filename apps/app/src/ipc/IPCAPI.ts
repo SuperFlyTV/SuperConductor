@@ -14,6 +14,7 @@ import { MoveTarget } from '../lib/util'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
+import { ValidatorCache } from 'graphics-data-definition'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -84,6 +85,9 @@ export interface IPCServerMethods {
 
 	acknowledgeSeenVersion: () => void
 	acknowledgeUserAgreement: (arg: { agreementVersion: string }) => void
+
+	fetchGDDCache: () => Promise<ValidatorCache | null>
+	storeGDDCache: (arg: { cache: ValidatorCache }) => Promise<void>
 
 	updateGUISelection: (arg: { selection: Readonly<CurrentSelectionAny[]> }) => void
 	exportProject: () => void

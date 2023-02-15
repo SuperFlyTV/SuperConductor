@@ -16,6 +16,7 @@ module.exports = {
 			['@']: path.resolve(__dirname, 'src'),
 		},
 		extensions: ['.tsx', '.ts', '.js'],
+		fallback: { url: require.resolve('url/') },
 	},
 	module: {
 		rules: [

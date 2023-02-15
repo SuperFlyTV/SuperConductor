@@ -36,11 +36,18 @@ import './casparcg.scss'
 import { FloatInput } from '../../../inputs/FloatInput'
 import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
 import { HiOutlineX } from 'react-icons/hi'
+import { store } from '../../../../mobx/store'
+import { computed } from 'mobx'
+import { ResourceType } from '@shared/models'
+import { usePromise } from '../../../../mobx/lib'
+import { EditGDDData } from '../GDD/gddEdit'
+import { GDDSchema } from 'graphics-data-definition'
 
-export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
-}) => {
+export const EditTimelineObjCasparCGAny: React.FC<{
+	obj: TimelineObjCasparCGAny
+	resourceId: string | undefined
+	onSave: OnSave
+}> = ({ obj, resourceId, onSave }) => {
 	let settings: JSX.Element = <></>
 
 	const [showAll, setShowAll] = React.useState(false)
@@ -1873,7 +1880,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 					/>
 				</div>
 
-				<CasparEditTemplateData obj={obj} onSave={onSave} />
+				<CasparEditTemplateData obj={obj} resourceId={resourceId} onSave={onSave} />
 
 				{/* {showAllButton} */}
 			</>
@@ -2025,8 +2032,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 
 const CasparEditTemplateData: React.FC<{
 	obj: TimelineObjCCGTemplate
+	resourceId: string | undefined
 	onSave: OnSave
-}> = ({ obj, onSave }) => {
+}> = ({ obj, resourceId, onSave }) => {
 	let parsed: { [id: string]: string } = {}
 	try {
 		if (typeof obj.content.data === 'string') {
@@ -2087,6 +2095,77 @@ const CasparEditTemplateData: React.FC<{
 			value: parsed[key],
 		})
 	})
+
+	const initializedGDDValidator = usePromise(() =>
+		store.gddValidatorStore.initializeGDDSchemaValidator().then(() => true)
+	)
+
+	let errorMessage: string | null = null
+	let gdd: {
+		validationResult: string | null
+		schema: GDDSchema
+	} | null = null
+
+	if (resourceId && initializedGDDValidator) {
+		const resource = computed(() => store.resourcesStore.getResource(resourceId)).get()
+
+		if (resource && resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
+			if (resource.errorMessage) errorMessage = resource.errorMessage
+
+			if (resource.gdd) {
+				gdd = {
+					schema: resource.gdd,
+					validationResult: null,
+				}
+
+				store.gddValidatorStore.initializeGDDSchemaValidator().catch((window as any).handleError)
+				const gddValidator = computed(() => store.gddValidatorStore.gddValidator).get()
+
+				if (gddValidator) {
+					gdd.validationResult = gddValidator(resource.gdd)
+				}
+			}
+		}
+	}
+	if (errorMessage) {
+		return (
+			<>
+				<div className="setting">
+					Error in template:
+					<div className="markable">{errorMessage}</div>
+				</div>
+			</>
+		)
+	}
+	if (gdd) {
+		if (gdd.validationResult) {
+			return (
+				<>
+					<div className="setting">
+						Error in Schema:
+						<div className="markable">{gdd.validationResult}</div>
+					</div>
+				</>
+			)
+		}
+		return (
+			<>
+				<div className="setting">
+					{
+						<EditGDDData
+							data={obj.content.data}
+							schema={gdd.schema}
+							onSaveData={(data: any) => {
+								const newObj = deepClone(obj)
+								newObj.content.data = data
+								onSave(newObj)
+							}}
+						/>
+					}
+				</div>
+			</>
+		)
+	}
 
 	return (
 		<>

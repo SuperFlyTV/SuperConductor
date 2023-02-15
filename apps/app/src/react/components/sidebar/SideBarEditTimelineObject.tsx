@@ -68,6 +68,7 @@ export const SideBarEditTimelineObject: React.FC<{
 
 			<EditTimelineObjContent
 				obj={props.timelineObj.obj}
+				resourceId={props.timelineObj.resourceId}
 				onSave={(newObj) => {
 					const editedTimelineObj = {
 						...props.timelineObj,

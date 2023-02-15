@@ -72,6 +72,9 @@ export class ResourcesStore {
 
 		return false
 	}
+	public getResource(resourceId: string): ResourceAny | undefined {
+		return this.resources[resourceId]
+	}
 
 	private _update(data: Resources) {
 		this.resources = data

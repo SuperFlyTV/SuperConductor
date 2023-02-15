@@ -49,8 +49,9 @@ import { EditTimelineObjTelemetricsAny } from './timelineObjs/telemetrics'
 
 export const EditTimelineObjContent: React.FC<{
 	obj: TSRTimelineObj
+	resourceId: string | undefined
 	onSave: OnSave
-}> = ({ obj, onSave }) => {
+}> = ({ obj, resourceId, onSave }) => {
 	let editElement: JSX.Element | null = null
 
 	obj = JSON.parse(JSON.stringify(obj)) // clone, bacause child functions might edit it
@@ -62,7 +63,9 @@ export const EditTimelineObjContent: React.FC<{
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		editElement = <EditTimelineObjAtemAny obj={obj as TimelineObjAtemAny} onSave={onSave} />
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
-		editElement = <EditTimelineObjCasparCGAny obj={obj as TimelineObjCasparCGAny} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjCasparCGAny obj={obj as TimelineObjCasparCGAny} resourceId={resourceId} onSave={onSave} />
+		)
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		editElement = <EditTimelineObjHTTPSendAny obj={obj as TimelineObjHTTPSendAny} onSave={onSave} />
 	} else if (obj.content.deviceType === DeviceType.TCPSEND) {
