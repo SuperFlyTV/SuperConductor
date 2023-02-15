@@ -58,7 +58,7 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 				}
 
 				if (parsed) {
-					label += ' ' + Object.values(parsed).join(', ')
+					label += ' ' + deepDescribeValues(parsed)
 				}
 			}
 		} else {
@@ -240,6 +240,24 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 		inTransition,
 		outTransition,
 	}
+}
+function deepDescribeValues(value: any, inner?: boolean): string {
+	if (Array.isArray(value)) {
+		if (value.length === 1) {
+			return deepDescribeValues(value[0])
+		} else {
+			const str = value.map((arrayItem) => deepDescribeValues(arrayItem, true)).join(', ')
+			if (inner) return `[ ${str} ]`
+			return str
+		}
+	} else if (typeof value === 'object') {
+		const values = Object.values(value)
+		if (values.length === 1) {
+			return deepDescribeValues(values[0])
+		} else {
+			return values.map((v) => deepDescribeValues(v, true)).join(', ')
+		}
+	} else return String(value)
 }
 
 /** Prepare timelineObject for the playout timeline.
