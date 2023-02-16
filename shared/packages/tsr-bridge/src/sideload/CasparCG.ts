@@ -1,10 +1,15 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
-import { CasparCG, AMCP } from 'casparcg-connection'
+import { CasparCG, AMCP, Config } from 'casparcg-connection'
 import got from 'got'
 import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import { literal } from '@shared/lib'
+import {
+	addTemplatesToResourcesFromCasparCG,
+	addTemplatesToResourcesFromCasparCGMediaScanner,
+	addTemplatesToResourcesFromDisk,
+} from './CasparCGTemplates'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
@@ -96,57 +101,11 @@ export class CasparCGSideload implements SideLoadDevice {
 
 		// Refresh templates:
 		{
-			const res = await this.ccg.tls()
-			const templatesList = res.response.data as {
-				type: 'template'
-				name: string
-				size: number
-				changed: number
-			}[]
-			for (const template of templatesList) {
-				const resource: CasparCGTemplate = {
-					resourceType: ResourceType.CASPARCG_TEMPLATE,
-					deviceId: this.deviceId,
-					id: `${this.deviceId}_template_${template.name}`,
-					...template,
-					displayName: template.name,
-				}
-				resources[resource.id] = resource
-			}
+			await addTemplatesToResourcesFromCasparCG(resources, this.ccg, this.deviceId)
 
 			// Also, do a separate query directly to the media scanner, to extract GDD-definitions if possible:
-			// This is kind of a hack, until CasparCG supports GDD natively.
-			{
-				const jsonData: {
-					templates: {
-						id: string
-						path: string
-						type: string
-						erorr?: string
-						gdd?: any
-					}
-				} = await got.get(`http://${this.ccg.host}:8000/tls-json`).json()
-
-				if (jsonData && Array.isArray(jsonData.templates)) {
-					for (const template of jsonData.templates) {
-						let resource = resources[template.id] as CasparCGTemplate | undefined
-						if (!resource || resource.resourceType !== ResourceType.CASPARCG_TEMPLATE) {
-							resources[template.id] = resource = literal<CasparCGTemplate>({
-								resourceType: ResourceType.CASPARCG_TEMPLATE,
-								deviceId: this.deviceId,
-								id: `${this.deviceId}_template_${template.id}`,
-								name: template.id,
-								size: 0,
-								changed: 0,
-								displayName: template.id,
-							})
-						}
-
-						if (template.error) resource.errorMessage = template.error
-						if (template.gdd) resource.gdd = template.gdd
-					}
-				}
-			}
+			// This is kind of a hack, until CasparCG supports GDD natively:
+			await addTemplatesToResourcesFromCasparCGMediaScanner(resources, this.ccg, this.deviceId)
 		}
 
 		this.cacheResources = resources
