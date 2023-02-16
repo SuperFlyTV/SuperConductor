@@ -49,6 +49,15 @@ Resources (such as media files) are kept in the rightmost pane and can be dragge
 
 ![Resource pane](/doc/img/resource-pane.gif)
 
+### GDD support
+
+Automatically displays input fields in GUI for CasparCG-templates that expose a GDD schema.
+
+Read more about how to write GDD (Grahics Data Definition) templates here:
+https://superflytv.github.io/GraphicsDataDefinition
+
+![Play mode single](/doc/img/gdd-input.png)
+
 ### Playout modes
 
 - **Single item**: Only _one_ item at a time is playing within the group. Used to create playlists, which can auto-next to next item, and loop.
