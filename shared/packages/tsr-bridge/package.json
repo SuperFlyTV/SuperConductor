@@ -46,12 +46,15 @@
 		"@shared/lib": "^0.10.1",
 		"@shared/models": "^0.10.1",
 		"@shared/peripherals": "^0.10.1",
+		"cheerio": "^1.0.0-rc.12",
 		"lodash": "^4.17.21",
 		"got": "^11.8.5",
+		"recursive-readdir": "^2.2.3",
 		"timeline-state-resolver": "7.5.0-nightly-release47-20221116-134940-9a43f95c5.0",
 		"winston": "^3.7.2"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.178"
+		"@types/lodash": "^4.14.178",
+		"@types/recursive-readdir": "^2.2.1"
 	}
 }

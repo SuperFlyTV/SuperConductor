@@ -105,7 +105,12 @@ export class CasparCGSideload implements SideLoadDevice {
 
 			// Also, do a separate query directly to the media scanner, to extract GDD-definitions if possible:
 			// This is kind of a hack, until CasparCG supports GDD natively:
-			await addTemplatesToResourcesFromCasparCGMediaScanner(resources, this.ccg, this.deviceId)
+			const success = await addTemplatesToResourcesFromCasparCGMediaScanner(resources, this.ccg, this.deviceId)
+
+			if (!success) {
+				// Finally, try to read the files from disk directly:
+				await addTemplatesToResourcesFromDisk(resources, this.ccg, this.deviceId)
+			}
 		}
 
 		this.cacheResources = resources
