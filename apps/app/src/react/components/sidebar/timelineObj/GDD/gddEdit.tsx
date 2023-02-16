@@ -10,10 +10,6 @@ export const EditGDDData: React.FC<{
 	data: any
 	onSaveData: (newData: any) => void
 }> = ({ schema, data, onSaveData }) => {
-	// const setData = (data) => {
-	// 	props.setData(data)
-	// }
-
 	const [currentData, setCurrentData] = useState(data)
 	useEffect(() => {
 		setCurrentData(data)

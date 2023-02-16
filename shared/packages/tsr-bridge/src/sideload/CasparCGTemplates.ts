@@ -10,6 +10,7 @@ import got from 'got'
 import { ResourceAny, ResourceType, CasparCGTemplate } from '@shared/models'
 import { literal } from '@shared/lib'
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 const recursiveReadDirAsync = util.promisify(recursiveReadDir)
 
 /**
@@ -77,15 +78,13 @@ export async function addTemplatesToResourcesFromDisk(
 		if (configData) {
 			const templatePath = configData.paths.templatePath
 
-			let absoluteTemplatePath: string = ''
+			let absoluteTemplatePath = ''
 
 			// If the path is absolute, we can use that directly:
 			if (await checkIfPathExists(path.resolve(templatePath))) {
 				absoluteTemplatePath = path.resolve(templatePath)
 			}
 
-			if (absoluteTemplatePath) {
-			}
 			if (!absoluteTemplatePath) {
 				// Figure out the path to caspar and use that:
 				const casparPath = await getCasparCGProcessPath()

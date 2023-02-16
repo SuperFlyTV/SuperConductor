@@ -38,7 +38,7 @@ export class GDDValidatorStore {
 				this.gddValidator = v.validate
 			})
 		} catch (e) {
-			;(window as any).handleError
+			;(window as any).handleError(e)
 		}
 
 		// Store the cache:

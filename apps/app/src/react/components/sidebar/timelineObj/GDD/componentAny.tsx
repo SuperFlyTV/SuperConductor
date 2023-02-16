@@ -17,8 +17,6 @@ import { gddTypeSelect } from './GDDTypes/select'
 import { gddTypeColorRRGGBB } from './GDDTypes/string-color-rrggbb'
 
 export const componentAny: React.FC<ComponentAnyProps<GDDSchemaProperty>> = (props) => {
-	// if (!props.schema) return null
-
 	const schema = props.schema
 
 	const innerProps: PropertyProps<any> = {

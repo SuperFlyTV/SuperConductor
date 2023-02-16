@@ -1,10 +1,8 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
-import { CasparCG, AMCP, Config } from 'casparcg-connection'
-import got from 'got'
-import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import { CasparCG, AMCP } from 'casparcg-connection'
+import { ResourceAny, ResourceType, CasparCGMedia } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { literal } from '@shared/lib'
 import {
 	addTemplatesToResourcesFromCasparCG,
 	addTemplatesToResourcesFromCasparCGMediaScanner,

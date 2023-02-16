@@ -215,6 +215,4 @@ export const basicPropertyObject: React.FC<PropertyProps<GDDSchemaPropertyObject
 			</EditProperty>
 		)
 	}
-
-	return null
 }
