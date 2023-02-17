@@ -63,7 +63,8 @@ export class TelemetryHandler {
 
 	onError(error: string, stack?: string): void {
 		// Make sure we only store a certain error once, to avoid flooding:
-		const errorHash = hash(error)
+		const modError = `${error}`.replace(/rejection id.*/, '') // Warning: UnhandledPromiseRejectionWarning: Unhandled promise rejection. [....] (rejection id: 88)
+		const errorHash = hash(modError)
 		if (!this.storedErrors.has(errorHash)) {
 			this.storedErrors.add(errorHash)
 
