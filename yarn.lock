@@ -11069,7 +11069,7 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-threadedclass@1.2.1, threadedclass@^0.8.0, threadedclass@^1.1.1:
+threadedclass@^0.8.0, threadedclass@^1.1.1, threadedclass@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/threadedclass/-/threadedclass-1.2.1.tgz#1ce1316f6835cec238edabba75421e654f2c5572"
   integrity sha512-b8dUXW0K3dUWYrQakKhXvY/Owrnd3p+NKTI0BVEuAU/o7PsLupoNDCadK6V3WwyVLKCy0CS/d1xBmc6uZNPgOw==
