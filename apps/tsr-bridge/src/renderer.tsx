@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import ReactDOM from 'react-dom'
+import ReactDOM from 'react-dom/client'
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material'
 import { App } from './react/App'
 
@@ -125,4 +125,7 @@ export const ContextWrapper: React.FC = () => {
 	)
 }
 
-ReactDOM.render(<ContextWrapper />, document.getElementById('root'))
+const container = document.getElementById('root')
+if (!container) throw new Error('root element not found!')
+const root = ReactDOM.createRoot(container)
+root.render(<ContextWrapper />)

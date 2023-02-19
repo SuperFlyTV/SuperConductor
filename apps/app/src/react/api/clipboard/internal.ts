@@ -1,5 +1,5 @@
 import { assertNever } from '@shared/lib'
-import { getDefaultPart } from '../../../electron/defaults'
+import { getDefaultPart } from '../../../lib/defaults'
 import { copyGroup, copyPart, copyTimelineObj, MoveTarget, shortID } from '../../../lib/util'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'

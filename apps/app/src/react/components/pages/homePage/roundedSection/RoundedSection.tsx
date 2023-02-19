@@ -4,9 +4,12 @@ import { Message } from '../message/Message'
 
 import './style.scss'
 
-export const RoundedSection: React.FC<{ title: React.ReactNode; controls?: React.ReactNode; help?: string }> = (
-	props
-) => {
+export const RoundedSection: React.FC<{
+	title: React.ReactNode
+	controls?: React.ReactNode
+	help?: string
+	children: React.ReactNode
+}> = (props) => {
 	const [showHelp, setShowHelp] = useState(false)
 
 	return (

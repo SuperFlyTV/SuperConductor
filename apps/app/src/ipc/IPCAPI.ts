@@ -51,6 +51,7 @@ export const enum ActionDescription {
 	UpdatePeripheralArea = 'Update button area',
 	RemovePeripheralArea = 'Remove button area',
 	AssignAreaToGroup = 'Assign Area to Group',
+	// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
 	SetApplicationTrigger = 'Assign trigger',
 }
 
@@ -75,6 +76,7 @@ export interface IPCServerMethods {
 	log: (arg: { level: LogLevel; params: any[] }) => void
 	handleClientError: (arg: { error: string; stack?: string }) => void
 	debugThrowError: (arg: { type: 'sync' | 'async' | 'setTimeout' }) => void
+	installUpdate: () => void
 	triggerSendAll: () => void
 	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
@@ -192,6 +194,7 @@ export interface IPCServerMethods {
 	refreshResourcesSetAuto: (arg: { interval: number }) => void
 	triggerHandleAutoFill: () => void
 
+	updateAppData: (arg: UpdateAppDataOptions) => void
 	updateProject: (arg: { id: string; project: Project }) => void
 
 	newRundown: (arg: { name: string }) => string
@@ -228,6 +231,7 @@ export interface IPCServerMethods {
 	}) => void
 }
 export interface IPCClientMethods {
+	systemMessage: (message: string, options: SystemMessageOptions) => void
 	updateAppData: (appData: AppData) => void
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
@@ -239,3 +243,11 @@ export interface IPCClientMethods {
 	updateFailedGlobalTriggers: (identifiers: string[]) => void
 	updateAnalogInput: (fullIdentifier: string, analogInput: AnalogInput | null) => void
 }
+
+export interface SystemMessageOptions {
+	variant?: 'default' | 'error' | 'success' | 'warning' | 'info'
+	key?: string
+	persist?: boolean
+	displayRestartButton?: boolean
+}
+export type UpdateAppDataOptions = Pick<AppData, 'preReleaseAutoUpdate'>

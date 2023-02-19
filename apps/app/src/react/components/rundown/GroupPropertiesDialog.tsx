@@ -19,7 +19,14 @@ const groupValidationSchema = Yup.object({
 	name: Yup.string().label('Group Name').required(),
 })
 
-export function GroupPropertiesDialog({ initial, open, title, acceptLabel, onAccepted, onDiscarded }: IProps) {
+export function GroupPropertiesDialog({
+	initial,
+	open,
+	title,
+	acceptLabel,
+	onAccepted,
+	onDiscarded,
+}: IProps): JSX.Element {
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	return (

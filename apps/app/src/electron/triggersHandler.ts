@@ -63,11 +63,11 @@ export class TriggersHandler extends EventEmitter {
 		super()
 	}
 
-	setKeyboardKeys(activeKeys: ActiveTriggers) {
+	setKeyboardKeys(activeKeys: ActiveTriggers): void {
 		this.activeKeys = activeKeys
 		this.handleUpdate()
 	}
-	updateActiveTriggers(activeTriggers: ActiveTriggers) {
+	updateActiveTriggers(activeTriggers: ActiveTriggers): void {
 		this.activeTriggers = activeTriggers
 		this.handleUpdate()
 	}
@@ -96,7 +96,7 @@ export class TriggersHandler extends EventEmitter {
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 	}
-	onPeripheralStatus(peripheralId: string, peripheral: PeripheralStatus | null) {
+	onPeripheralStatus(peripheralId: string, peripheral: PeripheralStatus | null): void {
 		if (!peripheral?.status.connected) {
 			// The peripheral has been disconnected
 
@@ -291,7 +291,7 @@ export class TriggersHandler extends EventEmitter {
 		}
 	}
 
-	registerGlobalKeyboardTriggers() {
+	registerGlobalKeyboardTriggers(): void {
 		const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
 
 		// Don't thrash the registration of hotkeys if nothing has changed.
@@ -356,7 +356,7 @@ export class TriggersHandler extends EventEmitter {
 		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
 	}
 
-	triggerEmitAll() {
+	triggerEmitAll(): void {
 		this.emit('failedGlobalTriggers', this.failedGlobalTriggers)
 	}
 

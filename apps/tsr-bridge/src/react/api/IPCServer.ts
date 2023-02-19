@@ -19,10 +19,10 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 		return this.ipcRenderer.invoke(methodname, ...JSON.parse(JSON.stringify(args)))
 	}
 
-	updateSettings(...args: ServerArgs<'updateSettings'>) {
+	async updateSettings(...args: ServerArgs<'updateSettings'>): ServerReturn<'updateSettings'> {
 		return this.invokeServerMethod('updateSettings', ...args)
 	}
-	initialized(...args: ServerArgs<'initialized'>) {
+	async initialized(...args: ServerArgs<'initialized'>): ServerReturn<'initialized'> {
 		return this.invokeServerMethod('initialized', ...args)
 	}
 }

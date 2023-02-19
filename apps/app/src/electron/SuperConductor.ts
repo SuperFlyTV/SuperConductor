@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -21,7 +22,7 @@ import { LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
 import { Part } from '../models/rundown/Part'
-import { getDefaultPart } from './defaults'
+import { getDefaultPart } from '../lib/defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
@@ -31,6 +32,7 @@ import { HTTPAPI } from './HTTPAPI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
+import { SystemMessageOptions } from '../ipc/IPCAPI'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -199,6 +201,13 @@ export class SuperConductor {
 				project.autoRefreshInterval = interval
 				this.storage.updateProject(project)
 			},
+			onClientConnected: () => {
+				// Nothing here yet
+			},
+			installUpdate: () => {
+				autoUpdater.autoRunAppAfterInstall = true
+				autoUpdater.quitAndInstall()
+			},
 			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 				return this.updateTimeline(group)
 			},
@@ -244,6 +253,9 @@ export class SuperConductor {
 		} else {
 			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 		}
+	}
+	sendSystemMessage(message: string, options: SystemMessageOptions): void {
+		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
@@ -431,7 +443,10 @@ export class SuperConductor {
 		}
 	}
 
-	onNewWindow(window: BrowserWindow) {
+	onNewWindow(window: BrowserWindow): {
+		ipcClient: IPCClient
+		close: () => void
+	} {
 		const ipcClient = new IPCClient(window)
 
 		const client = {
@@ -473,7 +488,7 @@ export class SuperConductor {
 	 * Is called when the app is starting to shut down.
 	 * After this has been called, the client window has closed.
 	 */
-	isShuttingDown() {
+	isShuttingDown(): void {
 		this.shuttingDown = true
 		this.session.terminate()
 	}
@@ -481,7 +496,7 @@ export class SuperConductor {
 	 * Is called when the app is shutting down.
 	 * Shut down everything
 	 */
-	terminate() {
+	terminate(): void {
 		this.storage.terminate()
 		this.triggerHandleAutoFill.clear()
 	}

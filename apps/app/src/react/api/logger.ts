@@ -3,7 +3,15 @@ import { stringifyError } from '@shared/lib'
 import { IPCServer } from './IPCServer'
 
 export class ClientSideLogger {
-	constructor(private serverAPI: IPCServer) {}
+	constructor(private serverAPI: IPCServer) {
+		this.error = this.error.bind(this)
+		this.warn = this.warn.bind(this)
+		this.info = this.info.bind(this)
+		this.http = this.http.bind(this)
+		this.verbose = this.verbose.bind(this)
+		this.debug = this.debug.bind(this)
+		this.silly = this.silly.bind(this)
+	}
 
 	private fixArgs(...args: any[]) {
 		return args.map((arg) => stringifyError(arg))

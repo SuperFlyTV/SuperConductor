@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
+import ReactHtmlParser from 'react-html-parser'
 
 import '@fontsource/barlow/300.css'
 import '@fontsource/barlow/400.css'
@@ -45,6 +46,9 @@ import { ErrorBoundary } from './components/util/ErrorBoundary'
 import { Spinner } from './components/util/Spinner'
 import { CB } from './lib/errorHandling'
 import { ActiveAnalog } from '../models/rundown/Analog'
+import { SystemMessageOptions } from '../ipc/IPCAPI'
+import { TextBtn } from './components/inputs/textBtn/TextBtn'
+import { HiOutlineX } from 'react-icons/hi'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -67,7 +71,7 @@ if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
 export const App = observer(function App() {
 	const [project, setProject] = useState<Project>()
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
-	const { enqueueSnackbar } = useSnackbar()
+	const { enqueueSnackbar, closeSnackbar } = useSnackbar()
 
 	const serverAPI = useMemo<IPCServer>(() => {
 		return new IPCServer(ipcRenderer)
@@ -81,9 +85,66 @@ export const App = observer(function App() {
 		return new TriggersEmitter()
 	}, [])
 
+	const handleError = useCallback(
+		(...args: any[]) => {
+			for (const error of args) {
+				logger.error(args)
+				const { message, stack } = stringifyErrorInner(error)
+
+				if (message) {
+					enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
+
+					// Don't send sever-errors back to server:
+					if (!message.match(ErrorCruftRegex)) {
+						// eslint-disable-next-line no-console
+						serverAPI.handleClientError({ error: message, stack }).catch(console.error)
+					}
+				}
+			}
+			return true
+		},
+		[enqueueSnackbar, logger, serverAPI]
+	)
+
 	// Handle IPC-messages from server
 	useEffect(() => {
 		const ipcClient = new IPCClient(logger, ipcRenderer, {
+			systemMessage: (messageStr: string, options: SystemMessageOptions) => {
+				messageStr = messageStr.replace(/\n/g, '<br>')
+				const message = (
+					<>
+						<div>
+							<p>{ReactHtmlParser(messageStr)}</p>
+							<>
+								{options.displayRestartButton && (
+									<TextBtn
+										onClick={() => {
+											closeSnackbar(snackBarKey)
+											serverAPI.installUpdate().catch(handleError)
+										}}
+										label="Restart and install"
+									/>
+								)}
+							</>
+						</div>
+						{options.persist && (
+							<button
+								className="close-btn"
+								onClick={() => {
+									closeSnackbar(snackBarKey)
+								}}
+							>
+								<HiOutlineX />
+							</button>
+						)}
+					</>
+				)
+				const snackBarKey = enqueueSnackbar(message, {
+					variant: options.variant ?? 'info',
+					key: options.key,
+					persist: options.persist,
+				})
+			},
 			updateAppData: (appData: AppData) => {
 				store.appStore.update(appData)
 				store.rundownsStore.update(appData.rundowns)
@@ -112,28 +173,7 @@ export const App = observer(function App() {
 		return () => {
 			ipcClient.destroy()
 		}
-	}, [triggers, logger])
-
-	const handleError = useCallback(
-		(...args: any[]) => {
-			for (const error of args) {
-				logger.error(args)
-				const { message, stack } = stringifyErrorInner(error)
-
-				if (message) {
-					enqueueSnackbar(message.replace(ErrorCruftRegex, ''), { variant: 'error' })
-
-					// Don't send sever-errors back to server:
-					if (!message.match(ErrorCruftRegex)) {
-						// eslint-disable-next-line no-console
-						serverAPI.handleClientError({ error: message, stack }).catch(console.error)
-					}
-				}
-			}
-			return true
-		},
-		[enqueueSnackbar, logger, serverAPI]
-	)
+	}, [enqueueSnackbar, closeSnackbar, triggers, logger, handleError, serverAPI])
 
 	const errorHandlerContextValue = useMemo(() => {
 		return {
@@ -278,6 +318,7 @@ export const App = observer(function App() {
 		}
 	}
 
+	/* eslint-disable @typescript-eslint/unbound-method */
 	useEffect(() => {
 		sorensen
 			.init()
@@ -286,6 +327,7 @@ export const App = observer(function App() {
 			})
 			.catch(logger.error)
 	}, [logger.error, serverAPI])
+	/* eslint-enable @typescript-eslint/unbound-method */
 
 	const appStore = store.appStore
 
@@ -313,11 +355,13 @@ export const App = observer(function App() {
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)
 		if (!remindMeLater) {
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			appStore.serverAPI.acknowledgeSeenVersion().catch(logger.error)
 		}
 	}
 	function onUserAgreement(agreementVersion: string): void {
 		setUserAgreementScreenOpen(false)
+		// eslint-disable-next-line @typescript-eslint/unbound-method
 		appStore.serverAPI.acknowledgeUserAgreement({ agreementVersion }).catch(logger.error)
 	}
 

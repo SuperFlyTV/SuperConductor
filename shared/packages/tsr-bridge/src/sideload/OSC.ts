@@ -5,10 +5,10 @@ import { LoggerLike } from '@shared/api'
 
 export class OSCSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
 	private async _refreshResources() {

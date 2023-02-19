@@ -6,7 +6,7 @@ import { handleConvenience } from './convenience'
 import { ClipBoardInternal, ClipBoardInternalAny, handleInternal } from './internal'
 import { ClipBoardContext } from './lib'
 
-export function setupClipboard(context: ClipBoardContext) {
+export function setupClipboard(context: ClipBoardContext): void {
 	// This function is called once, when the app is started.
 
 	document.addEventListener(

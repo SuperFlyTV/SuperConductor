@@ -1,11 +1,6 @@
 import { assertNever } from '@shared/lib'
 import React from 'react'
-import {
-	TimelineContentTypeHyperdeck,
-	TimelineObjHyperdeckAny,
-	TimelineObjHyperdeckTransport,
-	TransportStatus,
-} from 'timeline-state-resolver-types'
+import { TimelineContentTypeHyperdeck, TimelineObjHyperdeckAny, TransportStatus } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -48,10 +43,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 		</>
 	)
 
-	const obj0 = obj
-
 	if (obj.content.type === TimelineContentTypeHyperdeck.TRANSPORT) {
-		const obj = obj0 as TimelineObjHyperdeckTransport
 		let specificTransportSettings: JSX.Element = <></>
 		const commonTransportSettings: JSX.Element = (
 			<>

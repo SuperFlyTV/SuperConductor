@@ -4,7 +4,7 @@ import { ResourceAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { BrowserWindow } from 'electron'
-import { IPCClientMethods } from '../ipc/IPCAPI'
+import { IPCClientMethods, SystemMessageOptions } from '../ipc/IPCAPI'
 import { AppData } from '../models/App/AppData'
 import { ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
@@ -15,10 +15,13 @@ import { AnalogInput } from '../models/project/AnalogInput'
 export class IPCClient implements IPCClientMethods {
 	constructor(private mainWindow: BrowserWindow) {}
 
-	close() {
+	close(): void {
 		// Nothing here
 	}
 
+	systemMessage(message: string, options: SystemMessageOptions): void {
+		this.mainWindow?.webContents.send('callMethod', 'systemMessage', message, options)
+	}
 	updateAppData(appData: AppData): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateAppData', appData)
 	}

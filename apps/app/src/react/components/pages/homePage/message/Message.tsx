@@ -4,9 +4,12 @@ import { IoClose } from 'react-icons/io5'
 
 import './style.scss'
 
-export const Message: React.FC<{ content?: React.ReactNode; type: 'help' | 'warning'; onClose?: () => void }> = (
-	props
-) => {
+export const Message: React.FC<{
+	content?: React.ReactNode
+	type: 'help' | 'warning'
+	onClose?: () => void
+	children?: React.ReactNode
+}> = (props) => {
 	return (
 		<div className={`message ${props.type}`}>
 			<div className="icon">

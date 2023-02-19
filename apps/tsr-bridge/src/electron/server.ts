@@ -188,7 +188,7 @@ export class TSRBridgeServer {
 			}
 		}
 	}
-	async terminate() {
+	async terminate(): Promise<void> {
 		await this.baseBridge.destroy()
 	}
 }

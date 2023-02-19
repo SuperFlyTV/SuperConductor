@@ -143,7 +143,7 @@ export const LayerName: React.FC<{
 })
 
 /** Analogue to LayerName, used in initial-renders */
-export function LayerNameEmpty() {
+export function LayerNameEmpty(): JSX.Element {
 	return <div className="layer-name" />
 }
 

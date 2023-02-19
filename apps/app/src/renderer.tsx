@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import ReactDOM from 'react-dom'
+import ReactDOM from 'react-dom/client'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { SnackbarProvider } from 'notistack'
@@ -130,5 +130,7 @@ export const ContextWrapper: React.FC = () => {
 		</DndProvider>
 	)
 }
-
-ReactDOM.render(<ContextWrapper />, document.getElementById('root'))
+const container = document.getElementById('root')
+if (!container) throw new Error('root element not found!')
+const root = ReactDOM.createRoot(container)
+root.render(<ContextWrapper />)

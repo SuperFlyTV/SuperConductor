@@ -267,6 +267,7 @@ const AnalogInputSettings: React.FC<{
 								.catch(handleError)
 						}}
 						allowUndefined={true}
+						focusTooltip={`Tip: You can type fractions, like so: "1/127"`}
 					/>
 					{analogInputSetting.updateUsingAbsolute && (
 						<FloatInput
@@ -350,6 +351,11 @@ const AnalogInputSettings: React.FC<{
 													onClick={() => {
 														// Assign the analog to this setting:
 														analogInputSetting.fullIdentifier = activeAnalog.fullIdentifier
+														if (activeAnalog.value.rAbs === true) {
+															analogInputSetting.updateUsingAbsolute = true
+														} else if (activeAnalog.value.rAbs === false) {
+															analogInputSetting.updateUsingAbsolute = false
+														}
 														ipcServer
 															.updateProject({
 																id: project.id,

@@ -21,7 +21,7 @@ export class AnalogHandler extends EventEmitter {
 	}
 
 	/** Called when a peripheral updates its activeAnalog value */
-	updateActiveAnalog(fullIdentifier: string, activeAnalog: ActiveAnalog | null) {
+	updateActiveAnalog(fullIdentifier: string, activeAnalog: ActiveAnalog | null): void {
 		if (activeAnalog) {
 			this.activeAnalogs[fullIdentifier] = activeAnalog
 			this.handleUpdate(fullIdentifier, activeAnalog)

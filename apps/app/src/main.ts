@@ -1,4 +1,4 @@
-import { literal } from '@shared/lib'
+import { literal, stringifyError } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu, shell, screen } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
@@ -22,7 +22,6 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		webPreferences: {
 			nodeIntegration: true,
 			contextIsolation: false,
-			nativeWindowOpen: false,
 		},
 		title: 'SuperConductor',
 	})
@@ -66,14 +65,15 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		redoLabel: 'Redo',
 		redoEnabled: false,
 		onUndoClick: () => {
-			return superConductor.ipcServer.undo().catch(log.error)
+			superConductor.ipcServer.undo().catch(log.error)
 		},
 		onRedoClick: () => {
-			return superConductor.ipcServer.redo().catch(log.error)
+			superConductor.ipcServer.redo().catch(log.error)
 		},
 		onAboutClick: () => {
 			handler.ipcClient.displayAboutDialog()
 		},
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		onUpdateClick: async () => {
 			try {
 				const result = await autoUpdater.checkForUpdatesAndNotify()
@@ -97,13 +97,19 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 						title: 'Up-to-date',
 						message: `You have the latest version of SuperConductor (v${CURRENT_VERSION}).`,
 					})
+				} else {
+					await dialog.showMessageBox(win, {
+						type: 'info',
+						title: 'New version available',
+						message: `A new version (${result.updateInfo.version}) will download automatically.`,
+					})
 				}
 			} catch (error) {
 				log.error(error)
 			}
 		},
 	})
-	const menu = generateMenu(menuOpts)
+	const menu = generateMenu(menuOpts, log)
 	Menu.setApplicationMenu(menu)
 
 	superConductor.ipcServer.on('updatedUndoLedger', (undoLedger, undoPointer) => {
@@ -113,7 +119,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		menuOpts.undoEnabled = Boolean(undoAction)
 		menuOpts.redoLabel = redoAction ? `Redo ${redoAction.description}` : 'Redo'
 		menuOpts.redoEnabled = Boolean(redoAction)
-		const menu = generateMenu(menuOpts)
+		const menu = generateMenu(menuOpts, log)
 		Menu.setApplicationMenu(menu)
 	})
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:
@@ -175,7 +181,58 @@ function onAppReady(): void {
 
 	const superConductor = new SuperConductor(log, rendererLogger)
 
-	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+	autoUpdater.on('update-available', (info) => {
+		// Notify:
+
+		if (autoUpdater.autoDownload) {
+			superConductor.sendSystemMessage(
+				`A new version (${info.version}) is available. It will automatically be downloaded and installed next time you restart SuperConductor.`,
+				{
+					key: 'update-available',
+				}
+			)
+		} else {
+			superConductor.sendSystemMessage(`A new version (${info.version}) is available.`, {
+				key: 'update-available',
+			})
+		}
+	})
+	autoUpdater.on('update-downloaded', (info) => {
+		superConductor.sendSystemMessage(
+			`A new version (${info.version}) has been downloaded. Restart SuperConductor to install it.`,
+			{
+				key: 'update-downloaded',
+				persist: true,
+				displayRestartButton: true,
+			}
+		)
+	})
+	autoUpdater.on('error', (error, message) => {
+		const errString = stringifyError(error) + message ? ` ${message}` : ''
+
+		// Ignore, this is an error that pops up if the latest tag doesn't have a release yet (or if there a draft release):
+		if (errString.match(/Cannot find latest.yml in the latest release artifacts/)) return
+		log.error(errString)
+
+		superConductor.sendSystemMessage(
+			`There was an error when auto-updating, please <a href="https://github.com/SuperFlyTV/SuperConductor/releases/latest" target="_blank">download the latest</a> version manually.\nError message: ${stringifyError(
+				error,
+				true
+			)}`,
+			{
+				variant: 'error',
+				key: 'update-error',
+			}
+		)
+	})
+	{
+		const appData = superConductor.storage.getAppData()
+		autoUpdater.autoDownload = true
+		autoUpdater.allowDowngrade = true
+
+		autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
+		autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+	}
 
 	app.on('window-all-closed', () => {
 		// On macOS it is common for applications and their menu bar

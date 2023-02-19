@@ -19,7 +19,14 @@ const partValidationSchema = Yup.object({
 	name: Yup.string().label('Part Name').required(),
 })
 
-export function PartPropertiesDialog({ initial, open, title, acceptLabel, onAccepted, onDiscarded }: IProps) {
+export function PartPropertiesDialog({
+	initial,
+	open,
+	title,
+	acceptLabel,
+	onAccepted,
+	onDiscarded,
+}: IProps): JSX.Element {
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	return (

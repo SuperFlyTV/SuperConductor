@@ -12,11 +12,10 @@ export class IPCClient implements IPCClientMethods {
 			system: (system: AppSystem) => void
 		}
 	) {
-		this.handleCallMethod = this.handleCallMethod.bind(this)
 		this.ipcRenderer.on('callMethod', this.handleCallMethod)
 	}
 
-	private handleCallMethod(_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void {
+	private handleCallMethod = ((_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void => {
 		const fcn = (this as any)[methodname]
 		if (!fcn) {
 			// eslint-disable-next-line no-console
@@ -24,7 +23,7 @@ export class IPCClient implements IPCClientMethods {
 		} else {
 			fcn.apply(this, args)
 		}
-	}
+	}).bind(this)
 
 	log(entry: LogEntry): void {
 		this.callbacks.log(entry)

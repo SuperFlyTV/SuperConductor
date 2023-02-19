@@ -17,7 +17,9 @@ import {
 	TimelineObjShotoku,
 	TimelineObjSingularLiveAny,
 	TimelineObjSisyfosAny,
+	TimelineObjSofieChefAny,
 	TimelineObjTCPSendAny,
+	TimelineObjTelemetricsAny,
 	TimelineObjVIZMSEAny,
 	TimelineObjVMixAny,
 	TSRTimelineObj,
@@ -42,6 +44,8 @@ import { EditTimelineObjTCPSendAny } from './timelineObjs/tcpSend'
 import { EditTimelineObjUnknown } from './timelineObjs/unknown'
 import { EditTimelineObjVIZMSEAny } from './timelineObjs/vizMSE'
 import { EditTimelineObjVMixAny } from './timelineObjs/vMix'
+import { EditTimelineObjSofieChefAny } from './timelineObjs/sofieChef'
+import { EditTimelineObjTelemetricsAny } from './timelineObjs/telemetrics'
 
 export const EditTimelineObjContent: React.FC<{
 	obj: TSRTimelineObj
@@ -87,6 +91,10 @@ export const EditTimelineObjContent: React.FC<{
 		editElement = <EditTimelineObjVMixAny obj={obj as TimelineObjVMixAny} onSave={onSave} />
 	} else if (obj.content.deviceType === DeviceType.VIZMSE) {
 		editElement = <EditTimelineObjVIZMSEAny obj={obj as TimelineObjVIZMSEAny} onSave={onSave} />
+	} else if (obj.content.deviceType === DeviceType.SOFIE_CHEF) {
+		editElement = <EditTimelineObjSofieChefAny obj={obj as TimelineObjSofieChefAny} onSave={onSave} />
+	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
+		editElement = <EditTimelineObjTelemetricsAny obj={obj as TimelineObjTelemetricsAny} onSave={onSave} />
 	} else {
 		assertNever(obj.content)
 	}

@@ -58,3 +58,9 @@ yarn build:binary
 1. Run `yarn release` in the root of the repo to bump the appropriate version numbers in the various `package.json` files. Lerna will automatically commit and push the changes along with the appropriate tag.
 2. Wait for the [`Create GitHub Release`](https://github.com/SuperFlyTV/SuperConductor/actions/workflows/create-release.yaml) action to finish.
 3. Go to the [releases](https://github.com/SuperFlyTV/SuperConductor/releases) page and publish the draft release.
+
+### Pre-releases
+
+- On the `develop` branch, run `yarn preminor` first time after a release: `1.5.4` -> `1.6.0-alpha.0`
+  - Then run `yarn prerelease` to bump the prerelease version: `1.6.0-alpha.0` -> `1.6.0-alpha.1`
+- On `master` branch, if a bugfix needs to be tested, run `yarn prerelease`: `1.5.4` -> `1.5.5-alpha.0`

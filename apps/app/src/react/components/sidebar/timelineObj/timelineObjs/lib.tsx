@@ -13,6 +13,7 @@ export type OnSave = (newObj: TSRTimelineObj) => void
 export const EditWrapper: React.FC<{
 	obj: TSRTimelineObj
 	onSave: OnSave
+	children: JSX.Element | JSX.Element[]
 }> = ({ obj, onSave, children }) => {
 	const project = useContext(ProjectContext)
 

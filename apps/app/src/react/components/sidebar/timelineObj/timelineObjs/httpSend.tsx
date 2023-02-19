@@ -39,48 +39,49 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ obj: TimelineObjHTTPSendAny;
 					allowUndefined={false}
 				/>
 			</div>
+			<>
+				{Object.entries(obj.content.params).map(([key, value], index) => (
+					<React.Fragment key={index}>
+						<Stack direction="row" justifyContent="space-between">
+							<Typography variant="body2">Param #{index}</Typography>
+							<TrashBtn
+								onClick={() => {
+									delete obj.content.params[key]
+									onSave(obj)
+								}}
+								title="Delete parameter"
+							/>
+						</Stack>
 
-			{Object.entries(obj.content.params).map(([key, value], index) => (
-				<React.Fragment key={index}>
-					<Stack direction="row" justifyContent="space-between">
-						<Typography variant="body2">Param #{index}</Typography>
-						<TrashBtn
-							onClick={() => {
-								delete obj.content.params[key]
-								onSave(obj)
-							}}
-							title="Delete parameter"
-						/>
-					</Stack>
+						<div className="setting">
+							<TextInput
+								label="Key"
+								fullWidth
+								currentValue={key}
+								onChange={(v) => {
+									obj.content.params[v] = value
+									delete obj.content.params[key]
+									onSave(obj)
+								}}
+								allowUndefined={false}
+							/>
+						</div>
 
-					<div className="setting">
-						<TextInput
-							label="Key"
-							fullWidth
-							currentValue={key}
-							onChange={(v) => {
-								obj.content.params[v] = value
-								delete obj.content.params[key]
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-
-					<div className="setting">
-						<TextInput
-							label="Value"
-							fullWidth
-							currentValue={value}
-							onChange={(v) => {
-								obj.content.params[key] = v
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-				</React.Fragment>
-			))}
+						<div className="setting">
+							<TextInput
+								label="Value"
+								fullWidth
+								currentValue={value}
+								onChange={(v) => {
+									obj.content.params[key] = v
+									onSave(obj)
+								}}
+								allowUndefined={false}
+							/>
+						</div>
+					</React.Fragment>
+				))}
+			</>
 
 			<Button
 				style={{ marginBottom: '1rem' }}

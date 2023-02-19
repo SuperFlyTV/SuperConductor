@@ -6,6 +6,7 @@ export const FloatInput: React.FC<
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
+			defaultValue?: number
 			label: React.ReactNode
 			disabled?: boolean
 			fullWidth?: boolean
@@ -15,6 +16,8 @@ export const FloatInput: React.FC<
 			/** min, max */
 			caps?: [number, number]
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 	| {
 			currentValue: number | undefined
@@ -30,6 +33,8 @@ export const FloatInput: React.FC<
 			/** min, max */
 			caps?: [number, number]
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 > = (props) => {
 	const parse = useCallback(
@@ -105,13 +110,15 @@ export const FloatInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<number>(
 			props.currentValue,
 			props.onChange,
-			0,
+			props.defaultValue ?? 0,
 			parse,
 			stringify,
 			props.label,
@@ -122,7 +129,9 @@ export const FloatInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

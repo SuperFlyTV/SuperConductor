@@ -30,7 +30,10 @@ export function timelineObjsOntoLayers(
 	sortedLayers: SortedLayer[],
 	resolvedTimeline: ResolvedTimeline,
 	timeline: TimelineObj[]
-) {
+): Array<{
+	layerId: string
+	objectsOnLayer: Array<{ resolved: ResolvedTimelineObject['resolved']; timelineObj: TimelineObj }>
+}> {
 	return sortedLayers.map(({ layerId, objectIds }) => {
 		const objectsOnLayer: {
 			resolved: ResolvedTimelineObject['resolved']
