@@ -10,8 +10,7 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
 import { DurationInput } from '../../inputs/DurationInput'
-
-type LockState = 'all' | 'some' | 'none'
+import { firstValue, getListBoolean, isIndeterminate, ListBoolean } from '../../../lib/multipleEdit'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
@@ -25,6 +24,10 @@ export const SideBarEditPart: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 
+	/**
+	 * A list of all selected parts.
+	 * Guaranteed to have at least 1 entry
+	 */
 	const fullParts = computed(() =>
 		parts
 			.filter((p) => store.rundownsStore.hasPart(p.partId))
@@ -56,31 +59,32 @@ export const SideBarEditPart: React.FC<{
 		[handleError, ipcServer, rundownId]
 	)
 
-	if (!fullParts.length) return null
+	if (!fullParts.length) return null // Ensure at least one entry
 
-	let groupsLocked: LockState = 'none'
-	if (fullParts.every((p) => p.groupLocked)) groupsLocked = 'all'
-	else if (fullParts.some((p) => p.groupLocked)) groupsLocked = 'some'
-
-	let partsLocked: LockState = 'none'
-	if (fullParts.every((p) => p.partGUI.locked)) partsLocked = 'all'
-	else if (fullParts.some((p) => p.partGUI.locked)) partsLocked = 'some'
+	const groupsLocked = getListBoolean(fullParts, (p) => p.groupLocked ?? false)
+	const partsLocked = getListBoolean(fullParts, (p) => p.partGUI.locked ?? false)
 
 	let durationPlaceholder = 'From content'
 	if (fullParts.some((p) => p.partGUI.duration !== fullParts[0].partGUI.duration))
-		durationPlaceholder = 'Multiple values'
+		durationPlaceholder = '-- Different values --'
+
+	const modifiableParts = fullParts.filter((p) => !p.groupLocked && !p.partGUI.locked)
 
 	const header = (
 		<>
 			<div className="title">
-				<span>{fullParts.length > 1 ? 'Multiple parts' : `Part: ${fullParts[0].partGUI.resolved.label}`}</span>
+				<span>
+					{fullParts.length > 1
+						? `${fullParts.length} parts`
+						: `Part: ${fullParts[0].partGUI.resolved.label}`}
+				</span>
 				<div>
 					<TrashBtn
-						disabled={partsLocked === 'all' || groupsLocked === 'all'}
+						disabled={modifiableParts.length === 0}
 						onClick={() => {
 							setDeleteConfirmationOpen(true)
 						}}
-						title="Delete Part"
+						title={modifiableParts.length === 1 ? 'Delete Part' : `Delete ${modifiableParts.length} Parts`}
 					/>
 				</div>
 			</div>
@@ -89,43 +93,41 @@ export const SideBarEditPart: React.FC<{
 
 	return (
 		<SidebarContent title={header} className="edit-group">
-			<DataRow label="ID" value={fullParts.length > 1 ? 'Multiple IDs' : fullParts[0].partId} />
+			<DataRow label="ID" value={fullParts.length > 1 ? 'Different IDs' : fullParts[0].partId} />
 
 			<div className="settings">
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"
-						currentValue={fullParts.every((p) => p.partGUI.disabled)}
-						indeterminate={fullParts.some((p) => p.partGUI.disabled !== fullParts[0].partGUI.disabled)}
-						disabled={partsLocked === 'all' || groupsLocked === 'all'}
+						currentValue={firstValue(modifiableParts, (g) => g.partGUI.disabled)}
+						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.disabled)}
+						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						onChange={(value) => {
-							fullParts
-								.filter((p) => !p.groupLocked && !p.partGUI.locked)
-								.forEach((p) =>
-									ipcServer
-										.updatePart({
-											rundownId,
-											groupId: p.groupId,
-											partId: p.partId,
-											part: {
-												disabled: value,
-											},
-										})
-										.catch(handleError)
-								)
+							modifiableParts.forEach((p) => {
+								ipcServer
+									.updatePart({
+										rundownId,
+										groupId: p.groupId,
+										partId: p.partId,
+										part: {
+											disabled: value,
+										},
+									})
+									.catch(handleError)
+							})
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Lock part for editing"
-						currentValue={partsLocked === 'all'}
-						indeterminate={partsLocked === 'some'}
-						disabled={groupsLocked === 'all'}
+						currentValue={partsLocked === ListBoolean.ALL}
+						indeterminate={partsLocked === ListBoolean.SOME}
+						disabled={groupsLocked === ListBoolean.ALL}
 						onChange={(value) => {
 							fullParts
 								.filter((p) => !p.groupLocked)
-								.forEach((p) =>
+								.forEach((p) => {
 									ipcServer
 										.updatePart({
 											rundownId,
@@ -136,59 +138,52 @@ export const SideBarEditPart: React.FC<{
 											},
 										})
 										.catch(handleError)
-								)
+								})
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Loop"
-						currentValue={fullParts.every((p) => p.partGUI.loop)}
-						indeterminate={fullParts.some((p) => p.partGUI.loop !== fullParts[0].partGUI.loop)}
-						disabled={partsLocked === 'all' || groupsLocked === 'all'}
+						currentValue={firstValue(modifiableParts, (g) => g.partGUI.loop)}
+						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.loop)}
+						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						onChange={(value) => {
-							fullParts
-								.filter((p) => !p.groupLocked && !p.partGUI.locked)
-								.forEach((p) =>
-									ipcServer
-										.updatePart({
-											rundownId,
-											groupId: p.groupId,
-											partId: p.partId,
-											part: {
-												loop: value,
-											},
-										})
-										.catch(handleError)
-								)
+							modifiableParts.forEach((p) => {
+								ipcServer
+									.updatePart({
+										rundownId,
+										groupId: p.groupId,
+										partId: p.partId,
+										part: {
+											loop: value,
+										},
+									})
+									.catch(handleError)
+							})
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<DurationInput
 						label="Fixed Part duration"
-						currentValue={
-							fullParts.every((p) => p.partGUI.duration === fullParts[0].partGUI.duration)
-								? fullParts[0].partGUI.duration
-								: undefined
-						}
-						disabled={partsLocked === 'all' || groupsLocked === 'all'}
+						currentValue={firstValue(modifiableParts, (g) => g.partGUI.duration)}
+						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.duration)}
+						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						emptyPlaceholder={durationPlaceholder}
 						onChange={(value) => {
-							fullParts
-								.filter((p) => !p.groupLocked && !p.partGUI.locked)
-								.forEach((p) =>
-									ipcServer
-										.updatePart({
-											rundownId,
-											groupId: p.groupId,
-											partId: p.partId,
-											part: {
-												duration: value,
-											},
-										})
-										.catch(handleError)
-								)
+							modifiableParts.forEach((p) => {
+								ipcServer
+									.updatePart({
+										rundownId,
+										groupId: p.groupId,
+										partId: p.partId,
+										part: {
+											duration: value,
+										},
+									})
+									.catch(handleError)
+							})
 						}}
 						allowUndefined={true}
 					/>
@@ -201,8 +196,7 @@ export const SideBarEditPart: React.FC<{
 				acceptLabel="Delete"
 				onAccepted={() => {
 					fullParts
-						.filter((p) => !p.groupLocked && !p.partGUI.locked)
-						.forEach((p) => handleDelete(p.groupId, p.partId))
+					modifiableParts.forEach((p) => handleDelete(p.groupId, p.partId))
 					setDeleteConfirmationOpen(false)
 				}}
 				onDiscarded={() => {
@@ -211,7 +205,12 @@ export const SideBarEditPart: React.FC<{
 			>
 				<p>
 					Are you sure you want to delete{' '}
-					{fullParts.length > 1 ? 'multiple parts' : <>&quot;{fullParts[0].partGUI.resolved.label}&quot;</>}?
+					{modifiableParts.length > 1 || modifiableParts.length === 0 ? (
+						`${modifiableParts.length} parts`
+					) : (
+						<>&quot;{modifiableParts[0].partGUI.resolved.label}&quot;</>
+					)}
+					?
 				</p>
 			</ConfirmationDialog>
 		</SidebarContent>

@@ -35,7 +35,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 										groupId: group.id,
 									}
 							})
-							.filter((p) => typeof p !== 'undefined'),
+							.filter(Boolean),
 					} as {
 						type: 'group'
 						items: {
@@ -50,16 +50,15 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 							.map((p) => {
 								const group =
 									store.rundownsStore.hasGroup(p.groupId) && store.rundownsStore.getGroup(p.groupId)
-								const part =
-									store.rundownsStore.hasPart(p.partId) && store.rundownsStore.getPart(p.partId)
+								const part = store.rundownsStore.hasPart(p.partId)
 								if (group && part)
 									return {
 										groupId: group.id,
 										groupLocked: group.locked,
-										partId: part.id,
+										partId: p.partId,
 									}
 							})
-							.filter((p) => typeof p !== 'undefined'),
+							.filter(Boolean),
 					} as {
 						type: 'part'
 						items: {

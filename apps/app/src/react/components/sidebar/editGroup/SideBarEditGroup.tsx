@@ -10,19 +10,25 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
 import { SelectEnum } from '../../inputs/SelectEnum'
-import { Group, PlayoutMode, ScheduleSettings } from '../../../../models/rundown/Group'
+import { PlayoutMode, ScheduleSettings } from '../../../../models/rundown/Group'
 import { DateTimeInput } from '../../inputs/DateTimeInput'
 import { RepeatingType } from '../../../../lib/timeLib'
 import { DurationInput } from '../../inputs/DurationInput'
+import { ToggleInput } from '../../inputs/ToggleInput'
 import { assertNever } from '@shared/lib'
 import { PartialDeep } from 'type-fest'
 import { IntInput } from '../../inputs/IntInput'
 import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
-import Toggle from 'react-toggle'
 import { FormLabel, Grid } from '@mui/material'
 import { shortID } from '../../../../lib/util'
-
-type LockState = 'all' | 'some' | 'none'
+import {
+	allAreTrue,
+	firstValue,
+	getListBoolean,
+	getListBooleanLabels,
+	isIndeterminate,
+	ListBoolean,
+} from '../../../lib/multipleEdit'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -34,6 +40,10 @@ export const SideBarEditGroup: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 
+	/**
+	 * A list of all selected groups.
+	 * Guaranteed to have at least 1 entry.
+	 */
 	const fullGroups = computed(() =>
 		groups
 			.filter((g) => store.rundownsStore.hasGroup(g.groupId))
@@ -60,27 +70,29 @@ export const SideBarEditGroup: React.FC<{
 
 	const toggleId = useMemo(() => `toggle_${shortID()}`, [])
 
-	if (!fullGroups.length) return null
+	if (!fullGroups.length) return null // Ensure at least one entry
 
-	let locked: LockState = 'none'
-	if (fullGroups.every((g) => g.locked)) locked = 'all'
-	else if (fullGroups.some((g) => g.locked)) locked = 'some'
+	const locked = getListBoolean(fullGroups, (g) => g.locked ?? false)
+	const oneAtATime = getListBoolean(fullGroups, (g) => g.oneAtATime)
 
-	let oneAtATime: LockState = 'none'
-	if (fullGroups.every((g) => g.oneAtATime)) oneAtATime = 'all'
-	else if (fullGroups.some((g) => g.oneAtATime)) oneAtATime = 'some'
+	/** List of which groups can be modified/deleted */
+	const modifiableGroups = fullGroups.filter((g) => !g.locked)
+	/** List of which mofidiable groups in OneAtATime mode */
+	const modifiableGroupsOneAtATime = modifiableGroups.filter((g) => g.oneAtATime)
 
 	const header = (
 		<>
 			<div className="title">
-				<span>{fullGroups.length > 1 ? 'Multiple groups' : `Group: ${fullGroups[0].name}`}</span>
+				<span>{fullGroups.length > 1 ? `${fullGroups.length} groups` : `Group: ${fullGroups[0].name}`}</span>
 				<div>
 					<TrashBtn
-						disabled={fullGroups.every((g) => g.locked)}
+						disabled={modifiableGroups.length === 0}
 						onClick={() => {
 							setDeleteConfirmationOpen(true)
 						}}
-						title="Delete Group"
+						title={
+							modifiableGroups.length === 1 ? 'Delete Group' : `Delete ${modifiableGroups.length} Groups`
+						}
 					/>
 				</div>
 			</div>
@@ -89,76 +101,87 @@ export const SideBarEditGroup: React.FC<{
 
 	return (
 		<SidebarContent title={header} className="edit-group">
-			<DataRow label="ID" value={fullGroups.length > 1 ? 'Multiple IDs' : fullGroups[0].id} />
+			<DataRow label="ID" value={fullGroups.length > 1 ? 'Different IDs' : fullGroups[0].id} />
 
 			<div className="settings">
-				{fullGroups.length === 1 && (
-					<>
-						<div className="setting">
-							<SelectEnum
-								label="Playout mode"
-								currentValue={fullGroups[0].playoutMode}
-								disabled={locked === 'all'}
-								fullWidth
-								options={PlayoutMode}
-								onChange={(value) => {
+				<>
+					<div className="setting">
+						<SelectEnum
+							label="Playout mode"
+							currentValue={firstValue(modifiableGroups, (g) => g.playoutMode)}
+							indeterminate={isIndeterminate(modifiableGroups, (g) => g.playoutMode)}
+							disabled={modifiableGroups.length === 0}
+							fullWidth
+							options={PlayoutMode}
+							onChange={(value) => {
+								modifiableGroups.forEach((g) => {
 									ipcServer
 										.updateGroup({
 											rundownId,
-											groupId: fullGroups[0].id,
-											group: {
-												playoutMode: value,
-											},
+											groupId: g.id,
+											group: { playoutMode: value },
 										})
 										.catch(handleError)
-								}}
-							/>
-						</div>
-						{fullGroups[0].playoutMode === PlayoutMode.SCHEDULE && (
-							<div className="settings-group">
-								<div className="setting">
-									<Grid container>
-										<Grid item sx={{ mr: 1 }}>
-											<Toggle
-												id={toggleId}
-												onChange={(e) => {
+								})
+							}}
+						/>
+					</div>
+					{allAreTrue(fullGroups, (g) => g.playoutMode === PlayoutMode.SCHEDULE) && (
+						<div className="settings-group">
+							<div className="setting">
+								<Grid container>
+									<Grid item sx={{ mr: 1 }}>
+										<ToggleInput
+											id={toggleId}
+											disabled={modifiableGroups.length === 0}
+											onChange={(value) => {
+												modifiableGroups.forEach((g) => {
 													ipcServer
 														.updateGroup({
 															rundownId,
-															groupId: fullGroups[0].id,
-															group: { schedule: { activate: e.target.checked } },
+															groupId: g.id,
+															group: { schedule: { activate: value } },
 														})
 														.catch(handleError)
-												}}
-												checked={!!fullGroups[0].schedule.activate}
-												title={
-													fullGroups[0].schedule.activate
-														? 'Click to disable schedule'
-														: 'Click to activate schedule'
-												}
-											/>
-										</Grid>
-										<Grid item>
-											<FormLabel htmlFor={toggleId}>
-												{fullGroups[0].schedule.activate
-													? 'Schedule active'
-													: 'Schedule disabled'}
-											</FormLabel>
-										</Grid>
+												})
+											}}
+											currentValue={firstValue(modifiableGroups, (g) => g.schedule.activate)}
+											indeterminate={isIndeterminate(
+												modifiableGroups,
+												(g) => !!g.schedule.activate
+											)}
+											label={
+												firstValue(modifiableGroups, (g) => g.schedule.activate)
+													? 'Click to disable schedule'
+													: 'Click to activate schedule'
+											}
+										/>
 									</Grid>
-								</div>
-								<div className="setting">
-									<DateTimeInput
-										label="Start Time"
-										currentValue={fullGroups[0].schedule.startTime}
-										allowUndefined={true}
-										disabled={locked === 'all'}
-										fullWidth
-										onChange={(value) => {
+									<Grid item>
+										<FormLabel htmlFor={toggleId}>
+											{getListBooleanLabels(fullGroups, (g) => !!g.schedule.activate, [
+												'Schedule active',
+												'-- Different values --',
+												'Schedule disabled',
+											])}
+										</FormLabel>
+									</Grid>
+								</Grid>
+							</div>
+							<div className="setting">
+								<DateTimeInput
+									label="Start Time"
+									currentValue={firstValue(modifiableGroups, (g) => g.schedule.startTime)}
+									indeterminate={isIndeterminate(modifiableGroups, (g) => g.schedule.startTime)}
+									allowUndefined={true}
+									disabled={modifiableGroups.length === 0}
+									fullWidth
+									onChange={(value) => {
+										modifiableGroups.forEach((g) => {
 											ipcServer
 												.updateGroup({
 													rundownId,
-													groupId: fullGroups[0].id,
+													groupId: g.id,
 													group: {
 														schedule: {
 															startTime: value,
@@ -166,21 +189,24 @@ export const SideBarEditGroup: React.FC<{
 													},
 												})
 												.catch(handleError)
-										}}
-									/>
-								</div>
-								<div className="setting">
-									<SelectEnum
-										label="Repeating"
-										currentValue={fullGroups[0].schedule.repeating.type}
-										disabled={locked === 'all'}
-										fullWidth
-										options={RepeatingType}
-										onChange={(value) => {
+										})
+									}}
+								/>
+							</div>
+							<div className="setting">
+								<SelectEnum
+									label="Repeating"
+									currentValue={firstValue(modifiableGroups, (g) => g.schedule.repeating.type)}
+									indeterminate={isIndeterminate(modifiableGroups, (g) => g.schedule.repeating.type)}
+									disabled={modifiableGroups.length === 0}
+									fullWidth
+									options={RepeatingType}
+									onChange={(value) => {
+										modifiableGroups.forEach((g) => {
 											ipcServer
 												.updateGroup({
 													rundownId,
-													groupId: fullGroups[0].id,
+													groupId: g.id,
 													group: {
 														schedule: {
 															repeating: {
@@ -190,36 +216,47 @@ export const SideBarEditGroup: React.FC<{
 													},
 												})
 												.catch(handleError)
-										}}
-									/>
-								</div>
-								<GroupScheduleRepeatingSettings
-									settings={fullGroups[0].schedule}
-									locked={locked === 'all'}
-									onChange={(groupUpdate) => {
-										ipcServer
-											.updateGroup({
-												rundownId,
-												groupId: fullGroups[0].id,
-												group: groupUpdate,
-											})
-											.catch(handleError)
+										})
 									}}
 								/>
 							</div>
-						)}
-					</>
-				)}
+							{isIndeterminate(modifiableGroups, (g) => g.schedule.repeating) ? (
+								<div>-- Different schemas --</div>
+							) : (
+								<GroupScheduleRepeatingSettings
+									repeating={firstValue(modifiableGroups, (g) => g.schedule.repeating)}
+									disabled={modifiableGroups.length === 0}
+									onChange={(repeatingUpdate) => {
+										modifiableGroups.forEach((g) => {
+											ipcServer
+												.updateGroup({
+													rundownId,
+													groupId: g.id,
+													group: {
+														schedule: {
+															repeating: repeatingUpdate,
+														},
+													},
+												})
+												.catch(handleError)
+										})
+									}}
+								/>
+							)}
+						</div>
+					)}
+				</>
+
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"
-						currentValue={fullGroups.every((g) => g.disabled)}
-						indeterminate={fullGroups.some((g) => g.disabled !== fullGroups[0].disabled)}
-						disabled={locked === 'all'}
+						currentValue={firstValue(modifiableGroups, (g) => g.disabled)}
+						indeterminate={isIndeterminate(modifiableGroups, (g) => g.disabled)}
+						disabled={locked === ListBoolean.ALL}
 						onChange={(value) => {
 							fullGroups
 								.filter((g) => !g.locked)
-								.forEach((g) =>
+								.forEach((g) => {
 									ipcServer
 										.toggleGroupDisable({
 											rundownId,
@@ -227,17 +264,17 @@ export const SideBarEditGroup: React.FC<{
 											value,
 										})
 										.catch(handleError)
-								)
+								})
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Lock group for editing"
-						currentValue={locked === 'all'}
-						indeterminate={locked === 'some'}
+						currentValue={locked === ListBoolean.ALL}
+						indeterminate={locked === ListBoolean.SOME}
 						onChange={(value) => {
-							fullGroups.forEach((g) =>
+							fullGroups.forEach((g) => {
 								ipcServer
 									.toggleGroupLock({
 										rundownId,
@@ -245,20 +282,20 @@ export const SideBarEditGroup: React.FC<{
 										value,
 									})
 									.catch(handleError)
-							)
+							})
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Play one Part at a time"
-						currentValue={oneAtATime === 'all'}
-						indeterminate={oneAtATime === 'some'}
-						disabled={locked === 'all'}
+						currentValue={oneAtATime === ListBoolean.ALL}
+						indeterminate={oneAtATime === ListBoolean.SOME}
+						disabled={locked === ListBoolean.ALL}
 						onChange={(value) => {
 							fullGroups
 								.filter((g) => !g.locked)
-								.forEach((g) =>
+								.forEach((g) => {
 									ipcServer
 										.toggleGroupOneAtATime({
 											rundownId,
@@ -266,56 +303,48 @@ export const SideBarEditGroup: React.FC<{
 											value,
 										})
 										.catch(handleError)
-								)
+								})
 						}}
 					/>
 				</div>
-				{oneAtATime !== 'none' && (
+				{oneAtATime !== ListBoolean.NONE && (
 					<div className="setting">
 						<BooleanInput
 							label="Loop"
-							currentValue={fullGroups.filter((g) => g.oneAtATime).every((g) => g.loop)}
-							indeterminate={fullGroups
-								.filter((g) => g.oneAtATime)
-								.some((g, _i, all) => g.loop !== all[0].loop)}
-							disabled={locked === 'all'}
+							currentValue={firstValue(modifiableGroupsOneAtATime, (g) => g.loop)}
+							indeterminate={isIndeterminate(modifiableGroupsOneAtATime, (g) => g.loop)}
+							disabled={modifiableGroupsOneAtATime.length === 0}
 							onChange={(value) => {
-								fullGroups
-									.filter((g) => !g.locked && g.oneAtATime)
-									.forEach((g) =>
-										ipcServer
-											.toggleGroupLoop({
-												rundownId,
-												groupId: g.id,
-												value,
-											})
-											.catch(handleError)
-									)
+								modifiableGroupsOneAtATime.forEach((g) => {
+									ipcServer
+										.toggleGroupLoop({
+											rundownId,
+											groupId: g.id,
+											value,
+										})
+										.catch(handleError)
+								})
 							}}
 						/>
 					</div>
 				)}
-				{oneAtATime !== 'none' && (
+				{oneAtATime !== ListBoolean.NONE && (
 					<div className="setting">
 						<BooleanInput
 							label="Auto-step"
-							currentValue={fullGroups.filter((g) => g.oneAtATime).every((g) => g.autoPlay)}
-							indeterminate={fullGroups
-								.filter((g) => g.oneAtATime)
-								.some((g, _i, all) => g.autoPlay !== all[0].autoPlay)}
-							disabled={locked === 'all'}
+							currentValue={firstValue(modifiableGroupsOneAtATime, (g) => g.autoPlay)}
+							indeterminate={isIndeterminate(modifiableGroupsOneAtATime, (g) => g.autoPlay)}
+							disabled={modifiableGroupsOneAtATime.length === 0}
 							onChange={(value) => {
-								fullGroups
-									.filter((g) => !g.locked && g.oneAtATime)
-									.forEach((g) =>
-										ipcServer
-											.toggleGroupAutoplay({
-												rundownId,
-												groupId: g.id,
-												value,
-											})
-											.catch(handleError)
-									)
+								modifiableGroupsOneAtATime.forEach((g) => {
+									ipcServer
+										.toggleGroupAutoplay({
+											rundownId,
+											groupId: g.id,
+											value,
+										})
+										.catch(handleError)
+								})
 							}}
 						/>
 					</div>
@@ -327,7 +356,7 @@ export const SideBarEditGroup: React.FC<{
 				title="Delete Group"
 				acceptLabel="Delete"
 				onAccepted={() => {
-					fullGroups.filter((g) => !g.locked).forEach((g) => handleDelete(g.id))
+					modifiableGroups.forEach((g) => handleDelete(g.id))
 					setDeleteConfirmationOpen(false)
 				}}
 				onDiscarded={() => {
@@ -336,7 +365,12 @@ export const SideBarEditGroup: React.FC<{
 			>
 				<p>
 					Are you sure you want to delete{' '}
-					{fullGroups.length > 1 ? 'multiple groups' : <>&quot;{fullGroups[0].name}&quot;</>}?
+					{modifiableGroups.length > 1 || modifiableGroups.length === 0 ? (
+						`${modifiableGroups.length} groups`
+					) : (
+						<>&quot;{modifiableGroups[0].name}&quot;</>
+					)}
+					?
 				</p>
 			</ConfirmationDialog>
 		</SidebarContent>
@@ -344,68 +378,69 @@ export const SideBarEditGroup: React.FC<{
 })
 
 export const GroupScheduleRepeatingSettings: React.FC<{
-	settings: ScheduleSettings
-	locked: boolean | undefined
-	onChange: (group: PartialDeep<Group>) => void
-}> = ({ settings, locked, onChange }) => {
-	if (settings.repeating.type === RepeatingType.NO_REPEAT) {
+	repeating: ScheduleSettings['repeating'] | undefined
+	disabled: boolean | undefined
+	onChange: (settings: PartialDeep<ScheduleSettings['repeating']>) => void
+}> = ({ repeating, disabled, onChange }) => {
+	if (!repeating) return null
+	if (repeating.type === RepeatingType.NO_REPEAT) {
 		return null
-	} else if (settings.repeating.type === RepeatingType.CUSTOM) {
+	} else if (repeating.type === RepeatingType.CUSTOM) {
 		return (
 			<>
 				<div className="setting">
 					<DurationInput
 						label="Interval"
 						fullWidth
-						currentValue={settings.repeating.intervalCustom as number}
+						currentValue={repeating.intervalCustom as number}
 						allowUndefined={false}
 						allowNull={false}
-						disabled={locked}
+						disabled={disabled}
 						defaultValue={1}
-						onChange={(value) => onChange({ schedule: { repeating: { intervalCustom: value } } })}
+						onChange={(value) => onChange({ intervalCustom: value })}
 					/>
 				</div>
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
 						fullWidth
-						currentValue={settings.repeating.repeatUntil}
+						currentValue={repeating.repeatUntil}
 						allowUndefined={true}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { repeatUntil: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ repeatUntil: value })}
 					/>
 				</div>
 			</>
 		)
-	} else if (settings.repeating.type === RepeatingType.DAILY) {
+	} else if (repeating.type === RepeatingType.DAILY) {
 		return (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Repeat every X day"
 						fullWidth
-						currentValue={settings.repeating.interval ?? 1}
+						currentValue={repeating.interval ?? 1}
 						allowUndefined={false}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ interval: value })}
 					/>
 				</div>
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
 						fullWidth
-						currentValue={settings.repeating.repeatUntil}
+						currentValue={repeating.repeatUntil}
 						allowUndefined={true}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { repeatUntil: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ repeatUntil: value })}
 					/>
 				</div>
 			</>
 		)
-	} else if (settings.repeating.type === RepeatingType.WEEKLY) {
+	} else if (repeating.type === RepeatingType.WEEKLY) {
 		const weekdaysSelect: number[] = []
-		for (let i = 0; i < (settings.repeating.weekdays ?? []).length; i++) {
-			if ((settings.repeating.weekdays ?? [])[i]) weekdaysSelect.push(i)
+		for (let i = 0; i < (repeating.weekdays ?? []).length; i++) {
+			if ((repeating.weekdays ?? [])[i]) weekdaysSelect.push(i)
 		}
 		return (
 			<>
@@ -415,7 +450,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 						fullWidth
 						currentValues={weekdaysSelect}
 						allowUndefined={false}
-						disabled={locked}
+						disabled={disabled}
 						options={[
 							{ value: 0, label: 'Sunday' },
 							{ value: 1, label: 'Monday' },
@@ -435,7 +470,7 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 								value.includes(5),
 								value.includes(6),
 							]
-							onChange({ schedule: { repeating: { weekdays: weekdays } } })
+							onChange({ weekdays: weekdays })
 						}}
 					/>
 				</div>
@@ -443,41 +478,41 @@ export const GroupScheduleRepeatingSettings: React.FC<{
 					<DateTimeInput
 						label="Repeat Until"
 						fullWidth
-						currentValue={settings.repeating.repeatUntil}
+						currentValue={repeating.repeatUntil}
 						allowUndefined={true}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { repeatUntil: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ repeatUntil: value })}
 					/>
 				</div>
 			</>
 		)
-	} else if (settings.repeating.type === RepeatingType.MONTHLY) {
+	} else if (repeating.type === RepeatingType.MONTHLY) {
 		return (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Repeat every X month"
 						fullWidth
-						currentValue={settings.repeating.interval ?? 1}
+						currentValue={repeating.interval ?? 1}
 						allowUndefined={false}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { interval: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ interval: value })}
 					/>
 				</div>
 				<div className="setting">
 					<DateTimeInput
 						label="Repeat Until"
 						fullWidth
-						currentValue={settings.repeating.repeatUntil}
+						currentValue={repeating.repeatUntil}
 						allowUndefined={true}
-						disabled={locked}
-						onChange={(value) => onChange({ schedule: { repeating: { repeatUntil: value } } })}
+						disabled={disabled}
+						onChange={(value) => onChange({ repeatUntil: value })}
 					/>
 				</div>
 			</>
 		)
 	} else {
-		assertNever(settings.repeating)
+		assertNever(repeating)
 		return <></>
 	}
 }

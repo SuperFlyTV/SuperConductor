@@ -3,6 +3,7 @@ import { ParsedValueInput } from './parsedValueInput'
 export const IntInput: React.FC<
 	| {
 			currentValue: number
+			indeterminate?: boolean
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
@@ -17,6 +18,7 @@ export const IntInput: React.FC<
 	  }
 	| {
 			currentValue: number | undefined
+			indeterminate?: boolean
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
@@ -58,6 +60,7 @@ export const IntInput: React.FC<
 	if (props.allowUndefined) {
 		return ParsedValueInput<number | undefined>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			undefined,
 			parse,
@@ -75,6 +78,7 @@ export const IntInput: React.FC<
 	} else {
 		return ParsedValueInput<number>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			0,
 			parse,
