@@ -1,13 +1,15 @@
 import { Box, Button, Stack, Typography } from '@mui/material'
+import { deepClone } from '@shared/lib'
 import React from 'react'
 import { OSCMessageCommandContent, OSCValueType, SomeOSCValue, TimelineObjOSCAny } from 'timeline-state-resolver-types'
+import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { FloatInput } from '../../../inputs/FloatInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { TrashBtn } from '../../../inputs/TrashBtn'
-import { EditWrapper, OnSave } from './lib'
+import { EditWrapper, OnSave, OnSaveType } from './lib'
 
 enum OSCEasingType {
 	Linear = 'Linear',
@@ -36,16 +38,212 @@ const DEFAULT_TRANSITION: OSCMessageCommandContent['transition'] = {
 	direction: OSCTransitionDirection.InOut,
 }
 
-const EditOSCValue: React.FC<{ oscValue: SomeOSCValue; onSave: () => void }> = ({ oscValue, onSave }) => {
+export const EditTimelineObjOSCAny: React.FC<{ objs: TimelineObjOSCAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave: onSave0,
+}) => {
+	const contentType = firstValue(objs, (obj) => obj.content.type)
+	if (!contentType) return null
+
+	const firstObj = objs[0]
+	if (!firstObj) return null
+
+	const onSave = onSave0 as OnSaveType<TimelineObjOSCAny>
+	return (
+		<EditWrapper objs={objs} onSave={onSave0}>
+			<div className="setting">
+				<TextInput
+					label="Path"
+					fullWidth
+					{...inputValue(objs, (obj) => obj.content.path, '')}
+					onChange={(v) => {
+						onSave({ content: { path: v } })
+					}}
+					allowUndefined={false}
+				/>
+			</div>
+
+			<>
+				{isIndeterminate(objs, (obj) => obj.content.values) ? (
+					<>-- Different values-- </>
+				) : (
+					<>
+						{firstObj.content.values.map((oscValue, index) => (
+							<React.Fragment key={index}>
+								<Stack direction="row" justifyContent="space-between">
+									<Typography variant="body2">Value #{index}</Typography>
+									<TrashBtn
+										onClick={() => {
+											const values = deepClone(firstObj.content.values)
+											values.splice(index, 1)
+											onSave({ content: { values } })
+										}}
+										title="Delete value"
+									/>
+								</Stack>
+
+								<EditOSCValue
+									oscValue={oscValue}
+									onSave={(newOscValue) => {
+										const values = deepClone(firstObj.content.values)
+										values[index] = newOscValue
+										onSave({ content: { values } })
+									}}
+								/>
+							</React.Fragment>
+						))}
+						<Button
+							style={{ marginBottom: '1rem' }}
+							variant="contained"
+							onClick={() => {
+								const values = deepClone(firstObj.content.values)
+								values.push({
+									type: OSCValueType.INT,
+									value: 0,
+								})
+								onSave({ content: { values } })
+							}}
+						>
+							Add Value
+						</Button>
+					</>
+				)}
+			</>
+
+			{isIndeterminate(objs, (obj) => obj.content.transition === undefined) ? (
+				<>-- Different values--</>
+			) : !firstObj.content.transition ? (
+				<Box>
+					<Button
+						style={{ marginBottom: '1rem' }}
+						variant="contained"
+						onClick={() => {
+							onSave({ content: { transition: DEFAULT_TRANSITION } })
+						}}
+					>
+						Add Transition
+					</Button>
+				</Box>
+			) : (
+				<>
+					<Stack direction="row" justifyContent="space-between">
+						<Typography variant="body2">Transition Settings</Typography>
+						<TrashBtn
+							onClick={() => {
+								onSave({ content: { transition: undefined } })
+							}}
+							title="Delete transition"
+						/>
+					</Stack>
+
+					<div className="setting">
+						<DurationInput
+							label="Transition Duration (milliseconds)"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.transition?.duration, 0)}
+							defaultValue={0}
+							onChange={(v) => {
+								onSave({ content: { transition: { duration: v } } })
+							}}
+							allowUndefined={false}
+							allowNull={false}
+						/>
+					</div>
+
+					<div className="setting">
+						<SelectEnum
+							label="Transition Easing Type"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.transition?.type, undefined)}
+							options={OSCEasingType}
+							onChange={(v: OSCEasingType) => {
+								onSave({ content: { transition: { type: v } } })
+							}}
+							allowUndefined={false}
+						/>
+					</div>
+
+					<div className="setting">
+						<SelectEnum
+							label="Transition Easing Type"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.transition?.direction, undefined)}
+							options={OSCTransitionDirection}
+							onChange={(v: OSCTransitionDirection) => {
+								onSave({ content: { transition: { direction: v } } })
+							}}
+							allowUndefined={false}
+						/>
+					</div>
+
+					{isIndeterminate(objs, (obj) => obj.content.from) ? (
+						<>--Different values--</>
+					) : (
+						<>
+							{firstObj.content.from &&
+								firstObj.content.from.map((oscValue, index) => (
+									<React.Fragment key={index}>
+										<Stack direction="row" justifyContent="space-between">
+											<Typography variant="body2">From Value #{index}</Typography>
+											<TrashBtn
+												onClick={() => {
+													if (!firstObj.content.from) return
+
+													const from = deepClone(firstObj.content.from)
+													from.splice(index, 1)
+													onSave({ content: { from } })
+												}}
+												title="Delete value"
+											/>
+										</Stack>
+
+										<EditOSCValue
+											oscValue={oscValue}
+											onSave={(newOscValue) => {
+												const from = deepClone(firstObj.content.from) || []
+												from[index] = newOscValue
+												onSave({ content: { from } })
+											}}
+										/>
+									</React.Fragment>
+								))}
+							<Button
+								style={{ marginBottom: '1rem' }}
+								variant="contained"
+								onClick={() => {
+									if (!firstObj.content.from) firstObj.content.from = []
+									const from = deepClone(firstObj.content.from)
+									from.push({
+										type: OSCValueType.INT,
+										value: 0,
+									})
+									onSave({ content: { from } })
+								}}
+							>
+								Add From Value
+							</Button>
+						</>
+					)}
+				</>
+			)}
+		</EditWrapper>
+	)
+}
+
+const EditOSCValue: React.FC<{ oscValue: SomeOSCValue; onSave: (newOscValue: SomeOSCValue) => void }> = ({
+	oscValue: oscValue0,
+	onSave,
+}) => {
 	return (
 		<>
 			<div className="setting">
 				<SelectEnum
 					label="Type"
 					fullWidth
-					currentValue={oscValue.type}
+					currentValue={oscValue0.type}
 					options={OSCValueType}
 					onChange={(v: OSCValueType) => {
+						const oscValue = deepClone(oscValue0)
 						if (v === OSCValueType.INT || v === OSCValueType.FLOAT) {
 							oscValue.value = 0
 						} else if (v === OSCValueType.STRING) {
@@ -57,220 +255,59 @@ const EditOSCValue: React.FC<{ oscValue: SomeOSCValue; onSave: () => void }> = (
 						}
 
 						oscValue.type = v
-						onSave()
+						onSave(oscValue)
 					}}
 					allowUndefined={false}
 				/>
 			</div>
 
-			{oscValue.type === OSCValueType.INT && (
+			{oscValue0.type === OSCValueType.INT && (
 				<div className="setting">
 					<IntInput
 						label="Value"
 						fullWidth
-						currentValue={oscValue.value}
+						currentValue={oscValue0.value}
 						onChange={(v) => {
+							const oscValue = deepClone(oscValue0)
 							oscValue.value = v
-							onSave()
+							onSave(oscValue)
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			)}
 
-			{oscValue.type === OSCValueType.FLOAT && (
+			{oscValue0.type === OSCValueType.FLOAT && (
 				<div className="setting">
 					<FloatInput
 						label="Value"
 						fullWidth
-						currentValue={oscValue.value}
+						currentValue={oscValue0.value}
 						onChange={(v) => {
+							const oscValue = deepClone(oscValue0)
 							oscValue.value = v
-							onSave()
+							onSave(oscValue)
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			)}
 
-			{oscValue.type === OSCValueType.STRING && (
+			{oscValue0.type === OSCValueType.STRING && (
 				<div className="setting">
 					<TextInput
 						label="Value"
 						fullWidth
-						currentValue={oscValue.value}
+						currentValue={oscValue0.value}
 						onChange={(v) => {
+							const oscValue = deepClone(oscValue0)
 							oscValue.value = v
-							onSave()
+							onSave(oscValue)
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			)}
 		</>
-	)
-}
-
-export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: OnSave }> = ({ obj, onSave }) => {
-	return (
-		<EditWrapper obj={obj} onSave={onSave}>
-			<div className="setting">
-				<TextInput
-					label="Path"
-					fullWidth
-					currentValue={obj.content.path}
-					onChange={(v) => {
-						obj.content.path = v
-						onSave(obj)
-					}}
-					allowUndefined={false}
-				/>
-			</div>
-
-			<>
-				{obj.content.values.map((oscValue, index) => (
-					<React.Fragment key={index}>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="body2">Value #{index}</Typography>
-							<TrashBtn
-								onClick={() => {
-									obj.content.values.splice(index, 1)
-									onSave(obj)
-								}}
-								title="Delete value"
-							/>
-						</Stack>
-
-						<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
-					</React.Fragment>
-				))}
-			</>
-
-			<Button
-				style={{ marginBottom: '1rem' }}
-				variant="contained"
-				onClick={() => {
-					obj.content.values.push({
-						type: OSCValueType.INT,
-						value: 0,
-					})
-					onSave(obj)
-				}}
-			>
-				Add Value
-			</Button>
-			<>
-				{!obj.content.transition && (
-					<Box>
-						<Button
-							style={{ marginBottom: '1rem' }}
-							variant="contained"
-							onClick={() => {
-								obj.content.transition = DEFAULT_TRANSITION
-								onSave(obj)
-							}}
-						>
-							Add Transition
-						</Button>
-					</Box>
-				)}
-			</>
-			<>
-				{obj.content.transition && (
-					<>
-						<Stack direction="row" justifyContent="space-between">
-							<Typography variant="body2">Transition Settings</Typography>
-							<TrashBtn
-								onClick={() => {
-									delete obj.content.transition
-									onSave(obj)
-								}}
-								title="Delete transition"
-							/>
-						</Stack>
-
-						<div className="setting">
-							<DurationInput
-								label="Transition Duration (milliseconds)"
-								fullWidth
-								currentValue={obj.content.transition.duration}
-								defaultValue={0}
-								onChange={(v) => {
-									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-									obj.content.transition.duration = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								allowNull={false}
-							/>
-						</div>
-
-						<div className="setting">
-							<SelectEnum
-								label="Transition Easing Type"
-								fullWidth
-								currentValue={obj.content.transition.type}
-								options={OSCEasingType}
-								onChange={(v: OSCEasingType) => {
-									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-									obj.content.transition.type = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-							/>
-						</div>
-
-						<div className="setting">
-							<SelectEnum
-								label="Transition Easing Type"
-								fullWidth
-								currentValue={obj.content.transition.direction}
-								options={OSCTransitionDirection}
-								onChange={(v: OSCTransitionDirection) => {
-									if (!obj.content.transition) obj.content.transition = DEFAULT_TRANSITION
-									obj.content.transition.direction = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-							/>
-						</div>
-
-						{obj.content.from &&
-							obj.content.from.map((oscValue, index) => (
-								<React.Fragment key={index}>
-									<Stack direction="row" justifyContent="space-between">
-										<Typography variant="body2">From Value #{index}</Typography>
-										<TrashBtn
-											onClick={() => {
-												if (!obj.content.from) return
-												obj.content.from.splice(index, 1)
-												onSave(obj)
-											}}
-											title="Delete value"
-										/>
-									</Stack>
-
-									<EditOSCValue oscValue={oscValue} onSave={() => onSave(obj)} />
-								</React.Fragment>
-							))}
-
-						<Button
-							style={{ marginBottom: '1rem' }}
-							variant="contained"
-							onClick={() => {
-								if (!obj.content.from) obj.content.from = []
-								obj.content.from.push({
-									type: OSCValueType.INT,
-									value: 0,
-								})
-								onSave(obj)
-							}}
-						>
-							Add From Value
-						</Button>
-					</>
-				)}
-			</>
-		</EditWrapper>
 	)
 }

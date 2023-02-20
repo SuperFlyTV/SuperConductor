@@ -40,6 +40,10 @@ export function getListBoolean<T>(objects: T[], fcn: (obj: T) => boolean): ListB
 export function allAreTrue<T>(objects: T[], fcn: (obj: T) => boolean): boolean {
 	return getListBoolean(objects, fcn) === ListBoolean.ALL
 }
+export function anyAreTrue<T>(objects: T[], fcn: (obj: T) => boolean): boolean {
+	const lb = getListBoolean(objects, fcn)
+	return lb === ListBoolean.ALL || lb === ListBoolean.SOME
+}
 /**
  * Convenience method, returns the proper label depending on the result of getListBoolean()
  * @param labels [Label for ALL, Label for SOME, Label for NONE]
@@ -55,6 +59,17 @@ export function getListBooleanLabels<T>(
 	if (listBoolean === ListBoolean.NONE) return labels[2]
 	assertNever(listBoolean)
 	return 'N/A'
+}
+/** Convenience method, used in Input fields */
+export function inputValue<T, V, DefaultV>(
+	objects: T[],
+	fcn: (obj: T) => V | undefined,
+	defaultValue: DefaultV
+): { currentValue: V | DefaultV; indeterminate: boolean } {
+	return {
+		currentValue: firstValue(objects, fcn) ?? defaultValue,
+		indeterminate: isIndeterminate(objects, fcn),
+	}
 }
 
 // Unit tests:

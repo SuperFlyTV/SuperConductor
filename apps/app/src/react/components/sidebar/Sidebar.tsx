@@ -1,6 +1,5 @@
 import React from 'react'
 import { SidebarResourceLibrary } from './SidebarResourceLibrary'
-
 import { SideBarEditTimelineObject } from './SideBarEditTimelineObject'
 import { Project } from '../../../models/project/Project'
 import { store } from '../../mobx/store'
@@ -9,7 +8,6 @@ import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
 import { assertNever } from '@shared/lib'
 import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
 import { SideBarEditPart } from './editPart/SideBarEditPart'
-import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ErrorBoundary } from '../util/ErrorBoundary'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
@@ -17,7 +15,31 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 		return store.rundownsStore.currentRundownId
 	}, [])
 
-	const editing = useMemoComputedObject(
+	const editing:
+		| {
+				type: 'group'
+				items: {
+					groupId: string
+				}[]
+		  }
+		| {
+				type: 'part'
+				items: {
+					groupId: string
+					groupLocked: boolean
+					partId: string
+				}[]
+		  }
+		| {
+				type: 'timelineObj'
+				items: {
+					groupId: string
+					partId: string
+					timelineObjId: string
+					groupOrPartLocked?: boolean
+				}[]
+		  }
+		| undefined = useMemoComputedObject(
 		() => {
 			const mainSelected = store.guiStore.mainSelected
 
@@ -68,31 +90,36 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 						}[]
 					}
 				} else if (mainSelected.type === 'timelineObj') {
-					const group =
-						store.rundownsStore.hasGroup(mainSelected.groupId) &&
-						store.rundownsStore.getGroup(mainSelected.groupId)
-					const part =
-						store.rundownsStore.hasPart(mainSelected.partId) &&
-						store.rundownsStore.getPart(mainSelected.partId)
-					const timelineObj =
-						store.rundownsStore.hasTimelineObj(mainSelected.timelineObjId) &&
-						store.rundownsStore.getTimelineObj(mainSelected.timelineObjId)
-					if (group && part && timelineObj)
-						return {
-							type: 'timelineObj',
-							groupId: group.id,
-							groupLocked: group.locked,
-							partId: part.id,
-							partLocked: part.locked,
-							timelineObj,
-						} as {
-							type: 'timelineObj'
+					return {
+						type: 'timelineObj',
+						items: store.guiStore
+							.getSelectedOfType('timelineObj')
+							.map((obj) => {
+								const group =
+									store.rundownsStore.hasGroup(obj.groupId) &&
+									store.rundownsStore.getGroup(obj.groupId)
+								const part =
+									store.rundownsStore.hasPart(obj.partId) && store.rundownsStore.getPart(obj.partId)
+								const timelineObj = store.rundownsStore.hasTimelineObj(obj.timelineObjId)
+								if (group && part && timelineObj) {
+									return {
+										groupId: group.id,
+										partId: part.id,
+										timelineObjId: obj.timelineObjId,
+										groupOrPartLocked: group.locked || part.locked,
+									}
+								}
+							})
+							.filter(Boolean),
+					} as {
+						type: 'timelineObj'
+						items: {
 							groupId: string
-							groupLocked: boolean
 							partId: string
-							partLocked: boolean
-							timelineObj: TimelineObj
-						}
+							timelineObjId: string
+							groupOrPartLocked?: boolean
+						}[]
+					}
 				} else {
 					assertNever(mainSelected)
 				}
@@ -127,16 +154,12 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 			</ErrorBoundary>
 		)
 	} else if (editing.type === 'timelineObj') {
-		const groupOrPartLocked = editing.groupLocked || editing.partLocked
 		return (
 			<ErrorBoundary>
 				<SideBarEditTimelineObject
 					rundownId={currentRundownId}
-					groupId={editing.groupId}
-					partId={editing.partId}
-					timelineObj={editing.timelineObj}
+					timelineObjs={editing.items}
 					mappings={props.mappings}
-					disabled={groupOrPartLocked}
 				/>
 			</ErrorBoundary>
 		)

@@ -8,6 +8,8 @@ import { TSRTimelineObj, TSRTimelineObjBase } from 'timeline-state-resolver-type
 import classNames from 'classnames'
 
 import './style.scss'
+import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
+import { OnSave } from '../../sidebar/timelineObj/timelineObjs/lib'
 
 const POPOVER_ANCHOR_ORIGIN: {
 	vertical: 'bottom'
@@ -25,13 +27,13 @@ const POPOVER_TRANSFORM_ORIGIN: {
 }
 
 export function AnalogInputOverridePicker({
-	obj,
+	objs,
 	path,
 	onSave,
 }: {
-	obj: TSRTimelineObj
+	objs: TSRTimelineObj[]
 	path: string
-	onSave: (newObj: TSRTimelineObj) => void
+	onSave: OnSave
 }): JSX.Element | null {
 	const elementId = useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
@@ -46,8 +48,6 @@ export function AnalogInputOverridePicker({
 		return options
 	}, [])
 
-	const content = (obj as TSRTimelineObjBase).content
-
 	const onClose = () => {
 		setAnchorEl(null)
 	}
@@ -58,29 +58,35 @@ export function AnalogInputOverridePicker({
 
 	const onSelect = (e: React.MouseEvent<HTMLElement>) => {
 		setAnchorEl(null)
-		// eslint-disable-next-line no-console
-		console.log(e.currentTarget.dataset)
 
 		const newLink = e.currentTarget.dataset['value'] ?? ''
-		if (newLink === '' && content.$references) {
-			delete content.$references[path]
-			onSave(obj)
+		if (newLink === '' && content?.$references) {
+			// delete content.$references[path]
+
+			onSave({
+				content: {
+					$references: {
+						[path]: undefined,
+					},
+				},
+			})
 		} else if (newLink !== '') {
-			if (!content.$references) {
-				content.$references = {}
-			}
-
-			content.$references[path] = {
-				datastoreKey: newLink,
-				overwrite: false,
-			}
-
-			onSave(obj)
+			onSave({
+				content: {
+					$references: {
+						[path]: {
+							datastoreKey: newLink,
+							overwrite: false,
+						},
+					},
+				},
+			})
 		}
 	}
+	const content = firstValue(objs, (obj) => (obj as TSRTimelineObjBase).content)
 
 	const open = Boolean(anchorEl)
-	const currentLink = content.$references?.[path]?.datastoreKey
+	const currentLink = content?.$references?.[path]?.datastoreKey
 	const currentAnalogInputLabelIdPair = useMemo(
 		() => Object.entries(analogInputOptions).find(([_, value]) => value === currentLink),
 		[analogInputOptions, currentLink]
@@ -90,6 +96,10 @@ export function AnalogInputOverridePicker({
 	if (Object.keys(analogInputOptions).length === 0) {
 		return null
 	}
+	if (isIndeterminate(objs, (obj) => (obj as TSRTimelineObjBase).content.$references)) {
+		return null
+	}
+	if (!content) return null
 
 	return (
 		<>
