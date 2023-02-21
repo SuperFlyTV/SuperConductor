@@ -28,6 +28,7 @@ import {
 	getListBooleanLabels,
 	isIndeterminate,
 	ListBoolean,
+	inputValue,
 } from '../../../lib/multipleEdit'
 
 export const SideBarEditGroup: React.FC<{
@@ -108,8 +109,7 @@ export const SideBarEditGroup: React.FC<{
 					<div className="setting">
 						<SelectEnum
 							label="Playout mode"
-							currentValue={firstValue(modifiableGroups, (g) => g.playoutMode)}
-							indeterminate={isIndeterminate(modifiableGroups, (g) => g.playoutMode)}
+							{...inputValue(modifiableGroups, (g) => g.playoutMode, undefined)}
 							disabled={modifiableGroups.length === 0}
 							fullWidth
 							options={PlayoutMode}
@@ -145,11 +145,7 @@ export const SideBarEditGroup: React.FC<{
 														.catch(handleError)
 												})
 											}}
-											currentValue={firstValue(modifiableGroups, (g) => g.schedule.activate)}
-											indeterminate={isIndeterminate(
-												modifiableGroups,
-												(g) => !!g.schedule.activate
-											)}
+											{...inputValue(modifiableGroups, (g) => g.schedule.activate, undefined)}
 											label={
 												firstValue(modifiableGroups, (g) => g.schedule.activate)
 													? 'Click to disable schedule'
@@ -171,8 +167,7 @@ export const SideBarEditGroup: React.FC<{
 							<div className="setting">
 								<DateTimeInput
 									label="Start Time"
-									currentValue={firstValue(modifiableGroups, (g) => g.schedule.startTime)}
-									indeterminate={isIndeterminate(modifiableGroups, (g) => g.schedule.startTime)}
+									{...inputValue(modifiableGroups, (g) => g.schedule.startTime, undefined)}
 									allowUndefined={true}
 									disabled={modifiableGroups.length === 0}
 									fullWidth
@@ -196,8 +191,7 @@ export const SideBarEditGroup: React.FC<{
 							<div className="setting">
 								<SelectEnum
 									label="Repeating"
-									currentValue={firstValue(modifiableGroups, (g) => g.schedule.repeating.type)}
-									indeterminate={isIndeterminate(modifiableGroups, (g) => g.schedule.repeating.type)}
+									{...inputValue(modifiableGroups, (g) => g.schedule.repeating.type, undefined)}
 									disabled={modifiableGroups.length === 0}
 									fullWidth
 									options={RepeatingType}
@@ -250,8 +244,7 @@ export const SideBarEditGroup: React.FC<{
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"
-						currentValue={firstValue(modifiableGroups, (g) => g.disabled)}
-						indeterminate={isIndeterminate(modifiableGroups, (g) => g.disabled)}
+						{...inputValue(modifiableGroups, (g) => g.disabled, undefined)}
 						disabled={locked === ListBoolean.ALL}
 						onChange={(value) => {
 							fullGroups
@@ -311,8 +304,7 @@ export const SideBarEditGroup: React.FC<{
 					<div className="setting">
 						<BooleanInput
 							label="Loop"
-							currentValue={firstValue(modifiableGroupsOneAtATime, (g) => g.loop)}
-							indeterminate={isIndeterminate(modifiableGroupsOneAtATime, (g) => g.loop)}
+							{...inputValue(modifiableGroupsOneAtATime, (g) => g.loop, undefined)}
 							disabled={modifiableGroupsOneAtATime.length === 0}
 							onChange={(value) => {
 								modifiableGroupsOneAtATime.forEach((g) => {
@@ -332,8 +324,7 @@ export const SideBarEditGroup: React.FC<{
 					<div className="setting">
 						<BooleanInput
 							label="Auto-step"
-							currentValue={firstValue(modifiableGroupsOneAtATime, (g) => g.autoPlay)}
-							indeterminate={isIndeterminate(modifiableGroupsOneAtATime, (g) => g.autoPlay)}
+							{...inputValue(modifiableGroupsOneAtATime, (g) => g.autoPlay, undefined)}
 							disabled={modifiableGroupsOneAtATime.length === 0}
 							onChange={(value) => {
 								modifiableGroupsOneAtATime.forEach((g) => {

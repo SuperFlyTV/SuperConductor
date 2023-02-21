@@ -6,7 +6,7 @@ import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { getMappingName } from '../../../../../lib/util'
 import { PartialDeep } from 'type-fest'
-import { firstValue, isIndeterminate } from '../../../../lib/multipleEdit'
+import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 
 export type OnSave = (update: PartialDeep<TSRTimelineObj>) => void
@@ -57,8 +57,7 @@ export const EditWrapper: React.FC<{
 				<div className="setting">
 					<SelectEnum
 						label="Layer"
-						currentValue={firstValue(objs, (obj) => obj.layer)}
-						indeterminate={isIndeterminate(objs, (obj) => obj.layer)}
+						{...inputValue(objs, (obj) => obj.layer, undefined)}
 						onChange={(e) => {
 							onSave({
 								layer: e.target.value,
@@ -74,13 +73,10 @@ export const EditWrapper: React.FC<{
 							label="Start"
 							fullWidth
 							allowUndefined={false}
-							currentValue={
-								firstValue(enables, (enable) =>
-									typeof enable.start === 'string' ? enable.start : ''
-								) ?? ''
-							}
-							indeterminate={isIndeterminate(enables, (enable) =>
-								typeof enable.start === 'string' ? enable.start : ''
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.start === 'string' ? enable.start : ''),
+								''
 							)}
 							onChange={(newVal) => {
 								onSave({
@@ -98,13 +94,10 @@ export const EditWrapper: React.FC<{
 							allowUndefined={false}
 							allowNull={false}
 							defaultValue={0}
-							currentValue={
-								firstValue(enables, (enable) =>
-									typeof enable.start === 'number' ? enable.start : 0
-								) ?? 0
-							}
-							indeterminate={isIndeterminate(enables, (enable) =>
-								typeof enable.start === 'number' ? enable.start : 0
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.start === 'number' ? enable.start : 0),
+								0
 							)}
 							onChange={(newVal) => {
 								onSave({
@@ -124,13 +117,10 @@ export const EditWrapper: React.FC<{
 							label="Duration"
 							fullWidth
 							allowUndefined={false}
-							currentValue={
-								firstValue(enables, (enable) =>
-									typeof enable.duration === 'string' ? enable.duration : ''
-								) ?? ''
-							}
-							indeterminate={isIndeterminate(enables, (enable) =>
-								typeof enable.duration === 'string' ? enable.duration : ''
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.duration === 'string' ? enable.duration : ''),
+								''
 							)}
 							onChange={(newVal) => {
 								onSave({
@@ -150,13 +140,10 @@ export const EditWrapper: React.FC<{
 							allowNull={true}
 							defaultValue={null}
 							emptyPlaceholder="Infinite"
-							currentValue={
-								firstValue(enables, (enable) =>
-									typeof enable.duration === 'number' ? enable.duration : 0
-								) ?? 0
-							}
-							indeterminate={isIndeterminate(enables, (enable) =>
-								typeof enable.duration === 'number' ? enable.duration : 0
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.duration === 'number' ? enable.duration : 0),
+								0
 							)}
 							onChange={(newVal) => {
 								onSave({

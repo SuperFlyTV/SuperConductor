@@ -10,7 +10,7 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
 import { DurationInput } from '../../inputs/DurationInput'
-import { firstValue, getListBoolean, isIndeterminate, ListBoolean } from '../../../lib/multipleEdit'
+import { getListBoolean, ListBoolean, inputValue } from '../../../lib/multipleEdit'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
@@ -99,8 +99,7 @@ export const SideBarEditPart: React.FC<{
 				<div className="setting">
 					<BooleanInput
 						label="Disable playout"
-						currentValue={firstValue(modifiableParts, (g) => g.partGUI.disabled)}
-						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.disabled)}
+						{...inputValue(modifiableParts, (p) => p.partGUI.disabled, undefined)}
 						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						onChange={(value) => {
 							modifiableParts.forEach((p) => {
@@ -145,8 +144,7 @@ export const SideBarEditPart: React.FC<{
 				<div className="setting">
 					<BooleanInput
 						label="Loop"
-						currentValue={firstValue(modifiableParts, (g) => g.partGUI.loop)}
-						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.loop)}
+						{...inputValue(modifiableParts, (p) => p.partGUI.loop, undefined)}
 						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						onChange={(value) => {
 							modifiableParts.forEach((p) => {
@@ -167,8 +165,7 @@ export const SideBarEditPart: React.FC<{
 				<div className="setting">
 					<DurationInput
 						label="Fixed Part duration"
-						currentValue={firstValue(modifiableParts, (g) => g.partGUI.duration)}
-						indeterminate={isIndeterminate(modifiableParts, (p) => p.partGUI.duration)}
+						{...inputValue(modifiableParts, (p) => p.partGUI.duration, undefined)}
 						disabled={partsLocked === ListBoolean.ALL || groupsLocked === ListBoolean.ALL}
 						emptyPlaceholder={durationPlaceholder}
 						onChange={(value) => {
