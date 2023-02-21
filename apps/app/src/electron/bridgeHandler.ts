@@ -94,7 +94,7 @@ export class BridgeHandler {
 	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
-	async onClose() {
+	async onClose(): Promise<void> {
 		if (this.internalBridge) {
 			await this.internalBridge.destroy()
 		}
@@ -102,7 +102,7 @@ export class BridgeHandler {
 
 		if (this.reconnectToBridgesInterval) clearInterval(this.reconnectToBridgesInterval)
 	}
-	onUpdatedProject(project: Project) {
+	onUpdatedProject(project: Project): void {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
@@ -194,7 +194,7 @@ export class BridgeHandler {
 			}
 		}
 	}
-	updateMappings(mappings: Mappings) {
+	updateMappings(mappings: Mappings): void {
 		if (!_.isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
@@ -203,7 +203,7 @@ export class BridgeHandler {
 			}
 		}
 	}
-	updateTimeline(timelineId: string, timeline: TSRTimeline | null) {
+	updateTimeline(timelineId: string, timeline: TSRTimeline | null): void {
 		if (!_.isEqual(this.timelines[timelineId], timeline)) {
 			if (timeline) {
 				this.timelines[timelineId] = timeline
@@ -220,14 +220,14 @@ export class BridgeHandler {
 			}
 		}
 	}
-	updateSettings(bridgeId: string, settings: Bridge['settings']) {
+	updateSettings(bridgeId: string, settings: Bridge['settings']): void {
 		const bridgeConnection = this.connectedBridges.find((bc) => bc.bridgeId === bridgeId)
 		if (bridgeConnection) {
 			bridgeConnection.setSettings(settings)
 		}
 	}
 	/** Called from the storage when an AnalogInput has been updated */
-	updateAnalogInput(analogInput: AnalogInput | null) {
+	updateAnalogInput(analogInput: AnalogInput | null): void {
 		const project = this.storage.getProject()
 
 		const changedDatastoreKeys: string[] = []
@@ -282,12 +282,12 @@ export class BridgeHandler {
 			value: any | null
 			modified: number
 		}[]
-	) {
+	): void {
 		for (const bridgeConnection of this.connectedBridges) {
 			bridgeConnection.updateDatastore(updates)
 		}
 	}
-	refreshResources() {
+	refreshResources(): void {
 		for (const bridgeConnection of this.connectedBridges) {
 			bridgeConnection.refreshResources()
 		}
@@ -597,7 +597,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 		})
 		this.connection.on('message', this.handleMessage.bind(this))
 	}
-	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any): void {
 		if (this.connection.connected) {
 			this.connection.send(msg)
 		}
@@ -629,7 +629,7 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	async destroy(): Promise<void> {
 		await this.baseBridge.destroy()
 	}
-	protected send(msg: BridgeAPI.FromSuperConductor.Any) {
+	protected send(msg: BridgeAPI.FromSuperConductor.Any): void {
 		try {
 			this.baseBridge.handleMessage(msg)
 		} catch (err) {

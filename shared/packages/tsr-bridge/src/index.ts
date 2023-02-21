@@ -131,7 +131,7 @@ export class BaseBridge {
 		this.updateTSR(currentTime)
 	}
 	/** To be called when our bridgeId has been determined. This is basivally the initialize function */
-	async onReceivedBridgeId(bridgeId: string) {
+	async onReceivedBridgeId(bridgeId: string): Promise<void> {
 		if (this.myBridgeId !== bridgeId) {
 			this.myBridgeId = bridgeId
 
@@ -158,7 +158,7 @@ export class BaseBridge {
 		}
 	}
 
-	handleMessage(msg: BridgeAPI.FromSuperConductor.Any) {
+	handleMessage(msg: BridgeAPI.FromSuperConductor.Any): void {
 		if (msg.type === 'setId') {
 			this.onReceivedBridgeId(msg.id)
 				// Wait until after the initialization of things like the peripherals handler
@@ -203,7 +203,7 @@ export class BaseBridge {
 		}
 	}
 
-	async destroy() {
+	async destroy(): Promise<void> {
 		if (this.peripheralsHandler) {
 			await this.peripheralsHandler.close()
 			this.peripheralsHandler = null

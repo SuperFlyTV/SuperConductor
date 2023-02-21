@@ -2,9 +2,12 @@ import React from 'react'
 import { TimelineObjPharosAny } from 'timeline-state-resolver-types'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 
-export const EditTimelineObjPharosAny: React.FC<{ obj: TimelineObjPharosAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjPharosAny: React.FC<{ objs: TimelineObjPharosAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave,
+}) => {
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave}>
 			{NOT_IMPLEMENTED_SETTINGS}
 		</EditWrapper>
 	)

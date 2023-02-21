@@ -1,4 +1,4 @@
-import { format, createLogger, transports } from 'winston'
+import { format, createLogger, transports, Logger } from 'winston'
 import { utilFormatter } from './util-formatter'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { LogLevel } from '@shared/api'
@@ -7,7 +7,7 @@ const myFormat = format.printf(({ level, message, label, timestamp }) => {
 	return `${timestamp} [${label}] ${level}: ${message}`
 })
 
-export const createLoggers = (dirname: string) => {
+export const createLoggers = (dirname: string): { electronLogger: Logger; rendererLogger: Logger } => {
 	const myTransports = [
 		new transports.Console(),
 		new DailyRotateFile({

@@ -1,73 +1,90 @@
-import { MenuItem, TextField } from '@mui/material'
 import React, { useContext } from 'react'
 import { filterMapping, sortMappings } from '../../../../../lib/TSRMappings'
-import { TimelineEnable } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { getMappingName } from '../../../../../lib/util'
+import { PartialDeep } from 'type-fest'
+import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
+import { SelectEnum } from '../../../inputs/SelectEnum'
 
-export type OnSave = (newObj: TSRTimelineObj) => void
+export type OnSave = (update: PartialDeep<TSRTimelineObj>) => void
+export type OnSaveType<T> = (update: PartialDeep<T>) => void
 
 export const EditWrapper: React.FC<{
-	obj: TSRTimelineObj
+	objs: TSRTimelineObj[]
 	onSave: OnSave
-}> = ({ obj, onSave, children }) => {
+	children: JSX.Element | JSX.Element[]
+}> = ({ objs, onSave, children }) => {
 	const project = useContext(ProjectContext)
 
-	const enable: TimelineEnable = Array.isArray(obj.enable) ? obj.enable[0] : obj.enable
+	// const enable = firstValue(objs, (obj) => (Array.isArray(obj.enable) ? obj.enable[0] : obj.enable))
+	const enables = objs.map((obj) => (Array.isArray(obj.enable) ? obj.enable[0] : obj.enable))
+	// const enableIndeterminate = isIndeterminate(objs, (obj) => (Array.isArray(obj.enable) ? obj.enable[0] : obj.enable))
 
-	const startIsExpression = typeof enable.start === 'string'
-	const enableStartNum = typeof enable.start === 'number' ? enable.start : 0
-	const enableStartExpression = typeof enable.start === 'string' ? enable.start : ''
+	const startTypeIndeterminate = isIndeterminate(enables, (enable) => typeof enable.start)
+	const startIsExpression = firstValue(enables, (enable) => typeof enable.start === 'string')
 
-	const durationIsExpression = typeof enable.duration === 'string'
-	const enableDurationNum = typeof enable.duration === 'number' ? enable.duration : null
-	const enableDurationExpression = typeof enable.duration === 'string' ? enable.duration : ''
+	const durationTypeIndeterminate = isIndeterminate(enables, (enable) => typeof enable.duration)
+	const durationIsExpression = firstValue(enables, (enable) => typeof enable.duration === 'string')
+
+	// const enableStartNum = typeof enable.start === 'number' ? enable.start : 0
+	// const enableStartExpression = typeof enable.start === 'string' ? enable.start : ''
+
+	// const enableDurationNum = typeof enable.duration === 'number' ? enable.duration : null
+	// const enableDurationExpression = typeof enable.duration === 'string' ? enable.duration : ''
+
+	const mappingOptions: { [key: string]: string } = {}
+	if (project.mappings) {
+		for (const m of sortMappings(project.mappings)) {
+			let useMapping = true
+			for (const obj of objs) {
+				if (!filterMapping(m.mapping, obj)) {
+					useMapping = false
+					break
+				}
+			}
+			if (!useMapping) continue
+
+			mappingOptions[m.layerId] = getMappingName(m.mapping, m.layerId)
+		}
+	}
 
 	return (
 		<div className="edit-timeline-obj">
 			<div className="settings">
 				<div className="setting">
-					<TextField
-						select
-						fullWidth
-						size="small"
+					<SelectEnum
 						label="Layer"
-						id="layer"
-						name="layer"
-						margin="dense"
-						value={obj.layer}
+						{...inputValue(objs, (obj) => obj.layer, undefined)}
 						onChange={(e) => {
-							obj.layer = e.target.value
-							onSave(obj)
+							onSave({
+								layer: e.target.value,
+							})
 						}}
-					>
-						{project.mappings &&
-							sortMappings(project.mappings)
-								.filter(({ mapping }) => {
-									return filterMapping(mapping, obj)
-								})
-								.map(({ layerId, mapping }) => (
-									<MenuItem key={layerId} value={layerId}>
-										{getMappingName(mapping, layerId)}
-									</MenuItem>
-								))}
-					</TextField>
+						options={mappingOptions}
+					/>
 
-					{startIsExpression ? (
+					{startTypeIndeterminate ? (
+						<>--Different start types --</>
+					) : startIsExpression ? (
 						<TextInput
 							label="Start"
 							fullWidth
 							allowUndefined={false}
-							currentValue={enableStartExpression}
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.start === 'string' ? enable.start : ''),
+								''
+							)}
 							onChange={(newVal) => {
-								if (!Array.isArray(obj.enable)) {
-									obj.enable.start = newVal
-									delete obj.enable.while
-								}
-								onSave(obj)
+								onSave({
+									enable: {
+										start: newVal,
+										while: undefined,
+									},
+								})
 							}}
 						/>
 					) : (
@@ -77,29 +94,42 @@ export const EditWrapper: React.FC<{
 							allowUndefined={false}
 							allowNull={false}
 							defaultValue={0}
-							currentValue={enableStartNum}
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.start === 'number' ? enable.start : 0),
+								0
+							)}
 							onChange={(newVal) => {
-								if (!Array.isArray(obj.enable)) {
-									obj.enable.start = newVal
-									delete obj.enable.while
-								}
-								onSave(obj)
+								onSave({
+									enable: {
+										start: newVal,
+										while: undefined,
+									},
+								})
 							}}
 						/>
 					)}
 
-					{durationIsExpression ? (
+					{durationTypeIndeterminate ? (
+						<>--Different start types --</>
+					) : durationIsExpression ? (
 						<TextInput
 							label="Duration"
 							fullWidth
 							allowUndefined={false}
-							currentValue={enableDurationExpression}
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.duration === 'string' ? enable.duration : ''),
+								''
+							)}
 							onChange={(newVal) => {
-								if (!Array.isArray(obj.enable)) {
-									obj.enable.duration = newVal
-									delete obj.enable.end
-								}
-								onSave(obj)
+								onSave({
+									enable: {
+										duration: newVal,
+										end: undefined,
+										while: undefined,
+									},
+								})
 							}}
 						/>
 					) : (
@@ -110,13 +140,19 @@ export const EditWrapper: React.FC<{
 							allowNull={true}
 							defaultValue={null}
 							emptyPlaceholder="Infinite"
-							currentValue={enableDurationNum}
+							{...inputValue(
+								enables,
+								(enable) => (typeof enable.duration === 'number' ? enable.duration : 0),
+								0
+							)}
 							onChange={(newVal) => {
-								if (!Array.isArray(obj.enable)) {
-									obj.enable.duration = newVal
-									delete obj.enable.end
-								}
-								onSave(obj)
+								onSave({
+									enable: {
+										duration: newVal,
+										end: undefined,
+										while: undefined,
+									},
+								})
 							}}
 						/>
 					)}

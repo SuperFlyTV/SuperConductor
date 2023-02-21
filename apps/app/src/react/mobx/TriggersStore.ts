@@ -21,7 +21,7 @@ export class TriggersStore {
 		makeAutoObservable(this)
 	}
 
-	updateFailedGlobalTriggers(identifiers: string[]) {
+	updateFailedGlobalTriggers(identifiers: string[]): void {
 		this.failedGlobalTriggers = new Set(identifiers)
 	}
 }

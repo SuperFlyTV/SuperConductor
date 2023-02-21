@@ -2,7 +2,12 @@ import { Button } from '@mui/material'
 import React from 'react'
 import { BsPlusLg } from 'react-icons/bs'
 
-export const AddBtn = (props: { className?: string; disabled?: boolean; title: string; onClick: () => void }) => {
+export const AddBtn = (props: {
+	className?: string
+	disabled?: boolean
+	title: string
+	onClick: () => void
+}): JSX.Element => {
 	return (
 		<Button
 			className={props.className}

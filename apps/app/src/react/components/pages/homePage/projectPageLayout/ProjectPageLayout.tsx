@@ -8,6 +8,7 @@ export const ProjectPageLayout: React.FC<{
 	subtitle?: string
 	help?: React.ReactNode
 	controls?: React.ReactNode
+	children: React.ReactNode
 }> = (props) => {
 	const [showHelp, setShowHelp] = useState(false)
 

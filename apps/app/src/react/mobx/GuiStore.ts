@@ -81,7 +81,7 @@ export class GuiStore {
 	private groupSettings = new Map<string, GroupSettings>()
 
 	private _activeTabId = 'home'
-	get activeTabId() {
+	get activeTabId(): string {
 		return this._activeTabId
 	}
 	set activeTabId(id: string) {
@@ -100,7 +100,7 @@ export class GuiStore {
 	getSelectedOfType(type: 'group'): CurrentSelectionGroup[]
 	getSelectedOfType(type: 'part'): CurrentSelectionPart[]
 	getSelectedOfType(type: 'timelineObj'): CurrentSelectionTimelineObj[]
-	getSelectedOfType(type: string) {
+	getSelectedOfType(type: string): CurrentSelectionAny[] {
 		return this._selected.filter((s) => s.type === type)
 	}
 	/** Add item to selection */
@@ -180,31 +180,31 @@ export class GuiStore {
 		moveId: null,
 	}
 
-	goToHome(pageId?: HomePageId) {
+	goToHome(pageId?: HomePageId): void {
 		this.activeTabId = 'home'
 		if (pageId) this.activeHomePageId = pageId
 	}
 
-	isHomeSelected() {
+	isHomeSelected(): boolean {
 		return this.activeTabId === 'home'
 	}
 
-	goToNewRundown() {
+	goToNewRundown(): void {
 		this.activeTabId = 'new-rundown'
 	}
 
-	isNewRundownSelected() {
+	isNewRundownSelected(): boolean {
 		return this.activeTabId === 'new-rundown'
 	}
 
-	updateTimelineObjMove(data: Partial<TimelineObjectMove>) {
+	updateTimelineObjMove(data: Partial<TimelineObjectMove>): void {
 		this.timelineObjMove = {
 			...this.timelineObjMove,
 			...data,
 		}
 	}
 
-	updateDefiningArea(definingArea: DefiningArea | null) {
+	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 	}
 
@@ -224,7 +224,7 @@ export class GuiStore {
 	get resourceLibrary(): Readonly<ResourceLibrarySettings> {
 		return deepClone(this._resourceLibrary)
 	}
-	updateResourceLibrary(update: Partial<ResourceLibrarySettings>) {
+	updateResourceLibrary(update: Partial<ResourceLibrarySettings>): void {
 		this._resourceLibrary = {
 			...this._resourceLibrary,
 			...update,

@@ -101,7 +101,7 @@ export const Layer: React.FC<{
 	)
 }
 /** Analogue to Layer, used in initial-renders */
-export function LayerEmpty() {
+export function LayerEmpty(): JSX.Element {
 	return (
 		<div className="layer">
 			<div className="layer__content" />

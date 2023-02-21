@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
 import { IPCClient } from './IPCClient'
@@ -21,7 +22,7 @@ import { LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
 import { Part } from '../models/rundown/Part'
-import { getDefaultPart } from './defaults'
+import { getDefaultPart } from '../lib/defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
 import { assertNever } from '@shared/lib'
@@ -31,6 +32,7 @@ import { HTTPAPI } from './HTTPAPI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
+import { SystemMessageOptions } from '../ipc/IPCAPI'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -45,7 +47,7 @@ export class SuperConductor {
 	bridgeHandler: BridgeHandler
 
 	private shuttingDown = false
-	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
+	private resourceUpdatesToSend = new Map<string, ResourceAny | null>()
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
@@ -102,7 +104,7 @@ export class SuperConductor {
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
-			this.resourceUpdatesToSend.push({ id, resource })
+			this.resourceUpdatesToSend.set(id, resource)
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
 		})
@@ -199,6 +201,13 @@ export class SuperConductor {
 				project.autoRefreshInterval = interval
 				this.storage.updateProject(project)
 			},
+			onClientConnected: () => {
+				// Nothing here yet
+			},
+			installUpdate: () => {
+				autoUpdater.autoRunAppAfterInstall = true
+				autoUpdater.quitAndInstall()
+			},
 			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 				return this.updateTimeline(group)
 			},
@@ -245,6 +254,9 @@ export class SuperConductor {
 			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 		}
 	}
+	sendSystemMessage(message: string, options: SystemMessageOptions): void {
+		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
+	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.
 		// This is done to improve performance,
@@ -252,8 +264,15 @@ export class SuperConductor {
 		if (!this.__triggerBatchSendResourcesTimeout) {
 			this.__triggerBatchSendResourcesTimeout = setTimeout(() => {
 				this.__triggerBatchSendResourcesTimeout = null
-				this.clients.forEach((clients) => clients.ipcClient.updateResources(this.resourceUpdatesToSend))
-				this.resourceUpdatesToSend = []
+
+				const resourceUpdatesToSend: { id: string; resource: ResourceAny | null }[] = []
+				for (const [id, resource] of this.resourceUpdatesToSend.entries()) {
+					resourceUpdatesToSend.push({ id, resource })
+				}
+				if (resourceUpdatesToSend.length) {
+					this.clients.forEach((clients) => clients.ipcClient.updateResources(resourceUpdatesToSend))
+				}
+				this.resourceUpdatesToSend.clear()
 			}, 100)
 		}
 	}
@@ -431,7 +450,10 @@ export class SuperConductor {
 		}
 	}
 
-	onNewWindow(window: BrowserWindow) {
+	onNewWindow(window: BrowserWindow): {
+		ipcClient: IPCClient
+		close: () => void
+	} {
 		const ipcClient = new IPCClient(window)
 
 		const client = {
@@ -473,7 +495,7 @@ export class SuperConductor {
 	 * Is called when the app is starting to shut down.
 	 * After this has been called, the client window has closed.
 	 */
-	isShuttingDown() {
+	isShuttingDown(): void {
 		this.shuttingDown = true
 		this.session.terminate()
 	}
@@ -481,7 +503,7 @@ export class SuperConductor {
 	 * Is called when the app is shutting down.
 	 * Shut down everything
 	 */
-	terminate() {
+	terminate(): void {
 		this.storage.terminate()
 		this.triggerHandleAutoFill.clear()
 	}

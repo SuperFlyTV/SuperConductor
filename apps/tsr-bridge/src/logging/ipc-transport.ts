@@ -7,7 +7,7 @@ export default class IPCTransport extends Transport {
 		super()
 	}
 
-	log(entry: LogEntry, callback: (...args: unknown[]) => unknown) {
+	log(entry: LogEntry, callback: (...args: unknown[]) => unknown): void {
 		this.ipcClient.log(entry)
 		callback()
 	}

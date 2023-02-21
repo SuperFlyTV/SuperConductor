@@ -13,6 +13,7 @@ import {
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { stringifyError } from '@shared/lib'
 
 export class OBSSideload implements SideLoadDevice {
 	private obs: OBSWebsocket
@@ -39,12 +40,12 @@ export class OBSSideload implements SideLoadDevice {
 			this._triggerRetryConnection()
 		})
 
-		this._connect().catch((error) => this.log.error(error))
+		this._connect().catch((error) => this.log.error('OBS Connect error: ' + stringifyError(error)))
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		return this.obs.disconnect()
 	}
 	private async _connect() {
@@ -72,7 +73,7 @@ export class OBSSideload implements SideLoadDevice {
 
 		if (!this.obsConnected) {
 			this._connect().catch((error) => {
-				this.log.error(error)
+				this.log.error('OBS Connect error: ' + stringifyError(error))
 				this._triggerRetryConnection()
 			})
 		}

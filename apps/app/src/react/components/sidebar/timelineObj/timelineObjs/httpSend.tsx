@@ -1,27 +1,32 @@
 import { Button, Stack, Typography } from '@mui/material'
 import React from 'react'
 import { TimelineContentTypeHTTP, TimelineObjHTTPSendAny } from 'timeline-state-resolver-types'
+import { inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { TrashBtn } from '../../../inputs/TrashBtn'
-import { EditWrapper, OnSave } from './lib'
+import { EditWrapper, OnSave, OnSaveType } from './lib'
 
-export const EditTimelineObjHTTPSendAny: React.FC<{ obj: TimelineObjHTTPSendAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
+export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave: onSave0,
 }) => {
+	const onSave = onSave0 as OnSaveType<TimelineObjHTTPSendAny>
+
+	const firstObj = objs[0]
+	if (!firstObj) return null
+
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave0}>
 			<div className="setting">
 				<SelectEnum
 					label="Request Type"
 					fullWidth
-					currentValue={obj.content.type}
+					{...inputValue(objs, (obj) => obj.content.type, undefined)}
 					options={TimelineContentTypeHTTP}
 					onChange={(v: TimelineContentTypeHTTP) => {
-						obj.content.type = v
-						onSave(obj)
+						onSave({ content: { type: v } })
 					}}
 					allowUndefined={false}
 				/>
@@ -31,77 +36,83 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ obj: TimelineObjHTTPSendAny;
 				<TextInput
 					label="URL"
 					fullWidth
-					currentValue={obj.content.url}
+					{...inputValue(objs, (obj) => obj.content.url, '')}
 					onChange={(v) => {
-						obj.content.url = v
-						onSave(obj)
+						onSave({ content: { url: v } })
 					}}
 					allowUndefined={false}
 				/>
 			</div>
+			<>
+				{isIndeterminate(objs, (obj) => obj.content.params) ? (
+					<>-- Different values -- </>
+				) : (
+					<>
+						{Object.entries(firstObj.content.params).map(([key, value], index) => (
+							<React.Fragment key={index}>
+								<Stack direction="row" justifyContent="space-between">
+									<Typography variant="body2">Param #{index}</Typography>
+									<TrashBtn
+										onClick={() => {
+											onSave({ content: { params: { [key]: undefined } } })
+										}}
+										title="Delete parameter"
+									/>
+								</Stack>
 
-			{Object.entries(obj.content.params).map(([key, value], index) => (
-				<React.Fragment key={index}>
-					<Stack direction="row" justifyContent="space-between">
-						<Typography variant="body2">Param #{index}</Typography>
-						<TrashBtn
+								<div className="setting">
+									<TextInput
+										label="Key"
+										fullWidth
+										currentValue={key}
+										onChange={(v) => {
+											onSave({
+												content: {
+													params: {
+														[v]: value,
+														[key]: undefined,
+													},
+												},
+											})
+										}}
+										allowUndefined={false}
+									/>
+								</div>
+
+								<div className="setting">
+									<TextInput
+										label="Value"
+										fullWidth
+										currentValue={value}
+										onChange={(v) => {
+											onSave({ content: { params: { [key]: v } } })
+										}}
+										allowUndefined={false}
+									/>
+								</div>
+							</React.Fragment>
+						))}
+						<Button
+							style={{ marginBottom: '1rem' }}
+							variant="contained"
 							onClick={() => {
-								delete obj.content.params[key]
-								onSave(obj)
+								const numParams = Object.keys(firstObj.content.params).length
+								onSave({ content: { params: { [`param${numParams}`]: 'value' } } })
 							}}
-							title="Delete parameter"
-						/>
-					</Stack>
-
-					<div className="setting">
-						<TextInput
-							label="Key"
-							fullWidth
-							currentValue={key}
-							onChange={(v) => {
-								obj.content.params[v] = value
-								delete obj.content.params[key]
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-
-					<div className="setting">
-						<TextInput
-							label="Value"
-							fullWidth
-							currentValue={value}
-							onChange={(v) => {
-								obj.content.params[key] = v
-								onSave(obj)
-							}}
-							allowUndefined={false}
-						/>
-					</div>
-				</React.Fragment>
-			))}
-
-			<Button
-				style={{ marginBottom: '1rem' }}
-				variant="contained"
-				onClick={() => {
-					const numParams = Object.keys(obj.content.params).length
-					obj.content.params[`param${numParams}`] = 'value'
-					onSave(obj)
-				}}
-			>
-				Add Parameter
-			</Button>
+						>
+							Add Parameter
+						</Button>
+					</>
+				)}
+			</>
 
 			<div className="setting">
 				<IntInput
 					label="Temporal Priority"
 					fullWidth
-					currentValue={obj.content.temporalPriority}
+					{...inputValue(objs, (obj) => obj.content.temporalPriority, undefined)}
 					onChange={(v) => {
-						obj.content.temporalPriority = v
-						onSave(obj)
+						onSave({ content: { temporalPriority: v } })
 					}}
 					allowUndefined={true}
 				/>
@@ -111,10 +122,9 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ obj: TimelineObjHTTPSendAny;
 				<TextInput
 					label="Queue ID"
 					fullWidth
-					currentValue={obj.content.queueId}
+					{...inputValue(objs, (obj) => obj.content.queueId, undefined)}
 					onChange={(v) => {
-						obj.content.queueId = v
-						onSave(obj)
+						onSave({ content: { queueId: v } })
 					}}
 					allowUndefined={true}
 				/>

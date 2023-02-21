@@ -12,6 +12,7 @@ export const Btn: React.FC<{
 	disabled?: boolean
 	size?: string
 	variant?: 'contained'
+	children: React.ReactNode
 }> = (props) => {
 	return (
 		<button

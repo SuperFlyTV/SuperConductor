@@ -3,21 +3,21 @@ import { IntInput } from '../../../inputs/IntInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { TimelineObjTCPSendAny } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
+import { inputValue } from '../../../../lib/multipleEdit'
 
-export const EditTimelineObjTCPSendAny: React.FC<{ obj: TimelineObjTCPSendAny; onSave: OnSave }> = ({
-	obj,
+export const EditTimelineObjTCPSendAny: React.FC<{ objs: TimelineObjTCPSendAny[]; onSave: OnSave }> = ({
+	objs,
 	onSave,
 }) => {
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave}>
 			<div className="setting">
 				<TextInput
 					label="Message"
 					fullWidth
-					currentValue={obj.content.message}
+					{...inputValue(objs, (obj) => obj.content.message, '')}
 					onChange={(v) => {
-						obj.content.message = v
-						onSave(obj)
+						onSave({ content: { message: v } })
 					}}
 					allowUndefined={false}
 				/>
@@ -27,10 +27,9 @@ export const EditTimelineObjTCPSendAny: React.FC<{ obj: TimelineObjTCPSendAny; o
 				<IntInput
 					label="Temporal Priority"
 					fullWidth
-					currentValue={obj.content.temporalPriority}
+					{...inputValue(objs, (obj) => obj.content.temporalPriority, undefined)}
 					onChange={(v) => {
-						obj.content.temporalPriority = v
-						onSave(obj)
+						onSave({ content: { temporalPriority: v } })
 					}}
 					allowUndefined={true}
 				/>
@@ -40,10 +39,9 @@ export const EditTimelineObjTCPSendAny: React.FC<{ obj: TimelineObjTCPSendAny; o
 				<TextInput
 					label="Queue ID"
 					fullWidth
-					currentValue={obj.content.queueId}
+					{...inputValue(objs, (obj) => obj.content.queueId, undefined)}
 					onChange={(v) => {
-						obj.content.queueId = v
-						onSave(obj)
+						onSave({ content: { queueId: v } })
 					}}
 					allowUndefined={true}
 				/>

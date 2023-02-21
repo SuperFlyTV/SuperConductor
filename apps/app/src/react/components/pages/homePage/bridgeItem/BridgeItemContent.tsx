@@ -18,7 +18,7 @@ import 'react-toggle/style.css'
 export const BridgeItemContent: React.FC<{
 	id: string
 	bridge: Bridge
-	bridgeStatus: BridgeStatus
+	bridgeStatus: BridgeStatus | undefined
 	isInternal?: boolean
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
@@ -142,7 +142,7 @@ export const BridgeItemContent: React.FC<{
 				<PeripheralsList
 					autoConnectToAllPeripherals={props.bridge.settings.autoConnectToAllPeripherals}
 					bridgeId={props.bridge.id}
-					statuses={props.bridgeStatus.peripherals}
+					statuses={props.bridgeStatus ? props.bridgeStatus.peripherals : {}}
 					settings={props.bridge.settings.peripherals}
 				/>
 			</RoundedSection>

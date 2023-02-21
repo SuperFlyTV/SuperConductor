@@ -47,7 +47,7 @@ export class PeripheralsHandler extends EventEmitter {
 	constructor(private log: LoggerLike, public readonly id: string) {
 		super()
 	}
-	init() {
+	init(): void {
 		this.watcher = new PeripheralWatcher()
 		this.watcher.on('knownPeripheralsChanged', (peripherals) => {
 			this.emit('knownPeripherals', peripherals)
@@ -106,7 +106,10 @@ export class PeripheralsHandler extends EventEmitter {
 	/**
 	 * Updates the settings for how peripherals should be handled.
 	 */
-	async updatePeripheralsSettings(settings: { [peripheralId: string]: PeripheralSettingsAny }, autoConnect: boolean) {
+	async updatePeripheralsSettings(
+		settings: { [peripheralId: string]: PeripheralSettingsAny },
+		autoConnect: boolean
+	): Promise<void> {
 		// Do this before handling the per-peripheral settings.
 		// This is because the behavior of setSpecificPeripheralConnectionPreference
 		// depends on the value of the auto connect setting.
@@ -130,11 +133,11 @@ export class PeripheralsHandler extends EventEmitter {
 		this.emitPeripheralConnectedStatuses()
 
 		await Promise.all(
-			Array.from(this.peripherals.values()).map((peripheral) => peripheral.setConnectedToParent(connected))
+			Array.from(this.peripherals.values()).map(async (peripheral) => peripheral.setConnectedToParent(connected))
 		)
 	}
 	async close(): Promise<void> {
-		await Promise.all(Array.from(this.peripherals.values()).map((peripheral) => peripheral.close()))
+		await Promise.all(Array.from(this.peripherals.values()).map(async (peripheral) => peripheral.close()))
 
 		this.watcher?.removeAllListeners()
 		this.watcher?.stop()

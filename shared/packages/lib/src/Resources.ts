@@ -33,7 +33,7 @@ enum GeneralResourceType {
 	UNKNOWN = 'unknown',
 }
 
-export function describeResource(resource: ResourceAny) {
+export function describeResource(resource: ResourceAny): GeneralResourceType {
 	switch (resource.resourceType) {
 		case ResourceType.CASPARCG_MEDIA:
 			return GeneralResourceType.MEDIA

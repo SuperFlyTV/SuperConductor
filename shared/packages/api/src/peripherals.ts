@@ -108,6 +108,10 @@ export enum PeripheralType {
 }
 
 export interface AnalogValue {
+	/** An absolute value */
 	absolute: number
+	/** A relative value */
 	relative: number
+	/** Recommendation on what value to use. true=use absolute, false= use relative */
+	rAbs: boolean | undefined
 }

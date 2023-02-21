@@ -19,7 +19,7 @@ export async function insertGroups(
 			[partId: string]: ResourceAny[]
 		}
 	}[]
-) {
+): Promise<boolean> {
 	const currentRundownId = store.rundownsStore.currentRundownId
 	if (!currentRundownId) return false
 
@@ -49,8 +49,12 @@ export async function insertGroups(
 			})
 		}
 	}
+	return true
 }
-export async function insertParts(context: ClipBoardContext, parts: { part: Part; resources: ResourceAny[] }[]) {
+export async function insertParts(
+	context: ClipBoardContext,
+	parts: { part: Part; resources: ResourceAny[] }[]
+): Promise<boolean> {
 	const currentRundownId = store.rundownsStore.currentRundownId
 	if (!currentRundownId) return false
 
@@ -92,4 +96,5 @@ export async function insertParts(context: ClipBoardContext, parts: { part: Part
 			})
 		}
 	}
+	return true
 }

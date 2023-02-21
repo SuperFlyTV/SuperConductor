@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-export function DebugTestErrors() {
+export function DebugTestErrors(): JSX.Element {
 	const els: JSX.Element[] = []
 
 	for (let i = 0; i < 10; i++) {

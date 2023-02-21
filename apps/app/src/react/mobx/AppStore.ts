@@ -39,11 +39,11 @@ export class AppStore {
 		return this._data
 	}
 
-	update(data: AppData) {
+	update(data: AppData): void {
 		this._data = data
 	}
 
-	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null) {
+	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null): void {
 		const newStatuses = { ...this.bridgeStatuses }
 		if (status) {
 			newStatuses[bridgeId] = status
@@ -55,7 +55,7 @@ export class AppStore {
 		this._updateAllDeviceStatuses()
 	}
 
-	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null) {
+	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
 		const newPeripherals = { ...this.peripherals }
 		if (peripheral) {
 			newPeripherals[peripheralId] = peripheral

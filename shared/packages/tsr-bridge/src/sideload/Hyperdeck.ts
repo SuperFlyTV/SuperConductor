@@ -36,10 +36,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 			this.hyperdeck.connect(deviceOptions.options.host, deviceOptions.options?.port)
 		}
 	}
-	refreshResources() {
+	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		this.hyperdeck.removeAllListeners()
 		return this.hyperdeck.disconnect()
 	}

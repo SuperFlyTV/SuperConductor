@@ -1,7 +1,7 @@
 import { literal } from '@shared/lib'
 import { CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
-import { getDefaultPart } from '../../../electron/defaults'
+import { getDefaultPart } from '../../../lib/defaults'
 import { sortMappings } from '../../../lib/TSRMappings'
 import { shortID } from '../../../lib/util'
 import { Part } from '../../../models/rundown/Part'

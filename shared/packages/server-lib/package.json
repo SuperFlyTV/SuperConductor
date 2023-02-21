@@ -1,6 +1,6 @@
 {
 	"name": "@shared/server-lib",
-	"version": "0.9.6",
+	"version": "0.10.2",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -11,7 +11,7 @@
 	"license": "AGPL-3.0-or-later",
 	"private": true,
 	"engines": {
-		"node": "^12.20 || ^14.15.3 || 16"
+		"node": "^16.16.0 || 18"
 	},
 	"main": "dist/index",
 	"types": "dist/index",
@@ -42,8 +42,8 @@
 		]
 	},
 	"dependencies": {
-		"@shared/api": "^0.9.6",
-		"@shared/models": "^0.9.6",
+		"@shared/api": "^0.10.2",
+		"@shared/models": "^0.10.2",
 		"ws": "^8.4.2"
 	},
 	"devDependencies": {

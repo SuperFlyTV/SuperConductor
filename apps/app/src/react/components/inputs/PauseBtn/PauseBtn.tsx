@@ -80,11 +80,11 @@ export const PauseBtn: React.FC<{
 			onClick={props.onClick}
 			title={title}
 		>
-			{willDo === 'cue' && <IoPlaySkipBackSharp size={18} />}
-			{willDo === 'pause' && <MdPause size={22} />}
-			{willDo === 'resume' && <MdPlayArrow size={18} />}
+			<>{willDo === 'cue' && <IoPlaySkipBackSharp size={18} />}</>
+			<>{willDo === 'pause' && <MdPause size={22} />}</>
+			<>{willDo === 'resume' && <MdPlayArrow size={18} />}</>
 
-			{!props.partId && <div className="playcount">{countAffectedParts}</div>}
+			<>{!props.partId && <div className="playcount">{countAffectedParts}</div>}</>
 		</Btn>
 	)
 }
