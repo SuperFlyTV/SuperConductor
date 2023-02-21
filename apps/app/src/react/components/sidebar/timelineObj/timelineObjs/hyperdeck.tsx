@@ -1,11 +1,12 @@
 import { assertNever } from '@shared/lib'
 import React from 'react'
 import { TimelineContentTypeHyperdeck, TimelineObjHyperdeckAny, TransportStatus } from 'timeline-state-resolver-types'
+import { isIndeterminate, inputValue, firstValue } from '../../../../lib/multipleEdit'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
 
 /**
  * In TSR, only some of the transport statuses are supported and actually do something.
@@ -19,10 +20,17 @@ enum SupportedTransportStatuses {
 	PREVIEW = 'preview',
 }
 
-export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
+export const EditTimelineObjHyperdeckAny: React.FC<{ objs: TimelineObjHyperdeckAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave: onSave0,
 }) => {
+	const onSave = onSave0 as OnSaveType<TimelineObjHyperdeckAny>
+	const firstObj = objs[0]
+	if (!firstObj) return null
+
+	const contentType = firstValue(objs, (obj) => obj.content.type)
+	if (!contentType) return null
+
 	let settings: JSX.Element = <></>
 
 	const commonSettings: JSX.Element = (
@@ -31,11 +39,10 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 				<SelectEnum
 					label="Type"
 					fullWidth
-					currentValue={obj.content.type}
+					{...inputValue(objs, (obj) => obj.content.type, undefined)}
 					options={TimelineContentTypeHyperdeck}
 					onChange={(v: TimelineContentTypeHyperdeck) => {
-						obj.content.type = v
-						onSave(obj)
+						onSave({ content: { type: v } })
 					}}
 					allowUndefined={false}
 				/>
@@ -43,7 +50,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 		</>
 	)
 
-	if (obj.content.type === TimelineContentTypeHyperdeck.TRANSPORT) {
+	if (contentType === TimelineContentTypeHyperdeck.TRANSPORT) {
 		let specificTransportSettings: JSX.Element = <></>
 		const commonTransportSettings: JSX.Element = (
 			<>
@@ -51,24 +58,22 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 					<SelectEnum
 						label="Transport Status"
 						fullWidth
-						currentValue={obj.content.status}
+						{...inputValue(objs, (obj) => obj.content.status, undefined)}
 						options={SupportedTransportStatuses}
 						onChange={(v: TransportStatus) => {
-							obj.content.status = v
-
 							// There isn't any runtime code which enforces that clipId is a number or null.
 							// What this means is that, if a user first creates a RECORD object then
 							// changes it to a PLAY object, it can have an undefined clipId which
 							// can then propogate throughout the system, which won't be handled correctly by TSR.
 							// To prevent this, we check for an undefined value and replace it with null here.
 							if (
-								obj.content.status === TransportStatus.PLAY &&
-								(obj.content as any).clipId === undefined
+								firstObj.content.status === TransportStatus.PLAY &&
+								firstObj.content.clipId === undefined
 							) {
-								obj.content.clipId = null
+								onSave({ content: { status: v, clipId: null } })
+							} else {
+								onSave({ content: { status: v } })
 							}
-
-							onSave(obj)
 						}}
 						allowUndefined={false}
 					/>
@@ -76,30 +81,29 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 			</>
 		)
 
-		if (
-			obj.content.status === TransportStatus.FORWARD ||
-			obj.content.status === TransportStatus.REWIND ||
-			obj.content.status === TransportStatus.JOG ||
-			obj.content.status === TransportStatus.SHUTTLE ||
-			obj.content.status === TransportStatus.STOPPED
+		if (isIndeterminate(objs, (obj) => obj.content.status)) {
+			specificTransportSettings = <>-- Different statuses --</>
+		} else if (
+			firstObj.content.status === TransportStatus.FORWARD ||
+			firstObj.content.status === TransportStatus.REWIND ||
+			firstObj.content.status === TransportStatus.JOG ||
+			firstObj.content.status === TransportStatus.SHUTTLE ||
+			firstObj.content.status === TransportStatus.STOPPED
 		) {
 			specificTransportSettings = <>{NOT_IMPLEMENTED_SETTINGS}</>
-		} else if (obj.content.status === TransportStatus.PREVIEW) {
+		} else if (firstObj.content.status === TransportStatus.PREVIEW) {
 			specificTransportSettings = <></>
-		} else if (obj.content.status === TransportStatus.PLAY) {
+		} else if (firstObj.content.status === TransportStatus.PLAY) {
 			specificTransportSettings = (
 				<>
 					<div className="setting">
 						<IntInput
 							label="Clip ID"
 							fullWidth
-							currentValue={obj.content.clipId ?? undefined}
+							{...inputValue(objs, (obj) => (obj.content as any).clipId, undefined)}
 							onChange={(v) => {
-								if (obj.content.status !== TransportStatus.PLAY) {
-									return
-								}
-								obj.content.clipId = v === undefined ? null : v
-								onSave(obj)
+								if (firstObj.content.status !== TransportStatus.PLAY) return
+								onSave({ content: { clipId: v === undefined ? null : v } })
 							}}
 							allowUndefined={true}
 							caps={[1, Number.POSITIVE_INFINITY]}
@@ -109,13 +113,10 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 						<IntInput
 							label="Speed"
 							fullWidth
-							currentValue={obj.content.speed}
+							{...inputValue(objs, (obj) => (obj.content as any).speed, undefined)}
 							onChange={(v) => {
-								if (obj.content.status !== TransportStatus.PLAY) {
-									return
-								}
-								obj.content.speed = v
-								onSave(obj)
+								if (firstObj.content.status !== TransportStatus.PLAY) return
+								onSave({ content: { speed: v } })
 							}}
 							allowUndefined={true}
 							caps={[-5000, 5000]}
@@ -124,45 +125,36 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 					<div className="setting">
 						<BooleanInput
 							label="Loop"
-							currentValue={obj.content.loop}
+							{...inputValue(objs, (obj) => (obj.content as any).loop, undefined)}
 							onChange={(v) => {
-								if (obj.content.status !== TransportStatus.PLAY) {
-									return
-								}
-								obj.content.loop = v
-								onSave(obj)
+								if (firstObj.content.status !== TransportStatus.PLAY) return
+								onSave({ content: { loop: v } })
 							}}
 						/>
 					</div>
 					<div className="setting">
 						<BooleanInput
 							label="Single Clip"
-							currentValue={obj.content.singleClip}
+							{...inputValue(objs, (obj) => (obj.content as any).singleClip, undefined)}
 							onChange={(v) => {
-								if (obj.content.status !== TransportStatus.PLAY) {
-									return
-								}
-								obj.content.singleClip = v
-								onSave(obj)
+								if (firstObj.content.status !== TransportStatus.PLAY) return
+								onSave({ content: { singleClip: v } })
 							}}
 						/>
 					</div>
 				</>
 			)
-		} else if (obj.content.status === TransportStatus.RECORD) {
+		} else if (firstObj.content.status === TransportStatus.RECORD) {
 			specificTransportSettings = (
 				<>
 					<div className="setting">
 						<TextInput
 							label="Filename"
 							fullWidth
-							currentValue={obj.content.recordFilename}
+							{...inputValue(objs, (obj) => (obj.content as any).recordFilename, undefined)}
 							onChange={(v) => {
-								if (obj.content.status !== TransportStatus.RECORD) {
-									return
-								}
-								obj.content.recordFilename = v
-								onSave(obj)
+								if (firstObj.content.status !== TransportStatus.RECORD) return
+								onSave({ content: { recordFilename: v } })
 							}}
 							allowUndefined={true}
 						/>
@@ -170,7 +162,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 				</>
 			)
 		} else {
-			assertNever(obj.content)
+			assertNever(firstObj.content)
 		}
 
 		settings = (
@@ -179,10 +171,12 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 				{specificTransportSettings}
 			</>
 		)
+	} else {
+		assertNever(contentType)
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave0}>
 			{commonSettings}
 			{settings}
 		</EditWrapper>

@@ -1468,7 +1468,7 @@ export class IPCServer
 		timelineObjId: string
 		timelineObj: {
 			resourceId?: TimelineObj['resourceId']
-			obj: Partial<TimelineObj['obj']>
+			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
@@ -1485,7 +1485,7 @@ export class IPCServer
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
-		if (arg.timelineObj.obj !== undefined) Object.assign(timelineObj.obj, arg.timelineObj.obj)
+		if (arg.timelineObj.obj !== undefined) deepExtend(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })

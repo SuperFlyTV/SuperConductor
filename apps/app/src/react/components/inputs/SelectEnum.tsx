@@ -4,6 +4,7 @@ import React from 'react'
 export const SelectEnum: React.FC<{
 	label: React.ReactNode
 	currentValue: any
+	indeterminate?: boolean
 	options: { [key: string]: any }
 	onChange: (newValue: any) => void
 	allowUndefined?: boolean
@@ -11,7 +12,18 @@ export const SelectEnum: React.FC<{
 	fullWidth?: boolean
 	width?: string
 	disabled?: boolean
-}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label, fullWidth, width, disabled }) => {
+}> = ({
+	currentValue,
+	indeterminate,
+	options,
+	onChange,
+	allowUndefined,
+	defaultValue,
+	label,
+	fullWidth,
+	width,
+	disabled,
+}) => {
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -48,8 +60,15 @@ export const SelectEnum: React.FC<{
 		if (currentValue === '__undefined') {
 			allOptions[currentValue] = { value: currentValue, label: 'Not set' }
 		} else {
-			allOptions[currentValue] = { value: currentValue, label: currentValue }
+			allOptions[currentValue] = { value: currentValue, label: String(currentValue) }
 		}
+	}
+
+	const allOptionsList = Object.entries(allOptions)
+
+	if (indeterminate) {
+		allOptionsList.unshift(['__indeterminate', { value: '__indeterminate', label: '-- Different values --' }])
+		currentValue = '__indeterminate'
 	}
 
 	return (
@@ -61,6 +80,8 @@ export const SelectEnum: React.FC<{
 			label={label}
 			value={currentValue}
 			onChange={(e) => {
+				if (e.target.value === '__indeterminate') return // ignore
+
 				if (allowUndefined && e.target.value === '__undefined') {
 					onChange(undefined)
 				} else {
@@ -72,7 +93,7 @@ export const SelectEnum: React.FC<{
 			sx={{ width: width }}
 			disabled={disabled}
 		>
-			{Object.entries(allOptions).map(([key, value]) => {
+			{allOptionsList.map(([key, value]) => {
 				return (
 					<MenuItem key={key} value={key}>
 						{value.label}
