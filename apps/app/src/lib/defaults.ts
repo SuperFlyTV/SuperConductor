@@ -66,14 +66,14 @@ export function getDefaultAppData(currentVersion: string): AppData {
 				{
 					label: 'F5',
 					fullIdentifiers: ['keyboard-F5'],
-					action: 'pause',
+					action: 'previous',
 				},
 			],
 			previous: [
 				{
 					label: 'F6',
 					fullIdentifiers: ['keyboard-F6'],
-					action: 'pause',
+					action: 'next',
 				},
 			],
 		},
