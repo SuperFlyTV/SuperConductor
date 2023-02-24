@@ -184,10 +184,10 @@
     eventemitter3 "^4.0.7"
     tslib "^2.4.0"
 
-"@elgato-stream-deck/node@^5.7.0":
-  version "5.7.0"
-  resolved "https://registry.yarnpkg.com/@elgato-stream-deck/node/-/node-5.7.0.tgz#17788386167df5f272ba9e268ffdd317267c3dd6"
-  integrity sha512-KTLNq6MabjIzuk7OpdwMreBECr6NkwAQxers1vLXKeu+sgmZwt2CQeBKJYocmMnltILfnfvTGNMZhS61tT47pw==
+"@elgato-stream-deck/node@^5.7.2":
+  version "5.7.2"
+  resolved "https://registry.yarnpkg.com/@elgato-stream-deck/node/-/node-5.7.2.tgz#f78fbc85b60647f6d861f1958d484b76063d1e18"
+  integrity sha512-U7gl/R+Jnl3CIyMx2b/WhEs0DBbDt8irDXj++DrRJudWg/JSenHyccg/7KFVixCU6JRxWktEPdVJKJ6U+8FPVQ==
   dependencies:
     "@elgato-stream-deck/core" "5.7.0"
     jpeg-js "^0.4.2"

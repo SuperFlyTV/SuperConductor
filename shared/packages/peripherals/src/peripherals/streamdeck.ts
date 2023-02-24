@@ -131,33 +131,36 @@ export class PeripheralStreamDeck extends Peripheral {
 			})
 
 			// Press / Release the knobs on Streamdeck plus:
-			this.streamDeck.on('encoderDown', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+			this.streamDeck.on('encoderDown', (encoderIndex) => {
+				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
 				this.keys[identifier] = false
 				this.emit('keyDown', identifier)
 			})
-			this.streamDeck.on('encoderUp', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+			this.streamDeck.on('encoderUp', (encoderIndex) => {
+				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
 				this.keys[identifier] = false
 				this.emit('keyUp', identifier)
 			})
 			// Rotate the knobs on Streamdeck plus:
-			this.streamDeck.on('rotateRight', (keyIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+			this.streamDeck.on('rotateRight', (encoderIndex, deltaValue) => {
+				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, deltaValue),
 					relative: deltaValue,
 					rAbs: false,
 				})
 			})
-			this.streamDeck.on('rotateLeft', (keyIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+			this.streamDeck.on('rotateLeft', (encoderIndex, deltaValue) => {
+				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, -deltaValue),
 					relative: -deltaValue,
 					rAbs: false,
 				})
 			})
+			// this.streamDeck.on('lcdShortPress', (encoderIndex, position) => {})
+			// this.streamDeck.on('lcdLongPress', (encoderIndex, position) => {})
+			// this.streamDeck.on('lcdSwipe', (fromEncoderIndex, toEncoderIndex, fromPosition, toPosition) => {})
 			// lcdShortPress
 			// lcdLongPress
 			// lcdSwipe
