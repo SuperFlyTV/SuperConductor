@@ -88,7 +88,6 @@ export const SideBarEditTimelineObject: React.FC<{
 
 			<EditTimelineObjContent
 				modifiableObjects={modifiableObjects}
-				resourceId={props.timelineObj.resourceId}
 				onSave={(updateObj) => {
 					modifiableObjects.forEach((o) => {
 						ipcServer

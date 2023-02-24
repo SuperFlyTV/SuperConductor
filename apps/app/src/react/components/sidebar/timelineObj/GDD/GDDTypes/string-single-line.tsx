@@ -13,6 +13,11 @@ export const gddTypeSingleLine: React.FC<PropertyProps<GDDTypeSingleLine>> = (pr
 					props.setData(e.target.value)
 				}}
 				onBlur={props.onSave}
+				onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+					if (e.key === 'Enter') {
+						props.onSave()
+					}
+				}}
 			/>
 		</EditProperty>
 	)

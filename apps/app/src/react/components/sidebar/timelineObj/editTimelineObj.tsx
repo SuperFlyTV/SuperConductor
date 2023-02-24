@@ -1,4 +1,4 @@
-import { assertNever } from '@shared/lib'
+import { assertNever, compact } from '@shared/lib'
 import React from 'react'
 import {
 	DeviceType,
@@ -55,9 +55,8 @@ export const EditTimelineObjContent: React.FC<{
 		timelineObj: TimelineObj
 		groupOrPartLocked?: boolean | undefined
 	}[]
-	resourceId: string | undefined
 	onSave: OnSave
-}> = ({ modifiableObjects, resourceId, onSave }) => {
+}> = ({ modifiableObjects, onSave }) => {
 	let editElement: JSX.Element | null = null
 
 	const indeterminate =
@@ -71,6 +70,7 @@ export const EditTimelineObjContent: React.FC<{
 		return <div>-- Different types --</div>
 	}
 	const objs = modifiableObjects.map((o) => o.timelineObj.obj)
+	const resourceIds = compact(modifiableObjects.map((o) => o.timelineObj.resourceId))
 
 	if (firstObj.content.deviceType === DeviceType.ABSTRACT && firstObj.content.type === 'empty') {
 		editElement = <EditTimelineObjEmpty objs={objs as TimelineObjEmpty[]} onSave={onSave} />
@@ -82,7 +82,7 @@ export const EditTimelineObjContent: React.FC<{
 		editElement = (
 			<EditTimelineObjCasparCGAny
 				objs={objs as TimelineObjCasparCGAny[]}
-				resourceId={resourceId}
+				resourceIds={resourceIds}
 				onSave={onSave}
 			/>
 		)

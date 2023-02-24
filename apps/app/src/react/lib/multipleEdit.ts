@@ -1,6 +1,7 @@
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 
+/** Returns the first value in a list */
 export function firstValue<T, V>(objects: T[], fcn: (obj: T) => V): V | undefined {
 	if (!objects.length) return undefined
 	return fcn(objects[0])
@@ -100,4 +101,37 @@ assert(
 assert(
 	isIndeterminate([1, 2], (n) => n),
 	true
+)
+
+assert(
+	getListBoolean([1, 1, 1], (n) => !!n),
+	ListBoolean.ALL
+)
+assert(
+	getListBoolean([1, 0, 1], (n) => !!n),
+	ListBoolean.SOME
+)
+assert(
+	getListBoolean([0, 1, 1], (n) => !!n),
+	ListBoolean.SOME
+)
+assert(
+	getListBoolean([1, 1, 0], (n) => !!n),
+	ListBoolean.SOME
+)
+assert(
+	getListBoolean([0, 0, 0], (n) => !!n),
+	ListBoolean.NONE
+)
+assert(
+	getListBoolean([1], (n) => !!n),
+	ListBoolean.ALL
+)
+assert(
+	getListBoolean([0], (n) => !!n),
+	ListBoolean.NONE
+)
+assert(
+	getListBoolean([1, 0], (n) => !!n),
+	ListBoolean.SOME
 )

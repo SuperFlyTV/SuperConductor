@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { assertNever, deepClone } from '@shared/lib'
 import {
 	ChannelFormat,
@@ -40,18 +40,20 @@ import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/Ana
 import { HiOutlineX } from 'react-icons/hi'
 import { store } from '../../../../mobx/store'
 import { computed } from 'mobx'
-import { ResourceType } from '@shared/models'
+import { ResourceAny, ResourceType } from '@shared/models'
 import { usePromise } from '../../../../mobx/lib'
 import { EditGDDData } from '../GDD/gddEdit'
 import { GDDSchema } from 'graphics-data-definition'
 import { PartialDeep } from 'type-fest'
 import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
+import { makePartialData } from '../GDD/lib'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
 	objs: TimelineObjCasparCGAny[]
-	resourceId: string | undefined
+	resourceIds: string[]
+
 	onSave: OnSave
-}> = ({ objs, resourceId, onSave: onSave0 }) => {
+}> = ({ objs, resourceIds, onSave: onSave0 }) => {
 	let settings: JSX.Element = <></>
 
 	const onSave = onSave0 as OnSaveType<TimelineObjCasparCGAny>
@@ -1911,7 +1913,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					/>
 				</div>
 
-				<CasparEditTemplateData objs={objs} resourceId={resourceId} onSave={onSave0} />
+				<CasparEditTemplateData objs={objs} resourceIds={resourceIds} onSave={onSave0} />
 
 				{/* {showAllButton} */}
 			</>
@@ -2063,16 +2065,177 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 const CasparEditTemplateData: React.FC<{
 	objs: TimelineObjCCGTemplate[]
-	resourceId: string | undefined
+	resourceIds: string[]
 	onSave: OnSave
-}> = ({ objs, resourceId, onSave }) => {
-	if (isIndeterminate(objs, (obj) => obj.content.data)) {
-		return <>-- Different data values --</>
-	}
-	const firstObj = objs[0]
-	if (!firstObj) return null
+}> = ({ objs, resourceIds, onSave }) => {
+	const initializedGDDValidator = usePromise(() =>
+		store.gddValidatorStore.initializeGDDSchemaValidator().then(() => true)
+	)
 
+	const resources: ResourceAny[] = []
+	for (const resourceId of resourceIds) {
+		const resource = computed(() => store.resourcesStore.getResource(resourceId)).get()
+		if (resource) resources.push(resource)
+	}
+
+	const gddEdit = initializedGDDValidator ? prepareGDDEdit(resources) : undefined
+
+	if (gddEdit) {
+		return <CasparEditTemplateGDDData objs={objs} onSave={onSave} gddEdit={gddEdit} />
+	} else {
+		// Not GDD
+		return <CasparEditTemplatePlainData objs={objs} onSave={onSave} />
+	}
+}
+interface GDDEdit {
+	errorMessage: string | null
+	schema: GDDSchema
+	validationResult: string | null
+	gddIsIndeterminate: boolean
+}
+function prepareGDDEdit(resources: ResourceAny[]): GDDEdit | undefined {
+	let errorMessage: string | null = null
+	const gdds: {
+		validationResult: string | null
+		schema: GDDSchema
+	}[] = []
+	let gddIsIndeterminate = false
+
+	if (resources.length) {
+		for (const resource of resources) {
+			if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
+				if (resource.errorMessage) errorMessage = resource.errorMessage
+
+				if (resource.gdd) {
+					const gdd = {
+						schema: resource.gdd,
+						validationResult: null,
+					}
+					gdds.push(gdd)
+				}
+			}
+		}
+
+		if (gdds.length) {
+			gddIsIndeterminate = isIndeterminate(gdds, (gdd) => gdd.schema)
+
+			if (!gddIsIndeterminate) {
+				store.gddValidatorStore.initializeGDDSchemaValidator().catch((window as any).handleError)
+				const gddValidator = computed(() => store.gddValidatorStore.gddValidator).get()
+				if (gddValidator) {
+					for (const gdd of gdds) {
+						gdd.validationResult = gddValidator(gdd.schema)
+					}
+				}
+			}
+		}
+	}
+
+	if (gdds.length > 0) {
+		const gdd = gdds[0]
+		return {
+			errorMessage,
+			gddIsIndeterminate,
+			schema: gdd.schema,
+			validationResult: gdd.validationResult,
+		}
+	}
+}
+const CasparEditTemplateGDDData: React.FC<{
+	gddEdit: GDDEdit
+	objs: TimelineObjCCGTemplate[]
+	onSave: OnSave
+}> = ({ gddEdit, objs, onSave }) => {
+	const [editIndeterminateData, setEditIndeterminateData] = useState(false)
+
+	const contentDataIsIndeterminate = isIndeterminate(objs, (obj) => obj.content.data)
+	const contentData = firstValue(objs, (obj) => obj.content.data) || {}
+
+	if (gddEdit.gddIsIndeterminate) {
+		return (
+			<>
+				<div className="setting">-- Different GDD schemas --</div>
+			</>
+		)
+	}
+
+	if (gddEdit.errorMessage) {
+		return (
+			<>
+				<div className="setting">
+					Error in template:
+					<div className="markable">{gddEdit.errorMessage}</div>
+				</div>
+			</>
+		)
+	}
+	if (!editIndeterminateData && contentDataIsIndeterminate) {
+		return (
+			<>
+				<div className="setting">
+					-- Different data --
+					<div>
+						<Btn
+							className="size-small"
+							onClick={() => {
+								setEditIndeterminateData(true)
+							}}
+						>
+							Edit anyway
+						</Btn>
+					</div>
+				</div>
+			</>
+		)
+	}
+
+	if (gddEdit.validationResult) {
+		return (
+			<>
+				<div className="setting">
+					Error in Schema:
+					<div className="markable">{gddEdit.validationResult}</div>
+				</div>
+			</>
+		)
+	}
+	return (
+		<>
+			<div className="setting">
+				{
+					<EditGDDData
+						data={contentData}
+						schema={gddEdit.schema}
+						onSaveData={(data: any) => {
+							// Make a diff, so that we don't overwrite the whole data object.
+							// This is useful when editing multiple objects and we only want to change _one_
+							// of the fields.
+							const diff = makePartialData(data, contentData)
+							onSave({
+								content: {
+									data: {
+										__gdd: 1,
+										...diff,
+									},
+								},
+							})
+						}}
+					/>
+				}
+			</div>
+		</>
+	)
+}
+
+const CasparEditTemplatePlainData: React.FC<{
+	objs: TimelineObjCCGTemplate[]
+	onSave: OnSave
+}> = ({ objs, onSave }) => {
+	const [editIndeterminateData, setEditIndeterminateData] = useState(false)
+
+	const firstObj = objs[0]
 	let parsed: { [id: string]: string } = {}
+	if (!firstObj) return null
 	try {
 		if (typeof firstObj.content.data === 'string') {
 			parsed = JSON.parse(firstObj.content.data)
@@ -2119,87 +2282,40 @@ const CasparEditTemplateData: React.FC<{
 		onSave({ content: { data: modifier } })
 	}
 
-	const data: Array<any> = []
-	Object.keys(parsed).forEach((key) => {
-		data.push({
-			key: key,
-			value: parsed[key],
-		})
-	})
-
-	const initializedGDDValidator = usePromise(() =>
-		store.gddValidatorStore.initializeGDDSchemaValidator().then(() => true)
-	)
-
-	let errorMessage: string | null = null
-	let gdd: {
-		validationResult: string | null
-		schema: GDDSchema
-	} | null = null
-
-	if (resourceId && initializedGDDValidator) {
-		const resource = computed(() => store.resourcesStore.getResource(resourceId)).get()
-
-		if (resource && resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
-			if (resource.errorMessage) errorMessage = resource.errorMessage
-
-			if (resource.gdd) {
-				gdd = {
-					schema: resource.gdd,
-					validationResult: null,
-				}
-
-				store.gddValidatorStore.initializeGDDSchemaValidator().catch((window as any).handleError)
-				const gddValidator = computed(() => store.gddValidatorStore.gddValidator).get()
-
-				if (gddValidator) {
-					gdd.validationResult = gddValidator(resource.gdd)
-				}
-			}
-		}
-	}
-	if (errorMessage) {
+	if (!editIndeterminateData && isIndeterminate(objs, (obj) => obj.content.data)) {
 		return (
 			<>
 				<div className="setting">
-					Error in template:
-					<div className="markable">{errorMessage}</div>
-				</div>
-			</>
-		)
-	}
-	if (gdd) {
-		if (gdd.validationResult) {
-			return (
-				<>
-					<div className="setting">
-						Error in Schema:
-						<div className="markable">{gdd.validationResult}</div>
-					</div>
-				</>
-			)
-		}
-		return (
-			<>
-				<div className="setting">
-					{
-						<EditGDDData
-							data={obj.content.data}
-							schema={gdd.schema}
-							onSaveData={(data: any) => {
-								const newObj = deepClone(obj)
-								newObj.content.data = data
-								onSave(newObj)
+					-- Different data --
+					<div>
+						<Btn
+							className="size-small"
+							onClick={() => {
+								setEditIndeterminateData(true)
 							}}
-						/>
-					}
+						>
+							Edit anyway
+						</Btn>
+					</div>
 				</div>
 			</>
 		)
+	}
+
+	const dataEntries: Array<{ key: string; value: any }> = []
+	for (const [key, value] of Object.entries(parsed)) {
+		if (key === '__gdd') continue
+		dataEntries.push({ key, value })
 	}
 
 	return (
 		<>
+			{parsed.__gdd && (
+				<div className="setting">
+					Data seems to be GDD-data, but no GDD schema was found. Try to reload the resources and ensure that
+					the resource shows up in the library.
+				</div>
+			)}
 			<div className="setting">
 				<BooleanInput
 					label="Classic CasparCG XML Data"
@@ -2221,7 +2337,7 @@ const CasparEditTemplateData: React.FC<{
 						<tr>
 							<td colSpan={3}></td>
 						</tr>
-						{Object.entries(parsed).map(([key, value]) => {
+						{dataEntries.map(({ key, value }) => {
 							return (
 								<tr key={key}>
 									<td className="key">
