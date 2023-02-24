@@ -23,7 +23,7 @@
 		"lerna": "lerna",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"lintfix": "yarn lint --fix",
-		"lint:changed": "lerna exec --since origin/master --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
+		"lint:changed": "lerna exec --since head --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "lerna run build",
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
@@ -41,7 +41,7 @@
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",
-		"threadedclass": "^1.0.1",
+		"threadedclass": "^1.2.1",
 		"node-hid": "github:julusian/node-hid#v2.1.2-1",
 		"casparcg-state": "2.1.2",
 		"serialport": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"

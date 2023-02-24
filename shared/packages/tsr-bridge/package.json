@@ -1,6 +1,6 @@
 {
 	"name": "@shared/tsr-bridge",
-	"version": "0.10.1",
+	"version": "0.10.4",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -42,10 +42,10 @@
 		]
 	},
 	"dependencies": {
-		"@shared/api": "^0.10.1",
-		"@shared/lib": "^0.10.1",
-		"@shared/models": "^0.10.1",
-		"@shared/peripherals": "^0.10.1",
+		"@shared/api": "^0.10.4",
+		"@shared/lib": "^0.10.4",
+		"@shared/models": "^0.10.4",
+		"@shared/peripherals": "^0.10.4",
 		"cheerio": "^1.0.0-rc.12",
 		"lodash": "^4.17.21",
 		"got": "^11.8.5",

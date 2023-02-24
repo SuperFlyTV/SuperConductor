@@ -6,8 +6,9 @@ export const BooleanInput: React.FC<{
 	onChange: (newValue: boolean) => void
 	label: string | number | React.ReactElement<any, string | React.JSXElementConstructor<any>>
 	disabled?: boolean
+	indeterminate?: boolean
 	endAdornment?: React.ReactNode
-}> = ({ currentValue, onChange, label, disabled, endAdornment }) => {
+}> = ({ currentValue, onChange, label, disabled, indeterminate, endAdornment }) => {
 	return (
 		<FormGroup>
 			<FormControlLabel
@@ -18,6 +19,7 @@ export const BooleanInput: React.FC<{
 						}}
 						checked={!!currentValue}
 						disabled={disabled}
+						indeterminate={indeterminate}
 					/>
 				}
 				label={label}

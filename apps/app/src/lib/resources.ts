@@ -42,6 +42,7 @@ import {
 	TimelineObjCCGTemplate,
 	TimelineObjHyperdeckTransport,
 	TransportStatus,
+	TimelineObjTCPRequest,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -626,6 +627,19 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				clipId: resource.clipId,
 			},
 		})
+	} else if (resource.resourceType === ResourceType.TCP_REQUEST) {
+		return literal<TimelineObjTCPRequest>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: 1 * 1000,
+			},
+			content: {
+				deviceType: DeviceType.TCPSEND,
+				message: '',
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -702,6 +716,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'OSC'
 		case ResourceType.HTTP_REQUEST:
 			return 'HTTP'
+		case ResourceType.TCP_REQUEST:
+			return 'TCP'
 		default:
 			assertNever(resource)
 			return 'Other'

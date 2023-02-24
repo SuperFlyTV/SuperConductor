@@ -11207,10 +11207,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-threadedclass@^0.8.0, threadedclass@^1.0.1, threadedclass@^1.1.1:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/threadedclass/-/threadedclass-1.1.0.tgz#3f0e3e91d41098a9c9aa98635fa043530702e269"
-  integrity sha512-+R9wHIHKMsmp0g1TKHZ9gcATD5Pohig4ZWqDqV2o1+VjKjw8KmUcTQZ0sJCj/G8hjFxXPp2QAZDHsmzTcqQJYQ==
+threadedclass@^0.8.0, threadedclass@^1.1.1, threadedclass@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/threadedclass/-/threadedclass-1.2.1.tgz#1ce1316f6835cec238edabba75421e654f2c5572"
+  integrity sha512-b8dUXW0K3dUWYrQakKhXvY/Owrnd3p+NKTI0BVEuAU/o7PsLupoNDCadK6V3WwyVLKCy0CS/d1xBmc6uZNPgOw==
   dependencies:
     callsites "^3.1.0"
     eventemitter3 "^4.0.4"

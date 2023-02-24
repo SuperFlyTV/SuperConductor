@@ -47,7 +47,7 @@ export class SuperConductor {
 	bridgeHandler: BridgeHandler
 
 	private shuttingDown = false
-	private resourceUpdatesToSend: Array<{ id: string; resource: ResourceAny | null }> = []
+	private resourceUpdatesToSend = new Map<string, ResourceAny | null>()
 	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
@@ -104,7 +104,7 @@ export class SuperConductor {
 		})
 		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
-			this.resourceUpdatesToSend.push({ id, resource })
+			this.resourceUpdatesToSend.set(id, resource)
 			this._triggerBatchSendResources()
 			this.triggerHandleAutoFill()
 		})
@@ -264,8 +264,15 @@ export class SuperConductor {
 		if (!this.__triggerBatchSendResourcesTimeout) {
 			this.__triggerBatchSendResourcesTimeout = setTimeout(() => {
 				this.__triggerBatchSendResourcesTimeout = null
-				this.clients.forEach((clients) => clients.ipcClient.updateResources(this.resourceUpdatesToSend))
-				this.resourceUpdatesToSend = []
+
+				const resourceUpdatesToSend: { id: string; resource: ResourceAny | null }[] = []
+				for (const [id, resource] of this.resourceUpdatesToSend.entries()) {
+					resourceUpdatesToSend.push({ id, resource })
+				}
+				if (resourceUpdatesToSend.length) {
+					this.clients.forEach((clients) => clients.ipcClient.updateResources(resourceUpdatesToSend))
+				}
+				this.resourceUpdatesToSend.clear()
 			}, 100)
 		}
 	}

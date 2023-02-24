@@ -29,6 +29,7 @@ enum GeneralResourceType {
 	HTTP_REQUEST = 'http_request',
 	PLAY = 'play',
 	TRANSPORT = 'transport',
+	TCP_REQUEST = 'tcp_request',
 	UNKNOWN = 'unknown',
 }
 
@@ -104,6 +105,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.TRANSPORT
 		case ResourceType.HYPERDECK_CLIP:
 			return GeneralResourceType.MEDIA
+		case ResourceType.TCP_REQUEST:
+			return GeneralResourceType.TCP_REQUEST
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN

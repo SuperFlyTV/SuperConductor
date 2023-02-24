@@ -5,6 +5,7 @@ import { ParsedValueInput } from './parsedValueInput'
 export const DurationInput: React.FC<
 	| {
 			currentValue: number | undefined
+			indeterminate?: boolean
 			onChange: (newValue: number | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
@@ -16,6 +17,7 @@ export const DurationInput: React.FC<
 	  }
 	| {
 			currentValue: number
+			indeterminate?: boolean
 			onChange: (newValue: number) => void
 			allowUndefined: false
 			allowNull: false
@@ -29,6 +31,7 @@ export const DurationInput: React.FC<
 	  }
 	| {
 			currentValue: number | null
+			indeterminate?: boolean
 			onChange: (newValue: number | null) => void
 			allowUndefined: false
 			allowNull: true
@@ -60,6 +63,7 @@ export const DurationInput: React.FC<
 	if (props.allowUndefined) {
 		return ParsedValueInput<number | undefined>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			undefined,
 			(str: string) => parseDuration(str) ?? undefined,
@@ -77,6 +81,7 @@ export const DurationInput: React.FC<
 	} else if (props.allowNull) {
 		return ParsedValueInput<number | null>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			props.defaultValue,
 			parseDuration,
@@ -94,6 +99,7 @@ export const DurationInput: React.FC<
 	} else {
 		return ParsedValueInput<number>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			props.defaultValue,
 			(str: string) => parseDuration(str) ?? undefined,

@@ -20,8 +20,10 @@ import {
 	BlendMode,
 	Chroma,
 	DeviceType,
+	Mixer,
+	CasparCGTransition,
 } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
+import { EditWrapper, OnSave, OnSaveType } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -42,13 +44,17 @@ import { ResourceType } from '@shared/models'
 import { usePromise } from '../../../../mobx/lib'
 import { EditGDDData } from '../GDD/gddEdit'
 import { GDDSchema } from 'graphics-data-definition'
+import { PartialDeep } from 'type-fest'
+import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
-	obj: TimelineObjCasparCGAny
+	objs: TimelineObjCasparCGAny[]
 	resourceId: string | undefined
 	onSave: OnSave
-}> = ({ obj, resourceId, onSave }) => {
+}> = ({ objs, resourceId, onSave: onSave0 }) => {
 	let settings: JSX.Element = <></>
+
+	const onSave = onSave0 as OnSaveType<TimelineObjCasparCGAny>
 
 	const [showAll, setShowAll] = React.useState(false)
 	// const [showMixer, setShowMixer] = React.useState(false)
@@ -59,84 +65,98 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				<SelectEnum
 					label="Type"
 					fullWidth
-					currentValue={obj.content.type}
+					{...inputValue(objs, (obj) => obj.content.type, undefined)}
 					options={TimelineContentTypeCasparCg}
-					onChange={(newValue) => {
-						obj.content.type = newValue
-
-						const sharedContentProps = <T extends TimelineContentTypeCasparCg>(
-							type: T
-						): {
-							deviceType: DeviceType.CASPARCG
-							type: T
-						} => {
-							return {
-								deviceType: DeviceType.CASPARCG,
-								type,
+					onChange={(newType: TimelineContentTypeCasparCg) => {
+						let anyChange = false
+						for (const obj of objs) {
+							if (obj.content.type !== newType) {
+								anyChange = true
+								break
 							}
 						}
+						if (!anyChange) return // no change
 
-						// Create new content that is appropriate for the new CCG timelineObj type
-						switch (obj.content.type) {
+						// Create new content that is appropriate for the new CCG timelineObj type:
+						switch (newType) {
 							case TimelineContentTypeCasparCg.HTMLPAGE: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									url: '',
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										url: '',
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.INPUT: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									inputType: '',
-									device: 0,
-									deviceFormat: ChannelFormat.HD_1080P2500,
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										inputType: '',
+										device: 0,
+										deviceFormat: ChannelFormat.HD_1080P2500,
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.IP: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									uri: '',
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										uri: '',
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.MEDIA: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									file: '',
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										file: '',
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.RECORD: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									file: '',
-									encoderOptions: '',
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										file: '',
+										encoderOptions: '',
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.ROUTE: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+									},
+								})
 								break
 							}
 							case TimelineContentTypeCasparCg.TEMPLATE: {
-								obj.content = {
-									...sharedContentProps(obj.content.type),
-									templateType: 'html',
-									name: '',
-									useStopCommand: false,
-									data: {},
-								}
+								onSave({
+									content: {
+										deviceType: DeviceType.CASPARCG,
+										type: newType,
+										templateType: 'html',
+										name: '',
+										useStopCommand: false,
+										data: {},
+									},
+								})
 								break
 							}
 							default:
-								assertNever(obj.content)
+								assertNever(newType)
 						}
-
-						onSave(obj)
 					}}
 				/>
 			</div>
@@ -150,17 +170,16 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	// };
 	// mixer?: Mixer;
 
-	const getSettingsChannelLayout = (obj: TimelineObjCasparCGAny & { content: { channelLayout?: string } }) => (
+	const getSettingsChannelLayout = (objs: (TimelineObjCasparCGAny & { content: { channelLayout?: string } })[]) => (
 		<>
-			{showAll || obj.content.channelLayout !== undefined ? (
+			{showAll || anyAreTrue(objs, (obj) => obj.content.channelLayout !== undefined) ? (
 				<div className="setting">
 					<TextInput
 						label="channelLayout"
 						fullWidth
-						currentValue={obj.content.channelLayout}
+						{...inputValue(objs, (obj) => obj.content.channelLayout, undefined)}
 						onChange={(v) => {
-							obj.content.channelLayout = v
-							onSave(obj)
+							onSave({ content: { channelLayout: v } })
 						}}
 						allowUndefined={true}
 					/>
@@ -170,32 +189,30 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	)
 
 	const getSettingsVideoAudioFilters = (
-		obj: TimelineObjCasparCGAny & { content: { videoFilter?: string; audioFilter?: string } }
+		objs: (TimelineObjCasparCGAny & { content: { videoFilter?: string; audioFilter?: string } })[]
 	) => (
 		<>
-			{showAll || obj.content.videoFilter ? (
+			{showAll || anyAreTrue(objs, (obj) => !!obj.content.videoFilter) ? (
 				<div className="setting">
 					<TextInput
 						label="VideoFilter"
 						fullWidth
-						currentValue={obj.content.videoFilter}
+						{...inputValue(objs, (obj) => obj.content.videoFilter, undefined)}
 						onChange={(v) => {
-							obj.content.videoFilter = v
-							onSave(obj)
+							onSave({ content: { videoFilter: v } })
 						}}
 						allowUndefined={true}
 					/>
 				</div>
 			) : null}
-			{showAll || obj.content.audioFilter ? (
+			{showAll || anyAreTrue(objs, (obj) => !!obj.content.audioFilter) ? (
 				<div className="setting">
 					<TextInput
 						label="AudioFilter"
 						fullWidth
-						currentValue={obj.content.audioFilter}
+						{...inputValue(objs, (obj) => obj.content.audioFilter, undefined)}
 						onChange={(v) => {
-							obj.content.audioFilter = v
-							onSave(obj)
+							onSave({ content: { audioFilter: v } })
 						}}
 						allowUndefined={true}
 					/>
@@ -204,13 +221,43 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		</>
 	)
 
-	const getSettingsTransitions = (obj: TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase }) => {
-		if (!obj.content.transitions) obj.content.transitions = {}
-		if (!obj.content.transitions.inTransition) obj.content.transitions.inTransition = { type: Transition.CUT }
-		if (!obj.content.transitions.outTransition) obj.content.transitions.outTransition = { type: Transition.CUT }
+	const getSettingsTransitions = (
+		objs: (TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase })[]
+	) => {
+		if (isIndeterminate(objs, (obj) => obj.content.transitions)) {
+			return <>-- Different transitions --</>
+		}
+		const firstObj = objs[0]
+		if (!firstObj) return null
 
-		const inTransitions = getSettingsTransitionInner(obj, obj.content.transitions.inTransition, 'In')
-		const outTransitions = getSettingsTransitionInner(obj, obj.content.transitions.outTransition, 'Out')
+		const transitions = firstObj.content.transitions || {}
+
+		const inTransitions = getSettingsTransitionInner(
+			transitions.inTransition || { type: Transition.CUT },
+			'In',
+			(transition) => {
+				if (!transitions.inTransition) {
+					transition = {
+						type: Transition.CUT,
+						...transition,
+					}
+				}
+				onSave({ content: { transitions: { inTransition: transition } } })
+			}
+		)
+		const outTransitions = getSettingsTransitionInner(
+			transitions.outTransition || { type: Transition.CUT },
+			'Out',
+			(transition) => {
+				if (!transitions.inTransition) {
+					transition = {
+						type: Transition.CUT,
+						...transition,
+					}
+				}
+				onSave({ content: { transitions: { outTransition: transition } } })
+			}
+		)
 
 		if (inTransitions.length || outTransitions.length) {
 			return (
@@ -223,7 +270,11 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			)
 		}
 	}
-	const getSettingsTransitionInner = (obj: TimelineObjCasparCGAny, transition: TimelineTransition, label: string) => {
+	const getSettingsTransitionInner = (
+		transition: TimelineTransition,
+		label: string,
+		onSave: (transition: PartialDeep<TimelineTransition>) => void
+	) => {
 		const el: JSX.Element[] = []
 
 		if (showAll || (transition.type ?? Transition.CUT) !== Transition.CUT) {
@@ -236,21 +287,23 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						options={Transition}
 						defaultValue={Transition.CUT}
 						onChange={(v) => {
-							transition.type = v
+							const newTransition = deepClone(transition)
+							newTransition.type = v
 							// Convenience: add default values:
-							if (transition.type === Transition.CUT) {
-								transition.duration = undefined
-							} else if (transition.type === Transition.MIX) {
-								if (!transition.duration) transition.duration = 500
+							if (newTransition.type === Transition.CUT) {
+								newTransition.duration = undefined
+							} else if (newTransition.type === Transition.MIX) {
+								if (!newTransition.duration) newTransition.duration = 500
 							} else if (
-								transition.type === Transition.PUSH ||
-								transition.type === Transition.SLIDE ||
-								transition.type === Transition.WIPE
+								newTransition.type === Transition.PUSH ||
+								newTransition.type === Transition.SLIDE ||
+								newTransition.type === Transition.WIPE
 							) {
-								if (!transition.duration) transition.duration = 500
-								if (transition.easing === undefined) transition.easing = Ease.IN_OUT_CUBIC
+								if (!newTransition.duration) newTransition.duration = 500
+								if (newTransition.easing === undefined) newTransition.easing = Ease.IN_OUT_CUBIC
 							}
-							onSave(obj)
+
+							onSave(newTransition)
 						}}
 					/>
 				</div>
@@ -268,8 +321,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.duration}
 							onChange={(v) => {
-								transition.duration = v
-								onSave(obj)
+								onSave({ duration: v })
 							}}
 							allowUndefined={true}
 						/>
@@ -286,8 +338,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							options={Ease}
 							defaultValue={Ease.LINEAR}
 							onChange={(v) => {
-								transition.easing = v
-								onSave(obj)
+								onSave({ easing: v })
 							}}
 						/>
 					</div>
@@ -314,8 +365,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							options={Direction}
 							defaultValue={Direction.LEFT}
 							onChange={(v) => {
-								transition.direction = v
-								onSave(obj)
+								onSave({ direction: v })
 							}}
 						/>
 					</div>
@@ -330,8 +380,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.maskFile}
 							onChange={(v) => {
-								transition.maskFile = v
-								onSave(obj)
+								onSave({ maskFile: v })
 							}}
 							allowUndefined={false}
 						/>
@@ -346,8 +395,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.overlayFile}
 							onChange={(v) => {
-								transition.overlayFile = v
-								onSave(obj)
+								onSave({ overlayFile: v })
 							}}
 							allowUndefined={true}
 						/>
@@ -362,8 +410,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.delay}
 							onChange={(v) => {
-								transition.delay = v
-								onSave(obj)
+								onSave({ delay: v })
 							}}
 							allowUndefined={true}
 						/>
@@ -378,8 +425,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.audioFadeStart}
 							onChange={(v) => {
-								transition.audioFadeStart = v
-								onSave(obj)
+								onSave({ audioFadeStart: v })
 							}}
 							allowUndefined={true}
 						/>
@@ -394,8 +440,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={transition.audioFadeDuration}
 							onChange={(v) => {
-								transition.audioFadeDuration = v
-								onSave(obj)
+								onSave({ audioFadeDuration: v })
 							}}
 							allowUndefined={true}
 						/>
@@ -415,8 +460,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={customOptions.updateInterval}
 							onChange={(v) => {
-								customOptions.updateInterval = v
-								onSave(obj)
+								onSave({ customOptions: { updateInterval: v } } as any)
 							}}
 							allowUndefined={true}
 						/>
@@ -431,8 +475,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={customOptions.linearSpeed}
 							onChange={(v) => {
-								customOptions.linearSpeed = v
-								onSave(obj)
+								onSave({ customOptions: { linearSpeed: v } } as any)
 							}}
 							allowUndefined={true}
 						/>
@@ -447,8 +490,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={customOptions.acceleration}
 							onChange={(v) => {
-								customOptions.acceleration = v
-								onSave(obj)
+								onSave({ customOptions: { acceleration: v } } as any)
 							}}
 							allowUndefined={true}
 						/>
@@ -463,8 +505,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={customOptions.maxSpeed}
 							onChange={(v) => {
-								customOptions.maxSpeed = v
-								onSave(obj)
+								onSave({ customOptions: { maxSpeed: v } } as any)
 							}}
 							allowUndefined={true}
 						/>
@@ -479,8 +520,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							fullWidth
 							currentValue={customOptions.snapDistance}
 							onChange={(v) => {
-								customOptions.snapDistance = v
-								onSave(obj)
+								onSave({ customOptions: { snapDistance: v } } as any)
 							}}
 							allowUndefined={true}
 						/>
@@ -500,31 +540,44 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		return el
 	}
 
-	const getSettingsMixer = (obj: TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase }) => {
-		if (!obj.content.mixer) obj.content.mixer = {}
-
-		const mixer = obj.content.mixer
+	const getSettingsMixer = (objs: (TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase })[]) => {
+		const mixers = objs.map((obj) => obj.content.mixer || {}) as MixerWithoutTransitionObject[]
 
 		const mixSettings: JSX.Element[] = []
 
-		if (showAll || mixer.anchor !== undefined) {
+		const anyAnchor = anyAreTrue(mixers, (mixer) => mixer.anchor !== undefined)
+		const anyBlend = anyAreTrue(mixers, (mixer) => mixer.blend !== undefined)
+		const anyBrightness = anyAreTrue(mixers, (mixer) => mixer.brightness !== undefined)
+		const anyChroma = anyAreTrue(mixers, (mixer) => mixer.chroma !== undefined)
+		const anyClip = anyAreTrue(mixers, (mixer) => mixer.clip !== undefined)
+		const anyContrast = anyAreTrue(mixers, (mixer) => mixer.contrast !== undefined)
+		const anyCrop = anyAreTrue(mixers, (mixer) => mixer.crop !== undefined)
+		const anyFill = anyAreTrue(mixers, (mixer) => mixer.fill !== undefined)
+		const anyKeyer = anyAreTrue(mixers, (mixer) => mixer.keyer !== undefined)
+		const anyLevels = anyAreTrue(mixers, (mixer) => mixer.levels !== undefined)
+		const anyMasterVolume = anyAreTrue(mixers, (mixer) => mixer.mastervolume !== undefined)
+		const anyOpacity = anyAreTrue(mixers, (mixer) => mixer.opacity !== undefined)
+		const anyPerspective = anyAreTrue(mixers, (mixer) => mixer.perspective !== undefined)
+		const anyRotation = anyAreTrue(mixers, (mixer) => mixer.rotation !== undefined)
+		const anySaturation = anyAreTrue(mixers, (mixer) => mixer.saturation !== undefined)
+		const anyStraightAlpha = anyAreTrue(mixers, (mixer) => mixer.straightAlpha !== undefined)
+		const anyVolume = anyAreTrue(mixers, (mixer) => mixer.volume !== undefined)
+
+		if (showAll || anyAnchor) {
 			const anchor: {
 				x: number
 				y: number
-			} = (mixer.anchor as any) ?? {
-				x: 0,
-				y: 0,
-			}
+			} = deepClone(firstValue(mixers, (mixer) => mixer.anchor) ?? { x: 0, y: 0 })
+
 			mixSettings.push(
 				<div className="settings-group" key="anchor">
 					<div className="label">
 						Anchor
-						{mixer.anchor !== undefined && (
+						{anyAnchor && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.anchor
-									onSave(obj)
+									onSave({ content: { mixer: { anchor: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -535,46 +588,47 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Anchor x"
 							fullWidth
-							currentValue={anchor.x}
+							{...inputValue(mixers, (mixer) => mixer.anchor?.x, 0)}
 							onChange={(v) => {
-								mixer.anchor = anchor
 								anchor.x = v
-								onSave(obj)
+								onSave({ content: { mixer: { anchor: anchor } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.anchor.x" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.anchor.x" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="anchor y"
 							fullWidth
-							currentValue={anchor.y}
+							{...inputValue(mixers, (mixer) => mixer.anchor?.y, 0)}
 							onChange={(v) => {
-								mixer.anchor = anchor
 								anchor.y = v
-								onSave(obj)
+								onSave({ content: { mixer: { anchor: anchor } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.anchor.y" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.anchor.y" onSave={onSave0} />
+							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.blend !== undefined) {
+		if (showAll || anyBlend) {
 			mixSettings.push(
 				<div className="settings-group" key="blend">
 					<div className="label">
 						Blend
-						{mixer.blend !== undefined && (
+						{anyBlend && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.blend
-									onSave(obj)
+									onSave({ content: { mixer: { blend: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -585,10 +639,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<SelectEnum
 							label="Blend mode"
 							fullWidth
-							currentValue={mixer.blend}
+							{...inputValue(mixers, (mixer) => mixer.blend, undefined)}
 							onChange={(v) => {
-								mixer.blend = v
-								onSave(obj)
+								onSave({ content: { mixer: { blend: v } } })
 							}}
 							allowUndefined={false}
 							options={BlendMode}
@@ -598,17 +651,16 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				</div>
 			)
 		}
-		if (showAll || mixer.brightness !== undefined) {
+		if (showAll || anyBrightness) {
 			mixSettings.push(
 				<div className="settings-group" key="brightness">
 					<div className="label">
 						Brightness
-						{mixer.brightness !== undefined && (
+						{anyBrightness && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.brightness
-									onSave(obj)
+									onSave({ content: { mixer: { brightness: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -619,45 +671,45 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Brightness"
 							fullWidth
-							currentValue={mixer.brightness as any}
+							{...inputValue(mixers, (mixer) => mixer.brightness, 1)}
 							onChange={(v) => {
-								mixer.brightness = v
-								onSave(obj)
+								onSave({ content: { mixer: { brightness: v } } })
 							}}
 							caps={[0, 1]}
 							percentage={true}
 							allowUndefined={false}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.brightness" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.brightness" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.chroma !== undefined) {
+		if (showAll || anyChroma) {
 			const chroma: {
 				keyer: Chroma
 				threshold: number
 				softness: number
 				spill: number
-			} = (mixer.chroma as any) ?? {
-				keyer: Chroma.NONE,
-				threshold: 0,
-				softness: 0,
-				spill: 0,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.chroma) ?? {
+					keyer: Chroma.NONE,
+					threshold: 0,
+					softness: 0,
+					spill: 0,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="chroma">
 					<div className="label">
 						Chroma
-						{mixer.chroma !== undefined && (
+						{anyChroma && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.chroma
-									onSave(obj)
+									onSave({ content: { mixer: { chroma: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -668,11 +720,10 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<SelectEnum
 							label="Keyer"
 							fullWidth
-							currentValue={chroma.keyer}
+							{...inputValue(mixers, (mixer) => mixer.chroma?.keyer, Chroma.NONE)}
 							onChange={(v) => {
-								mixer.chroma = chroma
 								chroma.keyer = v
-								onSave(obj)
+								onSave({ content: { mixer: { chroma } } })
 							}}
 							allowUndefined={false}
 							options={Chroma}
@@ -683,16 +734,15 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Threshold"
 							fullWidth
-							currentValue={chroma.threshold}
+							{...inputValue(mixers, (mixer) => mixer.chroma?.threshold, 0)}
 							onChange={(v) => {
-								mixer.chroma = chroma
 								chroma.threshold = v
-								onSave(obj)
+								onSave({ content: { mixer: { chroma } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.threshold" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.chroma.threshold" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -700,16 +750,15 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Softness"
 							fullWidth
-							currentValue={chroma.softness}
+							{...inputValue(mixers, (mixer) => mixer.chroma?.softness, 0)}
 							onChange={(v) => {
-								mixer.chroma = chroma
 								chroma.softness = v
-								onSave(obj)
+								onSave({ content: { mixer: { chroma } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.softness" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.chroma.softness" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -717,44 +766,44 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Spill"
 							fullWidth
-							currentValue={chroma.spill}
+							{...inputValue(mixers, (mixer) => mixer.chroma?.spill, 0)}
 							onChange={(v) => {
-								mixer.chroma = chroma
 								chroma.spill = v
-								onSave(obj)
+								onSave({ content: { mixer: { chroma } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.chroma.spill" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.chroma.spill" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.clip !== undefined) {
+		if (showAll || anyClip) {
 			const clip: {
 				x: number
 				y: number
 				width: number
 				height: number
-			} = (mixer.clip as any) ?? {
-				x: 0,
-				y: 0,
-				width: 1,
-				height: 1,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.clip) ?? {
+					x: 0,
+					y: 0,
+					width: 1,
+					height: 1,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="clip">
 					<div className="label">
 						Mixer clip
-						{mixer.clip !== undefined && (
+						{anyClip && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.clip
-									onSave(obj)
+									onSave({ content: { mixer: { clip: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -765,50 +814,51 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Clip x"
 							fullWidth
-							currentValue={clip.x}
+							{...inputValue(mixers, (mixer) => mixer.clip?.x, 0)}
 							onChange={(v) => {
-								mixer.clip = clip
 								clip.x = v
-								onSave(obj)
+								onSave({ content: { mixer: { clip } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.clip.x" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.clip.x" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="Clip y"
 							fullWidth
-							currentValue={clip.y}
+							{...inputValue(mixers, (mixer) => mixer.clip?.y, 0)}
 							onChange={(v) => {
-								mixer.clip = clip
 								clip.y = v
-								onSave(obj)
+								onSave({ content: { mixer: { clip } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.clip.y" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.clip.y" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="Clip width"
 							fullWidth
-							currentValue={clip.width}
+							{...inputValue(mixers, (mixer) => mixer.clip?.width, 1)}
 							onChange={(v) => {
-								mixer.clip = clip
 								clip.width = v
-								onSave(obj)
+								onSave({ content: { mixer: { clip } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.clip.width" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.clip.width" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -816,35 +866,33 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Clip height"
 							fullWidth
-							currentValue={clip.height}
+							{...inputValue(mixers, (mixer) => mixer.clip?.height, 1)}
 							onChange={(v) => {
-								mixer.clip = clip
 								clip.height = v
-								onSave(obj)
+								onSave({ content: { mixer: { clip } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.clip.height" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.clip.height" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.contrast !== undefined) {
+		if (showAll || anyContrast) {
 			mixSettings.push(
 				<div className="settings-group" key="contrast">
 					<div className="label">
 						Contrast
-						{mixer.contrast !== undefined && (
+						{anyContrast && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.contrast
-									onSave(obj)
+									onSave({ content: { mixer: { contrast: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -855,43 +903,45 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Contrast"
 							fullWidth
-							currentValue={mixer.contrast as any}
+							{...inputValue(mixers, (mixer) => mixer.contrast, 1)}
 							onChange={(v) => {
-								mixer.contrast = v
-								onSave(obj)
+								onSave({ content: { mixer: { contrast: v } } })
 							}}
 							caps={[0, 1]}
 							percentage={true}
 							allowUndefined={false}
 							defaultValue={1}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.contrast" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.contrast" onSave={onSave0} />
+							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.crop !== undefined) {
+		if (showAll || anyCrop) {
 			const crop: {
 				left: number
 				top: number
 				right: number
 				bottom: number
-			} = (mixer.crop as any) ?? {
-				left: 0,
-				top: 0,
-				right: 1,
-				bottom: 1,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.crop) ?? {
+					left: 0,
+					top: 0,
+					right: 1,
+					bottom: 1,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="crop">
 					<div className="label">
 						Mixer crop
-						{mixer.crop !== undefined && (
+						{anyCrop && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.crop
-									onSave(obj)
+									onSave({ content: { mixer: { crop: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -902,17 +952,17 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Crop left"
 							fullWidth
-							currentValue={crop.left}
+							{...inputValue(mixers, (mixer) => mixer.crop?.left, 0)}
 							onChange={(v) => {
-								mixer.crop = crop
 								crop.left = v
-								onSave(obj)
+								onSave({ content: { mixer: { crop } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
+							defaultValue={0}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.crop.left" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.crop.left" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -920,34 +970,35 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Crop top"
 							fullWidth
-							currentValue={crop.top}
+							{...inputValue(mixers, (mixer) => mixer.crop?.top, 0)}
 							onChange={(v) => {
-								mixer.crop = crop
 								crop.top = v
-								onSave(obj)
+								onSave({ content: { mixer: { crop } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.crop.top" onSave={onSave} />}
+							defaultValue={0}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.crop.top" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="crop right"
 							fullWidth
-							currentValue={crop.right}
+							{...inputValue(mixers, (mixer) => mixer.crop?.right, 1)}
 							onChange={(v) => {
-								mixer.crop = crop
 								crop.right = v
-								onSave(obj)
+								onSave({ content: { mixer: { crop } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.crop.right" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.crop.right" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -955,46 +1006,46 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="crop bottom"
 							fullWidth
-							currentValue={crop.bottom}
+							{...inputValue(mixers, (mixer) => mixer.crop?.bottom, 1)}
 							onChange={(v) => {
-								mixer.crop = crop
 								crop.bottom = v
-								onSave(obj)
+								onSave({ content: { mixer: { crop } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							caps={[0, 1]}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.crop.bottom" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.crop.bottom" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.fill !== undefined) {
+		if (showAll || anyFill) {
 			const fill: {
 				x: number
 				y: number
 				xScale: number
 				yScale: number
-			} = (mixer.fill as any) ?? {
-				x: 0,
-				y: 0,
-				xScale: 1,
-				yScale: 1,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.fill) ?? {
+					x: 0,
+					y: 0,
+					xScale: 1,
+					yScale: 1,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="fill">
 					<div className="label">
 						Mixer Fill
-						{mixer.fill !== undefined && (
+						{anyFill && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.fill
-									onSave(obj)
+									onSave({ content: { mixer: { fill: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1005,47 +1056,48 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Fill x"
 							fullWidth
-							currentValue={fill.x}
+							{...inputValue(mixers, (mixer) => mixer.fill?.x, 0)}
 							onChange={(v) => {
-								mixer.fill = fill
 								fill.x = v
-								onSave(obj)
+								onSave({ content: { mixer: { fill } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.x" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.fill.x" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="Fill y"
 							fullWidth
-							currentValue={fill.y}
+							{...inputValue(mixers, (mixer) => mixer.fill?.y, 0)}
 							onChange={(v) => {
-								mixer.fill = fill
 								fill.y = v
-								onSave(obj)
+								onSave({ content: { mixer: { fill } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.fill.y" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.fill.y" onSave={onSave0} />
+							}
 						/>
 					</div>
 					<div className="setting">
 						<FloatInput
 							label="Fill x-scale"
 							fullWidth
-							currentValue={fill.xScale}
+							{...inputValue(mixers, (mixer) => mixer.fill?.xScale, 1)}
 							onChange={(v) => {
-								mixer.fill = fill
 								fill.xScale = v
-								onSave(obj)
+								onSave({ content: { mixer: { fill } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.fill.xScale" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.fill.xScale" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -1053,34 +1105,32 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Fill Y-Scale"
 							fullWidth
-							currentValue={fill.yScale}
+							{...inputValue(mixers, (mixer) => mixer.fill?.yScale, 1)}
 							onChange={(v) => {
-								mixer.fill = fill
 								fill.yScale = v
-								onSave(obj)
+								onSave({ content: { mixer: { fill } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.fill.yScale" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.fill.yScale" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.keyer !== undefined) {
+		if (showAll || anyKeyer) {
 			mixSettings.push(
 				<div className="settings-group" key="keyer">
 					<div className="label">
 						Keyer
-						{mixer.keyer !== undefined && (
+						{anyKeyer && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.keyer
-									onSave(obj)
+									onSave({ content: { mixer: { keyer: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1090,40 +1140,40 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<div className="setting">
 						<BooleanInput
 							label="Keyer"
-							currentValue={mixer.keyer as any}
+							{...inputValue(mixers, (mixer) => mixer.keyer, undefined)}
 							onChange={(v) => {
-								mixer.keyer = v
-								onSave(obj)
+								onSave({ content: { mixer: { keyer: v } } })
 							}}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.levels !== undefined) {
+		if (showAll || anyLevels) {
 			const levels: {
 				minInput: number
 				maxInput: number
 				gamma: number
 				minOutput: number
 				maxOutput: number
-			} = (mixer.levels as any) ?? {
-				minInput: 0,
-				maxInput: 1,
-				gamma: 1,
-				minOutput: 0,
-				maxOutput: 1,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.levels) ?? {
+					minInput: 0,
+					maxInput: 1,
+					gamma: 1,
+					minOutput: 0,
+					maxOutput: 1,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="levels">
 					<div className="label">
 						Mixer levels
-						{mixer.levels !== undefined && (
+						{anyLevels && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.levels
-									onSave(obj)
+									onSave({ content: { mixer: { levels: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1134,18 +1184,17 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="levels minInput"
 							fullWidth
-							currentValue={levels.minInput}
+							{...inputValue(mixers, (mixer) => mixer.levels?.minInput, 0)}
 							onChange={(v) => {
-								mixer.levels = levels
 								levels.minInput = v
-								onSave(obj)
+								onSave({ content: { mixer: { levels } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							caps={[0, 1]}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.levels.minInput" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.levels.minInput" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -1153,18 +1202,17 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="levels maxInput"
 							fullWidth
-							currentValue={levels.maxInput}
+							{...inputValue(mixers, (mixer) => mixer.levels?.maxInput, 1)}
 							onChange={(v) => {
-								mixer.levels = levels
 								levels.maxInput = v
-								onSave(obj)
+								onSave({ content: { mixer: { levels } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							caps={[0, 1]}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.levels.maxInput" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.levels.maxInput" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -1172,17 +1220,16 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="levels gamma"
 							fullWidth
-							currentValue={levels.gamma}
+							{...inputValue(mixers, (mixer) => mixer.levels?.gamma, 1)}
 							onChange={(v) => {
-								mixer.levels = levels
 								levels.gamma = v
-								onSave(obj)
+								onSave({ content: { mixer: { levels } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.levels.gamma" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.levels.gamma" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -1190,18 +1237,17 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="levels minOutput"
 							fullWidth
-							currentValue={levels.minOutput}
+							{...inputValue(mixers, (mixer) => mixer.levels?.minOutput, 0)}
 							onChange={(v) => {
-								mixer.levels = levels
 								levels.minOutput = v
-								onSave(obj)
+								onSave({ content: { mixer: { levels } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							caps={[0, 1]}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.levels.minOutput" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.levels.minOutput" onSave={onSave0} />
 							}
 						/>
 					</div>
@@ -1209,35 +1255,33 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="levels maxOutput"
 							fullWidth
-							currentValue={levels.maxOutput}
+							{...inputValue(mixers, (mixer) => mixer.levels?.maxOutput, 1)}
 							onChange={(v) => {
-								mixer.levels = levels
 								levels.maxOutput = v
-								onSave(obj)
+								onSave({ content: { mixer: { levels } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							caps={[0, 1]}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.levels.maxOutput" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.levels.maxOutput" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.mastervolume !== undefined) {
+		if (showAll || anyMasterVolume) {
 			mixSettings.push(
 				<div className="settings-group" key="mastervolume">
 					<div className="label">
 						Master Volume
-						{mixer.mastervolume !== undefined && (
+						{anyMasterVolume && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.mastervolume
-									onSave(obj)
+									onSave({ content: { mixer: { mastervolume: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1248,33 +1292,31 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Master Volume"
 							fullWidth
-							currentValue={mixer.mastervolume as any}
+							{...inputValue(mixers, (mixer) => mixer.mastervolume, 1)}
 							onChange={(v) => {
-								mixer.mastervolume = v
-								onSave(obj)
+								onSave({ content: { mixer: { mastervolume: v } } })
 							}}
 							percentage={true}
 							allowUndefined={false}
 							defaultValue={1}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.mastervolume" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.mastervolume" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.opacity !== undefined) {
+		if (showAll || anyOpacity) {
 			mixSettings.push(
 				<div className="settings-group" key="opacity">
 					<div className="label">
 						Opacity
-						{mixer.opacity !== undefined && (
+						{anyOpacity && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.opacity
-									onSave(obj)
+									onSave({ content: { mixer: { opacity: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1285,21 +1327,22 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Opacity"
 							fullWidth
-							currentValue={mixer.opacity as any}
+							{...inputValue(mixers, (mixer) => mixer.opacity, 1)}
 							onChange={(v) => {
-								mixer.opacity = v
-								onSave(obj)
+								onSave({ content: { mixer: { opacity: v } } })
 							}}
 							percentage={true}
 							allowUndefined={false}
 							caps={[0, 1]}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.opacity" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.opacity" onSave={onSave0} />
+							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.perspective !== undefined) {
+		if (showAll || anyPerspective) {
 			const perspective: {
 				topLeftX: number
 				topLeftY: number
@@ -1309,26 +1352,27 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				bottomRightY: number
 				bottomLeftX: number
 				bottomLeftY: number
-			} = (mixer.perspective as any) ?? {
-				topLeftX: 0,
-				topLeftY: 0,
-				topRightX: 1,
-				topRightY: 0,
-				bottomRightX: 1,
-				bottomRightY: 1,
-				bottomLeftX: 0,
-				bottomLeftY: 1,
-			}
+			} = deepClone(
+				firstValue(mixers, (mixer) => mixer.perspective) ?? {
+					topLeftX: 0,
+					topLeftY: 0,
+					topRightX: 1,
+					topRightY: 0,
+					bottomRightX: 1,
+					bottomRightY: 1,
+					bottomLeftX: 0,
+					bottomLeftY: 1,
+				}
+			)
 			mixSettings.push(
 				<div className="settings-group" key="perspective">
 					<div className="label">
 						Mixer perspective
-						{mixer.perspective !== undefined && (
+						{anyPerspective && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.perspective
-									onSave(obj)
+									onSave({ content: { mixer: { perspective: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1339,20 +1383,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="topLeftX"
 							fullWidth
-							currentValue={perspective.topLeftX}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.topLeftX, 0)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.topLeftX = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.topLeftX"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1361,20 +1404,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="topLeftY"
 							fullWidth
-							currentValue={perspective.topLeftY}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.topLeftY, 0)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.topLeftY = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.topLeftY"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1383,20 +1425,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="topRightX"
 							fullWidth
-							currentValue={perspective.topRightX}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.topRightX, 1)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.topRightX = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.topRightX"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1405,20 +1446,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="topRightY"
 							fullWidth
-							currentValue={perspective.topRightY}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.topRightY, 0)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.topRightY = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.topRightY"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1427,20 +1467,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="bottomRightX"
 							fullWidth
-							currentValue={perspective.bottomRightX}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.bottomRightX, 1)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.bottomRightX = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.bottomRightX"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1449,20 +1488,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="bottomRightY"
 							fullWidth
-							currentValue={perspective.bottomRightY}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.bottomRightY, 1)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.bottomRightY = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.bottomRightY"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1471,20 +1509,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="bottomLeftX"
 							fullWidth
-							currentValue={perspective.bottomLeftX}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.bottomLeftX, 0)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.bottomLeftX = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={0}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.bottomLeftX"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1493,20 +1530,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="bottomLeftY"
 							fullWidth
-							currentValue={perspective.bottomLeftY}
+							{...inputValue(mixers, (mixer) => mixer.perspective?.bottomLeftY, 1)}
 							onChange={(v) => {
-								mixer.perspective = perspective
 								perspective.bottomLeftY = v
-								onSave(obj)
+								onSave({ content: { mixer: { perspective } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							endAdornment={
 								<AnalogInputOverridePicker
-									obj={obj}
+									objs={objs}
 									path="mixer.perspective.bottomLeftY"
-									onSave={onSave}
+									onSave={onSave0}
 								/>
 							}
 						/>
@@ -1514,17 +1550,16 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				</div>
 			)
 		}
-		if (showAll || mixer.rotation !== undefined) {
+		if (showAll || anyRotation) {
 			mixSettings.push(
 				<div className="settings-group" key="rotation">
 					<div className="label">
 						Rotation
-						{mixer.rotation !== undefined && (
+						{anyRotation && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.rotation
-									onSave(obj)
+									onSave({ content: { mixer: { rotation: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1535,30 +1570,30 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="rotation"
 							fullWidth
-							currentValue={mixer.rotation as any}
+							{...inputValue(mixers, (mixer) => mixer.rotation, 0)}
 							onChange={(v) => {
-								mixer.rotation = v
-								onSave(obj)
+								onSave({ content: { mixer: { rotation: v } } })
 							}}
 							allowUndefined={false}
 							defaultValue={0}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.rotation" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.rotation" onSave={onSave0} />
+							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.saturation !== undefined) {
+		if (showAll || anySaturation) {
 			mixSettings.push(
 				<div className="settings-group" key="saturation">
 					<div className="label">
 						Saturation
-						{mixer.saturation !== undefined && (
+						{anySaturation && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.saturation
-									onSave(obj)
+									onSave({ content: { mixer: { saturation: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1569,34 +1604,32 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="saturation"
 							fullWidth
-							currentValue={(mixer.saturation as any) ?? 1}
+							{...inputValue(mixers, (mixer) => mixer.saturation, 1)}
 							onChange={(v) => {
-								mixer.saturation = v
-								onSave(obj)
+								onSave({ content: { mixer: { saturation: v } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
 							caps={[0, 1]}
 							endAdornment={
-								<AnalogInputOverridePicker obj={obj} path="mixer.saturation" onSave={onSave} />
+								<AnalogInputOverridePicker objs={objs} path="mixer.saturation" onSave={onSave0} />
 							}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.straightAlpha !== undefined) {
+		if (showAll || anyStraightAlpha) {
 			mixSettings.push(
 				<div className="settings-group" key="straightAlpha">
 					<div className="label">
 						Straight Alpha
-						{mixer.straightAlpha !== undefined && (
+						{anyStraightAlpha && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.straightAlpha
-									onSave(obj)
+									onSave({ content: { mixer: { straightAlpha: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1606,27 +1639,25 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<div className="setting">
 						<BooleanInput
 							label="Straight Alpha"
-							currentValue={mixer.straightAlpha as any}
+							{...inputValue(mixers, (mixer) => mixer.straightAlpha, undefined)}
 							onChange={(v) => {
-								mixer.straightAlpha = v
-								onSave(obj)
+								onSave({ content: { mixer: { straightAlpha: v } } })
 							}}
 						/>
 					</div>
 				</div>
 			)
 		}
-		if (showAll || mixer.volume !== undefined) {
+		if (showAll || anyVolume) {
 			mixSettings.push(
 				<div className="settings-group" key="volume">
 					<div className="label">
 						Volume
-						{mixer.volume !== undefined && (
+						{anyVolume && (
 							<Btn
 								className="size-small"
 								onClick={() => {
-									delete mixer.volume
-									onSave(obj)
+									onSave({ content: { mixer: { volume: undefined } } })
 								}}
 							>
 								<HiOutlineX />
@@ -1637,15 +1668,16 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						<FloatInput
 							label="Volume"
 							fullWidth
-							currentValue={mixer.volume as any}
+							{...inputValue(mixers, (mixer) => mixer.volume, 1)}
 							onChange={(v) => {
-								mixer.volume = v
-								onSave(obj)
+								onSave({ content: { mixer: { volume: v } } })
 							}}
 							allowUndefined={false}
 							percentage={true}
 							defaultValue={1}
-							endAdornment={<AnalogInputOverridePicker obj={obj} path="mixer.volume" onSave={onSave} />}
+							endAdornment={
+								<AnalogInputOverridePicker objs={objs} path="mixer.volume" onSave={onSave0} />
+							}
 						/>
 					</div>
 				</div>
@@ -1665,20 +1697,25 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		</Link>
 	)
 
-	const obj0 = obj
+	const objs0 = objs
 
-	if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
-		const obj = obj0 as TimelineObjCCGMedia
+	const contentType = firstValue(objs, (obj) => obj.content.type)
+	if (!contentType) return null
+
+	if (contentType === TimelineContentTypeCasparCg.MEDIA) {
+		const objs = objs0 as TimelineObjCCGMedia[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="Filename"
 						fullWidth
-						currentValue={obj.content.file}
+						{...inputValue(objs, (obj) => obj.content.file, '')}
 						onChange={(v) => {
-							obj.content.file = v
-							onSave(obj)
+							onSave({ content: { file: v } })
 						}}
 						allowUndefined={false}
 					/>
@@ -1686,27 +1723,25 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				<div className="setting">
 					<BooleanInput
 						label="Looping content"
-						currentValue={obj.content.loop}
+						{...inputValue(objs, (obj) => obj.content.loop, undefined)}
 						onChange={(v) => {
-							obj.content.loop = v
-							onSave(obj)
+							onSave({ content: { loop: v } })
 						}}
 					/>
 				</div>
 
 				{showAll ||
-				obj.content.seek !== undefined ||
-				obj.content.inPoint !== undefined ||
-				obj.content.length !== undefined ? (
+				anyAreTrue(objs, (obj) => obj.content.seek !== undefined) ||
+				anyAreTrue(objs, (obj) => obj.content.inPoint !== undefined) ||
+				anyAreTrue(objs, (obj) => obj.content.length !== undefined) ? (
 					<>
 						<div className="setting">
 							<DurationInput
 								label="Seek"
 								fullWidth
-								currentValue={obj.content.seek}
+								{...inputValue(objs, (obj) => obj.content.seek, undefined)}
 								onChange={(v) => {
-									obj.content.seek = v
-									onSave(obj)
+									onSave({ content: { seek: v } })
 								}}
 								allowUndefined={true}
 							/>
@@ -1715,10 +1750,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							<DurationInput
 								label="In Point (ie loop start point)"
 								fullWidth
-								currentValue={obj.content.inPoint}
+								{...inputValue(objs, (obj) => obj.content.inPoint, undefined)}
 								onChange={(v) => {
-									obj.content.inPoint = v
-									onSave(obj)
+									onSave({ content: { inPoint: v } })
 								}}
 								allowUndefined={true}
 							/>
@@ -1727,10 +1761,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							<DurationInput
 								label="Length (ie point of freeze/loop)"
 								fullWidth
-								currentValue={obj.content.length}
+								{...inputValue(objs, (obj) => obj.content.length, undefined)}
 								onChange={(v) => {
-									obj.content.length = v
-									onSave(obj)
+									onSave({ content: { length: v } })
 								}}
 								allowUndefined={true}
 							/>
@@ -1742,55 +1775,57 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<label>noStarttime</label>
 					<BooleanInput
 						currentValue={obj.content.noStarttime}
+						{...inputValue(objs, (obj) => obj.content.noStarttime, undefined)}
 						onChange={(v) => {
-							obj.content.noStarttime = v
-							onSave(obj)
+							onSave({ content: { noStarttime: v } })
 						}}
 					/>
 				</div> */}
-				{getSettingsChannelLayout(obj)}
-				{getSettingsVideoAudioFilters(obj)}
-				{getSettingsMixer(obj)}
-				{getSettingsTransitions(obj)}
+				{getSettingsChannelLayout(objs)}
+				{getSettingsVideoAudioFilters(objs)}
+				{getSettingsMixer(objs)}
+				{getSettingsTransitions(objs)}
 
 				{showAllButton}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.IP) {
-		const obj = obj0 as TimelineObjCCGIP
+	} else if (contentType === TimelineContentTypeCasparCg.IP) {
+		const objs = objs0 as TimelineObjCCGIP[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="URI"
 						fullWidth
-						currentValue={obj.content.uri}
+						{...inputValue(objs, (obj) => obj.content.uri, '')}
 						onChange={(v) => {
-							obj.content.uri = v
-							onSave(obj)
+							onSave({ content: { uri: v } })
 						}}
 						allowUndefined={false}
 					/>
 				</div>
-				{getSettingsChannelLayout(obj)}
-				{getSettingsVideoAudioFilters(obj)}
-				{getSettingsTransitions(obj)}
+				{getSettingsChannelLayout(objs)}
+				{getSettingsVideoAudioFilters(objs)}
+				{getSettingsTransitions(objs)}
 
 				{showAllButton}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.INPUT) {
-		const obj = obj0 as TimelineObjCCGInput
+	} else if (contentType === TimelineContentTypeCasparCg.INPUT) {
+		const objs = objs0 as TimelineObjCCGInput[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label='Input Type (eg "decklink")'
 						fullWidth
-						currentValue={obj.content.inputType}
+						{...inputValue(objs, (obj) => obj.content.inputType, '')}
 						onChange={(v) => {
-							obj.content.inputType = v
-							onSave(obj)
+							onSave({ content: { inputType: v } })
 						}}
 						allowUndefined={false}
 					/>
@@ -1799,10 +1834,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<IntInput
 						label="Device Number"
 						fullWidth
-						currentValue={obj.content.device}
+						{...inputValue(objs, (obj) => obj.content.device, 0)}
 						onChange={(v) => {
-							obj.content.device = v
-							onSave(obj)
+							onSave({ content: { device: v } })
 						}}
 						allowUndefined={false}
 						caps={[0, 99]}
@@ -1812,11 +1846,10 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<SelectEnum
 						label="Device Format"
 						fullWidth
-						currentValue={obj.content.deviceFormat}
+						{...inputValue(objs, (obj) => obj.content.deviceFormat, undefined)}
 						options={ChannelFormat}
 						onChange={(v) => {
-							obj.content.deviceFormat = v
-							onSave(obj)
+							onSave({ content: { deviceFormat: v } })
 						}}
 					/>
 				</div>
@@ -1824,35 +1857,35 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<TextInput
 						label="Filter"
 						fullWidth
-						currentValue={obj.content.filter}
+						{...inputValue(objs, (obj) => obj.content.filter, undefined)}
 						onChange={(v) => {
-							obj.content.filter = v
-							onSave(obj)
+							onSave({ content: { filter: v } })
 						}}
 						allowUndefined={true}
 					/>
 				</div>
 
-				{getSettingsChannelLayout(obj)}
-				{getSettingsVideoAudioFilters(obj)}
-				{getSettingsTransitions(obj)}
+				{getSettingsChannelLayout(objs)}
+				{getSettingsVideoAudioFilters(objs)}
+				{getSettingsTransitions(objs)}
 
 				{showAllButton}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.TEMPLATE) {
-		const obj = obj0 as TimelineObjCCGTemplate
+	} else if (contentType === TimelineContentTypeCasparCg.TEMPLATE) {
+		const objs = objs0 as TimelineObjCCGTemplate[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 		settings = (
 			<>
 				<div className="setting">
 					<SelectEnum
 						label="Template Type"
 						fullWidth
-						currentValue={obj.content.templateType}
+						{...inputValue(objs, (obj) => obj.content.templateType, undefined)}
 						options={{ html: 'HTML', flash: 'Flash' }}
 						onChange={(v) => {
-							obj.content.templateType = v
-							onSave(obj)
+							onSave({ content: { templateType: v } })
 						}}
 						defaultValue={'html'}
 					/>
@@ -1861,10 +1894,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<TextInput
 						label="Name"
 						fullWidth
-						currentValue={obj.content.name}
+						{...inputValue(objs, (obj) => obj.content.name, '')}
 						onChange={(v) => {
-							obj.content.name = v
-							onSave(obj)
+							onSave({ content: { name: v } })
 						}}
 						allowUndefined={false}
 					/>
@@ -1872,39 +1904,41 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 				<div className="setting">
 					<BooleanInput
 						label="Send stop() on stop"
-						currentValue={obj.content.useStopCommand}
+						{...inputValue(objs, (obj) => obj.content.useStopCommand, undefined)}
 						onChange={(v) => {
-							obj.content.useStopCommand = v
-							onSave(obj)
+							onSave({ content: { useStopCommand: v } })
 						}}
 					/>
 				</div>
 
-				<CasparEditTemplateData obj={obj} resourceId={resourceId} onSave={onSave} />
+				<CasparEditTemplateData objs={objs} resourceId={resourceId} onSave={onSave0} />
 
 				{/* {showAllButton} */}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.HTMLPAGE) {
-		const obj = obj0 as TimelineObjCCGHTMLPage
+	} else if (contentType === TimelineContentTypeCasparCg.HTMLPAGE) {
+		const objs = objs0 as TimelineObjCCGHTMLPage[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="URL"
 						fullWidth
-						currentValue={obj.content.url}
+						{...inputValue(objs, (obj) => obj.content.url, '')}
 						onChange={(v) => {
-							obj.content.url = v
-							onSave(obj)
+							onSave({ content: { url: v } })
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.ROUTE) {
-		const obj = obj0 as TimelineObjCCGRoute & { content: { __routeMappedLayer?: boolean } }
+	} else if (contentType === TimelineContentTypeCasparCg.ROUTE) {
+		const objs = objs0 as (TimelineObjCCGRoute & { content: { __routeMappedLayer?: boolean } })[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 
 		settings = (
 			<>
@@ -1912,25 +1946,25 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<TextInput
 						label="mappedLayer"
 						fullWidth
-						currentValue={obj.content.mappedLayer}
+						{...inputValue(objs, (obj) => obj.content.mappedLayer, undefined)}
 						onChange={(v) => {
-							obj.content.mappedLayer = v
-							onSave(obj)
+							onSave({ content: { mappedLayer: v } })
 						}}
 						allowUndefined={true}
 					/>
 				</div>
 
-				{!obj.content.mappedLayer ? (
+				{isIndeterminate(objs, (obj) => obj.content.mappedLayer) ? (
+					<>-- Different values -- </>
+				) : !firstObj.content.mappedLayer ? (
 					<>
 						<div className="setting">
 							<IntInput
 								label="Channel"
 								fullWidth
-								currentValue={obj.content.channel}
+								{...inputValue(objs, (obj) => obj.content.channel, undefined)}
 								onChange={(v) => {
-									obj.content.channel = v
-									onSave(obj)
+									onSave({ content: { channel: v } })
 								}}
 								allowUndefined={true}
 								caps={[0, 999]}
@@ -1940,10 +1974,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 							<IntInput
 								label="Layer"
 								fullWidth
-								currentValue={obj.content.layer}
+								{...inputValue(objs, (obj) => obj.content.layer, undefined)}
 								onChange={(v) => {
-									obj.content.layer = v
-									onSave(obj)
+									onSave({ content: { layer: v } })
 								}}
 								allowUndefined={true}
 								caps={[0, 999]}
@@ -1956,14 +1989,13 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<SelectEnum
 						label="Mode"
 						fullWidth
-						currentValue={obj.content.mode}
+						{...inputValue(objs, (obj) => obj.content.mode, undefined)}
 						options={{
 							BACKGROUND: 'BACKGROUND',
 							NEXT: 'NEXT',
 						}}
 						onChange={(v) => {
-							obj.content.mode = v
-							onSave(obj)
+							onSave({ content: { mode: v } })
 						}}
 						allowUndefined={true}
 					/>
@@ -1972,23 +2004,24 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<DurationInput
 						label="Delay"
 						fullWidth
-						currentValue={obj.content.delay}
+						{...inputValue(objs, (obj) => obj.content.delay, undefined)}
 						onChange={(v) => {
-							obj.content.delay = v
-							onSave(obj)
+							onSave({ content: { delay: v } })
 						}}
 						allowUndefined={true}
 					/>
 				</div>
 
-				{getSettingsChannelLayout(obj)}
-				{getSettingsVideoAudioFilters(obj)}
-				{getSettingsTransitions(obj)}
+				{getSettingsChannelLayout(objs)}
+				{getSettingsVideoAudioFilters(objs)}
+				{getSettingsTransitions(objs)}
 				{showAllButton}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeCasparCg.RECORD) {
-		const obj = obj0 as TimelineObjCCGRecord
+	} else if (contentType === TimelineContentTypeCasparCg.RECORD) {
+		const objs = objs0 as TimelineObjCCGRecord[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
 
 		settings = (
 			<>
@@ -1996,10 +2029,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<TextInput
 						label="File name"
 						fullWidth
-						currentValue={obj.content.file}
+						{...inputValue(objs, (obj) => obj.content.file, '')}
 						onChange={(v) => {
-							obj.content.file = v
-							onSave(obj)
+							onSave({ content: { file: v } })
 						}}
 						allowUndefined={false}
 					/>
@@ -2008,10 +2040,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 					<TextInput
 						label="Encoder Options"
 						fullWidth
-						currentValue={obj.content.encoderOptions}
+						{...inputValue(objs, (obj) => obj.content.encoderOptions, '')}
 						onChange={(v) => {
-							obj.content.encoderOptions = v
-							onSave(obj)
+							onSave({ content: { encoderOptions: v } })
 						}}
 						allowUndefined={false}
 					/>
@@ -2019,11 +2050,11 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else {
-		assertNever(obj.content)
+		assertNever(contentType)
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave0}>
 			{commonSettings}
 			{settings}
 		</EditWrapper>
@@ -2031,16 +2062,22 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 }
 
 const CasparEditTemplateData: React.FC<{
-	obj: TimelineObjCCGTemplate
+	objs: TimelineObjCCGTemplate[]
 	resourceId: string | undefined
 	onSave: OnSave
-}> = ({ obj, resourceId, onSave }) => {
+}> = ({ objs, resourceId, onSave }) => {
+	if (isIndeterminate(objs, (obj) => obj.content.data)) {
+		return <>-- Different data values --</>
+	}
+	const firstObj = objs[0]
+	if (!firstObj) return null
+
 	let parsed: { [id: string]: string } = {}
 	try {
-		if (typeof obj.content.data === 'string') {
-			parsed = JSON.parse(obj.content.data)
+		if (typeof firstObj.content.data === 'string') {
+			parsed = JSON.parse(firstObj.content.data)
 		} else {
-			parsed = obj.content.data
+			parsed = firstObj.content.data
 		}
 	} catch (err) {
 		// eslint-disable-next-line no-console
@@ -2048,44 +2085,38 @@ const CasparEditTemplateData: React.FC<{
 	}
 
 	const handleUpdateValue = (key: string, newValue: string) => {
-		const newData = deepClone(parsed)
-		const newObj = deepClone(obj)
-		newObj.content.data = newData
-		newData[key] = newValue
-		onSave(newObj)
+		const modifier: any = {}
+		modifier[key] = newValue
+		onSave({ content: { data: modifier } })
 	}
 	const handleUpdateKey = (oldKey: string, newKey: string) => {
-		const newData = deepClone(parsed)
-		const newObj = deepClone(obj)
-		newObj.content.data = newData
 		if (newKey !== oldKey) {
-			newData[newKey] = newData[oldKey]
-			delete newData[oldKey]
-			onSave(newObj)
+			const modifier: any = {}
+			modifier[newKey] = parsed[oldKey]
+			modifier[oldKey] = undefined
+
+			onSave({ content: { data: modifier } })
 		}
 	}
 
 	const handleAddNew = () => {
-		const newData = deepClone(parsed)
-		const newObj = deepClone(obj)
-		newObj.content.data = newData
+		const modifier: any = {}
 
+		// Find next free key:
 		for (let i = 0; i < 100; i++) {
 			const key = `f${i}`
-			if (newData[key] === undefined) {
-				newData[key] = ''
+			if (parsed[key] === undefined) {
+				modifier[key] = ''
 				break
 			}
 		}
-		onSave(newObj)
+		onSave({ content: { data: modifier } })
 	}
 
 	const handleDelete = (key: string) => {
-		const newData = deepClone(parsed)
-		const newObj = deepClone(obj)
-		newObj.content.data = newData
-		delete newData[key]
-		onSave(newObj)
+		const modifier: any = {}
+		modifier[key] = undefined
+		onSave({ content: { data: modifier } })
 	}
 
 	const data: Array<any> = []
@@ -2172,10 +2203,9 @@ const CasparEditTemplateData: React.FC<{
 			<div className="setting">
 				<BooleanInput
 					label="Classic CasparCG XML Data"
-					currentValue={(obj.content as any).sendDataAsXML}
+					{...inputValue(objs, (obj) => (obj.content as any).sendDataAsXML, undefined)}
 					onChange={(v) => {
-						;(obj.content as any).sendDataAsXML = v
-						onSave(obj)
+						onSave({ content: { sendDataAsXML: v } })
 					}}
 				/>
 			</div>
@@ -2248,4 +2278,75 @@ const CasparEditTemplateData: React.FC<{
 			</div>
 		</>
 	)
+}
+
+// This is a copy of the Mixer interface from TSR, but with "| TransitionObject" removed from all of the properties.
+export interface MixerWithoutTransitionObject {
+	inTransition?: CasparCGTransition
+	changeTransition?: CasparCGTransition
+	outTransition?: CasparCGTransition
+	anchor?: {
+		x: number
+		y: number
+	}
+	blend?: BlendMode
+	brightness?: number
+	chroma?: {
+		keyer: Chroma
+		threshold: number
+		softness: number
+		spill: number
+	}
+	clip?: {
+		x: number
+		y: number
+		width: number
+		height: number
+	}
+	contrast?: number
+	crop?: {
+		left: number
+		top: number
+		right: number
+		bottom: number
+	}
+	fill?: {
+		x: number
+		y: number
+		xScale: number
+		yScale: number
+	}
+	keyer?: boolean
+	levels?: {
+		minInput: number
+		maxInput: number
+		gamma: number
+		minOutput: number
+		maxOutput: number
+	}
+	mastervolume?: number
+	opacity?: number
+	perspective?: {
+		topLeftX: number
+		topLeftY: number
+		topRightX: number
+		topRightY: number
+		bottomRightX: number
+		bottomRightY: number
+		bottomLeftX: number
+		bottomLeftY: number
+	}
+	rotation?: number
+	saturation?: number
+	straightAlpha?: boolean
+	volume?: number
+	bundleWithCommands?: number
+}
+
+// Ensure that MixerWithoutTransitionObject and Mixer are compatible:
+function assertTypeMixer(_m: Required<Mixer>): void {
+	// nothing
+}
+export function testMixerWithoutTransitionObject(m: Required<MixerWithoutTransitionObject>): void {
+	assertTypeMixer(m)
 }

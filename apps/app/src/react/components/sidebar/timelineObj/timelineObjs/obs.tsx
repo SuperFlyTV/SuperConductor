@@ -12,116 +12,121 @@ import {
 	TimelineObjOBSSourceSettings,
 	TimelineObjOBSStreaming,
 } from 'timeline-state-resolver-types'
+import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
 
-export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave: onSave0,
+}) => {
+	const onSave = onSave0 as OnSaveType<TimelineObjOBSAny>
 	let settings: JSX.Element = <></>
 
-	const obj0 = obj
-	if (obj.content.type === TimelineContentTypeOBS.CURRENT_SCENE) {
-		const obj = obj0 as TimelineObjOBSCurrentScene
+	const contentType = firstValue(objs, (obj) => obj.content.type)
+	if (!contentType) return null
+
+	const objs0 = objs
+	if (contentType === TimelineContentTypeOBS.CURRENT_SCENE) {
+		const objs = objs0 as TimelineObjOBSCurrentScene[]
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="Scene Name"
 						fullWidth
-						currentValue={obj.content.sceneName}
+						{...inputValue(objs, (obj) => obj.content.sceneName, '')}
 						onChange={(v) => {
-							obj.content.sceneName = v
-							onSave(obj)
+							onSave({ content: { sceneName: v } })
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.CURRENT_TRANSITION) {
-		const obj = obj0 as TimelineObjOBSCurrentTransition
+	} else if (contentType === TimelineContentTypeOBS.CURRENT_TRANSITION) {
+		const objs = objs0 as TimelineObjOBSCurrentTransition[]
 		settings = (
 			<>
 				<div className="setting">
 					<TextInput
 						label="Transition Name"
 						fullWidth
-						currentValue={obj.content.transitionName}
+						{...inputValue(objs, (obj) => obj.content.transitionName, '')}
 						onChange={(v) => {
-							obj.content.transitionName = v
-							onSave(obj)
+							onSave({ content: { transitionName: v } })
 						}}
 						allowUndefined={false}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.RECORDING) {
-		const obj = obj0 as TimelineObjOBSRecording
+	} else if (contentType === TimelineContentTypeOBS.RECORDING) {
+		const objs = objs0 as TimelineObjOBSRecording[]
 		settings = (
 			<>
 				<div className="setting">
 					<BooleanInput
 						label="Recording On"
-						currentValue={obj.content.on}
+						{...inputValue(objs, (obj) => obj.content.on, undefined)}
 						onChange={(v) => {
-							obj.content.on = v
-							onSave(obj)
+							onSave({ content: { on: v } })
 						}}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.STREAMING) {
-		const obj = obj0 as TimelineObjOBSStreaming
+	} else if (contentType === TimelineContentTypeOBS.STREAMING) {
+		const objs = objs0 as TimelineObjOBSStreaming[]
 		settings = (
 			<>
 				<div className="setting">
 					<BooleanInput
 						label="Stream On"
-						currentValue={obj.content.on}
+						{...inputValue(objs, (obj) => obj.content.on, undefined)}
 						onChange={(v) => {
-							obj.content.on = v
-							onSave(obj)
+							onSave({ content: { on: v } })
 						}}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.MUTE) {
-		const obj = obj0 as TimelineObjOBSMute
+	} else if (contentType === TimelineContentTypeOBS.MUTE) {
+		const objs = objs0 as TimelineObjOBSMute[]
 		settings = (
 			<>
 				<div className="setting">
 					<BooleanInput
 						label="Mute On"
-						currentValue={obj.content.mute}
+						{...inputValue(objs, (obj) => obj.content.mute, undefined)}
 						onChange={(v) => {
-							obj.content.mute = v
-							onSave(obj)
+							onSave({ content: { mute: v } })
 						}}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
-		const obj = obj0 as TimelineObjOBSSceneItemRender
+	} else if (contentType === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
+		const objs = objs0 as TimelineObjOBSSceneItemRender[]
 		settings = (
 			<>
 				<div className="setting">
 					<BooleanInput
 						label="Render On"
-						currentValue={obj.content.on}
+						{...inputValue(objs, (obj) => obj.content.on, undefined)}
 						onChange={(v) => {
-							obj.content.on = v
-							onSave(obj)
+							onSave({ content: { on: v } })
 						}}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeOBS.SOURCE_SETTINGS) {
-		const obj = obj0 as TimelineObjOBSSourceSettings
+	} else if (contentType === TimelineContentTypeOBS.SOURCE_SETTINGS) {
+		const objs = objs0 as TimelineObjOBSSourceSettings[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+
 		settings = (
 			<>
 				<div className="setting">
@@ -131,13 +136,14 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 						fullWidth
 						autoFocus
 						label="Source Type"
-						value={obj.content.sourceType}
+						{...inputValue(objs, (obj) => obj.content.sourceType, '')}
 						onChange={(event) => {
-							obj.content.sourceType = event.target.value as any
-							if (obj.content.sourceType === 'ffmpeg_source' && !obj.content.sourceSettings) {
-								;(obj.content as any).sourceSettings = {}
+							const sourceType = event.target.value as any
+							if (firstObj.content.sourceType === 'ffmpeg_source' && !firstObj.content.sourceSettings) {
+								onSave({ content: { sourceType, sourceSettings: {} } })
+							} else {
+								onSave({ content: { sourceType } })
 							}
-							onSave(obj)
 						}}
 					>
 						<MenuItem value="ffmpeg_source">FFMpeg Source</MenuItem>
@@ -148,101 +154,95 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 					</TextField>
 				</div>
 
-				{obj.content.sourceType === 'ffmpeg_source' && (
-					<>
-						<div className="setting">
-							<BooleanInput
-								label="Close when inactive"
-								currentValue={obj.content.sourceSettings.close_when_inactive}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.close_when_inactive = v
-									onSave(obj)
-								}}
-							/>
-						</div>
-						<div className="setting">
-							<BooleanInput
-								label="Hardware decode"
-								currentValue={obj.content.sourceSettings.hw_decode}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.hw_decode = v
-									onSave(obj)
-								}}
-							/>
-						</div>
-						<div className="setting">
-							<TextInput
-								label="Input"
-								fullWidth
-								currentValue={obj.content.sourceSettings.input}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.input = v
-									onSave(obj)
-								}}
-								allowUndefined={true}
-							/>
-						</div>
-						<div className="setting">
-							<BooleanInput
-								label="Is local file"
-								currentValue={obj.content.sourceSettings.is_local_file}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.is_local_file = v
-									onSave(obj)
-								}}
-							/>
-						</div>
-						<div className="setting">
-							<TextInput
-								label="Local file"
-								fullWidth
-								currentValue={obj.content.sourceSettings.local_file}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.local_file = v
-									onSave(obj)
-								}}
-								allowUndefined={true}
-							/>
-						</div>
-						<div className="setting">
-							<BooleanInput
-								label="Looping content"
-								currentValue={obj.content.sourceSettings.looping}
-								onChange={(v) => {
-									if (!obj.content.sourceSettings) {
-										return
-									}
-									obj.content.sourceSettings.looping = v
-									onSave(obj)
-								}}
-							/>
-						</div>
-					</>
+				{isIndeterminate(objs, (obj) => obj.content.sourceType) ? (
+					<>-- Different values -- </>
+				) : (
+					firstObj.content.sourceType === 'ffmpeg_source' && (
+						<>
+							<div className="setting">
+								<BooleanInput
+									label="Close when inactive"
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.sourceSettings as any).close_when_inactive,
+										''
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { close_when_inactive: v } } })
+									}}
+								/>
+							</div>
+							<div className="setting">
+								<BooleanInput
+									label="Hardware decode"
+									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).hw_decode, '')}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { hw_decode: v } } })
+									}}
+								/>
+							</div>
+							<div className="setting">
+								<TextInput
+									label="Input"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).input, '')}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { input: v } } })
+									}}
+									allowUndefined={true}
+								/>
+							</div>
+							<div className="setting">
+								<BooleanInput
+									label="Is local file"
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.sourceSettings as any).is_local_file,
+										''
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { is_local_file: v } } })
+									}}
+								/>
+							</div>
+							<div className="setting">
+								<TextInput
+									label="Local file"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).local_file, '')}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { local_file: v } } })
+									}}
+									allowUndefined={true}
+								/>
+							</div>
+							<div className="setting">
+								<BooleanInput
+									label="Looping content"
+									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).looping, '')}
+									onChange={(v) => {
+										if (!firstObj.content.sourceSettings) return
+										onSave({ content: { sourceSettings: { looping: v } } })
+									}}
+								/>
+							</div>
+						</>
+					)
 				)}
 			</>
 		)
 	} else {
-		assertNever(obj.content)
+		assertNever(contentType)
 		return NOT_IMPLEMENTED_SETTINGS
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave0}>
 			{settings}
 		</EditWrapper>
 	)
