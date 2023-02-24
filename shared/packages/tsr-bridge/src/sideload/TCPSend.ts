@@ -5,10 +5,10 @@ import { LoggerLike } from '@shared/api'
 
 export class TCPSendSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsTCPSend, _log: LoggerLike) {}
-	refreshResources() {
+	async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
-	async close() {
+	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
 	private async _refreshResources() {
