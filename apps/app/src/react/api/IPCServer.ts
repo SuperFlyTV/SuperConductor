@@ -56,6 +56,12 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	): ServerReturn<'acknowledgeUserAgreement'> {
 		return this.invokeServerMethod('acknowledgeUserAgreement', ...args)
 	}
+	async fetchGDDCache(...args: ServerArgs<'fetchGDDCache'>): ServerReturn<'fetchGDDCache'> {
+		return this.invokeServerMethod('fetchGDDCache', ...args)
+	}
+	async storeGDDCache(...args: ServerArgs<'storeGDDCache'>): ServerReturn<'storeGDDCache'> {
+		return this.invokeServerMethod('storeGDDCache', ...args)
+	}
 	async updateGUISelection(...args: ServerArgs<'updateGUISelection'>): ServerReturn<'updateGUISelection'> {
 		return this.invokeServerMethod('updateGUISelection', ...args)
 	}

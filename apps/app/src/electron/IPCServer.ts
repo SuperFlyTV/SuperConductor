@@ -55,7 +55,7 @@ import {
 	guessDeviceIdFromTimelineObject,
 	sortMappings,
 } from '../lib/TSRMappings'
-import { getDefaultGroup, getDefaultPart } from './defaults'
+import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
 import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
 import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
 import { TSRTimelineObjFromResource } from '../lib/resources'
@@ -69,6 +69,7 @@ import { CurrentSelectionAny } from '../lib/GUI'
 import { BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
 import { autoUpdater } from 'electron-updater'
+import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -105,7 +106,7 @@ type ConvertToServerSide<T> = {
 	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
-		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>>
+		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>> | ReturnType<T[K]>
 		: T[K]
 }
 
@@ -319,6 +320,12 @@ export class IPCServer
 	}
 	async updateGUISelection(arg: { selection: Readonly<CurrentSelectionAny[]> }): Promise<void> {
 		this.session.updateSelection(arg.selection)
+	}
+	async fetchGDDCache(): Promise<ValidatorCache | null> {
+		return this.storage.getGDDCache()
+	}
+	async storeGDDCache(arg: { cache: ValidatorCache }): Promise<void> {
+		await this.storage.updateGDDCache(arg.cache)
 	}
 
 	async exportProject(): Promise<void> {
@@ -1468,7 +1475,7 @@ export class IPCServer
 		timelineObjId: string
 		timelineObj: {
 			resourceId?: TimelineObj['resourceId']
-			obj: Partial<TimelineObj['obj']>
+			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
@@ -1485,7 +1492,7 @@ export class IPCServer
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
-		if (arg.timelineObj.obj !== undefined) Object.assign(timelineObj.obj, arg.timelineObj.obj)
+		if (arg.timelineObj.obj !== undefined) deepExtend(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
@@ -2005,6 +2012,9 @@ export class IPCServer
 
 		if (arg.preReleaseAutoUpdate !== undefined) {
 			appData.preReleaseAutoUpdate = arg.preReleaseAutoUpdate
+
+			autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
+
 			setTimeout(() => {
 				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
 			}, 1000)
@@ -2508,6 +2518,25 @@ export class IPCServer
 		/** Possible layers, wich votes. The layer with the highest vote will be picked in the end */
 		const possibleLayers: { [layerId: string]: number } = {}
 
+		let useCasparCGChannel: number | undefined = undefined
+		let useCasparCGLayer: number | undefined = undefined
+
+		if (arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE && arg.resource.gdd) {
+			const gdd: GDDSchema = arg.resource.gdd
+			const channel = gdd.gddPlayoutOptions?.playout?.casparcg?.channel
+			if (channel !== undefined) useCasparCGChannel = channel
+
+			const layer = gdd.gddPlayoutOptions?.playout?.casparcg?.layer
+			if (layer !== undefined) useCasparCGLayer = layer
+		}
+		if (
+			arg.resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
+			arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE
+		) {
+			if (arg.resource.channel !== undefined) useCasparCGChannel = arg.resource.channel
+			if (arg.resource.layer !== undefined) useCasparCGLayer = arg.resource.layer
+		}
+
 		// First, try to pick next free layer:
 		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
 			// Is the layer on the same device as the resource?
@@ -2532,6 +2561,7 @@ export class IPCServer
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (possibleLayers[timelineObj.obj.layer]) {
+						// Check for similar objects on this layer:
 						for (const property of Object.keys(timelineObj.obj.content)) {
 							if ((timelineObj.obj.content as any)[property] === (arg.obj.content as any)[property]) {
 								possibleLayers[timelineObj.obj.layer]++
@@ -2546,17 +2576,17 @@ export class IPCServer
 		if (
 			(arg.resource?.resourceType === ResourceType.CASPARCG_MEDIA ||
 				arg.resource?.resourceType === ResourceType.CASPARCG_TEMPLATE) &&
-			(arg.resource.channel || arg.resource.layer)
+			(useCasparCGChannel || useCasparCGLayer)
 		) {
 			for (const layerId of Object.keys(possibleLayers)) {
 				const mapping = arg.project.mappings[layerId]
 				if (mapping?.device === DeviceType.CASPARCG) {
 					const m = mapping as MappingCasparCG
 
-					if (arg.resource.channel && m.channel !== arg.resource.channel) {
+					if (useCasparCGChannel && m.channel !== useCasparCGChannel) {
 						possibleLayers[layerId] = -999
 					}
-					if (arg.resource.layer && m.layer !== arg.resource.layer) {
+					if (useCasparCGLayer && m.layer !== useCasparCGLayer) {
 						possibleLayers[layerId] = -999
 					}
 				}

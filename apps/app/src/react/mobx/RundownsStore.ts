@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
-import { getDefaultGroup } from '../../electron/defaults'
+import { getDefaultGroup } from '../../lib/defaults'
 import { Rundown, RundownGUI } from '../../models/rundown/Rundown'
 import { Group, GroupGUI } from '../../models/rundown/Group'
 import { IPCClient } from '../api/IPCClient'

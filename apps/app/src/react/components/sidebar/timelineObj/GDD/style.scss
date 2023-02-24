@@ -1,0 +1,42 @@
+.gdd-edit-data {
+    --padding: 0.2em;
+
+    display: block;
+    border: 1px solid grey;
+    border-radius: var(--padding);
+    padding: var(--padding);
+
+    overflow-x: auto;
+
+    .gdd-edit-data__label {
+      font-weight: bold;
+    }
+    .gdd-edit-data__description {
+      font-weight: normal;
+      font-style: italic;
+      font-size: 80%;
+    }
+    .gdd-edit-data__edit {
+        overflow-x: auto;
+    }
+    .gdd-edit-data__data-validation {
+      background-color: rgba(255,50,50,0.3);
+      border: rgba(255,0,0,0.7);
+    }
+    .gdd-edit-data__gdd-property {
+      margin: 0.1em;
+    }
+    .gdd-edit-data__gdd-property-array>.items {
+      display: flex;
+      flex-direction: column;
+    }
+    .gdd-edit-data__gdd-property-array table td {
+      vertical-align: top;
+    }
+    .gdd-edit-data__gdd-property-object {
+      border: 1px solid grey;
+      border-radius: var(--padding);
+      padding: var(--padding);
+      box-shadow: 0px 2px 10px rgba(0,0,0, 0.2);
+    }
+}

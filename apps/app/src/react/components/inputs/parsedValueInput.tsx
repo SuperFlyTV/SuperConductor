@@ -1,10 +1,11 @@
-import { FormControl, InputLabel, OutlinedInput } from '@mui/material'
+import { FormControl, InputLabel, OutlinedInput, Tooltip } from '@mui/material'
 import useId from '@mui/material/utils/useId'
 import _ from 'lodash'
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
 
 export function ParsedValueInput<V>(
 	currentValue: V,
+	indeterminate: boolean | undefined,
 	onChange: (newValue: V) => void,
 	defaultValue: V,
 	parse: (str: string, isWriting: boolean) => V | undefined,
@@ -23,10 +24,15 @@ export function ParsedValueInput<V>(
 		cursorStart: number | undefined,
 		cursorEnd: number | undefined
 	) => V,
-	endAdornment?: React.ReactNode
+	endAdornment?: React.ReactNode,
+	/** Display a tooltip on hover */
+	tooltip?: string,
+	/** Display a tooltip when typing / focused */
+	focusTooltip?: string
 ): JSX.Element {
 	const inputId = useId()
 	const [value, setValue] = useState<string>('')
+	const [hasFocus, setHasFocus] = useState<boolean>(false)
 	const selectorPosition = useRef<number | null>(null)
 	const fieldRef = useRef<HTMLInputElement>(null)
 	const hasUnsavedChanges = useRef<boolean>(false)
@@ -43,9 +49,11 @@ export function ParsedValueInput<V>(
 
 	const onSave = useCallback(
 		(str: string) => {
+			const hadUnsavedChanges = hasUnsavedChanges.current
 			hasUnsavedChanges.current = false
 
 			if (!str) {
+				if (indeterminate && !hadUnsavedChanges) return // ignore empty when indeterminate
 				onChange(defaultValue)
 				setValue(stringify(currentValue))
 			} else {
@@ -54,7 +62,7 @@ export function ParsedValueInput<V>(
 				else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 			}
 		},
-		[onChange, currentValue, defaultValue, parse, stringify]
+		[onChange, currentValue, indeterminate, defaultValue, parse, stringify]
 	)
 	const onChangeValue = useCallback(
 		(value: V) => {
@@ -166,29 +174,57 @@ export function ParsedValueInput<V>(
 		[onEventChange, onSave, changeOnKey]
 	)
 
+	const onFocus = useCallback(() => {
+		setHasFocus(true)
+	}, [setHasFocus])
 	const onBlur = useCallback(
 		(e: React.FocusEvent<HTMLInputElement>) => {
 			onSave(e.target.value)
+			setHasFocus(false)
 		},
-		[onSave]
+		[onSave, setHasFocus]
 	)
+
+	let displayValue = value
+	let displayLabel = label
+	let displayPlaceholder = emptyPlaceholder
+	if (indeterminate && !hasUnsavedChanges.current) {
+		displayValue = ''
+		displayLabel = label + ': -- Different values --'
+		displayPlaceholder = '-- Different values --'
+	}
+
+	let elInput = (
+		<OutlinedInput
+			id={inputId}
+			type={inputType}
+			inputRef={fieldRef}
+			onFocus={onFocus}
+			onBlur={onBlur}
+			onChange={onInputChange}
+			onKeyDown={onKeyDown}
+			label={displayLabel}
+			value={displayValue}
+			disabled={disabled}
+			placeholder={displayPlaceholder}
+			endAdornment={endAdornment}
+		/>
+	)
+	if (tooltip || focusTooltip) {
+		let displayTooltip = tooltip ?? ''
+		if (focusTooltip && hasFocus) displayTooltip = focusTooltip
+
+		elInput = (
+			<Tooltip arrow={true} title={displayTooltip} open={displayTooltip !== ''}>
+				{elInput}
+			</Tooltip>
+		)
+	}
 
 	return (
 		<FormControl variant="outlined" margin="dense" size="small" fullWidth={fullWidth} sx={{ width: width }}>
 			<InputLabel htmlFor={inputId}>{label}</InputLabel>
-			<OutlinedInput
-				id={inputId}
-				type={inputType}
-				inputRef={fieldRef}
-				onBlur={onBlur}
-				onChange={onInputChange}
-				onKeyDown={onKeyDown}
-				label={label}
-				value={value}
-				disabled={disabled}
-				placeholder={emptyPlaceholder}
-				endAdornment={endAdornment}
-			/>
+			{elInput}
 		</FormControl>
 	)
 }

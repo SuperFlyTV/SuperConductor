@@ -1,8 +1,13 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import { ResourceAny, ResourceType, CasparCGMedia } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import {
+	addTemplatesToResourcesFromCasparCG,
+	addTemplatesToResourcesFromCasparCGMediaScanner,
+	addTemplatesToResourcesFromDisk,
+} from './CasparCGTemplates'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
@@ -94,22 +99,15 @@ export class CasparCGSideload implements SideLoadDevice {
 
 		// Refresh templates:
 		{
-			const res = await this.ccg.tls()
-			const templatesList = res.response.data as {
-				type: 'template'
-				name: string
-				size: number
-				changed: number
-			}[]
-			for (const template of templatesList) {
-				const resource: CasparCGTemplate = {
-					resourceType: ResourceType.CASPARCG_TEMPLATE,
-					deviceId: this.deviceId,
-					id: `${this.deviceId}_template_${template.name}`,
-					...template,
-					displayName: template.name,
-				}
-				resources[resource.id] = resource
+			await addTemplatesToResourcesFromCasparCG(resources, this.ccg, this.deviceId)
+
+			// Also, do a separate query directly to the media scanner, to extract GDD-definitions if possible:
+			// This is kind of a hack, until CasparCG supports GDD natively:
+			const success = await addTemplatesToResourcesFromCasparCGMediaScanner(resources, this.ccg, this.deviceId)
+
+			if (!success) {
+				// Finally, try to read the files from disk directly:
+				await addTemplatesToResourcesFromDisk(resources, this.ccg, this.deviceId)
 			}
 		}
 

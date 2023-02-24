@@ -6,6 +6,7 @@ import { GroupPlayDataStore } from './GroupPlayDataStore'
 import { ProjectStore } from './ProjectStore'
 import { TriggersStore } from './TriggersStore'
 import { AnalogStore } from './AnalogStore'
+import { GDDValidatorStore } from './GDDValidatorStoreStore'
 
 export const store = {
 	guiStore: new GuiStore(),
@@ -16,4 +17,6 @@ export const store = {
 	groupPlayDataStore: new GroupPlayDataStore(),
 	triggersStore: new TriggersStore(),
 	analogStore: new AnalogStore(),
+
+	gddValidatorStore: new GDDValidatorStore(),
 }

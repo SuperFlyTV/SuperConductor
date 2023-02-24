@@ -1,4 +1,4 @@
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone, literal } from '@shared/lib'
 import React from 'react'
 import {
 	AtemTransitionStyle,
@@ -17,10 +17,13 @@ import {
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { IntInput } from '../../../inputs/IntInput'
-import { EditWrapper, OnSave } from './lib'
+import { EditWrapper, OnSave, OnSaveType } from './lib'
 import { Button, Stack, Typography } from '@mui/material'
 import { TrashBtn } from '../../../inputs/TrashBtn'
 import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
+import { PartialDeep } from 'type-fest'
+import deepExtend from 'deep-extend'
+import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
 
 enum ATEMAudioChannelMixOption {
 	Off = 0,
@@ -40,22 +43,37 @@ enum ATEMBorderBevel {
 	Out = 3,
 }
 
-export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSave: OnSave }> = ({
+	objs,
+	onSave: onSave0,
+}) => {
 	let settings: JSX.Element = <></>
 
-	const obj0 = obj
-	if (obj.content.type === TimelineContentTypeAtem.ME) {
-		const obj = obj0 as TimelineObjAtemME
+	if (isIndeterminate(objs, (obj) => obj.content.type)) {
+		return <>-- Different types --</>
+	}
+	const contentType = firstValue(objs, (obj) => obj.content.type)
+	if (!contentType) return null
+
+	const objs0 = objs
+	// const onSave0 = onSave
+	if (contentType === TimelineContentTypeAtem.ME) {
+		const objs = objs0 as TimelineObjAtemME[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemME>
 		settings = (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Input"
 						fullWidth
-						currentValue={obj.content.me.input}
+						{...inputValue(objs, (obj) => obj.content.me.input, undefined)}
 						onChange={(v) => {
-							obj.content.me.input = v
-							onSave(obj)
+							onSave({
+								content: { me: { input: v } },
+							})
 						}}
 						allowUndefined={true}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -65,49 +83,51 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<SelectEnum
 						label={'Transition'}
 						fullWidth
-						currentValue={obj.content.me.transition}
+						{...inputValue(objs, (obj) => obj.content.me.transition, undefined)}
 						options={AtemTransitionStyle}
 						onChange={(v) => {
-							obj.content.me.transition = v
-							onSave(obj)
+							onSave({ content: { me: { transition: v } } })
 						}}
 						allowUndefined={true}
 					/>
 				</div>
-				{obj.content.me.transition === AtemTransitionStyle.MIX ? (
+				{isIndeterminate(objs, (obj) => obj.content.me.transition) ? (
+					<>-- Different transitions --</>
+				) : firstObj.content.me.transition === AtemTransitionStyle.MIX ? (
 					<div className="setting">
 						<IntInput
 							label={'Transition: Mix Rate'}
 							fullWidth
-							currentValue={obj.content.me.transitionSettings?.mix?.rate ?? ATEM_DEFAULT_TRANSITION_RATE}
+							{...inputValue(
+								objs,
+								(obj) => obj.content.me.transitionSettings?.mix?.rate,
+								ATEM_DEFAULT_TRANSITION_RATE
+							)}
 							onChange={(v) => {
-								if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
-								if (!obj.content.me.transitionSettings.mix)
-									obj.content.me.transitionSettings.mix = { rate: v }
-
-								obj.content.me.transitionSettings.mix.rate = v
-								onSave(obj)
+								onSave({
+									content: { me: { transitionSettings: { mix: { rate: v } } } },
+								})
 							}}
 							allowUndefined={false}
 							caps={[0, Number.POSITIVE_INFINITY]}
 						/>
 					</div>
-				) : obj.content.me.transition !== AtemTransitionStyle.CUT && obj.content.me.transition !== undefined ? (
+				) : firstObj.content.me.transition !== AtemTransitionStyle.CUT &&
+				  firstObj.content.me.transition !== undefined ? (
 					<>
 						<div className="setting">
 							<IntInput
 								label={'Transition: Rate'}
 								fullWidth
-								currentValue={
-									obj.content.me.transitionSettings?.wipe?.rate ?? ATEM_DEFAULT_TRANSITION_RATE
-								}
+								{...inputValue(
+									objs,
+									(obj) => obj.content.me.transitionSettings?.wipe?.rate,
+									ATEM_DEFAULT_TRANSITION_RATE
+								)}
 								onChange={(v) => {
-									if (!obj.content.me.transitionSettings) obj.content.me.transitionSettings = {}
-									if (!obj.content.me.transitionSettings.wipe)
-										obj.content.me.transitionSettings.wipe = {}
-
-									obj.content.me.transitionSettings.wipe.rate = v
-									onSave(obj)
+									onSave({
+										content: { me: { transitionSettings: { wipe: { rate: v } } } },
+									})
 								}}
 								allowUndefined={false}
 							/>
@@ -119,18 +139,22 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				{/* Note: There are more options that could be implemented here, feel free to submit a PR! */}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.DSK) {
-		const obj = obj0 as TimelineObjAtemDSK
+	} else if (contentType === TimelineContentTypeAtem.DSK) {
+		const objs = objs0 as TimelineObjAtemDSK[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemDSK>
 
 		settings = (
 			<>
 				<div className="setting">
 					<BooleanInput
 						label="DSK onAir"
-						currentValue={obj.content.dsk.onAir}
+						{...inputValue(objs, (obj) => obj.content.dsk.onAir, undefined)}
 						onChange={(v) => {
-							obj.content.dsk.onAir = v
-							onSave(obj)
+							onSave({
+								content: { dsk: { onAir: v } },
+							})
 						}}
 					/>
 				</div>
@@ -138,15 +162,20 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="DSK: Source Fill"
 						fullWidth
-						currentValue={obj.content.dsk.sources?.fillSource || 0}
+						{...inputValue(objs, (obj) => obj.content.dsk.sources?.fillSource, 0)}
 						onChange={(v) => {
-							if (!obj.content.dsk.sources)
-								obj.content.dsk.sources = {
-									fillSource: v,
-									cutSource: 0,
-								}
-							obj.content.dsk.sources.fillSource = v
-							onSave(obj)
+							const mod: PartialDeep<TimelineObjAtemDSK> = {
+								content: { dsk: { sources: { fillSource: v } } },
+							}
+							if (!firstObj.content.dsk.sources) {
+								deepExtend(
+									mod,
+									literal<PartialDeep<TimelineObjAtemDSK>>({
+										content: { dsk: { sources: { fillSource: v, cutSource: 0 } } },
+									})
+								)
+							}
+							onSave(mod)
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -157,15 +186,20 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="DSK: Source Cut (key)"
 						fullWidth
-						currentValue={obj.content.dsk.sources?.cutSource || 0}
+						{...inputValue(objs, (obj) => obj.content.dsk.sources?.cutSource, 0)}
 						onChange={(v) => {
-							if (!obj.content.dsk.sources)
-								obj.content.dsk.sources = {
-									cutSource: v,
-									fillSource: 0,
-								}
-							obj.content.dsk.sources.cutSource = v
-							onSave(obj)
+							const mod: PartialDeep<TimelineObjAtemDSK> = {
+								content: { dsk: { sources: { cutSource: v } } },
+							}
+							if (!firstObj.content.dsk.sources) {
+								deepExtend(
+									mod,
+									literal<PartialDeep<TimelineObjAtemDSK>>({
+										content: { dsk: { sources: { cutSource: v, fillSource: 0 } } },
+									})
+								)
+							}
+							onSave(mod)
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -175,18 +209,20 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				{/* Note: There are more options that could be implemented here, feel free to submit a PR! */}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.AUX) {
-		const obj = obj0 as TimelineObjAtemAUX
+	} else if (contentType === TimelineContentTypeAtem.AUX) {
+		const objs = objs0 as TimelineObjAtemAUX[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemAUX>
 		settings = (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Input"
 						fullWidth
-						currentValue={obj.content.aux.input}
+						{...inputValue(objs, (obj) => obj.content.aux.input, 0)}
 						onChange={(v) => {
-							obj.content.aux.input = v
-							onSave(obj)
+							onSave({ content: { aux: { input: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -194,18 +230,28 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.SSRC) {
-		const obj = obj0 as TimelineObjAtemSsrc
+	} else if (contentType === TimelineContentTypeAtem.SSRC) {
+		const objs = objs0 as TimelineObjAtemSsrc[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemSsrc>
+
+		if (isIndeterminate(objs, (obj) => obj.content.ssrc.boxes)) {
+			return <>-- Different SSRC values --</>
+		}
+		// Deep clone, because it is modified when updated:
+		const boxes = deepClone(firstObj.content.ssrc.boxes)
+
 		settings = (
 			<>
-				{obj.content.ssrc.boxes.map((box, index) => (
+				{boxes.map((box, index) => (
 					<React.Fragment key={index}>
 						<Stack direction="row" justifyContent="space-between">
 							<Typography variant="body2">Box #{index + 1}</Typography>
 							<TrashBtn
 								onClick={() => {
-									obj.content.ssrc.boxes.splice(index, 1)
-									onSave(obj)
+									boxes.splice(index, 1)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								title="Delete SuperSource Box"
 							/>
@@ -217,7 +263,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.enabled}
 								onChange={(v) => {
 									box.enabled = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 							/>
 						</div>
@@ -228,7 +274,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.source}
 								onChange={(v) => {
 									box.source = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[0, Number.POSITIVE_INFINITY]}
@@ -241,7 +287,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.x}
 								onChange={(v) => {
 									box.x = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[-4800, 4800]}
@@ -254,7 +300,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.y}
 								onChange={(v) => {
 									box.y = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[-2700, 2700]}
@@ -267,7 +313,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.size}
 								onChange={(v) => {
 									box.size = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[70, 1000]}
@@ -279,7 +325,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.cropped}
 								onChange={(v) => {
 									box.cropped = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 							/>
 						</div>
@@ -290,7 +336,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.cropTop}
 								onChange={(v) => {
 									box.cropTop = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[0, 18000]}
@@ -303,7 +349,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.cropBottom}
 								onChange={(v) => {
 									box.cropBottom = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[0, 18000]}
@@ -316,7 +362,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.cropLeft}
 								onChange={(v) => {
 									box.cropLeft = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[0, 32000]}
@@ -329,7 +375,7 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 								currentValue={box.cropRight}
 								onChange={(v) => {
 									box.cropRight = v
-									onSave(obj)
+									onSave({ content: { ssrc: { boxes } } })
 								}}
 								allowUndefined={true}
 								caps={[0, 32000]}
@@ -341,26 +387,28 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<Button
 					variant="contained"
 					onClick={() => {
-						obj.content.ssrc.boxes.push({})
-						onSave(obj)
+						boxes.push({})
+						onSave({ content: { ssrc: { boxes } } })
 					}}
 				>
 					Add Box
 				</Button>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.SSRCPROPS) {
-		const obj = obj0 as TimelineObjAtemSsrcProps
+	} else if (contentType === TimelineContentTypeAtem.SSRCPROPS) {
+		const objs = objs0 as TimelineObjAtemSsrcProps[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemSsrcProps>
 		settings = (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Art Fill Source"
 						fullWidth
-						currentValue={obj.content.ssrcProps.artFillSource}
+						{...inputValue(objs, (obj) => obj.content.ssrcProps.artFillSource, 0)}
 						onChange={(v) => {
-							obj.content.ssrcProps.artFillSource = v
-							onSave(obj)
+							onSave({ content: { ssrcProps: { artFillSource: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -370,10 +418,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="Art Cut (Key) Source"
 						fullWidth
-						currentValue={obj.content.ssrcProps.artCutSource}
+						{...inputValue(objs, (obj) => obj.content.ssrcProps.artCutSource, 0)}
 						onChange={(v) => {
-							obj.content.ssrcProps.artCutSource = v
-							onSave(obj)
+							onSave({ content: { ssrcProps: { artCutSource: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -383,294 +430,288 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<SelectEnum
 						label={'Art Option'}
 						fullWidth
-						currentValue={obj.content.ssrcProps.artOption}
+						{...inputValue(objs, (obj) => obj.content.ssrcProps.artOption, 0)}
 						options={ATEMArtOption}
-						onChange={(v) => {
-							obj.content.ssrcProps.artOption = v
-							onSave(obj)
+						onChange={(v: ATEMArtOption) => {
+							onSave({ content: { ssrcProps: { artOption: v } } })
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Art Pre-Multiplied"
-						currentValue={obj.content.ssrcProps.artPreMultiplied}
+						{...inputValue(objs, (obj) => obj.content.ssrcProps.artPreMultiplied, undefined)}
 						onChange={(v) => {
-							obj.content.ssrcProps.artPreMultiplied = v
-							onSave(obj)
+							onSave({ content: { ssrcProps: { artPreMultiplied: v } } })
 						}}
 					/>
 				</div>
-				{obj.content.ssrcProps.artPreMultiplied === false && (
-					<>
-						<div className="setting">
-							<IntInput
-								label="Art Clip (0 - 1000)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.artClip}
-								onChange={(v) => {
-									if (obj.content.ssrcProps.artPreMultiplied) {
-										return
-									}
-									obj.content.ssrcProps.artClip = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1000]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Art Gain (0 - 1000)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.artGain}
-								onChange={(v) => {
-									if (obj.content.ssrcProps.artPreMultiplied) {
-										return
-									}
-									obj.content.ssrcProps.artGain = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1000]}
-							/>
-						</div>
-						<div className="setting">
-							<BooleanInput
-								label="Art Invert Key"
-								currentValue={obj.content.ssrcProps.artInvertKey}
-								onChange={(v) => {
-									if (obj.content.ssrcProps.artPreMultiplied) {
-										return
-									}
-									obj.content.ssrcProps.artInvertKey = v
-									onSave(obj)
-								}}
-							/>
-						</div>
-					</>
+				{isIndeterminate(objs, (obj) => obj.content.ssrcProps.artPreMultiplied) ? (
+					<>-- Different values -- </>
+				) : (
+					firstObj.content.ssrcProps.artPreMultiplied === false && (
+						<>
+							<div className="setting">
+								<IntInput
+									label="Art Clip (0 - 1000)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).artClip, 0)}
+									onChange={(v) => {
+										if (firstObj.content.ssrcProps.artPreMultiplied) return
+										onSave({ content: { ssrcProps: { artClip: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1000]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Art Gain (0 - 1000)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).artGain, 0)}
+									onChange={(v) => {
+										if (firstObj.content.ssrcProps.artPreMultiplied) return
+										onSave({ content: { ssrcProps: { artGain: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1000]}
+								/>
+							</div>
+							<div className="setting">
+								<BooleanInput
+									label="Art Invert Key"
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).artInvertKey,
+										undefined
+									)}
+									onChange={(v) => {
+										if (firstObj.content.ssrcProps.artPreMultiplied) return
+										onSave({ content: { ssrcProps: { artInvertKey: v } } })
+									}}
+								/>
+							</div>
+						</>
+					)
 				)}
 				<div className="setting">
 					<BooleanInput
 						label="Border Enabled"
-						currentValue={obj.content.ssrcProps.borderEnabled}
+						{...inputValue(objs, (obj) => obj.content.ssrcProps.borderEnabled, undefined)}
 						onChange={(v) => {
-							obj.content.ssrcProps.borderEnabled = v
-							onSave(obj)
+							onSave({ content: { ssrcProps: { borderEnabled: v } } })
 						}}
 					/>
 				</div>
-				{obj.content.ssrcProps.borderEnabled && (
-					<>
-						<div className="setting">
-							<SelectEnum
-								label="Border Bevel"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderBevel}
-								options={ATEMBorderBevel}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderBevel = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Outer Width (0 - 1600)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderOuterWidth}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderOuterWidth = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1600]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Inner Width (0 - 1600)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderInnerWidth}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderInnerWidth = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1600]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Outer Softness (0 - 100)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderOuterSoftness}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderOuterSoftness = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 100]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Inner Softness (0 - 100)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderInnerSoftness}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderInnerSoftness = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 100]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Bevel Softness (0 - 100)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderBevelSoftness}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderBevelSoftness = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 100]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Bevel Position (0 - 100)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderBevelPosition}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderBevelPosition = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 100]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Hue (0 - 3599)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderHue}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderHue = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 3599]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Saturation (0 - 1000)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderSaturation}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderSaturation = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1000]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Luma (0 - 1000)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderLuma}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderLuma = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 1000]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Light Source Direction (0 - 3590)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderLightSourceDirection}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderLightSourceDirection = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[0, 3590]}
-							/>
-						</div>
-						<div className="setting">
-							<IntInput
-								label="Border Light Source Altitude (10 - 100)"
-								fullWidth
-								currentValue={obj.content.ssrcProps.borderLightSourceAltitude}
-								onChange={(v) => {
-									if (!obj.content.ssrcProps.borderEnabled) {
-										return
-									}
-									obj.content.ssrcProps.borderLightSourceAltitude = v
-									onSave(obj)
-								}}
-								allowUndefined={false}
-								caps={[10, 100]}
-							/>
-						</div>
-					</>
+
+				{isIndeterminate(objs, (obj) => obj.content.ssrcProps.borderEnabled) ? (
+					<>-- Different values -- </>
+				) : (
+					firstObj.content.ssrcProps.borderEnabled && (
+						<>
+							<div className="setting">
+								<SelectEnum
+									label="Border Bevel"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderBevel, 0)}
+									options={ATEMBorderBevel}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderBevel: v } } })
+									}}
+									allowUndefined={false}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Outer Width (0 - 1600)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderOuterWidth, 0)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderOuterWidth: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1600]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Inner Width (0 - 1600)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderInnerWidth, 0)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderInnerWidth: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1600]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Outer Softness (0 - 100)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderOuterSoftness,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+
+										onSave({ content: { ssrcProps: { borderOuterSoftness: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 100]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Inner Softness (0 - 100)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderInnerSoftness,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderInnerSoftness: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 100]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Bevel Softness (0 - 100)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderBevelSoftness,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderBevelSoftness: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 100]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Bevel Position (0 - 100)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderBevelPosition,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderBevelPosition: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 100]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Hue (0 - 3599)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderHue, 0)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderHue: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 3599]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Saturation (0 - 1000)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderSaturation, 0)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderSaturation: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1000]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Luma (0 - 1000)"
+									fullWidth
+									{...inputValue(objs, (obj) => (obj.content.ssrcProps as any).borderLuma, 0)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderLuma: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 1000]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Light Source Direction (0 - 3590)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderLightSourceDirection,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderLightSourceDirection: v } } })
+									}}
+									allowUndefined={false}
+									caps={[0, 3590]}
+								/>
+							</div>
+							<div className="setting">
+								<IntInput
+									label="Border Light Source Altitude (10 - 100)"
+									fullWidth
+									{...inputValue(
+										objs,
+										(obj) => (obj.content.ssrcProps as any).borderLightSourceAltitude,
+										0
+									)}
+									onChange={(v) => {
+										if (!firstObj.content.ssrcProps.borderEnabled) return
+										onSave({ content: { ssrcProps: { borderLightSourceAltitude: v } } })
+									}}
+									allowUndefined={false}
+									caps={[10, 100]}
+								/>
+							</div>
+						</>
+					)
 				)}
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.MEDIAPLAYER) {
-		const obj = obj0 as TimelineObjAtemMediaPlayer
+	} else if (contentType === TimelineContentTypeAtem.MEDIAPLAYER) {
+		const objs = objs0 as TimelineObjAtemMediaPlayer[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemMediaPlayer>
+
 		settings = (
 			<>
 				<div className="setting">
 					<SelectEnum
 						label={'Source Type'}
 						fullWidth
-						currentValue={obj.content.mediaPlayer.sourceType}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.sourceType, undefined)}
 						options={MediaSourceType}
 						onChange={(v) => {
-							obj.content.mediaPlayer.sourceType = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { sourceType: v } } })
 						}}
 						allowUndefined={true}
 					/>
@@ -679,10 +720,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="Clip Index"
 						fullWidth
-						currentValue={obj.content.mediaPlayer.clipIndex}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.clipIndex, 0)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.clipIndex = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { clipIndex: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -692,10 +732,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="Still Index"
 						fullWidth
-						currentValue={obj.content.mediaPlayer.stillIndex}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.stillIndex, 0)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.stillIndex = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { stillIndex: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -704,30 +743,27 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<BooleanInput
 						label="Playing"
-						currentValue={obj.content.mediaPlayer.playing}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.playing, undefined)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.playing = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { playing: v } } })
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Loop"
-						currentValue={obj.content.mediaPlayer.loop}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.loop, undefined)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.loop = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { loop: v } } })
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="At Beginning"
-						currentValue={obj.content.mediaPlayer.atBeginning}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.atBeginning, undefined)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.atBeginning = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { atBeginning: v } } })
 						}}
 					/>
 				</div>
@@ -735,10 +771,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="Clip Frame"
 						fullWidth
-						currentValue={obj.content.mediaPlayer.clipFrame}
+						{...inputValue(objs, (obj) => obj.content.mediaPlayer.clipFrame, 0)}
 						onChange={(v) => {
-							obj.content.mediaPlayer.clipFrame = v
-							onSave(obj)
+							onSave({ content: { mediaPlayer: { clipFrame: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -746,18 +781,20 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.MACROPLAYER) {
-		const obj = obj0 as TimelineObjAtemMacroPlayer
+	} else if (contentType === TimelineContentTypeAtem.MACROPLAYER) {
+		const objs = objs0 as TimelineObjAtemMacroPlayer[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemMacroPlayer>
 		settings = (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Macro Index"
 						fullWidth
-						currentValue={obj.content.macroPlayer.macroIndex}
+						{...inputValue(objs, (obj) => obj.content.macroPlayer.macroIndex, 0)}
 						onChange={(v) => {
-							obj.content.macroPlayer.macroIndex = v
-							onSave(obj)
+							onSave({ content: { macroPlayer: { macroIndex: v } } })
 						}}
 						allowUndefined={false}
 						caps={[0, Number.POSITIVE_INFINITY]}
@@ -766,37 +803,37 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 				<div className="setting">
 					<BooleanInput
 						label="Macro Player isRunning"
-						currentValue={obj.content.macroPlayer.isRunning}
+						{...inputValue(objs, (obj) => obj.content.macroPlayer.isRunning, undefined)}
 						onChange={(v) => {
-							obj.content.macroPlayer.isRunning = v
-							onSave(obj)
+							onSave({ content: { macroPlayer: { isRunning: v } } })
 						}}
 					/>
 				</div>
 				<div className="setting">
 					<BooleanInput
 						label="Macro Loop"
-						currentValue={obj.content.macroPlayer.loop}
+						{...inputValue(objs, (obj) => obj.content.macroPlayer.loop, undefined)}
 						onChange={(v) => {
-							obj.content.macroPlayer.loop = v
-							onSave(obj)
+							onSave({ content: { macroPlayer: { loop: v } } })
 						}}
 					/>
 				</div>
 			</>
 		)
-	} else if (obj.content.type === TimelineContentTypeAtem.AUDIOCHANNEL) {
-		const obj = obj0 as TimelineObjAtemAudioChannel
+	} else if (contentType === TimelineContentTypeAtem.AUDIOCHANNEL) {
+		const objs = objs0 as TimelineObjAtemAudioChannel[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		const onSave = onSave0 as OnSaveType<TimelineObjAtemAudioChannel>
 		settings = (
 			<>
 				<div className="setting">
 					<IntInput
 						label="Gain (0 - 65381)"
 						fullWidth
-						currentValue={obj.content.audioChannel.gain}
+						{...inputValue(objs, (obj) => obj.content.audioChannel.gain, 0)}
 						onChange={(v) => {
-							obj.content.audioChannel.gain = v
-							onSave(obj)
+							onSave({ content: { audioChannel: { gain: v } } })
 						}}
 						allowUndefined={true}
 						caps={[0, 65381]}
@@ -806,10 +843,9 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<IntInput
 						label="Balance (-10000 - 10000)"
 						fullWidth
-						currentValue={obj.content.audioChannel.balance}
+						{...inputValue(objs, (obj) => obj.content.audioChannel.balance, 0)}
 						onChange={(v) => {
-							obj.content.audioChannel.balance = v
-							onSave(obj)
+							onSave({ content: { audioChannel: { balance: v } } })
 						}}
 						allowUndefined={true}
 						caps={[-10000, 10000]}
@@ -819,11 +855,10 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 					<SelectEnum
 						label="Mix Option"
 						fullWidth
-						currentValue={obj.content.audioChannel.mixOption}
+						{...inputValue(objs, (obj) => obj.content.audioChannel.mixOption, 0)}
 						options={ATEMAudioChannelMixOption}
 						onChange={(v) => {
-							obj.content.audioChannel.mixOption = v
-							onSave(obj)
+							onSave({ content: { audioChannel: { mixOption: v } } })
 						}}
 						allowUndefined={true}
 					/>
@@ -831,11 +866,11 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 			</>
 		)
 	} else {
-		assertNever(obj.content)
+		assertNever(contentType)
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper objs={objs} onSave={onSave0}>
 			{settings}
 		</EditWrapper>
 	)

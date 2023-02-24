@@ -8,22 +8,22 @@ A playout client for _Windows/Linux/macOS_ that will let you control _CasparCG&n
 
 ### Windows
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/SuperConductor-0.9.6-Windows-Installer.exe).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/TSR-Bridge-0.9.6-Windows-Installer.exe).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/SuperConductor-0.10.4-Windows-Installer.exe).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/TSR-Bridge-0.10.4-Windows-Installer.exe).
 
 ### Linux (Ubuntu)
 
-- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/SuperConductor-0.9.6-Linux-Executable.AppImage).<br/>
+- Download the [.appImage file for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/SuperConductor-0.10.4-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/SuperConductor-0.9.6-Linux-Executable.AppImage`
-- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/TSR-Bridge-0.9.6-Linux-Executable.AppImage).<br/>
+  `chmod +x Downloads/SuperConductor-0.10.4-Linux-Executable.AppImage`
+- (Optional) Download the [.appImage file for TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/TSR-Bridge-0.10.4-Linux-Executable.AppImage).<br/>
   Execute the following before running the file:<br/>
-  `chmod +x Downloads/TSR-Bridge-0.9.6-Linux-Executable.AppImage`
+  `chmod +x Downloads/TSR-Bridge-0.10.4-Linux-Executable.AppImage`
 
 ### macOS
 
-- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/SuperConductor-0.9.6-macOS-Installer.dmg).
-- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.9.6/TSR-Bridge-0.9.6-macOS-Installer.dmg).
+- Download and open the [installer for SuperConductor](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/SuperConductor-0.10.4-macOS-Installer.dmg).
+- (Optional) Download and open the [installer for separate TSR-Bridge](https://github.com/SuperFlyTV/SuperConductor/releases/download/v0.10.4/TSR-Bridge-0.10.4-macOS-Installer.dmg).
 
 ## Problems and Issues
 
@@ -48,6 +48,15 @@ Under the hood, _SuperConductor_ is powered by the same playout backend as the [
 Resources (such as media files) are kept in the rightmost pane and can be dragged into the rundown to be played out right away.
 
 ![Resource pane](/doc/img/resource-pane.gif)
+
+### GDD support
+
+Automatically displays input fields in GUI for CasparCG-templates that expose a GDD schema.
+
+Read more about how to write GDD (Grahics Data Definition) templates here:
+https://superflytv.github.io/GraphicsDataDefinition
+
+![Play mode single](/doc/img/gdd-input.png)
 
 ### Playout modes
 

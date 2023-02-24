@@ -267,6 +267,7 @@ const AnalogInputSettings: React.FC<{
 								.catch(handleError)
 						}}
 						allowUndefined={true}
+						focusTooltip={`Tip: You can type fractions, like so: "1/127"`}
 					/>
 					{analogInputSetting.updateUsingAbsolute && (
 						<FloatInput

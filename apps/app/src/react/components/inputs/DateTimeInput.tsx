@@ -5,6 +5,7 @@ import { ParsedValueInput } from './parsedValueInput'
 export const DateTimeInput: React.FC<
 	| {
 			currentValue: DateTimeObject | undefined
+			indeterminate?: boolean
 			onChange: (newValue: DateTimeObject | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
@@ -16,6 +17,7 @@ export const DateTimeInput: React.FC<
 	  }
 	| {
 			currentValue: DateTimeObject
+			indeterminate?: boolean
 			onChange: (newValue: DateTimeObject) => void
 			allowUndefined: false
 			allowNull: false
@@ -29,6 +31,7 @@ export const DateTimeInput: React.FC<
 	  }
 	| {
 			currentValue: DateTimeObject | null
+			indeterminate?: boolean
 			onChange: (newValue: DateTimeObject | null) => void
 			allowUndefined: false
 			allowNull: true
@@ -44,6 +47,7 @@ export const DateTimeInput: React.FC<
 	if (props.allowUndefined) {
 		return ParsedValueInput<DateTimeObject | undefined>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			undefined,
 			(str: string) => parseDateTime(str) ?? undefined,
@@ -61,6 +65,7 @@ export const DateTimeInput: React.FC<
 	} else if (props.allowNull) {
 		return ParsedValueInput<DateTimeObject | null>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			props.defaultValue,
 			parseDateTime,
@@ -78,6 +83,7 @@ export const DateTimeInput: React.FC<
 	} else {
 		return ParsedValueInput<DateTimeObject>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			props.defaultValue,
 			(str: string) => parseDateTime(str) ?? undefined,

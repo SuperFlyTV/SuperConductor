@@ -208,7 +208,11 @@ function onAppReady(): void {
 		)
 	})
 	autoUpdater.on('error', (error, message) => {
-		log.error(stringifyError(error) + message ? ` ${message}` : '')
+		const errString = stringifyError(error) + message ? ` ${message}` : ''
+
+		// Ignore, this is an error that pops up if the latest tag doesn't have a release yet (or if there a draft release):
+		if (errString.match(/Cannot find latest.yml in the latest release artifacts/)) return
+		log.error(errString)
 
 		superConductor.sendSystemMessage(
 			`There was an error when auto-updating, please <a href="https://github.com/SuperFlyTV/SuperConductor/releases/latest" target="_blank">download the latest</a> version manually.\nError message: ${stringifyError(
@@ -221,8 +225,14 @@ function onAppReady(): void {
 			}
 		)
 	})
+	{
+		const appData = superConductor.storage.getAppData()
+		autoUpdater.autoDownload = true
+		autoUpdater.allowDowngrade = true
 
-	autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+		autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
+		autoUpdater.checkForUpdatesAndNotify().catch(log.error)
+	}
 
 	app.on('window-all-closed', () => {
 		// On macOS it is common for applications and their menu bar

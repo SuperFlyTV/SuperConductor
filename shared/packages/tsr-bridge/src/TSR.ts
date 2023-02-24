@@ -10,6 +10,7 @@ import { OSCSideload } from './sideload/OSC'
 import { HTTPSendSideload } from './sideload/HTTPSend'
 import { HyperdeckSideload } from './sideload/Hyperdeck'
 import { SideLoadDevice } from './sideload/sideload'
+import { TCPSendSideload } from './sideload/TCPSend'
 import { stringifyError } from '@shared/lib'
 
 export class TSR {
@@ -99,7 +100,7 @@ export class TSR {
 					await this.conductor.initDevice(deviceId, newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
-				})().catch((error) => this.log.error('TSR sideload error: ' + stringifyError(error)))
+				})().catch((error) => this.log.error('TSR device error: ' + stringifyError(error)))
 			}
 		}
 		// Removed:
@@ -190,6 +191,8 @@ export class TSR {
 			this.sideLoadedDevices[deviceId] = new HTTPSendSideload(deviceId, deviceOptions, this.log)
 		} else if (deviceOptions.type === DeviceType.HYPERDECK) {
 			this.sideLoadedDevices[deviceId] = new HyperdeckSideload(deviceId, deviceOptions, this.log)
+		} else if (deviceOptions.type === DeviceType.TCPSEND) {
+			this.sideLoadedDevices[deviceId] = new TCPSendSideload(deviceId, deviceOptions, this.log)
 		}
 	}
 	private onDeviceStatus(deviceId: string, status: DeviceStatus) {

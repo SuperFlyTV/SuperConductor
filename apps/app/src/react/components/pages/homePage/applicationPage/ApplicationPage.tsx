@@ -35,10 +35,14 @@ export const ApplicationPage: React.FC = observer(function ApplicationPage() {
 
 					{showHelp && (
 						<Message type="help">
-							If you turn on this, SuperConductor will auto-update to the latest pre-release version.
+							If you enable this, SuperConductor will auto-update to the latest <b>pre-release version</b>
+							.
 							<br />
 							The pre-release versions are released more frequently and have the latest features, but have
 							a higher risk of bugs.
+							<br />
+							If you disable this, SuperConductor will downgrade you to the latest stable version, if you
+							are running a pre-release version.
 						</Message>
 					)}
 					<div className="sc-switch">

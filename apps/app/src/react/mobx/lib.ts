@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { computed } from 'mobx'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 let DEBUG = false
 
@@ -192,6 +192,25 @@ export function useMemoArray<T>(fcn: () => T[], deps: React.DependencyList): T[]
 
 		return ref.current
 	}, deps)
+}
+export function usePromise<T>(fcn: () => Promise<T>, deps?: React.DependencyList): T | undefined {
+	const [value, setValue] = useState<T | undefined>(undefined)
+	const [error, setError] = useState<Error | undefined>(undefined)
+
+	useEffect(() => {
+		fcn()
+			.then((result) => {
+				setValue(result)
+				setError(undefined)
+			})
+			.catch((e) => {
+				setValue(undefined)
+				setError(e)
+			})
+	}, deps || [])
+
+	if (error) throw error
+	else return value
 }
 export function assign<T extends { [key: string]: any }>(
 	org: T,
