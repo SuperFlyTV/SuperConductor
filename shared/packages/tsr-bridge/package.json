@@ -1,6 +1,6 @@
 {
 	"name": "@shared/tsr-bridge",
-	"version": "0.10.4",
+	"version": "0.11.0-alpha.0",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -42,13 +42,13 @@
 		]
 	},
 	"dependencies": {
-		"@shared/api": "^0.10.4",
-		"@shared/lib": "^0.10.4",
-		"@shared/models": "^0.10.4",
-		"@shared/peripherals": "^0.10.4",
+		"@shared/api": "^0.11.0-alpha.0",
+		"@shared/lib": "^0.11.0-alpha.0",
+		"@shared/models": "^0.11.0-alpha.0",
+		"@shared/peripherals": "^0.11.0-alpha.0",
 		"cheerio": "^1.0.0-rc.12",
-		"lodash": "^4.17.21",
 		"got": "^11.8.5",
+		"lodash": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
 		"timeline-state-resolver": "7.5.0-nightly-release47-20221116-134940-9a43f95c5.0",
 		"winston": "^3.7.2"
