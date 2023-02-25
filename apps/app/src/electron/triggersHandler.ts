@@ -15,7 +15,6 @@ import {
 } from '../lib/triggers/action'
 import {
 	DefiningArea,
-	getKeyDisplayForAnalog,
 	getKeyDisplayForButtonActions,
 	prepareTriggersAreaMap,
 } from '../lib/triggers/keyDisplay/keyDisplay'

@@ -4,7 +4,7 @@ import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType 
 import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
-import { limitTextWidth } from './lib/estimateTextSize'
+import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
@@ -99,7 +99,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			case DeviceModelId.PEDAL:
 				return 'Stream Deck Pedal'
 			case DeviceModelId.PLUS:
-				return 'Stream Deck +'
+				return 'Stream Deck Plus'
 			default:
 				assertNever(model)
 				return 'Stream Deck'
@@ -108,10 +108,16 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private streamDeck?: StreamDeck
 	private _info: PeripheralInfo | undefined
-	private sentKeyDisplay: { [identifier: string]: KeyDisplay } = {}
+	private receivedKeyDisplay: { [identifier: string]: KeyDisplay } = {}
+	private displayKeyDisplay: { [identifier: string]: KeyDisplay } = {}
 	private connectedToParent = false
 	private queue = new PQueue({ concurrency: 1 })
 	private keys: { [identifier: string]: boolean } = {}
+	private encoders: { [identifier: string]: number } = {}
+
+	private hasEmittedAllKeysOnPage = new Set<number>()
+
+	private virtualPage = 0
 
 	constructor(log: LoggerLike, id: string, private path: string) {
 		super(log, id)
@@ -140,31 +146,32 @@ export class PeripheralStreamDeck extends Peripheral {
 
 			// Press / Release of the buttons:
 			this.streamDeck.on('down', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'button')
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
 				this.keys[identifier] = true
 				this.emit('keyDown', identifier)
 			})
 
 			this.streamDeck.on('up', (keyIndex) => {
-				const identifier = keyIndexToIdentifier(keyIndex, 'button')
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
 				this.keys[identifier] = false
 				this.emit('keyUp', identifier)
 			})
 
 			// Press / Release the encoders on Streamdeck plus:
 			this.streamDeck.on('encoderDown', (encoderIndex) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'encoderPress')
+				const identifier = this.keyIndexToIdentifier(encoderIndex, 'encoderPress')
 				this.keys[identifier] = false
 				this.emit('keyDown', identifier)
 			})
 			this.streamDeck.on('encoderUp', (encoderIndex) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'encoderPress')
+				const identifier = this.keyIndexToIdentifier(encoderIndex, 'encoderPress')
 				this.keys[identifier] = false
 				this.emit('keyUp', identifier)
 			})
 			// Rotate the encoders on Streamdeck plus:
 			this.streamDeck.on('rotateRight', (encoderIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'encoder')
+				const identifier = this.keyIndexToIdentifier(encoderIndex, 'encoder')
+				this.encoders[identifier] = deltaValue
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, deltaValue),
 					relative: deltaValue,
@@ -172,16 +179,48 @@ export class PeripheralStreamDeck extends Peripheral {
 				})
 			})
 			this.streamDeck.on('rotateLeft', (encoderIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'encoder')
+				const identifier = this.keyIndexToIdentifier(encoderIndex, 'encoder')
+				this.encoders[identifier] = deltaValue
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, -deltaValue),
 					relative: -deltaValue,
 					rAbs: false,
 				})
 			})
+			this.streamDeck.on('lcdSwipe', (_fromEncoderIndex, _toEncoderIndex, fromPosition, toPosition) => {
+				let change = 0
+				if (fromPosition.x > toPosition.x) {
+					change = 1
+				} else if (fromPosition.x < toPosition.x) {
+					change = -1
+				}
+				if (change) {
+					const newVirtualPage = Math.max(0, this.virtualPage + change)
+					if (newVirtualPage !== this.virtualPage) {
+						this.virtualPage = newVirtualPage
+						this._updateAllKeys(`Page ${this.virtualPage + 1}`).catch((error) => {
+							this.log.error(error)
+						})
+						setTimeout(() => {
+							if (this.virtualPage === newVirtualPage) {
+								this._updateAllKeys()
+									.then(() => {
+										if (!this.hasEmittedAllKeysOnPage.has(this.virtualPage)) {
+											// Emit all keys on this page,
+											// so we receive the labels from SuperConducter
+											this.emitAllKeys()
+										}
+									})
+									.catch((error) => {
+										this.log.error(error)
+									})
+							}
+						}, 1000)
+					}
+				}
+			})
 			// lcdShortPress
 			// lcdLongPress
-			// lcdSwipe
 
 			this.streamDeck.on('error', (error) => {
 				if (`${error}`.match(/could not read from/)) {
@@ -208,21 +247,45 @@ export class PeripheralStreamDeck extends Peripheral {
 		if (!this._info) throw new Error('Peripheral not initialized')
 		return this._info
 	}
-	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
+	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): Promise<void> {
+		this.receivedKeyDisplay[identifier] = keyDisplay
+		return this._setKeyDisplayInternal(identifier, keyDisplay)
+	}
+	private async _setKeyDisplayInternal(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
 		if (!this.streamDeck) return
 
-		const key = identifierToKey(identifier)
+		const key = this.identifierToKey(identifier)
+		if (!key) return
 
-		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
+		if (!keyDisplay) {
+			if (key.type === 'button') {
+				keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
+			} else if (key.type === 'encoder') {
+				keyDisplay = {
+					attentionLevel: AttentionLevel.IGNORE,
+					info: {
+						long: 'Not assigned',
+						analogValue: String(this.encoders[identifier] ?? 0),
+					},
+				}
+			} else if (key.type === 'encoderPress') {
+				keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
+			} else {
+				assertNever(key.type)
+				keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
+			}
+		}
 
-		const oldKeyDisplay = this.sentKeyDisplay[identifier] as KeyDisplay | undefined
+		const oldKeyDisplay = this.displayKeyDisplay[identifier] as KeyDisplay | undefined
 		if (force || !_.isEqual(oldKeyDisplay, keyDisplay)) {
-			this.sentKeyDisplay[identifier] = keyDisplay
+			this.displayKeyDisplay[identifier] = keyDisplay
 
 			if (!this.connectedToParent) {
 				// Intercept:
 
-				if (identifier === '0') {
+				const key = this.identifierToKey(identifier)
+
+				if (key && key.type === 'button' && key.keyIndex === 0) {
 					keyDisplay = {
 						attentionLevel: AttentionLevel.INFO,
 						header: {
@@ -243,8 +306,8 @@ export class PeripheralStreamDeck extends Peripheral {
 
 				for (const keyIndex of Object.values(adjacentButtons)) {
 					if (keyIndex !== null) {
-						const identifier = keyIndexToIdentifier(keyIndex, 'button')
-						await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+						const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
+						await this._setKeyDisplayInternal(identifier, this.displayKeyDisplay[identifier], true)
 					}
 				}
 			}
@@ -261,8 +324,8 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 		// Buttons
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_KEYS; keyIndex++) {
-			const identifier = keyIndexToIdentifier(keyIndex, 'button')
-			let keyDisplay = this.sentKeyDisplay[identifier]
+			const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
+			let keyDisplay = this.receivedKeyDisplay[identifier]
 
 			if (keyIndex === 0 && !this.connectedToParent) {
 				keyDisplay = {
@@ -280,17 +343,17 @@ export class PeripheralStreamDeck extends Peripheral {
 					},
 				}
 			}
-			await this._setKeyDisplay(identifier, keyDisplay, true)
+			await this._setKeyDisplayInternal(identifier, keyDisplay, true)
 		}
 		// Encoders
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_ENCODERS; keyIndex++) {
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'encoder')
-				await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'encoder')
+				await this._setKeyDisplayInternal(identifier, this.receivedKeyDisplay[identifier], true)
 			}
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'encoderPress')
-				await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'encoderPress')
+				await this._setKeyDisplayInternal(identifier, this.receivedKeyDisplay[identifier], true)
 			}
 		}
 	}
@@ -320,16 +383,18 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private emitAllKeys() {
 		if (!this.streamDeck) return
+
+		this.hasEmittedAllKeysOnPage.add(this.virtualPage)
 		// Buttons
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_KEYS; keyIndex++) {
-			const identifier = keyIndexToIdentifier(keyIndex, 'button')
+			const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
 			if (this.keys[identifier]) this.emit('keyDown', identifier)
 			else this.emit('keyUp', identifier)
 		}
 		// Encoders
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_ENCODERS; keyIndex++) {
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'encoder')
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'encoder')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, 0),
 					relative: 0,
@@ -337,7 +402,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				})
 			}
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'encoderPress')
+				const identifier = this.keyIndexToIdentifier(keyIndex, 'encoderPress')
 				if (this.keys[identifier]) this.emit('keyDown', identifier)
 				else this.emit('keyUp', identifier)
 			}
@@ -376,7 +441,7 @@ export class PeripheralStreamDeck extends Peripheral {
 		const SIZE_AVG = (SIZE_H + SIZE_W) / 2
 
 		// A font size that should look good on most stream-decks (?):
-		const fontsize = Math.floor((SIZE_AVG * 20) / 96)
+		const defaultFontsize = Math.floor((SIZE_AVG * 20) / 96)
 		const padding = 5
 		let bgColor = '#000'
 		const borders = {
@@ -402,9 +467,9 @@ export class PeripheralStreamDeck extends Peripheral {
 				// Area label:
 				svg += `<text
 			font-family="Arial, Helvetica, sans-serif"
-			font-size="${fontsize}px"
+			font-size="${defaultFontsize}px"
 			x="0"
-			y="${fontsize}"
+			y="${defaultFontsize}"
 			fill="${textColor}"
 			text-anchor="start"
 			>${keyDisplay.area.areaLabel}</text>`
@@ -413,7 +478,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			font-family="Arial, Helvetica, sans-serif"
 			font-size="${Math.floor(SIZE / 2)}px"
 			x="${Math.floor(SIZE / 2)}"
-			y="${fontsize + Math.floor(SIZE / 2)}"
+			y="${defaultFontsize + Math.floor(SIZE / 2)}"
 			fill="${textColor}"
 			text-anchor="middle"
 			>${keyDisplay.area.keyLabel}</text>`
@@ -421,7 +486,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				bgColor = '#000'
 			}
 		} else {
-			const maxTextWidth = SIZE_W - padding // note
+			const maxTextWidth = SIZE_W - padding
 
 			const dampenText = keyDisplay.attentionLevel === AttentionLevel.IGNORE
 			const dampenBackgroundImage = dampenText || keyDisplay.attentionLevel === AttentionLevel.ALERT
@@ -431,7 +496,75 @@ export class PeripheralStreamDeck extends Peripheral {
 			const xCenter = Math.floor(SIZE_W / 2)
 
 			x += padding
-			y += padding + fontsize
+			y += padding + defaultFontsize
+
+			const svgTextLine = (arg: {
+				text: string
+				fontSize?: number
+				center?: boolean
+				textColor?: string
+				wrap?: boolean
+				maxLines?: number
+			}): string => {
+				if (!arg.fontSize) arg.fontSize = 1
+				let text = arg.text
+
+				if (!text.length) return ''
+
+				if (text.includes('\n')) {
+					const lines = text.split('\n')
+					let textSVG = ''
+					if (arg.maxLines) lines.splice(arg.maxLines, 999)
+					for (const line of lines) {
+						textSVG += svgTextLine({
+							...arg,
+							text: line,
+						})
+					}
+					return textSVG
+				} else {
+					const orgFontSize = Math.floor(defaultFontsize * arg.fontSize)
+					let actualFontSize = orgFontSize
+
+					let estTextWidth = estimateTextWidth(text, actualFontSize)
+					if (estTextWidth > maxTextWidth) {
+						// Shrink the text a bit:
+						actualFontSize = Math.floor(actualFontSize * 0.8)
+						estTextWidth = estimateTextWidth(text, actualFontSize)
+					}
+
+					if (arg.wrap && estTextWidth > maxTextWidth) {
+						let orgText = text
+						const lines: string[] = []
+
+						while (orgText.length > 0) {
+							const line = limitTextWidth(orgText, actualFontSize, maxTextWidth)
+							lines.push(line)
+							orgText = orgText.slice(line.length)
+						}
+						if (arg.maxLines) lines.splice(arg.maxLines, 999)
+						return svgTextLine({
+							...arg,
+							wrap: false,
+							text: lines.join('\n'),
+						})
+					} else {
+						// Limit the text, if too long:
+						text = limitTextWidth(text, actualFontSize, maxTextWidth)
+
+						const textSVG = `<text
+									font-family="Arial, Helvetica, sans-serif"
+									font-size="${actualFontSize}px"
+									x="${arg.center ? xCenter : x}"
+									y="${y}"
+									fill="${arg.textColor ?? '#FFFFFF'}"
+									text-anchor="${arg.center ? 'middle' : 'start'}"
+									>${text}</text>`
+						y += Math.max(actualFontSize, orgFontSize)
+						return textSVG
+					}
+				}
+			}
 
 			// Background:
 
@@ -517,23 +650,23 @@ export class PeripheralStreamDeck extends Peripheral {
 						const adjacentKeys = this.getAdjacentKeys(key)
 						borders.top = !(
 							adjacentKeys.top !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.top, 'button')]?.area?.areaId ===
-								keyDisplay.area.areaId
+							this.displayKeyDisplay[this.keyIndexToIdentifier(adjacentKeys.top, 'button')]?.area
+								?.areaId === keyDisplay.area.areaId
 						)
 						borders.bottom = !(
 							adjacentKeys.bottom !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.bottom, 'button')]?.area?.areaId ===
-								keyDisplay.area.areaId
+							this.displayKeyDisplay[this.keyIndexToIdentifier(adjacentKeys.bottom, 'button')]?.area
+								?.areaId === keyDisplay.area.areaId
 						)
 						borders.left = !(
 							adjacentKeys.left !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.left, 'button')]?.area?.areaId ===
-								keyDisplay.area.areaId
+							this.displayKeyDisplay[this.keyIndexToIdentifier(adjacentKeys.left, 'button')]?.area
+								?.areaId === keyDisplay.area.areaId
 						)
 						borders.right = !(
 							adjacentKeys.right !== null &&
-							this.sentKeyDisplay[keyIndexToIdentifier(adjacentKeys.right, 'button')]?.area?.areaId ===
-								keyDisplay.area.areaId
+							this.displayKeyDisplay[this.keyIndexToIdentifier(adjacentKeys.right, 'button')]?.area
+								?.areaId === keyDisplay.area.areaId
 						)
 					}
 				}
@@ -595,82 +728,31 @@ export class PeripheralStreamDeck extends Peripheral {
 			}
 
 			if (keyDisplay.header) {
-				const text = keyDisplay.header.short || limitTextWidth(keyDisplay.header.long, fontsize, maxTextWidth)
-
-				const textFontSize = Math.floor(fontsize * (text.length > 7 ? 0.8 : 1))
-				svg += `<text
-							font-family="Arial, Helvetica, sans-serif"
-							font-size="${textFontSize}px"
-							x="${x}"
-							y="${y}"
-							fill="${textColor}"
-							text-anchor="start"
-							>${text}</text>`
-				y += Math.max(textFontSize, fontsize)
+				svg += svgTextLine({
+					text: keyDisplay.header.short || keyDisplay.header.long,
+					fontSize: 1.1,
+					textColor,
+					center: key.type === 'encoder',
+					wrap: true,
+					maxLines: 2,
+				})
 			}
 			if (keyDisplay.info) {
-				const textFontSize = Math.floor(fontsize * 0.8)
-				if (keyDisplay.info.short) {
-					svg += `<text
-						font-family="Arial, Helvetica, sans-serif"
-						font-size="${textFontSize}px"
-						x="${x}"
-						y="${y}"
-						fill="${textColor}"
-						text-anchor="start"
-						>${keyDisplay.info.short}</text>`
-					y += textFontSize
-				} else if (keyDisplay.info.long) {
-					let text = keyDisplay.info.long
+				svg += svgTextLine({
+					text: keyDisplay.info.short || keyDisplay.info.long,
+					fontSize: 0.8,
+					textColor,
+					center: key.type === 'encoder',
+					wrap: true,
+					maxLines: 3,
+				})
 
-					if (text.includes('\n')) {
-						const lines = text.split('\n')
-						for (const line of lines) {
-							if (line) {
-								svg += `<text
-									font-family="Arial, Helvetica, sans-serif"
-									font-size="${textFontSize}px"
-									x="${x}"
-									y="${y}"
-									fill="${textColor}"
-									text-anchor="start"
-									>${line}</text>`
-								y += textFontSize
-							} else {
-								break
-							}
-						}
-					} else {
-						let line = ''
-						for (let i = 0; i < 3; i++) {
-							line = limitTextWidth(text, fontsize, maxTextWidth)
-							text = text.slice(line.length)
-							if (line) {
-								svg += `<text
-									font-family="Arial, Helvetica, sans-serif"
-									font-size="${textFontSize}px"
-									x="${x}"
-									y="${y}"
-									fill="${textColor}"
-									text-anchor="start"
-									>${line}</text>`
-								y += textFontSize
-							} else {
-								break
-							}
-						}
-					}
-				}
 				if (keyDisplay.info.analogValue) {
-					svg += `<text
-						font-family="Arial, Helvetica, sans-serif"
-						font-size="${fontsize}px"
-						x="${xCenter}"
-						y="${y}"
-						fill="${textColor}"
-						text-anchor="middle"
-						>${keyDisplay.info.analogValue}</text>`
-					y += fontsize
+					svg += svgTextLine({
+						text: keyDisplay.info.analogValue,
+						textColor,
+						center: true,
+					})
 				}
 			}
 		}
@@ -797,25 +879,84 @@ export class PeripheralStreamDeck extends Peripheral {
 		const columns = this.streamDeck.KEY_COLUMNS
 		return rowColumn.row * columns + rowColumn.column
 	}
-}
-function keyIndexToIdentifier(keyIndex: number, type: KeyType): string {
-	if (type === 'button') return `${keyIndex}`
-	else if (type === 'encoder') return `encoder-${keyIndex}`
-	else if (type === 'encoderPress') return `encoderPress-${keyIndex}`
-	else assertNever(type)
-	return `${type}-${keyIndex}`
-}
-function identifierToKey(identifier: string): Key {
-	{
-		const m = identifier.match(/^\d+$/)
-		if (m) return { keyIndex: parseInt(identifier, 10), type: 'button' }
+	private getVirtualKeyIndex(keyIndex: number, type: KeyType): number {
+		if (type === 'button') {
+			return keyIndex + this.virtualPage * (this.streamDeck?.NUM_KEYS ?? 0)
+		} else if (type === 'encoder' || type === 'encoderPress') {
+			return keyIndex + this.virtualPage * (this.streamDeck?.NUM_ENCODERS ?? 0)
+		} else {
+			assertNever(type)
+			return keyIndex
+		}
 	}
-	{
-		const m = identifier.match(/^(\w+)-(\d+)$/)
-		if (m) return { keyIndex: parseInt(m[2], 10), type: m[1] as KeyType }
+
+	private identifierToKey(identifier: string): Key | undefined {
+		let virtualKeyIndex = -1
+		let type: KeyType | undefined = undefined
+		{
+			const m = identifier.match(/^\d+$/)
+			if (m) {
+				virtualKeyIndex = parseInt(identifier, 10)
+				type = 'button'
+			}
+		}
+		{
+			const m = identifier.match(/^encoder-(\d+)$/)
+			if (m) {
+				virtualKeyIndex = parseInt(m[2], 10)
+				type = 'encoder'
+			}
+		}
+		{
+			const m = identifier.match(/^encoderPress-(\d+)$/)
+			if (m) {
+				virtualKeyIndex = parseInt(m[2], 10)
+				type = 'encoderPress'
+			}
+		}
+		{
+			const m = identifier.match(/^(\w+)-(\d+)$/)
+			if (m) {
+				virtualKeyIndex = parseInt(m[2], 10)
+				type = m[1] as KeyType
+			}
+		}
+		if (virtualKeyIndex === -1) return undefined
+		if (!type) return undefined
+		if (Number.isNaN(virtualKeyIndex)) return undefined
+
+		const keyIndex = this.getRealKeyIndex(virtualKeyIndex, type)
+		if (keyIndex === undefined) return undefined
+
+		return { keyIndex, type }
 	}
-	throw new Error(`Xkeys: Unknown identifier: "${identifier}"`)
+	private getRealKeyIndex(virtualKeyIndex: number, type: KeyType): number | undefined {
+		let keyIndex: number
+		if (type === 'button') {
+			keyIndex = virtualKeyIndex - this.virtualPage * (this.streamDeck?.NUM_KEYS ?? 0)
+		} else if (type === 'encoder' || type === 'encoderPress') {
+			keyIndex = virtualKeyIndex - this.virtualPage * (this.streamDeck?.NUM_ENCODERS ?? 0)
+		} else {
+			assertNever(type)
+			keyIndex = virtualKeyIndex
+		}
+
+		if (keyIndex >= 0 && keyIndex < (this.streamDeck?.NUM_KEYS ?? 999)) return keyIndex
+		return undefined
+	}
+	private keyIndexToIdentifier(keyIndex: number, type: KeyType): string {
+		const vKeyIndex = this.getVirtualKeyIndex(keyIndex, type)
+		if (type === 'button') {
+			return `${vKeyIndex}`
+		} else if (type === 'encoder') {
+			return `encoder-${vKeyIndex}`
+		} else if (type === 'encoderPress') {
+			return `encoderPress-${vKeyIndex}`
+		} else assertNever(type)
+		return `${type}-${vKeyIndex}`
+	}
 }
+
 type Key = {
 	keyIndex: number
 	type: KeyType

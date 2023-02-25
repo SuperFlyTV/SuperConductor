@@ -2,12 +2,11 @@ import { StorageHandler } from './storageHandler'
 import EventEmitter from 'events'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogInputSetting, Project } from '../models/project/Project'
+import { AnalogInputSetting } from '../models/project/Project'
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
 import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay'
 import _ from 'lodash'
 import { BridgeHandler } from './bridgeHandler'
-import { ActiveTrigger } from '../models/rundown/Trigger'
 
 export interface AnalogHandlerEvents {
 	error: (error: Error) => void
@@ -97,12 +96,11 @@ export class AnalogHandler extends EventEmitter {
 		this.updatePeripheralAnalog(fullIdentifier)
 	}
 	private updatePeripherals(): void {
-		const project = this.storage.getProject()
 		for (const fullIdentifier of Object.keys(this.activeAnalogs)) {
-			this.updatePeripheralAnalog(fullIdentifier, undefined, project)
+			this.updatePeripheralAnalog(fullIdentifier, undefined)
 		}
 	}
-	private updatePeripheralAnalog(fullIdentifier: string, analogInput?: AnalogInput, project?: Project): void {
+	private updatePeripheralAnalog(fullIdentifier: string, analogInput?: AnalogInput): void {
 		if (!analogInput) analogInput = this.storage.getAnalogInput(fullIdentifier)
 
 		const activeAnalog = this.activeAnalogs[fullIdentifier] as ActiveAnalog | undefined
