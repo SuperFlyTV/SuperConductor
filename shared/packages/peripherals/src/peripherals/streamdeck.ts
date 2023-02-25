@@ -151,20 +151,20 @@ export class PeripheralStreamDeck extends Peripheral {
 				this.emit('keyUp', identifier)
 			})
 
-			// Press / Release the knobs on Streamdeck plus:
+			// Press / Release the encoders on Streamdeck plus:
 			this.streamDeck.on('encoderDown', (encoderIndex) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'knobPress')
+				const identifier = keyIndexToIdentifier(encoderIndex, 'encoderPress')
 				this.keys[identifier] = false
 				this.emit('keyDown', identifier)
 			})
 			this.streamDeck.on('encoderUp', (encoderIndex) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'knobPress')
+				const identifier = keyIndexToIdentifier(encoderIndex, 'encoderPress')
 				this.keys[identifier] = false
 				this.emit('keyUp', identifier)
 			})
-			// Rotate the knobs on Streamdeck plus:
+			// Rotate the encoders on Streamdeck plus:
 			this.streamDeck.on('rotateRight', (encoderIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
+				const identifier = keyIndexToIdentifier(encoderIndex, 'encoder')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, deltaValue),
 					relative: deltaValue,
@@ -172,22 +172,13 @@ export class PeripheralStreamDeck extends Peripheral {
 				})
 			})
 			this.streamDeck.on('rotateLeft', (encoderIndex, deltaValue) => {
-				const identifier = keyIndexToIdentifier(encoderIndex, 'knob')
+				const identifier = keyIndexToIdentifier(encoderIndex, 'encoder')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, -deltaValue),
 					relative: -deltaValue,
 					rAbs: false,
 				})
 			})
-			// this.streamDeck.on('lcdShortPress', (encoderIndex, position) => {
-			// 	console.log('lcdShortPress', encoderIndex, position)
-			// })
-			// this.streamDeck.on('lcdLongPress', (encoderIndex, position) => {
-			// 	console.log('lcdLongPress', encoderIndex, position)
-			// })
-			// this.streamDeck.on('lcdSwipe', (fromEncoderIndex, toEncoderIndex, fromPosition, toPosition) => {
-			// 	console.log('lcdSwipe', fromEncoderIndex, toEncoderIndex, fromPosition, toPosition)
-			// })
 			// lcdShortPress
 			// lcdLongPress
 			// lcdSwipe
@@ -291,14 +282,14 @@ export class PeripheralStreamDeck extends Peripheral {
 			}
 			await this._setKeyDisplay(identifier, keyDisplay, true)
 		}
-		// Knobs
+		// Encoders
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_ENCODERS; keyIndex++) {
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				const identifier = keyIndexToIdentifier(keyIndex, 'encoder')
 				await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
 			}
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'knobPress')
+				const identifier = keyIndexToIdentifier(keyIndex, 'encoderPress')
 				await this._setKeyDisplay(identifier, this.sentKeyDisplay[identifier], true)
 			}
 		}
@@ -335,10 +326,10 @@ export class PeripheralStreamDeck extends Peripheral {
 			if (this.keys[identifier]) this.emit('keyDown', identifier)
 			else this.emit('keyUp', identifier)
 		}
-		// Knobs
+		// Encoders
 		for (let keyIndex = 0; keyIndex < this.streamDeck?.NUM_ENCODERS; keyIndex++) {
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'knob')
+				const identifier = keyIndexToIdentifier(keyIndex, 'encoder')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, 0),
 					relative: 0,
@@ -346,7 +337,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				})
 			}
 			{
-				const identifier = keyIndexToIdentifier(keyIndex, 'knobPress')
+				const identifier = keyIndexToIdentifier(keyIndex, 'encoderPress')
 				if (this.keys[identifier]) this.emit('keyDown', identifier)
 				else this.emit('keyUp', identifier)
 			}
@@ -369,13 +360,13 @@ export class PeripheralStreamDeck extends Peripheral {
 
 		if (key.type === 'button') {
 			SIZE_W = SIZE_H = SIZE = streamDeck.ICON_SIZE
-		} else if (key.type === 'knob') {
+		} else if (key.type === 'encoder') {
 			if (!streamDeck.LCD_ENCODER_SIZE) return
 
 			SIZE_W = streamDeck.LCD_ENCODER_SIZE.width
 			SIZE_H = streamDeck.LCD_ENCODER_SIZE.height
 			SIZE = Math.min(SIZE_H, SIZE_W)
-		} else if (key.type === 'knobPress') {
+		} else if (key.type === 'encoderPress') {
 			// Not supported right now
 			return
 		} else {
@@ -745,9 +736,9 @@ export class PeripheralStreamDeck extends Peripheral {
 							await streamDeck.fillKeyColor(key.keyIndex, bgRGB.r, bgRGB.g, bgRGB.b)
 						}
 					}
-				} else if (key.type === 'knob') {
+				} else if (key.type === 'encoder') {
 					await streamDeck.fillEncoderLcd(key.keyIndex, tmpImg, { format: 'rgba' })
-				} else if (key.type === 'knobPress') {
+				} else if (key.type === 'encoderPress') {
 					// not supported yet
 				} else {
 					assertNever(key.type)
@@ -809,8 +800,8 @@ export class PeripheralStreamDeck extends Peripheral {
 }
 function keyIndexToIdentifier(keyIndex: number, type: KeyType): string {
 	if (type === 'button') return `${keyIndex}`
-	else if (type === 'knob') return `knob-${keyIndex}`
-	else if (type === 'knobPress') return `knobPress-${keyIndex}`
+	else if (type === 'encoder') return `encoder-${keyIndex}`
+	else if (type === 'encoderPress') return `encoderPress-${keyIndex}`
 	else assertNever(type)
 	return `${type}-${keyIndex}`
 }
@@ -829,7 +820,7 @@ type Key = {
 	keyIndex: number
 	type: KeyType
 }
-type KeyType = 'button' | 'knob' | 'knobPress'
+type KeyType = 'button' | 'encoder' | 'encoderPress'
 async function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
