@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
-import { stringToRGB, RGBToString, stringifyError } from '@shared/lib'
+import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 import { limitTextWidth } from './lib/estimateTextSize'
@@ -80,10 +80,30 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
 		const model = 'model' in streamDeck ? streamDeck.model : streamDeck.MODEL
-		let name = 'Stream Deck'
-		if (model === DeviceModelId.MINI) name += ' Mini'
-		else if (model === DeviceModelId.XL) name += ' XL'
-		return name
+
+		switch (model) {
+			case DeviceModelId.ORIGINAL:
+				return 'Stream Deck'
+			case DeviceModelId.ORIGINALV2:
+				return 'Stream Deck'
+			case DeviceModelId.ORIGINALMK2:
+				return 'Stream Deck MK2'
+			case DeviceModelId.MINI:
+				return 'Stream Deck Mini'
+			case DeviceModelId.MINIV2:
+				return 'Stream Deck Mini'
+			case DeviceModelId.XL:
+				return 'Stream Deck XL'
+			case DeviceModelId.XLV2:
+				return 'Stream Deck XL'
+			case DeviceModelId.PEDAL:
+				return 'Stream Deck Pedal'
+			case DeviceModelId.PLUS:
+				return 'Stream Deck +'
+			default:
+				assertNever(model)
+				return 'Stream Deck'
+		}
 	}
 
 	private streamDeck?: StreamDeck
