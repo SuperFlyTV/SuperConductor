@@ -2,7 +2,7 @@ import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
 import { ActionAny } from '../action'
 import { PeripheralArea } from '../../../models/project/Peripheral'
-import { Project } from '../../../models/project/Project'
+import { AnalogInputSetting, Project } from '../../../models/project/Project'
 import { ActiveTrigger } from '../../../models/rundown/Trigger'
 import { keyDisplayRundownPlay, keyDisplayRundownPlayStop, keyDisplayRundownStop } from './rundownAction'
 import {
@@ -15,6 +15,8 @@ import {
 	keyDisplayApplicationStop,
 } from './applicationAction'
 import { TriggerArea, TriggersAreaMap, triggersAreaToArea } from './lib'
+import { ActiveAnalog } from '../../../models/rundown/Analog'
+import { AnalogInput } from '../../../models/project/AnalogInput'
 
 export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 	const triggersAreaMap = new Map<
@@ -146,6 +148,32 @@ export function idleKeyDisplay(triggerArea: TriggerArea | undefined): KeyDisplay
 			},
 		},
 	]
+}
+
+export function getKeyDisplayForAnalog(
+	activeAnalog: ActiveAnalog,
+	analogInput: AnalogInput | undefined,
+	analogInputSetting: AnalogInputSetting | undefined
+): KeyDisplayTimeline | KeyDisplay {
+	if (!analogInput || !analogInputSetting) {
+		return {
+			attentionLevel: AttentionLevel.IGNORE,
+			info: {
+				long: 'Not assigned',
+				analogValue: String(
+					activeAnalog.value.rAbs ? activeAnalog.value.absolute : activeAnalog.value.relative
+				),
+			},
+		}
+	}
+
+	return {
+		attentionLevel: AttentionLevel.NEUTRAL,
+		info: {
+			long: analogInputSetting.label,
+			analogValue: String(analogInput.value),
+		},
+	}
 }
 
 export interface DefiningArea {

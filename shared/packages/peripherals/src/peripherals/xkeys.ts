@@ -1,4 +1,5 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
+import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
@@ -142,15 +143,15 @@ export class PeripheralXkeys extends Peripheral {
 
 			// Buttons:
 			this.xkeysPanel.on('down', (keyIndex) => {
-				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', `${keyIndex}`)
+				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyDown', this.getIdentifier(keyIndex, 'key'))
 			})
 			this.xkeysPanel.on('up', (keyIndex) => {
-				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyUp', `${keyIndex}`)
+				if (!this.ignoreKeys.has(keyIndex)) this.emit('keyUp', this.getIdentifier(keyIndex, 'key'))
 			})
 			// Analog values:
 			this.xkeysPanel.on('jog', (keyIndex, deltaValue) => {
 				if (this.ignoreKeys.has(keyIndex)) return
-				const identifier = `jog-${keyIndex}`
+				const identifier = this.getIdentifier(keyIndex, 'jog')
 				this.emit('analog', identifier, {
 					absolute: this.getAbsoluteValue(identifier, deltaValue),
 					relative: deltaValue,
@@ -159,7 +160,7 @@ export class PeripheralXkeys extends Peripheral {
 			})
 			this.xkeysPanel.on('shuttle', (keyIndex, value) => {
 				if (this.ignoreKeys.has(keyIndex)) return
-				const identifier = `shuttle-${keyIndex}`
+				const identifier = this.getIdentifier(keyIndex, 'shuttle')
 				this.emit('analog', identifier, {
 					absolute: value,
 					relative: this.getRelativeValue(identifier, value),
@@ -168,7 +169,7 @@ export class PeripheralXkeys extends Peripheral {
 			})
 			this.xkeysPanel.on('tbar', (keyIndex, value) => {
 				if (this.ignoreKeys.has(keyIndex)) return
-				const identifier = `tbar-${keyIndex}`
+				const identifier = this.getIdentifier(keyIndex, 'tbar')
 				this.emit('analog', identifier, {
 					absolute: value,
 					relative: this.getRelativeValue(identifier, value),
@@ -177,9 +178,10 @@ export class PeripheralXkeys extends Peripheral {
 			})
 			this.xkeysPanel.on('joystick', (keyIndex, value) => {
 				if (this.ignoreKeys.has(keyIndex)) return
-				const identifierX = `joystick-${keyIndex}-x`
-				const identifierY = `joystick-${keyIndex}-y`
-				const identifierZ = `joystick-${keyIndex}-z`
+
+				const identifierX = this.getIdentifier(keyIndex, 'joystick-x')
+				const identifierY = this.getIdentifier(keyIndex, 'joystick-y')
+				const identifierZ = this.getIdentifier(keyIndex, 'joystick-z')
 				this.emit('analog', identifierX, {
 					absolute: value.x,
 					relative: this.getRelativeValue(identifierX, value.x),
@@ -232,7 +234,11 @@ export class PeripheralXkeys extends Peripheral {
 		return this._info
 	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
-		const keyIndex = parseInt(identifier)
+		const key = this.getKeyFromIdentifier(identifier)
+		const keyIndex = key.keyIndex
+
+		if (key.type !== 'key') return // Only support keys for now
+
 		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
 
 		if (!this.xkeysPanel) return
@@ -363,4 +369,43 @@ export class PeripheralXkeys extends Peripheral {
 			this.emit(value ? 'keyDown' : 'keyUp', `${keyIndex}`)
 		}
 	}
+	private getIdentifier(keyIndex: number, type: KeyType): string {
+		// Handle these a bit special, to be backwards compatible:
+		if (type === 'key') return `${keyIndex}`
+		else if (type === 'joystick-x') return `joystick-${keyIndex}-x`
+		else if (type === 'joystick-y') return `joystick-${keyIndex}-y`
+		else if (type === 'joystick-z') return `joystick-${keyIndex}-z`
+		else if (type === 'jog') return `jog-${keyIndex}`
+		else if (type === 'shuttle') return `shuttle-${keyIndex}`
+		else if (type === 'tbar') return `tbar-${keyIndex}`
+		else assertNever(type)
+		return `${type}-${keyIndex}`
+	}
+	private getKeyFromIdentifier(identifier: string): {
+		keyIndex: number
+		type: KeyType
+	} {
+		{
+			const m = identifier.match(/^\d+$/)
+			if (m) return { keyIndex: parseInt(identifier, 10), type: 'key' }
+		}
+		{
+			const m = identifier.match(/^joystick-(\d+)-x$/)
+			if (m) return { keyIndex: parseInt(m[1], 10), type: 'joystick-x' }
+		}
+		{
+			const m = identifier.match(/^joystick-(\d+)-y$/)
+			if (m) return { keyIndex: parseInt(m[1], 10), type: 'joystick-y' }
+		}
+		{
+			const m = identifier.match(/^joystick-(\d+)-z$/)
+			if (m) return { keyIndex: parseInt(m[1], 10), type: 'joystick-z' }
+		}
+		{
+			const m = identifier.match(/^(\w+)-(\d+)$/)
+			if (m) return { keyIndex: parseInt(m[2], 10), type: m[1] as KeyType }
+		}
+		throw new Error(`Xkeys: Unknown identifier: "${identifier}"`)
+	}
 }
+type KeyType = 'key' | 'jog' | 'shuttle' | 'tbar' | 'joystick-x' | 'joystick-y' | 'joystick-z'

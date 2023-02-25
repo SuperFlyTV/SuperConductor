@@ -43,6 +43,7 @@ export class StorageHandler extends EventEmitter {
 	private project: FileProject
 	private projectHasChanged = false
 	private projectNeedsWrite = false
+	private projectLastUpdated = 0
 
 	private openRundowns: { [fileName: string]: FileRundown } = {}
 	private rundownsNeedsWrite = new Set<string>()
@@ -189,6 +190,9 @@ export class StorageHandler extends EventEmitter {
 			...this.project.project,
 			id: this.appData.appData.project.id,
 		}
+	}
+	getProjectLastUpdated(): number {
+		return this.projectLastUpdated
 	}
 	updateProject(project: Omit<Project, 'id'>): void {
 		this.project.project = _.omit(project, 'id')
@@ -1023,6 +1027,7 @@ export class StorageHandler extends EventEmitter {
 		// Store Project:
 		this.ensureDirectory(this.projectDir(this._projectId))
 		if (this.projectNeedsWrite) {
+			this.projectLastUpdated = Date.now()
 			await this.writeFileSafe(this.projectPath(this._projectId), JSON.stringify(this.project))
 			this.projectNeedsWrite = false
 		}

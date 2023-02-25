@@ -178,7 +178,7 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 	updatePeripheralAnalog(bridgeId: string, deviceId: string, identifier: string, value: AnalogValue): void {
-		// This is called from a peripheral, when a key is pressed or released
+		// This is called from a peripheral, when an analog input is wiggled
 
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
 		const peripheralId = getPeripheralId(bridgeId, deviceId)

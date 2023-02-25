@@ -2,10 +2,15 @@ import { StorageHandler } from './storageHandler'
 import EventEmitter from 'events'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogInputSetting } from '../models/project/Project'
+import { AnalogInputSetting, Project } from '../models/project/Project'
+import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
+import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay'
+import _ from 'lodash'
+import { BridgeHandler } from './bridgeHandler'
+import { ActiveTrigger } from '../models/rundown/Trigger'
 
 export interface AnalogHandlerEvents {
-	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
+	error: (error: Error) => void
 }
 export interface AnalogHandler {
 	on<U extends keyof AnalogHandlerEvents>(event: U, listener: AnalogHandlerEvents[U]): this
@@ -16,7 +21,13 @@ export class AnalogHandler extends EventEmitter {
 	/** Contains a collection of the currently active analog values on all Panels */
 	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
 
-	constructor(private storage: StorageHandler) {
+	private updatePeripheralsTimeout: NodeJS.Timeout | null = null
+	private lookupMap: Map<string, LookupMap> = new Map()
+	private lookupMapProjectLastUpdated = -1
+
+	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
+
+	constructor(private storage: StorageHandler, private bridgeHandler: BridgeHandler) {
 		super()
 	}
 
@@ -29,21 +40,86 @@ export class AnalogHandler extends EventEmitter {
 			delete this.activeAnalogs[fullIdentifier]
 		}
 	}
+	triggerUpdatePeripherals(): void {
+		this.lookupMapProjectLastUpdated = -1 // force an update
 
-	private handleUpdate(fullIdentifier: string, activeAnalog: ActiveAnalog) {
+		if (this.updatePeripheralsTimeout) {
+			clearTimeout(this.updatePeripheralsTimeout)
+		}
+
+		this.updatePeripheralsTimeout = setTimeout(() => {
+			this.updatePeripheralsTimeout = null
+			this.updatePeripherals()
+		}, 20)
+	}
+	private getLookupAnalogInputSettings() {
+		if (this.lookupMapProjectLastUpdated === this.storage.getProjectLastUpdated()) {
+			return this.lookupMap
+		}
+		this.lookupMapProjectLastUpdated = this.storage.getProjectLastUpdated()
 		const project = this.storage.getProject()
 
+		this.lookupMap = new Map<
+			string,
+			{
+				datastoreKey: string
+				analogInputSetting: AnalogInputSetting
+			}
+		>()
+
 		for (const [datastoreKey, analogInputSetting] of Object.entries(project.analogInputSettings)) {
-			if (analogInputSetting.fullIdentifier === fullIdentifier) {
-				const analogInput = this.calculateAnalogInput(
-					this.storage.getAnalogInput(fullIdentifier),
+			if (analogInputSetting.fullIdentifier) {
+				this.lookupMap.set(analogInputSetting.fullIdentifier, {
 					datastoreKey,
 					analogInputSetting,
-					activeAnalog
-				)
-
-				this.storage.updateAnalogInput(fullIdentifier, analogInput)
+				})
 			}
+		}
+		return this.lookupMap
+	}
+
+	private handleUpdate(fullIdentifier: string, activeAnalog: ActiveAnalog): void {
+		const lookupMap = this.getLookupAnalogInputSettings()
+		const lookup = lookupMap.get(fullIdentifier)
+		if (lookup) {
+			const analogInput = this.calculateAnalogInput(
+				this.storage.getAnalogInput(fullIdentifier),
+				lookup.datastoreKey,
+				lookup.analogInputSetting,
+				activeAnalog
+			)
+
+			this.storage.updateAnalogInput(fullIdentifier, analogInput)
+			this.updatePeripheralAnalog(fullIdentifier, analogInput)
+			return
+		}
+		// else: not found
+		this.updatePeripheralAnalog(fullIdentifier)
+	}
+	private updatePeripherals(): void {
+		const project = this.storage.getProject()
+		for (const fullIdentifier of Object.keys(this.activeAnalogs)) {
+			this.updatePeripheralAnalog(fullIdentifier, undefined, project)
+		}
+	}
+	private updatePeripheralAnalog(fullIdentifier: string, analogInput?: AnalogInput, project?: Project): void {
+		if (!analogInput) analogInput = this.storage.getAnalogInput(fullIdentifier)
+
+		const activeAnalog = this.activeAnalogs[fullIdentifier] as ActiveAnalog | undefined
+		if (!activeAnalog) return
+
+		const lookupMap = this.getLookupAnalogInputSettings()
+		const lookup = lookupMap.get(fullIdentifier)
+
+		const keyDisplay: KeyDisplay | KeyDisplayTimeline = getKeyDisplayForAnalog(
+			activeAnalog,
+			analogInput,
+			lookup?.analogInputSetting
+		)
+
+		if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+			this.sentkeyDisplays[fullIdentifier] = keyDisplay
+			this.setKeyDisplay(activeAnalog, keyDisplay)
 		}
 	}
 	private calculateAnalogInput(
@@ -113,4 +189,14 @@ export class AnalogHandler extends EventEmitter {
 
 		return [m * sign, exp]
 	}
+	private setKeyDisplay(activeAnalog: ActiveAnalog, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
+		const bridgeConnection = this.bridgeHandler.getBridgeConnection(activeAnalog.bridgeId)
+		if (bridgeConnection) {
+			bridgeConnection.peripheralSetKeyDisplay(activeAnalog.deviceId, activeAnalog.identifier, keyDisplay)
+		}
+	}
+}
+interface LookupMap {
+	datastoreKey: string
+	analogInputSetting: AnalogInputSetting
 }
