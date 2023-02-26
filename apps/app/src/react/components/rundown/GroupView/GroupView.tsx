@@ -3,7 +3,7 @@ import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
 import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
-import { GroupPreparedPlayData } from '../../../../models/GUI/PreparedPlayhead'
+import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import {
 	DragItemTypes,
@@ -52,6 +52,7 @@ import { sortSelected } from '../../../lib/clientUtil'
 import _ from 'lodash'
 import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
 import { ErrorBoundary } from '../../util/ErrorBoundary'
+import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -902,6 +903,8 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 				<Btn variant="contained" onClick={() => setNewPartOpen(true)}>
 					New part
 				</Btn>
+
+				<GroupTimeDisplay group={group} />
 			</DropZone>
 
 			<PartPropertiesDialog
@@ -926,6 +929,103 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 		</>
 	)
 }
+const GroupTimeDisplay: React.FC<{ group: GroupGUI }> = ({ group }) => {
+	const { groupIsPlaying, sectionEndAction } = useMemoComputedObject(
+		() => {
+			const playData = store.groupPlayDataStore.groups.get(group.id)
+
+			if (!playData) {
+				return {
+					groupIsPlaying: false,
+					sectionEndAction: null,
+				}
+			}
+			return {
+				groupIsPlaying: playData.groupIsPlaying,
+				sectionEndAction: playData.sectionEndAction,
+			}
+		},
+		[group.id],
+		true
+	)
+
+	if (!groupIsPlaying) return null
+
+	let label: string
+	switch (sectionEndAction) {
+		case undefined:
+		case null: {
+			label = ''
+			break
+		}
+		case SectionEndAction.STOP: {
+			label = 'END TIME'
+			break
+		}
+		case SectionEndAction.NEXT_SECTION: {
+			// next = go to next section, which must be a loop
+			label = 'LOOP TIME'
+			break
+		}
+		case SectionEndAction.LOOP_SELF: {
+			label = 'LOOP TIME'
+			break
+		}
+		case SectionEndAction.INFINITE: {
+			// Probably paused
+			label = 'END TIME'
+			break
+		}
+		default: {
+			assertNever(sectionEndAction)
+			label = ''
+		}
+	}
+
+	return (
+		<div className="group-list__time-display">
+			<GroupRemainingTime groupId={group.id} />
+			<GroupEndTime groupId={group.id} label={label} />
+		</div>
+	)
+}
+export const GroupEndTime = observer(function RemainingTime(props: { groupId: string; label: string }) {
+	const sectionEndTimeString = useMemoComputedValue(() => {
+		const playData = store.groupPlayDataStore.groups.get(props.groupId)
+		if (!playData) return null
+
+		if (!playData.sectionEndTime) return null
+		return formatDateTime(playData.sectionEndTime, true, DISPLAY_DECIMAL_COUNT)
+	}, [props.groupId])
+
+	if (!sectionEndTimeString) return null
+	if (!props.label) return null
+
+	return (
+		<div className="group-list__time-display__item">
+			<span className="group-list__time-display__label">{props.label}</span>{' '}
+			<span className="group-list__time-display__value">{sectionEndTimeString}</span>
+		</div>
+	)
+})
+export const GroupRemainingTime = observer(function RemainingTime(props: { groupId: string }) {
+	const countDownTimeString = useMemoComputedValue(() => {
+		const playData = store.groupPlayDataStore.groups.get(props.groupId)
+		if (!playData) return null
+
+		if (!playData.sectionTimeToEnd) return null
+		return formatDuration(playData.sectionTimeToEnd, 'smart')
+	}, [props.groupId])
+
+	if (!countDownTimeString) return null
+
+	return (
+		<div className="group-list__time-display__item">
+			<span className="group-list__time-display__label">REMAINING</span>{' '}
+			<span className="group-list__time-display__value">{countDownTimeString}</span>
+		</div>
+	)
+})
 
 const GroupCountDown: React.FC<{
 	rundownId: string

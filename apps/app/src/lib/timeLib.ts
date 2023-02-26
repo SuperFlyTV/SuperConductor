@@ -1007,7 +1007,11 @@ function dateIsReasonable(d: Date): boolean {
 
 	return true
 }
-export function formatDateTime(d: DateTimeObject | Date | number | undefined | null): string {
+export function formatDateTime(
+	d: DateTimeObject | Date | number | undefined | null,
+	allowShort = false,
+	decimalMaxCount?: number
+): string {
 	if (d === undefined) return ''
 	if (d === null) return ''
 
@@ -1018,14 +1022,28 @@ export function formatDateTime(d: DateTimeObject | Date | number | undefined | n
 		d = dateTimeObject(d)
 	}
 
+	let millisecondStr = d.millisecond ? `.${pad(d.millisecond, 3)}` : ''
+	if (decimalMaxCount === 0) {
+		millisecondStr = ''
+	} else if (decimalMaxCount) {
+		millisecondStr = millisecondStr.slice(0, 1 + decimalMaxCount)
+	}
+	const timeStr = `${pad(d.hour)}:${pad(d.minute)}:${pad(d.second)}${millisecondStr}`
+	const dateStr = `${d.year}-${pad(d.month + 1)}-${pad(d.date)}`
+
+	if (allowShort) {
+		const today = dateTimeObject(new Date())
+
+		if (today.year === d.year && today.month === d.month && today.date === d.date) {
+			// Display short time:
+			return timeStr
+		}
+	}
+
 	// TODO: Maybe support locale datestring later?
 	// return dateTimeObjectToDate(input).toLocaleString()
 
-	let str = `${d.year}-${pad(d.month + 1)}-${pad(d.date)} ${pad(d.hour)}:${pad(d.minute)}:${pad(d.second)}`
-	if (d.millisecond) {
-		str += `.${pad(d.millisecond, 3)}`
-	}
-	return str
+	return `${dateStr} ${timeStr}`
 }
 
 try {

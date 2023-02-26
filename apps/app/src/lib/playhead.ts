@@ -6,6 +6,7 @@ import {
 	GroupPreparedPlayDataSection,
 	GroupPreparedPlayDataSingle,
 	PlayPartEndAction,
+	SectionEndAction,
 } from '../models/GUI/PreparedPlayhead'
 import { Part } from '../models/rundown/Part'
 import { findPart } from './util'
@@ -113,6 +114,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 						stopTime: action.stopTime,
 						endTime: null, // calculated later
 						duration: null, // calculated later
+						endAction: SectionEndAction.INFINITE, // calculated later
 						parts: [],
 						repeating: false,
 						schedule: action.fromSchedule,
@@ -133,6 +135,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 						stopTime: action.stopTime,
 						endTime: null, // calculated later
 						duration: null, // calculated later
+						endAction: SectionEndAction.INFINITE, // calculated later
 						parts: [],
 						repeating: false,
 						schedule: action.fromSchedule,
@@ -207,6 +210,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 							stopTime: action.stopTime,
 							endTime: null, // calculated later
 							duration: null, // calculated later
+							endAction: SectionEndAction.INFINITE, // calculated later
 							parts: [],
 							repeating: true,
 							schedule: false, // Set to false, since this follows a scheduled(?) section
@@ -249,6 +253,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 							stopTime: action.stopTime,
 							endTime: null, // calculated later
 							duration: null, // calculated later
+							endAction: SectionEndAction.INFINITE, // calculated later
 							parts: [],
 							repeating: true,
 							schedule: false, // Set to false, since this follows a scheduled(?) section
@@ -353,6 +358,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 								stopTime: action.stopTime,
 								endTime: null, // calculated later
 								duration: null, // calculated later
+								endAction: SectionEndAction.INFINITE, // calculated later
 								parts: [],
 								repeating: false,
 								schedule: action.fromSchedule,
@@ -371,6 +377,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 								stopTime: action.stopTime,
 								endTime: null, // calculated later
 								duration: actionPart.resolved.duration,
+								endAction: SectionEndAction.STOP,
 								parts: [],
 								repeating: actionPart.loop,
 								schedule: action.fromSchedule,
@@ -440,12 +447,15 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 
 	if (section.pauseTime !== undefined || section.repeating) {
 		section.endTime = null
+		section.endAction = section.repeating ? SectionEndAction.LOOP_SELF : SectionEndAction.INFINITE
 	} else if (section.duration !== null) {
 		section.endTime = section.startTime + section.duration
+		section.endAction = SectionEndAction.STOP
 	}
 
 	if (section.stopTime && (!section.endTime || section.endTime > section.stopTime)) {
 		section.endTime = section.stopTime
+		section.endAction = SectionEndAction.STOP
 	}
 
 	const prevSection = _.last(sections)
@@ -454,6 +464,7 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 		if (!prevSection.endTime || prevSection.endTime > section.startTime) {
 			prevSection.endTime = section.startTime
 		}
+		prevSection.endAction = SectionEndAction.NEXT_SECTION
 
 		const lastPart = _.last(prevSection.parts)
 		if (lastPart) {
@@ -483,14 +494,33 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 		allPartsArePaused: true,
 		playheads: {},
 		countdowns: {},
+
+		sectionEndAction: null,
+		sectionEndTime: null,
+		sectionTimeToEnd: null,
 	}
 
 	if (prepared) {
 		if (prepared.type === 'single') {
 			let playhead: GroupPlayDataPlayhead | null = null
-
 			for (const section of prepared.sections) {
-				playhead = getPlayheadForSection(playData, now, section) || playhead
+				const currentPlayhead = getPlayheadForSection(playData, now, section)
+				if (currentPlayhead) {
+					playhead = currentPlayhead
+				}
+
+				const { sectionStartTime, sectionEndTime, nextSectionStartTime } = getSectionTimes(section, now)
+				if (sectionStartTime <= now && sectionEndTime > now) {
+					playData.sectionEndAction = section.endAction
+					playData.sectionEndTime = nextSectionStartTime
+					playData.sectionTimeToEnd = nextSectionStartTime ? nextSectionStartTime - now : null
+					if (section.pauseTime !== undefined) {
+						// When paused, there is only one (paused) section,
+						// So we need to figure out something clever here:
+						playData.sectionEndTime = null
+						playData.sectionTimeToEnd = null
+					}
+				}
 			}
 
 			if (playhead) {
@@ -533,15 +563,16 @@ function addCountdown(playData: GroupPlayData, part: Part, duration: number) {
 	if (!playData.countdowns[part.id]) playData.countdowns[part.id] = []
 	playData.countdowns[part.id].push(duration)
 }
-function getPlayheadForSection(
-	playData: GroupPlayData,
-	now: number,
-	section: GroupPreparedPlayDataSection
-): GroupPlayDataPlayhead | null {
-	let playhead: GroupPlayDataPlayhead | null = null
-
+function getSectionTimes(
+	section: GroupPreparedPlayDataSection,
+	now: number
+): {
+	sectionStartTime: number
+	sectionEndTime: number
+	repeatAddition: number
+	nextSectionStartTime: number | null
+} {
 	const sectionEndTime = section.endTime ?? Infinity
-
 	let sectionStartTime = section.startTime
 
 	/** How much to add to times to get the times in the current repetition [ms] */
@@ -559,9 +590,26 @@ function getPlayheadForSection(
 	}
 
 	sectionStartTime += repeatAddition
-	if (sectionStartTime >= (section.endTime ?? Infinity)) return null
 
 	const nextSectionStartTime = section.duration === null ? null : sectionStartTime + section.duration
+
+	return {
+		sectionStartTime,
+		sectionEndTime,
+		repeatAddition,
+		nextSectionStartTime,
+	}
+}
+function getPlayheadForSection(
+	playData: GroupPlayData,
+	now: number,
+	section: GroupPreparedPlayDataSection
+): GroupPlayDataPlayhead | null {
+	let playhead: GroupPlayDataPlayhead | null = null
+
+	const { sectionStartTime, sectionEndTime, repeatAddition, nextSectionStartTime } = getSectionTimes(section, now)
+
+	if (sectionStartTime >= (section.endTime ?? Infinity)) return null
 
 	if (section.schedule) {
 		if (sectionStartTime >= now)
@@ -640,6 +688,10 @@ export interface GroupPlayData {
 
 	/** Time(s) until parts will start playing: */
 	countdowns: { [partId: string]: number[] }
+
+	sectionTimeToEnd: number | null
+	sectionEndTime: number | null
+	sectionEndAction: SectionEndAction | null
 }
 export interface GroupPlayDataPlayhead {
 	/** The current time of the playhead (ie time since the part started) [ms] */
