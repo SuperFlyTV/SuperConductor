@@ -1105,7 +1105,7 @@ export class IPCServer
 			deletedTransparentGroup = deleteGroup(rundown, group.id)
 		}
 
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
 			undo: () => {
