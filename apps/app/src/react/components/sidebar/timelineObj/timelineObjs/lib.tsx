@@ -142,7 +142,13 @@ export const EditWrapper: React.FC<{
 							emptyPlaceholder="Infinite"
 							{...inputValue(
 								enables,
-								(enable) => (typeof enable.duration === 'number' ? enable.duration : 0),
+								(enable) => {
+									return enable.duration === null
+										? null
+										: typeof enable.duration === 'number'
+										? enable.duration
+										: 0
+								},
 								0
 							)}
 							onChange={(newVal) => {

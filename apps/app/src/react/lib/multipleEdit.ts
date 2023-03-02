@@ -67,8 +67,9 @@ export function inputValue<T, V, DefaultV>(
 	fcn: (obj: T) => V | undefined,
 	defaultValue: DefaultV
 ): { currentValue: V | DefaultV; indeterminate: boolean } {
+	const fValue = firstValue(objects, fcn)
 	return {
-		currentValue: firstValue(objects, fcn) ?? defaultValue,
+		currentValue: fValue === undefined ? defaultValue : fValue,
 		indeterminate: isIndeterminate(objects, fcn),
 	}
 }

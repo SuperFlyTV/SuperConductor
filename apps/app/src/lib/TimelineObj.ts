@@ -250,6 +250,8 @@ function deepDescribeValues(value: any, inner?: boolean): string {
 			if (inner) return `[ ${str} ]`
 			return str
 		}
+	} else if (value === null) {
+		return 'null'
 	} else if (typeof value === 'object') {
 		const values = Object.values(value)
 		if (values.length === 1) {
