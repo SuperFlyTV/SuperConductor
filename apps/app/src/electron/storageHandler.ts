@@ -321,9 +321,18 @@ export class StorageHandler extends EventEmitter {
 		return fileName
 	}
 	openRundown(fileName: string): void {
-		this.openRundowns[fileName] = this._loadRundown(this._projectId, fileName)
+		const fileRundown = this._loadRundown(this._projectId, fileName)
+		this.openRundowns[fileName] = fileRundown
 		this.rundownsHasChanged.add(fileName)
-		this.appData.appData.rundowns[fileName].open = true
+
+		if (!this.appData.appData.rundowns[fileName]) {
+			this.appData.appData.rundowns[fileName] = {
+				name: fileRundown.rundown.name,
+				open: true,
+			}
+		} else {
+			this.appData.appData.rundowns[fileName].open = true
+		}
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
