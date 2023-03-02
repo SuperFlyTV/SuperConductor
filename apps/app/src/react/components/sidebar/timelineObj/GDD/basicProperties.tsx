@@ -10,8 +10,12 @@ import {
 	getDefaultDataFromSchema,
 } from 'graphics-data-definition'
 import React from 'react'
+import { BooleanInput } from '../../../inputs/BooleanInput'
+import { FloatInput } from '../../../inputs/FloatInput'
+import { IntInput } from '../../../inputs/IntInput'
+import { TextInput } from '../../../inputs/TextInput'
 import { componentAny } from './componentAny'
-import { EditProperty, PropertyProps } from './lib'
+import { EditProperty, getEditPropertyMeta, PropertyProps } from './lib'
 
 export const basicPropertyUnknown: React.FC<PropertyProps<GDDSchema> & { basicType: string }> = (props) => {
 	return (
@@ -22,13 +26,15 @@ export const basicPropertyUnknown: React.FC<PropertyProps<GDDSchema> & { basicTy
 }
 export const basicPropertyBoolean: React.FC<PropertyProps<GDDSchemaPropertyBoolean>> = (props) => {
 	const data = !!props.data
+	const { label, description } = getEditPropertyMeta(props)
 	return (
 		<EditProperty className="gdd-edit-data__boolean" {...props}>
-			<input
-				type="checkbox"
-				checked={data}
-				onChange={(e) => {
-					props.setData(e.target.checked)
+			<BooleanInput
+				label={label}
+				tooltip={description}
+				currentValue={data}
+				onChange={(v) => {
+					props.setData(v)
 					props.onSave()
 				}}
 			/>
@@ -37,45 +43,57 @@ export const basicPropertyBoolean: React.FC<PropertyProps<GDDSchemaPropertyBoole
 }
 export const basicPropertyString: React.FC<PropertyProps<GDDSchemaPropertyString>> = (props) => {
 	const data = props.data || ''
+	const { label, description } = getEditPropertyMeta(props)
 	return (
 		<EditProperty className="gdd-edit-data__string" {...props}>
-			<input
-				type="text"
-				value={data}
-				onChange={(e) => {
-					props.setData(e.target.value)
+			<TextInput
+				label={label}
+				focusTooltip={description}
+				fullWidth
+				currentValue={data}
+				onChange={(v) => {
+					props.setData(v)
+					props.onSave()
 				}}
-				onBlur={props.onSave}
+				allowUndefined={true}
 			/>
 		</EditProperty>
 	)
 }
 export const basicPropertyNumber: React.FC<PropertyProps<GDDSchemaPropertyNumber>> = (props) => {
 	const data = props.data ?? ''
+	const { label, description } = getEditPropertyMeta(props)
 	return (
 		<EditProperty className="gdd-edit-data__number" {...props}>
-			<input
-				type="number"
-				value={data}
-				onChange={(e) => {
-					props.setData(parseFloat(e.target.value))
+			<FloatInput
+				label={label}
+				focusTooltip={description}
+				fullWidth
+				currentValue={data}
+				onChange={(v) => {
+					props.setData(v)
+					props.onSave()
 				}}
-				onBlur={props.onSave}
+				allowUndefined={true}
 			/>
 		</EditProperty>
 	)
 }
 export const basicPropertyInteger: React.FC<PropertyProps<GDDSchemaPropertyInteger>> = (props) => {
 	const data = props.data ?? ''
+	const { label, description } = getEditPropertyMeta(props)
 	return (
 		<EditProperty className="gdd-edit-data__integer" {...props}>
-			<input
-				type="number"
-				value={data}
-				onChange={(e) => {
-					props.setData(parseInt(e.target.value))
+			<IntInput
+				label={label}
+				focusTooltip={description}
+				fullWidth
+				currentValue={data}
+				onChange={(v) => {
+					props.setData(v)
+					props.onSave()
 				}}
-				onBlur={props.onSave}
+				allowUndefined={true}
 			/>
 		</EditProperty>
 	)

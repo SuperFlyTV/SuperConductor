@@ -15,6 +15,8 @@ export const IntInput: React.FC<
 			/** min, max */
 			caps?: [number, number]
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 	| {
 			currentValue: number | undefined
@@ -30,6 +32,8 @@ export const IntInput: React.FC<
 			/** min, max */
 			caps?: [number, number]
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 > = (props) => {
 	const parse = useCallback(
@@ -73,7 +77,9 @@ export const IntInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -91,7 +97,9 @@ export const IntInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

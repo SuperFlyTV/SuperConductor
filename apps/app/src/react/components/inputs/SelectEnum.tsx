@@ -1,5 +1,5 @@
-import { MenuItem, TextField } from '@mui/material'
-import React from 'react'
+import { MenuItem, TextField, Tooltip } from '@mui/material'
+import React, { useCallback, useState } from 'react'
 
 export const SelectEnum: React.FC<{
 	label: React.ReactNode
@@ -12,6 +12,8 @@ export const SelectEnum: React.FC<{
 	fullWidth?: boolean
 	width?: string
 	disabled?: boolean
+	tooltip?: string
+	focusTooltip?: string
 }> = ({
 	currentValue,
 	indeterminate,
@@ -23,7 +25,11 @@ export const SelectEnum: React.FC<{
 	fullWidth,
 	width,
 	disabled,
+	tooltip,
+	focusTooltip,
 }) => {
+	const [hasFocus, setHasFocus] = useState<boolean>(false)
+
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -71,7 +77,11 @@ export const SelectEnum: React.FC<{
 		currentValue = '__indeterminate'
 	}
 
-	return (
+	const onFocus = useCallback(() => {
+		setHasFocus(true)
+	}, [setHasFocus])
+
+	let elInput = (
 		<TextField
 			select
 			margin="dense"
@@ -90,6 +100,7 @@ export const SelectEnum: React.FC<{
 					else throw new Error('Unknown option: ' + e.target.value)
 				}
 			}}
+			onFocus={onFocus}
 			sx={{ width: width }}
 			disabled={disabled}
 		>
@@ -102,4 +113,17 @@ export const SelectEnum: React.FC<{
 			})}
 		</TextField>
 	)
+
+	if (tooltip || focusTooltip) {
+		let displayTooltip = tooltip ?? ''
+		if (focusTooltip && hasFocus) displayTooltip = focusTooltip
+
+		elInput = (
+			<Tooltip arrow={true} title={displayTooltip}>
+				{elInput}
+			</Tooltip>
+		)
+	}
+
+	return elInput
 }

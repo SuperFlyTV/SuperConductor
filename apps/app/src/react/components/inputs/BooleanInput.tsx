@@ -1,4 +1,4 @@
-import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
+import { Checkbox, FormControlLabel, FormGroup, Tooltip } from '@mui/material'
 import React from 'react'
 
 export const BooleanInput: React.FC<{
@@ -8,22 +8,32 @@ export const BooleanInput: React.FC<{
 	disabled?: boolean
 	indeterminate?: boolean
 	endAdornment?: React.ReactNode
-}> = ({ currentValue, onChange, label, disabled, indeterminate, endAdornment }) => {
+	tooltip?: string
+}> = ({ currentValue, onChange, label, disabled, indeterminate, endAdornment, tooltip }) => {
+	let elInput = (
+		<Checkbox
+			onChange={(e) => {
+				onChange(e.target.checked)
+			}}
+			checked={!!currentValue}
+			disabled={disabled}
+			indeterminate={indeterminate}
+		/>
+	)
+
+	if (tooltip) {
+		const displayTooltip = tooltip ?? ''
+
+		elInput = (
+			<Tooltip arrow={true} title={displayTooltip}>
+				{elInput}
+			</Tooltip>
+		)
+	}
+
 	return (
 		<FormGroup>
-			<FormControlLabel
-				control={
-					<Checkbox
-						onChange={(e) => {
-							onChange(e.target.checked)
-						}}
-						checked={!!currentValue}
-						disabled={disabled}
-						indeterminate={indeterminate}
-					/>
-				}
-				label={label}
-			/>
+			<FormControlLabel control={elInput} label={label} />
 			{endAdornment}
 		</FormGroup>
 	)

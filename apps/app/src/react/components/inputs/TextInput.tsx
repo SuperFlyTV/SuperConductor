@@ -13,6 +13,8 @@ export const TextInput: React.FC<
 			width?: string
 			changeOnKey?: boolean
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 	| {
 			currentValue: string | undefined
@@ -26,6 +28,8 @@ export const TextInput: React.FC<
 			width?: string
 			changeOnKey?: boolean
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 > = (props) => {
 	const parse = useCallback((v: string) => v, [])
@@ -48,7 +52,9 @@ export const TextInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			undefined,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<string>(
@@ -66,7 +72,9 @@ export const TextInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			undefined,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

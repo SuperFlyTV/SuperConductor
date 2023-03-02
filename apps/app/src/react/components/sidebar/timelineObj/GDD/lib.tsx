@@ -20,6 +20,39 @@ export interface PropertyProps<T> extends ComponentAnyProps<T> {
 	key: string
 	dataValidation: string | null
 }
+export function getEditPropertyMeta(
+	props: PropertyProps<any> & {
+		inTableRow?: boolean
+		className?: string
+	}
+): {
+	schema: GDDSchema
+	label: string
+	description: string | undefined
+} {
+	const schema = props.schema as GDDSchema
+	const label = schema.title || `${props.property}`
+	const description = props.schema.description
+
+	return { schema, label, description }
+}
+export const WithLabel: React.FC<
+	PropertyProps<any> & {
+		inTableRow?: boolean
+		className?: string
+		children: React.ReactNode
+	}
+> = (props) => {
+	const { label, description } = getEditPropertyMeta(props)
+
+	return (
+		<>
+			<div className="gdd-edit-data__gdd-edit-data__label">{label}</div>
+			{description && <div className="gdd-edit-data__description">{description}</div>}
+			{props.children}
+		</>
+	)
+}
 export const EditProperty: React.FC<
 	PropertyProps<any> & {
 		inTableRow?: boolean
@@ -27,10 +60,6 @@ export const EditProperty: React.FC<
 		children: React.ReactNode
 	}
 > = (props) => {
-	const schema = props.schema as GDDSchema
-	const label = schema.title || props.property
-	const description = props.schema.description
-
 	if (props.inTableRow || props.inTableCell) {
 		return (
 			<td>
@@ -42,8 +71,8 @@ export const EditProperty: React.FC<
 	} else {
 		return (
 			<div className={'gdd-edit-data__gdd-property gdd-edit-data__gdd-property-' + props.className}>
-				<div className="gdd-edit-data__gdd-edit-data__label">{label}</div>
-				{description && <div className="gdd-edit-data__description">{description}</div>}
+				{/* <div className="gdd-edit-data__gdd-edit-data__label">{label}</div>
+				{description && <div className="gdd-edit-data__description">{description}</div>} */}
 				<div className="gdd-edit-data__gdd-edit-data__edit">{props.children}</div>
 				{props.dataValidation && <div className="gdd-edit-data__data-validation">{props.dataValidation}</div>}
 			</div>
