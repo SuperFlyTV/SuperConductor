@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography } from '@mui/material'
 import useId from '@mui/material/utils/useId'
 import { HiLink, HiOutlineX } from 'react-icons/hi'
-import { useMemoComputedObject } from '../../../mobx/lib'
+import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
 import { store } from '../../../mobx/store'
 import { TSRTimelineObj, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import classNames from 'classnames'
@@ -10,6 +10,7 @@ import classNames from 'classnames'
 import './style.scss'
 import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
 import { OnSave } from '../../sidebar/timelineObj/timelineObjs/lib'
+import { observer } from 'mobx-react-lite'
 
 const POPOVER_ANCHOR_ORIGIN: {
 	vertical: 'bottom'
@@ -25,24 +26,22 @@ const POPOVER_TRANSFORM_ORIGIN: {
 	vertical: 'top',
 	horizontal: 'right',
 }
-
-export function AnalogInputOverridePicker({
-	objs,
-	path,
-	onSave,
-}: {
+export const AnalogInputOverridePicker: React.FC<{
 	objs: TSRTimelineObj[]
 	path: string
 	onSave: OnSave
-}): JSX.Element | null {
+}> = observer(function AnalogInputOverridePicker({ objs, path, onSave }) {
 	const elementId = useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
 	const analogInputOptions = useMemoComputedObject(() => {
-		const options: { [key: string]: string } = {}
+		const options: { [datastoreKey: string]: { label: string; fullIdentifier: string | null } } = {}
 
 		for (const [datastoreKey, setting] of Object.entries(store.projectStore.project.analogInputSettings)) {
-			options[setting.label] = datastoreKey
+			options[datastoreKey] = {
+				label: setting.label,
+				fullIdentifier: setting.fullIdentifier,
+			}
 		}
 
 		return options
@@ -84,14 +83,16 @@ export function AnalogInputOverridePicker({
 		}
 	}
 	const content = firstValue(objs, (obj) => (obj as TSRTimelineObjBase).content)
-
 	const open = Boolean(anchorEl)
-	const currentLink = content?.$references?.[path]?.datastoreKey
-	const currentAnalogInputLabelIdPair = useMemo(
-		() => Object.entries(analogInputOptions).find(([_, value]) => value === currentLink),
-		[analogInputOptions, currentLink]
-	)
-	const currentAnalogInputLabel = currentAnalogInputLabelIdPair?.[0] ?? ''
+
+	const linkedDatastoreKey = content?.$references?.[path]?.datastoreKey
+	const linkedAnalogInput = linkedDatastoreKey ? analogInputOptions[linkedDatastoreKey] : undefined
+
+	const analogInputValue = useMemoComputedValue(() => {
+		if (linkedAnalogInput?.fullIdentifier) {
+			return store.analogStore.getAnalogInput(linkedAnalogInput.fullIdentifier)?.value
+		} else return undefined
+	}, [linkedAnalogInput])
 
 	if (Object.keys(analogInputOptions).length === 0) {
 		return null
@@ -104,16 +105,21 @@ export function AnalogInputOverridePicker({
 	return (
 		<>
 			<InputAdornment position="end">
-				<Tooltip title={currentLink ? `Linked to: ${currentAnalogInputLabel}` : `Link to Analog Input`}>
-					<IconButton
-						aria-label="set analog input override"
-						edge="end"
-						onClick={onClick}
-						color={currentLink ? 'warning' : 'default'}
-						className={classNames('analog-input-picker', currentLink && 'linked')}
-					>
-						<HiLink />
-					</IconButton>
+				<Tooltip title={linkedDatastoreKey ? `Linked to: ${linkedAnalogInput?.label}` : `Link to Analog Input`}>
+					<>
+						{analogInputValue !== undefined && (
+							<span className="analog-input-picker__value">{analogInputValue}</span>
+						)}
+						<IconButton
+							aria-label="set analog input override"
+							edge="end"
+							onClick={onClick}
+							color={linkedDatastoreKey ? 'warning' : 'default'}
+							className={classNames('analog-input-picker', linkedDatastoreKey && 'linked')}
+						>
+							<HiLink />
+						</IconButton>
+					</>
 				</Tooltip>
 			</InputAdornment>
 			<Popover
@@ -126,19 +132,19 @@ export function AnalogInputOverridePicker({
 				className="analog-input-picker-popover"
 			>
 				<Typography sx={{ py: 1 }}>
-					{currentLink && (
+					{linkedDatastoreKey && (
 						<MenuItem onClick={onSelect} data-value="">
 							<HiOutlineX />
 							Remove Analog Input link
 						</MenuItem>
 					)}
-					{Object.entries(analogInputOptions).map(([label, value]) => (
-						<MenuItem key={value} data-value={value} onClick={onSelect}>
-							{label}
+					{Object.entries(analogInputOptions).map(([datastoreKey, option]) => (
+						<MenuItem key={datastoreKey} data-value={datastoreKey} onClick={onSelect}>
+							{option.label}
 						</MenuItem>
 					))}
 				</Typography>
 			</Popover>
 		</>
 	)
-}
+})
