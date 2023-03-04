@@ -10,6 +10,7 @@ import {
 	getDefaultDataFromSchema,
 } from 'graphics-data-definition'
 import React from 'react'
+import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { FloatInput } from '../../../inputs/FloatInput'
 import { IntInput } from '../../../inputs/IntInput'
@@ -75,6 +76,13 @@ export const basicPropertyNumber: React.FC<PropertyProps<GDDSchemaPropertyNumber
 					props.onSave()
 				}}
 				allowUndefined={true}
+				endAdornment={
+					<AnalogInputOverridePicker
+						objs={props.objs}
+						path={'data.' + props.fullPath.join('.')}
+						onSave={props.onSaveObj}
+					/>
+				}
 			/>
 		</EditProperty>
 	)
@@ -82,6 +90,7 @@ export const basicPropertyNumber: React.FC<PropertyProps<GDDSchemaPropertyNumber
 export const basicPropertyInteger: React.FC<PropertyProps<GDDSchemaPropertyInteger>> = (props) => {
 	const data = props.data ?? ''
 	const { label, description } = getEditPropertyMeta(props)
+
 	return (
 		<EditProperty className="gdd-edit-data__integer" {...props}>
 			<IntInput
@@ -94,6 +103,13 @@ export const basicPropertyInteger: React.FC<PropertyProps<GDDSchemaPropertyInteg
 					props.onSave()
 				}}
 				allowUndefined={true}
+				endAdornment={
+					<AnalogInputOverridePicker
+						objs={props.objs}
+						path={'data.' + props.fullPath.join('.')}
+						onSave={props.onSaveObj}
+					/>
+				}
 			/>
 		</EditProperty>
 	)
@@ -138,9 +154,12 @@ export const basicPropertyArray: React.FC<PropertyProps<GDDSchemaPropertyArray>>
 						return (
 							<tr className="gdd-edit-data__item" key={index}>
 								{componentAny({
+									objs: props.objs,
+									fullPath: [...props.fullPath, String(index)],
 									property: index,
 									schema: schema.items,
 									data: itemData,
+									onSaveObj: props.onSaveObj,
 									setData: itemSetData,
 									onSave: props.onSave,
 									inTableRow: true,
@@ -197,9 +216,12 @@ export const basicPropertyObject: React.FC<PropertyProps<GDDSchemaPropertyObject
 					}
 
 					return componentAny({
+						objs: props.objs,
+						fullPath: [...props.fullPath, subProperty],
 						property: subProperty,
 						schema: subSchema,
 						data: propData,
+						onSaveObj: props.onSaveObj,
 						setData: propSetData,
 						onSave: props.onSave,
 						inTableCell: true,
@@ -220,9 +242,12 @@ export const basicPropertyObject: React.FC<PropertyProps<GDDSchemaPropertyObject
 						return (
 							<div className="gdd-edit-data__property" key={subProperty}>
 								{componentAny({
+									objs: props.objs,
+									fullPath: [...props.fullPath, subProperty],
 									property: subProperty,
 									schema: subSchema,
 									data: propData,
+									onSaveObj: props.onSaveObj,
 									setData: propSetData,
 									onSave: props.onSave,
 								})}

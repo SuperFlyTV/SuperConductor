@@ -1,13 +1,20 @@
 import { GDDSchema } from 'graphics-data-definition'
 import _ from 'lodash'
 import React from 'react'
+import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { OnSave } from '../timelineObjs/lib'
 
 export function getBasicType(schemaType: string | string[]): string {
 	return Array.isArray(schemaType) ? schemaType[0] : schemaType
 }
 export interface ComponentAnyProps<T> {
+	objs: TSRTimelineObj[]
+	/** Full path to the editing property */
+	fullPath: string[]
+
 	schema: T
 	data: any
+	onSaveObj: OnSave
 	setData: (newData: any) => void
 	onSave: () => void
 

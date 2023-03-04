@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { GDDSchema } from 'graphics-data-definition'
+import { TSRTimelineObj } from 'timeline-state-resolver-types'
 
 import './style.scss'
 import { componentAny } from './componentAny'
 import { deepClone } from '@shared/lib'
+import { OnSave } from '../timelineObjs/lib'
 
 export const EditGDDData: React.FC<{
+	objs: TSRTimelineObj[]
+
 	schema: GDDSchema
 	data: any
-	onSaveData: (newData: any) => void
-}> = ({ schema, data, onSaveData }) => {
+	onSaveObj: OnSave
+	onSaveContentData: (newData: any) => void
+}> = ({ objs, schema, data, onSaveContentData, onSaveObj }) => {
 	// clone, since the data is edited internally:
 	const [currentData, setCurrentData] = useState(JSON.parse(JSON.stringify(data)))
 
@@ -21,17 +26,20 @@ export const EditGDDData: React.FC<{
 	const updateCurrentData = (data: any) => {
 		setCurrentData(deepClone(data))
 	}
-	const onBlur = () => {
-		onSaveData(currentData)
+	const onSave = () => {
+		onSaveContentData(currentData)
 	}
 
 	return (
 		<div className="gdd-edit-data">
 			{componentAny({
+				objs: objs,
+				fullPath: [],
+				onSaveObj,
 				schema: schema,
 				data: currentData,
 				setData: updateCurrentData,
-				onSave: onBlur,
+				onSave,
 				property: '',
 			})}
 		</div>

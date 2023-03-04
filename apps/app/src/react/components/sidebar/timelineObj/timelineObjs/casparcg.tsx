@@ -2204,9 +2204,11 @@ const CasparEditTemplateGDDData: React.FC<{
 			<div className="setting">
 				{
 					<EditGDDData
+						objs={objs}
 						data={contentData}
 						schema={gddEdit.schema}
-						onSaveData={(data: any) => {
+						onSaveObj={onSave}
+						onSaveContentData={(data: any) => {
 							// Make a diff, so that we don't overwrite the whole data object.
 							// This is useful when editing multiple objects and we only want to change _one_
 							// of the fields.
