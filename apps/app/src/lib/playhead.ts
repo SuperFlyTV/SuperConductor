@@ -183,7 +183,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 					// Pause it at groupPausedTime
 
 					section.pauseTime = action.pauseTime
-					saveSection(data.sections, section)
+					if (group.loop) section.repeating = true
 				}
 
 				saveSection(data.sections, section)
@@ -254,7 +254,6 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 					saveSection(data.sections, loopPartSection)
 				}
 			}
-
 			return data
 		}
 	} else {
@@ -495,14 +494,24 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 					playhead = currentPlayhead
 				}
 
-				const { sectionStartTime, sectionEndTime, nextSectionStartTime } = getSectionTimes(section, now)
+				const { sectionStartTime, sectionEndTime } = getSectionTimes(section, now)
+
+				// console.log(sectionStartTime, sectionEndTime)
 				if (sectionStartTime <= now && sectionEndTime > now) {
 					playData.sectionEndAction = section.endAction
-					playData.sectionEndTime = nextSectionStartTime
-					playData.sectionTimeToEnd = nextSectionStartTime ? nextSectionStartTime - now : null
-					if (section.pauseTime !== undefined) {
-						// When paused, there is only one (paused) section,
-						// So we need to figure out something clever here:
+
+					if (sectionEndTime !== Infinity) {
+						playData.sectionEndTime = sectionEndTime
+						playData.sectionTimeToEnd = playData.sectionEndTime - now
+					} else if (section.pauseTime !== undefined && section.duration) {
+						// Is paused
+						playData.sectionEndTime = null
+						playData.sectionTimeToEnd = section.duration - section.pauseTime
+					} else if (section.repeating && section.duration) {
+						// Is repeating
+						playData.sectionEndTime = sectionStartTime + section.duration
+						playData.sectionTimeToEnd = playData.sectionEndTime - now
+					} else {
 						playData.sectionEndTime = null
 						playData.sectionTimeToEnd = null
 					}
@@ -558,7 +567,7 @@ function getSectionTimes(
 	repeatAddition: number
 	nextSectionStartTime: number | null
 } {
-	const sectionEndTime = section.endTime ?? Infinity
+	let sectionEndTime = section.endTime ?? Infinity
 	let sectionStartTime = section.startTime
 
 	/** How much to add to times to get the times in the current repetition [ms] */
@@ -576,6 +585,7 @@ function getSectionTimes(
 	}
 
 	sectionStartTime += repeatAddition
+	sectionEndTime += repeatAddition
 
 	const nextSectionStartTime = section.duration === null ? null : sectionStartTime + section.duration
 
@@ -621,9 +631,12 @@ function getPlayheadForSection(
 		/** End time of the part (unix timestamp) */
 		const partEndTime = part.duration === null ? null : partStartTime + part.duration
 
-		const playheadTime = section.pauseTime !== undefined ? section.pauseTime : now - partStartTime
+		/** Time of playhead (0 is start of section) */
+		const playheadTime =
+			(section.pauseTime !== undefined ? section.pauseTime + section.startTime : now) - partStartTime
 
 		if (section.pauseTime === undefined) {
+			// Is not paused
 			if (partStartTime >= section.startTime && partStartTime < (section.endTime ?? Infinity)) {
 				addCountdown(playData, part.part, partStartTime - now)
 			}
@@ -675,8 +688,11 @@ export interface GroupPlayData {
 	/** Time(s) until parts will start playing: */
 	countdowns: { [partId: string]: number[] }
 
+	/** Time left to the end of the section content (is set even when paused) [ms] */
 	sectionTimeToEnd: number | null
+	/** Time when the section content ends next time (unix timestamp) [ms] */
 	sectionEndTime: number | null
+
 	sectionEndAction: SectionEndAction | null
 }
 export interface GroupPlayDataPlayhead {

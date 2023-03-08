@@ -53,6 +53,7 @@ import _ from 'lodash'
 import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
 import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
+import { useFrame } from '../../../lib/useFrame'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -990,13 +991,36 @@ const GroupTimeDisplay: React.FC<{ group: GroupGUI }> = ({ group }) => {
 	)
 }
 export const GroupEndTime = observer(function RemainingTime(props: { groupId: string; label: string }) {
-	const sectionEndTimeString = useMemoComputedValue(() => {
-		const playData = store.groupPlayDataStore.groups.get(props.groupId)
-		if (!playData) return null
+	const { sectionEndTime, sectionTimeToEnd } = useMemoComputedObject(
+		() => {
+			const playData = store.groupPlayDataStore.groups.get(props.groupId)
+			// if (!playData) return null
 
-		if (!playData.sectionEndTime) return null
-		return formatDateTime(playData.sectionEndTime, true, DISPLAY_DECIMAL_COUNT)
-	}, [props.groupId])
+			return {
+				sectionEndTime: playData?.sectionEndTime ?? null,
+				sectionTimeToEnd: playData?.sectionTimeToEnd ?? null,
+			}
+		},
+		[props.groupId],
+		true
+	)
+	const [sectionEndTimeString, setSectionEndTimeString] = useState('')
+
+	useFrame(
+		(nowTime: number) => {
+			let endTime: number | null
+			if (sectionEndTime) {
+				endTime = sectionEndTime
+			} else if (sectionTimeToEnd) {
+				endTime = sectionTimeToEnd + nowTime
+			} else {
+				endTime = null
+			}
+			if (!endTime) setSectionEndTimeString('')
+			else setSectionEndTimeString(formatDateTime(endTime, true, DISPLAY_DECIMAL_COUNT))
+		},
+		[sectionEndTime, sectionTimeToEnd]
+	)
 
 	if (!sectionEndTimeString) return null
 	if (!props.label) return null
@@ -1014,6 +1038,7 @@ export const GroupRemainingTime = observer(function RemainingTime(props: { group
 		if (!playData) return null
 
 		if (!playData.sectionTimeToEnd) return null
+
 		return formatDuration(playData.sectionTimeToEnd, 'smart')
 	}, [props.groupId])
 

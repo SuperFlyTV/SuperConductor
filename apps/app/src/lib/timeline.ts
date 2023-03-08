@@ -180,11 +180,14 @@ function sectionToTimelineObj(
 		id: `section_content_${id}`,
 		enable: {
 			start: 0,
-			duration: section.repeating
-				? section.duration
-				: section.endTime !== null
-				? section.endTime - section.startTime
-				: null,
+			duration:
+				section.pauseTime !== undefined
+					? null
+					: section.repeating
+					? section.duration
+					: section.endTime !== null
+					? section.endTime - section.startTime
+					: null,
 			repeating: section.repeating ? section.duration : undefined,
 		},
 		layer: `${layer}_content`,
@@ -199,18 +202,34 @@ function sectionToTimelineObj(
 	sectionObj.children?.push(sectionContentObj)
 
 	for (const part of section.parts) {
-		// Add the part to the timeline:
-		const obj: TimelineObjEmpty | null = partToTimelineObj(
-			makeUniqueId(part.part.id),
-			group,
-			part,
-			part.startTime - section.startTime,
-			section.pauseTime,
-			customPartContent
-		)
-		// We have to modify the ids so that they won't collide with the previous ones:
-		changeTimelineId(obj, (id) => getUniqueId(id))
-		sectionContentObj.children?.push(obj)
+		/** Start time in section (0 is start of section) */
+		const partStartTime = part.startTime - section.startTime
+		/** End time in section (0 is start of section) */
+		const partEndTime =
+			part.part.resolved.duration === null ? Infinity : partStartTime + part.part.resolved.duration
+
+		let usePart: boolean
+		if (section.pauseTime !== undefined) {
+			// Is paused
+			usePart = partStartTime <= section.pauseTime && partEndTime > section.pauseTime
+		} else {
+			usePart = true
+		}
+
+		if (usePart) {
+			// Add the part to the timeline:
+			const obj: TimelineObjEmpty | null = partToTimelineObj(
+				makeUniqueId(part.part.id),
+				group,
+				part,
+				partStartTime,
+				section.pauseTime,
+				customPartContent
+			)
+			// We have to modify the ids so that they won't collide with the previous ones:
+			changeTimelineId(obj, (id) => getUniqueId(id))
+			sectionContentObj.children?.push(obj)
+		}
 	}
 
 	if ((sectionContentObj.children?.length ?? 0) > 0) {
