@@ -26,11 +26,9 @@
 		}
 	}
 	.group-list__time-display {
-
 		display: flex;
 		// flex-direction: row;
 		justify-content: flex-end;
-
 
 		&__item {
 			margin: 0 0.5em;
@@ -45,11 +43,6 @@
 		&__value {
 			font-family: 'Barlow Semi Condensed';
 			font-weight: 400;
-
-			min-width: 3em;
-			display: inline-block;
-
 		}
-
 	}
 }

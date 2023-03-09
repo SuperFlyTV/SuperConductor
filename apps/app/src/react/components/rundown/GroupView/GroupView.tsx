@@ -54,6 +54,7 @@ import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
 import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import { useFrame } from '../../../lib/useFrame'
+import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -1027,8 +1028,10 @@ export const GroupEndTime = observer(function RemainingTime(props: { groupId: st
 
 	return (
 		<div className="group-list__time-display__item">
-			<span className="group-list__time-display__label">{props.label}</span>{' '}
-			<span className="group-list__time-display__value">{sectionEndTimeString}</span>
+			<AntiWiggle>
+				<span className="group-list__time-display__label">{props.label}</span>{' '}
+				<span className="group-list__time-display__value">{sectionEndTimeString}</span>
+			</AntiWiggle>
 		</div>
 	)
 })
@@ -1046,8 +1049,10 @@ export const GroupRemainingTime = observer(function RemainingTime(props: { group
 
 	return (
 		<div className="group-list__time-display__item">
-			<span className="group-list__time-display__label">REMAINING</span>{' '}
-			<span className="group-list__time-display__value">{countDownTimeString}</span>
+			<AntiWiggle>
+				<span className="group-list__time-display__label">REMAINING</span>{' '}
+				<span className="group-list__time-display__value">{countDownTimeString}</span>
+			</AntiWiggle>
 		</div>
 	)
 })

@@ -1,0 +1,13 @@
+.anti-wiggle {
+	display: inline-block;
+
+	position: relative;
+}
+.anti-wiggle__inner {
+	position: absolute;
+	top: 0;
+	left: 0;
+
+	// So that the content don't wrap in its container:
+	width: max-content;
+}
