@@ -42,22 +42,22 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 		const actions: PlayAction[] = []
 
 		let lastStopTime: number | undefined = undefined
-
-		const playingPartEntry = Object.entries(group.playout.playingParts)[0] // in oneAtATime mode, there is only one playing part
-		if (playingPartEntry) {
-			const [playingPartId, playingPart] = playingPartEntry
-
+		let userAction: PlayAction | undefined = undefined
+		for (const [playingPartId, playingPart] of Object.entries(group.playout.playingParts)) {
 			if (!playingPart.fromSchedule) {
-				actions.push({
-					time: playingPart.startTime,
-					pauseTime: playingPart.pauseTime,
-					stopTime: playingPart.stopTime,
-					partId: playingPartId,
-					fromSchedule: false,
-				})
+				if (!userAction || userAction.time < playingPart.startTime) {
+					userAction = {
+						time: playingPart.startTime,
+						pauseTime: playingPart.pauseTime,
+						stopTime: playingPart.stopTime,
+						partId: playingPartId,
+						fromSchedule: false,
+					}
+				}
 			}
-			if (playingPart.stopTime) lastStopTime = playingPart.stopTime
+			if (playingPart.stopTime && playingPart.stopTime > (lastStopTime ?? 0)) lastStopTime = playingPart.stopTime
 		}
+		if (userAction) actions.push(userAction)
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
 			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
@@ -254,6 +254,7 @@ export function prepareGroupPlayData(group: Group): GroupPreparedPlayData | null
 					saveSection(data.sections, loopPartSection)
 				}
 			}
+
 			return data
 		}
 	} else {
@@ -496,7 +497,6 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 
 				const { sectionStartTime, sectionEndTime } = getSectionTimes(section, now)
 
-				// console.log(sectionStartTime, sectionEndTime)
 				if (sectionStartTime <= now && sectionEndTime > now) {
 					playData.sectionEndAction = section.endAction
 
@@ -573,12 +573,14 @@ function getSectionTimes(
 	/** How much to add to times to get the times in the current repetition [ms] */
 	let repeatAddition = 0
 
-	if (section.repeating && section.duration !== null && now >= section.startTime) {
+	const nowTime = section.pauseTime ?? now
+
+	if (section.repeating && section.duration !== null && nowTime >= section.startTime) {
 		/** A value that goes from 0 - repeating.duration */
-		const nowInRepeating = (now - section.startTime) % (section.duration ?? Infinity)
+		const nowInRepeating = (nowTime - section.startTime) % (section.duration ?? Infinity)
 
 		/** When the current iteration of the repeating started (unix timestamp) */
-		const currentRepeatingStartTime = now - nowInRepeating
+		const currentRepeatingStartTime = nowTime - nowInRepeating
 
 		/** How much to add to times to get the times in the current repetition [ms] */
 		repeatAddition = Math.max(0, currentRepeatingStartTime - section.startTime)
