@@ -552,11 +552,14 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 	return playData
 }
 /** Add a coundown until a Part */
-function addCountdown(playData: GroupPlayData, part: Part, duration: number) {
-	if (duration <= 0) return
+function addCountdown(playData: GroupPlayData, part: Part, timestamp: number, now: number) {
+	if (timestamp <= now) return
 
 	if (!playData.countdowns[part.id]) playData.countdowns[part.id] = []
-	playData.countdowns[part.id].push(duration)
+	playData.countdowns[part.id].push({
+		duration: timestamp - now,
+		timestamp: timestamp,
+	})
 }
 function getSectionTimes(
 	section: GroupPreparedPlayDataSection,
@@ -640,14 +643,14 @@ function getPlayheadForSection(
 		if (section.pauseTime === undefined) {
 			// Is not paused
 			if (partStartTime >= section.startTime && partStartTime < (section.endTime ?? Infinity)) {
-				addCountdown(playData, part.part, partStartTime - now)
+				addCountdown(playData, part.part, partStartTime, now)
 			}
 
 			if (section.repeating && section.duration !== null) {
 				// Also add for the next repeating loop:
 				const nextPartStartTime = partStartTime + section.duration
 				if (nextPartStartTime >= section.startTime && nextPartStartTime < (section.endTime ?? Infinity)) {
-					addCountdown(playData, part.part, nextPartStartTime - now)
+					addCountdown(playData, part.part, nextPartStartTime, now)
 				}
 			}
 		}
@@ -688,7 +691,12 @@ export interface GroupPlayData {
 	}
 
 	/** Time(s) until parts will start playing: */
-	countdowns: { [partId: string]: number[] }
+	countdowns: {
+		[partId: string]: {
+			duration: number
+			timestamp: number
+		}[]
+	}
 
 	/** Time left to the end of the section content (is set even when paused) [ms] */
 	sectionTimeToEnd: number | null

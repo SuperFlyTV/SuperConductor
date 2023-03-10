@@ -1063,7 +1063,7 @@ export const PartView: React.FC<{
 							<div className="part__time__duration">
 								TOTAL{' '}
 								<span className="part__time__duration__value">
-									{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
+									{formatDuration(part.resolved.duration, 'smart')}
 								</span>
 							</div>
 						</>

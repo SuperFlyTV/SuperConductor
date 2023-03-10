@@ -2012,6 +2012,9 @@ export class IPCServer
 				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
 			}, 1000)
 		}
+		if (arg.guiDecimalCount !== undefined) {
+			appData.guiDecimalCount = arg.guiDecimalCount
+		}
 
 		this._saveUpdates({ appData })
 	}

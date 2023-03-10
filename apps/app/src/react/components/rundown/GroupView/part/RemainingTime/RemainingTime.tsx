@@ -19,7 +19,7 @@ export const RemainingTime = observer(function RemainingTime(props: PropsType) {
 
 		const countDownTime = playhead.partDuration - playhead.playheadTime
 		if (!countDownTime) return null
-		return formatDuration(countDownTime, DISPLAY_DECIMAL_COUNT)
+		return formatDuration(countDownTime, DISPLAY_DECIMAL_COUNT, true)
 	}, [props.groupId, props.partId])
 
 	if (!countDownTimeString) return null

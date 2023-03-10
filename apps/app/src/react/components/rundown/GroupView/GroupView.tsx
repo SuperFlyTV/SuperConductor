@@ -1030,7 +1030,7 @@ export const GroupRemainingTime = observer(function RemainingTime(props: { group
 
 		if (!playData.sectionTimeToEnd) return null
 
-		return formatDuration(playData.sectionTimeToEnd, 'smart')
+		return formatDuration(playData.sectionTimeToEnd, DISPLAY_DECIMAL_COUNT, true)
 	}, [props.group.id])
 
 	const durationTimeString = useMemoComputedValue(() => {
@@ -1090,7 +1090,7 @@ const GroupCountDown: React.FC<{
 						.join('\n') + (nextCoundowns.length > 10 ? '\n...' : '')
 				}
 			>
-				Scheduled start: {formatDuration(nextCoundowns[0].duration, 'smart')}
+				Scheduled start: {formatDuration(nextCoundowns[0].duration, DISPLAY_DECIMAL_COUNT, true)}
 			</div>
 		</div>
 	)
