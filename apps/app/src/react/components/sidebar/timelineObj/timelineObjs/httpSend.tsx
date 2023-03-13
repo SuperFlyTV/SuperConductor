@@ -48,7 +48,7 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny
 					<>-- Different values -- </>
 				) : (
 					<>
-						{Object.entries(firstObj.content.params).map(([key, value], index) => (
+						{Object.entries(firstObj.content.params || {}).map(([key, value], index) => (
 							<React.Fragment key={index}>
 								<Stack direction="row" justifyContent="space-between">
 									<Typography variant="body2">Param #{index}</Typography>

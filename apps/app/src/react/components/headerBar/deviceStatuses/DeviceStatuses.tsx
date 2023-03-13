@@ -121,7 +121,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 						<ConnectionStatus
 							key={`${peripheralId}`}
 							label={peripheral.info.name}
-							tooltip={peripheral.status.connected ? 'Disconnected' : ''}
+							tooltip={peripheral.status.connected ? '' : 'Disconnected'}
 							ok={bridgeIsConnected && peripheral.status.connected}
 							open={
 								submenuPopover?.bridgeId === peripheral.bridgeId &&
