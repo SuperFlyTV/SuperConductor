@@ -17,7 +17,7 @@ const CURRENT_VERSION = require('@shared/api/package.json').version
 
 const allowPackages = [
 	`buffers@0.1.1`,
-	`caniuse-lite@1.0.30001301`,
+	`caniuse-lite@1.0.30001465`,
 	`cycle@1.0.3`,
 	`truncate-utf8-bytes@1.0.2`,
 	`utf8-byte-length@1.0.4`,
