@@ -10,7 +10,7 @@ module.exports = {
 	env: {
 		node: true,
 	},
-	ignorePatterns: ['**/dist/**/*'],
+	ignorePatterns: ['**/dist/**/*', '**/__tests__/**/*'],
 	rules: {
 		'no-console': 'warn',
 		'node/no-unpublished-import': [

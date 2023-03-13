@@ -1,4 +1,4 @@
-import { getGroupPlayData, GroupPlayData } from '../../lib/playhead'
+import { getGroupPlayData, GroupPlayData } from '../../lib/playout/groupPlayData'
 import { makeAutoObservable } from 'mobx'
 import _ from 'lodash'
 import { IPCClient } from '../api/IPCClient'

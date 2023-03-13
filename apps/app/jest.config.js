@@ -1,3 +1,4 @@
+// eslint-disable-next-line node/no-unpublished-require
 const base = require('../../jest.config.base')
 const packageJson = require('./package')
 

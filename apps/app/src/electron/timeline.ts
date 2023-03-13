@@ -1,4 +1,4 @@
-import { prepareGroupPlayData } from '../lib/playhead'
+import { prepareGroupPlayData } from '../lib/playout/preparedGroupPlayData'
 import { Group } from '../models/rundown/Group'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { TSRTimeline } from 'timeline-state-resolver-types'

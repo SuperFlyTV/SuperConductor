@@ -3,7 +3,7 @@ import { Part, PartBase } from '../models/rundown/Part'
 import { ResolvedTimeline } from 'superfly-timeline'
 import { Rundown, RundownBase } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getGroupPlayData, GroupPlayData } from './playhead'
+import { getGroupPlayData, GroupPlayData } from './playout/groupPlayData'
 import { Project } from '../models/project/Project'
 import {
 	DeviceOptionsAny,
@@ -39,6 +39,13 @@ export const findPartInRundown = (rundown: Rundown, partId: string): { part: Par
 	}
 	return undefined
 }
+export function findPartInGroup(group: Group, partId: string): Part | undefined {
+	const part = findPart(group, partId)
+	if (!part) return undefined
+
+	return part
+}
+
 export const findTimelineObj = (part: Part, timelineObjId: string): TimelineObj | undefined => {
 	for (const timelineObj of part.timeline) {
 		if (timelineObj.obj.id === timelineObjId) {
@@ -164,8 +171,8 @@ export function allowMovingPartIntoGroup(
  * Update Group playing properties, so that they reflect the current playing status
  * This should not change anything for playout, but is useful to do before making changes, such as enabling loop etc..
  */
-export function updateGroupPlayingParts(group: Group): void {
-	const now = Date.now()
+export function updateGroupPlayingParts(group: Group, now?: number): void {
+	if (!now) now = Date.now()
 	const playData = getGroupPlayData(group.preparedPlayData, now)
 
 	const prevPlayingParts = group.playout.playingParts
