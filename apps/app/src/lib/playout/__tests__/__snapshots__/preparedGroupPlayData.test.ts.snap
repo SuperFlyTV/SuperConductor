@@ -68,7 +68,10 @@ exports[`prepareGroupPlayData Default Group Play Looping Part A when stopped 2`]
   "anyPartIsPlaying": true,
   "countdowns": {
     "partA": [
-      999,
+      {
+        "duration": 999,
+        "timestamp": 2000,
+      },
     ],
   },
   "groupIsPlaying": true,

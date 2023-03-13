@@ -48,22 +48,22 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 		const actions: PlayAction[] = []
 
 		let lastStopTime: number | undefined = undefined
-
-		const playingPartEntry = Object.entries(group.playout.playingParts)[0] // in oneAtATime mode, there is only one playing part
-		if (playingPartEntry) {
-			const [playingPartId, playingPart] = playingPartEntry
-
+		let userAction: PlayAction | undefined = undefined
+		for (const [playingPartId, playingPart] of Object.entries(group.playout.playingParts)) {
 			if (!playingPart.fromSchedule) {
-				actions.push({
-					time: playingPart.startTime,
-					pauseTime: playingPart.pauseTime,
-					stopTime: playingPart.stopTime,
-					partId: playingPartId,
-					fromSchedule: false,
-				})
+				if (!userAction || userAction.time < playingPart.startTime) {
+					userAction = {
+						time: playingPart.startTime,
+						pauseTime: playingPart.pauseTime,
+						stopTime: playingPart.stopTime,
+						partId: playingPartId,
+						fromSchedule: false,
+					}
+				}
 			}
-			if (playingPart.stopTime) lastStopTime = playingPart.stopTime
+			if (playingPart.stopTime && playingPart.stopTime > (lastStopTime ?? 0)) lastStopTime = playingPart.stopTime
 		}
+		if (userAction) actions.push(userAction)
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
 			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
@@ -259,6 +259,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 					saveSection(data.sections, loopPartSection)
 				}
 			}
+
 			return data
 		}
 	} else {

@@ -94,7 +94,41 @@ test('formatDuration', () => {
 	expect(formatDuration(1234, 0)).toBe('1')
 	expect(formatDuration(1234, 1)).toBe('1.2')
 	expect(formatDuration(1234, 2)).toBe('1.23')
+	expect(formatDuration(1234, 3)).toBe('1.234')
 	expect(formatDuration(1234, 4)).toBe('1.234')
+
+	expect(formatDuration(-1234, 3)).toBe('-1.234')
+	expect(formatDuration(-1234, 2)).toBe('-1.23')
+	expect(formatDuration(-1234, 1)).toBe('-1.2')
+	expect(formatDuration(-1234, 0)).toBe('-1')
+
+	expect(formatDuration(3661500, 'smart')).toBe('1:01:01')
+	expect(formatDuration(3661000, 'smart')).toBe('1:01:01')
+	expect(formatDuration(12345, 'smart')).toBe('12.3')
+	expect(formatDuration(12000, 'smart')).toBe('12')
+
+	expect(formatDuration(1001, 0, true)).toBe('2')
+	expect(formatDuration(1000, 0, true)).toBe('1')
+	expect(formatDuration(999, 0, true)).toBe('1')
+	expect(formatDuration(1, 0, true)).toBe('1')
+	expect(formatDuration(0, 0, true)).toBe('0')
+	expect(formatDuration(-1, 0, true)).toBe('0')
+	expect(formatDuration(-1543, 0, true)).toBe('-1')
+	expect(formatDuration(-1543, 1, true)).toBe('-1.5')
+	expect(formatDuration(-1543, 2, true)).toBe('-1.54')
+	expect(formatDuration(-1543, 3, true)).toBe('-1.543')
+
+	expect(formatDuration(1001, 1, true)).toBe('1.1')
+	expect(formatDuration(1000, 1, true)).toBe('1.0')
+	expect(formatDuration(999, 1, true)).toBe('1.0')
+	expect(formatDuration(1, 1, true)).toBe('0.1')
+	expect(formatDuration(0, 1, true)).toBe('0.0')
+
+	expect(formatDuration(1001, 2, true)).toBe('1.01')
+	expect(formatDuration(1000, 2, true)).toBe('1.00')
+	expect(formatDuration(999, 2, true)).toBe('1.00')
+	expect(formatDuration(1, 2, true)).toBe('0.01')
+	expect(formatDuration(0, 2, true)).toBe('0.00')
 })
 
 test('dateTimeAdvance', () => {

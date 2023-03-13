@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-/** Execute callback on every frame */
-export function useFrame(fcn: (nowTime: number) => void, deps: React.DependencyList): void {
+/**
+ * Execute callback on every frame
+ * Callback function returns true to evaluate again on next frame. If it return false, the computation will pause until next deps change.
+ */
+export function useFrame(fcn: (nowTime: number) => boolean, deps: React.DependencyList): void {
 	const [time, setTime] = useState(0)
 
 	const isRunning = useRef(true)
@@ -26,6 +29,7 @@ export function useFrame(fcn: (nowTime: number) => void, deps: React.DependencyL
 	}, deps)
 
 	useEffect(() => {
-		fcn(time)
+		const continueEvaluations = fcn(time)
+		if (!continueEvaluations) isRunning.current = false
 	}, [fcn, time])
 }

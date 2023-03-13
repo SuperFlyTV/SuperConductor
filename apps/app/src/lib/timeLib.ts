@@ -149,6 +149,7 @@ function parseMilliseconds(ms: string): number {
 	return Math.floor(parseFloat(`0.${ms}`) * 1000)
 }
 export function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: number } {
+	ms = Math.abs(ms)
 	const h = Math.floor(ms / 3600000)
 	ms -= h * 3600000
 
@@ -161,27 +162,51 @@ export function millisecondsToTime(ms: number): { h: number; m: number; s: numbe
 	return { h, m, s, ms }
 }
 
-export function formatDuration(inputMs: number | null | undefined, decimalCount?: number | 'smart'): string {
+export function formatDuration(
+	inputMs: number | null | undefined,
+	decimalCount?: number | 'smart',
+	/** Set to true if the duration is used in a countdown (this causes it to turns to "0" at 0 ) */
+	isCountDown?: boolean
+): string {
 	if (inputMs === null) return '∞'
 	if (inputMs === undefined) return ''
 
+	let omitZeroMs = false
+	if (decimalCount === 'smart') {
+		if (inputMs > 60000) {
+			decimalCount = 0
+		} else {
+			omitZeroMs = true
+			decimalCount = 1
+		}
+	}
+
+	if (isCountDown && decimalCount !== undefined && inputMs > 0) {
+		// Special case: when displaying countdowns, "00:00" should display at time 0, not 0.999
+		if (decimalCount === 0) inputMs += 999
+		if (decimalCount === 1) inputMs += 99
+		if (decimalCount === 2) inputMs += 9
+	}
+
+	let sign = Math.sign(inputMs) < 0 ? '-' : ''
 	const { h, m: min, s: sec, ms } = millisecondsToTime(inputMs)
 
 	let msStr = !ms ? '000' : ms < 10 ? `00${ms}` : ms < 100 ? `0${ms}` : `${ms}` // 001 | 012 | 123
 
-	if (decimalCount === 'smart') {
-		decimalCount = inputMs > 60000 ? 0 : 1
-	}
 	if (decimalCount !== undefined) {
 		msStr = msStr.slice(0, decimalCount)
 	} else {
 		msStr = msStr.replace(/0+$/, '') // trim trailing zeros
 	}
+	if (omitZeroMs && msStr.match(/^0*$/)) msStr = '' // msStr is only zeroes, so omit them
 	if (msStr) msStr = '.' + msStr
 
-	if (h) return `${h}:${pad(min)}:${pad(sec)}` + msStr
-	if (min) return `${min}:${pad(sec)}` + msStr
-	return `${sec}` + msStr
+	if (h) return `${sign}${h}:${pad(min)}:${pad(sec)}${msStr}`
+	if (min) return `${sign}${min}:${pad(sec)}${msStr}`
+
+	if (sec === 0 && !msStr) sign = '' // Don't show "-0"
+
+	return `${sign}${sec}${msStr}`
 }
 function pad(n: number, size = 2): string {
 	let str = `${n}`

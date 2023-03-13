@@ -932,26 +932,53 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 	)
 }
 const GroupTimeDisplay: React.FC<{ group: GroupGUI }> = ({ group }) => {
-	const { groupIsPlaying, sectionEndAction } = useMemoComputedObject(
+	if (!group.oneAtATime) return null
+	return (
+		<div className="group-list__time-display">
+			<GroupEndTime groupId={group.id} />
+			<GroupRemainingTime group={group} />
+		</div>
+	)
+}
+export const GroupEndTime = observer(function RemainingTime(props: { groupId: string }) {
+	const { sectionEndTime, sectionTimeToEnd, sectionEndAction, groupIsPlaying } = useMemoComputedObject(
 		() => {
-			const playData = store.groupPlayDataStore.groups.get(group.id)
+			const playData = store.groupPlayDataStore.groups.get(props.groupId)
 
-			if (!playData) {
-				return {
-					groupIsPlaying: false,
-					sectionEndAction: null,
-				}
-			}
 			return {
-				groupIsPlaying: playData.groupIsPlaying,
-				sectionEndAction: playData.sectionEndAction,
+				groupIsPlaying: playData?.groupIsPlaying,
+				sectionEndTime: playData?.sectionEndTime ?? null,
+				sectionTimeToEnd: playData?.sectionTimeToEnd ?? null,
+				sectionEndAction: playData?.sectionEndAction,
 			}
 		},
-		[group.id],
+		[props.groupId],
 		true
 	)
+	const [sectionEndTimeString, setSectionEndTimeString] = useState('')
 
-	if (!groupIsPlaying) return null
+	useFrame(
+		(nowTime: number) => {
+			if (!groupIsPlaying) return false // Stop evaluating each frame
+
+			let endTime: number | null
+			if (sectionEndTime) {
+				endTime = sectionEndTime
+			} else if (sectionTimeToEnd) {
+				endTime = sectionTimeToEnd + nowTime
+			} else {
+				endTime = null
+			}
+			if (!endTime) {
+				setSectionEndTimeString('')
+				return false // Stop evaluating each frame
+			} else {
+				setSectionEndTimeString(formatDateTime(endTime, true, DISPLAY_DECIMAL_COUNT))
+				return true
+			}
+		},
+		[groupIsPlaying, sectionEndTime, sectionTimeToEnd]
+	)
 
 	let label: string
 	switch (sectionEndAction) {
@@ -984,74 +1011,60 @@ const GroupTimeDisplay: React.FC<{ group: GroupGUI }> = ({ group }) => {
 		}
 	}
 
-	return (
-		<div className="group-list__time-display">
-			<GroupRemainingTime groupId={group.id} />
-			<GroupEndTime groupId={group.id} label={label} />
-		</div>
-	)
-}
-export const GroupEndTime = observer(function RemainingTime(props: { groupId: string; label: string }) {
-	const { sectionEndTime, sectionTimeToEnd } = useMemoComputedObject(
-		() => {
-			const playData = store.groupPlayDataStore.groups.get(props.groupId)
-			// if (!playData) return null
-
-			return {
-				sectionEndTime: playData?.sectionEndTime ?? null,
-				sectionTimeToEnd: playData?.sectionTimeToEnd ?? null,
-			}
-		},
-		[props.groupId],
-		true
-	)
-	const [sectionEndTimeString, setSectionEndTimeString] = useState('')
-
-	useFrame(
-		(nowTime: number) => {
-			let endTime: number | null
-			if (sectionEndTime) {
-				endTime = sectionEndTime
-			} else if (sectionTimeToEnd) {
-				endTime = sectionTimeToEnd + nowTime
-			} else {
-				endTime = null
-			}
-			if (!endTime) setSectionEndTimeString('')
-			else setSectionEndTimeString(formatDateTime(endTime, true, DISPLAY_DECIMAL_COUNT))
-		},
-		[sectionEndTime, sectionTimeToEnd]
-	)
-
 	if (!sectionEndTimeString) return null
-	if (!props.label) return null
+	if (!label) return null
 
 	return (
 		<div className="group-list__time-display__item">
-			<AntiWiggle>
-				<span className="group-list__time-display__label">{props.label}</span>{' '}
+			<AntiWiggle deps={[label]}>
+				<span className="group-list__time-display__label">{label}</span>{' '}
 				<span className="group-list__time-display__value">{sectionEndTimeString}</span>
 			</AntiWiggle>
 		</div>
 	)
 })
-export const GroupRemainingTime = observer(function RemainingTime(props: { groupId: string }) {
+export const GroupRemainingTime = observer(function RemainingTime(props: { group: GroupGUI }) {
 	const countDownTimeString = useMemoComputedValue(() => {
-		const playData = store.groupPlayDataStore.groups.get(props.groupId)
+		const playData = store.groupPlayDataStore.groups.get(props.group.id)
 		if (!playData) return null
 
 		if (!playData.sectionTimeToEnd) return null
 
-		return formatDuration(playData.sectionTimeToEnd, 'smart')
-	}, [props.groupId])
+		return formatDuration(playData.sectionTimeToEnd, DISPLAY_DECIMAL_COUNT, true)
+	}, [props.group.id])
 
-	if (!countDownTimeString) return null
+	const durationTimeString = useMemoComputedValue(() => {
+		const parts = store.rundownsStore.getGroupParts(props.group.id)
+
+		let duration: number | null = 0
+		for (const part of parts) {
+			if (duration === null) break
+			if (part.resolved.duration === null) duration = null
+			else duration += part.resolved.duration
+		}
+
+		if (duration === null) return '∞'
+
+		return formatDuration(duration, 'smart')
+	}, [props.group.id])
+
+	let label = ''
+	let displayString = ''
+	if (countDownTimeString) {
+		label = 'REMAINING'
+		displayString = countDownTimeString
+	} else if (durationTimeString) {
+		label = 'TOTAL DURATION'
+		displayString = durationTimeString
+	}
+	if (!label) return null
+	if (!displayString) return null
 
 	return (
 		<div className="group-list__time-display__item">
-			<AntiWiggle>
-				<span className="group-list__time-display__label">REMAINING</span>{' '}
-				<span className="group-list__time-display__value">{countDownTimeString}</span>
+			<AntiWiggle deps={[label]}>
+				<span className="group-list__time-display__label">{label}</span>{' '}
+				<span className="group-list__time-display__value">{displayString}</span>
 			</AntiWiggle>
 		</div>
 	)
@@ -1077,7 +1090,7 @@ const GroupCountDown: React.FC<{
 						.join('\n') + (nextCoundowns.length > 10 ? '\n...' : '')
 				}
 			>
-				Scheduled start: {formatDuration(nextCoundowns[0].duration, 'smart')}
+				Scheduled start: {formatDuration(nextCoundowns[0].duration, DISPLAY_DECIMAL_COUNT, true)}
 			</div>
 		</div>
 	)

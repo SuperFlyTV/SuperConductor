@@ -215,7 +215,12 @@ describe('prepareGroupPlayData', () => {
 					fromSchedule: false,
 				})
 				expect(Object.keys(playData.countdowns)).toHaveLength(1)
-				expect(playData.countdowns['partA']).toMatchObject([999])
+				expect(playData.countdowns['partA']).toMatchObject([
+					{
+						duration: 999,
+						timestamp: 2000,
+					},
+				])
 
 				expect(playData).toMatchSnapshot()
 			}

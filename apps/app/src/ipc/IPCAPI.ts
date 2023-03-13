@@ -250,4 +250,4 @@ export interface SystemMessageOptions {
 	persist?: boolean
 	displayRestartButton?: boolean
 }
-export type UpdateAppDataOptions = Pick<AppData, 'preReleaseAutoUpdate'>
+export type UpdateAppDataOptions = Pick<AppData, 'preReleaseAutoUpdate' | 'guiDecimalCount'>

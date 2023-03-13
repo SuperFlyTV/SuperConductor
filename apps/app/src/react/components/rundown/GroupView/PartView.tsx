@@ -45,7 +45,6 @@ import { RundownTriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
 import { TimelineObjectMove } from '../../../mobx/GuiStore'
 import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
 import { formatDuration } from '../../../../lib/timeLib'
-import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import VisibilitySensor from 'react-visibility-sensor'
 import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { TrashBtn } from '../../inputs/TrashBtn'
@@ -1063,7 +1062,7 @@ export const PartView: React.FC<{
 							<div className="part__time__duration">
 								TOTAL{' '}
 								<span className="part__time__duration__value">
-									{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
+									{formatDuration(part.resolved.duration, 'smart')}
 								</span>
 							</div>
 						</>

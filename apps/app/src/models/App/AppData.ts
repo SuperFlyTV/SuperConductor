@@ -10,7 +10,13 @@ export interface AppData {
 	}
 	/** Which version of the user agreement the user has agreed to  */
 	userAgreement?: string
+
+	/** If the application should update to the latest pre-release. Defaults to false */
 	preReleaseAutoUpdate?: boolean
+
+	/** How many decimals to use in the GUI, defaults to 0 */
+	guiDecimalCount?: number
+
 	project: {
 		id: string
 	}
