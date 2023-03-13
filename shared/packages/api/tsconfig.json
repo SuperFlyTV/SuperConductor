@@ -3,6 +3,11 @@
 	"compilerOptions": {
 		"rootDir": "src",
 		"outDir": "dist",
-		"lib": ["es6"]
-	}
+		"lib": [
+			"es6"
+		]
+	},
+	"exclude": [
+		"src/**/__tests__/**/*"
+	]
 }

@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint:
-    name: Typecheck and Lint
+    name: Typecheck, Lint & Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,10 +34,12 @@ jobs:
       - name: Prepare Environment
         run: |
           yarn setup
-      - name: Run typecheck and linter
-        run: |
-          yarn build
-          yarn lint
+      - name: Typecheck
+        run: yarn build
+      - name: Lint
+        run: yarn lint
+      - name: Test
+        run: yarn test
       - name: Run license check
         run: |
           yarn license-validate

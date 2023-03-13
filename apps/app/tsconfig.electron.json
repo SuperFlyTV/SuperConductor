@@ -1,4 +1,9 @@
 {
 	"extends": "./tsconfig.json",
-	"exclude": ["dist", "src/renderer.tsx", "src/react/**/*"]
+	"exclude": [
+		"dist",
+		"src/renderer.tsx",
+		"src/react/**/*",
+		"src/**/__tests__/**/*"
+	]
 }
