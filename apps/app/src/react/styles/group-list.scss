@@ -23,6 +23,12 @@
 			height: calc(100vh - 20rem);
 
 			margin-top: -2rem;
+
+
+            &:first-child {
+                // Fix for when list is empty:
+                margin-top: 0;
+			}
 		}
 	}
 	.group-list__time-display {
