@@ -63,14 +63,14 @@ export const LayerName: React.FC<{
 		selectedDeviceStatus = appStore.allDeviceStatuses[mapping.deviceId]
 	}
 
-	const selectedItem: DropdownItem = { id: layerId, label: name, deviceStatus: selectedDeviceStatus }
+	const selectedLayer: DropdownLayer = { layerId: layerId, label: name, deviceStatus: selectedDeviceStatus }
 
-	const otherItems = useMemoComputedObject(
+	const otherLayers = useMemoComputedObject(
 		() => {
 			const partTimeline = store.rundownsStore.getPartTimeline(partId)
 			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			const otherItems0: DropdownItem[] = Object.entries(mappings)
+			const otherLayers0: DropdownLayer[] = Object.entries(mappings)
 				.filter(([mappingId, mapping]) => {
 					// Remove used layer from the dropdown list
 					const isUsedLayer = mappingId === layerId
@@ -91,16 +91,16 @@ export const LayerName: React.FC<{
 				.map(([layerId, mapping]) => {
 					const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
 
-					return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
+					return { layerId: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
 				})
 
-			otherItems0.push({
-				id: 'editMappings',
+			otherLayers0.push({
+				layerId: 'editMappings',
 				label: 'Edit Mappings',
 				className: 'editMappings',
 				deviceStatus: null,
 			})
-			return otherItems0
+			return otherLayers0
 		},
 		[partId, mappings],
 		true
@@ -110,8 +110,8 @@ export const LayerName: React.FC<{
 		<div className={classNames('layer-name', { warning: !mapping })}>
 			{
 				<LayerNamesDropdown
-					selectedItem={selectedItem}
-					otherItems={otherItems}
+					selectedLayer={selectedLayer}
+					otherLayers={otherLayers}
 					exists={!!mapping}
 					disabled={locked}
 					onSelect={(id: string) => {
@@ -147,16 +147,16 @@ export function LayerNameEmpty(): JSX.Element {
 	return <div className="layer-name" />
 }
 
-interface DropdownItem {
-	id: string
+interface DropdownLayer {
+	layerId: string
 	label: string
 	className?: string
 	deviceStatus: BridgeDevice | undefined | null
 }
 
 const LayerNamesDropdown: React.FC<{
-	selectedItem: DropdownItem
-	otherItems: DropdownItem[]
+	selectedLayer: DropdownLayer
+	otherLayers: DropdownLayer[]
 	exists: boolean
 	onSelect: (id: string) => void
 	onCreateMissingMapping: (id: string) => void
@@ -167,12 +167,12 @@ const LayerNamesDropdown: React.FC<{
 	return (
 		<div className={classNames('layer-names-dropdown', { open: isOpen, selectable: !props.disabled })}>
 			<div
-				className="selected-item"
+				className="selected-layer"
 				onClick={() => {
 					setOpen(props.disabled ? false : !isOpen)
 				}}
 			>
-				<div className="item">
+				<div className="layer">
 					{!props.exists && (
 						<div
 							className="warning-icon"
@@ -180,25 +180,25 @@ const LayerNamesDropdown: React.FC<{
 							onClick={(e) => {
 								e.preventDefault()
 								e.stopPropagation()
-								props.onCreateMissingMapping(props.selectedItem.id)
+								props.onCreateMissingMapping(props.selectedLayer.layerId)
 							}}
 						>
 							<MdWarningAmber size={18} />
 						</div>
 					)}
-					<div className="item-label">{props.selectedItem.label}</div>
+					<div className="layer-label">{props.selectedLayer.label}</div>
 
-					{props.selectedItem.deviceStatus === undefined && (
+					{props.selectedLayer.deviceStatus === undefined && (
 						<div className="connection-status__dot" title="Device not found"></div>
 					)}
-					{props.selectedItem.deviceStatus?.ok === false && (
+					{props.selectedLayer.deviceStatus?.ok === false && (
 						<div className="connection-status__dot" title="There is an issue with the device"></div>
 					)}
 				</div>
 			</div>
 			{!props.disabled && (
-				<DropdownOtherItems
-					otherItems={props.otherItems}
+				<DropdownOtherLayers
+					otherLayers={props.otherLayers}
 					onSelect={(id: string) => {
 						props.onSelect(id)
 						setOpen(false)
@@ -210,8 +210,8 @@ const LayerNamesDropdown: React.FC<{
 	)
 }
 
-const DropdownOtherItems: React.FC<{
-	otherItems: DropdownItem[]
+const DropdownOtherLayers: React.FC<{
+	otherLayers: DropdownLayer[]
 	onSelect: (id: string) => void
 	onClickOutside: () => void
 }> = (props) => {
@@ -232,16 +232,16 @@ const DropdownOtherItems: React.FC<{
 	}, [props])
 
 	return (
-		<div className="other-items">
-			{props.otherItems.map((item) => (
+		<div className="other-layers">
+			{props.otherLayers.map((layer) => (
 				<div
-					key={item.id}
-					className={'item' + (item.className ? ' ' + item.className : '')}
+					key={layer.layerId}
+					className={'layer' + (layer.className ? ' ' + layer.className : '')}
 					onClick={() => {
-						props.onSelect(item.id)
+						props.onSelect(layer.layerId)
 					}}
 				>
-					<div className="item-label">{item.label}</div>
+					<div className="layer-label">{layer.label}</div>
 				</div>
 			))}
 		</div>

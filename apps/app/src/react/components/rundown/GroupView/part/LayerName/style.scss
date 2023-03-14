@@ -32,17 +32,17 @@
 
 	&.selectable {
 		cursor: pointer;
-		.item:hover {
+		.layer:hover {
 			background-color: rgba(255, 255, 255, 0.1);
 		}
 	}
 
 	&.open {
-		.selected-item {
+		.selected-layer {
 			background-color: rgba(255, 255, 255, 0.1);
 			border-bottom: none;
 		}
-		.other-items {
+		.other-layers {
 			display: block;
 			border-radius: 0 0 0.4rem 0.4rem;
 		}
@@ -53,7 +53,7 @@
 		flex-shrink: 0;
 	}
 
-	.other-items {
+	.other-layers {
 		border: 0.1rem solid #545a78;
 		border-top: none;
 		display: none;
@@ -65,7 +65,7 @@
 		background: #464646;
 	}
 
-	.item {
+	.layer {
 		padding: 0 0.3rem;
 		font-size: 1.4rem;
 		font-size: 1.4rem;
