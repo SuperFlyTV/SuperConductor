@@ -1,21 +1,22 @@
 import sorensen from '@sofie-automation/sorensen'
-import { describeTimelineObject } from '../../../../lib/TimelineObj'
-import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable'
-import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { HotkeyContext } from '../../../contexts/Hotkey'
+import { describeTimelineObject } from '../../../../../../lib/TimelineObj'
+import { DeltaPosition, Position, useMovable } from '../../../../../../lib/useMovable'
+import { TimelineObj } from '../../../../../../models/rundown/TimelineObj'
+import { HotkeyContext } from '../../../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
+import { store } from '../../../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
-import { TimelineObjectMove } from '../../../mobx/GuiStore'
-import { shortID } from '../../../../lib/util'
+import { TimelineObjectMove } from '../../../../../mobx/GuiStore'
+import { shortID } from '../../../../../../lib/util'
 import { computed } from 'mobx'
-import { millisecondsToTime } from '../../../../lib/timeLib'
-import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
-import { CB } from '../../../lib/errorHandling'
+import { millisecondsToTime } from '../../../../../../lib/timeLib'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../../../lib/partTimeline'
+import { CB } from '../../../../../lib/errorHandling'
+import { TimelineObjectDuration, timelineObjectDurationString } from '../lib/timelineObj'
 
 const HANDLE_WIDTH = 8
 
@@ -459,72 +460,3 @@ export const TimelineObject: React.FC<{
 		</div>
 	)
 })
-
-function timelineObjectDurationString(duration: number | null): string {
-	if (duration === null) return '∞'
-	const { h, m, s, ms } = millisecondsToTime(duration)
-	const secondTenths = Math.floor(ms / 100)
-
-	let durationTitle = ''
-	// if (days) {
-	// 	durationTitle += days + 'd'
-	// }
-	if (h) {
-		durationTitle += h + 'h'
-	}
-	if (m) {
-		durationTitle += m + 'm'
-	}
-	if (s) {
-		if (secondTenths) {
-			durationTitle += s + '.' + secondTenths + 's'
-		} else {
-			durationTitle += s + 's'
-		}
-	}
-
-	return durationTitle
-}
-function TimelineObjectDuration(props: { duration: number | null }) {
-	if (props.duration === null) return <div className="duration">∞</div>
-	if (props.duration === 0) return <div className="duration">0</div>
-	const { h, m, s, ms } = millisecondsToTime(props.duration)
-	const secondTenths = Math.floor(ms / 100)
-	return (
-		<div className="duration">
-			{/* {days ? (
-				<>
-					<span>{days}</span>
-					<span style={{ fontWeight: 300 }}>d</span>
-				</>
-			) : null} */}
-			{h ? (
-				<>
-					<span>{h}</span>
-					<span style={{ fontWeight: 300 }}>h</span>
-				</>
-			) : null}
-			{m ? (
-				<>
-					<span>{m}</span>
-					<span style={{ fontWeight: 300 }}>m</span>
-				</>
-			) : null}
-			{s ? (
-				secondTenths ? (
-					<>
-						<span>{s}</span>
-						<span style={{ fontWeight: 300 }}>.</span>
-						<span>{secondTenths}</span>
-						<span style={{ fontWeight: 300 }}>s</span>
-					</>
-				) : (
-					<>
-						<span>{s}</span>
-						<span style={{ fontWeight: 300 }}>s</span>
-					</>
-				)
-			) : null}
-		</div>
-	)
-}

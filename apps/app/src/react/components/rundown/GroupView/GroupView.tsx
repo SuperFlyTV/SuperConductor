@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
-import { PartView } from './PartView'
+import { GroupBase, GroupGUI, PlayoutMode } from '../../../../models/rundown/Group'
+import { PartView } from './PartView/normal-part/PartView'
 import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
 import {
@@ -15,7 +15,7 @@ import {
 import { useDrag, useDrop, XYCoord } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
-import { PartPropertiesDialog } from '../PartPropertiesDialog'
+import { PartPropertiesDialog } from './PartView/lib/PartPropertiesDialog'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 import { assertNever } from '@shared/lib'
 import { allowMovingPartIntoGroup, getNextPartIndex, getPrevPartIndex, MoveTarget } from '../../../../lib/util'
@@ -55,6 +55,7 @@ import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import { useFrame } from '../../../lib/useFrame'
 import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
+import { PartExpressionView } from './PartView/expression-part/PartExpressionView'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -553,9 +554,7 @@ export const GroupView: React.FC<{
 					dragging: isDragging,
 				})}
 			>
-				<ErrorBoundary>
-					<PartView rundownId={rundownId} partId={firstPartId} parentGroupId={group.id} mappings={mappings} />
-				</ErrorBoundary>
+				<PartInGroup rundownId={rundownId} partId={firstPartId} group={group} mappings={mappings} />
 			</div>
 		) : null
 	} else {
@@ -802,11 +801,11 @@ export const GroupView: React.FC<{
 							>
 								{hidePartsHeight === null &&
 									group.partIds.map((partId) => (
-										<PartView
+										<PartInGroup
 											key={partId}
 											rundownId={rundownId}
 											partId={partId}
-											parentGroupId={group.id}
+											group={group}
 											mappings={mappings}
 										/>
 									))}
@@ -1223,3 +1222,21 @@ const GroupControlButtons: React.FC<{
 		</>
 	)
 })
+
+export const PartInGroup: React.FC<{
+	rundownId: string
+	group: GroupGUI
+	partId: string
+	mappings: Mappings
+}> = ({ rundownId, group, partId, mappings }) => {
+	if (group.playoutMode === PlayoutMode.NORMAL || group.playoutMode === PlayoutMode.SCHEDULE) {
+		return (
+			<ErrorBoundary>
+				<PartView rundownId={rundownId} partId={partId} parentGroupId={group.id} mappings={mappings} />
+			</ErrorBoundary>
+		)
+	} else {
+		assertNever(group.playoutMode)
+		return null
+	}
+}

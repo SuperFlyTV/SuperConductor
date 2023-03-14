@@ -1,10 +1,10 @@
 import React, { useContext } from 'react'
 import { Field, Form, Formik } from 'formik'
-import { Part } from '../../../models/rundown/Part'
+import { Part } from '../../../../../../models/rundown/Part'
 import * as Yup from 'yup'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { TextField } from 'formik-mui'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
 
 interface IProps {
 	initial?: Partial<Part>

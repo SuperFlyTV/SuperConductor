@@ -1,8 +1,7 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
-import { useMemoComputedValue } from '../../../mobx/lib'
-
+import { store } from '../../../../../mobx/store'
+import { useMemoComputedValue } from '../../../../../mobx/lib'
 type PropsType = {
 	groupId: string
 	partId: string
