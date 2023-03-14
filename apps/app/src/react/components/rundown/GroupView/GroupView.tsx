@@ -1235,6 +1235,17 @@ export const PartInGroup: React.FC<{
 				<PartView rundownId={rundownId} partId={partId} parentGroupId={group.id} mappings={mappings} />
 			</ErrorBoundary>
 		)
+	} else if (group.playoutMode === PlayoutMode.EXPRESSION) {
+		return (
+			<ErrorBoundary>
+				<PartExpressionView
+					rundownId={rundownId}
+					partId={partId}
+					parentGroupId={group.id}
+					mappings={mappings}
+				/>
+			</ErrorBoundary>
+		)
 	} else {
 		assertNever(group.playoutMode)
 		return null

@@ -216,57 +216,61 @@ export const SideBarEditGroup: React.FC<{
 						}}
 					/>
 				</div>
-				<div className="setting">
-					<BooleanInput
-						label="Play one Part at a time"
-						currentValue={group.oneAtATime}
-						disabled={group.locked}
-						onChange={(value) => {
-							ipcServer
-								.toggleGroupOneAtATime({
-									rundownId,
-									groupId,
-									value,
-								})
-								.catch(handleError)
-						}}
-					/>
-				</div>
-				{group.oneAtATime && (
-					<div className="setting">
-						<BooleanInput
-							label="Loop"
-							currentValue={group.loop}
-							disabled={group.locked}
-							onChange={(value) => {
-								ipcServer
-									.toggleGroupLoop({
-										rundownId,
-										groupId,
-										value,
-									})
-									.catch(handleError)
-							}}
-						/>
-					</div>
-				)}
-				{group.oneAtATime && (
-					<div className="setting">
-						<BooleanInput
-							label="Auto-step"
-							currentValue={group.autoPlay}
-							disabled={group.locked}
-							onChange={(value) => {
-								ipcServer
-									.toggleGroupAutoplay({
-										rundownId,
-										groupId,
-										value,
-									})
-									.catch(handleError)
-							}}
-						/>
-					</div>
+				{(group.playoutMode === PlayoutMode.NORMAL || group.playoutMode === PlayoutMode.SCHEDULE) && (
+					<>
+						<div className="setting">
+							<BooleanInput
+								label="Play one Part at a time"
+								currentValue={group.oneAtATime}
+								disabled={group.locked}
+								onChange={(value) => {
+									ipcServer
+										.toggleGroupOneAtATime({
+											rundownId,
+											groupId,
+											value,
+										})
+										.catch(handleError)
+								}}
+							/>
+						</div>
+						{group.oneAtATime && (
+							<div className="setting">
+								<BooleanInput
+									label="Loop"
+									currentValue={group.loop}
+									disabled={group.locked}
+									onChange={(value) => {
+										ipcServer
+											.toggleGroupLoop({
+												rundownId,
+												groupId,
+												value,
+											})
+											.catch(handleError)
+									}}
+								/>
+							</div>
+						)}
+						{group.oneAtATime && (
+							<div className="setting">
+								<BooleanInput
+									label="Auto-step"
+									currentValue={group.autoPlay}
+									disabled={group.locked}
+									onChange={(value) => {
+										ipcServer
+											.toggleGroupAutoplay({
+												rundownId,
+												groupId,
+												value,
+											})
+											.catch(handleError)
+									}}
+								/>
+							</div>
+						)}
+					</>
 				)}
 			</div>
 

@@ -90,7 +90,7 @@ export enum AutoFillSortMode {
 export enum PlayoutMode {
 	NORMAL = 'normal',
 	SCHEDULE = 'schedule',
-	// EXPRESSION = 'expression', // <-- not implemented yet
+	EXPRESSION = 'expression',
 }
 export interface ScheduleSettings {
 	activate?: boolean

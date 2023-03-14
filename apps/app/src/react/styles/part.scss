@@ -15,6 +15,15 @@ $part_time_height: 16px;
 		'tab meta dropdown time     endcap'
 		'tab meta names    timeline endcap';
 
+	&.part-expression {
+		grid-template-columns: $partTabWidth 19.2rem minmax(auto, 100px) 1fr 0.9rem;
+		grid-template-rows: 1.6rem 1fr;
+		gap: 0px 0px;
+		grid-template-areas:
+			'tab meta dropdown time     endcap'
+			'tab meta names    timeline endcap';
+	}
+
 	background-color: $partMetaColor;
 
 	&:first-child {
@@ -320,7 +329,7 @@ $part_time_height: 16px;
 
 			&__value {
 				font-family: 'Barlow Semi Condensed';
-				font-weight: 400;				
+				font-weight: 400;
 			}
 		}
 
@@ -341,7 +350,7 @@ $part_time_height: 16px;
 
 			&__value {
 				font-family: 'Barlow Semi Condensed';
-				font-weight: 400;				
+				font-weight: 400;
 			}
 		}
 
@@ -398,7 +407,11 @@ $part_time_height: 16px;
 			z-index: 10;
 		}
 	}
-
+    &__expression__timeline {
+        position: relative;
+        background-color: #222630;
+        grid-area: timeline;
+    }
 	&__endcap {
 		grid-area: endcap;
 		background: black;

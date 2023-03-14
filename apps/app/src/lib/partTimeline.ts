@@ -26,6 +26,7 @@ interface SortedLayer {
 	layerId: string
 	objectIds: string[]
 }
+/** Group objects on their respective layers */
 export function timelineObjsOntoLayers(
 	sortedLayers: SortedLayer[],
 	resolvedTimeline: ResolvedTimeline,
@@ -56,6 +57,38 @@ export function timelineObjsOntoLayers(
 			objectsOnLayer,
 		}
 	})
+}
+/** Return a flat list of resolved objects on their layers */
+export function timelineObjsOntoSeparateLayers(
+	sortedLayers: SortedLayer[],
+	resolvedTimeline: ResolvedTimeline,
+	timeline: TimelineObj[]
+): {
+	layerId: string
+	resolved: ResolvedTimelineObject['resolved']
+	timelineObj: TimelineObj
+}[] {
+	const layersWithObjects: {
+		layerId: string
+		resolved: ResolvedTimelineObject['resolved']
+		timelineObj: TimelineObj
+	}[] = []
+
+	for (const { layerId, objectIds } of sortedLayers) {
+		for (const objectId of objectIds) {
+			const resolvedObj = resolvedTimeline.objects[objectId]
+			const timelineObj = timeline.find((obj) => obj.obj.id === objectId)
+
+			if (resolvedObj && timelineObj) {
+				layersWithObjects.push({
+					layerId,
+					timelineObj,
+					resolved: resolvedObj.resolved,
+				})
+			}
+		}
+	}
+	return layersWithObjects
 }
 
 export function getLastEndTime(
