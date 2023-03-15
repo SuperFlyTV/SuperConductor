@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { store } from '../../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
-import { ResolvedTimeline, Resolver, ResolverCache } from 'superfly-timeline'
+import { ResolvedTimeline, ResolveOptions, Resolver, ResolverCache } from 'superfly-timeline'
 import { getResolvedTimelineTotalDuration } from '../../../../../../lib/util'
 
 /** Returns a few common methods that are used by the PartViwes */
@@ -10,8 +10,10 @@ export function getPartMethods(arg: {
 	parentGroupId: string
 	partId: string
 	partDuration: number | undefined
+	resolveOptions: Omit<ResolveOptions, 'cache'>
 }) {
 	const cache = useRef<ResolverCache>({})
+	let nextEventTime = 0
 	const { orgMaxDuration, orgResolvedTimeline, resolverErrorMessage, partTimeline } = useMemoComputedObject(() => {
 		let errorMessage = ''
 
@@ -20,8 +22,15 @@ export function getPartMethods(arg: {
 		try {
 			orgResolvedTimeline = Resolver.resolveTimeline(
 				partTimeline.map((o) => o.obj),
-				{ time: 0, cache: cache.current }
+				{ ...arg.resolveOptions, cache: cache.current }
 			)
+
+			if (arg.resolveOptions.time > 0) {
+				const state = Resolver.getState(orgResolvedTimeline, arg.resolveOptions.time, 1)
+				const nextEvent = state.nextEvents[0]
+				if (nextEvent) nextEventTime = nextEvent.time
+			}
+
 			/** Max duration for display. Infinite objects are counted to this */
 		} catch (e) {
 			orgResolvedTimeline = {
@@ -53,7 +62,7 @@ export function getPartMethods(arg: {
 			partTimeline,
 		}
 		// }, [part.timeline, trackWidth])
-	}, [arg.partId, arg.partDuration])
+	}, [arg.partId, arg.partDuration, arg.resolveOptions])
 
 	// This is used to defer initial rendering of some components, in order to improve initial rendering times:
 	const [renderEverything, setRenderEverything] = useState(false)
@@ -69,6 +78,7 @@ export function getPartMethods(arg: {
 		resolverErrorMessage,
 		partTimeline,
 		cache,
+		nextEventTime,
 
 		renderEverything,
 		onVisibilityChange,

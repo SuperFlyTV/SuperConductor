@@ -149,7 +149,7 @@ export const TimelineObject: React.FC<{
 			store.guiStore.timelineObjMove.originX !== undefined &&
 			store.guiStore.timelineObjMove.originY !== undefined &&
 			!store.guiStore.timelineObjMove.saving &&
-			store.guiStore.timelineObjMove.leaderTimelineObjId === timelineObj.obj.id
+			store.guiStore.timelineObjMove.leaderTimelineObjId === obj.id
 		) {
 			// This happens when the user moves the timeline-object to a new layer.
 			// So the move in the previous instance of this object has aborted,
@@ -235,7 +235,7 @@ export const TimelineObject: React.FC<{
 		}
 	}, [hotkeyContext, move])
 
-	const updateSelection = () => {
+	const updateSelection = useCallback(() => {
 		if (!selectable) return
 		// Prevent selection when dragging:
 		if (wasMoving.current) {
@@ -282,7 +282,7 @@ export const TimelineObject: React.FC<{
 								mainLayerIndex = layerIndex
 								mainObjStartTime = o.resolved.instances[0]?.start
 							}
-							if (o.timelineObj.obj.id === timelineObj.obj.id) {
+							if (o.timelineObj.obj.id === obj.id) {
 								thisLayerIndex = layerIndex
 								thisObjStartTime = o.resolved.instances[0]?.start
 							}
@@ -332,7 +332,7 @@ export const TimelineObject: React.FC<{
 				timelineObjId: obj.id,
 			})
 		}
-	}
+	}, [groupId, partId, obj.id])
 
 	const durationTitle = timelineObjectDurationString(duration)
 

@@ -19,9 +19,10 @@ export const LayerForExpression: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	timelineObj: TimelineObj
 	layerId: string
+	partDuration: number
 	locked?: boolean
 	mapping: Mapping | undefined
-}> = ({ rundownId, layerId, groupId, partId, resolved, timelineObj, locked, mapping }) => {
+}> = ({ rundownId, layerId, groupId, partId, resolved, timelineObj, partDuration, locked, mapping }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
@@ -68,6 +69,7 @@ export const LayerForExpression: React.FC<{
 				<TimelineObjectExpression
 					groupId={groupId}
 					partId={partId}
+					partDuration={partDuration}
 					timelineObj={timelineObj}
 					resolved={resolved}
 					locked={locked}

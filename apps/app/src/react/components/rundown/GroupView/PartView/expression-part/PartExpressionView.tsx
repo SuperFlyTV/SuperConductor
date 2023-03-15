@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useContext, useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { store } from '../../../../../mobx/store'
 import { PlayoutMode } from '../../../../../../models/rundown/Group'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
@@ -25,6 +25,7 @@ import { Popover } from '@mui/material'
 import { RundownTriggersSubmenu } from '../../part/TriggersSubmenu/TriggersSubmenu'
 import { LayerEmptyForExpression, LayerForExpression } from './LayerForExpression'
 import { LayerName, LayerNameEmpty } from '../../part/LayerName/LayerName'
+import { DISPLAY_EXPRESSION_MAX_DURATION } from '../../../../../constants'
 
 export const PartExpressionView: React.FC<{
 	rundownId: string
@@ -50,12 +51,36 @@ export const PartExpressionView: React.FC<{
 	// const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
 
-	const { orgResolvedTimeline, resolverErrorMessage, onVisibilityChange, renderEverything } = getPartMethods({
-		rundownId,
-		parentGroupId,
-		partId,
-		partDuration: part.duration,
-	})
+	const [resolveTime, setResolveTime] = useState(0)
+	// On startup:
+	useEffect(() => {
+		setResolveTime(Date.now())
+	}, [])
+
+	const { orgResolvedTimeline, resolverErrorMessage, onVisibilityChange, renderEverything, nextEventTime } =
+		getPartMethods({
+			rundownId,
+			parentGroupId,
+			partId,
+			partDuration: part.duration,
+			resolveOptions: {
+				time: resolveTime,
+				limitCount: 5,
+				limitTime: DISPLAY_EXPRESSION_MAX_DURATION * 2,
+			},
+		})
+
+	const setTimeoutTimer = useRef<NodeJS.Timeout | null>(null)
+	if (setTimeoutTimer.current) {
+		clearTimeout(setTimeoutTimer.current)
+		setTimeoutTimer.current = null
+	}
+	if (nextEventTime) {
+		const timeToNextEvent = Date.now() - nextEventTime
+		setTimeoutTimer.current = setTimeout(() => {
+			setResolveTime(Date.now())
+		}, timeToNextEvent)
+	}
 
 	// const timelineObjMove = useMemoComputedObject<TimelineObjectMove>(
 	// 	() => {
@@ -160,6 +185,26 @@ export const PartExpressionView: React.FC<{
 	const partTimeline = useMemoComputedObject(() => {
 		return store.rundownsStore.getPartTimeline(partId)
 	}, [partId])
+
+	const estimatedDuration = DISPLAY_EXPRESSION_MAX_DURATION
+	// const estimatedDuration = useMemo(() => {
+	// 	let minTime = Infinity
+	// 	let maxTime = -Infinity
+	// 	for (const obj of Object.values(resolvedTimeline.objects)) {
+	// 		let maxUseInstances = 5
+	// 		for (const instance of obj.resolved.instances) {
+	// 			if (maxUseInstances < 0) break
+	// 			maxUseInstances--
+	// 			minTime = Math.min(minTime, instance.start, instance.end ?? Infinity)
+	// 			maxTime = Math.max(maxTime, instance.start, instance.end ?? Infinity)
+	// 		}
+	// 	}
+	// 	let duration =
+	// 	if (maxTime !== Infinity && maxTime !== -Infinity && minTime !== Infinity ) {
+	// 		return maxTime - minTime
+	// 	}
+
+	// }, [resolvedTimeline])
 	// const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects, newObjectsToMoveToNewLayer } =
 	// 	useMemoComputedObject(() => {
 	// 		let modifiedTimeline: TimelineObj[]
@@ -653,6 +698,7 @@ export const PartExpressionView: React.FC<{
 									layerId={layerId}
 									locked={groupOrPartLocked}
 									mapping={mappings[layerId]}
+									partDuration={estimatedDuration}
 								/>
 							)
 						} else {

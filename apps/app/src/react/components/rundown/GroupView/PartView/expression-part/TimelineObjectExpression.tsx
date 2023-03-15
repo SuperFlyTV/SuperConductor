@@ -2,7 +2,7 @@ import sorensen from '@sofie-automation/sorensen'
 import { describeTimelineObject } from '../../../../../../lib/TimelineObj'
 import { TimelineObj } from '../../../../../../models/rundown/TimelineObj'
 import classNames from 'classnames'
-import React, { useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
@@ -10,15 +10,27 @@ import { store } from '../../../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { computed } from 'mobx'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../../../lib/partTimeline'
+import { useFrame } from '../../../../../../../dist/react/lib/useFrame'
+import _ from 'lodash'
 
 export const TimelineObjectExpression: React.FC<{
 	groupId: string
 	partId: string
+	/** Duration of the parent Part [ms] */
+	partDuration: number
 	resolved: ResolvedTimelineObject['resolved']
 	timelineObj: TimelineObj
 	locked?: boolean
 	warnings?: string[]
-}> = observer(function TimelineObjectExpression({ groupId, partId, timelineObj, resolved, locked, warnings }) {
+}> = observer(function TimelineObjectExpression({
+	groupId,
+	partId,
+	partDuration,
+	timelineObj,
+	resolved,
+	locked,
+	warnings,
+}) {
 	const ref = useRef<HTMLDivElement>(null)
 
 	// const hotkeyContext = useContext(HotkeyContext)
@@ -127,7 +139,7 @@ export const TimelineObjectExpression: React.FC<{
 	// 		store.guiStore.timelineObjMove.originX !== undefined &&
 	// 		store.guiStore.timelineObjMove.originY !== undefined &&
 	// 		!store.guiStore.timelineObjMove.saving &&
-	// 		store.guiStore.timelineObjMove.leaderTimelineObjId === timelineObj.obj.id
+	// 		store.guiStore.timelineObjMove.leaderTimelineObjId === obj.id
 	// 	) {
 	// 		// This happens when the user moves the timeline-object to a new layer.
 	// 		// So the move in the previous instance of this object has aborted,
@@ -147,29 +159,54 @@ export const TimelineObjectExpression: React.FC<{
 	// 	onDragEnd,
 	// })
 
-	let instance = resolved.instances[0] as TimelineObjectInstance | undefined
-	if (!instance) {
-		instance = {
-			id: 'N/A',
-			start: 0,
-			end: 0,
-			references: [],
-		}
+	const instance: TimelineObjectInstance = resolved.instances[0] ?? {
+		id: 'N/A',
+		start: 0,
+		end: 0,
+		references: [],
 	}
 
-	// const startValue = Math.max(0, instance.start / partDuration)
-	// const startPercentage = Math.min(
-	// 	// Cap to 98, because if 100, the object is not visible
-	// 	98,
-	// 	startValue * 100
-	// )
+	const [position, setPosition] = useState<{
+		left: string | undefined
+		width: string | undefined
+		right: string | undefined
+		zIndex: number
+	}>({
+		left: '0%',
+		width: '0%',
+		right: '0%',
+		zIndex: 0,
+	})
 
-	// const duration = instance.end !== null ? instance.end - instance.start : null
-	// let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
-	// if (widthPercentage > 100 - startPercentage) {
-	// 	// Limit the width, so that the rightmost part is always visible
-	// 	widthPercentage = null
-	// }
+	useFrame(
+		(nowTime) => {
+			const startValue = Math.max(0, instance.start / partDuration)
+			const startPercentage = Math.min(
+				// Cap to 98, because if 100, the object is not visible
+				98,
+				startValue * 100
+			)
+			const duration = instance.end !== null ? instance.end - instance.start : null
+			let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
+			if (widthPercentage > 100 - startPercentage) {
+				// Limit the width, so that the rightmost part is always visible
+				widthPercentage = null
+			}
+
+			const newPosition = {
+				left: `${startValue}%`,
+				width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
+				right: widthPercentage === null ? '-4px' : undefined,
+				zIndex: Math.round(startPercentage),
+			}
+			setPosition((oldPosition) => {
+				if (!_.isEqual(newPosition, oldPosition)) {
+					return newPosition
+				} else return oldPosition
+			})
+		},
+		[instance, partDuration]
+	)
 
 	const description = describeTimelineObject(obj)
 
@@ -213,7 +250,7 @@ export const TimelineObjectExpression: React.FC<{
 	// 	}
 	// }, [hotkeyContext, move])
 
-	const updateSelection = () => {
+	const updateSelection = useCallback(() => {
 		if (!selectable) return
 		// Prevent selection when dragging:
 		// if (wasMoving.current) {
@@ -260,7 +297,7 @@ export const TimelineObjectExpression: React.FC<{
 								mainLayerIndex = layerIndex
 								mainObjStartTime = o.resolved.instances[0]?.start
 							}
-							if (o.timelineObj.obj.id === timelineObj.obj.id) {
+							if (o.timelineObj.obj.id === obj.id) {
 								thisLayerIndex = layerIndex
 								thisObjStartTime = o.resolved.instances[0]?.start
 							}
@@ -310,7 +347,7 @@ export const TimelineObjectExpression: React.FC<{
 				timelineObjId: obj.id,
 			})
 		}
-	}
+	}, [groupId, partId, obj.id])
 
 	// const durationTitle = timelineObjectDurationString(duration)
 
@@ -354,12 +391,12 @@ export const TimelineObjectExpression: React.FC<{
 				locked,
 				warning: warnings && warnings.length > 0,
 			})}
-			// style={{
-			// 	left: `${startPercentage}%`,
-			// 	width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
-			// 	right: widthPercentage === null ? '-4px' : undefined,
-			// 	zIndex: Math.round(startPercentage),
-			// }}
+			style={{
+				left: position.left,
+				width: position.width,
+				right: position.right,
+				zIndex: position.zIndex,
+			}}
 			onClick={updateSelection}
 			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label}
 		>
