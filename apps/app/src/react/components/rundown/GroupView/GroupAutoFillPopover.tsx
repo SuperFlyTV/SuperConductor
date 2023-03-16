@@ -22,7 +22,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 		const ipcServer = useContext(IPCServerContext)
 		const { handleError } = useContext(ErrorHandlerContext)
 		const project = store.projectStore.project
-		const resources = store.resourcesStore.resources
+		const resources = store.resourcesAndMetadataStore.resources
 		const [showHelp, setShowHelp] = useState(false)
 
 		const triggerHandleAutoFill = useMemo(() => {

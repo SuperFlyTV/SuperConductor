@@ -21,6 +21,7 @@ import { EditWrapper, OnSave } from './lib'
 import { Button, Stack, Typography } from '@mui/material'
 import { TrashBtn } from '../../../inputs/TrashBtn'
 import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
+import { AtemMetadata } from '@shared/models'
 
 enum ATEMAudioChannelMixOption {
 	Off = 0,
@@ -40,7 +41,22 @@ enum ATEMBorderBevel {
 	Out = 3,
 }
 
-export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave: OnSave }> = ({ obj, onSave }) => {
+/**
+ * TODO: Only show inputs that are valid for the given ME.
+ */
+function createNamedAtemInputOptions(deviceMetadata: AtemMetadata): { [key: string]: number } {
+	const retValue: { [key: string]: number } = {}
+	for (const input of deviceMetadata.inputs) {
+		retValue[`${input.inputId} - ${input.longName}`] = input.inputId
+	}
+	return retValue
+}
+
+export const EditTimelineObjAtemAny: React.FC<{
+	obj: TimelineObjAtemAny
+	onSave: OnSave
+	deviceMetadata?: AtemMetadata | null
+}> = ({ obj, onSave, deviceMetadata }) => {
 	let settings: JSX.Element = <></>
 
 	const obj0 = obj
@@ -49,17 +65,31 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 		settings = (
 			<>
 				<div className="setting">
-					<IntInput
-						label="Input"
-						fullWidth
-						currentValue={obj.content.me.input}
-						onChange={(v) => {
-							obj.content.me.input = v
-							onSave(obj)
-						}}
-						allowUndefined={true}
-						caps={[0, Number.POSITIVE_INFINITY]}
-					/>
+					{deviceMetadata ? (
+						<SelectEnum
+							label={'Input'}
+							fullWidth
+							currentValue={obj.content.me.input}
+							options={createNamedAtemInputOptions(deviceMetadata)}
+							onChange={(v) => {
+								obj.content.me.input = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+						/>
+					) : (
+						<IntInput
+							label="Input"
+							fullWidth
+							currentValue={obj.content.me.input}
+							onChange={(v) => {
+								obj.content.me.input = v
+								onSave(obj)
+							}}
+							allowUndefined={true}
+							caps={[0, Number.POSITIVE_INFINITY]}
+						/>
+					)}
 				</div>
 				<div className="setting">
 					<SelectEnum

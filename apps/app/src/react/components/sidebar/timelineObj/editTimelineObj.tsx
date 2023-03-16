@@ -46,12 +46,17 @@ import { EditTimelineObjVIZMSEAny } from './timelineObjs/vizMSE'
 import { EditTimelineObjVMixAny } from './timelineObjs/vMix'
 import { EditTimelineObjSofieChefAny } from './timelineObjs/sofieChef'
 import { EditTimelineObjTelemetricsAny } from './timelineObjs/telemetrics'
+import { store } from '../../../mobx/store'
+import { observer } from 'mobx-react-lite'
+import { AtemMetadata, MetadataType } from '@shared/models'
 
 export const EditTimelineObjContent: React.FC<{
 	obj: TSRTimelineObj
+	deviceId?: string
 	onSave: OnSave
-}> = ({ obj, onSave }) => {
+}> = observer(function EditTimelineObjContent({ obj, deviceId, onSave }) {
 	let editElement: JSX.Element | null = null
+	const deviceMetadata = deviceId ? store.resourcesAndMetadataStore.metadata[deviceId] : null
 
 	obj = JSON.parse(JSON.stringify(obj)) // clone, bacause child functions might edit it
 
@@ -60,7 +65,15 @@ export const EditTimelineObjContent: React.FC<{
 	} else if (obj.content.deviceType === DeviceType.ABSTRACT) {
 		editElement = <EditTimelineObjAbstractAny obj={obj as TimelineObjAbstractAny} onSave={onSave} />
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
-		editElement = <EditTimelineObjAtemAny obj={obj as TimelineObjAtemAny} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjAtemAny
+				obj={obj as TimelineObjAtemAny}
+				onSave={onSave}
+				deviceMetadata={
+					deviceMetadata?.metadataType === MetadataType.ATEM ? (deviceMetadata as AtemMetadata) : null
+				}
+			/>
+		)
 	} else if (obj.content.deviceType === DeviceType.CASPARCG) {
 		editElement = <EditTimelineObjCasparCGAny obj={obj as TimelineObjCasparCGAny} onSave={onSave} />
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
@@ -104,4 +117,4 @@ export const EditTimelineObjContent: React.FC<{
 	}
 
 	return editElement
-}
+})

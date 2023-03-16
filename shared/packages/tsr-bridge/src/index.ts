@@ -1,6 +1,6 @@
 import { BridgeAPI, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
 import { clone } from 'lodash'
 import { Datastore } from 'timeline-state-resolver'
@@ -183,13 +183,16 @@ export class BaseBridge {
 				.updatePeripheralsSettings(msg.peripherals, msg.autoConnectToAllPeripherals)
 				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'refreshResources') {
-			this.tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
-				this.send({
-					type: 'updatedResources',
-					deviceId,
-					resources,
-				})
-			})
+			this.tsr.refreshResourcesAndMetadata(
+				(deviceId: string, resources: ResourceAny[], metadata: MetadataAny) => {
+					this.send({
+						type: 'updatedResourcesAndMetadata',
+						deviceId,
+						resources,
+						metadata,
+					})
+				}
+			)
 		} else if (msg.type === 'peripheralSetKeyDisplay') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 

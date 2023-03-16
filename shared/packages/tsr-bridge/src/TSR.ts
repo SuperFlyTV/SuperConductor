@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType, OSCDeviceType } from 'timeline-state-resolver'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny } from '@shared/models'
 import { BridgeAPI, LoggerLike } from '@shared/api'
 import { CasparCGSideload } from './sideload/CasparCG'
 import { AtemSideload } from './sideload/Atem'
@@ -126,7 +126,9 @@ export class TSR {
 
 		this.newConnection = false
 	}
-	public refreshResources(cb: (deviceId: string, resources: ResourceAny[]) => void): void {
+	public refreshResourcesAndMetadata(
+		cb: (deviceId: string, resources: ResourceAny[], metadata: MetadataAny) => void
+	): void {
 		for (const [deviceId, sideload] of Object.entries(this.sideLoadedDevices)) {
 			let timedOut = false
 			this.send({
@@ -145,9 +147,9 @@ export class TSR {
 			}, 10 * 1000)
 
 			sideload
-				.refreshResources()
-				.then((resources) => {
-					cb(deviceId, resources)
+				.refreshResourcesAndMetadata()
+				.then((resourcesAndMetadata) => {
+					cb(deviceId, resourcesAndMetadata.resources, resourcesAndMetadata.metadata)
 				})
 				.catch((e) => this.log.error(e))
 				.finally(() => {

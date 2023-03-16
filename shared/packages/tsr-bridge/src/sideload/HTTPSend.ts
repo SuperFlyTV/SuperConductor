@@ -1,18 +1,19 @@
 import { DeviceOptionsHTTPSend } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, HTTPRequest } from '@shared/models'
+import { ResourceAny, ResourceType, HTTPRequest, MetadataAny, HTTPSendMetadata, MetadataType } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 
 export class HTTPSendSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsHTTPSend, _log: LoggerLike) {}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: { [id: string]: ResourceAny } = {}
+		const metadata: HTTPSendMetadata = { metadataType: MetadataType.HTTP_SEND }
 
 		// HTTP Request
 		{
@@ -25,6 +26,9 @@ export class HTTPSendSideload implements SideLoadDevice {
 			resources[resource.id] = resource
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Object.values(resources),
+			metadata,
+		}
 	}
 }

@@ -14,6 +14,9 @@ import {
 	VMixFadeToBlack,
 	VMixFader,
 	VMixPreview,
+	VMixMetadata,
+	MetadataAny,
+	MetadataType,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -23,6 +26,7 @@ export class VMixSideload implements SideLoadDevice {
 	private vmix: VMix
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
 		this.vmix = new VMix()
@@ -43,17 +47,21 @@ export class VMixSideload implements SideLoadDevice {
 				.catch((error) => this.log.error('VMix Connect error: ' + stringifyError(error)))
 		}
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.vmix.dispose()
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: { [id: string]: ResourceAny } = {}
+		const metadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
 		if (!this.vmix.connected) {
-			return Object.values(resources)
+			return {
+				resources: Object.values(resources),
+				metadata,
+			}
 		}
 
 		// Inputs
@@ -182,6 +190,9 @@ export class VMixSideload implements SideLoadDevice {
 			resources[resource.id] = resource
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Object.values(resources),
+			metadata,
+		}
 	}
 }

@@ -1,18 +1,19 @@
 import { DeviceOptionsOSC } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, OSCMessage } from '@shared/models'
+import { ResourceAny, ResourceType, OSCMessage, OSCMetadata, MetadataAny, MetadataType } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 
 export class OSCSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: { [id: string]: ResourceAny } = {}
+		const metadata: OSCMetadata = { metadataType: MetadataType.OSC }
 
 		// Message
 		{
@@ -25,6 +26,9 @@ export class OSCSideload implements SideLoadDevice {
 			resources[resource.id] = resource
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Object.values(resources),
+			metadata,
+		}
 	}
 }

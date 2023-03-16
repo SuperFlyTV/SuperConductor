@@ -19,6 +19,7 @@ export const SideBarEditTimelineObject: React.FC<{
 	timelineObj: TimelineObj
 	mappings: Mappings | undefined
 	disabled?: boolean
+	deviceId?: string
 }> = observer(function SideBarEditTimelineObject(props) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -68,6 +69,7 @@ export const SideBarEditTimelineObject: React.FC<{
 
 			<EditTimelineObjContent
 				obj={props.timelineObj.obj}
+				deviceId={props.deviceId}
 				onSave={(newObj) => {
 					const editedTimelineObj = {
 						...props.timelineObj,

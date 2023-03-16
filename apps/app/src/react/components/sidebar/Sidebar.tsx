@@ -11,6 +11,7 @@ import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
 import { SideBarEditPart } from './editPart/SideBarEditPart'
 import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { ErrorBoundary } from '../util/ErrorBoundary'
+import { Mapping } from 'timeline-state-resolver-types'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
 	const currentRundownId = useMemoComputedValue(() => {
@@ -51,7 +52,8 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 					const timelineObj =
 						store.rundownsStore.hasTimelineObj(mainSelected.timelineObjId) &&
 						store.rundownsStore.getTimelineObj(mainSelected.timelineObjId)
-					if (group && part && timelineObj)
+					if (group && part && timelineObj) {
+						const mapping = props.mappings[timelineObj.obj.layer] as Mapping | undefined
 						return {
 							type: 'timelineObj',
 							groupId: group.id,
@@ -59,6 +61,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 							partId: part.id,
 							partLocked: part.locked,
 							timelineObj,
+							deviceId: mapping?.deviceId,
 						} as {
 							type: 'timelineObj'
 							groupId: string
@@ -66,7 +69,9 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 							partId: string
 							partLocked: boolean
 							timelineObj: TimelineObj
+							deviceId: string | undefined
 						}
+					}
 				} else {
 					assertNever(mainSelected)
 				}
@@ -116,6 +121,7 @@ export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(fun
 					timelineObj={editing.timelineObj}
 					mappings={props.mappings}
 					disabled={groupOrPartLocked}
+					deviceId={editing.deviceId}
 				/>
 			</ErrorBoundary>
 		)

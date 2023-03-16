@@ -7,6 +7,9 @@ import {
 	HyperdeckRecord,
 	HyperdeckPreview,
 	HyperdeckClip,
+	HyperdeckMetadata,
+	MetadataAny,
+	MetadataType,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -16,6 +19,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 	private hyperdeck: Hyperdeck
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheMetadata: HyperdeckMetadata = { metadataType: MetadataType.HYPERDECK }
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
 		this.hyperdeck = new Hyperdeck()
@@ -36,18 +40,25 @@ export class HyperdeckSideload implements SideLoadDevice {
 			this.hyperdeck.connect(deviceOptions.options.host, deviceOptions.options?.port)
 		}
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{
+		resources: ResourceAny[]
+		metadata: MetadataAny
+	}> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		this.hyperdeck.removeAllListeners()
 		return this.hyperdeck.disconnect()
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: { [id: string]: ResourceAny } = {}
+		const metadata: HyperdeckMetadata = { metadataType: MetadataType.HYPERDECK }
 
 		if (!this.hyperdeck.connected) {
-			return Object.values(this.cacheResources)
+			return {
+				resources: Object.values(this.cacheResources),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Play command
@@ -104,6 +115,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		this.cacheMetadata = metadata
+		return {
+			resources: Object.values(resources),
+			metadata,
+		}
 	}
 }

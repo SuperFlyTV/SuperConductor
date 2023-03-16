@@ -1,6 +1,14 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia, CasparCGTemplate } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	CasparCGMedia,
+	CasparCGTemplate,
+	MetadataAny,
+	CasparCGMetadata,
+	MetadataType,
+} from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 
@@ -8,6 +16,7 @@ export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheMetadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
 		this.ccg = new CasparCG({
@@ -22,18 +31,22 @@ export class CasparCGSideload implements SideLoadDevice {
 			},
 		})
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.ccg.disconnect()
 	}
 
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: { [id: string]: ResourceAny } = {}
+		const metadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
 		if (!this.ccg.connected) {
-			return Object.values(this.cacheResources)
+			return {
+				resources: Object.values(this.cacheResources),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Refresh media:
@@ -114,6 +127,10 @@ export class CasparCGSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		this.cacheMetadata = metadata
+		return {
+			resources: Object.values(resources),
+			metadata,
+		}
 	}
 }

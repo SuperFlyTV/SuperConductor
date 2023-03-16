@@ -8,6 +8,7 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
+	TimelineObjAtemME,
 	TimelineTransition,
 	Transition,
 	TransportStatus,
@@ -19,6 +20,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
 import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 import { TimelineObject } from 'superfly-timeline'
+import { AtemMetadata, MetadataAny, MetadataType } from '@shared/models'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -35,7 +37,10 @@ export interface TimelineObjectDescription {
 	}
 }
 
-export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescription {
+export function describeTimelineObject(
+	obj: TSRTimelineObj,
+	deviceMetadata?: MetadataAny | null
+): TimelineObjectDescription {
 	let label: string = obj.id
 	let inTransition: TimelineObjectDescription['inTransition'] = undefined
 	let outTransition: TimelineObjectDescription['outTransition'] = undefined
@@ -105,6 +110,20 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
 			label = `Input ${obj.content.me.input}`
+
+			if (deviceMetadata?.metadataType === MetadataType.ATEM) {
+				const deviceMetadata0 = deviceMetadata as AtemMetadata
+				const inputMetadata = deviceMetadata0.inputs.find((input) => {
+					if (input.inputId === (obj as TimelineObjAtemME).content.me.input) {
+						return true
+					}
+
+					return false
+				})
+				if (inputMetadata) {
+					label = inputMetadata.longName
+				}
+			}
 
 			if (obj.content.me.transition !== undefined) {
 				if (obj.content.me.transition === AtemTransitionStyle.MIX) {
