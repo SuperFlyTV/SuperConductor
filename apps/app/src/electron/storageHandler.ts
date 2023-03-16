@@ -1228,6 +1228,12 @@ export class StorageHandler extends EventEmitter {
 				delete this.resources[resourceId]
 			}
 		}
+		// Remove deleted metadata:
+		for (const [deviceId, metadata] of Object.entries(this.metadata)) {
+			if (metadata.deleted && Date.now() - metadata.deleted > GRACE_PERIOD) {
+				delete this.metadata[deviceId]
+			}
+		}
 	}
 
 	private rundownsDir(projectId: string): string {
