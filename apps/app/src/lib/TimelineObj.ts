@@ -121,7 +121,7 @@ export function describeTimelineObject(
 					return false
 				})
 				if (inputMetadata) {
-					label = inputMetadata.longName
+					label = `${obj.content.me.input} - ${inputMetadata.longName}`
 				}
 			}
 
