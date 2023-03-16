@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
-import { Project } from 'src/models/project/Project'
+import { Project } from '../../../../models/project/Project'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { ProjectPage } from './projectPage/ProjectPage'
 import { ProjectPageMenubar } from './projectPageMenubar/ProjectPageMenubar'
-import { HomePageId } from 'src/react/mobx/GuiStore'
+import { HomePageId } from '../../../../react/mobx/GuiStore'
 import { BridgesPage } from './bridgesPage/BridgesPage'
 import { LayersPage } from './layersPage/LayersPage'
 import { ApplicationActionsPage } from './ApplicationActionsPage/ApplicationActionsPage'

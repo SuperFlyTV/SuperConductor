@@ -10,27 +10,19 @@ import { store } from '../../../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
 import { computed } from 'mobx'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../../../lib/partTimeline'
-import { useFrame } from '../../../../../../../dist/react/lib/useFrame'
+import { useFrame } from '../../../../../lib/useFrame'
 import _ from 'lodash'
+import { useMemoComputedObject } from '../../../../../mobx/lib'
 
 export const TimelineObjectExpression: React.FC<{
 	groupId: string
 	partId: string
 	/** Duration of the parent Part [ms] */
 	partDuration: number
-	resolved: ResolvedTimelineObject['resolved']
 	timelineObj: TimelineObj
 	locked?: boolean
 	warnings?: string[]
-}> = observer(function TimelineObjectExpression({
-	groupId,
-	partId,
-	partDuration,
-	timelineObj,
-	resolved,
-	locked,
-	warnings,
-}) {
+}> = observer(function TimelineObjectExpression({ groupId, partId, partDuration, timelineObj, locked, warnings }) {
 	const ref = useRef<HTMLDivElement>(null)
 
 	// const hotkeyContext = useContext(HotkeyContext)
@@ -43,6 +35,16 @@ export const TimelineObjectExpression: React.FC<{
 
 	const selectable = !locked
 	// const movable = !locked
+
+	const resolvedObj = useMemoComputedObject(
+		() => {
+			const resolved = store.timelineStore.getResolvedTimeline()
+
+			return resolved?.objects[obj.id]
+		},
+		[obj.id],
+		true
+	)
 
 	// const dragData = useRef({
 	// 	msPerPixel,
@@ -159,53 +161,61 @@ export const TimelineObjectExpression: React.FC<{
 	// 	onDragEnd,
 	// })
 
-	const instance: TimelineObjectInstance = resolved.instances[0] ?? {
-		id: 'N/A',
-		start: 0,
-		end: 0,
-		references: [],
-	}
+	// const instance: TimelineObjectInstance =  ?? {
+	// 	id: 'N/A',
+	// 	start: 0,
+	// 	end: 0,
+	// 	references: [],
+	// }
 
-	const [position, setPosition] = useState<{
-		left: string | undefined
-		width: string | undefined
-		right: string | undefined
-		zIndex: number
-	}>({
-		left: '0%',
-		width: '0%',
-		right: '0%',
-		zIndex: 0,
-	})
+	const [displayInstances, setDisplayInstances] = useState<
+		{
+			left: string | undefined
+			width: string | undefined
+			right: string | undefined
+			zIndex: number
+		}[]
+	>([])
 
 	useFrame(
-		(nowTime) => {
-			const startValue = Math.max(0, instance.start / partDuration)
-			const startPercentage = Math.min(
-				// Cap to 98, because if 100, the object is not visible
-				98,
-				startValue * 100
-			)
-			const duration = instance.end !== null ? instance.end - instance.start : null
-			let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
-			if (widthPercentage > 100 - startPercentage) {
-				// Limit the width, so that the rightmost part is always visible
-				widthPercentage = null
+		(_nowTime) => {
+			if (!resolvedObj) return false
+
+			const newDisplayInstances: {
+				left: string | undefined
+				width: string | undefined
+				right: string | undefined
+				zIndex: number
+			}[] = []
+
+			for (const instance of resolvedObj.resolved.instances) {
+				const startValue = Math.max(0, instance.start / partDuration)
+				const startPercentage = Math.min(
+					// Cap to 98, because if 100, the object is not visible
+					98,
+					startValue * 100
+				)
+				const duration = instance.end !== null ? instance.end - instance.start : null
+				let widthPercentage: number | null = Math.min((duration ? duration / partDuration : 1) * 100)
+				if (widthPercentage > 100 - startPercentage) {
+					// Limit the width, so that the rightmost part is always visible
+					widthPercentage = null
+				}
+
+				newDisplayInstances.push({
+					left: `${startValue}%`,
+					width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
+					right: widthPercentage === null ? '-4px' : undefined,
+					zIndex: Math.round(startPercentage),
+				})
 			}
 
-			const newPosition = {
-				left: `${startValue}%`,
-				width: widthPercentage !== null ? `${widthPercentage}%` : undefined,
-				right: widthPercentage === null ? '-4px' : undefined,
-				zIndex: Math.round(startPercentage),
+			if (!_.isEqual(newDisplayInstances, displayInstances)) {
+				setDisplayInstances(displayInstances)
 			}
-			setPosition((oldPosition) => {
-				if (!_.isEqual(newPosition, oldPosition)) {
-					return newPosition
-				} else return oldPosition
-			})
+			return true
 		},
-		[instance, partDuration]
+		[resolvedObj]
 	)
 
 	const description = describeTimelineObject(obj)
@@ -381,97 +391,37 @@ export const TimelineObjectExpression: React.FC<{
 	)
 
 	return (
-		<div
-			ref={ref}
-			className={classNames('timeline-object', description.contentTypeClassNames.join(' '), {
-				selectable,
-				// movable,
-				selected: isSelected.get(),
-				// isAtMinWidth,
-				locked,
-				warning: warnings && warnings.length > 0,
-			})}
-			style={{
-				left: position.left,
-				width: position.width,
-				right: position.right,
-				zIndex: position.zIndex,
-			}}
-			onClick={updateSelection}
-			title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label}
-		>
-			{/* <div
-				className="handle handle--left"
-				onPointerDown={() => {
-					if (ref.current) {
-						const box = ref.current.getBoundingClientRect()
-						if (box.width <= HANDLE_WIDTH * 2) {
-							move.onStartMoving()
-							setMoveType('whole')
-							return
-						}
-					}
-					// move.onStartMoving()
-					// setMoveType('start')
-				}}
-			/> */}
-			<div
-				className="body"
-				// onPointerDown={() => {
-				// 	move.onStartMoving()
-				// 	setMoveType('whole')
-				// }}
-			>
-				{warnings && warnings.length > 0 && (
-					<div className="warning-icon">
-						<MdWarningAmber size={18} />
+		<>
+			{displayInstances.map((instance) => (
+				<div
+					ref={ref}
+					className={classNames('timeline-object', description.contentTypeClassNames.join(' '), {
+						selectable,
+						selected: isSelected.get(),
+						// isAtMinWidth,
+						locked,
+						warning: warnings && warnings.length > 0,
+					})}
+					style={{
+						left: instance.left,
+						width: instance.width,
+						right: instance.right,
+						zIndex: instance.zIndex,
+					}}
+					onClick={updateSelection}
+					title={warnings && warnings.length > 0 ? warnings.join(', ') : description.label}
+				>
+					<div className="body">
+						{warnings && warnings.length > 0 && (
+							<div className="warning-icon">
+								<MdWarningAmber size={18} />
+							</div>
+						)}
+						<div className="title">{description.label}</div>
+						{/* <TimelineObjectDuration duration={duration} /> */}
 					</div>
-				)}
-				<div className="title">{description.label}</div>
-				{/* <TimelineObjectDuration duration={duration} /> */}
-			</div>
-			{/* <div
-				className="handle handle--right"
-				onPointerDown={() => {
-					if (ref.current) {
-						const box = ref.current.getBoundingClientRect()
-						if (box.width <= HANDLE_WIDTH * 2) {
-							move.onStartMoving()
-							setMoveType('whole')
-							return
-						}
-					}
-					move.onStartMoving()
-					setMoveType('duration')
-				}}
-			/> */}
-			{/* {description.inTransition && (
-				<div
-					className="transition transition--in"
-					style={{
-						width:
-							description.inTransition.duration === undefined
-								? undefined
-								: description.inTransition.duration / msPerPixel,
-					}}
-					title={description.inTransition.label}
-				></div>
-			)} */}
-			{/* {description.outTransition && (
-				<div
-					className={classNames(
-						'transition transition--out',
-						(widthPercentage === null || widthPercentage > 99) && 'at-end'
-					)}
-					style={{
-						width:
-							description.outTransition.duration === undefined
-								? undefined
-								: description.outTransition.duration / msPerPixel,
-					}}
-					title={description.outTransition.label}
-				></div>
-			)} */}
-		</div>
+				</div>
+			))}
+		</>
 	)
 })

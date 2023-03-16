@@ -16,7 +16,7 @@ import { PlayButtonData, StopBtn } from '../../../../inputs/StopBtn/StopBtn'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
 import { TriggerBtn } from '../../../../inputs/TriggerBtn/TriggerBtn'
 import { ToggleBtn } from '../../../../inputs/ToggleBtn/ToggleBtn'
-import { sortLayers, timelineObjsOntoSeparateLayers } from '../../../../../../lib/partTimeline'
+import { getPartLayers, sortLayers, timelineObjsOntoSeparateLayers } from '../../../../../../lib/partTimeline'
 import { convertSorensenToElectron } from '../../../../../../lib/triggers/identifiers'
 import { EditPartName } from '../lib/EditPartName'
 import { getPartMethods } from '../lib/lib'
@@ -51,35 +51,17 @@ export const PartExpressionView: React.FC<{
 	// const [bypassSnapping, setBypassSnapping] = useState(false)
 	const [waitingForBackendUpdate, setWaitingForBackendUpdate] = useState(false)
 
-	const [resolveTime, setResolveTime] = useState(0)
-	// On startup:
-	useEffect(() => {
-		setResolveTime(Date.now())
-	}, [])
-
-	const { orgResolvedTimeline, resolverErrorMessage, onVisibilityChange, renderEverything, nextEventTime } =
-		getPartMethods({
-			rundownId,
-			parentGroupId,
-			partId,
-			partDuration: part.duration,
-			resolveOptions: {
-				time: resolveTime,
-				limitCount: 5,
-				limitTime: DISPLAY_EXPRESSION_MAX_DURATION * 2,
-			},
-		})
+	const { orgResolvedTimeline, resolverErrorMessage, onVisibilityChange, renderEverything } = getPartMethods({
+		rundownId,
+		parentGroupId,
+		partId,
+		partDuration: part.duration,
+	})
 
 	const setTimeoutTimer = useRef<NodeJS.Timeout | null>(null)
 	if (setTimeoutTimer.current) {
 		clearTimeout(setTimeoutTimer.current)
 		setTimeoutTimer.current = null
-	}
-	if (nextEventTime) {
-		const timeToNextEvent = Date.now() - nextEventTime
-		setTimeoutTimer.current = setTimeout(() => {
-			setResolveTime(Date.now())
-		}, timeToNextEvent)
 	}
 
 	// const timelineObjMove = useMemoComputedObject<TimelineObjectMove>(
@@ -181,276 +163,12 @@ export const PartExpressionView: React.FC<{
 	// 		setTrackWidth(size.width)
 	// 	}
 	// }, [timelineObjMove.moveType, timelineObjMove.partId, part.id])
-	const resolvedTimeline = orgResolvedTimeline
+	// const resolvedTimeline = orgResolvedTimeline
 	const partTimeline = useMemoComputedObject(() => {
 		return store.rundownsStore.getPartTimeline(partId)
 	}, [partId])
 
 	const estimatedDuration = DISPLAY_EXPRESSION_MAX_DURATION
-	// const estimatedDuration = useMemo(() => {
-	// 	let minTime = Infinity
-	// 	let maxTime = -Infinity
-	// 	for (const obj of Object.values(resolvedTimeline.objects)) {
-	// 		let maxUseInstances = 5
-	// 		for (const instance of obj.resolved.instances) {
-	// 			if (maxUseInstances < 0) break
-	// 			maxUseInstances--
-	// 			minTime = Math.min(minTime, instance.start, instance.end ?? Infinity)
-	// 			maxTime = Math.max(maxTime, instance.start, instance.end ?? Infinity)
-	// 		}
-	// 	}
-	// 	let duration =
-	// 	if (maxTime !== Infinity && maxTime !== -Infinity && minTime !== Infinity ) {
-	// 		return maxTime - minTime
-	// 	}
-
-	// }, [resolvedTimeline])
-	// const { modifiedTimeline, resolvedTimeline, newChangedObjects, newDuplicatedObjects, newObjectsToMoveToNewLayer } =
-	// 	useMemoComputedObject(() => {
-	// 		let modifiedTimeline: TimelineObj[]
-	// 		let resolvedTimeline: ResolvedTimeline
-	// 		let newChangedObjects: { [objectId: string]: TimelineObj } | null = null
-	// 		let newDuplicatedObjects: { [objectId: string]: TimelineObj } | null = null
-	// 		let newObjectsToMoveToNewLayer: string[] | null = null
-
-	// 		const partTimeline = store.rundownsStore.getPartTimeline(partId)
-
-	// 		const dragDelta = timelineObjMove.dragDelta || 0
-	// 		const leaderObj = partTimeline.find((obj) => obj.obj.id === timelineObjMove.leaderTimelineObjId)
-	// 		const leaderObjOriginalLayerId = leaderObj?.obj.layer
-	// 		const leaderObjLayerChanged = leaderObjOriginalLayerId !== timelineObjMove.hoveredLayerId
-	// 		if (
-	// 			leaderObj &&
-	// 			timelineObjMove.moveType === 'whole' &&
-	// 			timelineObjMove.hoveredLayerId &&
-	// 			timelineObjMove.hoveredLayerId.startsWith(EMPTY_LAYER_ID_PREFIX) &&
-	// 			store.guiStore.selected.length === 1
-	// 		) {
-	// 			// Handle moving a timelineObj to the "new layer" area
-	// 			// This type of move is only allowed when a single timelineObj is selected.
-
-	// 			modifiedTimeline = store.rundownsStore.getPartTimeline(partId)
-	// 			resolvedTimeline = orgResolvedTimeline
-	// 			newObjectsToMoveToNewLayer = [leaderObj.obj.id]
-	// 		} else if (
-	// 			(dragDelta || leaderObjLayerChanged) &&
-	// 			timelineObjMove.partId === part.id &&
-	// 			leaderObj &&
-	// 			timelineObjMove.leaderTimelineObjId &&
-	// 			timelineObjMove.moveId !== null &&
-	// 			!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
-	// 		) {
-	// 			// Handle movement, snapping
-
-	// 			// Check the the layer movement is legal:
-	// 			let moveToLayerId = timelineObjMove.hoveredLayerId
-	// 			if (moveToLayerId && !moveToLayerId.startsWith(EMPTY_LAYER_ID_PREFIX)) {
-	// 				const newLayerMapping = mappings[moveToLayerId]
-	// 				// @TODO: Figure out how newLayerMapping can be undefined here.
-	// 				if (!newLayerMapping || !filterMapping(newLayerMapping, leaderObj?.obj)) {
-	// 					moveToLayerId = null
-	// 				}
-	// 			}
-
-	// 			const selectedTimelineObjIds = compact(
-	// 				store.guiStore.selected.map((s) => (s.type === 'timelineObj' ? s.timelineObjId : undefined))
-	// 			)
-	// 			try {
-	// 				const o = applyMovementToTimeline({
-	// 					orgTimeline: partTimeline,
-	// 					orgResolvedTimeline: orgResolvedTimeline,
-	// 					snapPoints: bypassSnapping ? [] : snapPoints || [],
-	// 					snapDistanceInMilliseconds: snapDistanceInMilliseconds,
-	// 					dragDelta: dragDelta,
-
-	// 					// The use of wasMoved here helps prevent a brief flash at the
-	// 					// end of a move where the moved timelineObjs briefly appear at their pre-move position.
-	// 					moveType: timelineObjMove.moveType ?? timelineObjMove.wasMoved,
-	// 					leaderTimelineObjId: timelineObjMove.leaderTimelineObjId,
-	// 					selectedTimelineObjIds: selectedTimelineObjIds,
-	// 					cache: cache.current,
-	// 					leaderTimelineObjNewLayer: moveToLayerId,
-	// 					duplicate: Boolean(timelineObjMove.duplicate),
-	// 				})
-	// 				modifiedTimeline = o.modifiedTimeline
-	// 				resolvedTimeline = o.resolvedTimeline
-	// 				newChangedObjects = o.changedObjects
-	// 				newDuplicatedObjects = o.duplicatedObjects
-
-	// 				if (
-	// 					typeof leaderObjOriginalLayerId === 'string' &&
-	// 					!resolvedTimeline.layers[leaderObjOriginalLayerId]
-	// 				) {
-	// 					// If the leaderObj's original layer is now empty, it won't be rendered,
-	// 					// making it impossible for the user to move the leaderObj back to whence it came.
-	// 					// So, we add an empty layer object here to force it to remain visible.
-	// 					resolvedTimeline.layers[leaderObjOriginalLayerId] = []
-	// 				}
-	// 			} catch (e) {
-	// 				// If there was an error applying the movement (for example a circular dependency),
-	// 				// reset the movement to the original state:
-
-	// 				handleError('There was an error when trying to move: ' + stringifyError(e))
-
-	// 				modifiedTimeline = partTimeline
-	// 				resolvedTimeline = orgResolvedTimeline
-	// 				newChangedObjects = null
-	// 				newDuplicatedObjects = null
-	// 				newObjectsToMoveToNewLayer = null
-	// 			}
-	// 		} else {
-	// 			modifiedTimeline = partTimeline
-	// 			resolvedTimeline = orgResolvedTimeline
-	// 		}
-
-	// 		const maxDuration = getResolvedTimelineTotalDuration(resolvedTimeline, false)
-
-	// 		return {
-	// 			maxDuration,
-	// 			modifiedTimeline,
-	// 			resolvedTimeline,
-	// 			newChangedObjects,
-	// 			newDuplicatedObjects,
-	// 			newObjectsToMoveToNewLayer,
-	// 		}
-	// 	}, [
-	// 		timelineObjMove,
-	// 		part.id,
-	// 		mappings,
-	// 		handleError,
-	// 		orgResolvedTimeline,
-	// 		bypassSnapping,
-	// 		snapPoints,
-	// 		snapDistanceInMilliseconds,
-	// 		log,
-	// 	])
-
-	// useEffect(() => {
-	// 	if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
-	// 		changedObjects.current = null
-	// 	} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
-	// 		changedObjects.current = newChangedObjects
-
-	// 		if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
-	// 			duplicatedObjects.current = newDuplicatedObjects
-	// 		} else {
-	// 			duplicatedObjects.current = null
-	// 		}
-	// 	}
-	// }, [newChangedObjects, newObjectsToMoveToNewLayer, newDuplicatedObjects])
-
-	// useEffect(() => {
-	// 	// Handle when we stop moving:
-
-	// 	if (
-	// 		timelineObjMove.partId === part.id &&
-	// 		timelineObjMove.moveType === null &&
-	// 		timelineObjMove.wasMoved !== null &&
-	// 		timelineObjMove.moveId !== null &&
-	// 		!waitingForBackendUpdate &&
-	// 		!HANDLED_MOVE_IDS.includes(timelineObjMove.moveId)
-	// 	) {
-	// 		HANDLED_MOVE_IDS.unshift(timelineObjMove.moveId)
-	// 		setWaitingForBackendUpdate(true)
-	// 		store.guiStore.updateTimelineObjMove({
-	// 			saving: true,
-	// 		})
-
-	// 		// Prevent the list of handled move IDs from growing infinitely:
-	// 		if (HANDLED_MOVE_IDS.length > MAX_HANDLED_MOVE_IDS) {
-	// 			HANDLED_MOVE_IDS.length = MAX_HANDLED_MOVE_IDS
-	// 		}
-
-	// 		const promises: Promise<unknown>[] = []
-
-	// 		if (changedObjects.current) {
-	// 			for (const obj of Object.values(changedObjects.current)) {
-	// 				const promise = ipcServer.updateTimelineObj({
-	// 					rundownId: rundownId,
-	// 					partId: part.id,
-	// 					groupId: parentGroupId,
-	// 					timelineObjId: obj.obj.id,
-	// 					timelineObj: obj,
-	// 				})
-	// 				promises.push(promise)
-	// 			}
-	// 			changedObjects.current = null
-	// 		}
-	// 		if (duplicatedObjects.current) {
-	// 			promises.push(
-	// 				ipcServer.insertTimelineObjs({
-	// 					rundownId: rundownId,
-	// 					partId: part.id,
-	// 					groupId: parentGroupId,
-	// 					timelineObjs: Object.values(duplicatedObjects.current),
-	// 					target: null,
-	// 				})
-	// 			)
-	// 			duplicatedObjects.current = null
-	// 		}
-
-	// 		if (objectsToMoveToNewLayer.current) {
-	// 			for (const objId of objectsToMoveToNewLayer.current) {
-	// 				const promise = ipcServer.moveTimelineObjToNewLayer({
-	// 					rundownId: rundownId,
-	// 					partId: part.id,
-	// 					groupId: parentGroupId,
-	// 					timelineObjId: objId,
-	// 				})
-	// 				promises.push(promise)
-	// 			}
-	// 			objectsToMoveToNewLayer.current = null
-	// 		}
-	// 		Promise.allSettled(promises)
-	// 			.then((_results) => {
-	// 				setWaitingForBackendUpdate(false)
-	// 			})
-	// 			.catch((error) => {
-	// 				handleError(error)
-	// 				setWaitingForBackendUpdate(false)
-	// 			})
-	// 	}
-	// }, [
-	// 	//
-	// 	part.id,
-	// 	snapDistanceInMilliseconds,
-	// 	ipcServer,
-	// 	rundownId,
-	// 	parentGroupId,
-	// 	waitingForBackendUpdate,
-	// 	handleError,
-	// 	timelineObjMove.partId,
-	// 	timelineObjMove.moveType,
-	// 	timelineObjMove.wasMoved,
-	// 	timelineObjMove.moveId,
-	// ])
-	// useEffect(() => {
-	// 	objectsToMoveToNewLayer.current = newObjectsToMoveToNewLayer
-	// }, [newObjectsToMoveToNewLayer])
-
-	// useEffect(() => {
-	// 	const onKey = () => {
-	// 		const pressed = sorensen.getPressedKeys()
-	// 		setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
-	// 	}
-	// 	onKey()
-
-	// 	sorensen.bind('Shift', onKey, {
-	// 		up: false,
-	// 		global: true,
-	// 	})
-	// 	sorensen.bind('Shift', onKey, {
-	// 		up: true,
-	// 		global: true,
-	// 	})
-
-	// 	sorensen.addEventListener('keycancel', onKey)
-
-	// 	return () => {
-	// 		sorensen.unbind('Shift', onKey)
-	// 		sorensen.removeEventListener('keycancel', onKey)
-	// 	}
-	// }, [hotkeyContext])
 
 	// Disable button:
 	const toggleDisable = useCallback(() => {
@@ -515,9 +233,22 @@ export const PartExpressionView: React.FC<{
 		PlayoutMode.NORMAL
 
 	const groupOrPartLocked = groupLocked || part.locked || false
+
 	const sortedLayers = useMemo(() => {
-		return sortLayers(resolvedTimeline.layers, mappings)
-	}, [mappings, resolvedTimeline.layers])
+		const layers = getPartLayers(partTimeline)
+		return sortLayers(layers, mappings)
+	}, [mappings, partTimeline])
+
+	const layersWithObjectId: {
+		layerId: string
+		timelineObjId: string
+	}[] = []
+	for (const layer of sortedLayers) {
+		for (const objId of layer.objectIds) {
+			layersWithObjectId.push({ layerId: layer.layerId, timelineObjId: objId })
+		}
+	}
+
 	const firstTimelineObj = partTimeline.find((obj) => obj.obj.id === sortedLayers[0]?.objectIds[0])
 	const firstTimelineObjType = firstTimelineObj && ((firstTimelineObj.obj.content as any).type as string)
 	const tabAdditionalClassNames: { [key: string]: boolean } = {}
@@ -533,7 +264,7 @@ export const PartExpressionView: React.FC<{
 		true
 	)
 
-	const layersWithObjects = timelineObjsOntoSeparateLayers(sortedLayers, resolvedTimeline, partTimeline)
+	// const layersWithObjects = timelineObjsOntoSeparateLayers(sortedLayers, resolvedTimeline, partTimeline)
 
 	const failedGlobalShortcuts = useMemoComputedObject(() => {
 		return store.triggersStore.failedGlobalTriggers
@@ -631,31 +362,9 @@ export const PartExpressionView: React.FC<{
 						/>
 					</div>
 				</div>
-				{/* {!groupLocked && <div className="part__dropdown"></div>} */}
-
-				{/* <div className="part__time">
-					{renderEverything && (
-						<>
-							<div className="part__time__current-time">
-								<CurrentTime groupId={parentGroupId} partId={part.id} />
-							</div>
-
-							<div className="part__time__remaining-time">
-								<RemainingTime groupId={parentGroupId} partId={part.id} />
-							</div>
-
-							<div className="part__time__duration">
-								TOTAL{' '}
-								<span className="part__time__duration__value">
-									{formatDuration(part.resolved.duration, DISPLAY_DECIMAL_COUNT)}
-								</span>
-							</div>
-						</>
-					)}
-				</div> */}
 
 				<div className="part__layer-names">
-					{layersWithObjects.map(({ layerId }) => {
+					{layersWithObjectId.map(({ layerId }) => {
 						if (renderEverything) {
 							return (
 								<LayerName
@@ -674,10 +383,6 @@ export const PartExpressionView: React.FC<{
 					})}
 				</div>
 				<div className="part__expression__timeline">
-					{/* <div className="countdown-wrapper">
-						<CountdownHeads groupId={parentGroupId} partId={part.id} />
-					</div> */}
-					{/* <div className="layers-wrapper"> */}
 					{renderEverything && (
 						<>
 							{resolverErrorMessage && <div className="part__error-overlay">{resolverErrorMessage}</div>}
@@ -685,32 +390,31 @@ export const PartExpressionView: React.FC<{
 						</>
 					)}
 
-					{layersWithObjects.map(({ layerId, resolved, timelineObj }) => {
-						if (renderEverything) {
-							return (
-								<LayerForExpression
-									key={timelineObj.obj.id}
-									rundownId={rundownId}
-									groupId={parentGroupId}
-									partId={part.id}
-									resolved={resolved}
-									timelineObj={timelineObj}
-									layerId={layerId}
-									locked={groupOrPartLocked}
-									mapping={mappings[layerId]}
-									partDuration={estimatedDuration}
-								/>
-							)
-						} else {
-							return <LayerEmptyForExpression key={timelineObj.obj.id} />
-						}
-					})}
+					<>
+						{layersWithObjectId.map(({ layerId, timelineObjId }) => {
+							if (renderEverything) {
+								return (
+									<LayerForExpression
+										key={timelineObjId}
+										rundownId={rundownId}
+										groupId={parentGroupId}
+										partId={part.id}
+										timelineObjId={timelineObjId}
+										layerId={layerId}
+										locked={groupOrPartLocked}
+										mapping={mappings[layerId]}
+										partDuration={estimatedDuration}
+									/>
+								)
+							} else {
+								return <LayerEmptyForExpression key={timelineObjId} />
+							}
+						})}
+					</>
 
 					{!groupOrPartLocked && (
 						<EmptyLayer rundownId={rundownId} groupId={parentGroupId} partId={part.id} />
 					)}
-
-					{/* </div> */}
 				</div>
 				{renderEverything && (
 					<Popover

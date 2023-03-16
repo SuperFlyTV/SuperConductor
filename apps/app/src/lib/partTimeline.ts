@@ -1,9 +1,23 @@
 import { compact } from 'lodash'
+import { Part } from '../models/rundown/Part'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
 import { DeviceType, Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { sortMappings } from './TSRMappings'
 
+export function getPartLayers(partTimeline: TimelineObj[]): ResolvedTimeline['layers'] {
+	const layers: ResolvedTimeline['layers'] = {}
+
+	for (const timelineObj of partTimeline) {
+		const layerId = '' + timelineObj.obj.layer
+
+		if (!layers[layerId]) {
+			layers[layerId] = []
+		}
+		layers[layerId].push(timelineObj.obj.id)
+	}
+	return layers
+}
 export function sortLayers(layers: ResolvedTimeline['layers'], mappings: Mappings): SortedLayer[] {
 	const usedMappings: Mappings = {}
 
