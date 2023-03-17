@@ -1,7 +1,7 @@
 import { KeyDisplay, KeyDisplayTimeline, LoggerLike } from '@shared/api'
 import { assertNever, literal } from '@shared/lib'
 import _ from 'lodash'
-import { getGroupPlayData } from '../lib/playhead'
+import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
 import { IPCServer } from './IPCServer'

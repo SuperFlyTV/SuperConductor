@@ -1,0 +1,541 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`prepareGroupPlayData Default Group Idle 1`] = `
+{
+  "allPartsArePaused": true,
+  "anyPartIsPlaying": false,
+  "countdowns": {},
+  "groupIsPlaying": false,
+  "groupScheduledToPlay": [],
+  "playheads": {},
+  "sectionEndAction": null,
+  "sectionEndTime": null,
+  "sectionTimeToEnd": null,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Looping Part A when stopped 1`] = `
+{
+  "sections": [
+    {
+      "duration": 0,
+      "endAction": "next",
+      "endTime": 1000,
+      "parts": [],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+    {
+      "duration": 1000,
+      "endAction": "loop_self",
+      "endTime": null,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "loop_self",
+          "part": {
+            "id": "partA",
+            "loop": true,
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": true,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Looping Part A when stopped 2`] = `
+{
+  "allPartsArePaused": false,
+  "anyPartIsPlaying": true,
+  "countdowns": {
+    "partA": [
+      {
+        "duration": 999,
+        "timestamp": 2000,
+      },
+    ],
+  },
+  "groupIsPlaying": true,
+  "groupScheduledToPlay": [],
+  "playheads": {
+    "partA": {
+      "endAction": "loop_self",
+      "fromSchedule": false,
+      "isInRepeating": true,
+      "partDuration": 1000,
+      "partEndTime": 2000,
+      "partId": "partA",
+      "partPauseTime": undefined,
+      "partStartTime": 1000,
+      "playheadTime": 1,
+    },
+  },
+  "sectionEndAction": "loop_self",
+  "sectionEndTime": 2000,
+  "sectionTimeToEnd": 999,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Looping Part A when stopped 3`] = `
+{
+  "sections": [
+    {
+      "duration": 0,
+      "endAction": "next",
+      "endTime": 1000,
+      "parts": [],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": 1500,
+    },
+    {
+      "duration": 1000,
+      "endAction": "stop",
+      "endTime": 1500,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "loop_self",
+          "part": {
+            "id": "partA",
+            "loop": true,
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": true,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": 1500,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Looping Part A when stopped 4`] = `
+{
+  "allPartsArePaused": true,
+  "anyPartIsPlaying": false,
+  "countdowns": {},
+  "groupIsPlaying": false,
+  "groupScheduledToPlay": [],
+  "playheads": {},
+  "sectionEndAction": null,
+  "sectionEndTime": null,
+  "sectionTimeToEnd": null,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 1`] = `
+{
+  "sections": [
+    {
+      "duration": 1000,
+      "endAction": "stop",
+      "endTime": 2000,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "stop",
+          "part": {
+            "id": "partA",
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 2`] = `
+{
+  "allPartsArePaused": false,
+  "anyPartIsPlaying": true,
+  "countdowns": {},
+  "groupIsPlaying": true,
+  "groupScheduledToPlay": [],
+  "playheads": {
+    "partA": {
+      "endAction": "stop",
+      "fromSchedule": false,
+      "isInRepeating": true,
+      "partDuration": 1000,
+      "partEndTime": 2000,
+      "partId": "partA",
+      "partPauseTime": undefined,
+      "partStartTime": 1000,
+      "playheadTime": 1,
+    },
+  },
+  "sectionEndAction": "stop",
+  "sectionEndTime": 2000,
+  "sectionTimeToEnd": 999,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 3`] = `
+{
+  "sections": [
+    {
+      "duration": 1000,
+      "endAction": "infinite",
+      "endTime": null,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "stop",
+          "part": {
+            "id": "partA",
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+      ],
+      "pauseTime": 100,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 4`] = `
+{
+  "allPartsArePaused": true,
+  "anyPartIsPlaying": true,
+  "countdowns": {},
+  "groupIsPlaying": true,
+  "groupScheduledToPlay": [],
+  "playheads": {
+    "partA": {
+      "endAction": "stop",
+      "fromSchedule": false,
+      "isInRepeating": true,
+      "partDuration": 1000,
+      "partEndTime": 2000,
+      "partId": "partA",
+      "partPauseTime": 100,
+      "partStartTime": 1000,
+      "playheadTime": 100,
+    },
+  },
+  "sectionEndAction": "infinite",
+  "sectionEndTime": null,
+  "sectionTimeToEnd": 900,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 5`] = `
+{
+  "sections": [
+    {
+      "duration": 1000,
+      "endAction": "stop",
+      "endTime": 3900,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "stop",
+          "part": {
+            "id": "partA",
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 2900,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 2900,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 6`] = `
+{
+  "allPartsArePaused": false,
+  "anyPartIsPlaying": true,
+  "countdowns": {},
+  "groupIsPlaying": true,
+  "groupScheduledToPlay": [],
+  "playheads": {
+    "partA": {
+      "endAction": "stop",
+      "fromSchedule": false,
+      "isInRepeating": true,
+      "partDuration": 1000,
+      "partEndTime": 3900,
+      "partId": "partA",
+      "partPauseTime": undefined,
+      "partStartTime": 2900,
+      "playheadTime": 101,
+    },
+  },
+  "sectionEndAction": "stop",
+  "sectionEndTime": 3900,
+  "sectionTimeToEnd": 899,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 7`] = `
+{
+  "sections": [
+    {
+      "duration": 1000,
+      "endAction": "stop",
+      "endTime": 3500,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "stop",
+          "part": {
+            "id": "partA",
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 2900,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 2900,
+      "stopTime": 3500,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Default Group Play Part A when stopped 8`] = `
+{
+  "allPartsArePaused": true,
+  "anyPartIsPlaying": false,
+  "countdowns": {},
+  "groupIsPlaying": false,
+  "groupScheduledToPlay": [],
+  "playheads": {},
+  "sectionEndAction": null,
+  "sectionEndTime": null,
+  "sectionTimeToEnd": null,
+}
+`;
+
+exports[`prepareGroupPlayData Playlist Group Play Group 1`] = `
+{
+  "sections": [
+    {
+      "duration": 10000,
+      "endAction": "stop",
+      "endTime": 11000,
+      "parts": [
+        {
+          "duration": 1000,
+          "endAction": "next",
+          "part": {
+            "id": "partA",
+            "name": "Part A",
+            "resolved": {
+              "duration": 1000,
+              "label": "Part A",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+        {
+          "duration": 2000,
+          "endAction": "next",
+          "part": {
+            "id": "partB",
+            "name": "Part B",
+            "resolved": {
+              "duration": 2000,
+              "label": "Part B",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 2000,
+        },
+        {
+          "duration": 3000,
+          "endAction": "next",
+          "part": {
+            "id": "partC",
+            "name": "Part C",
+            "resolved": {
+              "duration": 3000,
+              "label": "Part C",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 4000,
+        },
+        {
+          "duration": 4000,
+          "endAction": "stop",
+          "part": {
+            "id": "partD",
+            "name": "Part D",
+            "resolved": {
+              "duration": 4000,
+              "label": "Part D",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 7000,
+        },
+      ],
+      "pauseTime": undefined,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;
+
+exports[`prepareGroupPlayData Playlist Group Play Part B 1`] = `
+{
+  "sections": [
+    {
+      "duration": 9000,
+      "endAction": "infinite",
+      "endTime": null,
+      "parts": [
+        {
+          "duration": 2000,
+          "endAction": "next",
+          "part": {
+            "id": "partB",
+            "name": "Part B",
+            "resolved": {
+              "duration": 2000,
+              "label": "Part B",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 1000,
+        },
+        {
+          "duration": 3000,
+          "endAction": "next",
+          "part": {
+            "id": "partC",
+            "name": "Part C",
+            "resolved": {
+              "duration": 3000,
+              "label": "Part C",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 3000,
+        },
+        {
+          "duration": 4000,
+          "endAction": "stop",
+          "part": {
+            "id": "partD",
+            "name": "Part D",
+            "resolved": {
+              "duration": 4000,
+              "label": "Part D",
+            },
+            "timeline": [],
+            "triggers": [],
+          },
+          "startTime": 6000,
+        },
+      ],
+      "pauseTime": 100,
+      "repeating": false,
+      "schedule": false,
+      "startTime": 1000,
+      "stopTime": undefined,
+    },
+  ],
+  "type": "single",
+  "validUntil": undefined,
+}
+`;

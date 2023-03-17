@@ -9,7 +9,7 @@ import {
 	deletePart,
 	deleteTimelineObj,
 	findGroup,
-	findPart,
+	findPartInGroup,
 	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
@@ -57,7 +57,7 @@ import {
 } from '../lib/TSRMappings'
 import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
 import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
-import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playhead'
+import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea } from '../models/project/Peripheral'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
@@ -70,6 +70,7 @@ import { BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
 import { autoUpdater } from 'electron-updater'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
+import * as RundownActions from './rundownActions'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -212,22 +213,12 @@ export class IPCServer
 		part: Part
 	} {
 		const { rundown, group } = this.getGroup(arg)
-		return this._getPartOfGroup(rundown, group, arg.partId)
-	}
-	private _getPartOfGroup(
-		rundown: Rundown,
-		group: Group,
-		partId: string
-	): {
-		rundown: Rundown
-		group: Group
-		part: Part
-	} {
-		const part = findPart(group, partId)
-		if (!part) throw new Error(`Part ${partId} not found in group ${group.id} ("${group.name}").`)
+		const part = findPartInGroup(group, arg.partId)
+		if (!part) throw new Error(`Part ${arg.partId} not found in group ${group.id} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
+
 	async undo(): Promise<void> {
 		const action = this.undoLedger[this.undoPointer]
 		try {
@@ -388,47 +379,16 @@ export class IPCServer
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 
-		this._playPart(group, part, now)
+		RundownActions.playPart(group, part, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	private async playParts(arg: { rundownId: string; groupId: string; partIds: string[] }): Promise<void> {
-		const now = Date.now()
-		const { rundown, group } = this.getGroup({
-			rundownId: arg.rundownId,
-			groupId: arg.groupId,
-		})
-		for (const partId of arg.partIds) {
-			const { part } = this._getPartOfGroup(rundown, group, partId)
 
-			this._playPart(group, part, now)
-		}
-
-		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
-	}
-	private _playPart(group: Group, part: Part, now: number): void {
-		if (part.disabled) {
-			return
-		}
-
-		if (group.oneAtATime) {
-			// Anything already playing should be stopped:
-			group.playout.playingParts = {}
-		}
-		if (!group.playout.playingParts) group.playout.playingParts = {}
-		// Start playing this Part:
-		group.playout.playingParts[part.id] = {
-			startTime: now,
-			pauseTime: undefined,
-			stopTime: undefined,
-			fromSchedule: false,
-		}
-	}
 	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 		updateGroupPlayingParts(group)
-		this._pausePart(group, part, arg.time, now)
+		RundownActions.pausePart(group, part, arg.time, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
@@ -440,82 +400,23 @@ export class IPCServer
 		})
 		updateGroupPlayingParts(group)
 		for (const partId of arg.partIds) {
-			const { part } = this._getPartOfGroup(rundown, group, partId)
+			const part = findPartInGroup(group, partId)
+			if (!part) throw new Error(`Part ${partId} not found in group ${group.id} ("${group.name}").`)
 
-			this._pausePart(group, part, arg.time, now)
+			RundownActions.pausePart(group, part, arg.time, now)
 
 			// group.preparedPlayData
 		}
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
-	private _pausePart(group: Group, part: Part, pauseTime: number | undefined, now: number): void {
-		if (part.disabled) {
-			return
-		}
 
-		if (!group.playout.playingParts) group.playout.playingParts = {}
-
-		if (group.oneAtATime) {
-			// If any other parts are playing, they should be stopped:
-			for (const partId of Object.keys(group.playout.playingParts)) {
-				if (partId !== part.id) {
-					group.playout.playingParts[partId].stopTime = now
-				}
-			}
-		}
-		const playData = getGroupPlayData(group.preparedPlayData)
-		const playhead = playData.playheads[part.id] as GroupPlayDataPlayhead | undefined
-		// const existingPlayingPart = group.playout.playingParts[part.id] as PlayingPart | undefined
-
-		// Handle this Part:
-		if (playhead) {
-			if (playhead.partPauseTime === undefined) {
-				// The part is playing, so it should be paused:
-				group.playout.playingParts[part.id] = {
-					startTime: playhead.partStartTime,
-					pauseTime:
-						pauseTime ??
-						// If a specific pauseTime not specified, pause at the current time:
-						now - playhead.partStartTime,
-					stopTime: undefined,
-					fromSchedule: false,
-				}
-			} else {
-				// The part is paused, so it should be resumed:
-				group.playout.playingParts[part.id] = {
-					startTime: now - playhead.partPauseTime,
-					pauseTime: undefined,
-					stopTime: undefined,
-					fromSchedule: false,
-				}
-			}
-		} else {
-			// Part is not playing, cue (pause) it at the time specified:
-			group.playout.playingParts[part.id] = {
-				startTime: Date.now(),
-				pauseTime: pauseTime ?? 0,
-				stopTime: undefined,
-				fromSchedule: false,
-			}
-		}
-	}
 	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
-		if (group.oneAtATime) {
-			// Stop the group:
-			for (const partId of Object.keys(group.playout.playingParts)) {
-				group.playout.playingParts[partId].stopTime = now
-			}
-		} else {
-			// Stop the part:
-			const playingPart = group.playout.playingParts[arg.partId]
-			if (playingPart) {
-				playingPart.stopTime = now
-			}
-		}
+		RundownActions.stopPart(group, arg.partId, now)
+
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async setPartTrigger(arg: {
@@ -564,35 +465,20 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 
 		// Stop the group:
-		for (const partId of Object.keys(group.playout.playingParts)) {
-			group.playout.playingParts[partId].stopTime = now
-		}
+		RundownActions.stopGroup(group, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async playGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
-		const { group } = this.getGroup(arg)
+		const { rundown, group } = this.getGroup(arg)
 
-		if (group.disabled) {
-			return
-		}
+		if (group.disabled) return
 
-		if (group.oneAtATime) {
-			// Play the first non-disabled part
-			const part = group.parts.find((p) => !p.disabled)
-			if (part) {
-				this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: part.id }).catch(
-					this._log.error
-				)
-			}
-		} else {
-			// Play all parts (disabled parts won't get played)
-			this.playParts({
-				rundownId: arg.rundownId,
-				groupId: arg.groupId,
-				partIds: group.parts.map((part) => part.id),
-			}).catch(this._log.error)
-		}
+		const now = Date.now()
+
+		RundownActions.playGroup(group, now)
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 	async pauseGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
 		const { group } = this.getGroup(arg)
