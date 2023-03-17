@@ -42,10 +42,12 @@ import {
 	TimelineObjCCGTemplate,
 	TimelineObjHyperdeckTransport,
 	TransportStatus,
+	TimelineObjTCPRequest,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
 import { shortID } from './util'
+import { GDDSchema, getDefaultDataFromSchema } from 'graphics-data-definition'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj {
 	const INFINITE_DURATION = null
@@ -65,20 +67,33 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			},
 		}
 	} else if (resource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
+		const gdd: GDDSchema | undefined = resource.gdd
+
+		let duration: number | null = 8000 // default duration
+		if (gdd?.gddPlayoutOptions?.client?.duration) duration = gdd?.gddPlayoutOptions?.client?.duration
+		else if (gdd?.gddPlayoutOptions?.client?.duration === null) duration = null // null means infinite
+		if (resource.duration) duration = resource.duration
+
+		let contentData = {} // default
+		if (gdd) contentData = getDefaultDataFromSchema(gdd)
+		if (resource.data) contentData = resource.data
+
 		const obj: TimelineObjCCGTemplate = {
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
-				duration: resource.duration || 8000,
+				duration: duration,
 			},
 			content: {
 				deviceType: DeviceType.CASPARCG,
 				type: TimelineContentTypeCasparCg.TEMPLATE,
 				templateType: 'html',
 				name: resource.name,
-				data: JSON.stringify(resource.data ?? {}),
+				data: contentData ?? {},
 				useStopCommand: resource.useStopCommand ?? true,
+				// @ts-expect-error sendDataAsXML is loosely typed..
+				sendDataAsXML: gdd?.gddPlayoutOptions?.client?.dataformat === 'casparcg-xml',
 			},
 		}
 
@@ -612,6 +627,19 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				clipId: resource.clipId,
 			},
 		})
+	} else if (resource.resourceType === ResourceType.TCP_REQUEST) {
+		return literal<TimelineObjTCPRequest>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: 1 * 1000,
+			},
+			content: {
+				deviceType: DeviceType.TCPSEND,
+				message: '',
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -688,6 +716,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'OSC'
 		case ResourceType.HTTP_REQUEST:
 			return 'HTTP'
+		case ResourceType.TCP_REQUEST:
+			return 'TCP'
 		default:
 			assertNever(resource)
 			return 'Other'

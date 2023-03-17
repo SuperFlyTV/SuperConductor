@@ -1,4 +1,5 @@
-import { MetadataBase } from './metadata'
+import { MetadataBase, MetadataType } from './metadata'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface HTTPSendMetadata extends MetadataBase {}
+export interface HTTPSendMetadata extends MetadataBase {
+	metadataType: MetadataType.HTTP_SEND
+}

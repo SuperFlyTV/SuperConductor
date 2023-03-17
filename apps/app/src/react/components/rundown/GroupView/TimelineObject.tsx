@@ -55,7 +55,7 @@ export const TimelineObject: React.FC<{
 	const selectable = !locked
 	const movable = !locked
 
-	const deviceMetadata = deviceId ? store.resourcesAndMetadataStore.metadata[deviceId] : null
+	const deviceMetadata = deviceId ? store.resourcesAndMetadataStore.getMetadata(deviceId) : null
 
 	const dragData = useRef({
 		msPerPixel,

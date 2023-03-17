@@ -20,7 +20,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
 import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 import { TimelineObject } from 'superfly-timeline'
-import { AtemMetadata, MetadataAny, MetadataType } from '@shared/models'
+import { MetadataAny, MetadataType } from '@shared/models'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -63,7 +63,7 @@ export function describeTimelineObject(
 				}
 
 				if (parsed) {
-					label += ' ' + Object.values(parsed).join(', ')
+					label += ' ' + deepDescribeValues(parsed)
 				}
 			}
 		} else {
@@ -112,8 +112,7 @@ export function describeTimelineObject(
 			label = `Input ${obj.content.me.input}`
 
 			if (deviceMetadata?.metadataType === MetadataType.ATEM) {
-				const deviceMetadata0 = deviceMetadata as AtemMetadata
-				const inputMetadata = deviceMetadata0.inputs.find((input) => {
+				const inputMetadata = deviceMetadata.inputs.find((input) => {
 					if (input.inputId === (obj as TimelineObjAtemME).content.me.input) {
 						return true
 					}
@@ -259,6 +258,26 @@ export function describeTimelineObject(
 		inTransition,
 		outTransition,
 	}
+}
+function deepDescribeValues(value: any, inner?: boolean): string {
+	if (Array.isArray(value)) {
+		if (value.length === 1) {
+			return deepDescribeValues(value[0])
+		} else {
+			const str = value.map((arrayItem) => deepDescribeValues(arrayItem, true)).join(', ')
+			if (inner) return `[ ${str} ]`
+			return str
+		}
+	} else if (value === null) {
+		return 'null'
+	} else if (typeof value === 'object') {
+		const values = Object.values(value)
+		if (values.length === 1) {
+			return deepDescribeValues(values[0])
+		} else {
+			return values.map((v) => deepDescribeValues(v, true)).join(', ')
+		}
+	} else return String(value)
 }
 
 /** Prepare timelineObject for the playout timeline.

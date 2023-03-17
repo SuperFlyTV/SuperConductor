@@ -67,6 +67,9 @@
 	*:not(input) {
 		user-select: none;
 	}
+	.markable {
+		user-select: text;
+	}
 }
 
 .app-loading {

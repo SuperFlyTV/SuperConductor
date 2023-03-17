@@ -1,7 +1,8 @@
 import { InputState } from 'atem-connection'
-import { MetadataBase } from './metadata'
+import { MetadataBase, MetadataType } from './metadata'
 
 export interface AtemMetadata extends MetadataBase {
+	metadataType: MetadataType.ATEM
 	inputs: AtemInputMetadata[]
 }
 

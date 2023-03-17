@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from
 
 export function ParsedValueInput<V>(
 	currentValue: V,
+	indeterminate: boolean | undefined,
 	onChange: (newValue: V) => void,
 	defaultValue: V,
 	parse: (str: string, isWriting: boolean) => V | undefined,
@@ -48,9 +49,11 @@ export function ParsedValueInput<V>(
 
 	const onSave = useCallback(
 		(str: string) => {
+			const hadUnsavedChanges = hasUnsavedChanges.current
 			hasUnsavedChanges.current = false
 
 			if (!str) {
+				if (indeterminate && !hadUnsavedChanges) return // ignore empty when indeterminate
 				onChange(defaultValue)
 				setValue(stringify(currentValue))
 			} else {
@@ -59,7 +62,7 @@ export function ParsedValueInput<V>(
 				else setValue(stringify(currentValue)) // unable to parse, revert to previous value
 			}
 		},
-		[onChange, currentValue, defaultValue, parse, stringify]
+		[onChange, currentValue, indeterminate, defaultValue, parse, stringify]
 	)
 	const onChangeValue = useCallback(
 		(value: V) => {
@@ -182,6 +185,15 @@ export function ParsedValueInput<V>(
 		[onSave, setHasFocus]
 	)
 
+	let displayValue = value
+	let displayLabel = label
+	let displayPlaceholder = emptyPlaceholder
+	if (indeterminate && !hasUnsavedChanges.current) {
+		displayValue = ''
+		displayLabel = label + ': -- Different values --'
+		displayPlaceholder = '-- Different values --'
+	}
+
 	let elInput = (
 		<OutlinedInput
 			id={inputId}
@@ -191,10 +203,10 @@ export function ParsedValueInput<V>(
 			onBlur={onBlur}
 			onChange={onInputChange}
 			onKeyDown={onKeyDown}
-			label={label}
-			value={value}
+			label={displayLabel}
+			value={displayValue}
 			disabled={disabled}
-			placeholder={emptyPlaceholder}
+			placeholder={displayPlaceholder}
 			endAdornment={endAdornment}
 		/>
 	)

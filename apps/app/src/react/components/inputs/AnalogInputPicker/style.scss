@@ -5,7 +5,7 @@
 .analog-input-picker {
 	opacity: 0.6;
 
-	>svg {
+	> svg {
 		/* Just outline the icon: */
 		fill: none;
 		stroke: white;
@@ -14,8 +14,12 @@
 
 	&.linked {
 		opacity: 1;
-		>svg {
+		> svg {
 			fill: white;
 		}
+	}
+
+	&__value {
+		font-size: 80%;
 	}
 }

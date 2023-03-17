@@ -40,4 +40,7 @@ export interface CasparCGTemplate extends ResourceBase {
 	sendDataAsXML?: boolean
 	channel?: number
 	layer?: number
+
+	errorMessage?: string
+	gdd?: any
 }

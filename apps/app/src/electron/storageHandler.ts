@@ -16,6 +16,7 @@ import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver
 import { CURRENT_VERSION } from './bridgeHandler'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
+import { ValidatorCache } from 'graphics-data-definition'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -42,6 +43,7 @@ export class StorageHandler extends EventEmitter {
 	private project: FileProject
 	private projectHasChanged = false
 	private projectNeedsWrite = false
+	private projectLastUpdated = 0
 
 	private openRundowns: { [fileName: string]: FileRundown } = {}
 	private rundownsNeedsWrite = new Set<string>()
@@ -62,6 +64,9 @@ export class StorageHandler extends EventEmitter {
 	private analogInputsHasChanged = new Set<string>()
 	private analogInputsNeedsWrite = false
 
+	private gddCache: ValidatorCache | null = null
+	private gddCacheNeedsWrite = false
+
 	private emitEverything = false
 
 	private emitTimeout: NodeJS.Timeout | null = null
@@ -75,6 +80,7 @@ export class StorageHandler extends EventEmitter {
 		this.loadRundowns()
 		this.resources = this.loadResources()
 		this.analogInputs = this.loadAnalogInputs()
+		this.gddCache = this.loadGDDCache()
 
 		this.cleanUpData()
 	}
@@ -189,6 +195,9 @@ export class StorageHandler extends EventEmitter {
 			...this.project.project,
 			id: this.appData.appData.project.id,
 		}
+	}
+	getProjectLastUpdated(): number {
+		return this.projectLastUpdated
 	}
 	updateProject(project: Omit<Project, 'id'>): void {
 		this.project.project = _.omit(project, 'id')
@@ -326,9 +335,18 @@ export class StorageHandler extends EventEmitter {
 		return fileName
 	}
 	openRundown(fileName: string): void {
-		this.openRundowns[fileName] = this._loadRundown(this._projectId, fileName)
+		const fileRundown = this._loadRundown(this._projectId, fileName)
+		this.openRundowns[fileName] = fileRundown
 		this.rundownsHasChanged.add(fileName)
-		this.appData.appData.rundowns[fileName].open = true
+
+		if (!this.appData.appData.rundowns[fileName]) {
+			this.appData.appData.rundowns[fileName] = {
+				name: fileRundown.rundown.name,
+				open: true,
+			}
+		} else {
+			this.appData.appData.rundowns[fileName].open = true
+		}
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
@@ -614,6 +632,13 @@ export class StorageHandler extends EventEmitter {
 		}
 		this.triggerUpdate({ analogInputs: { [fullIdentifier]: true } })
 	}
+	async getGDDCache(): Promise<ValidatorCache | null> {
+		return this.gddCache
+	}
+	async updateGDDCache(cache: ValidatorCache): Promise<void> {
+		this.gddCache = cache
+		this.triggerUpdate({ gddCache: true })
+	}
 
 	/** Triggered when the stored data has been updated */
 	private triggerUpdate(updates: {
@@ -623,6 +648,7 @@ export class StorageHandler extends EventEmitter {
 		closedRundowns?: true
 		resources?: { [resourceId: string]: true }
 		analogInputs?: { [fullIdentifier: string]: true }
+		gddCache?: true
 		metadata?: { [deviceId: string]: true }
 	}): void {
 		if (updates.appData) {
@@ -650,6 +676,9 @@ export class StorageHandler extends EventEmitter {
 				this.analogInputsHasChanged.add(fullIdentifier)
 				this.analogInputsNeedsWrite = true
 			}
+		}
+		if (updates.gddCache) {
+			this.gddCacheNeedsWrite = true
 		}
 		if (updates.metadata) {
 			for (const deviceId of Object.keys(updates.metadata)) {
@@ -914,7 +943,7 @@ export class StorageHandler extends EventEmitter {
 				// not found
 				analogInputs = {}
 			} else {
-				throw new Error(`Unable to read Resources file "${analogInputPath}": ${error}`)
+				throw new Error(`Unable to read AnalogInputs file "${analogInputPath}": ${error}`)
 			}
 		}
 
@@ -941,6 +970,24 @@ export class StorageHandler extends EventEmitter {
 		}
 
 		return analogInputs
+	}
+	private loadGDDCache(): ValidatorCache | null {
+		let gddCache: ValidatorCache | null = null
+
+		const gddCachePath = this.gddCachePath()
+		try {
+			const read = fs.readFileSync(gddCachePath, 'utf8')
+			gddCache = JSON.parse(read)
+		} catch (error) {
+			if ((error as any)?.code === 'ENOENT') {
+				// not found
+				gddCache = null
+			} else {
+				throw new Error(`Unable to read GDD cache file "${gddCachePath}": ${error}`)
+			}
+		}
+
+		return gddCache
 	}
 
 	private getDefaultAppData(): FileAppData {
@@ -1059,6 +1106,7 @@ export class StorageHandler extends EventEmitter {
 		// Store Project:
 		this.ensureDirectory(this.projectDir(this._projectId))
 		if (this.projectNeedsWrite) {
+			this.projectLastUpdated = Date.now()
 			await this.writeFileSafe(this.projectPath(this._projectId), JSON.stringify(this.project))
 			this.projectNeedsWrite = false
 		}
@@ -1081,6 +1129,11 @@ export class StorageHandler extends EventEmitter {
 		if (this.analogInputsNeedsWrite) {
 			await this.writeFileSafe(this.analogInputsPath(this._projectId), JSON.stringify(this.analogInputs))
 			this.analogInputsNeedsWrite = false
+		}
+		// Store GDD cache:
+		if (this.gddCacheNeedsWrite) {
+			await this.writeFileSafe(this.gddCachePath(), JSON.stringify(this.gddCache))
+			this.gddCacheNeedsWrite = false
 		}
 	}
 	private async _beforeWriteChanges() {
@@ -1253,6 +1306,9 @@ export class StorageHandler extends EventEmitter {
 	}
 	private analogInputsPath(projectId: string): string {
 		return path.join(this.projectDir(projectId), 'analogInputs.json')
+	}
+	private gddCachePath(): string {
+		return path.join(this._baseFolder, 'gddCache.json')
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')

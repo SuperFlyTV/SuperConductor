@@ -236,6 +236,7 @@ export class SuperConductor {
 			},
 			updatePeripherals: (): void => {
 				this.triggers?.triggerUpdatePeripherals()
+				this.analogHandler?.triggerUpdatePeripherals()
 			},
 			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
 				this.triggers?.setKeyboardKeys(activeKeys)
@@ -262,6 +263,7 @@ export class SuperConductor {
 		})
 
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
+		this.triggers.on('error', (e) => this.log.error(e))
 		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
 			this.clients.forEach((client) =>
 				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
@@ -269,7 +271,8 @@ export class SuperConductor {
 		})
 		this.ipcServer.triggers = this.triggers
 
-		this.analogHandler = new AnalogHandler(this.storage)
+		this.analogHandler = new AnalogHandler(this.storage, this.bridgeHandler)
+		this.analogHandler.on('error', (e) => this.log.error(e))
 
 		if (this.disableInternalHttpApi) {
 			this.log.info(`Internal HTTP API disabled`)

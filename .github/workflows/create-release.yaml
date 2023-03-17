@@ -154,7 +154,7 @@ jobs:
   build-macos-binary-superconductor:
     name: Build MacOS Binary - SuperConductor
     runs-on: macos-latest
-    needs: [create-release, build-macos-binary-TSR-bridge]
+    needs: [create-release]
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18

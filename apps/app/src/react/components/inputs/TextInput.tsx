@@ -3,6 +3,7 @@ import { ParsedValueInput } from './parsedValueInput'
 export const TextInput: React.FC<
 	| {
 			currentValue: string
+			indeterminate?: boolean
 			onChange: (newValue: string) => void
 			allowUndefined: false
 			emptyPlaceholder?: string
@@ -12,9 +13,12 @@ export const TextInput: React.FC<
 			width?: string
 			changeOnKey?: boolean
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 	| {
 			currentValue: string | undefined
+			indeterminate?: boolean
 			onChange: (newValue: string | undefined) => void
 			allowUndefined: true
 			emptyPlaceholder?: string
@@ -24,6 +28,8 @@ export const TextInput: React.FC<
 			width?: string
 			changeOnKey?: boolean
 			endAdornment?: React.ReactNode
+			tooltip?: string
+			focusTooltip?: string
 	  }
 > = (props) => {
 	const parse = useCallback((v: string) => v, [])
@@ -33,6 +39,7 @@ export const TextInput: React.FC<
 	if (props.allowUndefined) {
 		return ParsedValueInput<string | undefined>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			undefined,
 			parse,
@@ -45,11 +52,14 @@ export const TextInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			undefined,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<string>(
 			props.currentValue,
+			props.indeterminate,
 			props.onChange,
 			'',
 			parse,
@@ -62,7 +72,9 @@ export const TextInput: React.FC<
 			props.width,
 			props.changeOnKey,
 			undefined,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

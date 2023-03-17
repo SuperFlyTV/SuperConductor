@@ -1,7 +1,6 @@
 import { IPCServerContext } from '../../contexts/IPCServer'
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { Mappings } from 'timeline-state-resolver-types'
-import { TimelineObj } from '../../../models/rundown/TimelineObj'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow } from './DataRow/DataRow'
 import { SidebarContent } from './SidebarContent'
@@ -11,53 +10,73 @@ import { store } from '../../mobx/store'
 import { EditTimelineObjContent } from './timelineObj/editTimelineObj'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ConfirmationDialog } from '../util/ConfirmationDialog'
+import { computed } from 'mobx'
+import { firstValue } from '../../lib/multipleEdit'
 
 export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
-	groupId: string
-	partId: string
-	timelineObj: TimelineObj
+	timelineObjs: {
+		groupId: string
+		partId: string
+		timelineObjId: string
+		groupOrPartLocked?: boolean
+	}[]
 	mappings: Mappings | undefined
-	disabled?: boolean
-	deviceId?: string
-}> = observer(function SideBarEditTimelineObject(props) {
+}> = observer(function SideBarEditTimelineObject({ rundownId, timelineObjs }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
 
 	const gui = store.guiStore
-	const description = describeTimelineObject(props.timelineObj.obj)
 
-	const handleDelete = useCallback(() => {
-		ipcServer
-			.deleteTimelineObj({
-				rundownId: props.rundownId,
-				groupId: props.groupId,
-				partId: props.partId,
-				timelineObjId: props.timelineObj.obj.id,
+	/**
+	 * A list of all selected timeline objects.
+	 * Guaranteed to have at least 1 entry
+	 */
+	const fullObjs = computed(() =>
+		timelineObjs
+			.filter((p) => store.rundownsStore.hasTimelineObj(p.timelineObjId))
+			.map((p) => {
+				return {
+					...p,
+					timelineObj: store.rundownsStore.getTimelineObj(p.timelineObjId),
+				}
 			})
-			.then(() => {
-				gui.removeSelected({
-					type: 'timelineObj',
-					groupId: props.groupId,
-					partId: props.partId,
-					timelineObjId: props.timelineObj.obj.id,
-				})
-			})
-			.catch(handleError)
-	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id, props.groupId, props.partId])
+	).get()
+
+	if (fullObjs.length === 0) return null
+
+	const modifiableObjects = fullObjs.filter((o) => !o.groupOrPartLocked)
+
+	let label = 'N/A'
+	if (fullObjs.length === 1) {
+		const desciption = firstValue(modifiableObjects, (o) => describeTimelineObject(o.timelineObj.obj))
+		if (desciption) label = desciption.label
+	} else {
+		label = `${fullObjs.length} objects`
+	}
 
 	const header = (
 		<>
 			<div className="title">
-				<span>{`Timeline-object: ${describeTimelineObject(props.timelineObj.obj)?.label || ''}`}</span>
+				<span>
+					{fullObjs.length > 1
+						? `${fullObjs.length} Timeline objects`
+						: `Timeline object: ${
+								firstValue(fullObjs, (o) => describeTimelineObject(o.timelineObj.obj)?.label) || ''
+						  }`}
+				</span>
 				<div>
 					<TrashBtn
-						disabled={props.disabled}
+						disabled={modifiableObjects.length === 0}
 						onClick={() => {
 							setDeleteConfirmationOpen(true)
 						}}
-						title="Delete timeline object"
+						title={
+							modifiableObjects.length === 1
+								? 'Delete Timeline object'
+								: `Delete ${modifiableObjects.length} Timeline object`
+						}
 					/>
 				</div>
 			</div>
@@ -65,41 +84,62 @@ export const SideBarEditTimelineObject: React.FC<{
 	)
 	return (
 		<SidebarContent title={header} className="edit-timeline-obj">
-			<DataRow label="ID" value={props.timelineObj.obj.id} />
+			<DataRow label="ID" value={fullObjs.length > 1 ? 'Different IDs' : fullObjs[0].partId} />
 
 			<EditTimelineObjContent
-				obj={props.timelineObj.obj}
-				deviceId={props.deviceId}
-				onSave={(newObj) => {
-					const editedTimelineObj = {
-						...props.timelineObj,
-						obj: newObj,
-					}
-					ipcServer
-						.updateTimelineObj({
-							rundownId: props.rundownId,
-							groupId: props.groupId,
-							partId: props.partId,
-							timelineObjId: props.timelineObj.obj.id,
-							timelineObj: editedTimelineObj,
-						})
-						.catch(handleError)
+				modifiableObjects={modifiableObjects}
+				onSave={(updateObj) => {
+					modifiableObjects.forEach((o) => {
+						ipcServer
+							.updateTimelineObj({
+								rundownId: rundownId,
+								groupId: o.groupId,
+								partId: o.partId,
+								timelineObjId: o.timelineObjId,
+								timelineObj: {
+									obj: updateObj,
+								},
+							})
+							.catch(handleError)
+					})
 				}}
 			/>
 
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}
-				title="Delete Timeline Object"
+				title={
+					modifiableObjects.length === 1
+						? 'Delete Timeline Object'
+						: `Delete ${modifiableObjects.length} Timeline Objects`
+				}
 				acceptLabel="Delete"
 				onAccepted={() => {
-					handleDelete()
+					modifiableObjects.forEach((o) => {
+						ipcServer
+							.deleteTimelineObj({
+								rundownId: rundownId,
+								groupId: o.groupId,
+								partId: o.partId,
+								timelineObjId: o.timelineObj.obj.id,
+							})
+							.then(() => {
+								gui.removeSelected({
+									type: 'timelineObj',
+									groupId: o.groupId,
+									partId: o.partId,
+									timelineObjId: o.timelineObj.obj.id,
+								})
+							})
+							.catch(handleError)
+					})
+
 					setDeleteConfirmationOpen(false)
 				}}
 				onDiscarded={() => {
 					setDeleteConfirmationOpen(false)
 				}}
 			>
-				<p>Are you sure you want to delete &quot;{description.label}&quot;?</p>
+				<p>Are you sure you want to delete &quot;{label}&quot;?</p>
 			</ConfirmationDialog>
 		</SidebarContent>
 	)

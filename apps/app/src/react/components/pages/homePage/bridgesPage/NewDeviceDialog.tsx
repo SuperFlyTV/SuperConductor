@@ -8,6 +8,7 @@ import {
 	DeviceOptionsHyperdeck,
 	DeviceOptionsOBS,
 	DeviceOptionsOSC,
+	DeviceOptionsTCPSend,
 	DeviceOptionsVMix,
 	DeviceType,
 	OSCDeviceType,
@@ -121,6 +122,18 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					break
 				}
 
+				case DeviceType.TCPSEND: {
+					newDevice = literal<DeviceOptionsTCPSend>({
+						type: DeviceType.TCPSEND,
+						options: {
+							host: '192.168.0.10',
+							port: 23,
+						},
+					})
+
+					break
+				}
+
 				// @TODO: Add more device types
 
 				default:
@@ -193,6 +206,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					<MenuItem value={DeviceType.OSC}>OSC</MenuItem>
 					<MenuItem value={DeviceType.HTTPSEND}>HTTP Send</MenuItem>
 					<MenuItem value={DeviceType.HYPERDECK}>HyperDeck</MenuItem>
+					<MenuItem value={DeviceType.TCPSEND}>TCP Send</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 			</DialogContent>

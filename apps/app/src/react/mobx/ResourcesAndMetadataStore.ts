@@ -106,6 +106,12 @@ export class ResourcesAndMetadataStore {
 
 		return false
 	}
+	public getResource(resourceId: string): ResourceAny | undefined {
+		return this.resources[resourceId]
+	}
+	public getMetadata(deviceId: string): MetadataAny | undefined {
+		return this.metadata[deviceId]
+	}
 
 	private _update(data: Resources) {
 		this.resources = data

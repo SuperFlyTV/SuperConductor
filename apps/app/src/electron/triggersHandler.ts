@@ -25,6 +25,7 @@ import EventEmitter from 'events'
 import { convertSorensenToElectron } from '../lib/triggers/identifiers'
 
 export interface TriggersHandlerEvents {
+	error: (error: Error) => void
 	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
 }
 export interface TriggersHandler {
@@ -153,7 +154,7 @@ export class TriggersHandler extends EventEmitter {
 
 				if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 					this.sentkeyDisplays[fullIdentifier] = keyDisplay
-					setKeyDisplay(this.bridgeHandler, trigger, keyDisplay)
+					this.setKeyDisplay(trigger, keyDisplay)
 				}
 			}
 		}
@@ -621,15 +622,10 @@ export class TriggersHandler extends EventEmitter {
 			} else assertNever(selected)
 		}
 	}
-}
-
-function setKeyDisplay(
-	bridgeHandler: BridgeHandler,
-	trigger: ActiveTrigger,
-	keyDisplay: KeyDisplay | KeyDisplayTimeline
-) {
-	const bridgeConnection = bridgeHandler.getBridgeConnection(trigger.bridgeId)
-	if (bridgeConnection) {
-		bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
+	private setKeyDisplay(trigger: ActiveTrigger, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
+		const bridgeConnection = this.bridgeHandler.getBridgeConnection(trigger.bridgeId)
+		if (bridgeConnection) {
+			bridgeConnection.peripheralSetKeyDisplay(trigger.deviceId, trigger.identifier, keyDisplay)
+		}
 	}
 }

@@ -1,9 +1,10 @@
-import { MenuItem, TextField } from '@mui/material'
-import React from 'react'
+import { MenuItem, TextField, Tooltip } from '@mui/material'
+import React, { useCallback, useState } from 'react'
 
 export const SelectEnum: React.FC<{
 	label: React.ReactNode
 	currentValue: any
+	indeterminate?: boolean
 	options: { [key: string]: any }
 	onChange: (newValue: any) => void
 	allowUndefined?: boolean
@@ -11,7 +12,24 @@ export const SelectEnum: React.FC<{
 	fullWidth?: boolean
 	width?: string
 	disabled?: boolean
-}> = ({ currentValue, options, onChange, allowUndefined, defaultValue, label, fullWidth, width, disabled }) => {
+	tooltip?: string
+	focusTooltip?: string
+}> = ({
+	currentValue,
+	indeterminate,
+	options,
+	onChange,
+	allowUndefined,
+	defaultValue,
+	label,
+	fullWidth,
+	width,
+	disabled,
+	tooltip,
+	focusTooltip,
+}) => {
+	const [hasFocus, setHasFocus] = useState<boolean>(false)
+
 	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
 
 	// Convert Typescript-enum to key-values:
@@ -48,11 +66,22 @@ export const SelectEnum: React.FC<{
 		if (currentValue === '__undefined') {
 			allOptions[currentValue] = { value: currentValue, label: 'Not set' }
 		} else {
-			allOptions[currentValue] = { value: currentValue, label: currentValue }
+			allOptions[currentValue] = { value: currentValue, label: String(currentValue) }
 		}
 	}
 
-	return (
+	const allOptionsList = Object.entries(allOptions)
+
+	if (indeterminate) {
+		allOptionsList.unshift(['__indeterminate', { value: '__indeterminate', label: '-- Different values --' }])
+		currentValue = '__indeterminate'
+	}
+
+	const onFocus = useCallback(() => {
+		setHasFocus(true)
+	}, [setHasFocus])
+
+	let elInput = (
 		<TextField
 			select
 			margin="dense"
@@ -61,6 +90,8 @@ export const SelectEnum: React.FC<{
 			label={label}
 			value={currentValue}
 			onChange={(e) => {
+				if (e.target.value === '__indeterminate') return // ignore
+
 				if (allowUndefined && e.target.value === '__undefined') {
 					onChange(undefined)
 				} else {
@@ -69,10 +100,11 @@ export const SelectEnum: React.FC<{
 					else throw new Error('Unknown option: ' + e.target.value)
 				}
 			}}
+			onFocus={onFocus}
 			sx={{ width: width }}
 			disabled={disabled}
 		>
-			{Object.entries(allOptions).map(([key, value]) => {
+			{allOptionsList.map(([key, value]) => {
 				return (
 					<MenuItem key={key} value={key}>
 						{value.label}
@@ -81,4 +113,17 @@ export const SelectEnum: React.FC<{
 			})}
 		</TextField>
 	)
+
+	if (tooltip || focusTooltip) {
+		let displayTooltip = tooltip ?? ''
+		if (focusTooltip && hasFocus) displayTooltip = focusTooltip
+
+		elInput = (
+			<Tooltip arrow={true} title={displayTooltip}>
+				{elInput}
+			</Tooltip>
+		)
+	}
+
+	return elInput
 }

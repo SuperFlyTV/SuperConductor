@@ -4,6 +4,7 @@ import { HTTPSendMetadata } from './HTTPSend'
 import { HyperdeckMetadata } from './Hyperdeck'
 import { OBSMetadata } from './OBS'
 import { OSCMetadata } from './OSC'
+import { TCPSendMetadata } from './TCPSend'
 import { VMixMetadata } from './VMix'
 
 export type MetadataAny =
@@ -14,6 +15,7 @@ export type MetadataAny =
 	| OSCMetadata
 	| VMixMetadata
 	| HyperdeckMetadata
+	| TCPSendMetadata
 
 export interface MetadataBase {
 	metadataType: MetadataType
@@ -32,4 +34,5 @@ export enum MetadataType {
 	OBS = 'OBS',
 	OSC = 'OSC',
 	VMIX = 'VMIX',
+	TCP_SEND = 'TCP_SEND',
 }

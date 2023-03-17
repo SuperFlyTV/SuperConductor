@@ -35,7 +35,10 @@ export interface KeyDisplay {
 		long: string
 		/** The shortened version (max 10 characters is recommended)*/
 		short?: string
+		/** A text representing an analog value */
+		analogValue?: string
 	}
+
 	/** base64-encoded thumbnail */
 	thumbnail?: string
 }

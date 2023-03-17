@@ -1,4 +1,5 @@
-import { MetadataBase } from './metadata'
+import { MetadataBase, MetadataType } from './metadata'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface OSCMetadata extends MetadataBase {}
+export interface OSCMetadata extends MetadataBase {
+	metadataType: MetadataType.OSC
+}

@@ -473,8 +473,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.TCPSEND) {
-		// @TODO
-		return false
+		return resource.resourceType === ResourceType.TCP_REQUEST
 	} else if (mapping.device === DeviceType.VIZMSE) {
 		// @TODO
 		return false
