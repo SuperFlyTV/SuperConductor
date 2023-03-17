@@ -1672,6 +1672,16 @@
     npmlog "^6.0.2"
     write-file-atomic "^4.0.1"
 
+"@loupedeck/node@^0.3.1":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@loupedeck/node/-/node-0.3.1.tgz#8f4c6abdf3b3ad909c7a0435df1e7b3796fb5e52"
+  integrity sha512-2WVnjmWROAIXUUam/yeGqP47AdsOExocBx3GOIwfxKh8tm99BFOl+xukb0pGBOROK43aqM0LEyWGJOs5vtCF4g==
+  dependencies:
+    eventemitter3 "^4.0.7"
+    p-queue "^6.6.2"
+    serialport "^10.4.0"
+    tslib "^2.4.0"
+
 "@malept/cross-spawn-promise@^1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@malept/cross-spawn-promise/-/cross-spawn-promise-1.1.1.tgz#504af200af6b98e198bce768bc1730c6936ae01d"
@@ -3697,7 +3707,7 @@ binary@~0.3.0:
     buffers "~0.1.1"
     chainsaw "~0.1.0"
 
-bindings@^1.5.0, bindings@~1.5.0:
+bindings@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.5.0.tgz#10353c9e945334bc0511a6d90b38fbc7c9c504df"
   integrity sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==

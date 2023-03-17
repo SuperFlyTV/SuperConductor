@@ -17,6 +17,13 @@ export class PeripheralMIDI extends Peripheral {
 		if (PeripheralMIDI.Watching) {
 			throw new Error('Already watching')
 		}
+		if (!MIDI.Input) {
+			// Handle when MIDI is not supported
+			console.log('MIDI not supported')
+			return {
+				stop: () => {},
+			}
+		}
 		PeripheralMIDI.Watching = true
 
 		let lastSeenDevices: DevicesMap = new Map<string, { port: number; name: string }>()

@@ -70,7 +70,7 @@ export interface PeripheralInfo {
 	name: string
 
 	/** Other info about the peripheral device, to be used in GUI*/
-	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys | PeripheralInfo_MIDI
+	gui: PeripheralInfo_StreamDeck | PeripheralInfo_XKeys | PeripheralInfo_MIDI | PeripheralInfo_Loupedeck
 }
 
 export interface PeripheralInfo_StreamDeck {
@@ -80,6 +80,13 @@ export interface PeripheralInfo_StreamDeck {
 		width: number
 		height: number
 	}
+}
+export interface PeripheralInfo_Loupedeck {
+	type: PeripheralType.LOUPEDECK
+
+	layout: 'live' | 'live-s' | 'razer' | 'other'
+	lcdKeyColumns: number
+	lcdKeyRows: number
 }
 export interface PeripheralInfo_XKeys {
 	type: PeripheralType.XKEYS
@@ -108,6 +115,7 @@ export enum PeripheralType {
 	STREAMDECK = 'streamdeck',
 	XKEYS = 'xkeys',
 	MIDI = 'midi',
+	LOUPEDECK = 'loupedeck',
 }
 
 export interface AnalogValue {

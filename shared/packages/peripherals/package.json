@@ -48,6 +48,7 @@
 	"dependencies": {
 		"@elgato-stream-deck/node": "^5.7.2",
 		"@julusian/jpeg-turbo": "^1.1.1",
+		"@loupedeck/node": "^0.3.1",
 		"@shared/api": "^0.11.0-alpha.1",
 		"@shared/lib": "^0.11.0-alpha.1",
 		"lodash": "^4.17.21",

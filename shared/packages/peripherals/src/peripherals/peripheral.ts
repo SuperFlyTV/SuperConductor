@@ -99,6 +99,9 @@ export abstract class Peripheral extends EventEmitter {
 		this.previousValuesForRelative.set(identifier, absoluteValue)
 		return deltaValue
 	}
+	protected resetRelativeValue(identifier: string): void {
+		this.previousValuesForRelative.delete(identifier)
+	}
 	private previousValuesForAbsolute = new Map<string, number>() // Stores previous absolute values
 	/** Adds a value to previous value and returns an absolute value */
 	protected getAbsoluteValue(identifier: string, relativeValue: number): number {

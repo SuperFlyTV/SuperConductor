@@ -1,5 +1,6 @@
 import { KnownPeripheral } from '@shared/api'
 import EventEmitter from 'events'
+import { PeripheralLoupedeck } from './peripherals/loupedeck'
 import { PeripheralMIDI } from './peripherals/midi'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
@@ -29,6 +30,7 @@ export class PeripheralWatcher extends EventEmitter {
 		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral))
 		this.subwatchers.push(PeripheralXkeys.Watch(boundUpdateDiscoveredPeripheral))
 		this.subwatchers.push(PeripheralMIDI.Watch(boundUpdateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralLoupedeck.Watch(boundUpdateDiscoveredPeripheral))
 	}
 
 	/**
