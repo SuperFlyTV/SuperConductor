@@ -40,20 +40,23 @@ import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/Ana
 import { HiOutlineX } from 'react-icons/hi'
 import { store } from '../../../../mobx/store'
 import { computed } from 'mobx'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { CasparCGMedia, ResourceAny, ResourceType } from '@shared/models'
 import { usePromise } from '../../../../mobx/lib'
 import { EditGDDData } from '../GDD/gddEdit'
 import { GDDSchema } from 'graphics-data-definition'
 import { PartialDeep } from 'type-fest'
 import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
 import { makePartialData } from '../GDD/lib'
+import { observer } from 'mobx-react-lite'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
 	objs: TimelineObjCasparCGAny[]
 	resourceIds: string[]
 
 	onSave: OnSave
-}> = ({ objs, resourceIds, onSave: onSave0 }) => {
+}> = observer(function EditTimelineObjCasparCGAny({ objs, resourceIds, onSave: onSave0 }) {
+	const allResources = store.resourcesStore.resources
+
 	let settings: JSX.Element = <></>
 
 	const onSave = onSave0 as OnSaveType<TimelineObjCasparCGAny>
@@ -1709,6 +1712,19 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
+		let mediaResourceForFirstObj: CasparCGMedia | null = null
+		if (objs.length === 1) {
+			for (const resource of Object.values(allResources)) {
+				if (
+					resource.resourceType === ResourceType.CASPARCG_MEDIA &&
+					resource.displayName.toLowerCase() === firstObj.content.file.toLowerCase()
+				) {
+					mediaResourceForFirstObj = resource
+					break
+				}
+			}
+		}
+
 		settings = (
 			<>
 				<div className="setting">
@@ -1722,6 +1738,13 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						allowUndefined={false}
 					/>
 				</div>
+				{mediaResourceForFirstObj ? (
+					<img
+						style={{ width: '100%' }}
+						src={mediaResourceForFirstObj.thumbnail}
+						alt={mediaResourceForFirstObj.name}
+					/>
+				) : null}
 				<div className="setting">
 					<BooleanInput
 						label="Looping content"
@@ -2061,7 +2084,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			{settings}
 		</EditWrapper>
 	)
-}
+})
 
 const CasparEditTemplateData: React.FC<{
 	objs: TimelineObjCCGTemplate[]
