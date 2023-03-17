@@ -5,6 +5,7 @@ import { IPCServer } from '../api/IPCServer'
 import { IPCClient } from '../api/IPCClient'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { ClientSideLogger } from '../api/logger'
+import { setConstants } from '../constants'
 const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
@@ -39,8 +40,12 @@ export class AppStore {
 		return this._data
 	}
 
-	update(data: AppData): void {
-		this._data = data
+	update(appData: AppData): void {
+		this._data = appData
+
+		setConstants({
+			decimalCount: appData.guiDecimalCount,
+		})
 	}
 
 	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null): void {

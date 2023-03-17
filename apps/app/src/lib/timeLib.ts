@@ -153,6 +153,7 @@ function parseMilliseconds(ms: string): number {
 	return Math.floor(parseFloat(`0.${ms}`) * 1000)
 }
 export function millisecondsToTime(ms: number): { h: number; m: number; s: number; ms: number } {
+	ms = Math.abs(ms)
 	const h = Math.floor(ms / 3600000)
 	ms -= h * 3600000
 
@@ -165,27 +166,51 @@ export function millisecondsToTime(ms: number): { h: number; m: number; s: numbe
 	return { h, m, s, ms }
 }
 
-export function formatDuration(inputMs: number | null | undefined, decimalCount?: number | 'smart'): string {
+export function formatDuration(
+	inputMs: number | null | undefined,
+	decimalCount?: number | 'smart',
+	/** Set to true if the duration is used in a countdown (this causes it to turns to "0" at 0 ) */
+	isCountDown?: boolean
+): string {
 	if (inputMs === null) return '∞'
 	if (inputMs === undefined) return ''
 
+	let omitZeroMs = false
+	if (decimalCount === 'smart') {
+		if (inputMs > 60000) {
+			decimalCount = 0
+		} else {
+			omitZeroMs = true
+			decimalCount = 1
+		}
+	}
+
+	if (isCountDown && decimalCount !== undefined && inputMs > 0) {
+		// Special case: when displaying countdowns, "00:00" should display at time 0, not 0.999
+		if (decimalCount === 0) inputMs += 999
+		if (decimalCount === 1) inputMs += 99
+		if (decimalCount === 2) inputMs += 9
+	}
+
+	let sign = Math.sign(inputMs) < 0 ? '-' : ''
 	const { h, m: min, s: sec, ms } = millisecondsToTime(inputMs)
 
 	let msStr = !ms ? '000' : ms < 10 ? `00${ms}` : ms < 100 ? `0${ms}` : `${ms}` // 001 | 012 | 123
 
-	if (decimalCount === 'smart') {
-		decimalCount = inputMs > 60000 ? 0 : 1
-	}
 	if (decimalCount !== undefined) {
 		msStr = msStr.slice(0, decimalCount)
 	} else {
 		msStr = msStr.replace(/0+$/, '') // trim trailing zeros
 	}
+	if (omitZeroMs && msStr.match(/^0*$/)) msStr = '' // msStr is only zeroes, so omit them
 	if (msStr) msStr = '.' + msStr
 
-	if (h) return `${h}:${pad(min)}:${pad(sec)}` + msStr
-	if (min) return `${min}:${pad(sec)}` + msStr
-	return `${sec}` + msStr
+	if (h) return `${sign}${h}:${pad(min)}:${pad(sec)}${msStr}`
+	if (min) return `${sign}${min}:${pad(sec)}${msStr}`
+
+	if (sec === 0 && !msStr) sign = '' // Don't show "-0"
+
+	return `${sign}${sec}${msStr}`
 }
 function pad(n: number, size = 2): string {
 	let str = `${n}`
@@ -305,7 +330,41 @@ try {
 	assert(formatDuration(1234, 0), '1')
 	assert(formatDuration(1234, 1), '1.2')
 	assert(formatDuration(1234, 2), '1.23')
+	assert(formatDuration(1234, 3), '1.234')
 	assert(formatDuration(1234, 4), '1.234')
+
+	assert(formatDuration(-1234, 3), '-1.234')
+	assert(formatDuration(-1234, 2), '-1.23')
+	assert(formatDuration(-1234, 1), '-1.2')
+	assert(formatDuration(-1234, 0), '-1')
+
+	assert(formatDuration(3661500, 'smart'), '1:01:01')
+	assert(formatDuration(3661000, 'smart'), '1:01:01')
+	assert(formatDuration(12345, 'smart'), '12.3')
+	assert(formatDuration(12000, 'smart'), '12')
+
+	assert(formatDuration(1001, 0, true), '2')
+	assert(formatDuration(1000, 0, true), '1')
+	assert(formatDuration(999, 0, true), '1')
+	assert(formatDuration(1, 0, true), '1')
+	assert(formatDuration(0, 0, true), '0')
+	assert(formatDuration(-1, 0, true), '0')
+	assert(formatDuration(-1543, 0, true), '-1')
+	assert(formatDuration(-1543, 1, true), '-1.5')
+	assert(formatDuration(-1543, 2, true), '-1.54')
+	assert(formatDuration(-1543, 3, true), '-1.543')
+
+	assert(formatDuration(1001, 1, true), '1.1')
+	assert(formatDuration(1000, 1, true), '1.0')
+	assert(formatDuration(999, 1, true), '1.0')
+	assert(formatDuration(1, 1, true), '0.1')
+	assert(formatDuration(0, 1, true), '0.0')
+
+	assert(formatDuration(1001, 2, true), '1.01')
+	assert(formatDuration(1000, 2, true), '1.00')
+	assert(formatDuration(999, 2, true), '1.00')
+	assert(formatDuration(1, 2, true), '0.01')
+	assert(formatDuration(0, 2, true), '0.00')
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.error(e)
@@ -1007,7 +1066,11 @@ function dateIsReasonable(d: Date): boolean {
 
 	return true
 }
-export function formatDateTime(d: DateTimeObject | Date | number | undefined | null): string {
+export function formatDateTime(
+	d: DateTimeObject | Date | number | undefined | null,
+	allowShort = false,
+	decimalMaxCount?: number
+): string {
 	if (d === undefined) return ''
 	if (d === null) return ''
 
@@ -1018,14 +1081,28 @@ export function formatDateTime(d: DateTimeObject | Date | number | undefined | n
 		d = dateTimeObject(d)
 	}
 
+	let millisecondStr = d.millisecond ? `.${pad(d.millisecond, 3)}` : ''
+	if (decimalMaxCount === 0) {
+		millisecondStr = ''
+	} else if (decimalMaxCount) {
+		millisecondStr = millisecondStr.slice(0, 1 + decimalMaxCount)
+	}
+	const timeStr = `${pad(d.hour)}:${pad(d.minute)}:${pad(d.second)}${millisecondStr}`
+	const dateStr = `${d.year}-${pad(d.month + 1)}-${pad(d.date)}`
+
+	if (allowShort) {
+		const today = dateTimeObject(new Date())
+
+		if (today.year === d.year && today.month === d.month && today.date === d.date) {
+			// Display short time:
+			return timeStr
+		}
+	}
+
 	// TODO: Maybe support locale datestring later?
 	// return dateTimeObjectToDate(input).toLocaleString()
 
-	let str = `${d.year}-${pad(d.month + 1)}-${pad(d.date)} ${pad(d.hour)}:${pad(d.minute)}:${pad(d.second)}`
-	if (d.millisecond) {
-		str += `.${pad(d.millisecond, 3)}`
-	}
-	return str
+	return `${dateStr} ${timeStr}`
 }
 
 try {

@@ -10,12 +10,19 @@ import './style.scss'
 import { computed } from 'mobx'
 import { HelpButton } from '../../../inputs/HelpButton/HelpButton'
 import { Message } from '../message/Message'
+import { IntInput } from '../../../inputs/IntInput'
 
 export const ApplicationPage: React.FC = observer(function ApplicationPage() {
 	const serverAPI = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 
-	const preReleaseAutoUpdate = computed(() => store.appStore?.appData?.preReleaseAutoUpdate ?? false)
+	const appDataSettings = computed(() => {
+		const appData = store.appStore?.appData
+		return {
+			preReleaseAutoUpdate: appData?.preReleaseAutoUpdate ?? false,
+			guiDecimalCount: appData?.guiDecimalCount ?? 0,
+		}
+	}).get()
 
 	const [showHelp, setShowHelp] = useState(false)
 
@@ -47,14 +54,32 @@ export const ApplicationPage: React.FC = observer(function ApplicationPage() {
 					)}
 					<div className="sc-switch">
 						<Toggle
-							checked={preReleaseAutoUpdate.get()}
+							checked={appDataSettings.preReleaseAutoUpdate}
 							onChange={() => {
 								serverAPI
 									.updateAppData({
-										preReleaseAutoUpdate: !preReleaseAutoUpdate.get(),
+										preReleaseAutoUpdate: !appDataSettings.preReleaseAutoUpdate,
 									})
 									.catch(handleError)
 							}}
+						/>
+					</div>
+				</div>
+				<div>
+					<label>Number of decimals to display in GUI</label>
+					<div className="">
+						<IntInput
+							label="Decimals"
+							currentValue={appDataSettings.guiDecimalCount}
+							onChange={(value) => {
+								serverAPI
+									.updateAppData({
+										guiDecimalCount: value,
+									})
+									.catch(handleError)
+							}}
+							allowUndefined={false}
+							caps={[0, 3]}
 						/>
 					</div>
 				</div>

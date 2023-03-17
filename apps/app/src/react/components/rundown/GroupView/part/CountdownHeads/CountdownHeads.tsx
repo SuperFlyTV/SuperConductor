@@ -22,7 +22,7 @@ export const CountdownHeads = observer(function CountdownHeads(props: PropsType)
 		<>
 			{timesUntilStart &&
 				timesUntilStart.map((timeUntilStart, index) => (
-					<CountDownHead key={index} timeUntilStart={timeUntilStart} />
+					<CountDownHead key={index} timeUntilStart={timeUntilStart.duration} />
 				))}
 		</>
 	)

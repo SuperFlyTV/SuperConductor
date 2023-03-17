@@ -10,6 +10,7 @@
 	.group-list__control-row {
 		display: flex;
 		flex-grow: 1;
+		justify-content: space-between;
 		padding-top: 1rem;
 		padding-bottom: 1rem;
 		margin-bottom: -1rem;
@@ -22,6 +23,26 @@
 			height: calc(100vh - 20rem);
 
 			margin-top: -2rem;
+		}
+	}
+	.group-list__time-display {
+		display: flex;
+		// flex-direction: row;
+		justify-content: flex-end;
+
+		&__item {
+			margin: 0 0.5em;
+			&:last-child {
+				margin: 0 0 0 0.5em;
+			}
+		}
+		&__label {
+			font-family: 'Barlow Condensed';
+			font-weight: 300;
+		}
+		&__value {
+			font-family: 'Barlow Semi Condensed';
+			font-weight: 400;
 		}
 	}
 }

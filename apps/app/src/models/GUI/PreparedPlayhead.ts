@@ -44,6 +44,8 @@ export interface GroupPreparedPlayDataSection {
 
 	/** If the section originate from a schedule */
 	schedule: boolean
+
+	endAction: SectionEndAction
 }
 export interface GroupPreparedPlayDataPart {
 	/** The point in time the part starts to play. (unix timestamp) [ms] */
@@ -58,6 +60,18 @@ export interface GroupPreparedPlayDataPart {
 	/** What the playhead will do when it reaches the end of the part */
 	endAction?: PlayPartEndAction
 }
+
+export enum SectionEndAction {
+	/** Playout will stop */
+	STOP = 'stop',
+	/** Will play the next section in group */
+	NEXT_SECTION = 'next',
+	/** Will play the same section in a loop */
+	LOOP_SELF = 'loop_self',
+	/** Will continue to play this section indefinitely */
+	INFINITE = 'infinite',
+}
+
 export enum PlayPartEndAction {
 	/** Playout will stop */
 	STOP = 'stop',
