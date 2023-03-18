@@ -21,6 +21,9 @@ import {
 	MappingAtem,
 	TimelineObjCCGMedia,
 	TimelineObjCCGTemplate,
+	TimelineObjOBSCurrentScene,
+	TimelineObjOBSCurrentTransition,
+	TimelineObjVMixProgram,
 } from 'timeline-state-resolver-types'
 import { ResourceId } from '@shared/models'
 
@@ -408,7 +411,7 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceTyp
 	return ResourceType.INVALID
 }
 
-export function getResourceNameFromTimelineObj(
+export function getResourceLocatorFromTimelineObj(
 	obj: TSRTimelineObj,
 	resourceType: ResourceType,
 	mappings: Mappings
@@ -423,37 +426,65 @@ export function getResourceNameFromTimelineObj(
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
-			return generateResourceName(resourceType, (mapping as MappingAtem).index)
+			return String((mapping as MappingAtem).index)
 		case ResourceType.CASPARCG_MEDIA:
-			return generateResourceName(resourceType, (obj as TimelineObjCCGMedia).content.file.toUpperCase())
+			return (obj as TimelineObjCCGMedia).content.file.toUpperCase()
 		case ResourceType.CASPARCG_SERVER:
-			return generateResourceName(resourceType, undefined) // not yet supported
+			return 'UNSUPPORTED' // not yet supported
 		case ResourceType.CASPARCG_TEMPLATE:
-			return generateResourceName(resourceType, (obj as TimelineObjCCGTemplate).content.name.toUpperCase())
+			return (obj as TimelineObjCCGTemplate).content.name.toUpperCase()
 		case ResourceType.HTTP_REQUEST:
-			return generateResourceName(resourceType, 0)
+			return '0'
+		case ResourceType.HYPERDECK_CLIP:
+		case ResourceType.HYPERDECK_PLAY:
+		case ResourceType.HYPERDECK_PREVIEW:
+		case ResourceType.HYPERDECK_RECORD:
+			return '0'
+		case ResourceType.INVALID:
+			return 'INVALID'
+		case ResourceType.OBS_MUTE:
+		case ResourceType.OBS_RECORDING:
+		case ResourceType.OBS_STREAMING:
+		case ResourceType.OBS_RENDER:
+		case ResourceType.OBS_SOURCE_SETTINGS:
+			return '0'
+		case ResourceType.OBS_SCENE:
+			return (obj as TimelineObjOBSCurrentScene).content.sceneName
+		case ResourceType.OBS_TRANSITION:
+			return (obj as TimelineObjOBSCurrentTransition).content.transitionName
+		case ResourceType.OSC_MESSAGE:
+		case ResourceType.TCP_REQUEST:
+			return '0'
+		case ResourceType.VMIX_AUDIO_SETTINGS:
+		case ResourceType.VMIX_EXTERNAL:
+		case ResourceType.VMIX_FADER:
+		case ResourceType.VMIX_FADE_TO_BLACK:
+		case ResourceType.VMIX_INPUT_SETTINGS:
+		case ResourceType.VMIX_OUTPUT_SETTINGS:
+		case ResourceType.VMIX_OVERLAY_SETTINGS:
+		case ResourceType.VMIX_PREVIEW:
+		case ResourceType.VMIX_RECORDING:
+		case ResourceType.VMIX_STREAMING:
+			return '0'
+		case ResourceType.VMIX_INPUT:
+			return String((obj as TimelineObjVMixProgram).content.input)
+		default:
+			assertNever(resourceType)
 	}
 
 	return 'INVALID_RESOURCE_NAME'
 }
 
-export function generateResourceName(resourceType: ResourceType, locator?: number | string): string {
-	if (typeof locator === 'undefined') {
-		return `${resourceType}_MISSING_LOCATOR`
-	}
-
-	return `${resourceType}_${typeof locator === 'string' ? locator.toUpperCase() : locator}`
-}
-
 export function generateResourceId(deviceId: string, resourceType: ResourceType, locator: number | string): ResourceId {
-	const resourceName = generateResourceName(resourceType, locator)
-	return protectString<ResourceId>(`${deviceId}_${resourceType}_${resourceName}`)
+	return protectString<ResourceId>(
+		`${deviceId}_${resourceType}_${typeof locator === 'string' ? locator.toUpperCase() : locator}`
+	)
 }
 
 export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId {
 	const mapping = mappings[obj.layer]
 	const resourceType = getResourceTypeFromTimelineObj(obj)
-	const resourceName = getResourceNameFromTimelineObj(obj, resourceType, mappings)
+	const locator = getResourceLocatorFromTimelineObj(obj, resourceType, mappings)
 
-	return protectString<ResourceId>(`${mapping.deviceId}_${resourceType}_${resourceName}`)
+	return protectString<ResourceId>(`${mapping.deviceId}_${resourceType}_${locator}`)
 }
