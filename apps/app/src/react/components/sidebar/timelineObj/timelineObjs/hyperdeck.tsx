@@ -5,7 +5,7 @@ import { BooleanInput } from '../../../inputs/BooleanInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper, NOT_IMPLEMENTED_SETTINGS } from './lib'
 
 /**
  * In TSR, only some of the transport statuses are supported and actually do something.
@@ -19,10 +19,8 @@ enum SupportedTransportStatuses {
 	PREVIEW = 'preview',
 }
 
-export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
-}) => {
+export const EditTimelineObjHyperdeckAny: React.FC<EditTimelineObjProps<TimelineObjHyperdeckAny>> = (props) => {
+	const { obj, onSave } = props
 	let settings: JSX.Element = <></>
 
 	const commonSettings: JSX.Element = (
@@ -182,7 +180,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{ obj: TimelineObjHyperdeckAn
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			{commonSettings}
 			{settings}
 		</EditWrapper>

@@ -124,6 +124,9 @@ export class RundownsStore {
 	hasTimelineObj(objId: string): boolean {
 		return this._uiTimeline.has(objId)
 	}
+	getRundownIds(): string[] {
+		return Array.from(this._uiRundowns.keys())
+	}
 	getRundown(rundownId: string): RundownGUI {
 		const rundown = this._uiRundowns.get(rundownId)
 		if (!rundown) throw new Error(`Internal Error: Rundown ${rundownId} not found in store `)

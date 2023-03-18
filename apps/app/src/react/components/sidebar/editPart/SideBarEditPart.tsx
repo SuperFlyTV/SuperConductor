@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '../../util/ConfirmationDialog'
 import { computed } from 'mobx'
 import { BooleanInput } from '../../inputs/BooleanInput'
 import { DurationInput } from '../../inputs/DurationInput'
+import { TextArrayInput } from '../../inputs/TextArrayInput'
 
 export const SideBarEditPart: React.FC<{
 	rundownId: string
@@ -144,6 +145,26 @@ export const SideBarEditPart: React.FC<{
 								.catch(handleError)
 						}}
 						allowUndefined={true}
+					/>
+				</div>
+				<div className="setting">
+					<TextArrayInput
+						delimiter={',.;: '}
+						label="Class names"
+						allowUndefined={true}
+						currentValue={part.classes}
+						onChange={(value) => {
+							ipcServer
+								.updatePart({
+									rundownId,
+									groupId,
+									partId,
+									part: {
+										classes: value,
+									},
+								})
+								.catch(handleError)
+						}}
 					/>
 				</div>
 			</div>

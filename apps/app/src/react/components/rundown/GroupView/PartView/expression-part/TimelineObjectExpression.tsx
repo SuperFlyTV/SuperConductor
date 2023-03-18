@@ -359,28 +359,6 @@ export const TimelineObjectExpression: React.FC<{
 		}
 	}, [groupId, partId, obj.id])
 
-	// const durationTitle = timelineObjectDurationString(duration)
-
-	// const [isAtMinWidth, setIsAtMinWidth] = useState(false)
-	// useEffect(() => {
-	// 	if (!ref.current) {
-	// 		return
-	// 	}
-
-	// 	const elemToObserve = ref.current
-	// 	const resizeObserver = new ResizeObserver((entries) => {
-	// 		for (const entry of entries) {
-	// 			setIsAtMinWidth(entry.contentRect.width <= HANDLE_WIDTH * 2)
-	// 		}
-	// 	})
-
-	// 	resizeObserver.observe(elemToObserve)
-
-	// 	return () => {
-	// 		resizeObserver.unobserve(elemToObserve)
-	// 	}
-	// }, [])
-
 	const isSelected = computed(() =>
 		store.guiStore.isSelected({
 			type: 'timelineObj',

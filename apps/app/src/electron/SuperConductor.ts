@@ -376,7 +376,7 @@ export class SuperConductor {
 									}
 									timelineObj.obj.layer = r.layerId
 									newPart.timeline.push(timelineObj)
-									postProcessPart(newPart)
+									postProcessPart(group, newPart)
 								}
 
 								group.parts.push(newPart)
@@ -423,7 +423,7 @@ export class SuperConductor {
 								timelineObj.obj.layer = r.layerId
 
 								newPart.timeline.push(timelineObj)
-								postProcessPart(newPart)
+								postProcessPart(group, newPart)
 
 								group.parts.push(newPart)
 								added++

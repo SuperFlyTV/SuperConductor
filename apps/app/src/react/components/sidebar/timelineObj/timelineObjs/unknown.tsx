@@ -1,10 +1,10 @@
 import React from 'react'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper } from './lib'
 
-export const EditTimelineObjUnknown: React.FC<{ obj: TSRTimelineObj; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjUnknown: React.FC<EditTimelineObjProps<TSRTimelineObj>> = (props) => {
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			<p>Unknown/Unsupported timeline-object.</p>
 		</EditWrapper>
 	)

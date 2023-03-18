@@ -28,7 +28,7 @@ import {
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group } from '../models/rundown/Group'
+import { Group, PlayoutMode } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
 import {
@@ -794,16 +794,16 @@ export class IPCServer
 		const partPreChange = deepClone(part)
 		Object.assign(part, arg.part)
 
-		postProcessPart(part)
+		postProcessPart(group, part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: affectsPlayout })
 
 		return {
 			undo: () => {
-				const { rundown, part } = this.getPart(arg)
+				const { rundown, group, part } = this.getPart(arg)
 
 				Object.assign(part, partPreChange)
 
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
@@ -948,6 +948,7 @@ export class IPCServer
 		) {
 			affectsPlayout = group
 		}
+
 		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
 		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
 		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
@@ -1373,7 +1374,7 @@ export class IPCServer
 		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
 		if (arg.timelineObj.obj !== undefined) Object.assign(timelineObj.obj, arg.timelineObj.obj)
 
-		postProcessPart(part)
+		postProcessPart(group, part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -1382,7 +1383,7 @@ export class IPCServer
 
 				// Overwrite the changed timeline object with the pre-change copy we made.
 				part.timeline.splice(timelineObjIndex, 1, timelineObjPreChange)
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
@@ -1409,7 +1410,7 @@ export class IPCServer
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 		const modified = deleteTimelineObj(part, arg.timelineObjId)
 
-		if (modified) postProcessPart(part)
+		if (modified) postProcessPart(group, part)
 		if (part.timeline.length <= 0)
 			this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(this._log.error)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
@@ -1420,7 +1421,7 @@ export class IPCServer
 
 				// Re-insert the timelineObj in its original position.
 				part.timeline.splice(timelineObjIndex, 0, timelineObj)
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.DeleteTimelineObj,
@@ -1523,7 +1524,7 @@ export class IPCServer
 				timelineObjId: timelineObj.obj.id,
 			})
 
-			postProcessPart(part)
+			postProcessPart(group, part)
 		}
 		const insertedTimelineObjIds = inserted.map((t) => t.timelineObjId)
 
@@ -1544,7 +1545,7 @@ export class IPCServer
 
 				part.timeline = part.timeline.filter((obj) => !insertedTimelineObjIds.includes(obj.obj.id))
 
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.AddTimelineObj,
@@ -1582,7 +1583,7 @@ export class IPCServer
 		})
 		timelineObj.obj.layer = result.layerId
 
-		postProcessPart(part)
+		postProcessPart(group, part)
 		this._saveUpdates({ project, rundownId: arg.rundownId, rundown, group })
 
 		return {
@@ -1598,7 +1599,7 @@ export class IPCServer
 
 				timelineObj.obj.layer = originalLayer
 
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
@@ -1700,7 +1701,7 @@ export class IPCServer
 
 			part.timeline.push(timelineObj)
 			addedNewTimelineObjIds.push(timelineObj.obj.id)
-			postProcessPart(part)
+			postProcessPart(group, part)
 		}
 
 		this._saveUpdates({ project: updatedProject ? project : undefined, rundownId: arg.rundownId, rundown })
@@ -1721,7 +1722,7 @@ export class IPCServer
 				part.timeline = part.timeline.filter((t) => {
 					return !addedNewTimelineObjIds.includes(t.obj.id)
 				})
-				postProcessPart(part)
+				postProcessPart(group, part)
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.addResourcesToTimeline,
@@ -2362,6 +2363,12 @@ export class IPCServer
 
 		for (const group of groupsToUpdate) {
 			if (group.parts.length > 1) group.transparent = false
+
+			// Ensure onAtATime is set to false when in EXPRESSION mode:
+			if (group.playoutMode === PlayoutMode.EXPRESSION && group.oneAtATime) {
+				group.oneAtATime = false
+				updates.noEffectOnPlayout = false
+			}
 			if (!updates.noEffectOnPlayout) {
 				// Update Timeline:
 				group.preparedPlayData = this.callbacks.updateTimeline(group)

@@ -14,7 +14,7 @@ import { DurationInput } from '../../../inputs/DurationInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper, NOT_IMPLEMENTED_SETTINGS } from './lib'
 
 const DEFAULT_TRANSFORM: VMixTransform = {
 	zoom: 1,
@@ -32,7 +32,8 @@ enum VMixOutputSourceType {
 	Input = 'Input',
 }
 
-export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjVMixAny: React.FC<EditTimelineObjProps<TimelineObjVMixAny>> = (props) => {
+	const { obj, onSave } = props
 	const [showAll, setShowAll] = useState(false)
 	let settings: JSX.Element = NOT_IMPLEMENTED_SETTINGS
 
@@ -523,9 +524,5 @@ export const EditTimelineObjVMixAny: React.FC<{ obj: TimelineObjVMixAny; onSave:
 		assertNever(obj.content)
 	}
 
-	return (
-		<EditWrapper obj={obj} onSave={onSave}>
-			{settings}
-		</EditWrapper>
-	)
+	return <EditWrapper {...props}>{settings}</EditWrapper>
 }

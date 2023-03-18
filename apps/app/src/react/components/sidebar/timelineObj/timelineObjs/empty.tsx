@@ -1,10 +1,10 @@
 import React from 'react'
 import { TimelineObjEmpty } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper } from './lib'
 
-export const EditTimelineObjEmpty: React.FC<{ obj: TimelineObjEmpty; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjEmpty: React.FC<EditTimelineObjProps<TimelineObjEmpty>> = (props) => {
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			<p>No settings</p>
 		</EditWrapper>
 	)

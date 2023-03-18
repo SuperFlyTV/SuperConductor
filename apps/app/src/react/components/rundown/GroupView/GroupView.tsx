@@ -96,6 +96,8 @@ export const GroupView: React.FC<{
 	useEffect(() => {
 		playheadData.current = group.preparedPlayData
 
+		console.log('group.preparedPlayData', group.preparedPlayData)
+
 		const activeParts0: { [partId: string]: true } = {}
 
 		if (group.preparedPlayData) {
@@ -147,7 +149,8 @@ export const GroupView: React.FC<{
 			targetEl.closest('button') ||
 			targetEl.closest('input') ||
 			targetEl.closest('.editable') ||
-			targetEl.closest('.MuiModal-root')
+			targetEl.closest('.MuiModal-root') ||
+			targetEl.closest('.layer__content')
 		)
 			return
 
@@ -670,20 +673,22 @@ export const GroupView: React.FC<{
 								{group.locked ? <MdLock size={18} /> : <MdLockOpen size={18} />}
 							</ToggleButton>
 
-							<ToggleButton
-								title={
-									group.oneAtATime
-										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
-										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
-								}
-								value="one-at-a-time"
-								selected={group.oneAtATime}
-								size="small"
-								disabled={!canModifyOneAtATime}
-								onChange={toggleOneAtATime}
-							>
-								<MdLooksOne size={22} />
-							</ToggleButton>
+							{group.playoutMode !== PlayoutMode.EXPRESSION && (
+								<ToggleButton
+									title={
+										group.oneAtATime
+											? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
+											: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
+									}
+									value="one-at-a-time"
+									selected={group.oneAtATime}
+									size="small"
+									disabled={!canModifyOneAtATime}
+									onChange={toggleOneAtATime}
+								>
+									<MdLooksOne size={22} />
+								</ToggleButton>
+							)}
 
 							<ToggleButton
 								title={

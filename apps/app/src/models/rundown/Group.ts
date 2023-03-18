@@ -15,6 +15,8 @@ export interface GroupBase {
 	disabled?: boolean
 	locked?: boolean
 
+	classes?: string[]
+
 	playoutMode: PlayoutMode
 
 	/** Contains info for the Auto-Fill feature */

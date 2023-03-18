@@ -15,6 +15,8 @@ export interface PartBase {
 
 	duration?: number
 
+	classes?: string[]
+
 	resolved: {
 		/** Duration of the part, derived by resolving the timeline in the Part  */
 		duration: number | null // null means infinite

@@ -17,7 +17,7 @@ import {
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { IntInput } from '../../../inputs/IntInput'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper } from './lib'
 import { Button, Stack, Typography } from '@mui/material'
 import { TrashBtn } from '../../../inputs/TrashBtn'
 import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
@@ -40,7 +40,8 @@ enum ATEMBorderBevel {
 	Out = 3,
 }
 
-export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjAtemAny: React.FC<EditTimelineObjProps<TimelineObjAtemAny>> = (props) => {
+	const { obj, onSave } = props
 	let settings: JSX.Element = <></>
 
 	const obj0 = obj
@@ -834,9 +835,5 @@ export const EditTimelineObjAtemAny: React.FC<{ obj: TimelineObjAtemAny; onSave:
 		assertNever(obj.content)
 	}
 
-	return (
-		<EditWrapper obj={obj} onSave={onSave}>
-			{settings}
-		</EditWrapper>
-	)
+	return <EditWrapper {...props}>{settings}</EditWrapper>
 }

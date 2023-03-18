@@ -21,6 +21,10 @@
 		position: relative;
 		flex: 1;
 
+		&.selectable:hover {
+			background: #3b4254;
+		}
+
 		.timeline-object {
 			height: $layerHeight;
 			display: flex;

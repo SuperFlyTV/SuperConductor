@@ -1,9 +1,10 @@
+import { Group, PlayoutMode } from '../models/rundown/Group'
 import { ResolvedTimeline, Resolver } from 'superfly-timeline'
 import { getPartLabel, getResolvedTimelineTotalDuration } from '../lib/util'
 import { Part } from '../models/rundown/Part'
 import { TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
 
-export function postProcessPart(part: Part, noModify?: boolean): void {
+export function postProcessPart(parentGroup: Group, part: Part, noModify?: boolean): void {
 	let resolvedTimeline: ResolvedTimeline
 
 	const partTimeline = part.timeline.map((o) => o.obj)
@@ -53,7 +54,12 @@ export function postProcessPart(part: Part, noModify?: boolean): void {
 			}
 		}
 	}
-	const partDuration = part.duration ?? getResolvedTimelineTotalDuration(resolvedTimeline, false)
+	let partDuration: number | null
+	if (parentGroup.playoutMode === PlayoutMode.EXPRESSION) {
+		partDuration = null
+	} else {
+		partDuration = part.duration ?? getResolvedTimelineTotalDuration(resolvedTimeline, false)
+	}
 
 	part.resolved = {
 		duration: partDuration,
@@ -62,6 +68,6 @@ export function postProcessPart(part: Part, noModify?: boolean): void {
 
 	// If it was modified, run again to properly calculate artifacts:
 	if (modified && !noModify) {
-		postProcessPart(part, true)
+		postProcessPart(parentGroup, part, true)
 	}
 }

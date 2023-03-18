@@ -21,7 +21,7 @@ import {
 	Chroma,
 	DeviceType,
 } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper, OnSave } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -37,10 +37,8 @@ import { FloatInput } from '../../../inputs/FloatInput'
 import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
 import { HiOutlineX } from 'react-icons/hi'
 
-export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
-}) => {
+export const EditTimelineObjCasparCGAny: React.FC<EditTimelineObjProps<TimelineObjCasparCGAny>> = (props) => {
+	const { obj, onSave } = props
 	let settings: JSX.Element = <></>
 
 	const [showAll, setShowAll] = React.useState(false)
@@ -2016,7 +2014,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{ obj: TimelineObjCasparCGAny;
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			{commonSettings}
 			{settings}
 		</EditWrapper>

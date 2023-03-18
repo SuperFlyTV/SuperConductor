@@ -7,7 +7,7 @@ import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { TrashBtn } from '../../../inputs/TrashBtn'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper } from './lib'
 
 enum OSCEasingType {
 	Linear = 'Linear',
@@ -111,9 +111,10 @@ const EditOSCValue: React.FC<{ oscValue: SomeOSCValue; onSave: () => void }> = (
 	)
 }
 
-export const EditTimelineObjOSCAny: React.FC<{ obj: TimelineObjOSCAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjOSCAny: React.FC<EditTimelineObjProps<TimelineObjOSCAny>> = (props) => {
+	const { obj, onSave } = props
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			<div className="setting">
 				<TextInput
 					label="Path"

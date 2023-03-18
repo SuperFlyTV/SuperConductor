@@ -3,12 +3,10 @@ import React from 'react'
 import { TimelineContentTypeSofieChef, TimelineObjSofieChefAny } from 'timeline-state-resolver-types'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper } from './lib'
 
-export const EditTimelineObjSofieChefAny: React.FC<{ obj: TimelineObjSofieChefAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
-}) => {
+export const EditTimelineObjSofieChefAny: React.FC<EditTimelineObjProps<TimelineObjSofieChefAny>> = (props) => {
+	const { obj, onSave } = props
 	let settings: JSX.Element = <></>
 
 	if (obj.content.type === TimelineContentTypeSofieChef.URL) {
@@ -33,7 +31,7 @@ export const EditTimelineObjSofieChefAny: React.FC<{ obj: TimelineObjSofieChefAn
 	}
 
 	return (
-		<EditWrapper obj={obj} onSave={onSave}>
+		<EditWrapper {...props}>
 			<div className="setting">
 				<SelectEnum
 					label="Type"

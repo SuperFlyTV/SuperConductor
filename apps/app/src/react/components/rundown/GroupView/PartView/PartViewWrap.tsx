@@ -64,7 +64,8 @@ export const PartViewWrap: React.FC<{
 				targetEl.closest('button') ||
 				targetEl.closest('input') ||
 				targetEl.closest('.editable') ||
-				targetEl.closest('.MuiModal-root')
+				targetEl.closest('.MuiModal-root') ||
+				targetEl.closest('.layer__content')
 			)
 				return
 

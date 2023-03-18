@@ -364,11 +364,11 @@ export const PartExpressionView: React.FC<{
 				</div>
 
 				<div className="part__layer-names">
-					{layersWithObjectId.map(({ layerId }) => {
+					{layersWithObjectId.map(({ layerId, timelineObjId }) => {
 						if (renderEverything) {
 							return (
 								<LayerName
-									key={layerId}
+									key={timelineObjId}
 									rundownId={rundownId}
 									groupId={parentGroupId}
 									partId={part.id}
@@ -378,7 +378,7 @@ export const PartExpressionView: React.FC<{
 								/>
 							)
 						} else {
-							return <LayerNameEmpty key={layerId} />
+							return <LayerNameEmpty key={timelineObjId} />
 						}
 					})}
 				</div>
@@ -460,11 +460,12 @@ const PartControlButtons: React.FC<{
 		ipcServer.stopPart({ rundownId, groupId, partId }).catch(handleError)
 	}, [handleError, ipcServer, rundownId, groupId, partId])
 
+	console.log('a')
 	const { groupIsPlaying, anyPartIsPlaying, allPartsArePaused, partIsPlaying, partIsPaused, playheadCount } =
 		useMemoComputedObject(
 			() => {
 				const playData = store.groupPlayDataStore.groups.get(groupId)
-
+				console.log('playData', playData)
 				if (!playData) {
 					return {
 						groupIsPlaying: false,
@@ -475,6 +476,7 @@ const PartControlButtons: React.FC<{
 						partIsPaused: false,
 					}
 				}
+
 				const playhead = partId && playData.playheads[partId]
 				return {
 					groupIsPlaying: playData.groupIsPlaying,
@@ -488,6 +490,15 @@ const PartControlButtons: React.FC<{
 			[groupId],
 			true
 		)
+
+	console.log({
+		groupIsPlaying,
+		anyPartIsPlaying,
+		allPartsArePaused,
+		partIsPlaying,
+		partIsPaused,
+		playheadCount,
+	})
 
 	const { groupDisabled, groupOneAtATime } = useMemoComputedObject(
 		() => {

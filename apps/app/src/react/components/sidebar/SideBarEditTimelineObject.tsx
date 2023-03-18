@@ -11,6 +11,8 @@ import { store } from '../../mobx/store'
 import { EditTimelineObjContent } from './timelineObj/editTimelineObj'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ConfirmationDialog } from '../util/ConfirmationDialog'
+import { useMemoComputedValue } from '../../mobx/lib'
+import { PlayoutMode } from '../../../models/rundown/Group'
 
 export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
@@ -46,6 +48,11 @@ export const SideBarEditTimelineObject: React.FC<{
 			.catch(handleError)
 	}, [gui, handleError, ipcServer, props.rundownId, props.timelineObj.obj.id, props.groupId, props.partId])
 
+	const isExpression = useMemoComputedValue(() => {
+		const group = store.rundownsStore.getGroup(props.groupId)
+		return group.playoutMode === PlayoutMode.EXPRESSION
+	}, [props.groupId])
+
 	const header = (
 		<>
 			<div className="title">
@@ -68,6 +75,7 @@ export const SideBarEditTimelineObject: React.FC<{
 
 			<EditTimelineObjContent
 				obj={props.timelineObj.obj}
+				isExpression={isExpression}
 				onSave={(newObj) => {
 					const editedTimelineObj = {
 						...props.timelineObj,

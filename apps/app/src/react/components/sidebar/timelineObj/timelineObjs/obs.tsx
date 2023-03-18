@@ -14,9 +14,10 @@ import {
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper, NOT_IMPLEMENTED_SETTINGS } from './lib'
 
-export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: OnSave }> = ({ obj, onSave }) => {
+export const EditTimelineObjOBSAny: React.FC<EditTimelineObjProps<TimelineObjOBSAny>> = (props) => {
+	const { obj, onSave } = props
 	let settings: JSX.Element = <></>
 
 	const obj0 = obj
@@ -241,9 +242,5 @@ export const EditTimelineObjOBSAny: React.FC<{ obj: TimelineObjOBSAny; onSave: O
 		return NOT_IMPLEMENTED_SETTINGS
 	}
 
-	return (
-		<EditWrapper obj={obj} onSave={onSave}>
-			{settings}
-		</EditWrapper>
-	)
+	return <EditWrapper {...props}>{settings}</EditWrapper>
 }

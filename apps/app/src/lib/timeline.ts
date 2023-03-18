@@ -1,12 +1,20 @@
 import { deepClone, ensureArray } from '@shared/lib'
+import _ from 'lodash'
+import { TimelineObj } from 'src/models/rundown/TimelineObj'
 import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject } from 'superfly-timeline'
-import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
+import {
+	DeviceType,
+	TimelineObjEmpty,
+	TSRTimeline,
+	TSRTimelineObj,
+	TSRTimelineObjBase,
+} from 'timeline-state-resolver-types'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataPart,
 	GroupPreparedPlayDataSection,
 } from '../models/GUI/PreparedPlayhead'
-import { GroupBase } from '../models/rundown/Group'
+import { GroupBase, PlayoutMode } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import { modifyTimelineObjectForPlayout } from './TimelineObj'
 
@@ -172,7 +180,7 @@ function sectionToTimelineObj(
 			deviceType: DeviceType.ABSTRACT,
 			type: 'empty',
 		},
-		classes: [],
+		classes: group.classes ?? [],
 		isGroup: true,
 		children: [],
 	}
@@ -253,10 +261,17 @@ function partToTimelineObj(
 		duration: part.resolved.duration,
 		repeating: part.loop ? part.resolved.duration : undefined,
 	}
-	if (pauseTime !== undefined) {
-		// is paused
-		delete enable.duration
-		delete enable.repeating
+	if (group.playoutMode === PlayoutMode.EXPRESSION) {
+		enable.while = '1'
+	} else {
+		enable.start = startTime
+		enable.duration = part.resolved.duration
+		enable.repeating = part.loop ? part.resolved.duration : undefined
+		if (pauseTime !== undefined) {
+			// is paused
+			delete enable.duration
+			delete enable.repeating
+		}
 	}
 
 	const timelineObj: TimelineObjEmpty = {
@@ -267,20 +282,28 @@ function partToTimelineObj(
 			deviceType: DeviceType.ABSTRACT,
 			type: 'empty',
 		},
-		classes: [],
+		classes: part.classes ?? [],
 		isGroup: true,
 
-		children: customPartContent
-			? customPartContent(group, playingPart, objId, pauseTime !== undefined)
-			: part.timeline.map((o) => {
-					const partTimelineObj = deepClone(o.obj)
-					modifyTimelineObjectForPlayout(partTimelineObj, playingPart, o, pauseTime)
-					return partTimelineObj
-			  }),
+		children: _.compact(
+			customPartContent
+				? customPartContent(group, playingPart, objId, pauseTime !== undefined)
+				: part.timeline.map((o) => {
+						const partTimelineObj = deepClone(o.obj)
+						modifyTimelineObjectForPlayout(group, partTimelineObj, playingPart, o, pauseTime)
+
+						for (const enable of ensureArray(partTimelineObj.enable)) {
+							if (!_.isEmpty(enable)) return partTimelineObj
+						}
+						// else:
+						return undefined
+				  })
+		),
 	}
 
 	return timelineObj
 }
+
 function changeTimelineId(obj: TSRTimelineObjBase, changeId: (id: string) => string) {
 	/** Maps old id -> new id */
 	const changedIds = new Map<string, string>()

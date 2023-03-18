@@ -13,12 +13,13 @@ import {
 	TransportStatus,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { assertNever, capitalizeFirstLetter } from '@shared/lib'
+import { assertNever, capitalizeFirstLetter, ensureArray } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
 import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 import { TimelineObject } from 'superfly-timeline'
+import { GroupBase, PlayoutMode } from '../models/rundown/Group'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -246,12 +247,30 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
  * Modifies the provided object
  */
 export function modifyTimelineObjectForPlayout(
+	group: GroupBase,
 	obj: TSRTimelineObj,
 	playingPart: GroupPreparedPlayDataPart,
 	orgTimelineObj: TimelineObj,
 	pauseTime: number | undefined
 ): void {
 	let isPaused = false
+
+	if (group.playoutMode === PlayoutMode.EXPRESSION) {
+		// Only allow enable.while:
+		for (const enable of ensureArray(obj.enable)) {
+			delete enable.start
+			delete enable.duration
+			delete enable.end
+			delete enable.repeating
+		}
+	} else {
+		// Don't allow enable.while:
+		for (const enable of ensureArray(obj.enable)) {
+			delete enable.while
+		}
+	}
+
+	// Handle paused:
 	if (pauseTime !== undefined) {
 		// is paused
 

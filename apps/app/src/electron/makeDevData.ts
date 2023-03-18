@@ -160,7 +160,7 @@ export function makeDevData(): {
 					part.timeline.push(obj)
 				}
 
-				postProcessPart(part)
+				postProcessPart(group, part)
 			}
 		}
 	}

@@ -21,6 +21,7 @@ import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
 import Toggle from 'react-toggle'
 import { FormLabel, Grid } from '@mui/material'
 import { shortID } from '../../../../lib/util'
+import { TextArrayInput } from '../../inputs/TextArrayInput'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string
@@ -272,6 +273,24 @@ export const SideBarEditGroup: React.FC<{
 						)}
 					</>
 				)}
+
+				<div className="setting">
+					<TextArrayInput
+						delimiter={',.;: '}
+						label="Class names"
+						allowUndefined={true}
+						currentValue={group.classes}
+						onChange={(value) => {
+							ipcServer
+								.updateGroup({
+									rundownId,
+									groupId,
+									group: { classes: value },
+								})
+								.catch(handleError)
+						}}
+					/>
+				</div>
 			</div>
 
 			<ConfirmationDialog

@@ -1,14 +1,7 @@
 import React from 'react'
 import { TimelineObjSisyfosAny } from 'timeline-state-resolver-types'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditTimelineObjProps, EditWrapper, NOT_IMPLEMENTED_SETTINGS } from './lib'
 
-export const EditTimelineObjSisyfosAny: React.FC<{ obj: TimelineObjSisyfosAny; onSave: OnSave }> = ({
-	obj,
-	onSave,
-}) => {
-	return (
-		<EditWrapper obj={obj} onSave={onSave}>
-			{NOT_IMPLEMENTED_SETTINGS}
-		</EditWrapper>
-	)
+export const EditTimelineObjSisyfosAny: React.FC<EditTimelineObjProps<TimelineObjSisyfosAny>> = (props) => {
+	return <EditWrapper {...props}>{NOT_IMPLEMENTED_SETTINGS}</EditWrapper>
 }
