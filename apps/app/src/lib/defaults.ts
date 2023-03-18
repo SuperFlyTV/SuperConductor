@@ -175,7 +175,6 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 						name: 'Part 1',
 						timeline: [
 							{
-								resourceId: 'someResource0',
 								obj: {
 									id: shortID(),
 									enable: {

@@ -158,7 +158,6 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: {
-			resourceId?: TimelineObj['resourceId']
 			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}) => void

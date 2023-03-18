@@ -1,3 +1,4 @@
+import { unprotectString } from '@shared/models'
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
@@ -48,7 +49,7 @@ export const Layer: React.FC<{
 						groupId,
 						partId,
 						layerId,
-						resourceIds: item.resources.map((r) => r.id),
+						resourceIds: item.resources.map((r) => unprotectString(r.id)),
 					})
 					.catch(handleError)
 			},

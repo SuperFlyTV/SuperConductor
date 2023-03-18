@@ -11,14 +11,16 @@ import {
 	AtemMediaPlayer,
 	AtemSsrc,
 	AtemSsrcProps,
+	ResourceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { generateResourceId } from '@shared/lib'
 
 export class AtemSideload implements SideLoadDevice {
 	private atem: Atem
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: LoggerLike) {
 		this.atem = new Atem()
@@ -42,10 +44,10 @@ export class AtemSideload implements SideLoadDevice {
 		return this.atem.destroy()
 	}
 	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+		const resources: Map<ResourceId, ResourceAny> = new Map()
 
 		if (this.atem.status !== AtemConnectionStatus.CONNECTED || !this.atem.state) {
-			return Object.values(this.cacheResources)
+			return Array.from(this.cacheResources.values())
 		}
 
 		for (const me of this.atem.state.video.mixEffects) {
@@ -55,11 +57,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMe = {
 				resourceType: ResourceType.ATEM_ME,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_me_${me.index}`,
+				id: generateResourceId(this.deviceId, ResourceType.ATEM_ME, me.index),
 				index: me.index,
 				displayName: `ATEM ME ${me.index + 1}`,
 			}
-			resources[resource.id] = resource
+			resources.set(resource.id, resource)
 		}
 
 		for (let i = 0; i < this.atem.state.video.downstreamKeyers.length; i++) {
@@ -71,11 +73,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemDsk = {
 				resourceType: ResourceType.ATEM_DSK,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_dsk_${i}`,
+				id: generateResourceId(this.deviceId, ResourceType.ATEM_DSK, i),
 				index: i,
 				displayName: `ATEM DSK ${i + 1}`,
 			}
-			resources[resource.id] = resource
+			resources.set(resource.id, resource)
 		}
 
 		for (let i = 0; i < this.atem.state.video.auxilliaries.length; i++) {
@@ -87,11 +89,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemAux = {
 				resourceType: ResourceType.ATEM_AUX,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_aux_${i}`,
+				id: generateResourceId(this.deviceId, ResourceType.ATEM_AUX, i),
 				index: i,
 				displayName: `ATEM AUX ${i + 1}`,
 			}
-			resources[resource.id] = resource
+			resources.set(resource.id, resource)
 		}
 
 		for (let i = 0; i < this.atem.state.video.superSources.length; i++) {
@@ -104,22 +106,22 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemSsrc = {
 					resourceType: ResourceType.ATEM_SSRC,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_ssrc_${i}`,
+					id: generateResourceId(this.deviceId, ResourceType.ATEM_SSRC, i),
 					index: i,
 					displayName: `ATEM SuperSource ${i + 1}`,
 				}
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 
 			{
 				const resource: AtemSsrcProps = {
 					resourceType: ResourceType.ATEM_SSRC_PROPS,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_ssrc_props_${i}`,
+					id: generateResourceId(this.deviceId, ResourceType.ATEM_SSRC_PROPS, i),
 					index: i,
 					displayName: `ATEM SuperSource ${i + 1} Props`,
 				}
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 		}
 
@@ -127,10 +129,10 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMacroPlayer = {
 				resourceType: ResourceType.ATEM_MACRO_PLAYER,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_macro_player`,
+				id: generateResourceId(this.deviceId, ResourceType.ATEM_MACRO_PLAYER, 0),
 				displayName: 'ATEM Macro Player',
 			}
-			resources[resource.id] = resource
+			resources.set(resource.id, resource)
 		}
 
 		if (this.atem.state.fairlight) {
@@ -143,11 +145,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemAudioChannel = {
 					resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_audio_channel_${inputNumber}`,
+					id: generateResourceId(this.deviceId, ResourceType.ATEM_AUDIO_CHANNEL, inputNumber),
 					index: parseInt(inputNumber, 10),
 					displayName: `ATEM Audio Channel ${inputNumber}`,
 				}
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 		} else if (this.atem.state.audio) {
 			for (const channelNumber in this.atem.state.audio.channels) {
@@ -159,11 +161,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemAudioChannel = {
 					resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_audio_channel_${channelNumber}`,
+					id: generateResourceId(this.deviceId, ResourceType.ATEM_AUDIO_CHANNEL, channelNumber),
 					index: parseInt(channelNumber, 10),
 					displayName: `ATEM Audio Channel ${channelNumber}`,
 				}
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 		}
 
@@ -176,14 +178,14 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMediaPlayer = {
 				resourceType: ResourceType.ATEM_MEDIA_PLAYER,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_media_player_${i}`,
+				id: generateResourceId(this.deviceId, ResourceType.ATEM_MEDIA_PLAYER, i),
 				index: i,
 				displayName: `ATEM Media Player ${i + 1}`,
 			}
-			resources[resource.id] = resource
+			resources.set(resource.id, resource)
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		return Array.from(resources.values())
 	}
 }

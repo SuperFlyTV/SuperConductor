@@ -55,6 +55,7 @@ import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import { useFrame } from '../../../lib/useFrame'
 import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
+import { unprotectString } from '@shared/models'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -879,7 +880,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 							groupId: group.id,
 							partId,
 							layerId: null,
-							resourceIds: [resource.id],
+							resourceIds: [unprotectString(resource.id)],
 						})
 					}
 				} catch (error) {

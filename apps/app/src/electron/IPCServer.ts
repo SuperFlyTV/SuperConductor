@@ -42,8 +42,8 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, deepClone } from '@shared/lib'
+import { protectString, ResourceAny, ResourceId, ResourceType } from '@shared/models'
+import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
@@ -1360,7 +1360,6 @@ export class IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: {
-			resourceId?: TimelineObj['resourceId']
 			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}): Promise<UndoableResult<void> | undefined> {
@@ -1377,7 +1376,6 @@ export class IPCServer
 		const timelineObjPreChange = deepClone(timelineObj)
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
-		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
 		if (arg.timelineObj.obj !== undefined) deepExtend(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
@@ -1573,11 +1571,11 @@ export class IPCServer
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" could not be found.`)
 
-		if (!timelineObj.resourceId) throw new Error(`TimelineObj "${arg.timelineObjId}" lacks a resourceId.`)
-		const resource = this.storage.getResource(timelineObj.resourceId)
+		const project = this.getProject()
+		const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
+		const resource = this.storage.getResource(resourceId)
 
 		const originalLayer = timelineObj.obj.layer
-		const project = this.getProject()
 		const result = this._findBestOrCreateLayer({
 			project,
 			rundown,
@@ -1633,7 +1631,10 @@ export class IPCServer
 		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
 		for (const resourceId of arg.resourceIds) {
-			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
+			const resource =
+				typeof resourceId === 'string'
+					? this.storage.getResource(protectString<ResourceId>(resourceId))
+					: resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
 
 			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
@@ -1692,7 +1693,6 @@ export class IPCServer
 				)
 			}
 			const timelineObj: TimelineObj = {
-				resourceId: resource.id,
 				obj,
 				resolved: { instances: [] }, // set later, in postProcessPart
 			}
@@ -2037,11 +2037,10 @@ export class IPCServer
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (timelineObj.obj.layer === arg.mappingId) {
-						if (!timelineObj.resourceId)
-							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+						const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
 
 						let deviceId: string | undefined
-						const resource = this.storage.getResource(timelineObj.resourceId)
+						const resource = this.storage.getResource(resourceId)
 						if (resource) {
 							deviceId = resource.deviceId
 						}

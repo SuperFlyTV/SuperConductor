@@ -15,6 +15,7 @@ import { Btn } from '../inputs/Btn/Btn'
 import { getClassNameFromResource } from '../../../lib/resources'
 import { MoveTarget } from '../../../lib/util'
 import { ErrorBoundary } from '../util/ErrorBoundary'
+import { unprotectString } from '@shared/models'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	// Drag n' Drop:
@@ -154,7 +155,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 							groupId,
 							partId,
 							layerId: null,
-							resourceIds: [resource.id],
+							resourceIds: [unprotectString(resource.id)],
 						})
 					}
 				} catch (error) {
@@ -217,7 +218,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 							groupId,
 							partId,
 							layerId: null,
-							resourceIds: [resource.id],
+							resourceIds: [unprotectString(resource.id)],
 						})
 					}
 				} catch (error) {

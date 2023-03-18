@@ -1,6 +1,6 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia } from '@shared/models'
+import { ResourceAny, ResourceType, CasparCGMedia, ResourceId } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import {
@@ -8,11 +8,12 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates'
+import { generateResourceId } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
 		this.ccg = new CasparCG({
@@ -35,10 +36,10 @@ export class CasparCGSideload implements SideLoadDevice {
 	}
 
 	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+		const resources: Map<ResourceId, ResourceAny> = new Map()
 
 		if (!this.ccg.connected) {
-			return Object.values(this.cacheResources)
+			return Array.from(this.cacheResources.values())
 		}
 
 		// Refresh media:
@@ -75,7 +76,7 @@ export class CasparCGSideload implements SideLoadDevice {
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_media_${media.name}`,
+					id: generateResourceId(this.deviceId, ResourceType.CASPARCG_MEDIA, media.name),
 					...media,
 					displayName: media.name,
 				}
@@ -93,7 +94,7 @@ export class CasparCGSideload implements SideLoadDevice {
 					}
 				}
 
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 		}
 
@@ -112,6 +113,6 @@ export class CasparCGSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		return Array.from(resources.values())
 	}
 }

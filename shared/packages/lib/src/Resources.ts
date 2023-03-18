@@ -1,5 +1,28 @@
-import { ResourceAny, ResourceType } from '@shared/models'
+import { protectString, ResourceAny, ResourceType } from '@shared/models'
 import { assertNever } from './lib'
+import {
+	TSRTimelineObj,
+	Mappings,
+	DeviceType,
+	TimelineContentTypeAtem,
+	TimelineContentTypeCasparCg,
+	TimelineContentTypeHTTP,
+	TimelineContentTypeHyperdeck,
+	TransportStatus,
+	TimelineContentTypeLawo,
+	TimelineContentTypeOBS,
+	TimelineContentTypeOSC,
+	TimelineContentTypePanasonicPtz,
+	TimelineContentTypePharos,
+	TimelineContentTypeSisyfos,
+	TimelineContentTypeSofieChef,
+	TimelineContentTypeVizMSE,
+	TimelineContentTypeVMix,
+	MappingAtem,
+	TimelineObjCCGMedia,
+	TimelineObjCCGTemplate,
+} from 'timeline-state-resolver-types'
+import { ResourceId } from '@shared/models'
 
 enum GeneralResourceType {
 	MEDIA = 'media',
@@ -111,4 +134,326 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
 	}
+}
+
+export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceType {
+	switch (obj.content.deviceType) {
+		case DeviceType.ABSTRACT:
+			return ResourceType.INVALID
+
+		case DeviceType.ATEM: {
+			switch (obj.content.type) {
+				case TimelineContentTypeAtem.AUDIOCHANNEL:
+					return ResourceType.ATEM_AUDIO_CHANNEL
+				case TimelineContentTypeAtem.AUX:
+					return ResourceType.ATEM_AUX
+				case TimelineContentTypeAtem.DSK:
+					return ResourceType.ATEM_DSK
+				case TimelineContentTypeAtem.MACROPLAYER:
+					return ResourceType.ATEM_MACRO_PLAYER
+				case TimelineContentTypeAtem.ME:
+					return ResourceType.ATEM_ME
+				case TimelineContentTypeAtem.MEDIAPLAYER:
+					return ResourceType.ATEM_MEDIA_PLAYER
+				case TimelineContentTypeAtem.SSRC:
+					return ResourceType.ATEM_SSRC
+				case TimelineContentTypeAtem.SSRCPROPS:
+					return ResourceType.ATEM_SSRC_PROPS
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.CASPARCG: {
+			switch (obj.content.type) {
+				case TimelineContentTypeCasparCg.HTMLPAGE:
+					return ResourceType.INVALID
+				case TimelineContentTypeCasparCg.INPUT:
+					return ResourceType.INVALID
+				case TimelineContentTypeCasparCg.IP:
+					return ResourceType.INVALID
+				case TimelineContentTypeCasparCg.MEDIA:
+					return ResourceType.CASPARCG_MEDIA
+				case TimelineContentTypeCasparCg.RECORD:
+					return ResourceType.INVALID
+				case TimelineContentTypeCasparCg.ROUTE:
+					return ResourceType.INVALID
+				case TimelineContentTypeCasparCg.TEMPLATE:
+					return ResourceType.CASPARCG_TEMPLATE
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.HTTPSEND: {
+			switch (obj.content.type) {
+				case TimelineContentTypeHTTP.DELETE:
+				case TimelineContentTypeHTTP.GET:
+				case TimelineContentTypeHTTP.POST:
+				case TimelineContentTypeHTTP.PUT:
+					return ResourceType.HTTP_REQUEST
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.HYPERDECK: {
+			switch (obj.content.type) {
+				case TimelineContentTypeHyperdeck.TRANSPORT:
+					switch (obj.content.status) {
+						case TransportStatus.FORWARD:
+						case TransportStatus.JOG:
+						case TransportStatus.REWIND:
+						case TransportStatus.SHUTTLE:
+						case TransportStatus.STOPPED:
+							return ResourceType.INVALID
+						case TransportStatus.PLAY:
+							return ResourceType.HYPERDECK_PLAY
+						case TransportStatus.PREVIEW:
+							return ResourceType.HYPERDECK_PREVIEW
+						case TransportStatus.RECORD:
+							return ResourceType.HYPERDECK_RECORD
+						default:
+							assertNever(obj.content)
+					}
+
+					break
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.LAWO: {
+			switch (obj.content.type) {
+				case TimelineContentTypeLawo.EMBER_PROPERTY:
+					return ResourceType.INVALID
+				case TimelineContentTypeLawo.SOURCE:
+					return ResourceType.INVALID
+				case TimelineContentTypeLawo.SOURCES:
+					return ResourceType.INVALID
+				case TimelineContentTypeLawo.TRIGGER_VALUE:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.OBS: {
+			switch (obj.content.type) {
+				case TimelineContentTypeOBS.CURRENT_SCENE:
+					return ResourceType.OBS_SCENE
+				case TimelineContentTypeOBS.CURRENT_TRANSITION:
+					return ResourceType.OBS_TRANSITION
+				case TimelineContentTypeOBS.MUTE:
+					return ResourceType.OBS_MUTE
+				case TimelineContentTypeOBS.RECORDING:
+					return ResourceType.OBS_RECORDING
+				case TimelineContentTypeOBS.SCENE_ITEM_RENDER:
+					return ResourceType.OBS_RENDER
+				case TimelineContentTypeOBS.SOURCE_SETTINGS:
+					return ResourceType.OBS_SOURCE_SETTINGS
+				case TimelineContentTypeOBS.STREAMING:
+					return ResourceType.OBS_STREAMING
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.OSC: {
+			switch (obj.content.type) {
+				case TimelineContentTypeOSC.OSC:
+					return ResourceType.OSC_MESSAGE
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.PANASONIC_PTZ: {
+			switch (obj.content.type) {
+				case TimelineContentTypePanasonicPtz.PRESET:
+				case TimelineContentTypePanasonicPtz.SPEED:
+				case TimelineContentTypePanasonicPtz.ZOOM:
+				case TimelineContentTypePanasonicPtz.ZOOM_SPEED:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.PHAROS: {
+			switch (obj.content.type) {
+				case TimelineContentTypePharos.SCENE:
+				case TimelineContentTypePharos.TIMELINE:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.QUANTEL: {
+			return ResourceType.INVALID
+		}
+
+		case DeviceType.SHOTOKU: {
+			return ResourceType.INVALID
+		}
+
+		case DeviceType.SINGULAR_LIVE: {
+			return ResourceType.INVALID
+		}
+
+		case DeviceType.SISYFOS: {
+			switch (obj.content.type) {
+				case TimelineContentTypeSisyfos.CHANNEL:
+				case TimelineContentTypeSisyfos.CHANNELS:
+				case TimelineContentTypeSisyfos.TRIGGERVALUE:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.SOFIE_CHEF: {
+			switch (obj.content.type) {
+				case TimelineContentTypeSofieChef.URL:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.TCPSEND: {
+			return ResourceType.TCP_REQUEST
+		}
+
+		case DeviceType.TELEMETRICS: {
+			return ResourceType.INVALID
+		}
+
+		case DeviceType.VIZMSE: {
+			switch (obj.content.type) {
+				case TimelineContentTypeVizMSE.CLEANUP_SHOWS:
+				case TimelineContentTypeVizMSE.CLEAR_ALL_ELEMENTS:
+				case TimelineContentTypeVizMSE.CONCEPT:
+				case TimelineContentTypeVizMSE.CONTINUE:
+				case TimelineContentTypeVizMSE.ELEMENT_INTERNAL:
+				case TimelineContentTypeVizMSE.ELEMENT_PILOT:
+				case TimelineContentTypeVizMSE.INITIALIZE_SHOWS:
+				case TimelineContentTypeVizMSE.LOAD_ALL_ELEMENTS:
+					return ResourceType.INVALID
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		case DeviceType.VMIX: {
+			switch (obj.content.type) {
+				case TimelineContentTypeVMix.AUDIO:
+					return ResourceType.VMIX_AUDIO_SETTINGS
+				case TimelineContentTypeVMix.EXTERNAL:
+					return ResourceType.VMIX_EXTERNAL
+				case TimelineContentTypeVMix.FADER:
+					return ResourceType.VMIX_FADER
+				case TimelineContentTypeVMix.FADE_TO_BLACK:
+					return ResourceType.VMIX_FADE_TO_BLACK
+				case TimelineContentTypeVMix.INPUT:
+					return ResourceType.VMIX_INPUT_SETTINGS
+				case TimelineContentTypeVMix.OUTPUT:
+					return ResourceType.VMIX_OUTPUT_SETTINGS
+				case TimelineContentTypeVMix.OVERLAY:
+					return ResourceType.VMIX_OVERLAY_SETTINGS
+				case TimelineContentTypeVMix.PREVIEW:
+					return ResourceType.VMIX_PREVIEW
+				case TimelineContentTypeVMix.PROGRAM:
+					return ResourceType.VMIX_INPUT
+				case TimelineContentTypeVMix.RECORDING:
+					return ResourceType.VMIX_RECORDING
+				case TimelineContentTypeVMix.STREAMING:
+					return ResourceType.VMIX_STREAMING
+				default:
+					assertNever(obj.content)
+			}
+
+			break
+		}
+
+		default:
+			assertNever(obj.content)
+	}
+
+	return ResourceType.INVALID
+}
+
+export function getResourceNameFromTimelineObj(
+	obj: TSRTimelineObj,
+	resourceType: ResourceType,
+	mappings: Mappings
+): string {
+	const mapping = mappings[obj.layer]
+	switch (resourceType) {
+		case ResourceType.ATEM_AUDIO_CHANNEL:
+		case ResourceType.ATEM_AUX:
+		case ResourceType.ATEM_DSK:
+		case ResourceType.ATEM_MACRO_PLAYER:
+		case ResourceType.ATEM_ME:
+		case ResourceType.ATEM_MEDIA_PLAYER:
+		case ResourceType.ATEM_SSRC:
+		case ResourceType.ATEM_SSRC_PROPS:
+			return generateResourceName(resourceType, (mapping as MappingAtem).index)
+		case ResourceType.CASPARCG_MEDIA:
+			return generateResourceName(resourceType, (obj as TimelineObjCCGMedia).content.file.toUpperCase())
+		case ResourceType.CASPARCG_SERVER:
+			return generateResourceName(resourceType, undefined) // not yet supported
+		case ResourceType.CASPARCG_TEMPLATE:
+			return generateResourceName(resourceType, (obj as TimelineObjCCGTemplate).content.name.toUpperCase())
+		case ResourceType.HTTP_REQUEST:
+			return generateResourceName(resourceType, 0)
+	}
+
+	return 'INVALID_RESOURCE_NAME'
+}
+
+export function generateResourceName(resourceType: ResourceType, locator?: number | string): string {
+	if (typeof locator === 'undefined') {
+		return `${resourceType}_MISSING_LOCATOR`
+	}
+
+	return `${resourceType}_${typeof locator === 'string' ? locator.toUpperCase() : locator}`
+}
+
+export function generateResourceId(deviceId: string, resourceType: ResourceType, locator: number | string): ResourceId {
+	const resourceName = generateResourceName(resourceType, locator)
+	return protectString<ResourceId>(`${deviceId}_${resourceType}_${resourceName}`)
+}
+
+export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId {
+	const mapping = mappings[obj.layer]
+	const resourceType = getResourceTypeFromTimelineObj(obj)
+	const resourceName = getResourceNameFromTimelineObj(obj, resourceType, mappings)
+
+	return protectString<ResourceId>(`${mapping.deviceId}_${resourceType}_${resourceName}`)
 }

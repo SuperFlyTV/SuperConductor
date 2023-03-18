@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { assertNever, deepClone } from '@shared/lib'
+import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import {
 	ChannelFormat,
 	Direction,
@@ -40,7 +40,7 @@ import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/Ana
 import { HiOutlineX } from 'react-icons/hi'
 import { store } from '../../../../mobx/store'
 import { computed } from 'mobx'
-import { CasparCGMedia, ResourceAny, ResourceType } from '@shared/models'
+import { CasparCGMedia, ResourceAny, ResourceId, ResourceType } from '@shared/models'
 import { usePromise } from '../../../../mobx/lib'
 import { EditGDDData } from '../GDD/gddEdit'
 import { GDDSchema } from 'graphics-data-definition'
@@ -51,11 +51,12 @@ import { observer } from 'mobx-react-lite'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
 	objs: TimelineObjCasparCGAny[]
-	resourceIds: string[]
+	resourceIds: ResourceId[]
 
 	onSave: OnSave
 }> = observer(function EditTimelineObjCasparCGAny({ objs, resourceIds, onSave: onSave0 }) {
 	const allResources = store.resourcesStore.resources
+	const mappings = store.projectStore.project.mappings
 
 	let settings: JSX.Element = <></>
 
@@ -1712,16 +1713,11 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
-		let mediaResourceForFirstObj: CasparCGMedia | null = null
+		let mediaResourceForFirstObj: CasparCGMedia | undefined = undefined
 		if (objs.length === 1) {
-			for (const resource of Object.values(allResources)) {
-				if (
-					resource.resourceType === ResourceType.CASPARCG_MEDIA &&
-					resource.displayName.toLowerCase() === firstObj.content.file.toLowerCase()
-				) {
-					mediaResourceForFirstObj = resource
-					break
-				}
+			const res = allResources.get(getResourceIdFromTimelineObj(firstObj, mappings))
+			if (res?.resourceType === ResourceType.CASPARCG_MEDIA) {
+				mediaResourceForFirstObj = res
 			}
 		}
 
@@ -2088,7 +2084,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 const CasparEditTemplateData: React.FC<{
 	objs: TimelineObjCCGTemplate[]
-	resourceIds: string[]
+	resourceIds: ResourceId[]
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave }) => {
 	const initializedGDDValidator = usePromise(() =>

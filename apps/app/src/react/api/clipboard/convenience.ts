@@ -1,4 +1,4 @@
-import { literal } from '@shared/lib'
+import { generateResourceId, literal } from '@shared/lib'
 import { CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultPart } from '../../../lib/defaults'
@@ -39,7 +39,7 @@ export async function handleURL(context: ClipBoardContext, str: string): Promise
 			}
 			const resource = literal<CasparCGTemplate>({
 				deviceId: mapping.mapping.deviceId,
-				id: shortID(),
+				id: generateResourceId(mapping.mapping.deviceId, ResourceType.CASPARCG_TEMPLATE, url),
 				displayName: hostName,
 				resourceType: ResourceType.CASPARCG_TEMPLATE,
 				size: 0,
