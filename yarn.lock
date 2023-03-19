@@ -457,6 +457,14 @@
     node-addon-api "^3.2.1"
     prebuild-install "^6.1.3"
 
+"@julusian/midi@^3.0.0":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@julusian/midi/-/midi-3.0.1.tgz#1fd8a753d3993fd0723affe4081240d52348066c"
+  integrity sha512-djrDIi/brNwo5ZU6PptxOT59C0TKEAU0veOXdUWUp6MGo9QJkrsL7iKlWNhXUhlcvEY+Sp0+lBphz2+f0uwhFA==
+  dependencies:
+    node-addon-api "^5.0.0"
+    pkg-prebuilds "^0.1.0"
+
 "@koa/router@^12.0.0":
   version "12.0.0"
   resolved "https://registry.yarnpkg.com/@koa/router/-/router-12.0.0.tgz#2ae7937093fd392761c0e5833c368379d4a35737"
@@ -1906,13 +1914,6 @@
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.189.tgz#975ff8c38da5ae58b751127b19ad5e44b5b7f6d2"
   integrity sha512-kb9/98N6X8gyME9Cf7YaqIMvYGnBSWqEci6tiettE6iJWH1XdJz/PO8LB0GtLCG7x8dU3KWhZT+lA1a35127tA==
 
-"@types/midi@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@types/midi/-/midi-2.0.0.tgz#a71b99f6535de07008d2ad2ad542758603b28e6b"
-  integrity sha512-5ZnGxX5t1lYn6rNB4pDrv4ijU0UnTsXa7mW8ic/RsxMJcPE+aafqyNYgNFj/rUKUlXGgwDFROaji1VqFoogGNQ==
-  dependencies:
-    "@types/node" "*"
-
 "@types/mime@*":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-3.0.1.tgz#5f8f2bca0a5863cb69bc0b0acd88c96cb1d4ae10"
@@ -2991,7 +2992,7 @@ binary@~0.3.0:
     buffers "~0.1.1"
     chainsaw "~0.1.0"
 
-bindings@^1.5.0, bindings@~1.5.0:
+bindings@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.5.0.tgz#10353c9e945334bc0511a6d90b38fbc7c9c504df"
   integrity sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==
@@ -7731,14 +7732,6 @@ micromatch@^4.0.5:
     braces "^3.0.2"
     picomatch "^2.3.1"
 
-midi@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/midi/-/midi-2.0.0.tgz#5035dd0d0c4b381eeb6e9202c785ce81221d0c7a"
-  integrity sha512-HyCLWa+ET8Aqfu/NxdNkxfCx0EfCJrcZgKuhrY4c9UgkfxRt3ChM7RP1oC5vJf7ALXyuAG47jqr5yUlvSodTPQ==
-  dependencies:
-    bindings "~1.5.0"
-    nan "^2.14.2"
-
 mime-db@1.51.0, "mime-db@>= 1.43.0 < 2", mime-db@^1.28.0:
   version "1.51.0"
   resolved "https://registry.yarnpkg.com/mime-db/-/mime-db-1.51.0.tgz#d9ff62451859b18342d960850dc3cfb77e63fb0c"
@@ -8036,11 +8029,6 @@ mute-stream@0.0.8, mute-stream@~0.0.4:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
-
-nan@^2.14.2:
-  version "2.16.0"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.16.0.tgz#664f43e45460fb98faf00edca0bb0d7b8dce7916"
-  integrity sha512-UdAqHyFngu7TfQKsCBgAA6pWDkT8MAO7d0jyOecVhN5354xbLqdn8mV9Tat9gepAupm0bt2DbeaSC8vS52MuFA==
 
 nanoid@^3.3.4:
   version "3.3.4"
@@ -9111,6 +9099,13 @@ pkg-dir@^4.2.0:
   integrity sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==
   dependencies:
     find-up "^4.0.0"
+
+pkg-prebuilds@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/pkg-prebuilds/-/pkg-prebuilds-0.1.0.tgz#7ac38674146708e763a4581a0759d5e8594f61b6"
+  integrity sha512-ALsGSiwO6EDvjrrFRiv7Q6HZPrqCgTpNxQMFs3P4Ic25cP94DmLy0iGvZDlJmQBbq2IS8xkZrifwkoOHIetY9Q==
+  dependencies:
+    yargs "^17.5.1"
 
 plist@^3.0.1, plist@^3.0.4:
   version "3.0.4"
