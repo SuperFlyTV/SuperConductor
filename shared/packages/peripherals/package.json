@@ -47,7 +47,7 @@
 	},
 	"dependencies": {
 		"@elgato-stream-deck/node": "^5.6.0",
-		"@julusian/jpeg-turbo": "^1.1.1",
+		"@julusian/jpeg-turbo": "^2.1.0",
 		"@julusian/midi": "^3.0.0",
 		"@shared/api": "^0.10.5",
 		"@shared/lib": "^0.10.5",
