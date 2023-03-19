@@ -33,7 +33,6 @@
 		"start:bridge": "yarn build:shared && lerna run dev:bridge --stream",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
-		"postinstall": "electron-rebuild --force --version 19.1.6 --module-dir apps/tsr-bridge",
 		"license-validate": "node scripts/license-check.js",
 		"release:bump": "lerna version --force-publish --no-push",
 		"release:prerelease": "lerna version prerelease --force-publish --no-push",
@@ -49,7 +48,6 @@
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^2.2.0",
 		"@types/node": "^18.11.9",
-		"electron-rebuild": "^3.2.9",
 		"eslint-plugin-react": "^7.31.10",
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"lerna": "^6.0.3",
