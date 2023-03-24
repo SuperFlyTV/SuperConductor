@@ -8,7 +8,6 @@ import { DropZone } from '../../util/DropZone'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { useMemoComputedValue } from '../../../mobx/lib'
-import { unprotectString } from '@shared/models'
 
 let EMPTY_LAYER_ID_COUNTER = 0
 

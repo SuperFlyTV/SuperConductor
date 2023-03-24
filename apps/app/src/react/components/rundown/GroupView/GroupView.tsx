@@ -55,7 +55,6 @@ import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import { useFrame } from '../../../lib/useFrame'
 import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
-import { unprotectString } from '@shared/models'
 
 const DEFAULT_PART_HEIGHT = 80
 

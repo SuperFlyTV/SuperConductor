@@ -1,4 +1,3 @@
-import { unprotectString } from '@shared/models'
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'

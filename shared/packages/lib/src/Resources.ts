@@ -538,6 +538,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 			return `${resource.number}`
 		default: {
 			assertNever(resource)
+			// eslint-disable-next-line no-console
 			console.error(`Unknown resourceType "${(resource as any).resourceType}"`)
 			return 'INVALID'
 		}
