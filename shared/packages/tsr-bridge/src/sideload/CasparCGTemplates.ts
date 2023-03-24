@@ -8,7 +8,7 @@ import * as cheerio from 'cheerio'
 import { CasparCG, Config } from 'casparcg-connection'
 import got from 'got'
 import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString } from '@shared/models'
-import { literal } from '@shared/lib'
+import { getResourceIdFromResource, literal } from '@shared/lib'
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 const recursiveReadDirAsync = util.promisify(recursiveReadDir)
@@ -302,7 +302,4 @@ async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<chee
 	} catch (error) {
 		throw new Error(`Failed to parse GDD from "${filePath}", is it valid JSON?`)
 	}
-}
-function getResourceIdFromResource(resource: CasparCGTemplate): ResourceId {
-	throw new Error('Function not implemented.')
 }

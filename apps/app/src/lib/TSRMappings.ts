@@ -257,68 +257,83 @@ export function getMappingFromTimelineObject(
 		// MappingAtem
 
 		switch (obj.content.type) {
-			case TimelineContentTypeAtem.ME:
+			case TimelineContentTypeAtem.ME: {
+				const index = resource?.resourceType === ResourceType.ATEM_ME ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem ME 1',
+					layerName: `Atem ME ${index + 1}`,
 					mappingType: MappingAtemType.MixEffect,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.DSK:
+			case TimelineContentTypeAtem.DSK: {
+				const index = resource?.resourceType === ResourceType.ATEM_DSK ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem DSK 1',
+					layerName: `Atem DSK ${index + 1}`,
 					mappingType: MappingAtemType.DownStreamKeyer,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.SSRC:
+			case TimelineContentTypeAtem.SSRC: {
+				const index = resource?.resourceType === ResourceType.ATEM_SSRC ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem SS 1',
+					layerName: `Atem SS ${index + 1}`,
 					mappingType: MappingAtemType.SuperSourceBox,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.AUX:
+			case TimelineContentTypeAtem.AUX: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUX ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem AUX 1',
+					layerName: `Atem AUX ${index + 1}`,
 					mappingType: MappingAtemType.Auxilliary,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.MEDIAPLAYER:
+			case TimelineContentTypeAtem.MEDIAPLAYER: {
+				const index = resource?.resourceType === ResourceType.ATEM_MEDIA_PLAYER ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem MP 1',
+					layerName: `Atem MP ${index + 1}`,
 					mappingType: MappingAtemType.MediaPlayer,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.SSRCPROPS:
+			case TimelineContentTypeAtem.SSRCPROPS: {
+				const index = resource?.resourceType === ResourceType.ATEM_SSRC_PROPS ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem SS 1 props',
+					layerName: `Atem SS ${index + 1} props`,
 					mappingType: MappingAtemType.SuperSourceProperties,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.AUDIOCHANNEL:
+			case TimelineContentTypeAtem.AUDIOCHANNEL: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_CHANNEL ? resource.index : 0
+
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
 					deviceId: deviceId,
-					layerName: 'Atem Audio 1',
+					layerName: `Atem Audio ${index + 1}`,
 					mappingType: MappingAtemType.AudioChannel,
-					index: 0,
+					index,
 				})
+			}
 
 			case TimelineContentTypeAtem.MACROPLAYER:
 				return literal<MappingAtem>({
@@ -608,14 +623,16 @@ export function getMappingFromTimelineObject(
 					mappingType: MappingVMixType.Preview,
 					index: 1,
 				})
-			case TimelineContentTypeVMix.INPUT:
+			case TimelineContentTypeVMix.INPUT: {
+				const index = resource?.resourceType === ResourceType.VMIX_INPUT ? resource.number : 1
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
 					deviceId: deviceId,
 					layerName: 'Input',
 					mappingType: MappingVMixType.Input,
-					index: 1,
+					index,
 				})
+			}
 			case TimelineContentTypeVMix.AUDIO:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,

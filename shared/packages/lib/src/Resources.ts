@@ -467,8 +467,11 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.VMIX_RECORDING:
 		case ResourceType.VMIX_STREAMING:
 			return '0'
-		case ResourceType.VMIX_INPUT:
-			return String((obj as TimelineObjVMixProgram).content.input)
+		case ResourceType.VMIX_INPUT: {
+			// TODO: something might be wrong here? (TimelineObjVMixProgram vs TimelineObjVMixInput)
+			const vmixObj = obj as TimelineObjVMixProgram
+			return `${vmixObj.content.input}`
+		}
 		default:
 			assertNever(resourceType)
 	}
@@ -531,7 +534,8 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_STREAMING:
 			return '0'
 		case ResourceType.VMIX_INPUT:
-			return `${resource.type}_${resource.number}` // verify: or should "key" be used?
+			// todo: something might be wrong here, type doesn't seem to be used
+			return `${resource.number}`
 		default: {
 			assertNever(resource)
 			console.error(`Unknown resourceType "${(resource as any).resourceType}"`)
