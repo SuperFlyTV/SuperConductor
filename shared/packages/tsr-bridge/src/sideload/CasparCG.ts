@@ -1,6 +1,6 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia, ResourceId } from '@shared/models'
+import { ResourceAny, ResourceType, CasparCGMedia, ResourceId, protectString } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import {
@@ -8,7 +8,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates'
-import { generateResourceId } from '@shared/lib'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
@@ -76,10 +76,11 @@ export class CasparCGSideload implements SideLoadDevice {
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.CASPARCG_MEDIA, media.name),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					...media,
 					displayName: media.name,
 				}
+				resource.id = getResourceIdFromResource(resource)
 
 				if (media.type === 'image' || media.type === 'video') {
 					try {

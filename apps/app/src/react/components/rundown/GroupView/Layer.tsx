@@ -49,7 +49,7 @@ export const Layer: React.FC<{
 						groupId,
 						partId,
 						layerId,
-						resourceIds: item.resources.map((r) => unprotectString(r.id)),
+						resourceIds: item.resources.map((r) => r.id),
 					})
 					.catch(handleError)
 			},

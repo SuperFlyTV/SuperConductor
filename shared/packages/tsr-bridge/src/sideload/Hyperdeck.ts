@@ -8,10 +8,11 @@ import {
 	HyperdeckPreview,
 	HyperdeckClip,
 	ResourceId,
+	protectString,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { generateResourceId, stringifyError } from '@shared/lib'
+import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class HyperdeckSideload implements SideLoadDevice {
 	private hyperdeck: Hyperdeck
@@ -56,9 +57,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckPlay = {
 				resourceType: ResourceType.HYPERDECK_PLAY,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.HYPERDECK_PLAY, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Play',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -67,9 +69,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckRecord = {
 				resourceType: ResourceType.HYPERDECK_RECORD,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.HYPERDECK_RECORD, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Record',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -78,9 +81,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckPreview = {
 				resourceType: ResourceType.HYPERDECK_PREVIEW,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.HYPERDECK_PREVIEW, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Preview',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -96,12 +100,13 @@ export class HyperdeckSideload implements SideLoadDevice {
 				const resource: HyperdeckClip = {
 					resourceType: ResourceType.HYPERDECK_CLIP,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.HYPERDECK_CLIP, `${clip.clipId}_${clip.name}`),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					displayName: `Clip ${clip.clipId} - ${clip.name}`,
 					slotId: res.slotId,
 					clipId: parseInt(clip.clipId, 10),
 					clipName: clip.name,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 		}

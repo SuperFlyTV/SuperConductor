@@ -42,7 +42,7 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { protectString, ResourceAny, ResourceId, ResourceType } from '@shared/models'
+import { isProtectedString, protectString, ResourceAny, ResourceId, ResourceType } from '@shared/models'
 import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
@@ -1615,7 +1615,7 @@ export class IPCServer
 		groupId: string
 		partId: string
 		layerId: string | null
-		resourceIds: (string | ResourceAny)[]
+		resourceIds: (ResourceId | ResourceAny)[]
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1631,10 +1631,7 @@ export class IPCServer
 		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
 		for (const resourceId of arg.resourceIds) {
-			const resource =
-				typeof resourceId === 'string'
-					? this.storage.getResource(protectString<ResourceId>(resourceId))
-					: resourceId
+			const resource = isProtectedString(resourceId) ? this.storage.getResource(resourceId) : resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
 
 			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)

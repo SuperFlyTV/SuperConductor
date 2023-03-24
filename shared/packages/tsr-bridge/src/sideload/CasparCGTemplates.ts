@@ -7,8 +7,8 @@ import * as cheerio from 'cheerio'
 
 import { CasparCG, Config } from 'casparcg-connection'
 import got from 'got'
-import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId } from '@shared/models'
-import { generateResourceId, literal } from '@shared/lib'
+import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString } from '@shared/models'
+import { literal } from '@shared/lib'
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 const recursiveReadDirAsync = util.promisify(recursiveReadDir)
@@ -32,10 +32,11 @@ export async function addTemplatesToResourcesFromCasparCG(
 		const resource: CasparCGTemplate = {
 			resourceType: ResourceType.CASPARCG_TEMPLATE,
 			deviceId: deviceId,
-			id: generateResourceId(deviceId, ResourceType.CASPARCG_TEMPLATE, template.name),
+			id: protectString(''), // set by getResourceIdFromResource() later
 			...template,
 			displayName: template.name,
 		}
+		resource.id = getResourceIdFromResource(resource)
 		resources.set(resource.id, resource)
 	}
 }
@@ -199,19 +200,21 @@ function populateResources(
 	deviceId: string
 ): void {
 	for (const template of jsonData.templates) {
-		const resourceId = generateResourceId(deviceId, ResourceType.CASPARCG_TEMPLATE, template.id)
-		let resource = resources.get(resourceId) as CasparCGTemplate | undefined
+		const newResource = literal<CasparCGTemplate>({
+			resourceType: ResourceType.CASPARCG_TEMPLATE,
+			deviceId: deviceId,
+			id: protectString(''), // set by getResourceIdFromResource() later
+			name: template.id,
+			size: 0,
+			changed: 0,
+			displayName: template.id,
+		})
+		newResource.id = getResourceIdFromResource(newResource)
+
+		let resource = resources.get(newResource.id) as CasparCGTemplate | undefined
 		if (!resource || resource.resourceType !== ResourceType.CASPARCG_TEMPLATE) {
-			resource = literal<CasparCGTemplate>({
-				resourceType: ResourceType.CASPARCG_TEMPLATE,
-				deviceId: deviceId,
-				id: resourceId,
-				name: template.id,
-				size: 0,
-				changed: 0,
-				displayName: template.id,
-			})
-			resources.set(resourceId, resource)
+			resources.set(newResource.id, newResource)
+			resource = newResource
 		}
 
 		if (template.error) resource.errorMessage = template.error
@@ -299,4 +302,7 @@ async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<chee
 	} catch (error) {
 		throw new Error(`Failed to parse GDD from "${filePath}", is it valid JSON?`)
 	}
+}
+function getResourceIdFromResource(resource: CasparCGTemplate): ResourceId {
+	throw new Error('Function not implemented.')
 }

@@ -411,6 +411,7 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceTyp
 	return ResourceType.INVALID
 }
 
+/** Returns a string that can uniquely identify a timelineObj (within its type)  */
 export function getResourceLocatorFromTimelineObj(
 	obj: TSRTimelineObj,
 	resourceType: ResourceType,
@@ -475,12 +476,73 @@ export function getResourceLocatorFromTimelineObj(
 	return 'INVALID_RESOURCE_NAME'
 }
 
-export function generateResourceId(deviceId: string, resourceType: ResourceType, locator: number | string): ResourceId {
-	return protectString<ResourceId>(
-		`${deviceId}_${resourceType}_${typeof locator === 'string' ? locator.toUpperCase() : locator}`
-	)
+export function getResourceIdFromResource(resource: ResourceAny): ResourceId {
+	const locator = getResourceLocatorFromResource(resource)
+
+	return protectString<ResourceId>(`${resource.deviceId}_${resource.resourceType}_${locator}`)
+}
+/** Returns a string that can uniquely identify a a resouce (within its type) */
+export function getResourceLocatorFromResource(resource: ResourceAny): string {
+	switch (resource.resourceType) {
+		case ResourceType.ATEM_AUDIO_CHANNEL:
+		case ResourceType.ATEM_AUX:
+		case ResourceType.ATEM_DSK:
+		case ResourceType.ATEM_ME:
+		case ResourceType.ATEM_MEDIA_PLAYER:
+		case ResourceType.ATEM_SSRC:
+		case ResourceType.ATEM_SSRC_PROPS:
+			return `${resource.index}`
+		case ResourceType.ATEM_MACRO_PLAYER:
+			return `0`
+		case ResourceType.CASPARCG_SERVER:
+			return 'UNSUPPORTED' // not yet supported
+		case ResourceType.CASPARCG_MEDIA:
+		case ResourceType.CASPARCG_TEMPLATE:
+			return resource.name.toUpperCase()
+		case ResourceType.HTTP_REQUEST:
+			return '0'
+		case ResourceType.HYPERDECK_PLAY:
+		case ResourceType.HYPERDECK_PREVIEW:
+		case ResourceType.HYPERDECK_RECORD:
+			return '0'
+		case ResourceType.HYPERDECK_CLIP:
+			return `${resource.clipId}_${resource.clipName}`
+		case ResourceType.OBS_MUTE:
+		case ResourceType.OBS_RECORDING:
+		case ResourceType.OBS_STREAMING:
+		case ResourceType.OBS_RENDER:
+		case ResourceType.OBS_SOURCE_SETTINGS:
+			return '0'
+		case ResourceType.OBS_SCENE:
+		case ResourceType.OBS_TRANSITION:
+			return resource.name
+		case ResourceType.OSC_MESSAGE:
+		case ResourceType.TCP_REQUEST:
+			return '0'
+		case ResourceType.VMIX_AUDIO_SETTINGS:
+		case ResourceType.VMIX_EXTERNAL:
+		case ResourceType.VMIX_FADER:
+		case ResourceType.VMIX_FADE_TO_BLACK:
+		case ResourceType.VMIX_INPUT_SETTINGS:
+		case ResourceType.VMIX_OUTPUT_SETTINGS:
+		case ResourceType.VMIX_OVERLAY_SETTINGS:
+		case ResourceType.VMIX_PREVIEW:
+		case ResourceType.VMIX_RECORDING:
+		case ResourceType.VMIX_STREAMING:
+			return '0'
+		case ResourceType.VMIX_INPUT:
+			return `${resource.type}_${resource.number}` // verify: or should "key" be used?
+		default: {
+			assertNever(resource)
+			console.error(`Unknown resourceType "${(resource as any).resourceType}"`)
+			return 'INVALID'
+		}
+	}
 }
 
+/**
+ * Returns a string that uniquely identifies the Resource which would result in a certain TimelineObj.
+ */
 export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId {
 	const mapping = mappings[obj.layer]
 	const resourceType = getResourceTypeFromTimelineObj(obj)

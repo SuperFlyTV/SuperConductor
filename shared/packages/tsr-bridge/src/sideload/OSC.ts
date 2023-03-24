@@ -1,8 +1,8 @@
 import { DeviceOptionsOSC } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, OSCMessage, ResourceId } from '@shared/models'
+import { ResourceAny, ResourceType, OSCMessage, ResourceId, protectString } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { generateResourceId } from '@shared/lib'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class OSCSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
@@ -20,9 +20,10 @@ export class OSCSideload implements SideLoadDevice {
 			const resource: OSCMessage = {
 				resourceType: ResourceType.OSC_MESSAGE,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.OSC_MESSAGE, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'OSC Message',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 

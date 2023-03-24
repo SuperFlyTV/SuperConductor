@@ -880,7 +880,7 @@ const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundow
 							groupId: group.id,
 							partId,
 							layerId: null,
-							resourceIds: [unprotectString(resource.id)],
+							resourceIds: [resource.id],
 						})
 					}
 				} catch (error) {

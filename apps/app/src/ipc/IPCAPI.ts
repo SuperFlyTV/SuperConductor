@@ -15,6 +15,7 @@ import { CurrentSelectionAny } from '../lib/GUI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
+import { ResourceId } from '@shared/models'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -185,7 +186,7 @@ export interface IPCServerMethods {
 		partId: string
 
 		layerId: string | null
-		resourceIds: (string | ResourceAny)[]
+		resourceIds: (ResourceId | ResourceAny)[]
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void

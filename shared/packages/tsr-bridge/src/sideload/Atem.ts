@@ -12,10 +12,11 @@ import {
 	AtemSsrc,
 	AtemSsrcProps,
 	ResourceId,
+	protectString,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { generateResourceId } from '@shared/lib'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class AtemSideload implements SideLoadDevice {
 	private atem: Atem
@@ -57,10 +58,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMe = {
 				resourceType: ResourceType.ATEM_ME,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.ATEM_ME, me.index),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				index: me.index,
 				displayName: `ATEM ME ${me.index + 1}`,
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -73,10 +75,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemDsk = {
 				resourceType: ResourceType.ATEM_DSK,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.ATEM_DSK, i),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				index: i,
 				displayName: `ATEM DSK ${i + 1}`,
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -89,10 +92,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemAux = {
 				resourceType: ResourceType.ATEM_AUX,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.ATEM_AUX, i),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				index: i,
 				displayName: `ATEM AUX ${i + 1}`,
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -106,10 +110,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemSsrc = {
 					resourceType: ResourceType.ATEM_SSRC,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.ATEM_SSRC, i),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					index: i,
 					displayName: `ATEM SuperSource ${i + 1}`,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 
@@ -117,10 +122,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemSsrcProps = {
 					resourceType: ResourceType.ATEM_SSRC_PROPS,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.ATEM_SSRC_PROPS, i),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					index: i,
 					displayName: `ATEM SuperSource ${i + 1} Props`,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 		}
@@ -129,9 +135,10 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMacroPlayer = {
 				resourceType: ResourceType.ATEM_MACRO_PLAYER,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.ATEM_MACRO_PLAYER, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'ATEM Macro Player',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -145,10 +152,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemAudioChannel = {
 					resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.ATEM_AUDIO_CHANNEL, inputNumber),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					index: parseInt(inputNumber, 10),
 					displayName: `ATEM Audio Channel ${inputNumber}`,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 		} else if (this.atem.state.audio) {
@@ -161,10 +169,11 @@ export class AtemSideload implements SideLoadDevice {
 				const resource: AtemAudioChannel = {
 					resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.ATEM_AUDIO_CHANNEL, channelNumber),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					index: parseInt(channelNumber, 10),
 					displayName: `ATEM Audio Channel ${channelNumber}`,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 		}
@@ -178,10 +187,11 @@ export class AtemSideload implements SideLoadDevice {
 			const resource: AtemMediaPlayer = {
 				resourceType: ResourceType.ATEM_MEDIA_PLAYER,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.ATEM_MEDIA_PLAYER, i),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				index: i,
 				displayName: `ATEM Media Player ${i + 1}`,
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 

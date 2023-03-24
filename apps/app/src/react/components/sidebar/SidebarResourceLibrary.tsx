@@ -630,7 +630,7 @@ export const AddToTimeline: React.FC<{
 							groupId: values.groupId,
 							partId: values.partId,
 							layerId: values.layerId,
-							resourceIds: [unprotectString(resource.id)],
+							resourceIds: [resource.id],
 						})
 						.catch(handleError)
 					actions.setSubmitting(false)

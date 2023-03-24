@@ -1,4 +1,5 @@
-import { assertNever, generateResourceId, literal } from '@shared/lib'
+import { getResourceIdFromResource, assertNever, literal } from '@shared/lib'
+import { protectString } from '@shared/models'
 import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultGroup, getDefaultPart } from '../../../lib/defaults'
@@ -293,7 +294,7 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 
 					useResource = literal<CasparCGMedia>({
 						deviceId: deviceId,
-						id: generateResourceId(deviceId, ResourceType.CASPARCG_MEDIA, item.name),
+						id: protectString(''), // set by getResourceIdFromResource() later
 						displayName: item.name,
 						resourceType: ResourceType.CASPARCG_MEDIA,
 						type: type,
@@ -307,6 +308,7 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 						channel: parseInt(item.channel, 10) || undefined,
 						layer: parseInt(item.videolayer, 10) || undefined,
 					})
+					useResource.id = getResourceIdFromResource(useResource)
 				}
 			}
 			if (useResource && useResource.resourceType === ResourceType.CASPARCG_MEDIA) {
@@ -340,13 +342,14 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 				if (deviceId) {
 					useResource = literal<CasparCGTemplate>({
 						deviceId: deviceId,
-						id: generateResourceId(deviceId, ResourceType.CASPARCG_TEMPLATE, item.name),
+						id: protectString(''), // set by getResourceIdFromResource() later
 						displayName: item.name,
 						resourceType: ResourceType.CASPARCG_TEMPLATE,
 						name: item.name,
 						size: 0,
 						changed: Date.now(),
 					})
+					useResource.id = getResourceIdFromResource(useResource)
 				}
 			}
 			if (

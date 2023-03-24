@@ -30,7 +30,7 @@ export const EmptyLayer: React.FC<{
 						groupId,
 						partId,
 						layerId: null,
-						resourceIds: item.resources.map((r) => unprotectString(r.id)),
+						resourceIds: item.resources.map((r) => r.id),
 					})
 					.catch(handleError)
 			},

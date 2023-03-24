@@ -15,10 +15,11 @@ import {
 	VMixFader,
 	VMixPreview,
 	ResourceId,
+	protectString,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { generateResourceId, stringifyError } from '@shared/lib'
+import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class VMixSideload implements SideLoadDevice {
 	private vmix: VMix
@@ -64,11 +65,12 @@ export class VMixSideload implements SideLoadDevice {
 				const resource: VMixInput = {
 					resourceType: ResourceType.VMIX_INPUT,
 					deviceId: this.deviceId,
-					id: generateResourceId(this.deviceId, ResourceType.VMIX_INPUT, key),
+					id: protectString(''), // set by getResourceIdFromResource() later
 					number: input.number,
 					type: input.type,
 					displayName: `Input ${input.number}`,
 				}
+				resource.id = getResourceIdFromResource(resource)
 				resources.set(resource.id, resource)
 			}
 		}
@@ -78,9 +80,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixInputSettings = {
 				resourceType: ResourceType.VMIX_INPUT_SETTINGS,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_INPUT_SETTINGS, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Input Settings',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -89,9 +92,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixRecording = {
 				resourceType: ResourceType.VMIX_RECORDING,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_RECORDING, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Recording',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -100,9 +104,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixStreaming = {
 				resourceType: ResourceType.VMIX_STREAMING,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_STREAMING, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Streaming',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -111,9 +116,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixAudioSettings = {
 				resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_AUDIO_SETTINGS, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Audio Settings',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -122,9 +128,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixFader = {
 				resourceType: ResourceType.VMIX_FADER,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_FADER, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Transition Fader',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -133,9 +140,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixPreview = {
 				resourceType: ResourceType.VMIX_PREVIEW,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_PREVIEW, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Preview',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -144,9 +152,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixOutputSettings = {
 				resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_OUTPUT_SETTINGS, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Output Settings',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -155,9 +164,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixOverlaySettings = {
 				resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_OVERLAY_SETTINGS, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Overlay Settings',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -166,9 +176,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixExternal = {
 				resourceType: ResourceType.VMIX_EXTERNAL,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_EXTERNAL, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'External Output Settings',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
@@ -177,9 +188,10 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixFadeToBlack = {
 				resourceType: ResourceType.VMIX_FADE_TO_BLACK,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.VMIX_FADE_TO_BLACK, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Fade To Black',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 

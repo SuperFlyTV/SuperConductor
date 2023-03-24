@@ -1,8 +1,8 @@
 import { DeviceOptionsHTTPSend } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, HTTPRequest, ResourceId } from '@shared/models'
+import { ResourceAny, ResourceType, HTTPRequest, ResourceId, protectString } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { generateResourceId } from '@shared/lib'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class HTTPSendSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsHTTPSend, _log: LoggerLike) {}
@@ -20,9 +20,10 @@ export class HTTPSendSideload implements SideLoadDevice {
 			const resource: HTTPRequest = {
 				resourceType: ResourceType.HTTP_REQUEST,
 				deviceId: this.deviceId,
-				id: generateResourceId(this.deviceId, ResourceType.HTTP_REQUEST, 0),
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HTTP Request',
 			}
+			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 

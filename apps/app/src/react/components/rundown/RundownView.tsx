@@ -155,7 +155,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 							groupId,
 							partId,
 							layerId: null,
-							resourceIds: [unprotectString(resource.id)],
+							resourceIds: [resource.id],
 						})
 					}
 				} catch (error) {
@@ -218,7 +218,7 @@ const GroupListOptions: React.FC<{ rundownId: string }> = observer(function Grou
 							groupId,
 							partId,
 							layerId: null,
-							resourceIds: [unprotectString(resource.id)],
+							resourceIds: [resource.id],
 						})
 					}
 				} catch (error) {
