@@ -1734,7 +1734,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						allowUndefined={false}
 					/>
 				</div>
-				{mediaResourceForFirstObj ? (
+				{mediaResourceForFirstObj?.thumbnail ? (
 					<img
 						style={{ width: '100%' }}
 						src={mediaResourceForFirstObj.thumbnail}
