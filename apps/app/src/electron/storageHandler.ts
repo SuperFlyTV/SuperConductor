@@ -818,7 +818,7 @@ export class StorageHandler extends EventEmitter {
 		return rundown
 	}
 	private loadResources(): Map<ResourceId, FileResource> {
-		let resources: Map<ResourceId, FileResource> | undefined = new Map()
+		let resources: Map<ResourceId, FileResource> | undefined = undefined
 		const resourcesPath = this.resourcesPath(this._projectId)
 		try {
 			const read = fs.readFileSync(resourcesPath, 'utf8')
@@ -826,7 +826,7 @@ export class StorageHandler extends EventEmitter {
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				resources = new Map()
+				resources = undefined
 			} else {
 				throw new Error(`Unable to read Resources file "${resourcesPath}": ${error}`)
 			}
@@ -844,6 +844,7 @@ export class StorageHandler extends EventEmitter {
 			} catch (error) {
 				if ((error as any)?.code === 'ENOENT') {
 					// not found
+					resources = undefined
 				} else {
 					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
 				}

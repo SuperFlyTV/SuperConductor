@@ -1,7 +1,7 @@
 import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceId } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
@@ -15,7 +15,6 @@ import { CurrentSelectionAny } from '../lib/GUI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
-import { ResourceId } from '@shared/models'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 

@@ -1,4 +1,4 @@
-import { protectString, ResourceAny, ResourceType } from '@shared/models'
+import { protectString, ResourceAny, ResourceType, ResourceId } from '@shared/models'
 import { assertNever } from './lib'
 import {
 	TSRTimelineObj,
@@ -25,7 +25,6 @@ import {
 	TimelineObjOBSCurrentTransition,
 	TimelineObjVMixProgram,
 } from 'timeline-state-resolver-types'
-import { ResourceId } from '@shared/models'
 
 enum GeneralResourceType {
 	MEDIA = 'media',
