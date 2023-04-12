@@ -6,7 +6,7 @@ SuperConductor has some native dependencies which need to be (re)built from sour
 
 **On Windows**, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required. If you have issues with Python, install [Python 3](https://www.python.org/downloads/).
 
-**On Linux**, install the `build-essential` package and then install Python 3. Also do a `sudo apt-get install libasound2-dev`
+**On Linux**, install the `build-essential` package and then install Python 3. Also do a `sudo apt-get install libasound2-dev libudev-dev`
 
 **On macOS**, install XCode and its optional tools `xcode-select --install` and then install Python 3.
 
