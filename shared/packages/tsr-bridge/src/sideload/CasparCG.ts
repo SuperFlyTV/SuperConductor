@@ -41,6 +41,8 @@ export class CasparCGSideload implements SideLoadDevice {
 			return Object.values(this.cacheResources)
 		}
 
+		// Temporary fix for when there are MANY items, to avoid out-of-memory when loading too many thumbnails..
+		let TMP_THUMBNAIL_LIMIT = 500
 		// Refresh media:
 		{
 			let mediaList: {
@@ -80,10 +82,11 @@ export class CasparCGSideload implements SideLoadDevice {
 					displayName: media.name,
 				}
 
-				if (media.type === 'image' || media.type === 'video') {
+				if ((media.type === 'image' || media.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
 					try {
 						const thumbnail = await this.ccg.thumbnailRetrieve(media.name)
 						resource.thumbnail = thumbnail.response.data
+						TMP_THUMBNAIL_LIMIT--
 					} catch (error) {
 						if ((error as AMCP.ThumbnailRetrieveCommand)?.response?.code === 404) {
 							// Suppress error, this is probably because CasparCG's media-scanner isn't running.
