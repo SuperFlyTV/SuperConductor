@@ -137,10 +137,18 @@ export class PeripheralsHandler extends EventEmitter {
 		)
 	}
 	async close(): Promise<void> {
-		await Promise.all(Array.from(this.peripherals.values()).map(async (peripheral) => peripheral.close()))
-
 		this.watcher?.removeAllListeners()
 		this.watcher?.stop()
+
+		await Promise.all(
+			Array.from(this.peripherals.values()).map(async (peripheral) => {
+				try {
+					await peripheral.close()
+				} catch (e) {
+					this.log.error(e)
+				}
+			})
+		)
 
 		this.peripherals.clear()
 
