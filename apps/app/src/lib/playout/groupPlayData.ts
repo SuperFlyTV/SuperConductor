@@ -41,13 +41,14 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 					playhead = currentPlayhead
 				}
 
-				const { sectionStartTime, sectionEndTime } = getSectionTimes(section, now)
+				const { sectionLastStartTime, sectionNextEndTime } = getSectionTimes(section, now)
 
-				if (sectionStartTime <= now && sectionEndTime > now) {
+				if (sectionLastStartTime <= now && sectionNextEndTime > now && (section.endTime || Infinity) > now) {
+					//  && (section.endTime ?? Infinity) > now
 					playData.sectionEndAction = section.endAction
 
-					if (sectionEndTime !== Infinity) {
-						playData.sectionEndTime = sectionEndTime
+					if (sectionNextEndTime !== Infinity) {
+						playData.sectionEndTime = sectionNextEndTime
 						playData.sectionTimeToEnd = playData.sectionEndTime - now
 					} else if (section.pauseTime !== undefined && section.duration) {
 						// Is paused
@@ -55,7 +56,7 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 						playData.sectionTimeToEnd = section.duration - section.pauseTime
 					} else if (section.repeating && section.duration) {
 						// Is repeating
-						playData.sectionEndTime = sectionStartTime + section.duration
+						playData.sectionEndTime = sectionLastStartTime + section.duration
 						playData.sectionTimeToEnd = playData.sectionEndTime - now
 					} else {
 						playData.sectionEndTime = null
@@ -111,16 +112,17 @@ function getSectionTimes(
 	section: GroupPreparedPlayDataSection,
 	now: number
 ): {
-	sectionStartTime: number
-	sectionEndTime: number
+	/** Last start time of the section (when in a repeating section, the previous start time) */
+	sectionLastStartTime: number
+	/** Next end time (when in a repeating section, the next time the section will repeat ) */
+	sectionNextEndTime: number
+	/** How much to add to times to get the times in the current repetition [ms] */
 	repeatAddition: number
 	nextSectionStartTime: number | null
 } {
-	let sectionEndTime = section.endTime ?? Infinity
-	let sectionStartTime = section.startTime
-
-	/** How much to add to times to get the times in the current repetition [ms] */
-	let repeatAddition = 0
+	let sectionLastStartTime: number
+	let sectionNextEndTime: number
+	let repeatAddition: number
 
 	const nowTime = section.pauseTime ?? now
 
@@ -133,16 +135,20 @@ function getSectionTimes(
 
 		/** How much to add to times to get the times in the current repetition [ms] */
 		repeatAddition = Math.max(0, currentRepeatingStartTime - section.startTime)
+
+		sectionLastStartTime = section.startTime + repeatAddition
+		sectionNextEndTime = section.startTime + section.duration + repeatAddition
+	} else {
+		sectionLastStartTime = section.startTime
+		sectionNextEndTime = section.endTime ?? Infinity
+		repeatAddition = 0
 	}
 
-	sectionStartTime += repeatAddition
-	sectionEndTime += repeatAddition
-
-	const nextSectionStartTime = section.duration === null ? null : sectionStartTime + section.duration
+	const nextSectionStartTime = section.duration === null ? null : sectionLastStartTime + section.duration
 
 	return {
-		sectionStartTime,
-		sectionEndTime,
+		sectionLastStartTime,
+		sectionNextEndTime,
 		repeatAddition,
 		nextSectionStartTime,
 	}
@@ -154,15 +160,18 @@ function getPlayheadForSection(
 ): GroupPlayDataPlayhead | null {
 	let playhead: GroupPlayDataPlayhead | null = null
 
-	const { sectionStartTime, sectionEndTime, repeatAddition, nextSectionStartTime } = getSectionTimes(section, now)
+	const { sectionLastStartTime, sectionNextEndTime, repeatAddition, nextSectionStartTime } = getSectionTimes(
+		section,
+		now
+	)
 
-	if (sectionStartTime >= (section.endTime ?? Infinity)) return null
+	if (sectionLastStartTime >= (section.endTime ?? Infinity)) return null
 
 	if (section.schedule) {
-		if (sectionStartTime >= now)
+		if (sectionLastStartTime >= now)
 			playData.groupScheduledToPlay.push({
-				duration: sectionStartTime - now,
-				timestamp: sectionStartTime,
+				duration: sectionLastStartTime - now,
+				timestamp: sectionLastStartTime,
 			})
 		if (
 			nextSectionStartTime !== null &&
@@ -201,7 +210,12 @@ function getPlayheadForSection(
 			}
 		}
 
-		if (playheadTime >= 0 && playheadTime < (part.duration || Infinity) && sectionEndTime > now) {
+		if (
+			playheadTime >= 0 &&
+			playheadTime < (part.duration || Infinity) &&
+			sectionNextEndTime > now &&
+			(section.endTime || Infinity) > now
+		) {
 			playhead = literal<GroupPlayDataPlayhead>({
 				playheadTime: playheadTime,
 				partStartTime: partStartTime,

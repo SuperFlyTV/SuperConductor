@@ -178,10 +178,12 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 	const prevPlayingParts = group.playout.playingParts
 	group.playout.playingParts = {}
 	for (const [partId, playhead] of Object.entries(playData.playheads)) {
+		const prevPlayingPart = prevPlayingParts[partId]
+
 		group.playout.playingParts[partId] = {
 			startTime: playhead.partStartTime,
 			pauseTime: playhead.partPauseTime,
-			stopTime: undefined,
+			stopTime: prevPlayingPart?.stopTime,
 			fromSchedule: playhead.fromSchedule,
 		}
 	}

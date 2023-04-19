@@ -47,6 +47,19 @@ describe('prepareGroupPlayData', () => {
 				if (!prepared) throw new Error('Prepared is falsy')
 				expect(prepared).toMatchSnapshot()
 
+				expect(prepared.sections).toMatchObject([
+					{
+						startTime: 1000,
+						pauseTime: undefined,
+						stopTime: undefined,
+						endTime: 2000,
+						duration: 1000,
+						// repeating?: boolean,
+						schedule: false,
+						endAction: SectionEndAction.STOP,
+					},
+				])
+
 				const playData = getGroupPlayData(prepared, 1001)
 
 				expect(playData).toMatchObject({
@@ -159,6 +172,18 @@ describe('prepareGroupPlayData', () => {
 				if (!prepared) throw new Error('Prepared is falsy')
 				expect(prepared).toMatchSnapshot()
 
+				expect(prepared.sections).toMatchObject([
+					{
+						startTime: 2900,
+						pauseTime: undefined,
+						stopTime: 3500,
+						endTime: 3500,
+						duration: 1000,
+						schedule: false,
+						endAction: SectionEndAction.STOP,
+					},
+				])
+
 				const playData = getGroupPlayData(prepared, 3501)
 				expect(playData).toMatchObject({
 					groupIsPlaying: false,
@@ -188,6 +213,28 @@ describe('prepareGroupPlayData', () => {
 				const prepared = prepareGroupPlayData(group0, 1000)
 				if (!prepared) throw new Error('Prepared is falsy')
 				expect(prepared).toMatchSnapshot()
+
+				expect(prepared.sections).toMatchObject([
+					{
+						startTime: 1000,
+						pauseTime: undefined,
+						stopTime: undefined,
+						endTime: 1000,
+						duration: 0,
+						schedule: false,
+						endAction: SectionEndAction.NEXT_SECTION,
+					},
+					{
+						startTime: 1000,
+						pauseTime: undefined,
+						stopTime: undefined,
+						endTime: null,
+						duration: 1000,
+						repeating: true,
+						schedule: false,
+						endAction: SectionEndAction.LOOP_SELF,
+					},
+				])
 
 				const playData = getGroupPlayData(prepared, 1001)
 
@@ -232,6 +279,28 @@ describe('prepareGroupPlayData', () => {
 				const prepared = prepareGroupPlayData(group0, 1500)
 				if (!prepared) throw new Error('Prepared is falsy')
 				expect(prepared).toMatchSnapshot()
+
+				expect(prepared.sections).toMatchObject([
+					{
+						startTime: 1000,
+						pauseTime: undefined,
+						stopTime: 1500,
+						endTime: 1000,
+						duration: 0,
+						schedule: false,
+						endAction: SectionEndAction.NEXT_SECTION,
+					},
+					{
+						startTime: 1000,
+						pauseTime: undefined,
+						stopTime: 1500,
+						endTime: 1500,
+						duration: 1000,
+						repeating: true,
+						schedule: false,
+						endAction: SectionEndAction.STOP,
+					},
+				])
 
 				const playData = getGroupPlayData(prepared, 1501)
 				expect(playData).toMatchObject({
@@ -457,6 +526,93 @@ describe('prepareGroupPlayData', () => {
 					sectionEndAction: null,
 				})
 				expect(Object.keys(playData.playheads)).toHaveLength(0)
+			}
+		})
+		test('Play looping Part B, then stop it after loop', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+
+			const part = getPart(group0, 'partB')
+			part.loop = true
+
+			// Play the part:
+			RundownActions.playPart(group0, part, 1000)
+			postProcessGroup(group0, 1000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 1001)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				{
+					const playData = getGroupPlayData(prepared, 1001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 1999,
+						sectionEndTime: 3000,
+						sectionEndAction: SectionEndAction.LOOP_SELF,
+					})
+					expect(Object.keys(playData.playheads)).toHaveLength(1)
+					expect(playData.playheads['partB']).toMatchObject({
+						playheadTime: 1,
+						partStartTime: 1000,
+						partPauseTime: undefined,
+						partEndTime: 3000,
+						partDuration: 2000,
+						partId: 'partB',
+						endAction: PlayPartEndAction.LOOP_SELF,
+						fromSchedule: false,
+					})
+					expect(Object.keys(playData.countdowns)).toStrictEqual(['partB'])
+				}
+				// Also check after a loop:
+				{
+					const playData = getGroupPlayData(prepared, 3500)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 1500,
+						sectionEndTime: 5000,
+						sectionEndAction: SectionEndAction.LOOP_SELF,
+					})
+					expect(Object.keys(playData.playheads)).toHaveLength(1)
+					expect(playData.playheads['partB']).toMatchObject({
+						playheadTime: 500,
+						partStartTime: 3000,
+						partPauseTime: undefined,
+						partEndTime: 5000,
+						partDuration: 2000,
+						partId: 'partB',
+						endAction: PlayPartEndAction.LOOP_SELF,
+						fromSchedule: false,
+					})
+					expect(Object.keys(playData.countdowns)).toStrictEqual(['partB'])
+				}
+			}
+
+			// Wait for the part to loop (at 3000),
+			// then stop the part:
+			RundownActions.stopPart(group0, 'partB', 3500)
+			postProcessGroup(group0, 3500)
+			{
+				const prepared = prepareGroupPlayData(group0, 3501)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				const playData = getGroupPlayData(prepared, 3501)
+				expect(playData).toMatchObject({
+					groupIsPlaying: false,
+					anyPartIsPlaying: false,
+					// allPartsArePaused: true,
+					sectionTimeToEnd: null,
+					sectionEndTime: null,
+					sectionEndAction: null,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(0)
+				expect(Object.keys(playData.countdowns)).toHaveLength(0)
 			}
 		})
 	})

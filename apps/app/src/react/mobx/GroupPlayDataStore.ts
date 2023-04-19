@@ -44,8 +44,9 @@ export class GroupPlayDataStore {
 				this.updateGroupPlayDataLowLatency = false
 
 				// Update the groups map with the latest groups from the rundown and fresh playhead data for them.
+				const now = Date.now()
 				for (const group of this.rundown.groups) {
-					const newData = getGroupPlayData(group.preparedPlayData)
+					const newData = getGroupPlayData(group.preparedPlayData, now)
 					if (!_.isEqual(newData, this.groups.get(group.id))) {
 						this.groups.set(group.id, newData)
 

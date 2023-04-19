@@ -66,7 +66,6 @@ export function pausePart(group: Group, part: Part, pauseTime: number | undefine
 		// If any other parts are playing, they should be stopped:
 		for (const partId of Object.keys(group.playout.playingParts)) {
 			if (partId !== part.id) {
-				// console.log('stop part', partId)
 				group.playout.playingParts[partId].stopTime = now
 			}
 		}
