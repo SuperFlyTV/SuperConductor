@@ -1,7 +1,7 @@
 {
 	"name": "tsr-bridge",
 	"private": true,
-	"version": "0.11.0-alpha.2",
+	"version": "0.11.0-alpha.3",
 	"description": "A companion app to SuperConductor, to handle playout on another computer",
 	"main": "dist/main.js",
 	"engines": {
@@ -50,10 +50,10 @@
 	},
 	"dependencies": {
 		"@mui/material": "^5.10.14",
-		"@shared/api": "^0.11.0-alpha.2",
-		"@shared/lib": "^0.11.0-alpha.2",
-		"@shared/server-lib": "^0.11.0-alpha.2",
-		"@shared/tsr-bridge": "^0.11.0-alpha.2",
+		"@shared/api": "^0.11.0-alpha.3",
+		"@shared/lib": "^0.11.0-alpha.3",
+		"@shared/server-lib": "^0.11.0-alpha.3",
+		"@shared/tsr-bridge": "^0.11.0-alpha.3",
 		"classnames": "^2.3.2",
 		"electron-is-dev": "^2.0.0",
 		"electron-updater": "^5.3.0",
