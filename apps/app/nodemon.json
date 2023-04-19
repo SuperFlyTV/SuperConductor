@@ -1,5 +1,6 @@
 {
-	"watch": ["src/main.ts", "src/electron/*", "src/lib/*", "src/ipc/*", "src/mocks/*", "src/models/*"],
+	"watch": ["src/**/*"],
+	"ignore": ["*.test.ts", "src/react/*", "README"],
 	"exec": "tsc -p tsconfig.electron.json && electron ./dist/main.js",
 	"ext": "ts"
 }
