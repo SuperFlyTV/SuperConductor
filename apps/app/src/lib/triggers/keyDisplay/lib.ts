@@ -5,6 +5,7 @@ import { GroupBase } from '../../../models/rundown/Group'
 import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'
 import { PeripheralArea } from '../../../models/project/Peripheral'
 import { getTimelineForGroup } from '../../timeline'
+import { TimelineObject } from 'superfly-timeline'
 
 export type TriggersAreaMap = Map<string, TriggerArea>
 export interface TriggerArea {
@@ -130,7 +131,7 @@ export function _getKeyDisplay(
 						if (!content) return []
 
 						const id = `playing_${parentId}`
-						return [
+						const timeline: TimelineObject[] = [
 							{
 								id: id,
 								layer: 'KEY',
@@ -155,6 +156,7 @@ export function _getKeyDisplay(
 								],
 							},
 						]
+						return timeline
 					}
 				)
 				if (groupTL) {

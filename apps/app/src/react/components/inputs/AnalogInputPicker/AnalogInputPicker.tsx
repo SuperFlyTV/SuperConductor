@@ -4,7 +4,7 @@ import useId from '@mui/material/utils/useId'
 import { HiLink, HiOutlineX } from 'react-icons/hi'
 import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
 import { store } from '../../../mobx/store'
-import { TSRTimelineObj, TSRTimelineObjBase } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import classNames from 'classnames'
 
 import './style.scss'
@@ -27,7 +27,7 @@ const POPOVER_TRANSFORM_ORIGIN: {
 	horizontal: 'right',
 }
 export const AnalogInputOverridePicker: React.FC<{
-	objs: TSRTimelineObj[]
+	objs: TSRTimelineObj<TSRTimelineContent>[]
 	path: string
 	onSave: OnSave
 }> = observer(function AnalogInputOverridePicker({ objs, path, onSave }) {
@@ -82,7 +82,7 @@ export const AnalogInputOverridePicker: React.FC<{
 			})
 		}
 	}
-	const content = firstValue(objs, (obj) => (obj as TSRTimelineObjBase).content)
+	const content = firstValue(objs, (obj) => obj.content)
 	const open = Boolean(anchorEl)
 
 	const linkedDatastoreKey = content?.$references?.[path]?.datastoreKey
@@ -97,7 +97,7 @@ export const AnalogInputOverridePicker: React.FC<{
 	if (Object.keys(analogInputOptions).length === 0) {
 		return null
 	}
-	if (isIndeterminate(objs, (obj) => (obj as TSRTimelineObjBase).content.$references)) {
+	if (isIndeterminate(objs, (obj) => obj.content.$references)) {
 		return null
 	}
 	if (!content) return null

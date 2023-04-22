@@ -42,13 +42,14 @@ import {
 	TimelineContentTypePanasonicPtz,
 	TimelineContentTypeSisyfos,
 	TimelineContentTypeVMix,
+	TSRTimelineContent,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { Project } from '../models/project/Project'
 import { listAvailableDeviceIDs } from './util'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
-export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
+export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineContent>): boolean {
 	if (mapping.device !== obj.content.deviceType) return false
 
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
@@ -209,6 +210,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return vmixMapping.mappingType === MappingVMixType.FadeToBlack
 			case TimelineContentTypeVMix.FADER:
 				return vmixMapping.mappingType === MappingVMixType.Fader
+			case TimelineContentTypeVMix.SCRIPT:
+				return vmixMapping.mappingType === MappingVMixType.Script
 			default:
 				assertNever(obj.content)
 				return false
@@ -221,6 +224,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 		return true
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return true
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		return true
 	} else {
 		assertNever(obj.content)
 		return false
@@ -228,7 +233,10 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 }
 
 /** Tries to guess which device a timelineObject is likely to be using */
-export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): string | undefined {
+export function guessDeviceIdFromTimelineObject(
+	project: Project,
+	obj: TSRTimelineObj<TSRTimelineContent>
+): string | undefined {
 	const allDeviceIds = listAvailableDeviceIDs(project.bridges)
 	const sortedMappings = sortMappings(project.mappings)
 
@@ -243,7 +251,7 @@ export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimeli
 	return undefined
 }
 export function getMappingFromTimelineObject(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	deviceId: string,
 	resource: ResourceAny | undefined
 ): Mapping | undefined {
@@ -675,6 +683,13 @@ export function getMappingFromTimelineObject(
 					layerName: 'Fader',
 					mappingType: MappingVMixType.Fader,
 				})
+			case TimelineContentTypeVMix.SCRIPT:
+				return literal<MappingVMixAny>({
+					device: DeviceType.VMIX,
+					deviceId: deviceId,
+					layerName: 'Script',
+					mappingType: MappingVMixType.Script,
+				})
 			default:
 				assertNever(obj.content)
 		}
@@ -697,6 +712,12 @@ export function getMappingFromTimelineObject(
 			device: DeviceType.TELEMETRICS,
 			deviceId: deviceId,
 			layerName: 'Telemetrics',
+		})
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		return literal<Mapping>({
+			device: DeviceType.TRICASTER,
+			deviceId: deviceId,
+			layerName: 'Tricaster',
 		})
 	} else {
 		assertNever(obj.content)
@@ -745,6 +766,10 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 			return 'Sofie Chef'
 		case DeviceType.TELEMETRICS:
 			return 'Telemetrics'
+		case DeviceType.TRICASTER:
+			return 'TriCaster'
+		case DeviceType.MULTI_OSC:
+			return 'Multi OSC'
 		default:
 			assertNever(deviceType)
 	}
@@ -836,6 +861,8 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 					return ''
 				case MappingVMixType.Streaming:
 					return ''
+				case MappingVMixType.Script:
+					return ''
 				default:
 					assertNever(typedMapping)
 					return ''
@@ -875,6 +902,12 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			return `Window ${typedMapping.windowId}`
 		}
 		case DeviceType.TELEMETRICS: {
+			return ''
+		}
+		case DeviceType.TRICASTER: {
+			return ''
+		}
+		case DeviceType.MULTI_OSC: {
 			return ''
 		}
 		default:
@@ -1043,6 +1076,18 @@ export function getDefaultMappingForDeviceType(
 			device: deviceType,
 			deviceId,
 			layerName: `Telemetrics`,
+		})
+	} else if (deviceType === DeviceType.TRICASTER) {
+		return literal<Mapping>({
+			device: deviceType,
+			deviceId,
+			layerName: `TriCaster`,
+		})
+	} else if (deviceType === DeviceType.MULTI_OSC) {
+		return literal<Mapping>({
+			device: deviceType,
+			deviceId,
+			layerName: `Multi OSC`,
 		})
 	} else {
 		assertNever(deviceType)
@@ -1226,6 +1271,10 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 				if (_a.windowId > _b.windowId) return 1
 				if (_a.windowId < _b.windowId) return -1
 			} else if (device === DeviceType.TELEMETRICS) {
+				// Nothing
+			} else if (device === DeviceType.TRICASTER) {
+				// Nothing
+			} else if (device === DeviceType.MULTI_OSC) {
 				// Nothing
 			} else {
 				assertNever(device)

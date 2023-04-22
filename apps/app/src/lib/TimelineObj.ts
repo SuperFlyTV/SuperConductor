@@ -11,6 +11,7 @@ import {
 	TimelineTransition,
 	Transition,
 	TransportStatus,
+	TSRTimelineContent,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { assertNever, capitalizeFirstLetter } from '@shared/lib'
@@ -35,7 +36,7 @@ export interface TimelineObjectDescription {
 	}
 }
 
-export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescription {
+export function describeTimelineObject(obj: TSRTimelineObj<TSRTimelineContent>): TimelineObjectDescription {
 	let label: string = obj.id
 	let inTransition: TimelineObjectDescription['inTransition'] = undefined
 	let outTransition: TimelineObjectDescription['outTransition'] = undefined
@@ -201,6 +202,8 @@ export function describeTimelineObject(obj: TSRTimelineObj): TimelineObjectDescr
 			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
 			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeVMix.SCRIPT) {
+			label = `Script ${obj.content.name}`
 		} else {
 			assertNever(obj.content)
 		}
@@ -266,7 +269,7 @@ function deepDescribeValues(value: any, inner?: boolean): string {
  * Modifies the provided object
  */
 export function modifyTimelineObjectForPlayout(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	playingPart: GroupPreparedPlayDataPart,
 	orgTimelineObj: TimelineObj,
 	pauseTime: number | undefined

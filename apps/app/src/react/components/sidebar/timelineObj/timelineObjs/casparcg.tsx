@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState } from 'react'
 import { assertNever, deepClone } from '@shared/lib'
 import {
@@ -5,15 +6,6 @@ import {
 	Direction,
 	Ease,
 	TimelineContentTypeCasparCg,
-	TimelineObjCasparCGAny,
-	TimelineObjCCGHTMLPage,
-	TimelineObjCCGInput,
-	TimelineObjCCGIP,
-	TimelineObjCCGMedia,
-	TimelineObjCCGProducerContentBase,
-	TimelineObjCCGRecord,
-	TimelineObjCCGRoute,
-	TimelineObjCCGTemplate,
 	TimelineTransition,
 	Transition,
 	TSRTransitionOptions,
@@ -22,6 +14,16 @@ import {
 	DeviceType,
 	Mixer,
 	CasparCGTransition,
+	TSRTimelineObj,
+	TimelineContentCasparCGAny,
+	TimelineContentCCGTemplate,
+	TimelineContentCCGProducerBase,
+	TimelineContentCCGMedia,
+	TimelineContentCCGIP,
+	TimelineContentCCGInput,
+	TimelineContentCCGHTMLPage,
+	TimelineContentCCGRoute,
+	TimelineContentCCGRecord,
 } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave, OnSaveType } from './lib'
 import { BooleanInput } from '../../../inputs/BooleanInput'
@@ -49,14 +51,14 @@ import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../..
 import { makePartialData } from '../GDD/lib'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
-	objs: TimelineObjCasparCGAny[]
+	objs: TSRTimelineObj<TimelineContentCasparCGAny>[]
 	resourceIds: string[]
 
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave: onSave0 }) => {
 	let settings: JSX.Element = <></>
 
-	const onSave = onSave0 as OnSaveType<TimelineObjCasparCGAny>
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentCasparCGAny>>
 
 	const [showAll, setShowAll] = React.useState(false)
 	// const [showMixer, setShowMixer] = React.useState(false)
@@ -172,7 +174,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	// };
 	// mixer?: Mixer;
 
-	const getSettingsChannelLayout = (objs: (TimelineObjCasparCGAny & { content: { channelLayout?: string } })[]) => (
+	const getSettingsChannelLayout = (
+		objs: (TSRTimelineObj<TimelineContentCasparCGAny> & { content: { channelLayout?: string } })[]
+	) => (
 		<>
 			{showAll || anyAreTrue(objs, (obj) => obj.content.channelLayout !== undefined) ? (
 				<div className="setting">
@@ -191,7 +195,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	)
 
 	const getSettingsVideoAudioFilters = (
-		objs: (TimelineObjCasparCGAny & { content: { videoFilter?: string; audioFilter?: string } })[]
+		objs: (TSRTimelineObj<TimelineContentCasparCGAny> & {
+			content: { videoFilter?: string; audioFilter?: string }
+		})[]
 	) => (
 		<>
 			{showAll || anyAreTrue(objs, (obj) => !!obj.content.videoFilter) ? (
@@ -224,7 +230,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	)
 
 	const getSettingsTransitions = (
-		objs: (TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase })[]
+		objs: (TSRTimelineObj<TimelineContentCasparCGAny> & {
+			content: TimelineContentCCGProducerBase
+		})[]
 	) => {
 		if (isIndeterminate(objs, (obj) => obj.content.transitions)) {
 			return <>-- Different transitions --</>
@@ -542,7 +550,11 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		return el
 	}
 
-	const getSettingsMixer = (objs: (TimelineObjCasparCGAny & { content: TimelineObjCCGProducerContentBase })[]) => {
+	const getSettingsMixer = (
+		objs: (TSRTimelineObj<TimelineContentCasparCGAny> & {
+			content: TimelineContentCCGProducerBase
+		})[]
+	) => {
 		const mixers = objs.map((obj) => obj.content.mixer || {}) as MixerWithoutTransitionObject[]
 
 		const mixSettings: JSX.Element[] = []
@@ -1705,7 +1717,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 	if (!contentType) return null
 
 	if (contentType === TimelineContentTypeCasparCg.MEDIA) {
-		const objs = objs0 as TimelineObjCCGMedia[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGMedia>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
@@ -1792,7 +1804,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.IP) {
-		const objs = objs0 as TimelineObjCCGIP[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGIP>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -1816,7 +1828,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.INPUT) {
-		const objs = objs0 as TimelineObjCCGInput[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGInput>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -1875,7 +1887,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.TEMPLATE) {
-		const objs = objs0 as TimelineObjCCGTemplate[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGTemplate>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -1919,7 +1931,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.HTMLPAGE) {
-		const objs = objs0 as TimelineObjCCGHTMLPage[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGHTMLPage>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -1938,7 +1950,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.ROUTE) {
-		const objs = objs0 as (TimelineObjCCGRoute & { content: { __routeMappedLayer?: boolean } })[]
+		const objs = objs0 as (TSRTimelineObj<TimelineContentCCGRoute> & {
+			content: { __routeMappedLayer?: boolean }
+		})[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
@@ -2021,7 +2035,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.RECORD) {
-		const objs = objs0 as TimelineObjCCGRecord[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentCCGRecord>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
@@ -2064,7 +2078,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 }
 
 const CasparEditTemplateData: React.FC<{
-	objs: TimelineObjCCGTemplate[]
+	objs: TSRTimelineObj<TimelineContentCCGTemplate>[]
 	resourceIds: string[]
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave }) => {
@@ -2143,7 +2157,7 @@ function prepareGDDEdit(resources: ResourceAny[]): GDDEdit | undefined {
 }
 const CasparEditTemplateGDDData: React.FC<{
 	gddEdit: GDDEdit
-	objs: TimelineObjCCGTemplate[]
+	objs: TSRTimelineObj<TimelineContentCCGTemplate>[]
 	onSave: OnSave
 }> = ({ gddEdit, objs, onSave }) => {
 	const [editIndeterminateData, setEditIndeterminateData] = useState(false)
@@ -2230,7 +2244,7 @@ const CasparEditTemplateGDDData: React.FC<{
 }
 
 const CasparEditTemplatePlainData: React.FC<{
-	objs: TimelineObjCCGTemplate[]
+	objs: TSRTimelineObj<TimelineContentCCGTemplate>[]
 	onSave: OnSave
 }> = ({ objs, onSave }) => {
 	const [editIndeterminateData, setEditIndeterminateData] = useState(false)
@@ -2323,7 +2337,7 @@ const CasparEditTemplatePlainData: React.FC<{
 					label="Classic CasparCG XML Data"
 					{...inputValue(objs, (obj) => (obj.content as any).sendDataAsXML, undefined)}
 					onChange={(v) => {
-						onSave({ content: { sendDataAsXML: v } })
+						;(onSave as any)({ content: { sendDataAsXML: v } })
 					}}
 				/>
 			</div>

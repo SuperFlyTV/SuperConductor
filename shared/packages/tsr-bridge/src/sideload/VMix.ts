@@ -25,7 +25,7 @@ export class VMixSideload implements SideLoadDevice {
 	private cacheResources: { [id: string]: ResourceAny } = {}
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
-		this.vmix = new VMix()
+		this.vmix = new VMix(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
 
 		this.vmix.on('connected', () => {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection initialized`)
@@ -35,19 +35,20 @@ export class VMixSideload implements SideLoadDevice {
 		})
 
 		if (deviceOptions.options?.host && deviceOptions.options?.port) {
-			this.vmix
-				.connect({
-					host: deviceOptions.options.host,
-					port: deviceOptions.options.port,
-				})
-				.catch((error) => this.log.error('VMix Connect error: ' + stringifyError(error)))
+			// No idea why TypeScript thinks this is a promise that must be marked as `void`.
+			// It's just `void`. No promise.
+			try {
+				void this.vmix.connect(deviceOptions.options.host, deviceOptions.options.port)
+			} catch (error) {
+				this.log.error(stringifyError(error))
+			}
 		}
 	}
 	public async refreshResources(): Promise<ResourceAny[]> {
 		return this._refreshResources()
 	}
 	async close(): Promise<void> {
-		return this.vmix.dispose()
+		return this.vmix.disconnect()
 	}
 	private async _refreshResources() {
 		const resources: { [id: string]: ResourceAny } = {}

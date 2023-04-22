@@ -49,7 +49,7 @@
 		"got": "^11.8.5",
 		"lodash": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
-		"timeline-state-resolver": "7.5.0-nightly-release47-20221116-134940-9a43f95c5.0",
+		"timeline-state-resolver": "8.0.0-release49.0",
 		"winston": "^3.7.2"
 	},
 	"devDependencies": {

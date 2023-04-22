@@ -1,18 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { assertNever, deepClone, literal } from '@shared/lib'
 import React from 'react'
 import {
 	AtemTransitionStyle,
 	MediaSourceType,
+	TSRTimelineObj,
+	TimelineContentAtemAUX,
+	TimelineContentAtemAny,
+	TimelineContentAtemAudioChannel,
+	TimelineContentAtemDSK,
+	TimelineContentAtemME,
+	TimelineContentAtemMacroPlayer,
+	TimelineContentAtemMediaPlayer,
+	TimelineContentAtemSsrc,
+	TimelineContentAtemSsrcProps,
 	TimelineContentTypeAtem,
-	TimelineObjAtemAny,
-	TimelineObjAtemAudioChannel,
-	TimelineObjAtemAUX,
-	TimelineObjAtemDSK,
-	TimelineObjAtemMacroPlayer,
-	TimelineObjAtemME,
-	TimelineObjAtemMediaPlayer,
-	TimelineObjAtemSsrc,
-	TimelineObjAtemSsrcProps,
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -43,7 +45,7 @@ enum ATEMBorderBevel {
 	Out = 3,
 }
 
-export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSave: OnSave }> = ({
+export const EditTimelineObjAtemAny: React.FC<{ objs: TSRTimelineObj<TimelineContentAtemAny>[]; onSave: OnSave }> = ({
 	objs,
 	onSave: onSave0,
 }) => {
@@ -58,11 +60,11 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 	const objs0 = objs
 	// const onSave0 = onSave
 	if (contentType === TimelineContentTypeAtem.ME) {
-		const objs = objs0 as TimelineObjAtemME[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemME>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemME>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemME>>
 		settings = (
 			<>
 				<div className="setting">
@@ -140,10 +142,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.DSK) {
-		const objs = objs0 as TimelineObjAtemDSK[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemDSK>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemDSK>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemDSK>>
 
 		settings = (
 			<>
@@ -164,13 +166,13 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 						fullWidth
 						{...inputValue(objs, (obj) => obj.content.dsk.sources?.fillSource, 0)}
 						onChange={(v) => {
-							const mod: PartialDeep<TimelineObjAtemDSK> = {
+							const mod: PartialDeep<TSRTimelineObj<TimelineContentAtemDSK>> = {
 								content: { dsk: { sources: { fillSource: v } } },
 							}
 							if (!firstObj.content.dsk.sources) {
 								deepExtend(
 									mod,
-									literal<PartialDeep<TimelineObjAtemDSK>>({
+									literal<PartialDeep<TSRTimelineObj<TimelineContentAtemDSK>>>({
 										content: { dsk: { sources: { fillSource: v, cutSource: 0 } } },
 									})
 								)
@@ -188,13 +190,13 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 						fullWidth
 						{...inputValue(objs, (obj) => obj.content.dsk.sources?.cutSource, 0)}
 						onChange={(v) => {
-							const mod: PartialDeep<TimelineObjAtemDSK> = {
+							const mod: PartialDeep<TSRTimelineObj<TimelineContentAtemDSK>> = {
 								content: { dsk: { sources: { cutSource: v } } },
 							}
 							if (!firstObj.content.dsk.sources) {
 								deepExtend(
 									mod,
-									literal<PartialDeep<TimelineObjAtemDSK>>({
+									literal<PartialDeep<TSRTimelineObj<TimelineContentAtemDSK>>>({
 										content: { dsk: { sources: { cutSource: v, fillSource: 0 } } },
 									})
 								)
@@ -210,10 +212,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.AUX) {
-		const objs = objs0 as TimelineObjAtemAUX[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemAUX>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemAUX>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemAUX>>
 		settings = (
 			<>
 				<div className="setting">
@@ -231,10 +233,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.SSRC) {
-		const objs = objs0 as TimelineObjAtemSsrc[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemSsrc>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemSsrc>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemSsrc>>
 
 		if (isIndeterminate(objs, (obj) => obj.content.ssrc.boxes)) {
 			return <>-- Different SSRC values --</>
@@ -396,10 +398,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.SSRCPROPS) {
-		const objs = objs0 as TimelineObjAtemSsrcProps[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemSsrcProps>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemSsrcProps>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemSsrcProps>>
 		settings = (
 			<>
 				<div className="setting">
@@ -696,11 +698,11 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.MEDIAPLAYER) {
-		const objs = objs0 as TimelineObjAtemMediaPlayer[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemMediaPlayer>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemMediaPlayer>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemMediaPlayer>>
 
 		settings = (
 			<>
@@ -782,10 +784,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.MACROPLAYER) {
-		const objs = objs0 as TimelineObjAtemMacroPlayer[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemMacroPlayer>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemMacroPlayer>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemMacroPlayer>>
 		settings = (
 			<>
 				<div className="setting">
@@ -821,10 +823,10 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeAtem.AUDIOCHANNEL) {
-		const objs = objs0 as TimelineObjAtemAudioChannel[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentAtemAudioChannel>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
-		const onSave = onSave0 as OnSaveType<TimelineObjAtemAudioChannel>
+		const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemAudioChannel>>
 		settings = (
 			<>
 				<div className="setting">

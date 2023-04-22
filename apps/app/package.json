@@ -107,7 +107,7 @@
 		"react-visibility-sensor": "^5.1.1",
 		"short-uuid": "^4.2.2",
 		"superfly-timeline": "^8.3.1",
-		"timeline-state-resolver-types": "7.5.0-nightly-release47-20221116-134940-9a43f95c5.0",
+		"timeline-state-resolver-types": "8.0.0-release49.0",
 		"type-fest": "^3.2.0",
 		"url": "^0.11.0",
 		"utf-8-validate": "^5.0.10",

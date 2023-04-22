@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { GDDSchema } from 'graphics-data-definition'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 
 import './style.scss'
 import { componentAny } from './componentAny'
@@ -8,7 +8,7 @@ import { deepClone } from '@shared/lib'
 import { OnSave } from '../timelineObjs/lib'
 
 export const EditGDDData: React.FC<{
-	objs: TSRTimelineObj[]
+	objs: TSRTimelineObj<TSRTimelineContent>[]
 
 	schema: GDDSchema
 	data: any

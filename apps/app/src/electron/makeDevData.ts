@@ -7,8 +7,9 @@ import {
 	MappingAtem,
 	MappingAtemType,
 	MappingCasparCG,
+	TSRTimelineObj,
+	TimelineContentCCGMedia,
 	TimelineContentTypeCasparCg,
-	TimelineObjCCGMedia,
 } from 'timeline-state-resolver-types'
 import { shortID } from '../lib/util'
 import { Bridge } from '../models/project/Bridge'
@@ -140,7 +141,7 @@ export function makeDevData(): {
 
 					const obj: TimelineObj = {
 						resourceId: '',
-						obj: literal<TimelineObjCCGMedia>({
+						obj: literal<TSRTimelineObj<TimelineContentCCGMedia>>({
 							id: shortID(),
 							enable: {
 								start: 0,

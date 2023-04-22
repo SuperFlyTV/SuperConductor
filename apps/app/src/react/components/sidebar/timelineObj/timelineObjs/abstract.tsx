@@ -1,11 +1,11 @@
 import React from 'react'
-import { TimelineObjAbstractAny } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, TimelineContentAbstractAny } from 'timeline-state-resolver-types'
 import { EditWrapper, OnSave } from './lib'
 
-export const EditTimelineObjAbstractAny: React.FC<{ objs: TimelineObjAbstractAny[]; onSave: OnSave }> = ({
-	objs,
-	onSave,
-}) => {
+export const EditTimelineObjAbstractAny: React.FC<{
+	objs: TSRTimelineObj<TimelineContentAbstractAny>[]
+	onSave: OnSave
+}> = ({ objs, onSave }) => {
 	return (
 		<EditWrapper objs={objs} onSave={onSave}>
 			<div>No settings available</div>

@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { filterMapping, sortMappings } from '../../../../../lib/TSRMappings'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
@@ -9,11 +9,11 @@ import { PartialDeep } from 'type-fest'
 import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 
-export type OnSave = (update: PartialDeep<TSRTimelineObj>) => void
+export type OnSave = (update: PartialDeep<TSRTimelineObj<TSRTimelineContent>>) => void
 export type OnSaveType<T> = (update: PartialDeep<T>) => void
 
 export const EditWrapper: React.FC<{
-	objs: TSRTimelineObj[]
+	objs: TSRTimelineObj<TSRTimelineContent>[]
 	onSave: OnSave
 	children: JSX.Element | JSX.Element[]
 }> = ({ objs, onSave, children }) => {

@@ -1,7 +1,13 @@
 import { Box, Button, Stack, Typography } from '@mui/material'
 import { deepClone } from '@shared/lib'
 import React from 'react'
-import { OSCMessageCommandContent, OSCValueType, SomeOSCValue, TimelineObjOSCAny } from 'timeline-state-resolver-types'
+import {
+	OSCMessageCommandContent,
+	OSCValueType,
+	SomeOSCValue,
+	TSRTimelineObj,
+	TimelineContentOSCAny,
+} from 'timeline-state-resolver-types'
 import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { FloatInput } from '../../../inputs/FloatInput'
@@ -38,7 +44,7 @@ const DEFAULT_TRANSITION: OSCMessageCommandContent['transition'] = {
 	direction: OSCTransitionDirection.InOut,
 }
 
-export const EditTimelineObjOSCAny: React.FC<{ objs: TimelineObjOSCAny[]; onSave: OnSave }> = ({
+export const EditTimelineObjOSCAny: React.FC<{ objs: TSRTimelineObj<TimelineContentOSCAny>[]; onSave: OnSave }> = ({
 	objs,
 	onSave: onSave0,
 }) => {
@@ -48,7 +54,7 @@ export const EditTimelineObjOSCAny: React.FC<{ objs: TimelineObjOSCAny[]; onSave
 	const firstObj = objs[0]
 	if (!firstObj) return null
 
-	const onSave = onSave0 as OnSaveType<TimelineObjOSCAny>
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentOSCAny>>
 	return (
 		<EditWrapper objs={objs} onSave={onSave0}>
 			<div className="setting">

@@ -1,27 +1,30 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { assertNever, compact } from '@shared/lib'
 import React from 'react'
 import {
 	DeviceType,
-	TimelineObjAbstractAny,
-	TimelineObjAtemAny,
-	TimelineObjCasparCGAny,
-	TimelineObjEmpty,
-	TimelineObjHTTPSendAny,
-	TimelineObjHyperdeckAny,
-	TimelineObjLawoAny,
-	TimelineObjOBSAny,
-	TimelineObjOSCAny,
-	TimelineObjPanasonicPtzAny,
-	TimelineObjPharosAny,
-	TimelineObjQuantelAny,
-	TimelineObjShotoku,
-	TimelineObjSingularLiveAny,
-	TimelineObjSisyfosAny,
-	TimelineObjSofieChefAny,
-	TimelineObjTCPSendAny,
-	TimelineObjTelemetricsAny,
-	TimelineObjVIZMSEAny,
-	TimelineObjVMixAny,
+	TSRTimelineObj,
+	TimelineContentAbstractAny,
+	TimelineContentAtemAny,
+	TimelineContentCasparCGAny,
+	TimelineContentEmpty,
+	TimelineContentHTTPSendAny,
+	TimelineContentHyperdeckAny,
+	TimelineContentLawoAny,
+	TimelineContentOBSAny,
+	TimelineContentOSCAny,
+	TimelineContentPanasonicPtzAny,
+	TimelineContentPharosAny,
+	TimelineContentQuantelAny,
+	TimelineContentShotoku,
+	TimelineContentSingularLiveAny,
+	TimelineContentSisyfosAny,
+	TimelineContentSofieChefAny,
+	TimelineContentTCPSendAny,
+	TimelineContentTelemetricsAny,
+	TimelineContentTriCasterAny,
+	TimelineContentVIZMSEAny,
+	TimelineContentVMixAny,
 } from 'timeline-state-resolver-types'
 import { EditTimelineObjCasparCGAny } from './timelineObjs/casparcg'
 import { EditTimelineObjAbstractAny } from './timelineObjs/abstract'
@@ -47,6 +50,7 @@ import { EditTimelineObjSofieChefAny } from './timelineObjs/sofieChef'
 import { EditTimelineObjTelemetricsAny } from './timelineObjs/telemetrics'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
+import { EditTimelineObjTriCasterAny } from './timelineObjs/tricaster'
 
 export const EditTimelineObjContent: React.FC<{
 	modifiableObjects: {
@@ -72,52 +76,93 @@ export const EditTimelineObjContent: React.FC<{
 	const objs = modifiableObjects.map((o) => o.timelineObj.obj)
 	const resourceIds = compact(modifiableObjects.map((o) => o.timelineObj.resourceId))
 
-	if (firstObj.content.deviceType === DeviceType.ABSTRACT && firstObj.content.type === 'empty') {
-		editElement = <EditTimelineObjEmpty objs={objs as TimelineObjEmpty[]} onSave={onSave} />
+	if (
+		firstObj.content.deviceType === DeviceType.ABSTRACT &&
+		'type' in firstObj.content &&
+		firstObj.content.type === 'empty'
+	) {
+		editElement = <EditTimelineObjEmpty objs={objs as TSRTimelineObj<TimelineContentEmpty>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.ABSTRACT) {
-		editElement = <EditTimelineObjAbstractAny objs={objs as TimelineObjAbstractAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjAbstractAny objs={objs as TSRTimelineObj<TimelineContentAbstractAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.ATEM) {
-		editElement = <EditTimelineObjAtemAny objs={objs as TimelineObjAtemAny[]} onSave={onSave} />
+		editElement = <EditTimelineObjAtemAny objs={objs as TSRTimelineObj<TimelineContentAtemAny>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.CASPARCG) {
 		editElement = (
 			<EditTimelineObjCasparCGAny
-				objs={objs as TimelineObjCasparCGAny[]}
+				objs={objs as TSRTimelineObj<TimelineContentCasparCGAny>[]}
 				resourceIds={resourceIds}
 				onSave={onSave}
 			/>
 		)
 	} else if (firstObj.content.deviceType === DeviceType.HTTPSEND) {
-		editElement = <EditTimelineObjHTTPSendAny objs={objs as TimelineObjHTTPSendAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjHTTPSendAny objs={objs as TSRTimelineObj<TimelineContentHTTPSendAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.TCPSEND) {
-		editElement = <EditTimelineObjTCPSendAny objs={objs as TimelineObjTCPSendAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjTCPSendAny objs={objs as TSRTimelineObj<TimelineContentTCPSendAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.HYPERDECK) {
-		editElement = <EditTimelineObjHyperdeckAny objs={objs as TimelineObjHyperdeckAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjHyperdeckAny objs={objs as TSRTimelineObj<TimelineContentHyperdeckAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.LAWO) {
-		editElement = <EditTimelineObjLawoAny objs={objs as TimelineObjLawoAny[]} onSave={onSave} />
+		editElement = <EditTimelineObjLawoAny objs={objs as TSRTimelineObj<TimelineContentLawoAny>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.OBS) {
-		editElement = <EditTimelineObjOBSAny objs={objs as TimelineObjOBSAny[]} onSave={onSave} />
+		editElement = <EditTimelineObjOBSAny objs={objs as TSRTimelineObj<TimelineContentOBSAny>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.OSC) {
-		editElement = <EditTimelineObjOSCAny objs={objs as TimelineObjOSCAny[]} onSave={onSave} />
+		editElement = <EditTimelineObjOSCAny objs={objs as TSRTimelineObj<TimelineContentOSCAny>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.PHAROS) {
-		editElement = <EditTimelineObjPharosAny objs={objs as TimelineObjPharosAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjPharosAny objs={objs as TSRTimelineObj<TimelineContentPharosAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.PANASONIC_PTZ) {
-		editElement = <EditTimelineObjPanasonicPtzAny objs={objs as TimelineObjPanasonicPtzAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjPanasonicPtzAny
+				objs={objs as TSRTimelineObj<TimelineContentPanasonicPtzAny>[]}
+				onSave={onSave}
+			/>
+		)
 	} else if (firstObj.content.deviceType === DeviceType.QUANTEL) {
-		editElement = <EditTimelineObjQuantelAny objs={objs as TimelineObjQuantelAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjQuantelAny objs={objs as TSRTimelineObj<TimelineContentQuantelAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.SHOTOKU) {
-		editElement = <EditTimelineObjShotoku objs={objs as TimelineObjShotoku[]} onSave={onSave} />
+		editElement = <EditTimelineObjShotoku objs={objs as TSRTimelineObj<TimelineContentShotoku>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.SISYFOS) {
-		editElement = <EditTimelineObjSisyfosAny objs={objs as TimelineObjSisyfosAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjSisyfosAny objs={objs as TSRTimelineObj<TimelineContentSisyfosAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.SINGULAR_LIVE) {
-		editElement = <EditTimelineObjSingularLiveAny objs={objs as TimelineObjSingularLiveAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjSingularLiveAny
+				objs={objs as TSRTimelineObj<TimelineContentSingularLiveAny>[]}
+				onSave={onSave}
+			/>
+		)
 	} else if (firstObj.content.deviceType === DeviceType.VMIX) {
-		editElement = <EditTimelineObjVMixAny objs={objs as TimelineObjVMixAny[]} onSave={onSave} />
+		editElement = <EditTimelineObjVMixAny objs={objs as TSRTimelineObj<TimelineContentVMixAny>[]} onSave={onSave} />
 	} else if (firstObj.content.deviceType === DeviceType.VIZMSE) {
-		editElement = <EditTimelineObjVIZMSEAny objs={objs as TimelineObjVIZMSEAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjVIZMSEAny objs={objs as TSRTimelineObj<TimelineContentVIZMSEAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.SOFIE_CHEF) {
-		editElement = <EditTimelineObjSofieChefAny objs={objs as TimelineObjSofieChefAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjSofieChefAny objs={objs as TSRTimelineObj<TimelineContentSofieChefAny>[]} onSave={onSave} />
+		)
 	} else if (firstObj.content.deviceType === DeviceType.TELEMETRICS) {
-		editElement = <EditTimelineObjTelemetricsAny objs={objs as TimelineObjTelemetricsAny[]} onSave={onSave} />
+		editElement = (
+			<EditTimelineObjTelemetricsAny
+				objs={objs as TSRTimelineObj<TimelineContentTelemetricsAny>[]}
+				onSave={onSave}
+			/>
+		)
+	} else if (firstObj.content.deviceType === DeviceType.TRICASTER) {
+		editElement = (
+			<EditTimelineObjTriCasterAny objs={objs as TSRTimelineObj<TimelineContentTriCasterAny>[]} onSave={onSave} />
+		)
 	} else {
 		assertNever(firstObj.content)
 	}

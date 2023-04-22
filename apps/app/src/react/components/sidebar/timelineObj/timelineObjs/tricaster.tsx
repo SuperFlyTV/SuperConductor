@@ -1,9 +1,9 @@
 import React from 'react'
-import { TSRTimelineObj, TimelineContentTelemetricsAny } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, TimelineContentTriCasterAny } from 'timeline-state-resolver-types'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
 
-export const EditTimelineObjTelemetricsAny: React.FC<{
-	objs: TSRTimelineObj<TimelineContentTelemetricsAny>[]
+export const EditTimelineObjTriCasterAny: React.FC<{
+	objs: TSRTimelineObj<TimelineContentTriCasterAny>[]
 	onSave: OnSave
 }> = ({ objs, onSave }) => {
 	return (

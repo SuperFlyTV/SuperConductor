@@ -1,6 +1,6 @@
 import { deepClone, ensureArray } from '@shared/lib'
 import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject } from 'superfly-timeline'
-import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
+import { DeviceType } from 'timeline-state-resolver-types'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataPart,
@@ -37,7 +37,7 @@ export function getTimelineForGroup(
 	}
 
 	if (prepared) {
-		const timeline: TSRTimeline = []
+		const timeline: TimelineObject[] = []
 
 		if (prepared.type === 'single') {
 			let firstStart = Infinity
@@ -62,7 +62,7 @@ export function getTimelineForGroup(
 			}
 
 			if (children.length > 0) {
-				const timelineGroup: TimelineObjEmpty = {
+				const timelineGroup: TimelineObject = {
 					id: `group_${group.id}`,
 					enable: {
 						start: firstStart,
@@ -89,7 +89,7 @@ export function getTimelineForGroup(
 				timeline.push(timelineGroup)
 			}
 		} else if (prepared.type === 'multi') {
-			const timelineGroup: TimelineObjEmpty = {
+			const timelineGroup: TimelineObject = {
 				id: `group_${group.id}`,
 				enable: {
 					start: 0,
@@ -108,7 +108,7 @@ export function getTimelineForGroup(
 					const section = sections[i]
 
 					const children: TimelineObject[] = []
-					const timelineGroupPart: TimelineObjEmpty = {
+					const timelineGroupPart: TimelineObject = {
 						id: `group_${group.id}_${partId}_${i}`,
 						enable: {
 							start: 0,
@@ -158,10 +158,10 @@ function sectionToTimelineObj(
 	makeUniqueId: (id: string) => string,
 	getUniqueId: (id: string) => string,
 	customPartContent: CustomPartContent | undefined
-): TSRTimeline {
-	const timeline: TSRTimeline = []
+): TimelineObject[] {
+	const timeline: TimelineObject[] = []
 
-	const sectionObj: TimelineObjEmpty = {
+	const sectionObj: TimelineObject = {
 		id: `section_${id}`,
 		enable: {
 			start: section.startTime,
@@ -176,7 +176,7 @@ function sectionToTimelineObj(
 		isGroup: true,
 		children: [],
 	}
-	const sectionContentObj: TimelineObjEmpty = {
+	const sectionContentObj: TimelineObject = {
 		id: `section_content_${id}`,
 		enable: {
 			start: 0,
@@ -218,7 +218,7 @@ function sectionToTimelineObj(
 
 		if (usePart) {
 			// Add the part to the timeline:
-			const obj: TimelineObjEmpty | null = partToTimelineObj(
+			const obj: TimelineObject | null = partToTimelineObj(
 				makeUniqueId(part.part.id),
 				group,
 				part,
@@ -245,7 +245,7 @@ function partToTimelineObj(
 	startTime: number,
 	pauseTime: number | undefined,
 	customPartContent: CustomPartContent | undefined
-): TimelineObjEmpty {
+): TimelineObject {
 	const part: Part = playingPart.part
 
 	const enable: TimelineEnable = {
@@ -259,7 +259,7 @@ function partToTimelineObj(
 		delete enable.repeating
 	}
 
-	const timelineObj: TimelineObjEmpty = {
+	const timelineObj: TimelineObject = {
 		id: objId,
 		enable,
 		layer: objId,
@@ -281,7 +281,7 @@ function partToTimelineObj(
 
 	return timelineObj
 }
-function changeTimelineId(obj: TSRTimelineObjBase, changeId: (id: string) => string) {
+function changeTimelineId(obj: TimelineObject, changeId: (id: string) => string) {
 	/** Maps old id -> new id */
 	const changedIds = new Map<string, string>()
 

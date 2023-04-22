@@ -503,6 +503,9 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			return resource.resourceType === ResourceType.VMIX_RECORDING
 		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
 			return resource.resourceType === ResourceType.VMIX_STREAMING
+		} else if (mapping0.mappingType === MappingVMixType.Script) {
+			// @TODO
+			return false
 		} else {
 			assertNever(mapping0.mappingType)
 		}
@@ -510,6 +513,12 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.TELEMETRICS) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.TRICASTER) {
+		// @TODO
+		return false
+	} else if (mapping.device === DeviceType.MULTI_OSC) {
 		// @TODO
 		return false
 	} else {

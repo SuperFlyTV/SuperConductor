@@ -34,7 +34,7 @@ export class TSR {
 		this.conductor = new Conductor(c)
 
 		this.conductor.on('error', (e, ...args) => {
-			log.error('TSR', e, ...args)
+			log.error('TSR', stringifyError(e), ...args)
 		})
 		this.conductor.on('info', (msg, ...args) => {
 			log.info('TSR', msg, ...args)
@@ -44,7 +44,7 @@ export class TSR {
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
-		this.conductor.init().catch((e) => log.error(e))
+		this.conductor.init().catch((e) => log.error(stringifyError(e)))
 
 		this.send = () => {
 			throw new Error('TSR.send() not set!')
@@ -116,7 +116,7 @@ export class TSR {
 				// For example, when trying to remove a CasparCG device that has never connected.
 				// So, to prevent this code from being blocked indefinitely waiting for this promise
 				// to resolve, we instead let it run async.
-				this.conductor.removeDevice(deviceId).catch((e) => this.log.error(e))
+				this.conductor.removeDevice(deviceId).catch((e) => this.log.error(stringifyError(e)))
 
 				delete this.devices[deviceId]
 				delete this.deviceStatus[deviceId]
@@ -150,7 +150,7 @@ export class TSR {
 				.then((resources) => {
 					cb(deviceId, resources)
 				})
-				.catch((e) => this.log.error(e))
+				.catch((e) => this.log.error(stringifyError(e)))
 				.finally(() => {
 					clearTimeout(refreshTimeout)
 					if (!timedOut) {

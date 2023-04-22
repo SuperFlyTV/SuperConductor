@@ -1,6 +1,11 @@
 import { assertNever } from '@shared/lib'
 import React from 'react'
-import { TimelineContentTypeHyperdeck, TimelineObjHyperdeckAny, TransportStatus } from 'timeline-state-resolver-types'
+import {
+	TSRTimelineObj,
+	TimelineContentHyperdeckAny,
+	TimelineContentTypeHyperdeck,
+	TransportStatus,
+} from 'timeline-state-resolver-types'
 import { isIndeterminate, inputValue, firstValue } from '../../../../lib/multipleEdit'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { IntInput } from '../../../inputs/IntInput'
@@ -20,11 +25,11 @@ enum SupportedTransportStatuses {
 	PREVIEW = 'preview',
 }
 
-export const EditTimelineObjHyperdeckAny: React.FC<{ objs: TimelineObjHyperdeckAny[]; onSave: OnSave }> = ({
-	objs,
-	onSave: onSave0,
-}) => {
-	const onSave = onSave0 as OnSaveType<TimelineObjHyperdeckAny>
+export const EditTimelineObjHyperdeckAny: React.FC<{
+	objs: TSRTimelineObj<TimelineContentHyperdeckAny>[]
+	onSave: OnSave
+}> = ({ objs, onSave: onSave0 }) => {
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentHyperdeckAny>>
 	const firstObj = objs[0]
 	if (!firstObj) return null
 

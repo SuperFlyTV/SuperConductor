@@ -30,7 +30,7 @@ import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG, TSRTimelineContent } from 'timeline-state-resolver-types'
 import {
 	ActionDescription,
 	IPCServerMethods,
@@ -1636,7 +1636,7 @@ export class IPCServer
 			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
 
-			const obj: TSRTimelineObj = TSRTimelineObjFromResource(resource)
+			const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(resource)
 
 			let addToLayerId: string | undefined = undefined
 
@@ -2393,7 +2393,7 @@ export class IPCServer
 		rundown: Rundown
 		part: Part
 		project: Project
-		obj: TSRTimelineObj
+		obj: TSRTimelineObj<TSRTimelineContent>
 		resource: ResourceAny | undefined
 
 		layerMustBeFree: boolean
