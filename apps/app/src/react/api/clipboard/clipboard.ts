@@ -31,7 +31,16 @@ export function setupClipboard(context: ClipBoardContext): void {
 	document.addEventListener(
 		'paste',
 		CB(() => {
+			// Don't paste if the window doesn't have focus
 			if (!document.hasFocus()) return
+
+			// Don't handle the paste if an input element is focused
+			if (
+				document.activeElement &&
+				(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')
+			) {
+				return
+			}
 
 			navigator.clipboard
 				.read()
