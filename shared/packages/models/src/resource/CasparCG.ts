@@ -35,7 +35,7 @@ export interface CasparCGTemplate extends ResourceBase {
 
 	// prefilled data:
 	useStopCommand?: boolean
-	duration?: number
+	duration?: number | null
 	data?: any
 	sendDataAsXML?: boolean
 	channel?: number
