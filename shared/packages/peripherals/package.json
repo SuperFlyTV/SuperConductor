@@ -54,6 +54,6 @@
 		"p-queue": "^6.6.2",
 		"sharp": "^0.31.2",
 		"superfly-timeline": "^8.2.5",
-		"xkeys": "^2.4.0"
+		"xkeys": "^3.0.0"
 	}
 }

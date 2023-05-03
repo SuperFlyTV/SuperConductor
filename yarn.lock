@@ -3028,10 +3028,10 @@
   dependencies:
     lodash "^4"
 
-"@xkeys-lib/core@2.4.0":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@xkeys-lib/core/-/core-2.4.0.tgz#03d70285fe7a4e76b2443688a1d8474ed1446d9c"
-  integrity sha512-QYp0HP4LPrd94SXm93v3hVx5iIP5T/Xu5772RwcjDaBPw2vDTvWrd1WTX8tXi5pyN5x01jJxUYC25v4vi5WCMQ==
+"@xkeys-lib/core@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@xkeys-lib/core/-/core-3.0.0.tgz#0f72e22735b90d23c5ca5ca3f248b6a24ffbcf7f"
+  integrity sha512-PbeDpxb9jLIxCYGFC0KJU4spPlweyrQxs8Bzv2haiCds+rGY1XgzwdERCPmExk0EQyAZ4qNeKX8h0T2ieKK98A==
   dependencies:
     tslib "^2.4.0"
 
@@ -13323,13 +13323,13 @@ ws@^8.4.2:
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.4.2.tgz#18e749868d8439f2268368829042894b6907aa0b"
   integrity sha512-Kbk4Nxyq7/ZWqr/tarI9yIt/+iNNFOjBXEWgTb4ydaNHBNGgvf2QHbS9fdfsndfjFlFwEd4Al+mw83YkaD10ZA==
 
-xkeys@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/xkeys/-/xkeys-2.4.0.tgz#bad32c6968290fa89c66900c53ee4515b4aede54"
-  integrity sha512-/9+U26SlopufMlMvoVEbFCTnSPzl9jKeb3HWjHg5Tl/MQKKQG98yUDWsFF2BGPUKxFwBqZfmYGaQ2jsaD2S5XQ==
+xkeys@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/xkeys/-/xkeys-3.0.0.tgz#71e61441594e4fe4778ec6ce092a026b61ee0c92"
+  integrity sha512-TbWRyf4J1CvO9RzWzJq/hun0ZQlOfiRRbmVTc1iBPC5NStM+tnNFxSUuS5yI0QmaIEoMC4qJPBoJRsW8W+Ngog==
   dependencies:
     "@types/node-hid" "^1.3.1"
-    "@xkeys-lib/core" "2.4.0"
+    "@xkeys-lib/core" "3.0.0"
     node-hid "^2.1.1"
     tslib "^2.4.0"
   optionalDependencies:
