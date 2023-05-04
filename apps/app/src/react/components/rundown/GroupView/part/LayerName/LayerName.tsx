@@ -91,7 +91,7 @@ export const LayerName: React.FC<{
 				.map((m) => {
 					const deviceStatus = appStore.allDeviceStatuses[m.mapping.deviceId] as BridgeDevice | undefined
 
-					return { id: layerId, label: m.mapping.layerName ?? m.layerId, deviceStatus: deviceStatus }
+					return { id: m.layerId, label: m.mapping.layerName ?? m.layerId, deviceStatus: deviceStatus }
 				})
 
 			otherMappings0.push({
