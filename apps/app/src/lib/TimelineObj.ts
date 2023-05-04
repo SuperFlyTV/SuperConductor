@@ -259,6 +259,8 @@ function deepDescribeValues(value: any, inner?: boolean): string {
 		} else {
 			return values.map((v) => deepDescribeValues(v, true)).join(', ')
 		}
+	} else if (value === undefined) {
+		return ''
 	} else return String(value)
 }
 

@@ -2340,6 +2340,7 @@ const CasparEditTemplatePlainData: React.FC<{
 							<td colSpan={3}></td>
 						</tr>
 						{dataEntries.map(({ key, value }) => {
+							if (value === undefined) return null
 							return (
 								<tr key={key}>
 									<td className="key">
