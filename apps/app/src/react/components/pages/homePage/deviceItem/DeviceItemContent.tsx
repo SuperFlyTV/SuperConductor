@@ -8,6 +8,7 @@ import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { BooleanInput } from '../../../inputs/BooleanInput'
+import Toggle from 'react-toggle'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -240,6 +241,18 @@ export const DeviceItemContent: React.FC<{
 			</div>
 			<div className="actions">
 				<TextBtn label="Delete" style="danger" onClick={removeDevice} />
+				<>
+					<label>Enabled&nbsp;</label>
+					<div className="sc-switch">
+						<Toggle
+							checked={!deviceSettings.disable}
+							onChange={() => {
+								deviceSettings.disable = !deviceSettings.disable
+								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+							}}
+						/>
+					</div>
+				</>
 			</div>
 		</div>
 	)

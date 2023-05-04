@@ -65,6 +65,8 @@ export class TSR {
 		// Added/updated:
 		for (const deviceId in newDevices) {
 			const newDevice = newDevices[deviceId]
+			if (newDevice.disable) continue
+
 			const existingDevice = this.devices[deviceId]
 
 			if (!existingDevice || !_.isEqual(existingDevice, newDevice)) {
@@ -105,7 +107,8 @@ export class TSR {
 		}
 		// Removed:
 		for (const deviceId in this.devices) {
-			if (!newDevices[deviceId]) {
+			const newDevice = newDevices[deviceId]
+			if (!newDevice || newDevice.disable) {
 				// Delete the sideloaded device, if any
 				if (deviceId in this.sideLoadedDevices) {
 					await this.sideLoadedDevices[deviceId].close()
