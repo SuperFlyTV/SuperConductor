@@ -7,7 +7,7 @@ import { useSnackbar } from 'notistack'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { filterMapping } from '../../../../../../lib/TSRMappings'
+import { filterMapping, sortMappings } from '../../../../../../lib/TSRMappings'
 import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
@@ -65,22 +65,22 @@ export const LayerName: React.FC<{
 
 	const selectedItem: DropdownItem = { id: layerId, label: name, deviceStatus: selectedDeviceStatus }
 
-	const otherItems = useMemoComputedObject(
+	const otherMappings = useMemoComputedObject(
 		() => {
 			const partTimeline = store.rundownsStore.getPartTimeline(partId)
 			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			const otherItems0: DropdownItem[] = Object.entries(mappings)
-				.filter(([mappingId, mapping]) => {
+			const otherMappings0: DropdownItem[] = sortMappings(mappings)
+				.filter((m) => {
 					// Remove used layer from the dropdown list
-					const isUsedLayer = mappingId === layerId
+					const isUsedLayer = m.layerId === layerId
 					if (isUsedLayer) {
 						return false
 					}
 
 					// If uncompatible mapping-timelineObj is found, remove mapping
 					for (const timelineObj of objectsOnThisLayer) {
-						if (!filterMapping(mapping, timelineObj.obj)) {
+						if (!filterMapping(m.mapping, timelineObj.obj)) {
 							return false
 						}
 					}
@@ -88,19 +88,19 @@ export const LayerName: React.FC<{
 					return true
 				})
 				// Map to a simple readable format
-				.map(([layerId, mapping]) => {
-					const deviceStatus = appStore.allDeviceStatuses[mapping.deviceId] as BridgeDevice | undefined
+				.map((m) => {
+					const deviceStatus = appStore.allDeviceStatuses[m.mapping.deviceId] as BridgeDevice | undefined
 
-					return { id: layerId, label: mapping.layerName ?? 'Unknown', deviceStatus: deviceStatus }
+					return { id: layerId, label: m.mapping.layerName ?? m.layerId, deviceStatus: deviceStatus }
 				})
 
-			otherItems0.push({
+			otherMappings0.push({
 				id: 'editMappings',
 				label: 'Edit Mappings',
 				className: 'editMappings',
 				deviceStatus: null,
 			})
-			return otherItems0
+			return otherMappings0
 		},
 		[partId, mappings],
 		true
@@ -111,7 +111,7 @@ export const LayerName: React.FC<{
 			{
 				<LayerNamesDropdown
 					selectedItem={selectedItem}
-					otherItems={otherItems}
+					otherItems={otherMappings}
 					exists={!!mapping}
 					disabled={locked}
 					onSelect={(id: string) => {
