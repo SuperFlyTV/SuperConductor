@@ -87,10 +87,10 @@
 					&.at-end {
 						// There is no space to use to the right.
 						// Show that there is an out-transition in another way:
-						left: calc(100% - 5px);
+						left: calc(100% - 1em);
 						border-left: 2px solid rgba(255, 255, 255, 0.5);
 						background: linear-gradient(to top right, rgba(255, 255, 255, 0.5) 49%, #000 50%);
-						width: 7px !important;
+						width: 1em !important;
 					}
 				}
 			}

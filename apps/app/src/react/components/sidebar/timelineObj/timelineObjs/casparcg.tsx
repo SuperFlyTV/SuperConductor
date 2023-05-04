@@ -47,6 +47,7 @@ import { GDDSchema } from 'graphics-data-definition'
 import { PartialDeep } from 'type-fest'
 import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
 import { makePartialData } from '../GDD/lib'
+import { sortMappings } from '../../../../../lib/TSRMappings'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
 	objs: TimelineObjCasparCGAny[]
@@ -1915,7 +1916,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 				<CasparEditTemplateData objs={objs} resourceIds={resourceIds} onSave={onSave0} />
 
-				{/* {showAllButton} */}
+				{getSettingsMixer(objs)}
+
+				{showAllButton}
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.HTMLPAGE) {
@@ -1935,6 +1938,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						allowUndefined={false}
 					/>
 				</div>
+				{getSettingsMixer(objs)}
+				{getSettingsTransitions(objs)}
+				{showAllButton}
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.ROUTE) {
@@ -1942,13 +1948,22 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
+		const sourceMappingsOptions: { value: string; label: string }[] = sortMappings(
+			store.projectStore.project.mappings
+		).map((m) => ({
+			value: m.layerId,
+			label: m.mapping.layerName || m.layerId,
+		}))
+		console.log(sourceMappingsOptions)
+
 		settings = (
 			<>
 				<div className="setting">
-					<TextInput
-						label="mappedLayer"
+					<SelectEnum
+						label="Source Layer"
 						fullWidth
 						{...inputValue(objs, (obj) => obj.content.mappedLayer, undefined)}
+						options={sourceMappingsOptions}
 						onChange={(v) => {
 							onSave({ content: { mappedLayer: v } })
 						}}
@@ -2016,7 +2031,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 				{getSettingsChannelLayout(objs)}
 				{getSettingsVideoAudioFilters(objs)}
-				{getSettingsTransitions(objs)}
+				{getSettingsMixer(objs)}
 				{showAllButton}
 			</>
 		)

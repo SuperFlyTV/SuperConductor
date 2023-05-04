@@ -1,11 +1,13 @@
 import { MenuItem, TextField, Tooltip } from '@mui/material'
 import React, { useCallback, useState } from 'react'
 
+type OptionsEnum = { [key: string]: any }
+type OptionsArray = { value: string; label: string }[]
 export const SelectEnum: React.FC<{
 	label: React.ReactNode
 	currentValue: any
 	indeterminate?: boolean
-	options: { [key: string]: any }
+	options: OptionsEnum | OptionsArray
 	onChange: (newValue: any) => void
 	allowUndefined?: boolean
 	defaultValue?: any
@@ -35,19 +37,27 @@ export const SelectEnum: React.FC<{
 	// Convert Typescript-enum to key-values:
 
 	let foundAny = false
-	// If the enum has numbers as values:
-	for (const key in options) {
-		if (!isNaN(Number(key))) {
+	// If the options is an array:
+	if (Array.isArray(options)) {
+		for (const option of options as OptionsArray) {
 			foundAny = true
-			allOptions[key] = { value: Number(key), label: options[key] }
+			allOptions[option.value] = { value: option.value, label: option.label }
 		}
-	}
-	if (!foundAny) {
-		// If the enum has strings as values:
+	} else {
+		// If the enum has numbers as values:
 		for (const key in options) {
-			if (isNaN(Number(key))) {
+			if (!isNaN(Number(key))) {
 				foundAny = true
-				allOptions[options[key]] = { value: options[key], label: key }
+				allOptions[key] = { value: Number(key), label: options[key] }
+			}
+		}
+		if (!foundAny) {
+			// If the enum has strings as values:
+			for (const key in options) {
+				if (isNaN(Number(key))) {
+					foundAny = true
+					allOptions[options[key]] = { value: options[key], label: key }
+				}
 			}
 		}
 	}
