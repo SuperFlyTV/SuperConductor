@@ -67,7 +67,13 @@ export function setupClipboard(context: ClipBoardContext): void {
 						}
 					}
 				})
-				.catch(context.handleError)
+				.catch((error) => {
+					if (`${error}`.match(/no valid data/i)) {
+						// This is a user error, not something we need to handle.
+						return
+					}
+					context.handleError(error)
+				})
 		})
 	)
 }

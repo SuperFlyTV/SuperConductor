@@ -1954,7 +1954,6 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			value: m.layerId,
 			label: m.mapping.layerName || m.layerId,
 		}))
-		console.log(sourceMappingsOptions)
 
 		settings = (
 			<>
