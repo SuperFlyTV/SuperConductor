@@ -11,6 +11,7 @@ import { filterMapping, sortMappings } from '../../../../../../lib/TSRMappings'
 import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
+import { literal } from '@shared/lib'
 
 export const LayerName: React.FC<{
 	rundownId: string
@@ -33,6 +34,7 @@ export const LayerName: React.FC<{
 	const { enqueueSnackbar } = useSnackbar()
 	const mapping = mappings[layerId] as Mapping | undefined
 	const name = mapping?.layerName ?? layerId
+	const deviceStatus: BridgeDevice | undefined = mapping ? appStore.allDeviceStatuses[mapping.deviceId] : undefined
 
 	const onSelect = (selectedLayerId: string) => {
 		const partTimeline = store.rundownsStore.getPartTimeline(partId)
@@ -58,26 +60,15 @@ export const LayerName: React.FC<{
 		}
 	}
 
-	let selectedDeviceStatus: BridgeDevice | undefined = undefined
-	if (mapping) {
-		selectedDeviceStatus = appStore.allDeviceStatuses[mapping.deviceId]
-	}
+	const selectedMapping: LayersDropdownLayer = { id: layerId, label: name, deviceStatus: deviceStatus }
 
-	const selectedItem: DropdownItem = { id: layerId, label: name, deviceStatus: selectedDeviceStatus }
-
-	const otherMappings = useMemoComputedObject(
+	const allMappings = useMemoComputedObject(
 		() => {
 			const partTimeline = store.rundownsStore.getPartTimeline(partId)
 			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			const otherMappings0: DropdownItem[] = sortMappings(mappings)
+			const allMappings0: LayersDropdownLayer[] = sortMappings(mappings)
 				.filter((m) => {
-					// Remove used layer from the dropdown list
-					const isUsedLayer = m.layerId === layerId
-					if (isUsedLayer) {
-						return false
-					}
-
 					// If uncompatible mapping-timelineObj is found, remove mapping
 					for (const timelineObj of objectsOnThisLayer) {
 						if (!filterMapping(m.mapping, timelineObj.obj)) {
@@ -91,16 +82,14 @@ export const LayerName: React.FC<{
 				.map((m) => {
 					const deviceStatus = appStore.allDeviceStatuses[m.mapping.deviceId] as BridgeDevice | undefined
 
-					return { id: m.layerId, label: m.mapping.layerName ?? m.layerId, deviceStatus: deviceStatus }
+					return literal<LayersDropdownLayer>({
+						id: m.layerId,
+						label: m.mapping.layerName ?? m.layerId,
+						deviceStatus: deviceStatus,
+					})
 				})
 
-			otherMappings0.push({
-				id: 'editMappings',
-				label: 'Edit Mappings',
-				className: 'editMappings',
-				deviceStatus: null,
-			})
-			return otherMappings0
+			return allMappings0
 		},
 		[partId, mappings],
 		true
@@ -109,17 +98,13 @@ export const LayerName: React.FC<{
 	return (
 		<div className={classNames('layer-name', { warning: !mapping })}>
 			{
-				<LayerNamesDropdown
-					selectedItem={selectedItem}
-					otherItems={otherMappings}
+				<LayersNamesWithDropdown
+					selectedLayer={selectedMapping}
+					layers={allMappings}
 					exists={!!mapping}
 					disabled={locked}
 					onSelect={(id: string) => {
-						if (id === 'editMappings') {
-							store.guiStore.goToHome('mappingsSettings')
-						} else {
-							onSelect(id)
-						}
+						onSelect(id)
 					}}
 					onCreateMissingMapping={(id: string) => {
 						if (!store.rundownsStore.currentRundownId) {
@@ -147,16 +132,16 @@ export function LayerNameEmpty(): JSX.Element {
 	return <div className="layer-name" />
 }
 
-interface DropdownItem {
+interface LayersDropdownLayer {
 	id: string
 	label: string
 	className?: string
 	deviceStatus: BridgeDevice | undefined | null
 }
 
-const LayerNamesDropdown: React.FC<{
-	selectedItem: DropdownItem
-	otherItems: DropdownItem[]
+const LayersNamesWithDropdown: React.FC<{
+	selectedLayer: LayersDropdownLayer
+	layers: LayersDropdownLayer[]
 	exists: boolean
 	onSelect: (id: string) => void
 	onCreateMissingMapping: (id: string) => void
@@ -167,12 +152,12 @@ const LayerNamesDropdown: React.FC<{
 	return (
 		<div className={classNames('layer-names-dropdown', { open: isOpen, selectable: !props.disabled })}>
 			<div
-				className="selected-item"
+				className="selected-mapping"
 				onClick={() => {
 					setOpen(props.disabled ? false : !isOpen)
 				}}
 			>
-				<div className="item">
+				<div className="mapping">
 					{!props.exists && (
 						<div
 							className="warning-icon"
@@ -180,25 +165,26 @@ const LayerNamesDropdown: React.FC<{
 							onClick={(e) => {
 								e.preventDefault()
 								e.stopPropagation()
-								props.onCreateMissingMapping(props.selectedItem.id)
+								props.onCreateMissingMapping(props.selectedLayer.id)
 							}}
 						>
 							<MdWarningAmber size={18} />
 						</div>
 					)}
-					<div className="item-label">{props.selectedItem.label}</div>
+					<div className="mapping-label">{props.selectedLayer.label}</div>
 
-					{props.selectedItem.deviceStatus === undefined && (
+					{props.selectedLayer.deviceStatus === undefined && (
 						<div className="connection-status__dot" title="Device not found"></div>
 					)}
-					{props.selectedItem.deviceStatus?.ok === false && (
+					{props.selectedLayer.deviceStatus?.ok === false && (
 						<div className="connection-status__dot" title="There is an issue with the device"></div>
 					)}
 				</div>
 			</div>
 			{!props.disabled && (
-				<DropdownOtherItems
-					otherItems={props.otherItems}
+				<DropdownSelector
+					selectedLayer={props.selectedLayer}
+					layers={props.layers}
 					onSelect={(id: string) => {
 						props.onSelect(id)
 						setOpen(false)
@@ -210,8 +196,9 @@ const LayerNamesDropdown: React.FC<{
 	)
 }
 
-const DropdownOtherItems: React.FC<{
-	otherItems: DropdownItem[]
+const DropdownSelector: React.FC<{
+	selectedLayer: LayersDropdownLayer
+	layers: LayersDropdownLayer[]
 	onSelect: (id: string) => void
 	onClickOutside: () => void
 }> = (props) => {
@@ -231,19 +218,35 @@ const DropdownOtherItems: React.FC<{
 		}
 	}, [props])
 
+	let layers = props.layers
+	if (layers.length === 1 && layers[0].id === props.selectedLayer.id) {
+		// special case: only one layer, don't show dropdown
+		layers = []
+	}
+
 	return (
-		<div className="other-items">
-			{props.otherItems.map((item) => (
+		<div className="mappings-dropdown-selector">
+			{layers.map((layer) => (
 				<div
-					key={item.id}
-					className={'item' + (item.className ? ' ' + item.className : '')}
+					key={layer.id}
+					className={classNames('mapping', layer.className, {
+						selected: props.selectedLayer.id === layer.id,
+					})}
 					onClick={() => {
-						props.onSelect(item.id)
+						props.onSelect(layer.id)
 					}}
 				>
-					<div className="item-label">{item.label}</div>
+					<div className="mapping-label">{layer.label}</div>
 				</div>
 			))}
+			<div
+				className="mapping edit-mappings"
+				onClick={() => {
+					store.guiStore.goToHome('mappingsSettings')
+				}}
+			>
+				<div className="mapping-label">Edit Mappings</div>
+			</div>
 		</div>
 	)
 }

@@ -1,5 +1,9 @@
 @import '../../../../../styles/foundation/all';
 
+$background-color: #464646;
+$background-color-selected: lighten($color: $background-color, $amount: 20);
+
+
 .layer-name {
 	height: $layerHeight;
 	position: relative;
@@ -32,19 +36,20 @@
 
 	&.selectable {
 		cursor: pointer;
-		.item:hover {
+		.mapping:hover {
 			background-color: rgba(255, 255, 255, 0.1);
 		}
 	}
 
 	&.open {
-		.selected-item {
-			background-color: rgba(255, 255, 255, 0.1);
+		.selected-mapping {
+			// background-color: rgba(255, 255, 255, 0.1);
 			border-bottom: none;
 		}
-		.other-items {
+		.mappings-dropdown-selector {
 			display: block;
 			border-radius: 0 0 0.4rem 0.4rem;
+			box-shadow: 0 0 10px #000;
 		}
 	}
 
@@ -53,7 +58,9 @@
 		flex-shrink: 0;
 	}
 
-	.other-items {
+	.mappings-dropdown-selector {
+
+
 		border: 0.1rem solid #545a78;
 		border-top: none;
 		display: none;
@@ -62,10 +69,10 @@
 		top: 100%;
 		left: 0;
 		z-index: 10;
-		background: #464646;
+		background: $background-color
 	}
 
-	.item {
+	.mapping {
 		padding: 0 0.3rem;
 		font-size: 1.4rem;
 		font-size: 1.4rem;
@@ -75,15 +82,16 @@
 		height: $layerHeight;
 
 		&.selected {
-			display: block;
+			// display: block;
+			// font-weight: bold;
+			background: lighten($color: $background-color, $amount: 20);
 		}
 
-		&.editMappings {
-			background: #545a78;
-
-			&:hover {
-				background: #697091;
-			}
+		&.edit-mappings {
+			border-top: 1px solid #fff;
+			padding-top: 1em;
+			padding-bottom: 1em;
+			text-align: center;
 		}
 
 		&-label {
