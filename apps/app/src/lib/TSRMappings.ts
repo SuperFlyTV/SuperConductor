@@ -895,161 +895,268 @@ export function getDefaultMappingForDeviceType(
 	}
 
 	if (deviceType === DeviceType.ABSTRACT) {
-		return literal<MappingAbstract>({
+		const m = literal<MappingAbstract>({
 			device: deviceType,
 			deviceId,
-			layerName: `Abstract`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.CASPARCG) {
 		const channel = getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channel) ?? 1
 		const layer = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.layer) ?? 0) + 10
 
-		return literal<MappingCasparCG>({
+		const m = literal<MappingCasparCG>({
 			channel,
 			layer,
 			device: deviceType,
 			deviceId,
-			layerName: `CasparCG ${channel}-${layer}`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.ATEM) {
 		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? 0) + 1
-		return literal<MappingAtem>({
+		const m = literal<MappingAtem>({
 			index,
 			device: deviceType,
 			deviceId,
 			mappingType: MappingAtemType.MixEffect,
-			layerName: `Atem ME ${index}`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.LAWO) {
-		return literal<MappingLawo>({
+		const m = literal<MappingLawo>({
 			device: deviceType,
 			deviceId,
 			mappingType: MappingLawoType.SOURCE,
-			layerName: `Lawo source`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.HTTPSEND) {
-		return literal<MappingHTTPSend>({
+		const m = literal<MappingHTTPSend>({
 			device: deviceType,
 			deviceId,
-			layerName: `HTTP Send`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.PANASONIC_PTZ) {
-		return literal<MappingPanasonicPtz>({
+		const m = literal<MappingPanasonicPtz>({
 			device: DeviceType.PANASONIC_PTZ,
 			deviceId: deviceId,
-			layerName: 'PTZ Preset',
+			layerName: '', // Set later
 			mappingType: MappingPanasonicPtzType.PRESET,
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.TCPSEND) {
-		return literal<MappingTCPSend>({
+		const m = literal<MappingTCPSend>({
 			device: deviceType,
 			deviceId,
-			layerName: `TCP Send`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.HYPERDECK) {
 		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? -1) + 1
-		return literal<MappingHyperdeck>({
+		const m = literal<MappingHyperdeck>({
 			device: deviceType,
 			deviceId,
 			mappingType: MappingHyperdeckType.TRANSPORT,
 			index,
-			layerName: `HyperDeck ${index + 1}`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.PHAROS) {
-		return literal<MappingPharos>({
+		const m = literal<MappingPharos>({
 			device: deviceType,
 			deviceId,
-			layerName: `Pharos`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.OSC) {
-		return literal<MappingOSC>({
+		const m = literal<MappingOSC>({
 			device: deviceType,
 			deviceId,
-			layerName: `OSC`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.HTTPWATCHER) {
-		return literal<MappingHTTPWatcher>({
+		const m = literal<MappingHTTPWatcher>({
 			device: deviceType,
 			deviceId,
-			layerName: `HTTP watcher`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.SISYFOS) {
 		const channel =
 			(getLastBiggestValue(
 				mappings,
 				(m) => m.device === deviceType && m.mappingType === MappingSisyfosType.CHANNEL && m.channel
 			) ?? -1) + 1
-		return literal<MappingSisyfos>({
+		const m = literal<MappingSisyfos>({
 			device: deviceType,
 			deviceId: deviceId,
 			mappingType: MappingSisyfosType.CHANNEL,
 			channel,
-			layerName: `Channel ${channel + 1}`,
+			layerName: '', // Set later
 			setLabelToLayerName: true,
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.QUANTEL) {
 		const channelId = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channelId) ?? 0) + 1
 
-		return literal<MappingQuantel>({
+		const m = literal<MappingQuantel>({
 			device: deviceType,
 			deviceId: deviceId,
 			channelId,
-			layerName: `Quantel ${channelId}`,
+			layerName: '', // Set later
 			portId: 'port-id',
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.VIZMSE) {
-		return literal<MappingVizMSE>({
+		const m = literal<MappingVizMSE>({
 			device: deviceType,
 			deviceId: deviceId,
-			layerName: 'VizMSE',
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.SINGULAR_LIVE) {
-		return literal<MappingSingularLive>({
+		const m = literal<MappingSingularLive>({
 			device: deviceType,
 			deviceId: deviceId,
-			layerName: 'Singular Live',
+			layerName: '', // Set later
 			compositionName: 'composition-name',
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.SHOTOKU) {
-		return literal<MappingShotoku>({
+		const m = literal<MappingShotoku>({
 			device: deviceType,
 			deviceId: deviceId,
-			layerName: 'Shotoku',
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.VMIX) {
-		return literal<MappingVMixProgram>({
+		const m = literal<MappingVMixProgram>({
 			index: 1,
 			device: deviceType,
 			deviceId,
 			mappingType: MappingVMixType.Program,
-			layerName: `VMix PGM`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.OBS) {
-		return literal<MappingOBS>({
+		const m = literal<MappingOBS>({
 			device: deviceType,
 			deviceId,
 			mappingType: MappingOBSType.CurrentScene,
-			layerName: `OBS Scene`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.SOFIE_CHEF) {
-		return literal<MappingSofieChef>({
+		const m = literal<MappingSofieChef>({
 			device: deviceType,
 			deviceId,
-			layerName: `Chef window`,
+			layerName: '', // Set later
 			windowId: 'default',
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else if (deviceType === DeviceType.TELEMETRICS) {
-		return literal<Mapping>({
+		const m = literal<Mapping>({
 			device: deviceType,
 			deviceId,
-			layerName: `Telemetrics`,
+			layerName: '', // Set later
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else {
 		assertNever(deviceType)
-		return literal<Mapping>({
+		const m = literal<Mapping>({
 			device: deviceType,
 			deviceId: deviceId,
 		})
+		m.layerName = getDefaultLayerName(m)
+		return m
+	}
+}
+export function getDefaultLayerName(mapping: Mapping): string {
+	if (mapping.device === DeviceType.ABSTRACT) {
+		return `Abstract`
+	} else if (mapping.device === DeviceType.CASPARCG) {
+		const m = mapping as MappingCasparCG
+		return `CasparCG ${m.channel}-${m.layer}`
+	} else if (mapping.device === DeviceType.ATEM) {
+		const m = mapping as MappingAtem
+		return `Atem ME ${m.index}`
+	} else if (mapping.device === DeviceType.LAWO) {
+		return `Lawo source`
+	} else if (mapping.device === DeviceType.HTTPSEND) {
+		return `HTTP Send`
+	} else if (mapping.device === DeviceType.PANASONIC_PTZ) {
+		return 'PTZ Preset'
+	} else if (mapping.device === DeviceType.TCPSEND) {
+		return `TCP Send`
+	} else if (mapping.device === DeviceType.HYPERDECK) {
+		const m = mapping as MappingHyperdeck
+		if (m.mappingType === MappingHyperdeckType.TRANSPORT) {
+			return `HyperDeck ${(m.index ?? 0) + 1}`
+		} else {
+			assertNever(m.mappingType)
+			return `HyperDeck`
+		}
+	} else if (mapping.device === DeviceType.PHAROS) {
+		return `Pharos`
+	} else if (mapping.device === DeviceType.OSC) {
+		return `OSC`
+	} else if (mapping.device === DeviceType.HTTPWATCHER) {
+		return `HTTP watcher`
+	} else if (mapping.device === DeviceType.SISYFOS) {
+		const m = mapping as MappingSisyfos
+		if (m.mappingType === MappingSisyfosType.CHANNEL) {
+			return `Channel ${m.channel + 1}`
+		} else if (m.mappingType === MappingSisyfosType.CHANNELS) {
+			return `Channels`
+		} else if (m.mappingType === MappingSisyfosType.CHANNEL_BY_LABEL) {
+			return `Channel ${m.label}`
+		} else {
+			assertNever(m)
+			return 'Sisyfos'
+		}
+	} else if (mapping.device === DeviceType.QUANTEL) {
+		const m = mapping as MappingQuantel
+		return `Quantel ${m.channelId}`
+	} else if (mapping.device === DeviceType.VIZMSE) {
+		return 'VizMSE'
+	} else if (mapping.device === DeviceType.SINGULAR_LIVE) {
+		return 'Singular Live'
+	} else if (mapping.device === DeviceType.SHOTOKU) {
+		return 'Shotoku'
+	} else if (mapping.device === DeviceType.VMIX) {
+		return `VMix PGM`
+	} else if (mapping.device === DeviceType.OBS) {
+		return `OBS Scene`
+	} else if (mapping.device === DeviceType.SOFIE_CHEF) {
+		return `Chef window`
+	} else if (mapping.device === DeviceType.TELEMETRICS) {
+		return `Telemetrics`
+	} else {
+		assertNever(mapping.device)
+		return 'N/A'
 	}
 }
 
