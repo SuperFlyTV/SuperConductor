@@ -68,9 +68,9 @@ import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
-import { autoUpdater } from 'electron-updater'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 import * as RundownActions from './rundownActions'
+import { SuperConductor } from './SuperConductor'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -125,6 +125,7 @@ export class IPCServer
 		private _log: LoggerLike,
 		private _renderLog: LoggerLike,
 		private storage: StorageHandler,
+		private superConductor: SuperConductor,
 		private session: SessionHandler,
 		private callbacks: {
 			onClientConnected: () => void
@@ -298,6 +299,7 @@ export class IPCServer
 	async acknowledgeSeenVersion(): Promise<void> {
 		const appData = this.storage.getAppData()
 		appData.version.seenVersion = appData.version.currentVersion
+
 		this.storage.updateAppData(appData)
 	}
 	async acknowledgeUserAgreement(arg: { agreementVersion: string }): Promise<void> {
@@ -1897,13 +1899,21 @@ export class IPCServer
 		const appData = this.storage.getAppData()
 
 		if (arg.preReleaseAutoUpdate !== undefined) {
+			// If preReleaseAutoUpdate is set to true when the application is a pre-release version,
+			// set it to undefined, since preReleaseAutoUpdate will default to that anyway.
+			// (And the reverse when app is a release version)
+			// This will allow for both setting it specifically to auto-update/downgrade,
+			// but also avoid an unintentional update/downgrade when installing a (pre-)release version manually.
+			if (appData.version.currentVersionIsPrerelease) {
+				if (arg.preReleaseAutoUpdate === true) {
+					arg.preReleaseAutoUpdate = undefined
+				}
+			} else {
+				if (arg.preReleaseAutoUpdate === false) {
+					arg.preReleaseAutoUpdate = undefined
+				}
+			}
 			appData.preReleaseAutoUpdate = arg.preReleaseAutoUpdate
-
-			autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
-
-			setTimeout(() => {
-				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
-			}, 1000)
 		}
 		if (arg.guiDecimalCount !== undefined) {
 			appData.guiDecimalCount = arg.guiDecimalCount
@@ -2355,6 +2365,7 @@ export class IPCServer
 	}) {
 		if (updates.appData) {
 			this.storage.updateAppData(updates.appData)
+			this.superConductor.setAutoUpdateAllowPrerelease(false)
 		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)

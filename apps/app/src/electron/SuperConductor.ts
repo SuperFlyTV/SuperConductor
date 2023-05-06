@@ -192,7 +192,7 @@ export class SuperConductor {
 			},
 		})
 
-		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this.session, {
+		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this, this.session, {
 			refreshResources: () => {
 				this.refreshResources()
 			},
@@ -259,6 +259,22 @@ export class SuperConductor {
 	}
 	sendSystemMessage(message: string, options: SystemMessageOptions): void {
 		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
+	}
+	public setAutoUpdateAllowPrerelease(forceCheckUpdates: boolean): void {
+		const appData = this.storage.getAppData()
+
+		const preReleaseAutoUpdate = appData.preReleaseAutoUpdate ?? appData.version.currentVersionIsPrerelease
+
+		autoUpdater.autoDownload = true
+		autoUpdater.allowDowngrade = true
+
+		if (autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
+			autoUpdater.allowPrerelease = preReleaseAutoUpdate
+
+			setTimeout(() => {
+				autoUpdater.checkForUpdatesAndNotify().catch(this.log.error)
+			}, 1000)
+		}
 	}
 	private _triggerBatchSendResources() {
 		// Send updates of resources in batches to the client.

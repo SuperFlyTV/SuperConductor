@@ -22,6 +22,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 		version: {
 			seenVersion: null,
 			currentVersion: currentVersion,
+			currentVersionIsPrerelease: false, // placeholder, it'll be set in storageHandler soon anyway.
 		},
 		project: {
 			id: 'default',

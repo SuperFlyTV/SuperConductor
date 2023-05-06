@@ -7,11 +7,16 @@ export interface AppData {
 		seenVersion: string | null
 		/** The version of the SuperConductor who saved the data*/
 		currentVersion: string
+		/** Wether the current version is a pre-release or not */
+		currentVersionIsPrerelease: boolean
 	}
 	/** Which version of the user agreement the user has agreed to  */
 	userAgreement?: string
 
-	/** If the application should update to the latest pre-release. Defaults to false */
+	/**
+	 * If the application should update to the latest pre-release.
+	 * When undefined, it's treated as true if the current version is a pre-release, false otherwise
+	 */
 	preReleaseAutoUpdate?: boolean
 
 	/** How many decimals to use in the GUI, defaults to 0 */

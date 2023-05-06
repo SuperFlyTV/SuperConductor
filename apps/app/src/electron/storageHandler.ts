@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import EventEmitter from 'events'
+import * as semver from 'semver'
 import { LoggerLike } from '@shared/api'
 import { omit } from '@shared/lib'
 import { Project } from '../models/project/Project'
@@ -680,10 +681,16 @@ export class StorageHandler extends EventEmitter {
 		this.ensureCompatibilityAppData(appData)
 
 		// Update the currentVersion to the apps' version:
-		appData.appData.version.currentVersion = CURRENT_VERSION
 		if (appData.appData.version.currentVersion !== CURRENT_VERSION) {
+			appData.appData.version.currentVersion = CURRENT_VERSION
 			this.appDataNeedsWrite = true
 		}
+		const currentVersionIsPrerelease = isPrereleaseVersion(CURRENT_VERSION)
+		if (appData.appData.version.currentVersionIsPrerelease !== currentVersionIsPrerelease) {
+			appData.appData.version.currentVersionIsPrerelease = currentVersionIsPrerelease
+			this.appDataNeedsWrite = true
+		}
+
 		return appData
 	}
 	private loadProject(newName?: string): FileProject {
@@ -1296,4 +1303,13 @@ export interface ExportProjectData {
 	rundowns: FileRundown[]
 
 	openRundowns: string[]
+}
+
+export function isPrereleaseVersion(versionStr: string): boolean {
+	const version = semver.parse(versionStr)
+	if (version !== null) {
+		const isPrerelease = semver.prerelease(version) !== null
+		return isPrerelease
+	}
+	return false
 }

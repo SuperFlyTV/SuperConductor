@@ -19,7 +19,7 @@ export const ApplicationPage: React.FC = observer(function ApplicationPage() {
 	const appDataSettings = computed(() => {
 		const appData = store.appStore?.appData
 		return {
-			preReleaseAutoUpdate: appData?.preReleaseAutoUpdate ?? false,
+			preReleaseAutoUpdate: appData?.preReleaseAutoUpdate ?? appData?.version.currentVersionIsPrerelease,
 			guiDecimalCount: appData?.guiDecimalCount ?? 0,
 		}
 	}).get()
