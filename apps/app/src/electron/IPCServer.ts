@@ -2047,11 +2047,13 @@ export class IPCServer
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (timelineObj.obj.layer === arg.mappingId) {
-						if (!timelineObj.resourceId)
-							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+						// if (!timelineObj.resourceId)
+						// 	throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
 
 						let deviceId: string | undefined
-						const resource = this.storage.getResource(timelineObj.resourceId)
+						const resource = timelineObj.resourceId
+							? this.storage.getResource(timelineObj.resourceId)
+							: undefined
 						if (resource) {
 							deviceId = resource.deviceId
 						}
