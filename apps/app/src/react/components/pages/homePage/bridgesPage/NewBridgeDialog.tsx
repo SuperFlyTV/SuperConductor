@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useCallback, useContext } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { Bridge as BridgeType } from '../../../../../models/project/Bridge'

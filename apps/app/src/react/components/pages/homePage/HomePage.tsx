@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react'
 import { Project } from 'src/models/project/Project'
 import { observer } from 'mobx-react-lite'

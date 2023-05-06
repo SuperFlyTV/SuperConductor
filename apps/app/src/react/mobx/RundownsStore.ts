@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
 import { getDefaultGroup } from '../../lib/defaults'
 import { Rundown, RundownGUI } from '../../models/rundown/Rundown'
