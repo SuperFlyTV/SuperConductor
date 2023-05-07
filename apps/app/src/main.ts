@@ -225,7 +225,6 @@ function onAppReady(): void {
 			}
 		)
 	})
-
 	superConductor.setAutoUpdateAllowPrerelease(true)
 
 	app.on('window-all-closed', () => {
