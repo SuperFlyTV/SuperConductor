@@ -46,6 +46,7 @@ import {
 } from 'timeline-state-resolver-types'
 import { Project } from '../models/project/Project'
 import { listAvailableDeviceIDs } from './util'
+import { TimelineObj } from '../models/rundown/TimelineObj'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
 export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
@@ -1341,4 +1342,21 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			if (a.layerId < b.layerId) return -1
 			return 0
 		})
+}
+/** Returns a list of mappings that are compatible with the provided timeline objects */
+export function getCompatibleMappings(
+	projectMappings: Mappings,
+	filterObjects: (TimelineObj | TSRTimelineObj)[]
+): SortedMappings {
+	return sortMappings(projectMappings).filter((m) => {
+		// Filter out incompatible mappings:
+		for (const timelineObj of filterObjects) {
+			const obj = 'obj' in timelineObj ? timelineObj.obj : timelineObj
+
+			if (!filterMapping(m.mapping, obj)) {
+				return false
+			}
+		}
+		return true
+	})
 }

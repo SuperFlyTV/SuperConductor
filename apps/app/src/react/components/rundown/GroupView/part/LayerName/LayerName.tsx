@@ -7,7 +7,7 @@ import { useSnackbar } from 'notistack'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { filterMapping, sortMappings } from '../../../../../../lib/TSRMappings'
+import { getCompatibleMappings } from '../../../../../../lib/TSRMappings'
 import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
@@ -67,17 +67,7 @@ export const LayerName: React.FC<{
 			const partTimeline = store.rundownsStore.getPartTimeline(partId)
 			const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			const allMappings0: LayersDropdownLayer[] = sortMappings(mappings)
-				.filter((m) => {
-					// If uncompatible mapping-timelineObj is found, remove mapping
-					for (const timelineObj of objectsOnThisLayer) {
-						if (!filterMapping(m.mapping, timelineObj.obj)) {
-							return false
-						}
-					}
-
-					return true
-				})
+			const allMappings0: LayersDropdownLayer[] = getCompatibleMappings(mappings, objectsOnThisLayer)
 				// Map to a simple readable format
 				.map((m) => {
 					const deviceStatus = appStore.allDeviceStatuses[m.mapping.deviceId] as BridgeDevice | undefined

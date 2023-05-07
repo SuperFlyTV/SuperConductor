@@ -1,13 +1,13 @@
 import React, { useContext } from 'react'
-import { filterMapping, sortMappings } from '../../../../../lib/TSRMappings'
+import { getCompatibleMappings } from '../../../../../lib/TSRMappings'
 import { TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
-import { getMappingName } from '../../../../../lib/util'
 import { PartialDeep } from 'type-fest'
 import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
 import { SelectEnum } from '../../../inputs/SelectEnum'
+import { useMemoComputedObject } from '../../../../mobx/lib'
 
 export type OnSave = (update: PartialDeep<TSRTimelineObj>) => void
 export type OnSaveType<T> = (update: PartialDeep<T>) => void
@@ -35,21 +35,19 @@ export const EditWrapper: React.FC<{
 	// const enableDurationNum = typeof enable.duration === 'number' ? enable.duration : null
 	// const enableDurationExpression = typeof enable.duration === 'string' ? enable.duration : ''
 
-	const mappingOptions: { [key: string]: string } = {}
-	if (project.mappings) {
-		for (const m of sortMappings(project.mappings)) {
-			let useMapping = true
-			for (const obj of objs) {
-				if (!filterMapping(m.mapping, obj)) {
-					useMapping = false
-					break
-				}
-			}
-			if (!useMapping) continue
+	const mappingOptions: { value: string; label: string }[] = useMemoComputedObject(
+		() => {
+			// const partTimeline = store.rundownsStore.getPartTimeline(partId)
+			// const objectsOnThisLayer = partTimeline.filter((obj) => obj.obj.layer === layerId)
 
-			mappingOptions[m.layerId] = getMappingName(m.mapping, m.layerId)
-		}
-	}
+			return getCompatibleMappings(project.mappings, objs).map((m) => ({
+				value: m.layerId,
+				label: m.mapping.layerName || m.layerId,
+			}))
+		},
+		[project.mappings, objs],
+		true
+	)
 
 	return (
 		<div className="edit-timeline-obj">
