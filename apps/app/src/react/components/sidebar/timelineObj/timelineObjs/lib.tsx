@@ -56,9 +56,9 @@ export const EditWrapper: React.FC<{
 					<SelectEnum
 						label="Layer"
 						{...inputValue(objs, (obj) => obj.layer, undefined)}
-						onChange={(e) => {
+						onChange={(value) => {
 							onSave({
-								layer: e.target.value,
+								layer: value,
 							})
 						}}
 						options={mappingOptions}
