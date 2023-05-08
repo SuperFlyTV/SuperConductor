@@ -1193,21 +1193,9 @@ const GroupControlButtons: React.FC<{
 
 	return (
 		<>
+			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
 			<StopBtn className="part__stop" groupId={group.id} data={data} onClick={handleStop} />
 			<PlayBtn groupId={group.id} data={data} onClick={handlePlay} />
-			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
-			<Button
-				variant="contained"
-				size="small"
-				disabled={!canStepDown}
-				onClick={handleStepDown}
-				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-				title="Play next"
-			>
-				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-					<AiFillStepForward size={22} />
-				</div>
-			</Button>
 			<Button
 				variant="contained"
 				size="small"
@@ -1217,6 +1205,18 @@ const GroupControlButtons: React.FC<{
 				title="Play previous"
 			>
 				<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+					<AiFillStepForward size={22} />
+				</div>
+			</Button>
+			<Button
+				variant="contained"
+				size="small"
+				disabled={!canStepDown}
+				onClick={handleStepDown}
+				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+				title="Play next"
+			>
+				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
 					<AiFillStepForward size={22} />
 				</div>
 			</Button>
