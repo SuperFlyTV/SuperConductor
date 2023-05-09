@@ -1193,9 +1193,9 @@ const GroupControlButtons: React.FC<{
 
 	return (
 		<>
-			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
 			<StopBtn className="part__stop" groupId={group.id} data={data} onClick={handleStop} />
 			<PlayBtn groupId={group.id} data={data} onClick={handlePlay} />
+			<PauseBtn groupId={group.id} data={data} onClick={handlePause} />
 			<Button
 				variant="contained"
 				size="small"
