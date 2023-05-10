@@ -1199,24 +1199,24 @@ const GroupControlButtons: React.FC<{
 			<Button
 				variant="contained"
 				size="small"
-				disabled={!canStepDown}
-				onClick={handleStepDown}
-				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-				title="Play next"
-			>
-				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-					<AiFillStepForward size={22} />
-				</div>
-			</Button>
-			<Button
-				variant="contained"
-				size="small"
 				disabled={!canStepUp}
 				onClick={handleStepUp}
 				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
 				title="Play previous"
 			>
 				<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+					<AiFillStepForward size={22} />
+				</div>
+			</Button>
+			<Button
+				variant="contained"
+				size="small"
+				disabled={!canStepDown}
+				onClick={handleStepDown}
+				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+				title="Play next"
+			>
+				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
 					<AiFillStepForward size={22} />
 				</div>
 			</Button>
