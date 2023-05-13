@@ -33,6 +33,9 @@ export interface GroupBase {
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+
+	/** An additional, optional ID to be used by API clients to track the Groups they are responsible for */
+	externalId?: string
 }
 export interface PlayingPart {
 	/** Timestamp of when the part started playing (unix timestamp) */

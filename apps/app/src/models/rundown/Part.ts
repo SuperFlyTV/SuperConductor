@@ -23,6 +23,9 @@ export interface PartBase {
 	}
 	/** If this part was created from the AutoFill */
 	autoFilled?: boolean
+
+	/** An additional, optional ID to be used by API clients to track the Parts they are responsible for */
+	externalId?: string
 }
 export interface Part extends PartBase {
 	timeline: TimelineObj[]
