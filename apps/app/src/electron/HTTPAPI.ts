@@ -3,6 +3,7 @@ import Router from '@koa/router'
 import { IPCServer, isUndoable } from './IPCServer'
 import { stringifyError } from '@shared/lib'
 import { LoggerLike } from '@shared/api'
+import { ParsedUrlQuery } from 'querystring'
 
 export class HTTPAPI {
 	private app = new Koa()
@@ -56,7 +57,7 @@ export class HTTPAPI {
 				endpointType = 'GET'
 				this.router.get(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
-						const result = await fcn(ctx.request.query)
+						const result = await fcn(parseQuery(ctx.request.query))
 						ctx.response.body = result
 						ctx.response.status = 200
 					} catch (error) {
@@ -75,7 +76,7 @@ export class HTTPAPI {
 				endpointType = 'DELETE'
 				this.router.delete(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
-						const result = await fcn(ctx.request.query)
+						const result = await fcn(parseQuery(ctx.request.query))
 						if (isUndoable(result)) {
 							ctx.response.body = result.result
 						} else {
@@ -98,7 +99,7 @@ export class HTTPAPI {
 				endpointType = 'POST'
 				this.router.post(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
-						const result = await fcn(ctx.request.query)
+						const result = await fcn(parseQuery(ctx.request.query))
 						if (isUndoable(result)) {
 							ctx.response.body = result.result
 						} else {
@@ -131,4 +132,20 @@ export class HTTPAPI {
 		this.app.listen(port)
 		log.info(`Internal HTTP API available at http://localhost:${port}/api/internal`)
 	}
+}
+
+/**
+ * Parses JSON in URL search query params.
+ */
+function parseQuery(query: ParsedUrlQuery): Record<string, any> {
+	return Object.fromEntries(
+		Object.entries(query).map(([key, value]) => {
+			try {
+				const parsedValue = Array.isArray(value) ? value.map((v) => JSON.parse(v)) : JSON.parse(value ?? '')
+				return [key, parsedValue]
+			} catch {
+				return [key, value]
+			}
+		})
+	)
 }
