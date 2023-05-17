@@ -779,7 +779,13 @@ export const GroupView: React.FC<{
 								<GroupAutoFillPopover rundownId={rundownId} group={group} />
 							</Popover>
 						</div>
-						<div className="controls controls-space"></div>
+						<div className="controls controls-space">
+							{groupCollapsed ? (
+								<div>
+									{group.partIds.length} {group.partIds.length === 1 ? 'Part' : 'Parts'}
+								</div>
+							) : null}
+						</div>
 						<div className="controls controls-right">
 							<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
