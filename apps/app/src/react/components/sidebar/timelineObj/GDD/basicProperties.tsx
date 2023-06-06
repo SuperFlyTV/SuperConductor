@@ -16,7 +16,8 @@ import { FloatInput } from '../../../inputs/FloatInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { componentAny } from './componentAny'
-import { EditProperty, getEditPropertyMeta, PropertyProps } from './lib'
+import { getEditPropertyMeta, PropertyProps } from './lib'
+import { EditProperty } from './util'
 
 export const basicPropertyUnknown: React.FC<PropertyProps<GDDSchema> & { basicType: string }> = (props) => {
 	return (
