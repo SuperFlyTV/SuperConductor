@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite'
 import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { PeripheralStatus } from '../../../../../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../../../../../models/project/Peripheral'
 import { ProjectContext } from '../../../../contexts/Project'
 import { store } from '../../../../mobx/store'
 import { useMemoComputedObject } from '../../../../mobx/lib'
@@ -105,7 +105,7 @@ export const PeripheralSettings: React.FC<{
 					</Box>
 				)}
 				<Box sx={{ mt: 1 }}>
-					{Object.entries(peripheralSettings?.areas || []).map(([areaId, area]) => {
+					{Object.entries<PeripheralArea>(peripheralSettings?.areas || []).map(([areaId, area]) => {
 						return (
 							<Grid container key={areaId}>
 								<Grid item xs={2}>

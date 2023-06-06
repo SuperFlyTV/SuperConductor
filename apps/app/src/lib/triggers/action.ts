@@ -4,12 +4,13 @@ import { PartBase } from '../../models/rundown/Part'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTrigger, activeTriggersToString, RundownTrigger, ApplicationTrigger } from '../../models/rundown/Trigger'
 import { Project } from '../../models/project/Project'
-import { PeripheralStatus } from '../../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../../models/project/Peripheral'
 import { GroupWithShallowParts, PartWithRef } from '../util'
 import { CurrentSelectionAny } from '../GUI'
 import { BridgePeripheralId, assertNever, getPeripheralId } from '@shared/lib'
 import { protectString } from '@shared/models'
 import { BridgeId, PeripheralId } from '@shared/api'
+import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge'
 
 export type ActionAny =
 	| ({
@@ -97,15 +98,17 @@ export function getAllActionsInParts(
 	}
 	// Collect actions from Areas:
 
-	for (const [bridgeId0, bridge] of Object.entries(project.bridges)) {
+	for (const [bridgeId0, bridge] of Object.entries<Bridge>(project.bridges)) {
 		const bridgeId = protectString<BridgeId>(bridgeId0)
 
-		for (const [deviceId0, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
+		for (const [deviceId0, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+			bridge.clientSidePeripheralSettings
+		)) {
 			const deviceId = protectString<PeripheralId>(deviceId0)
 
 			const peripheralStatus = peripherals?.get(getPeripheralId(bridgeId, deviceId))
 
-			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+			for (const [areaId, area] of Object.entries<PeripheralArea>(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {
 					const group = groups.get(area.assignedToGroupId)
 					if (group && !group.group.disabled) {
@@ -215,7 +218,7 @@ export function getAllApplicationActions(
 	}
 
 	const actions: ApplicationAction[] = []
-	for (const triggers of Object.values(appData.triggers)) {
+	for (const triggers of Object.values<ApplicationTrigger[]>(appData.triggers)) {
 		if (triggers) {
 			for (const trigger of triggers) {
 				actions.push({

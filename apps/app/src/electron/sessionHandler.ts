@@ -145,13 +145,13 @@ export class SessionHandler extends EventEmitter {
 	resetPeripheralTriggerStatuses(bridgeId: BridgeId): void {
 		// Reset all peripheralStatuses for a bridge (like when a bridge is reconnected)
 
-		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
+		for (const [fullIdentifier, trigger] of Object.entries<ActiveTrigger>(this.allTriggers)) {
 			if (trigger.bridgeId === bridgeId) {
 				delete this.allTriggers[fullIdentifier]
 				delete this.allTriggersHasChanged[fullIdentifier]
 			}
 		}
-		for (const [fullIdentifier, trigger] of Object.entries(this.activeTriggers)) {
+		for (const [fullIdentifier, trigger] of Object.entries<ActiveTrigger>(this.activeTriggers)) {
 			if (trigger.bridgeId === bridgeId) {
 				delete this.activeTriggers[fullIdentifier]
 				this.activeTriggersHasChanged = true
@@ -267,7 +267,7 @@ export class SessionHandler extends EventEmitter {
 			delete this.allTriggersHasChanged[fullIdentifier]
 		}
 		if (this.activeTriggersHasChanged) {
-			const activeTriggers: ActiveTriggers = Object.values(this.activeTriggers)
+			const activeTriggers: ActiveTriggers = Object.values<ActiveTrigger>(this.activeTriggers)
 			this.emit('activeTriggers', activeTriggers)
 			this.activeTriggersHasChanged = false
 		}

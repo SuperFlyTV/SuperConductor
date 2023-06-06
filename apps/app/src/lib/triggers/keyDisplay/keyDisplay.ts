@@ -17,6 +17,7 @@ import {
 import { TriggerArea, TriggersAreaMap, triggersAreaToArea } from './lib'
 import { ActiveAnalog } from '../../../models/rundown/Analog'
 import { AnalogInput } from '../../../models/project/AnalogInput'
+import { Bridge, BridgePeripheralSettings } from '../../../models/project/Bridge'
 
 export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 	const triggersAreaMap = new Map<
@@ -28,10 +29,12 @@ export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 			areaColor: string
 		}
 	>()
-	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-		for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
+	for (const [bridgeId, bridge] of Object.entries<Bridge>(project.bridges)) {
+		for (const [deviceId, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+			bridge.clientSidePeripheralSettings
+		)) {
 			let iArea = -1
-			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+			for (const [areaId, area] of Object.entries<PeripheralArea>(peripheralSettings.areas)) {
 				iArea++
 
 				const notRandom0 = iArea / 6

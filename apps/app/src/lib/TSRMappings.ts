@@ -910,7 +910,7 @@ export function getDefaultMappingForDeviceType(
 	const deviceIdStr = unprotectString(deviceId)
 	// Filter mapping for deviceId:
 	const mappings: Mappings = {}
-	for (const [id, mapping] of Object.entries(allMappings)) {
+	for (const [id, mapping] of Object.entries<Mapping>(allMappings)) {
 		if (protectString(mapping.deviceId) === deviceId) mappings[id] = mapping
 	}
 
@@ -1206,7 +1206,7 @@ function getLastBiggestValue(
 	filterFunction: (mapping: AnyMapping) => number | false | undefined
 ): number | undefined {
 	let lastBiggest: number | undefined = undefined
-	Object.values(mappings).forEach((mapping) => {
+	Object.values<Mapping>(mappings).forEach((mapping) => {
 		const value = filterFunction(mapping as any)
 		if (value !== undefined && value !== false) {
 			if (lastBiggest === undefined || value > lastBiggest) {
@@ -1251,7 +1251,7 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 
 export type SortedMappings = { layerId: string; mapping: Mapping }[]
 export function sortMappings(mappings: Mappings): SortedMappings {
-	return Object.entries(mappings)
+	return Object.entries<Mapping>(mappings)
 		.map(([layerId, mapping]) => ({
 			layerId,
 			mapping,

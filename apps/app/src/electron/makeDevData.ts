@@ -4,6 +4,7 @@ import {
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
 	DeviceType,
+	Mapping,
 	MappingAtem,
 	MappingAtemType,
 	MappingCasparCG,
@@ -136,7 +137,7 @@ export function makeDevData(): {
 				// Timeline
 				{
 					const layerId = pickRandom(
-						Object.entries(project.mappings).filter((e) => e[1].deviceId === casparDeviceId),
+						Object.entries<Mapping>(project.mappings).filter((e) => e[1].deviceId === casparDeviceId),
 						notRandom
 					)[0]
 

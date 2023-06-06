@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
-import { INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
+import { Bridge, INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
 import { Project } from '../../../../../models/project/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -31,13 +31,13 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 	}, [project.bridges])
 
 	const incomingBridges = useMemo(() => {
-		return Object.values(project.bridges).filter((bridge) => {
+		return Object.values<Bridge>(project.bridges).filter((bridge) => {
 			return !bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])
 
 	const outgoingBridges = useMemo(() => {
-		return Object.values(project.bridges).filter((bridge) => {
+		return Object.values<Bridge>(project.bridges).filter((bridge) => {
 			return bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])

@@ -13,11 +13,12 @@ import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
 import { getPartLabel, shortID } from '../lib/util'
-import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { DeviceType, Mapping, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
+import { Bridge } from '../models/project/Bridge'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -275,7 +276,7 @@ export class StorageHandler extends EventEmitter {
 		} else return rundown
 	}
 	getAllRundowns(): Rundown[] {
-		return Object.entries(this.openRundowns).map(([fileName, fileRundown]) => {
+		return Object.entries<FileRundown>(this.openRundowns).map(([fileName, fileRundown]) => {
 			return {
 				id: fileName,
 				...fileRundown.rundown,
@@ -892,7 +893,7 @@ export class StorageHandler extends EventEmitter {
 		const resourcesPath = this.resourcesPath(this._projectId)
 		try {
 			const read = fs.readFileSync(resourcesPath, 'utf8')
-			resources = new Map(Object.entries(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
+			resources = new Map(Object.entries<unknown>(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
@@ -907,7 +908,10 @@ export class StorageHandler extends EventEmitter {
 			const tmpPath = this.getTmpFilePath(resourcesPath)
 			try {
 				const read = fs.readFileSync(tmpPath, 'utf8')
-				resources = new Map(Object.entries(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
+				resources = new Map(Object.entries<unknown>(JSON.parse(read))) as unknown as Map<
+					ResourceId,
+					FileResource
+				>
 
 				// If we only have a temporary file, we should write to the real one asap:
 				this.resourcesNeedsWrite = true
@@ -1198,7 +1202,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
-		for (const bridge of Object.values(project.bridges)) {
+		for (const bridge of Object.values<Bridge>(project.bridges)) {
 			// This object was renamed on 2022-10-16 to avoid confusion.
 			if (!bridge.clientSidePeripheralSettings) {
 				if ((bridge as any).peripheralSettings) {
@@ -1225,7 +1229,7 @@ export class StorageHandler extends EventEmitter {
 		// Ensure mapping id's are valid, Timeline-wise:
 		const mappings = project.mappings
 		project.mappings = {}
-		for (const [layerName, mapping] of Object.entries(mappings)) {
+		for (const [layerName, mapping] of Object.entries<Mapping>(mappings)) {
 			project.mappings[ensureValidId(layerName)] = mapping
 		}
 	}

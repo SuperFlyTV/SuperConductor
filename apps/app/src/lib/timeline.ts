@@ -103,7 +103,7 @@ export function getTimelineForGroup(
 				isGroup: true,
 				children: [],
 			}
-			for (const [partId, sections] of Object.entries(prepared.sections)) {
+			for (const [partId, sections] of Object.entries<GroupPreparedPlayDataSection[]>(prepared.sections)) {
 				for (let i = 0; i < sections.length; i++) {
 					const section = sections[i]
 

@@ -10,7 +10,7 @@ import { ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
-import { BridgeId, PeripheralId } from '@shared/api'
+import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
 
 /** This class is used server-side, to send messages to the client */

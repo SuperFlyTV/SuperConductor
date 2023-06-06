@@ -19,11 +19,12 @@ import {
 	prepareTriggersAreaMap,
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
-import { PeripheralStatus } from '../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
 import { convertSorensenToElectron } from '../lib/triggers/identifiers'
 import { protectString, unprotectString } from '@shared/models'
+import { BridgePeripheralSettings } from '../models/project/Bridge'
 
 export interface TriggersHandlerEvents {
 	error: (error: Error) => void
@@ -140,7 +141,7 @@ export class TriggersHandler extends EventEmitter {
 
 		const triggersAreaMap = prepareTriggersAreaMap(project)
 
-		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
+		for (const [fullIdentifier, trigger] of Object.entries<ActiveTrigger>(this.allTriggers)) {
 			const used = usedTriggers[fullIdentifier]
 
 			const peripheralStatus = this.session.getPeripheralStatus(trigger.bridgeId, trigger.deviceId)
@@ -453,13 +454,15 @@ export class TriggersHandler extends EventEmitter {
 		// Check if the trigger is already in another
 
 		let found = false
-		for (const [peripheralId0, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
+		for (const [peripheralId0, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+			bridge.clientSidePeripheralSettings
+		)) {
 			if (found) break
 
 			const peripheralId = protectString<PeripheralId>(peripheralId0)
 
 			if (peripheralId === definingArea.deviceId) {
-				for (const area of Object.values(peripheralSettings.areas)) {
+				for (const area of Object.values<PeripheralArea>(peripheralSettings.areas)) {
 					if (found) break
 					if (area.identifiers.includes(activeTrigger.identifier)) {
 						found = true

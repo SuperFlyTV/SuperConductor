@@ -155,7 +155,7 @@ const createWindow = async (): Promise<void> => {
 	})
 	function updateSystem() {
 		const networkAddresses: string[] = []
-		Object.values(os.networkInterfaces()).forEach((nis) =>
+		Object.values<os.NetworkInterfaceInfo[] | undefined>(os.networkInterfaces()).forEach((nis) =>
 			nis?.forEach((ni) => {
 				const a = `${ni.address}`
 				if (!a.match(/127.0.0.1/) && !a.match(/::1/)) {

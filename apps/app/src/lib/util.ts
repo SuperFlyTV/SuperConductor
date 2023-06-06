@@ -1,9 +1,9 @@
-import { Group, GroupBase, GroupGUI } from '../models/rundown/Group'
+import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group'
 import { Part, PartBase } from '../models/rundown/Part'
-import { ResolvedTimeline } from 'superfly-timeline'
+import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
 import { Rundown, RundownBase } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getGroupPlayData, GroupPlayData } from './playout/groupPlayData'
+import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData'
 import { Project } from '../models/project/Project'
 import {
 	DeviceOptionsAny,
@@ -123,8 +123,8 @@ export function getResolvedTimelineTotalDuration(
 ): number | null {
 	let maxDuration = 0
 	let isInfinite = false
-	Object.values(resolvedTimeline.objects).forEach((obj) => {
-		Object.values(obj.resolved.instances).forEach((instance) => {
+	Object.values<ResolvedTimelineObject>(resolvedTimeline.objects).forEach((obj) => {
+		obj.resolved.instances.forEach((instance) => {
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -177,7 +177,7 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 
 	const prevPlayingParts = group.playout.playingParts
 	group.playout.playingParts = {}
-	for (const [partId, playhead] of Object.entries(playData.playheads)) {
+	for (const [partId, playhead] of Object.entries<GroupPlayDataPlayhead>(playData.playheads)) {
 		const prevPlayingPart = prevPlayingParts[partId]
 
 		group.playout.playingParts[partId] = {
@@ -188,7 +188,7 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 		}
 	}
 	// Also add previously stopped playingParts, so that the stops still block sheduled playing parts:
-	for (const [partId, prevPlayingPart] of Object.entries(prevPlayingParts)) {
+	for (const [partId, prevPlayingPart] of Object.entries<PlayingPart>(prevPlayingParts)) {
 		if (!group.playout.playingParts[partId] && prevPlayingPart.stopTime) {
 			if (!group.parts.find((p) => p.id === partId)) continue
 			group.playout.playingParts[partId] = prevPlayingPart

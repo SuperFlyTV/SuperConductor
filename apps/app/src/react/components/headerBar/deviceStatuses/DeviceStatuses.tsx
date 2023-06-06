@@ -9,7 +9,7 @@ import { useMemoComputedObject } from '../../../mobx/lib'
 import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../contexts/Project'
-import { BridgeId, KnownPeripheral, PeripheralId } from '@shared/api'
+import { BridgeId, KnownPeripheral, PeripheralId, PeripheralSettingsBase } from '@shared/api'
 import { MdAdd } from 'react-icons/md'
 import { DisabledPeripheralInfo, DisabledPeripheralsSettings } from './DisabledPeripherals/DisabledPeripheralsSettings'
 import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
@@ -46,7 +46,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 		for (const [bridgeId, bridgeStatus] of appStore.bridgeStatuses.entries()) {
 			const bridgeSettings = project.bridges[unprotectString<BridgeId>(bridgeId)] as Bridge | undefined
 			if (!bridgeSettings) continue
-			for (const [deviceId, deviceStatus] of Object.entries(bridgeStatus.devices)) {
+			for (const [deviceId, deviceStatus] of Object.entries<BridgeDevice>(bridgeStatus.devices)) {
 				newAllDevices.push({
 					bridgeId,
 					bridgeStatus,
@@ -60,7 +60,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 		return newAllDevices.sort(sortOn((o) => [o.deviceSettings?.type, o.bridgeId, o.deviceId]))
 	}, [appStore.bridgeStatuses, project])
 	const allPeripherals = useMemoComputedObject(() => {
-		return Object.entries(appStore.peripherals).sort(sortOn((x) => x[0]))
+		return Array.from(appStore.peripherals.entries()).sort(sortOn((x) => x[0]))
 	}, [appStore.peripherals])
 	const disabledPeripherals = useMemoComputedObject(() => {
 		const newDisabledPeripherals: DisabledPeripheralInfo[] = []
@@ -69,7 +69,9 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 
 			if (!bridgeSettings) continue
 			if (bridgeSettings.settings.autoConnectToAllPeripherals) continue
-			for (const [peripheralId0, peripheralSettings] of Object.entries(bridgeSettings.settings.peripherals)) {
+			for (const [peripheralId0, peripheralSettings] of Object.entries<PeripheralSettingsBase>(
+				bridgeSettings.settings.peripherals
+			)) {
 				const peripheralId = protectString<PeripheralId>(peripheralId0)
 
 				if (peripheralSettings.manualConnect) {

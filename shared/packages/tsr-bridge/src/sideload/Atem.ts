@@ -1,5 +1,5 @@
 import { DeviceOptionsAtem } from 'timeline-state-resolver'
-import { Atem, AtemConnectionStatus } from 'atem-connection'
+import { Atem, AtemConnectionStatus, AtemState } from 'atem-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -204,7 +204,7 @@ export class AtemSideload implements SideLoadDevice {
 			resources.set(resource.id, resource)
 		}
 
-		for (const input of Object.values(this.atem.state.inputs)) {
+		for (const input of Object.values<AtemState['inputs'][0]>(this.atem.state.inputs)) {
 			if (input) {
 				metadata.inputs.push({
 					...input,

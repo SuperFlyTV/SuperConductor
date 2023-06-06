@@ -6,7 +6,7 @@ import { store } from '../../../../mobx/store'
 import { PeripheralItemHeader } from '../peripheralItem/PeripheralItemHeader'
 import { getPeripheralId } from '@shared/lib'
 import { protectString } from '@shared/models'
-import { BridgeId, PeripheralId } from '@shared/api'
+import { BridgeId, KnownPeripheral, PeripheralId } from '@shared/api'
 
 export const PeripheralsList: React.FC<{
 	autoConnectToAllPeripherals: boolean
@@ -29,7 +29,7 @@ export const PeripheralsList: React.FC<{
 	return (
 		<div className="peripherals-list">
 			<ScList
-				list={Object.entries(props.statuses).map(([peripheralId0, status]) => {
+				list={Object.entries<KnownPeripheral>(props.statuses).map(([peripheralId0, status]) => {
 					const peripheralSettings = props.settings[peripheralId0]
 					const peripheralId = protectString<PeripheralId>(peripheralId0)
 					const otherStatus = appStore.peripherals.get(getPeripheralId(props.bridgeId, peripheralId))

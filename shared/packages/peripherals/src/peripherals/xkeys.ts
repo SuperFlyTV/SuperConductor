@@ -86,7 +86,7 @@ export class PeripheralXkeys extends Peripheral {
 		this: void,
 		panelInfo: HID_Device
 	): { product: Product; productId: number; interface: number } {
-		for (const product of Object.values(PRODUCTS)) {
+		for (const product of Object.values<Product>(PRODUCTS)) {
 			for (const hidDevice of product.hidDevices) {
 				if (
 					hidDevice[0] === panelInfo.productId &&
@@ -273,7 +273,7 @@ export class PeripheralXkeys extends Peripheral {
 
 			// Because the xkeys-panel only has a single flashing-bus, we'll go through
 			// all the keys and pick the one with the highest flashing-level.
-			const fastestFlashFrequency = Object.values(this.sentKeyDisplay).reduce((prev, keyDisplay) => {
+			const fastestFlashFrequency = Object.values<KeyDisplay>(this.sentKeyDisplay).reduce((prev, keyDisplay) => {
 				const { flashFrequency: flash } = this.getKeyColorAndFlash(keyDisplay)
 				return Math.max(flash, prev)
 			}, 0)
@@ -358,7 +358,7 @@ export class PeripheralXkeys extends Peripheral {
 			this.xkeysPanel?.setIndicatorLED(2, true) // red
 		}
 
-		for (const [identifier, keyDisplay] of Object.entries(this.sentKeyDisplay)) {
+		for (const [identifier, keyDisplay] of Object.entries<KeyDisplay>(this.sentKeyDisplay)) {
 			await this._setKeyDisplay(identifier, keyDisplay, true)
 		}
 	}

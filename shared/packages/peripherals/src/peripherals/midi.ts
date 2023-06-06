@@ -254,7 +254,7 @@ export class PeripheralMIDI extends Peripheral {
 		await super._close()
 	}
 	private async _updateAllKeys(): Promise<void> {
-		for (const [identifier, keyDisplay] of Object.entries(this.sentKeyDisplay)) {
+		for (const [identifier, keyDisplay] of Object.entries<KeyDisplay>(this.sentKeyDisplay)) {
 			await this._setKeyDisplay(identifier, keyDisplay, true)
 		}
 	}

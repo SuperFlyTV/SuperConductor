@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType, OSCDeviceType } from 'timeline-state-resolver'
-import { MetadataAny, ResourceAny, TSRDeviceId, protectString, unprotectString } from '@shared/models'
+import { MetadataAny, ResourceAny, TSRDeviceId, unprotectString } from '@shared/models'
 import { BridgeAPI, LoggerLike } from '@shared/api'
 import { CasparCGSideload } from './sideload/CasparCG'
 import { AtemSideload } from './sideload/Atem'
@@ -62,8 +62,7 @@ export class TSR {
 
 	public async updateDevices(newDevices: Map<TSRDeviceId, DeviceOptionsAny>): Promise<void> {
 		// Added/updated:
-		for (const [deviceId0, newDevice] of Object.entries(newDevices)) {
-			const deviceId = protectString<TSRDeviceId>(deviceId0)
+		for (const [deviceId, newDevice] of newDevices.entries()) {
 			if (newDevice.disable) continue
 
 			const existingDevice = this.devices.get(deviceId)

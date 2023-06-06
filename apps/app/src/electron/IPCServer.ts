@@ -28,9 +28,9 @@ import {
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group } from '../models/rundown/Group'
+import { Group, PlayingPart } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, DeviceType, MappingCasparCG, Mapping } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, DeviceType, MappingCasparCG, Mapping, DeviceOptionsAny } from 'timeline-state-resolver-types'
 import {
 	ActionDescription,
 	IPCServerMethods,
@@ -74,7 +74,7 @@ import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
-import { BridgePeripheralSettings } from '../models/project/Bridge'
+import { Bridge, BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 import * as RundownActions from './rundownActions'
@@ -968,7 +968,7 @@ export class IPCServer
 		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
 		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
 		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
-			for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+			for (const [partId, playingPart] of Object.entries<PlayingPart>(group.playout.playingParts)) {
 				if (playingPart.stopTime) delete group.playout.playingParts[partId]
 			}
 		}
@@ -2061,9 +2061,11 @@ export class IPCServer
 						}
 						if (!deviceId) {
 							// Pick the first compatible deviceId we find:
-							for (const bridge of Object.values(project.bridges)) {
+							for (const bridge of Object.values<Bridge>(project.bridges)) {
 								if (deviceId) break
-								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
+								for (const [findDeviceId, device] of Object.entries<DeviceOptionsAny>(
+									bridge.settings.devices
+								)) {
 									if (device.type === timelineObj.obj.content.deviceType) {
 										deviceId = protectString<TSRDeviceId>(findDeviceId)
 										break
@@ -2089,7 +2091,7 @@ export class IPCServer
 				throw new Error('No layer could be automatically created.')
 			case 1: {
 				newLayerId = Object.keys(createdMappings)[0]
-				const newMapping = Object.values(createdMappings)[0]
+				const newMapping = Object.values<Mapping>(createdMappings)[0]
 
 				if (!newMapping.layerName) {
 					throw new Error('INTERNAL ERROR: Layer lacks a name.')
@@ -2509,7 +2511,7 @@ export class IPCServer
 			}
 		}
 
-		const bestLayer = Object.entries(possibleLayers).reduce(
+		const bestLayer = Object.entries<number>(possibleLayers).reduce(
 			(prev, current) => {
 				if (current[1] > prev[1]) return current
 				return prev

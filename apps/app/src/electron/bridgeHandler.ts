@@ -8,15 +8,16 @@ import {
 	AnalogValue,
 	PeripheralId,
 	BridgeId,
+	PeripheralSettingsBase,
 } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { AnalogInputSetting, Project } from '../models/project/Project'
-import { Bridge, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
+import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { SessionHandler } from './sessionHandler'
 import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
-import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
+import { Datastore, DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import {
 	MetadataAny,
 	ResourceAny,
@@ -135,7 +136,7 @@ export class BridgeHandler {
 		}
 
 		// Added/updated:
-		for (const bridge of Object.values(project.bridges)) {
+		for (const bridge of Object.values<Bridge>(project.bridges)) {
 			if (bridge.outgoing) {
 				const existing = this.outgoingBridges.get(bridge.id)
 				let addNew = false
@@ -256,7 +257,7 @@ export class BridgeHandler {
 			// Slow path, regenerate whole datastore:
 
 			const datastore: Datastore = {}
-			for (const [datastoreKey, setting] of Object.entries(project.analogInputSettings)) {
+			for (const [datastoreKey, setting] of Object.entries<AnalogInputSetting>(project.analogInputSettings)) {
 				if (!setting.fullIdentifier) continue
 				const storedAnalog = this.storage.getAnalogInput(setting.fullIdentifier)
 				if (!storedAnalog) continue
@@ -328,8 +329,8 @@ abstract class AbstractBridgeConnection {
 			this.send({
 				type: 'setSettings',
 				...settings,
-				devices: protectTupleArray(Object.entries(settings.devices)),
-				peripherals: protectTupleArray(Object.entries(settings.peripherals)),
+				devices: protectTupleArray(Object.entries<DeviceOptionsAny>(settings.devices)),
+				peripherals: protectTupleArray(Object.entries<PeripheralSettingsBase>(settings.peripherals)),
 			})
 		}
 	}
@@ -415,7 +416,7 @@ abstract class AbstractBridgeConnection {
 		if (this.sentMappings) {
 			this.setMappings(this.sentMappings, true)
 		}
-		for (const [timelineId, timeline] of Object.entries(this.sentTimelines)) {
+		for (const [timelineId, timeline] of Object.entries<TSRTimeline>(this.sentTimelines)) {
 			this.addTimeline(timelineId, timeline)
 		}
 		// Sync timelineIds:
@@ -602,7 +603,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 				const status = this.session.getBridgeStatus(this.bridgeId)
 				if (status) {
 					status.connected = false
-					for (const device of Object.values(status.devices)) {
+					for (const device of Object.values<BridgeDevice>(status.devices)) {
 						device.ok = false
 						device.connectionId = 0
 						device.message = 'Bridge not connected'

@@ -24,8 +24,10 @@ import {
 	OSCMessage,
 	protectString,
 	ResourceAny,
+	ResourceId,
 	ResourceType,
 	TCPRequest,
+	TSRDeviceId,
 	VMixAudioSettings,
 	VMixExternal,
 	VMixFader,
@@ -62,10 +64,10 @@ describe('resourceId generation', () => {
 		// is the same as the one generated from the resource:
 		expect(getResourceIdFromTimelineObj(obj, mappings)).toBe(r.id)
 	}
-	const DEVICE_ID = 'myDevice0'
+	const DEVICE_ID = protectString<TSRDeviceId>('myDevice0')
 	const COMMON = {
 		deviceId: DEVICE_ID,
-		id: protectString(''), // set by getResourceIdFromResource() later
+		id: protectString<ResourceId>(''), // set by getResourceIdFromResource() later
 		displayName: 'asdf',
 	}
 	test('CASPARCG_SERVER', () => {

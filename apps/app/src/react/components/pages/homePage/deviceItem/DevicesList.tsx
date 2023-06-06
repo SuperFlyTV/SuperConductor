@@ -38,7 +38,7 @@ export const DevicesList: React.FC<{
 		<div className="devices-list">
 			<ScList
 				openByDefault={unprotectStringArray(props.newlyCreatedDeviceId ? [props.newlyCreatedDeviceId] : [])}
-				list={Object.entries(devices)
+				list={Object.entries<BridgeDevice>(devices)
 					/**
 					 * Temporary fix - required because props.devices and props.bridge.settings.device
 					 * do not have the same devices (props.devices does not get updated).

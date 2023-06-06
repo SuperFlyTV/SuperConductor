@@ -307,7 +307,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			if (oldKeyDisplay?.area?.areaId !== keyDisplay.area?.areaId) {
 				const adjacentButtons = this.getAdjacentKeys(key)
 
-				for (const keyIndex of Object.values(adjacentButtons)) {
+				for (const keyIndex of Object.values<number | null>(adjacentButtons)) {
 					if (keyIndex !== null) {
 						const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
 						await this._setKeyDisplayInternal(identifier, this.displayKeyDisplay[identifier], true)

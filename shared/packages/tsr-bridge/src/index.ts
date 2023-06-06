@@ -112,7 +112,7 @@ export class BaseBridge {
 
 		const fullTimeline: TSRTimeline = []
 
-		for (const timeline of Object.values(this.storedTimelines)) {
+		for (const timeline of Object.values<TSRTimeline>(this.storedTimelines)) {
 			for (const obj of timeline) {
 				fullTimeline.push(obj)
 			}

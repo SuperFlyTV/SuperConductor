@@ -64,7 +64,7 @@ export abstract class Peripheral extends EventEmitter {
 	}
 	protected abstract _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay): Promise<void>
 	protected async _close(): Promise<void> {
-		for (const tracker of Object.values(this.trackers)) {
+		for (const tracker of Object.values<TimelineTracker>(this.trackers)) {
 			tracker.stop()
 		}
 		this.trackers = {}

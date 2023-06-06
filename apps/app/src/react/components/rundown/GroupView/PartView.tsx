@@ -3,7 +3,13 @@ import _ from 'lodash'
 import sorensen from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead'
 import { Layer, LayerEmpty } from './Layer'
-import { ResolvedTimeline, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
+import {
+	ResolvedTimeline,
+	ResolvedTimelineObject,
+	Resolver,
+	ResolverCache,
+	TimelineObjectInstance,
+} from 'superfly-timeline'
 import {
 	allowMovingPartIntoGroup,
 	EMPTY_LAYER_ID_PREFIX,
@@ -257,7 +263,7 @@ export const PartView: React.FC<{
 	const snapPoints = useMemo(() => {
 		const snapPoints: Array<SnapPoint> = []
 
-		for (const timelineObj of Object.values(orgResolvedTimeline.objects)) {
+		for (const timelineObj of Object.values<ResolvedTimelineObject>(orgResolvedTimeline.objects)) {
 			if (Array.isArray(timelineObj.enable)) {
 				return
 			}
@@ -488,7 +494,7 @@ export const PartView: React.FC<{
 			const promises: Promise<unknown>[] = []
 
 			if (changedObjects.current) {
-				for (const obj of Object.values(changedObjects.current)) {
+				for (const obj of Object.values<TimelineObj>(changedObjects.current)) {
 					const promise = ipcServer.updateTimelineObj({
 						rundownId: rundownId,
 						partId: part.id,
@@ -506,7 +512,7 @@ export const PartView: React.FC<{
 						rundownId: rundownId,
 						partId: part.id,
 						groupId: parentGroupId,
-						timelineObjs: Object.values(duplicatedObjects.current),
+						timelineObjs: Object.values<TimelineObj>(duplicatedObjects.current),
 						target: null,
 					})
 				)
