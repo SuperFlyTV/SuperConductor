@@ -12,6 +12,7 @@ import { ProjectContext } from '../../../contexts/Project'
 import { useMemoArray } from '../../../mobx/lib'
 import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
+import { protectString } from '@shared/models'
 
 export const Layer: React.FC<{
 	rundownId: string
@@ -93,7 +94,7 @@ export const Layer: React.FC<{
 							msPerPixel={msPerPixel}
 							locked={locked}
 							warnings={warnings}
-							deviceId={mapping?.deviceId}
+							deviceId={protectString(mapping?.deviceId)}
 						></TimelineObject>
 					)
 				})}

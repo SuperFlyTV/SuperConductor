@@ -1,7 +1,7 @@
 import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
-import { ResourceAny, ResourceId, MetadataAny } from '@shared/models'
+import { ResourceAny, ResourceId, MetadataAny, SerializedProtectedMap, TSRDeviceId } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
@@ -9,12 +9,13 @@ import { Group } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
-import { LogLevel } from '@shared/api'
+import { BridgeId, LogLevel, PeripheralId } from '@shared/api'
 import { MoveTarget } from '../lib/util'
 import { CurrentSelectionAny } from '../lib/GUI'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
+import { BridgePeripheralId } from '@shared/lib'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -210,22 +211,22 @@ export interface IPCServerMethods {
 
 	createMissingMapping: (arg: { rundownId: string; mappingId: string }) => void
 
-	addPeripheralArea: (arg: { bridgeId: string; deviceId: string }) => void
-	removePeripheralArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
+	addPeripheralArea: (arg: { bridgeId: BridgeId; deviceId: PeripheralId }) => void
+	removePeripheralArea: (arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }) => void
 	updatePeripheralArea: (arg: {
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 		update: Partial<PeripheralArea>
 	}) => void
 	assignAreaToGroup: (arg: {
 		groupId: string | undefined
 		areaId: string
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 	}) => void
 
-	startDefiningArea: (arg: { bridgeId: string; deviceId: string; areaId: string }) => void
+	startDefiningArea: (arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }) => void
 	finishDefiningArea: () => void
 	setApplicationTrigger: (arg: {
 		triggerAction: ApplicationTrigger['action']
@@ -240,10 +241,10 @@ export interface IPCClientMethods {
 	updateRundown: (fileName: string, rundown: Rundown) => void
 	updateResourcesAndMetadata: (
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
-		metadata: { [deviceId: string]: MetadataAny }
+		metadata: SerializedProtectedMap<TSRDeviceId, MetadataAny | null>
 	) => void
-	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
-	updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) => void
+	updateBridgeStatus: (id: BridgeId, status: BridgeStatus | null) => void
+	updatePeripheral: (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void
 	updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 	updateFailedGlobalTriggers: (identifiers: string[]) => void

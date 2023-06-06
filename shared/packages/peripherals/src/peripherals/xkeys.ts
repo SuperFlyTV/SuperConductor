@@ -1,8 +1,9 @@
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { protectString } from '@shared/models'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 7
@@ -105,8 +106,10 @@ export class PeripheralXkeys extends Peripheral {
 		)
 	}
 
-	private static GetXkeysId(this: void, panelInfo: HID_Device): string {
-		return panelInfo.serialNumber ? `xkeys-serial_${panelInfo.serialNumber}` : `xkeys-path_${panelInfo.path}`
+	private static GetXkeysId(this: void, panelInfo: HID_Device): PeripheralId {
+		return protectString(
+			panelInfo.serialNumber ? `xkeys-serial_${panelInfo.serialNumber}` : `xkeys-path_${panelInfo.path}`
+		)
 	}
 
 	private _info: PeripheralInfo | undefined
@@ -121,7 +124,7 @@ export class PeripheralXkeys extends Peripheral {
 	private ignoreKeys = new Set<number>()
 	private xkeysPanel?: XKeys
 
-	constructor(log: LoggerLike, id: string, private path: string) {
+	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
 		super(log, id)
 	}
 

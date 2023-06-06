@@ -18,7 +18,7 @@ import {
 	MappingVMix,
 	MappingVMixType,
 } from 'timeline-state-resolver-types'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
@@ -248,21 +248,22 @@ function hashCode(str: string): number {
 
 export const EMPTY_LAYER_ID_PREFIX = '__empty'
 
-export function findDevice(bridges: Project['bridges'], deviceId: string): DeviceOptionsAny | undefined {
+export function findDevice(bridges: Project['bridges'], deviceId: TSRDeviceId): DeviceOptionsAny | undefined {
+	const deviceIdStr = unprotectString(deviceId)
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
-		if (deviceId in bridge.settings.devices) {
-			return bridge.settings.devices[deviceId]
+		if (deviceIdStr in bridge.settings.devices) {
+			return bridge.settings.devices[deviceIdStr]
 		}
 	}
 }
 
-export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<string> {
-	const deviceIds = new Set<string>()
+export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<TSRDeviceId> {
+	const deviceIds = new Set<TSRDeviceId>()
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
-		for (const deviceId in bridge.settings.devices) {
-			const device = bridge.settings.devices[deviceId]
+		for (const [deviceId0, device] of Object.entries<DeviceOptionsAny>(bridge.settings.devices)) {
+			const deviceId = protectString<TSRDeviceId>(deviceId0)
 			if (deviceType === undefined || device.type === deviceType) {
 				deviceIds.add(deviceId)
 			}
@@ -274,13 +275,13 @@ export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?:
 /**
  * @returns If found, the ID of the first device of the specified deviceType. Else, undefined.
  */
-export function findDeviceOfType(bridges: Project['bridges'], deviceType: DeviceType): string | undefined {
+export function findDeviceOfType(bridges: Project['bridges'], deviceType: DeviceType): TSRDeviceId | undefined {
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
 		for (const deviceId in bridge.settings.devices) {
 			const device = bridge.settings.devices[deviceId]
 			if (device.type === deviceType) {
-				return deviceId
+				return protectString<TSRDeviceId>(deviceId)
 			}
 		}
 	}
@@ -590,7 +591,11 @@ export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Pa
  * arrayToBeSorted.sort(sortOn((x) => x))
  * arrayToBeSorted.sort(sortOn((x) => [x.rank, x.id]))
  */
-export function sortOn<A>(getSortValue: (value: A) => number | string | undefined | (number | string | undefined)[]) {
+export function sortOn<A>(
+	getSortValue: (
+		value: A
+	) => number | string | undefined | ProtectedString<any> | (number | string | undefined | ProtectedString<any>)[]
+) {
 	return (a: A, b: A): number => {
 		const valA = getSortValue(a)
 		const valB = getSortValue(b)
@@ -627,8 +632,9 @@ export function shortID(): string {
 	return shortUUID.generate().slice(0, 8)
 }
 
-export function getDeviceName(project: Project, deviceId: string): string {
-	return project.deviceNames?.[deviceId] || deviceId
+export function getDeviceName(project: Project, deviceId: TSRDeviceId): string {
+	const deviceIdStr = unprotectString(deviceId)
+	return project.deviceNames?.[deviceIdStr] || deviceIdStr
 }
 export function getMappingName(mapping: Mapping, layerId: string): string {
 	return mapping.layerName ?? layerId

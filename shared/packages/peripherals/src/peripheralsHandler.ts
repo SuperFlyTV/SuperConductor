@@ -8,6 +8,8 @@ import {
 	PeripheralSettingsAny,
 	PeripheralType,
 	AnalogValue,
+	PeripheralId,
+	BridgeId,
 } from '@shared/api'
 import { Peripheral } from './peripherals/peripheral'
 import { PeripheralWatcher } from './peripheralWatcher'
@@ -17,23 +19,23 @@ import { PeripheralMIDI } from './peripherals/midi'
 import { assertNever, deepClone } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {
-	connected: (peripheralId: string, peripheralInfo: PeripheralInfo) => void
-	disconnected: (peripheralId: string, peripheralInfo: PeripheralInfo) => void
+	connected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
+	disconnected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
 
-	keyDown: (peripheralId: string, identifier: string) => void
-	keyUp: (peripheralId: string, identifier: string) => void
-	analog: (peripheralId: string, identifier: string, value: AnalogValue) => void
+	keyDown: (peripheralId: PeripheralId, identifier: string) => void
+	keyUp: (peripheralId: PeripheralId, identifier: string) => void
+	analog: (peripheralId: PeripheralId, identifier: string, value: AnalogValue) => void
 
-	knownPeripherals: (peripherals: { [peripheralId: string]: KnownPeripheral }) => void
+	knownPeripherals: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
 }
 export interface PeripheralsHandler {
 	on<U extends keyof PeripheralsHandlerEvents>(event: U, listener: PeripheralsHandlerEvents[U]): this
 	emit<U extends keyof PeripheralsHandlerEvents>(event: U, ...args: Parameters<PeripheralsHandlerEvents[U]>): boolean
 }
 export class PeripheralsHandler extends EventEmitter {
-	private peripherals = new Map<string, Peripheral>()
+	private peripherals = new Map<PeripheralId, Peripheral>()
 	private peripheralStatuses = new Map<
-		string,
+		PeripheralId,
 		{
 			connected: boolean
 			info: PeripheralInfo
@@ -42,9 +44,9 @@ export class PeripheralsHandler extends EventEmitter {
 	private watcher?: PeripheralWatcher
 	/** Whether we're connected to SuperConductor or not*/
 	private connectedToParent = false
-	private shouldConnectToSpecific = new Map<string, boolean>()
+	private shouldConnectToSpecific = new Map<PeripheralId, boolean>()
 	private autoConnectToAll = true
-	constructor(private log: LoggerLike, public readonly id: string) {
+	constructor(private log: LoggerLike, public readonly id: BridgeId) {
 		super()
 	}
 	init(): void {
@@ -88,7 +90,7 @@ export class PeripheralsHandler extends EventEmitter {
 			}
 		})
 	}
-	setKeyDisplay(peripheralId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
+	setKeyDisplay(peripheralId: PeripheralId, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline): void {
 		const peripheral = this.peripherals.get(peripheralId)
 		if (!peripheral) throw new Error(`Peripheral "${peripheralId}" not found`)
 
@@ -97,17 +99,17 @@ export class PeripheralsHandler extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getKnownPeripherals(): { [peripheralId: string]: KnownPeripheral } {
-		return this.watcher?.getKnownPeripherals() ?? {}
+	getKnownPeripherals(): Map<PeripheralId, KnownPeripheral> {
+		return this.watcher?.getKnownPeripherals() ?? new Map()
 	}
-	getKnownPeripheral(peripheralId: string): KnownPeripheral | undefined {
+	getKnownPeripheral(peripheralId: PeripheralId): KnownPeripheral | undefined {
 		return this.watcher?.getKnownPeripheral(peripheralId)
 	}
 	/**
 	 * Updates the settings for how peripherals should be handled.
 	 */
 	async updatePeripheralsSettings(
-		settings: { [peripheralId: string]: PeripheralSettingsAny },
+		settings: Map<PeripheralId, PeripheralSettingsAny>,
 		autoConnect: boolean
 	): Promise<void> {
 		// Do this before handling the per-peripheral settings.
@@ -120,7 +122,7 @@ export class PeripheralsHandler extends EventEmitter {
 		}
 
 		const specificPeripheralPromises: Promise<void>[] = []
-		for (const [peripheralId, setting] of Object.entries(settings)) {
+		for (const [peripheralId, setting] of settings.entries()) {
 			specificPeripheralPromises.push(
 				this.setSpecificPeripheralConnectionPreference(peripheralId, setting.manualConnect)
 			)
@@ -228,7 +230,7 @@ export class PeripheralsHandler extends EventEmitter {
 		this.autoConnectToAll = true
 
 		const initPromises: Promise<void>[] = []
-		for (const [id, info] of Object.entries(this.getKnownPeripherals())) {
+		for (const [id, info] of this.getKnownPeripherals().entries()) {
 			if (this.peripherals.has(id)) {
 				// We already have a connected peripheral instance set up for this ID, so do nothing.
 				continue
@@ -277,7 +279,7 @@ export class PeripheralsHandler extends EventEmitter {
 	 * If set to true and not already connected, a connection will be attempted.
 	 * If set to false and currently connected, the connection will be closed.
 	 */
-	private async setSpecificPeripheralConnectionPreference(id: string, shouldConnect: boolean): Promise<void> {
+	private async setSpecificPeripheralConnectionPreference(id: PeripheralId, shouldConnect: boolean): Promise<void> {
 		this.shouldConnectToSpecific.set(id, shouldConnect)
 
 		// If there's no available peripheral with this ID, do nothing.
@@ -305,7 +307,7 @@ export class PeripheralsHandler extends EventEmitter {
 	 * or if the settings specify that this specific peripheral should be connected to.
 	 * Does nothing if already connected to a peripheral with the given ID.
 	 */
-	private async maybeConnectToPeripheral(peripheralId: string, info: KnownPeripheral): Promise<void> {
+	private async maybeConnectToPeripheral(peripheralId: PeripheralId, info: KnownPeripheral): Promise<void> {
 		// If we already have connected to this peripheral, do nothing.
 		const existingPeripheral = this.peripherals.get(peripheralId)
 		if (existingPeripheral) {
@@ -324,7 +326,7 @@ export class PeripheralsHandler extends EventEmitter {
 	 * Given info about an available peripheral, creates an actual connection to that peripheral
 	 * and returns the resulting Peripheral class instance.
 	 */
-	private createPeripheralFromAvailableInfo(id: string, info: KnownPeripheral): Peripheral {
+	private createPeripheralFromAvailableInfo(id: PeripheralId, info: KnownPeripheral): Peripheral {
 		switch (info.type) {
 			case PeripheralType.STREAMDECK:
 				return new PeripheralStreamDeck(this.log, id, info.devicePath)

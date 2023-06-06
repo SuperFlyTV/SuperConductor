@@ -1,5 +1,5 @@
 import { deepClone } from '@shared/lib'
-import { ResourceId } from '@shared/models'
+import { ResourceId, TSRDeviceId } from '@shared/models'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import {
@@ -59,7 +59,7 @@ interface ResourceLibrarySettings {
 	/** A reference to the latest selected Resource */
 	lastSelectedResourceId: ResourceId | null
 	nameFilterValue: string
-	deviceFilterValue: string[]
+	deviceFilterValue: TSRDeviceId[]
 	resourceTypeFilterValue: string[]
 	detailedFiltersExpanded: boolean
 }

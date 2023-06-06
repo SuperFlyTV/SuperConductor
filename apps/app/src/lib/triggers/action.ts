@@ -7,7 +7,9 @@ import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { GroupWithShallowParts, PartWithRef } from '../util'
 import { CurrentSelectionAny } from '../GUI'
-import { assertNever } from '@shared/lib'
+import { BridgePeripheralId, assertNever, getPeripheralId } from '@shared/lib'
+import { protectString } from '@shared/models'
+import { BridgeId, PeripheralId } from '@shared/api'
 
 export type ActionAny =
 	| ({
@@ -65,7 +67,7 @@ export function getPartsWithRefInRundowns(rundowns: Rundown[]): PartWithRef[] {
 export function getAllActionsInParts(
 	allParts: PartWithRef[],
 	project: Project,
-	peripherals: { [peripheralId: string]: PeripheralStatus } | undefined
+	peripherals: Map<BridgePeripheralId, PeripheralStatus> | undefined
 ): RundownAction[] {
 	const actions: RundownAction[] = []
 	// Collect all actions from the rundowns:
@@ -95,9 +97,13 @@ export function getAllActionsInParts(
 	}
 	// Collect actions from Areas:
 
-	for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-		for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
-			const peripheralStatus: PeripheralStatus | undefined = peripherals?.[`${bridgeId}-${deviceId}`]
+	for (const [bridgeId0, bridge] of Object.entries(project.bridges)) {
+		const bridgeId = protectString<BridgeId>(bridgeId0)
+
+		for (const [deviceId0, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
+			const deviceId = protectString<PeripheralId>(deviceId0)
+
+			const peripheralStatus = peripherals?.get(getPeripheralId(bridgeId, deviceId))
 
 			for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
 				if (area.assignedToGroupId) {

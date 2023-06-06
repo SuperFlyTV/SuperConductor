@@ -6,6 +6,8 @@ import {
 	LoggerLike,
 	KnownPeripheral,
 	AnalogValue,
+	PeripheralId,
+	BridgeId,
 } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { AnalogInputSetting, Project } from '../models/project/Project'
@@ -15,7 +17,14 @@ import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { MetadataAny, ResourceAny } from '@shared/models'
+import {
+	MetadataAny,
+	ResourceAny,
+	TSRDeviceId,
+	protectTupleArray,
+	deserializeProtectedMap,
+	unprotectString,
+} from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
 import { AnalogInput } from '../models/project/AnalogInput'
 
@@ -29,18 +38,19 @@ type AnyBridgeConnection = WebsocketBridgeConnection | LocalBridgeConnection
 export class BridgeHandler {
 	server: WebsocketServer
 
-	private outgoingBridges: {
-		[bridgeId: string]: {
+	private outgoingBridges: Map<
+		BridgeId,
+		{
 			bridge: Bridge
 			lastTry: number
 			connection?: WebsocketConnection
 		}
-	} = {}
+	> = new Map()
 	private internalBridge: LocalBridgeConnection | null = null
 	private connectedBridges: Array<AnyBridgeConnection> = []
 	private mappings: Mappings = {}
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
-	private settings: { [bridgeId: string]: Bridge['settings'] } = {}
+	private settings: Map<BridgeId, Bridge['settings']> = new Map()
 	private analogInputs: {
 		[datastoreKey: string]: {
 			setting: AnalogInputSetting
@@ -69,7 +79,7 @@ export class BridgeHandler {
 			)
 
 			// Lookup and set the bridgeId, if it is an outgoing
-			for (const [bridgeId, outgoing] of Object.entries(this.outgoingBridges)) {
+			for (const [bridgeId, outgoing] of this.outgoingBridges.entries()) {
 				if (outgoing.connection?.connectionId === connection.connectionId) {
 					bridge.bridgeId = bridgeId
 				}
@@ -91,7 +101,7 @@ export class BridgeHandler {
 			this.reconnectToBridges()
 		}, 1000)
 	}
-	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
+	getBridgeConnection(bridgeId: BridgeId): AnyBridgeConnection | undefined {
 		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
 	}
 	async onClose(): Promise<void> {
@@ -127,7 +137,7 @@ export class BridgeHandler {
 		// Added/updated:
 		for (const bridge of Object.values(project.bridges)) {
 			if (bridge.outgoing) {
-				const existing = this.outgoingBridges[bridge.id]
+				const existing = this.outgoingBridges.get(bridge.id)
 				let addNew = false
 				if (!existing) {
 					// Added
@@ -147,10 +157,10 @@ export class BridgeHandler {
 						peripherals: {},
 					})
 
-					this.outgoingBridges[bridge.id] = {
+					this.outgoingBridges.set(bridge.id, {
 						bridge,
 						lastTry: Date.now(),
-					}
+					})
 
 					this.tryConnectToBridge(bridge.id)
 				}
@@ -159,25 +169,23 @@ export class BridgeHandler {
 			this.updateSettings(bridge.id, bridge.settings)
 		}
 		// Removed
-		for (const bridgeId of Object.keys(this.outgoingBridges)) {
-			const existing = this.outgoingBridges[bridgeId]
-
-			if (existing && !project.bridges[bridgeId]) {
+		for (const [bridgeId, existing] of this.outgoingBridges.entries()) {
+			if (!project.bridges[unprotectString<BridgeId>(bridgeId)]) {
 				// removed:
 				existing.connection?.terminate()
-				delete this.outgoingBridges[bridgeId]
+				this.outgoingBridges.delete(bridgeId)
 			}
 		}
 	}
 	private reconnectToBridges() {
-		for (const [bridgeId, bridge] of Object.entries(this.outgoingBridges)) {
+		for (const [bridgeId, bridge] of this.outgoingBridges.entries()) {
 			if (!bridge.connection && Date.now() - bridge.lastTry > 10 * 1000) {
 				this.tryConnectToBridge(bridgeId)
 			}
 		}
 	}
-	private tryConnectToBridge(bridgeId: string) {
-		const bridge = this.outgoingBridges[bridgeId]
+	private tryConnectToBridge(bridgeId: BridgeId) {
+		const bridge = this.outgoingBridges.get(bridgeId)
 		if (bridge) {
 			bridge.lastTry = Date.now()
 			try {
@@ -220,7 +228,7 @@ export class BridgeHandler {
 			}
 		}
 	}
-	updateSettings(bridgeId: string, settings: Bridge['settings']): void {
+	updateSettings(bridgeId: BridgeId, settings: Bridge['settings']): void {
 		const bridgeConnection = this.connectedBridges.find((bc) => bc.bridgeId === bridgeId)
 		if (bridgeConnection) {
 			bridgeConnection.setSettings(settings)
@@ -295,13 +303,13 @@ export class BridgeHandler {
 }
 
 interface BridgeConnectionCallbacks {
-	updatedResourcesAndMetadata: (deviceId: string, resources: ResourceAny[], metadata: MetadataAny | null) => void
-	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
-	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
+	updatedResourcesAndMetadata: (deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny | null) => void
+	onVersionMismatch: (bridgeId: BridgeId, bridgeVersion: string, ourVersion: string) => void
+	onDeviceRefreshStatus: (deviceId: TSRDeviceId, refreshing: boolean) => void
 }
 
 abstract class AbstractBridgeConnection {
-	public bridgeId: string | null = null
+	public bridgeId: BridgeId | null = null
 
 	private sentSettings: Bridge['settings'] | null = null
 	private sentMappings: any | null = null
@@ -317,7 +325,12 @@ abstract class AbstractBridgeConnection {
 	setSettings(settings: Bridge['settings'], force = false) {
 		if (force || !_.isEqual(this.sentSettings, settings)) {
 			this.sentSettings = _.cloneDeep(settings)
-			this.send({ type: 'setSettings', ...settings })
+			this.send({
+				type: 'setSettings',
+				...settings,
+				devices: protectTupleArray(Object.entries(settings.devices)),
+				peripherals: protectTupleArray(Object.entries(settings.peripherals)),
+			})
 		}
 	}
 	addTimeline(timelineId: string, timeline: TSRTimeline) {
@@ -346,7 +359,7 @@ abstract class AbstractBridgeConnection {
 	) {
 		this.send({ type: 'updateDatastore', updates, currentTime: this.getCurrentTime() })
 	}
-	peripheralSetKeyDisplay(deviceId: string, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
+	peripheralSetKeyDisplay(deviceId: PeripheralId, identifier: string, keyDisplay: KeyDisplay | KeyDisplayTimeline) {
 		this.send({
 			type: 'peripheralSetKeyDisplay',
 			deviceId,
@@ -376,7 +389,7 @@ abstract class AbstractBridgeConnection {
 			}
 		}
 	}
-	protected onInit(id: string, version: string, incoming: boolean) {
+	protected onInit(id: BridgeId, version: string, incoming: boolean) {
 		if (!this.bridgeId) {
 			this.bridgeId = id
 		} else if (this.bridgeId !== id) {
@@ -393,7 +406,7 @@ abstract class AbstractBridgeConnection {
 
 		// Send initial commands:
 		const project = this.storage.getProject()
-		const bridge = project.bridges[this.bridgeId]
+		const bridge = project.bridges[unprotectString<BridgeId>(this.bridgeId)]
 		if (bridge) {
 			this.setSettings(bridge.settings, true)
 		} else {
@@ -415,21 +428,22 @@ abstract class AbstractBridgeConnection {
 		if (!this.bridgeId) throw new Error('onInitRequestId: bridgeId not set')
 		this.send({ type: 'setId', id: this.bridgeId })
 	}
-	protected onDeviceStatus(deviceId: string, ok: boolean, message: string) {
+	protected onDeviceStatus(deviceId: TSRDeviceId, ok: boolean, message: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 
 		const bridgeStatus = this.session.getBridgeStatus(this.bridgeId)
 		if (!bridgeStatus) throw new Error('onDeviceStatus: bridgeStatus not set')
 
-		if (!bridgeStatus.devices[deviceId]) {
-			bridgeStatus.devices[deviceId] = {
+		const deviceIdStr = unprotectString<TSRDeviceId>(deviceId)
+		if (!bridgeStatus.devices[deviceIdStr]) {
+			bridgeStatus.devices[deviceIdStr] = {
 				connectionId: 0,
 				message: '',
 				ok: false,
 			}
 		}
 		let updated = false
-		const existing = bridgeStatus.devices[deviceId]
+		const existing = bridgeStatus.devices[deviceIdStr]
 		if (existing.ok !== ok || existing.message !== message) {
 			updated = true
 
@@ -447,45 +461,47 @@ abstract class AbstractBridgeConnection {
 			this.refreshResources()
 		}
 	}
-	protected onDeviceRemoved(deviceId: string) {
+	protected onDeviceRemoved(deviceId: TSRDeviceId) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 
 		const bridgeStatus = this.session.getBridgeStatus(this.bridgeId)
 		if (!bridgeStatus) throw new Error('onDeviceStatus: bridgeStatus not set')
 
-		delete bridgeStatus.devices[deviceId]
+		delete bridgeStatus.devices[unprotectString<TSRDeviceId>(deviceId)]
 
 		this.callbacks.updatedResourcesAndMetadata(deviceId, [], null)
 		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
-	protected _onPeripheralStatus(deviceId: string, info: PeripheralInfo, status: 'connected' | 'disconnected') {
+	protected _onPeripheralStatus(deviceId: PeripheralId, info: PeripheralInfo, status: 'connected' | 'disconnected') {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralStatus(this.bridgeId, deviceId, info, status === 'connected')
 	}
-	protected _onPeripheralTrigger(deviceId: string, trigger: 'keyDown' | 'keyUp', identifier: string) {
+	protected _onPeripheralTrigger(deviceId: PeripheralId, trigger: 'keyDown' | 'keyUp', identifier: string) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralTriggerStatus(this.bridgeId, deviceId, identifier, trigger === 'keyDown')
 	}
-	protected _onPeripheralAnalog(deviceId: string, identifier: string, value: AnalogValue) {
+	protected _onPeripheralAnalog(deviceId: PeripheralId, identifier: string, value: AnalogValue) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
 		this.session.updatePeripheralAnalog(this.bridgeId, deviceId, identifier, value)
 	}
-	protected _onKnownPeripherals(knownPeripherals: { [peripheralId: string]: KnownPeripheral }) {
+	protected _onKnownPeripherals(knownPeripherals: Map<PeripheralId, KnownPeripheral>) {
 		if (!this.bridgeId) throw new Error('onDeviceStatus: bridgeId not set')
+
 		this.session.updateKnownPeripherals(this.bridgeId, knownPeripherals)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[this.bridgeId]
+		const bridge = project.bridges[unprotectString<BridgeId>(this.bridgeId)]
 		if (bridge) {
-			for (const peripheralId of Object.keys(knownPeripherals)) {
-				if (!bridge.settings.peripherals[peripheralId]) {
+			for (const peripheralId of knownPeripherals.keys()) {
+				const peripheralIdStr = unprotectString(peripheralId)
+				if (!bridge.settings.peripherals[peripheralIdStr]) {
 					// Initalize with defaults
-					bridge.settings.peripherals[peripheralId] = {
+					bridge.settings.peripherals[peripheralIdStr] = {
 						manualConnect: false,
 					}
 				}
 				if (
 					!bridge.settings.autoConnectToAllPeripherals &&
-					!bridge.settings.peripherals[peripheralId].manualConnect
+					!bridge.settings.peripherals[peripheralIdStr].manualConnect
 				) {
 					this.session.removePeripheral(this.bridgeId, peripheralId)
 				}
@@ -517,7 +533,7 @@ abstract class AbstractBridgeConnection {
 		} else if (msg.type === 'DeviceRefreshStatus') {
 			this.callbacks.onDeviceRefreshStatus(msg.deviceId, msg.refreshing)
 		} else if (msg.type === 'KnownPeripherals') {
-			this._onKnownPeripherals(msg.peripherals)
+			this._onKnownPeripherals(deserializeProtectedMap(msg.peripherals))
 		} else {
 			assertNever(msg)
 		}
@@ -530,10 +546,11 @@ abstract class AbstractBridgeConnection {
 		const project = this.storage.getProject()
 
 		// If the bridge doesn't exist in settings, create it:
-		if (!project.bridges[this.bridgeId]) {
-			project.bridges[this.bridgeId] = {
+		const bridgeIdStr = unprotectString<BridgeId>(this.bridgeId)
+		if (!project.bridges[bridgeIdStr]) {
+			project.bridges[bridgeIdStr] = {
 				id: this.bridgeId,
-				name: this.bridgeId,
+				name: unprotectString(this.bridgeId),
 				outgoing: false,
 				url: '',
 				settings: {

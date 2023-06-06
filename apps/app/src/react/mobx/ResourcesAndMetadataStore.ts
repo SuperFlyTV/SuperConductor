@@ -2,30 +2,32 @@ import { makeAutoObservable } from 'mobx'
 import { IPCServer } from '../api/IPCServer'
 const { ipcRenderer } = window.require('electron')
 import { IPCClient } from '../api/IPCClient'
-import { MetadataAny, ResourceAny, ResourceId } from '@shared/models'
+import {
+	MetadataAny,
+	ResourceAny,
+	ResourceId,
+	SerializedProtectedMap,
+	TSRDeviceId,
+	deserializeProtectedMap,
+} from '@shared/models'
 import { ClientSideLogger } from '../api/logger'
 import { hashObj } from '../../lib/util'
 
 export type Resources = Map<ResourceId, ResourceAny>
 
-/** maps deviceId -> MetadataAny */
-export type Metadata = Map<string, MetadataAny>
-
-export interface RefreshStatuses {
-	[deviceId: string]: boolean
-}
+export type Metadata = Map<TSRDeviceId, MetadataAny>
 
 export class ResourcesAndMetadataStore {
 	resources: Resources = new Map()
 	metadata: Metadata = new Map()
-	refreshStatuses: RefreshStatuses = {}
+	refreshStatuses = new Set<TSRDeviceId>()
 
 	serverAPI: IPCServer
 	logger: ClientSideLogger
 	ipcClient: IPCClient
 
 	private resourceHashes: Map<ResourceId, string> // Not defined here, this should not be an observable
-	private metadataHashes: Map<string, string> // Not defined here, this should not be an observable
+	private metadataHashes: Map<TSRDeviceId, string> // Not defined here, this should not be an observable
 
 	constructor(init?: Resources) {
 		this.serverAPI = new IPCServer(ipcRenderer)
@@ -47,7 +49,7 @@ export class ResourcesAndMetadataStore {
 
 	public updateResourcesAndMetadata(
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
-		metadata: { [deviceId: string]: MetadataAny | null }
+		metadata: SerializedProtectedMap<TSRDeviceId, MetadataAny | null>
 	): void {
 		// Resources:
 		{
@@ -71,7 +73,9 @@ export class ResourcesAndMetadataStore {
 
 		// Metadata:
 		{
-			for (const [deviceId, deviceMetadata] of Object.entries(metadata)) {
+			for (const [deviceId, deviceMetadata] of deserializeProtectedMap<TSRDeviceId, MetadataAny | null>(
+				metadata
+			).entries()) {
 				const metadataHash = hashObj(deviceMetadata)
 
 				if (deviceMetadata) {
@@ -90,19 +94,12 @@ export class ResourcesAndMetadataStore {
 		}
 	}
 	public isAnyDeviceRefreshing(): boolean {
-		for (const deviceId in this.refreshStatuses) {
-			const isRefreshing = this.refreshStatuses[deviceId]
-			if (isRefreshing) {
-				return true
-			}
-		}
-
-		return false
+		return this.refreshStatuses.size > 0
 	}
 	public getResource(resourceId: ResourceId): ResourceAny | undefined {
 		return this.resources.get(resourceId)
 	}
-	public getMetadata(deviceId: string): MetadataAny | undefined {
+	public getMetadata(deviceId: TSRDeviceId): MetadataAny | undefined {
 		return this.metadata.get(deviceId)
 	}
 
@@ -110,7 +107,8 @@ export class ResourcesAndMetadataStore {
 		this.resources = data
 	}
 
-	private _updateDeviceRefreshStatus(deviceId: string, refreshing: boolean) {
-		this.refreshStatuses[deviceId] = refreshing
+	private _updateDeviceRefreshStatus(deviceId: TSRDeviceId, refreshing: boolean) {
+		if (refreshing) this.refreshStatuses.add(deviceId)
+		else this.refreshStatuses.delete(deviceId)
 	}
 }

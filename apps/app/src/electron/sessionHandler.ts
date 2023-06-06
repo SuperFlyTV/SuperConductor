@@ -3,19 +3,36 @@ import { BridgeStatus } from '../models/project/Bridge'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import _ from 'lodash'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { AnalogValue, KnownPeripheral, PeripheralInfo } from '@shared/api'
+import { AnalogValue, BridgeId, KnownPeripheral, PeripheralId, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { CurrentSelectionAny } from '../lib/GUI'
-import { getPeripheralId } from '@shared/lib'
+import { BridgePeripheralId, getPeripheralId } from '@shared/lib'
 import { ActiveAnalog } from '../models/rundown/Analog'
+import { unprotectString } from '@shared/models'
+
+export interface SessionHandlerEvents {
+	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
+
+	bridgeStatus: (bridgeId: BridgeId, status: BridgeStatus | null) => void
+	peripheral: (peripheralId: BridgePeripheralId, status: PeripheralStatus | null) => void
+	allTrigger: (fullIdentifier: string, activeTrigger: ActiveTrigger | null) => void
+	activeTriggers: (activeTriggers: ActiveTriggers) => void
+	activeAnalog: (fullIdentifier: string, activeAnalog: ActiveAnalog | null) => void
+	definingArea: (definingArea: DefiningArea | null) => void
+	selection: (selection: Readonly<CurrentSelectionAny[]>) => void
+}
+export interface SessionHandler {
+	on<U extends keyof SessionHandlerEvents>(event: U, listener: SessionHandlerEvents[U]): this
+	emit<U extends keyof SessionHandlerEvents>(event: U, ...args: Parameters<SessionHandlerEvents[U]>): boolean
+}
 
 /** This class handles all non-persistant data */
 export class SessionHandler extends EventEmitter {
-	private bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
-	private bridgeStatusesHasChanged: { [bridgeId: string]: true } = {}
+	private bridgeStatuses = new Map<BridgeId, BridgeStatus>()
+	private bridgeStatusesHasChanged = new Set<BridgeId>()
 
-	private peripherals: { [peripheralId: string]: PeripheralStatus } = {}
-	private peripheralsHasChanged: { [peripheralId: string]: true } = {}
+	private peripherals = new Map<BridgePeripheralId, PeripheralStatus>()
+	private peripheralsHasChanged = new Set<BridgePeripheralId>()
 
 	/** Contains a collection of ALL triggers/keys/buttons on all Panels */
 	private allTriggers: { [fullIdentifier: string]: ActiveTrigger } = {}
@@ -56,36 +73,31 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 
-	getBridgeStatuses(): {
-		[bridgeId: string]: BridgeStatus
-	} {
-		return this.bridgeStatuses
+	getBridgeStatus(id: BridgeId): BridgeStatus | undefined {
+		return this.bridgeStatuses.get(id)
 	}
-	getBridgeStatus(id: string): BridgeStatus | undefined {
-		return this.bridgeStatuses[id]
-	}
-	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
+	updateBridgeStatus(id: BridgeId, bridgeStatus: BridgeStatus | null): void {
 		if (bridgeStatus) {
-			this.bridgeStatuses[id] = bridgeStatus
-			this.bridgeStatusesHasChanged[id] = true
+			this.bridgeStatuses.set(id, bridgeStatus)
+			this.bridgeStatusesHasChanged.add(id)
 		} else {
-			if (this.bridgeStatuses[id]) {
-				delete this.bridgeStatuses[id]
-				this.bridgeStatusesHasChanged[id] = true
+			if (this.bridgeStatuses.has(id)) {
+				this.bridgeStatuses.delete(id)
+				this.bridgeStatusesHasChanged.add(id)
 			}
 		}
 
 		this.triggerUpdate()
 	}
-	getPeripheralStatus(bridgeId: string, deviceId: string): PeripheralStatus | undefined {
+	getPeripheralStatus(bridgeId: BridgeId, deviceId: PeripheralId): PeripheralStatus | undefined {
 		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
-		return this.peripherals[peripheralId]
+		return this.peripherals.get(peripheralId)
 	}
-	updatePeripheralStatus(bridgeId: string, deviceId: string, info: PeripheralInfo, connected: boolean): void {
+	updatePeripheralStatus(bridgeId: BridgeId, deviceId: PeripheralId, info: PeripheralInfo, connected: boolean): void {
 		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
-		const existing: PeripheralStatus | undefined = this.peripherals[peripheralId]
+		const existing = this.peripherals.get(peripheralId)
 
 		const newDevice: PeripheralStatus = {
 			id: deviceId,
@@ -96,38 +108,41 @@ export class SessionHandler extends EventEmitter {
 				connected: connected,
 			},
 		}
-		if (!_.isEqual(newDevice, this.peripherals[peripheralId])) {
-			this.peripherals[peripheralId] = newDevice
-			this.peripheralsHasChanged[peripheralId] = true
+		if (!_.isEqual(newDevice, this.peripherals.get(peripheralId))) {
+			this.peripherals.set(peripheralId, newDevice)
+			this.peripheralsHasChanged.add(peripheralId)
 		}
 
 		this.triggerUpdate()
 	}
-	removePeripheral(bridgeId: string, deviceId: string): void {
+	removePeripheral(bridgeId: BridgeId, deviceId: PeripheralId): void {
 		const peripheralId = getPeripheralId(bridgeId, deviceId)
-		delete this.peripherals[peripheralId]
-		this.peripheralsHasChanged[peripheralId] = true
+		this.peripherals.delete(peripheralId)
+		this.peripheralsHasChanged.add(peripheralId)
 		this.triggerUpdate()
 	}
-	updateKnownPeripherals(
-		bridgeId: string,
-		knownPeripherals: {
-			[peripheralId: string]: KnownPeripheral
-		}
-	): void {
-		const bridgeStatus = this.bridgeStatuses[bridgeId]
+	updateKnownPeripherals(bridgeId: BridgeId, knownPeripherals: Map<PeripheralId, KnownPeripheral>): void {
+		const bridgeStatus = this.bridgeStatuses.get(bridgeId)
 		if (!bridgeStatus) {
 			return
 		}
 
-		if (!_.isEqual(knownPeripherals, bridgeStatus.peripherals)) {
-			bridgeStatus.peripherals = knownPeripherals
-			this.bridgeStatusesHasChanged[bridgeId] = true
+		const knownPeripheralsObj: {
+			[PeripheralId: string]: KnownPeripheral
+		} = {}
+
+		for (const [deviceId, knownPeripheral] of knownPeripherals.entries()) {
+			knownPeripheralsObj[unprotectString<PeripheralId>(deviceId)] = knownPeripheral
+		}
+
+		if (!_.isEqual(knownPeripheralsObj, bridgeStatus.peripherals)) {
+			bridgeStatus.peripherals = knownPeripheralsObj
+			this.bridgeStatusesHasChanged.add(bridgeId)
 		}
 
 		this.triggerUpdate()
 	}
-	resetPeripheralTriggerStatuses(bridgeId: string): void {
+	resetPeripheralTriggerStatuses(bridgeId: BridgeId): void {
 		// Reset all peripheralStatuses for a bridge (like when a bridge is reconnected)
 
 		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
@@ -143,13 +158,13 @@ export class SessionHandler extends EventEmitter {
 			}
 		}
 	}
-	updatePeripheralTriggerStatus(bridgeId: string, deviceId: string, identifier: string, down: boolean): void {
+	updatePeripheralTriggerStatus(bridgeId: BridgeId, deviceId: PeripheralId, identifier: string, down: boolean): void {
 		// This is called from a peripheral, when a key is pressed or released
 
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
 		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
-		const device = this.peripherals[peripheralId]
+		const device = this.peripherals.get(peripheralId)
 		const trigger: ActiveTrigger = {
 			fullIdentifier: fullIdentifier,
 			bridgeId: bridgeId,
@@ -177,13 +192,13 @@ export class SessionHandler extends EventEmitter {
 
 		this.triggerUpdate()
 	}
-	updatePeripheralAnalog(bridgeId: string, deviceId: string, identifier: string, value: AnalogValue): void {
+	updatePeripheralAnalog(bridgeId: BridgeId, deviceId: PeripheralId, identifier: string, value: AnalogValue): void {
 		// This is called from a peripheral, when an analog input is wiggled
 
 		const fullIdentifier = `${bridgeId}-${deviceId}-${identifier}`
 		const peripheralId = getPeripheralId(bridgeId, deviceId)
 
-		const device = this.peripherals[peripheralId]
+		const device = this.peripherals.get(peripheralId)
 		const analog: ActiveAnalog = {
 			fullIdentifier: fullIdentifier,
 			bridgeId: bridgeId,
@@ -227,11 +242,11 @@ export class SessionHandler extends EventEmitter {
 	}
 	private emitChanges() {
 		if (this.emitEverything) {
-			for (const bridgeId of Object.keys(this.bridgeStatuses)) {
-				this.bridgeStatusesHasChanged[bridgeId] = true
+			for (const bridgeId of this.bridgeStatuses.keys()) {
+				this.bridgeStatusesHasChanged.add(bridgeId)
 			}
-			for (const peripheralId of Object.keys(this.peripherals)) {
-				this.peripheralsHasChanged[peripheralId] = true
+			for (const peripheralId of this.peripherals.keys()) {
+				this.peripheralsHasChanged.add(peripheralId)
 			}
 			this.activeTriggersHasChanged = true
 			this.definingAreaHasChanged = true
@@ -239,13 +254,13 @@ export class SessionHandler extends EventEmitter {
 			this.emitEverything = false
 		}
 
-		for (const bridgeId of Object.keys(this.bridgeStatusesHasChanged)) {
-			this.emit('bridgeStatus', bridgeId, this.bridgeStatuses[bridgeId] ?? null)
-			delete this.bridgeStatusesHasChanged[bridgeId]
+		for (const bridgeId of this.bridgeStatusesHasChanged.keys()) {
+			this.emit('bridgeStatus', bridgeId, this.bridgeStatuses.get(bridgeId) ?? null)
+			this.bridgeStatusesHasChanged.delete(bridgeId)
 		}
-		for (const peripheralId of Object.keys(this.peripheralsHasChanged)) {
-			this.emit('peripheral', peripheralId, this.peripherals[peripheralId] ?? null)
-			delete this.peripheralsHasChanged[peripheralId]
+		for (const peripheralId of this.peripheralsHasChanged.keys()) {
+			this.emit('peripheral', peripheralId, this.peripherals.get(peripheralId) ?? null)
+			this.peripheralsHasChanged.delete(peripheralId)
 		}
 		for (const fullIdentifier of Object.keys(this.allTriggersHasChanged)) {
 			this.emit('allTrigger', fullIdentifier, this.allTriggers[fullIdentifier] ?? null)

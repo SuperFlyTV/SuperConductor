@@ -1,4 +1,4 @@
-import { BridgeAPI, LoggerLike } from '@shared/api'
+import { BridgeAPI, LoggerLike, BridgeId } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BaseBridge } from '@shared/tsr-bridge'
 import { AppSettings } from '../models/AppData'
@@ -20,7 +20,7 @@ export class TSRBridgeServer {
 	private connectToSuperConductorTimeout: NodeJS.Timeout | null = null
 	private connectionToSuperConductor: {
 		host: string
-		bridgeId: string
+		bridgeId: BridgeId
 		connection: WebsocketConnection
 		connected: boolean
 		lastTry: number
@@ -93,7 +93,7 @@ export class TSRBridgeServer {
 			)
 		}
 	}
-	private onConnectionToSuperConductor(connection: WebsocketConnection, ourBridgeId?: string) {
+	private onConnectionToSuperConductor(connection: WebsocketConnection, ourBridgeId?: BridgeId) {
 		if (this.connectedSuperConductor) {
 			this.logger.warn('Already connected to a SuperConductor, switching to new...')
 		}
@@ -140,7 +140,7 @@ export class TSRBridgeServer {
 	private connectToSuperConductor() {
 		const shouldConnect = !this.settings.acceptConnections
 		const host: string = this.settings.superConductorHost
-		const bridgeId: string = this.settings.bridgeId
+		const bridgeId: BridgeId = this.settings.bridgeId
 
 		if (this.connectionToSuperConductor) {
 			// Should we close the current connection?

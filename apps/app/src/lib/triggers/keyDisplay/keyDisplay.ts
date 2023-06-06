@@ -1,4 +1,4 @@
-import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
+import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, BridgeId, PeripheralId } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
 import { ActionAny } from '../action'
 import { PeripheralArea } from '../../../models/project/Peripheral'
@@ -177,7 +177,7 @@ export function getKeyDisplayForAnalog(
 }
 
 export interface DefiningArea {
-	bridgeId: string
-	deviceId: string
+	bridgeId: BridgeId
+	deviceId: PeripheralId
 	areaId: string
 }

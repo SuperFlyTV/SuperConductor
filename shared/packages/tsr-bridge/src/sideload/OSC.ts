@@ -8,13 +8,14 @@ import {
 	OSCMetadata,
 	MetadataAny,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource } from '@shared/lib'
 
 export class OSCSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
+	constructor(private deviceId: TSRDeviceId, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
 		return this._refreshResourcesAndMetadata()
 	}

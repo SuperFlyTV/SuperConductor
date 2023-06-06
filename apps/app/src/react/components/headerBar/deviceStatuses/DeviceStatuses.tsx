@@ -9,9 +9,11 @@ import { useMemoComputedObject } from '../../../mobx/lib'
 import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../contexts/Project'
-import { KnownPeripheral } from '@shared/api'
+import { BridgeId, KnownPeripheral, PeripheralId } from '@shared/api'
 import { MdAdd } from 'react-icons/md'
 import { DisabledPeripheralInfo, DisabledPeripheralsSettings } from './DisabledPeripherals/DisabledPeripheralsSettings'
+import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
+import { getPeripheralId } from '@shared/lib'
 
 export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	const project = useContext(ProjectContext)
@@ -19,8 +21,8 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 
 	const [submenuPopover, setSubmenuPopover] = React.useState<{
 		anchorEl: HTMLAnchorElement
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 	} | null>(null)
 	const closeSubMenu = useCallback(() => {
 		setSubmenuPopover(null)
@@ -35,20 +37,20 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 
 	const allDevices = useMemoComputedObject(() => {
 		const newAllDevices: {
-			bridgeId: string
+			bridgeId: BridgeId
 			bridgeStatus: BridgeStatus
-			deviceId: string
+			deviceId: TSRDeviceId
 			deviceStatus: BridgeDevice
 			deviceSettings: DeviceOptionsAny | undefined
 		}[] = []
-		for (const [bridgeId, bridgeStatus] of Object.entries(appStore.bridgeStatuses)) {
-			const bridgeSettings = project.bridges[bridgeId] as Bridge | undefined
+		for (const [bridgeId, bridgeStatus] of appStore.bridgeStatuses.entries()) {
+			const bridgeSettings = project.bridges[unprotectString<BridgeId>(bridgeId)] as Bridge | undefined
 			if (!bridgeSettings) continue
 			for (const [deviceId, deviceStatus] of Object.entries(bridgeStatus.devices)) {
 				newAllDevices.push({
 					bridgeId,
 					bridgeStatus,
-					deviceId,
+					deviceId: protectString(deviceId),
 					deviceStatus,
 					deviceSettings: bridgeSettings.settings.devices[deviceId],
 				})
@@ -62,16 +64,21 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	}, [appStore.peripherals])
 	const disabledPeripherals = useMemoComputedObject(() => {
 		const newDisabledPeripherals: DisabledPeripheralInfo[] = []
-		for (const [bridgeId, bridgeStatus] of Object.entries(appStore.bridgeStatuses)) {
-			const bridgeSettings = project.bridges[bridgeId] as Bridge | undefined
+		for (const [bridgeId, bridgeStatus] of appStore.bridgeStatuses.entries()) {
+			const bridgeSettings = project.bridges[unprotectString<BridgeId>(bridgeId)] as Bridge | undefined
+
 			if (!bridgeSettings) continue
 			if (bridgeSettings.settings.autoConnectToAllPeripherals) continue
-			for (const [peripheralId, peripheralSettings] of Object.entries(bridgeSettings.settings.peripherals)) {
+			for (const [peripheralId0, peripheralSettings] of Object.entries(bridgeSettings.settings.peripherals)) {
+				const peripheralId = protectString<PeripheralId>(peripheralId0)
+
 				if (peripheralSettings.manualConnect) {
 					// This peripheral is already one that the user has indicated they would like to connect to.
 					continue
 				}
-				const peripheralInfo = bridgeStatus.peripherals[peripheralId] as KnownPeripheral | undefined
+				const peripheralInfo = bridgeStatus.peripherals[unprotectString<PeripheralId>(peripheralId)] as
+					| KnownPeripheral
+					| undefined
 				if (!peripheralInfo) continue
 				newDisabledPeripherals.push({
 					bridgeId,
@@ -113,7 +120,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 					)
 				})}
 				{allPeripherals.map(([peripheralId, peripheral]) => {
-					const bridge = appStore.bridgeStatuses[peripheral.bridgeId]
+					const bridge = appStore.bridgeStatuses.get(peripheral.bridgeId)
 
 					const bridgeIsConnected = bridge && bridge.connected
 
@@ -171,7 +178,9 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 					<PeripheralSettings
 						bridgeId={submenuPopover.bridgeId}
 						deviceId={submenuPopover.deviceId}
-						peripheral={appStore.peripherals[`${submenuPopover.bridgeId}-${submenuPopover.deviceId}`]}
+						peripheral={appStore.peripherals.get(
+							getPeripheralId(submenuPopover.bridgeId, submenuPopover.deviceId)
+						)}
 						onDisconnect={closeSubMenu}
 					/>
 				) : null}

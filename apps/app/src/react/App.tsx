@@ -49,6 +49,8 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
 import { TextBtn } from './components/inputs/textBtn/TextBtn'
 import { HiOutlineX } from 'react-icons/hi'
+import { protectString } from '@shared/models'
+import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -267,8 +269,8 @@ export const App = observer(function App() {
 			const activeKeys = sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
 				return {
 					fullIdentifier: `keyboard-${code}`,
-					bridgeId: '',
-					deviceId: `keyboard`,
+					bridgeId: protectString(''),
+					deviceId: PERIPHERAL_KEYBOARD,
 					deviceName: '',
 					identifier: sorensen.getKeyForCode(code),
 				}

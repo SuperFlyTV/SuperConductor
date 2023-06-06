@@ -1,7 +1,14 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 import classNames from 'classnames'
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo_StreamDeck, AttentionLevel } from '@shared/api'
+import {
+	KeyDisplay,
+	KeyDisplayTimeline,
+	PeripheralInfo_StreamDeck,
+	AttentionLevel,
+	BridgeId,
+	PeripheralId,
+} from '@shared/api'
 import { stringToRGB, RGBToString, assertNever, getPeripheralId } from '@shared/lib'
 import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral'
@@ -15,10 +22,11 @@ import {
 	prepareTriggersAreaMap,
 } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
 import { TimelineDisplay } from './TimelineDisplay'
+import { protectString, unprotectString } from '@shared/models'
 
 export const StreamdeckSettings: React.FC<{
-	bridgeId: string
-	deviceId: string
+	bridgeId: BridgeId
+	deviceId: PeripheralId
 	peripheral: PeripheralStatus
 	definingArea: DefiningArea | null
 }> = observer(function StreamdeckSettings({ bridgeId, deviceId, peripheral, definingArea }) {
@@ -34,7 +42,7 @@ export const StreamdeckSettings: React.FC<{
 		(triggers: ActiveTriggers) => {
 			const newPressedKeys: { [fullIdentifier: string]: true } = {}
 			for (const trigger of triggers) {
-				if (`${trigger.bridgeId}-${trigger.deviceId}` === peripheralId) {
+				if (getPeripheralId(trigger.bridgeId, trigger.deviceId) === peripheralId) {
 					newPressedKeys[trigger.fullIdentifier] = true
 				}
 			}
@@ -69,7 +77,7 @@ export const StreamdeckSettings: React.FC<{
 
 			const identifier = `${iKey}`
 			const fullIdentifier = `${peripheralId}-${identifier}`
-			const deviceId = peripheralId.replace(`${bridgeId}-`, '')
+			const deviceId: PeripheralId = protectString(unprotectString(peripheralId).replace(`${bridgeId}-`, ''))
 			const buttonActions = store.rundownsStore.allButtonActions.get(fullIdentifier) ?? []
 
 			const trigger: ActiveTrigger = {

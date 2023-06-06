@@ -21,10 +21,12 @@ import { ProjectContext } from '../../../../contexts/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { shortID } from '../../../../../lib/util'
 import { getDefaultDeviceName } from '../../../../../lib/TSRMappings'
+import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 interface INewDeviceDialogProps {
 	open: boolean
-	onAccepted: (deviceId: string) => void
+	onAccepted: (deviceId: TSRDeviceId) => void
 	onDiscarded: () => void
 	bridge: Bridge
 }
@@ -142,11 +144,12 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					return
 			}
 
-			const newDeviceId = shortID()
+			const newDeviceIdStr = shortID()
+			const newDeviceId = protectString<TSRDeviceId>(newDeviceIdStr)
 
 			const editedDevices = {
 				...bridge.settings.devices,
-				[newDeviceId]: newDevice,
+				[newDeviceIdStr]: newDevice,
 			}
 			const editedBridge: Bridge = {
 				...bridge,
@@ -159,11 +162,11 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 				...project,
 				bridges: {
 					...project.bridges,
-					[editedBridge.id]: editedBridge,
+					[unprotectString<BridgeId>(editedBridge.id)]: editedBridge,
 				},
 				deviceNames: {
 					...project.deviceNames,
-					[newDeviceId]: getDefaultDeviceName(newDeviceType),
+					[newDeviceIdStr]: getDefaultDeviceName(newDeviceType),
 				},
 			}
 

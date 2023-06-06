@@ -7,7 +7,7 @@ import * as cheerio from 'cheerio'
 
 import { CasparCG, Config } from 'casparcg-connection'
 import got from 'got'
-import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString } from '@shared/models'
+import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString, TSRDeviceId } from '@shared/models'
 import { getResourceIdFromResource, literal } from '@shared/lib'
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -19,7 +19,7 @@ const recursiveReadDirAsync = util.promisify(recursiveReadDir)
 export async function addTemplatesToResourcesFromCasparCG(
 	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
-	deviceId: string
+	deviceId: TSRDeviceId
 ): Promise<void> {
 	const res = await casparCG.tls()
 	const templatesList = res.response.data as {
@@ -48,7 +48,7 @@ export async function addTemplatesToResourcesFromCasparCG(
 export async function addTemplatesToResourcesFromCasparCGMediaScanner(
 	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
-	deviceId: string
+	deviceId: TSRDeviceId
 ): Promise<boolean> {
 	let jsonData: MediaScannerTemplateData | null = null
 
@@ -70,7 +70,7 @@ export async function addTemplatesToResourcesFromCasparCGMediaScanner(
 export async function addTemplatesToResourcesFromDisk(
 	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
-	deviceId: string
+	deviceId: TSRDeviceId
 ): Promise<boolean> {
 	// If CasparCG is running locally, we could try reading the template files manually.
 	if (casparCG.host === '127.0.0.1' || casparCG.host === 'localhost') {
@@ -197,7 +197,7 @@ interface MediaScannerTemplateDataTemplate {
 function populateResources(
 	resources: Map<ResourceId, ResourceAny>,
 	jsonData: MediaScannerTemplateData,
-	deviceId: string
+	deviceId: TSRDeviceId
 ): void {
 	for (const template of jsonData.templates) {
 		const newResource = literal<CasparCGTemplate>({

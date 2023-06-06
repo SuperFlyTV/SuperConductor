@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material'
-import { KnownPeripheral } from '@shared/api'
+import { BridgeId, KnownPeripheral, PeripheralId } from '@shared/api'
 import React, { useCallback, useContext } from 'react'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
@@ -7,10 +7,11 @@ import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 
 import './style.scss'
 import { DeviceIcon } from '../../../pages/homePage/deviceIcon/DeviceIcon'
+import { unprotectString } from '@shared/models'
 
 export interface DisabledPeripheralInfo {
-	bridgeId: string
-	deviceId: string
+	bridgeId: BridgeId
+	deviceId: PeripheralId
 	info: KnownPeripheral
 }
 
@@ -25,7 +26,10 @@ export const DisabledPeripheralsSettings: React.FC<{
 	const toggleManualConnect = useCallback(
 		(peripheral?: DisabledPeripheralInfo) => {
 			if (!peripheral) return
-			const peripheralSettings = project.bridges[peripheral.bridgeId].settings.peripherals[peripheral.deviceId]
+			const peripheralSettings =
+				project.bridges[unprotectString<BridgeId>(peripheral.bridgeId)].settings.peripherals[
+					unprotectString<PeripheralId>(peripheral.deviceId)
+				]
 			peripheralSettings.manualConnect = !peripheralSettings.manualConnect
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},

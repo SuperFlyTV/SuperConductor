@@ -12,6 +12,7 @@ import './style.scss'
 import { BridgeDevice } from '../../../../../../models/project/Bridge'
 import { useMemoComputedObject } from '../../../../../mobx/lib'
 import { literal } from '@shared/lib'
+import { protectString } from '@shared/models'
 
 export const LayerName: React.FC<{
 	rundownId: string
@@ -34,7 +35,7 @@ export const LayerName: React.FC<{
 	const { enqueueSnackbar } = useSnackbar()
 	const mapping = mappings[layerId] as Mapping | undefined
 	const name = mapping?.layerName ?? layerId
-	const deviceStatus: BridgeDevice | undefined = mapping ? appStore.allDeviceStatuses[mapping.deviceId] : undefined
+	const deviceStatus = mapping ? appStore.allDeviceStatuses.get(protectString(mapping.deviceId)) : undefined
 
 	const onSelect = (selectedLayerId: string) => {
 		const partTimeline = store.rundownsStore.getPartTimeline(partId)
@@ -70,7 +71,7 @@ export const LayerName: React.FC<{
 			const allMappings0: LayersDropdownLayer[] = getCompatibleMappings(mappings, objectsOnThisLayer)
 				// Map to a simple readable format
 				.map((m) => {
-					const deviceStatus = appStore.allDeviceStatuses[m.mapping.deviceId] as BridgeDevice | undefined
+					const deviceStatus = appStore.allDeviceStatuses.get(protectString(m.mapping.deviceId))
 
 					return literal<LayersDropdownLayer>({
 						id: m.layerId,

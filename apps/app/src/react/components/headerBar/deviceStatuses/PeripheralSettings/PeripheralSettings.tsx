@@ -13,11 +13,13 @@ import { StreamdeckSettings } from './streamdeck'
 import { XKeysSettings } from './xkeys'
 import { MIDISettings } from './midi'
 import { TrashBtn } from '../../../../components/inputs/TrashBtn'
+import { BridgeId, PeripheralId } from '@shared/api'
+import { unprotectString } from '@shared/models'
 
 export const PeripheralSettings: React.FC<{
-	bridgeId: string
-	deviceId: string
-	peripheral: PeripheralStatus
+	bridgeId: BridgeId
+	deviceId: PeripheralId
+	peripheral: PeripheralStatus | undefined
 	onDisconnect: () => void
 }> = observer(function PeripheralSettings({ bridgeId, deviceId, peripheral, onDisconnect }) {
 	const { handleError } = useContext(ErrorHandlerContext)
@@ -53,18 +55,19 @@ export const PeripheralSettings: React.FC<{
 		serverAPI.finishDefiningArea().catch(handleError)
 	}, [handleError, serverAPI])
 
-	const bridge = project.bridges[bridgeId]
+	const bridge = project.bridges[unprotectString<BridgeId>(bridgeId)]
 
 	const disconnect = useCallback(() => {
-		bridge.settings.peripherals[deviceId].manualConnect = false
+		bridge.settings.peripherals[unprotectString<PeripheralId>(deviceId)].manualConnect = false
 		serverAPI.updateProject({ id: project.id, project }).catch(handleError)
 		onDisconnect()
 	}, [bridge.settings.peripherals, deviceId, handleError, onDisconnect, project, serverAPI])
 
 	if (!bridge) return null
 
-	const peripheralSettings = bridge.clientSidePeripheralSettings[deviceId]
+	const peripheralSettings = bridge.clientSidePeripheralSettings[unprotectString<PeripheralId>(deviceId)]
 
+	if (!peripheral) return null
 	return (
 		<div className="peripheral-settings">
 			<div>Name: {peripheral.info.name}</div>

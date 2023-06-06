@@ -19,6 +19,7 @@ import {
 	VMixMetadata,
 	MetadataAny,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -30,7 +31,7 @@ export class VMixSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
 		this.vmix = new VMix()
 
 		this.vmix.on('connected', () => {
@@ -40,11 +41,11 @@ export class VMixSideload implements SideLoadDevice {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection disconnected`)
 		})
 
-		if (deviceOptions.options?.host && deviceOptions.options?.port) {
+		if (this.deviceOptions.options?.host && this.deviceOptions.options?.port) {
 			this.vmix
 				.connect({
-					host: deviceOptions.options.host,
-					port: deviceOptions.options.port,
+					host: this.deviceOptions.options.host,
+					port: this.deviceOptions.options.port,
 				})
 				.catch((error) => this.log.error('VMix Connect error: ' + stringifyError(error)))
 		}

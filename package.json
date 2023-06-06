@@ -47,7 +47,7 @@
 		"serialport": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
 	},
 	"devDependencies": {
-		"@sofie-automation/code-standard-preset": "^2.2.0",
+		"@sofie-automation/code-standard-preset": "^2.4.7",
 		"@types/jest": "^29.4.0",
 		"@types/node": "^18.11.9",
 		"eslint-plugin-react": "^7.31.10",

@@ -7,11 +7,11 @@ export interface Project {
 
 	mappings: Mappings
 	bridges: {
-		[bridgeId: string]: Bridge
+		[BridgeId: string]: Bridge
 	}
 	analogInputSettings: AnalogInputSettings
 
-	deviceNames: { [deviceId: string]: string }
+	deviceNames: { [TSRDeviceId: string]: string }
 
 	settings: Settings
 

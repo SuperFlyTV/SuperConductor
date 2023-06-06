@@ -8,6 +8,8 @@ import { shortID } from './util'
 import { Part } from '../models/rundown/Part'
 import { RepeatingType } from './timeLib'
 import { AppData } from '../models/App/AppData'
+import { unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 export function getDefaultAppData(currentVersion: string): AppData {
 	return {
@@ -130,7 +132,7 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		},
 
 		bridges: {
-			[INTERNAL_BRIDGE_ID]: {
+			[unprotectString<BridgeId>(INTERNAL_BRIDGE_ID)]: {
 				id: INTERNAL_BRIDGE_ID,
 				name: 'Internal bridge',
 				outgoing: false,

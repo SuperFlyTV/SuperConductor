@@ -24,7 +24,7 @@ import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
 import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
-import { AtemMetadata, MetadataType } from '@shared/models'
+import { AtemMetadata, MetadataType, TSRDeviceId, protectString } from '@shared/models'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../../mobx/store'
 
@@ -69,9 +69,11 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TimelineObjAtemAny[]; onSa
 
 		const mappings = store.projectStore.project.mappings
 		const firstLayer = objs[0]?.layer
-		const firstDeviceId = mappings[firstLayer]?.deviceId
+		const firstDeviceId = protectString<TSRDeviceId>(mappings[firstLayer]?.deviceId)
+
 		const allTimelineObjsHaveSameDeviceId =
-			firstDeviceId && objs.every((obj) => mappings[obj.layer]?.deviceId === firstDeviceId)
+			firstDeviceId &&
+			objs.every((obj) => protectString<TSRDeviceId>(mappings[obj.layer]?.deviceId) === firstDeviceId)
 		let deviceMetadata: AtemMetadata | null = null
 		if (allTimelineObjsHaveSameDeviceId) {
 			const md = store.resourcesAndMetadataStore.getMetadata(firstDeviceId)

@@ -1,9 +1,10 @@
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import * as MIDI from '@julusian/midi'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { protectString } from '@shared/models'
 
-export type DevicesMap = Map<string, { port: number; name: string }>
+export type DevicesMap = Map<PeripheralId, { port: number; name: string }>
 
 /** An interval (ms) for how fast the keys should flash, when flashing Fast */
 const FLASH_FAST = 250
@@ -19,7 +20,7 @@ export class PeripheralMIDI extends Peripheral {
 		}
 		PeripheralMIDI.Watching = true
 
-		let lastSeenDevices: DevicesMap = new Map<string, { port: number; name: string }>()
+		let lastSeenDevices: DevicesMap = new Map<PeripheralId, { port: number; name: string }>()
 
 		const Input = new MIDI.Input()
 
@@ -29,10 +30,10 @@ export class PeripheralMIDI extends Peripheral {
 			const inputCount = Input.getPortCount()
 
 			// Build the map of IDs
-			const devices: DevicesMap = new Map<string, { port: number; name: string }>()
+			const devices: DevicesMap = new Map<PeripheralId, { port: number; name: string }>()
 			for (let i = 0; i < inputCount; i++) {
 				const name = Input.getPortName(i)
-				const id = `${i}: ${name}`
+				const id = protectString<PeripheralId>(`${i}: ${name}`)
 				devices.set(id, { port: i, name })
 			}
 
@@ -111,7 +112,7 @@ export class PeripheralMIDI extends Peripheral {
 		}
 	>()
 
-	constructor(log: LoggerLike, id: string, portIndexString: string) {
+	constructor(log: LoggerLike, id: PeripheralId, portIndexString: string) {
 		super(log, id)
 		this.portIndex = parseInt(portIndexString, 10)
 	}

@@ -7,12 +7,13 @@ import { DeviceItemContent } from './DeviceItemContent'
 import { DeviceItemHeader } from './DeviceItemHeader'
 import { getDeviceName } from '../../../../../lib/util'
 import { literal } from '@shared/lib'
+import { TSRDeviceId, protectString, unprotectStringArray } from '@shared/models'
 
 export const DevicesList: React.FC<{
 	bridge: Bridge
 	devices: BridgeStatus['devices']
 	project: Project
-	newlyCreatedDeviceId: string | undefined
+	newlyCreatedDeviceId: TSRDeviceId | undefined
 }> = observer(function DevicesList(props) {
 	const devices: BridgeStatus['devices'] = {}
 	for (const deviceId of Object.keys(props.bridge.settings.devices)) {
@@ -36,7 +37,7 @@ export const DevicesList: React.FC<{
 	return (
 		<div className="devices-list">
 			<ScList
-				openByDefault={props.newlyCreatedDeviceId ? [props.newlyCreatedDeviceId] : []}
+				openByDefault={unprotectStringArray(props.newlyCreatedDeviceId ? [props.newlyCreatedDeviceId] : [])}
 				list={Object.entries(devices)
 					/**
 					 * Temporary fix - required because props.devices and props.bridge.settings.device
@@ -46,14 +47,15 @@ export const DevicesList: React.FC<{
 					.filter(([id]) => {
 						return props.bridge.settings.devices[id]
 					})
-					.map(([deviceId, device]) => {
+					.map(([deviceId0, device]) => {
+						const deviceId = protectString<TSRDeviceId>(deviceId0)
 						const deviceName = getDeviceName(props.project, deviceId)
 
 						return {
-							id: deviceId,
+							id: deviceId0,
 							header: (
 								<DeviceItemHeader
-									key={deviceId}
+									key={deviceId0}
 									bridge={props.bridge}
 									deviceId={deviceId}
 									device={device}
@@ -62,7 +64,7 @@ export const DevicesList: React.FC<{
 							),
 							content: (
 								<DeviceItemContent
-									key={deviceId}
+									key={deviceId0}
 									bridge={props.bridge}
 									deviceId={deviceId}
 									device={device}

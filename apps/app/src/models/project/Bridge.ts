@@ -1,9 +1,10 @@
-import { KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
+import { BridgeId, KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
 import { PeripheralArea } from './Peripheral'
+import { protectString } from '@shared/models'
 
 export interface Bridge {
-	id: string
+	id: BridgeId
 	name: string
 
 	outgoing: boolean
@@ -12,16 +13,16 @@ export interface Bridge {
 
 	settings: {
 		devices: {
-			[deviceId: string]: DeviceOptionsAny
+			[TSRDeviceId: string]: DeviceOptionsAny
 		}
 		peripherals: {
-			[peripheralId: string]: PeripheralSettingsAny
+			[PeripheralId: string]: PeripheralSettingsAny
 		}
 		autoConnectToAllPeripherals: boolean
 	}
 
 	clientSidePeripheralSettings: {
-		[peripheralId: string]: BridgePeripheralSettings
+		[PeripheralId: string]: BridgePeripheralSettings
 	}
 }
 
@@ -29,11 +30,11 @@ export interface BridgeStatus {
 	connected: boolean
 
 	devices: {
-		[deviceId: string]: BridgeDevice
+		[TSRDeviceId: string]: BridgeDevice
 	}
 
 	peripherals: {
-		[peripheralId: string]: BridgePeripheral
+		[PeripheralId: string]: BridgePeripheral
 	}
 }
 
@@ -53,4 +54,4 @@ export interface BridgePeripheralSettings {
 	}
 }
 
-export const INTERNAL_BRIDGE_ID = '__INTERNAL__'
+export const INTERNAL_BRIDGE_ID = protectString<BridgeId>('__INTERNAL__')

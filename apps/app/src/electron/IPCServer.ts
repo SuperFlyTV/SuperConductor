@@ -30,7 +30,7 @@ import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
 import { Group } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, DeviceType, MappingCasparCG, Mapping } from 'timeline-state-resolver-types'
 import {
 	ActionDescription,
 	IPCServerMethods,
@@ -42,7 +42,15 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { isProtectedString, ResourceAny, ResourceId, ResourceType } from '@shared/models'
+import {
+	isProtectedString,
+	protectString,
+	ResourceAny,
+	ResourceId,
+	ResourceType,
+	TSRDeviceId,
+	unprotectString,
+} from '@shared/models'
 import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
@@ -61,7 +69,7 @@ import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea } from '../models/project/Peripheral'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { LoggerLike, LogLevel } from '@shared/api'
+import { BridgeId, LoggerLike, LogLevel, PeripheralId } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
@@ -2046,7 +2054,7 @@ export class IPCServer
 					if (timelineObj.obj.layer === arg.mappingId) {
 						const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
 
-						let deviceId: string | undefined
+						let deviceId: TSRDeviceId | undefined
 						const resource = this.storage.getResource(resourceId)
 						if (resource) {
 							deviceId = resource.deviceId
@@ -2057,7 +2065,7 @@ export class IPCServer
 								if (deviceId) break
 								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
 									if (device.type === timelineObj.obj.content.deviceType) {
-										deviceId = findDeviceId
+										deviceId = protectString<TSRDeviceId>(findDeviceId)
 										break
 									}
 								}
@@ -2113,16 +2121,19 @@ export class IPCServer
 		}
 	}
 
-	async addPeripheralArea(arg: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
+	async addPeripheralArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId }): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[arg.bridgeId]
+
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+		let peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (!peripheralSettings) {
-			bridge.clientSidePeripheralSettings[arg.deviceId] = peripheralSettings = {
+			bridge.clientSidePeripheralSettings[deviceIdStr] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2141,9 +2152,9 @@ export class IPCServer
 			undo: async () => {
 				if (newAreaId) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[arg.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -2156,17 +2167,19 @@ export class IPCServer
 		}
 	}
 	async removePeripheralArea(data: {
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 	}): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(data.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(data.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (peripheralSettings) {
@@ -2180,9 +2193,9 @@ export class IPCServer
 			undo: async () => {
 				if (removedArea) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -2195,27 +2208,29 @@ export class IPCServer
 			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
-	async updatePeripheralArea(data: {
-		bridgeId: string
-		deviceId: string
+	async updatePeripheralArea(arg: {
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 		update: Partial<PeripheralArea>
 	}): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
-		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+		const bridge = project.bridges[bridgeIdStr]
+		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (peripheralSettings) {
-			orgArea = deepClone(peripheralSettings.areas[data.areaId])
+			orgArea = deepClone(peripheralSettings.areas[arg.areaId])
 
-			peripheralSettings.areas[data.areaId] = {
-				...peripheralSettings.areas[data.areaId],
-				...data.update,
+			peripheralSettings.areas[arg.areaId] = {
+				...peripheralSettings.areas[arg.areaId],
+				...arg.update,
 			}
 
 			this._saveUpdates({ project })
@@ -2225,14 +2240,14 @@ export class IPCServer
 			undo: async () => {
 				if (orgArea) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
-					peripheralSettings.areas[data.areaId] = orgArea
+					peripheralSettings.areas[arg.areaId] = orgArea
 
 					this._saveUpdates({ project })
 				}
@@ -2243,14 +2258,16 @@ export class IPCServer
 	async assignAreaToGroup(arg: {
 		groupId: string | undefined
 		areaId: string
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 	}): Promise<UndoableResult<void> | undefined> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.getProject()
 
-		const bridge = project.bridges[arg.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) return
-		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2263,9 +2280,9 @@ export class IPCServer
 			undo: async () => {
 				const project = this.storage.getProject()
 
-				const bridge = project.bridges[arg.bridgeId]
+				const bridge = project.bridges[bridgeIdStr]
 				if (!bridge) return
-				const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+				const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 				if (!peripheralSettings) return
 				const area = peripheralSettings.areas[arg.areaId]
 				if (!area) return
@@ -2276,12 +2293,14 @@ export class IPCServer
 			description: ActionDescription.AssignAreaToGroup,
 		}
 	}
-	async startDefiningArea(arg: { bridgeId: string; deviceId: string; areaId: string }): Promise<void> {
+	async startDefiningArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }): Promise<void> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.getProject()
 
-		const bridge = project.bridges[arg.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) return
-		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2435,11 +2454,12 @@ export class IPCServer
 
 		// First, try to pick next free layer:
 		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
+			const mappingDeviceId = protectString(mapping.deviceId)
 			// Is the layer on the same device as the resource?
-			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
+			if (arg.resource && arg.resource.deviceId !== mappingDeviceId) continue
 
 			// Does the layer have a device?
-			if (!allDeviceIds.has(mapping.deviceId)) continue
+			if (!allDeviceIds.has(mappingDeviceId)) continue
 
 			// Is the layer compatible?
 			if (!filterMapping(mapping, arg.obj)) continue
