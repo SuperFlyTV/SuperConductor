@@ -1,7 +1,7 @@
 import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceId } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
@@ -158,7 +158,6 @@ export interface IPCServerMethods {
 		partId: string
 		timelineObjId: string
 		timelineObj: {
-			resourceId?: TimelineObj['resourceId']
 			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}) => void
@@ -186,7 +185,7 @@ export interface IPCServerMethods {
 		partId: string
 
 		layerId: string | null
-		resourceIds: (string | ResourceAny)[]
+		resourceIds: (ResourceId | ResourceAny)[]
 	}) => void
 
 	toggleGroupLoop: (arg: { rundownId: string; groupId: string; value: boolean }) => void

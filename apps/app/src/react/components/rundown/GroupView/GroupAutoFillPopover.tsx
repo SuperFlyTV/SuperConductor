@@ -16,6 +16,7 @@ import { Message } from '../../pages/homePage/message/Message'
 import { HelpButton } from '../../inputs/HelpButton/HelpButton'
 import { Box } from '@mui/material'
 import { CB } from '../../../lib/errorHandling'
+import { unprotectString } from '@shared/models'
 
 export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI }> = observer(
 	function GroupButtonAreaPopover({ rundownId, group }) {
@@ -171,7 +172,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 								<b>Preview of found resources:</b>
 							</div>
 							{matchedResources.slice(0, MAX_VIEW_COUNT).map((r) => {
-								return <div key={r.id}>{r.resource.displayName}</div>
+								return <div key={unprotectString(r.id)}>{r.resource.displayName}</div>
 							})}
 
 							{matchedResources.length - MAX_VIEW_COUNT > 0 && (

@@ -139,7 +139,6 @@ export function makeDevData(): {
 					)[0]
 
 					const obj: TimelineObj = {
-						resourceId: '',
 						obj: literal<TimelineObjCCGMedia>({
 							id: shortID(),
 							enable: {

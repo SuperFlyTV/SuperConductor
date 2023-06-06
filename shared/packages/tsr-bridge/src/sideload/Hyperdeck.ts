@@ -7,15 +7,17 @@ import {
 	HyperdeckRecord,
 	HyperdeckPreview,
 	HyperdeckClip,
+	ResourceId,
+	protectString,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { stringifyError } from '@shared/lib'
+import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class HyperdeckSideload implements SideLoadDevice {
 	private hyperdeck: Hyperdeck
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
 		this.hyperdeck = new Hyperdeck()
@@ -44,10 +46,10 @@ export class HyperdeckSideload implements SideLoadDevice {
 		return this.hyperdeck.disconnect()
 	}
 	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+		const resources: Map<ResourceId, ResourceAny> = new Map()
 
 		if (!this.hyperdeck.connected) {
-			return Object.values(this.cacheResources)
+			return Array.from(this.cacheResources.values())
 		}
 
 		// Play command
@@ -55,10 +57,11 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckPlay = {
 				resourceType: ResourceType.HYPERDECK_PLAY,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_hyperdeck_play`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Play',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Record command
@@ -66,10 +69,11 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckRecord = {
 				resourceType: ResourceType.HYPERDECK_RECORD,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_hyperdeck_record`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Record',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Preview command
@@ -77,13 +81,16 @@ export class HyperdeckSideload implements SideLoadDevice {
 			const resource: HyperdeckPreview = {
 				resourceType: ResourceType.HYPERDECK_PREVIEW,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_hyperdeck_preview`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'HyperDeck Preview',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Enumerate clips
+		// TODO: replace this with the "Device Metadata" system, like how we do ATEM Inputs.
+		// This will be kind of broken until then.
 		{
 			const res: Commands.DiskListCommandResponse = await this.hyperdeck.sendCommand(
 				new Commands.DiskListCommand()
@@ -93,17 +100,18 @@ export class HyperdeckSideload implements SideLoadDevice {
 				const resource: HyperdeckClip = {
 					resourceType: ResourceType.HYPERDECK_CLIP,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_hyperdeck_clip_${clip.clipId}_${clip.name}`,
+					id: protectString(''), // set by getResourceIdFromResource() later
 					displayName: `Clip ${clip.clipId} - ${clip.name}`,
 					slotId: res.slotId,
 					clipId: parseInt(clip.clipId, 10),
 					clipName: clip.name,
 				}
-				resources[resource.id] = resource
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
 			}
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		return Array.from(resources.values())
 	}
 }

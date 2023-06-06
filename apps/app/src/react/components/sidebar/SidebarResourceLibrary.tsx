@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { SidebarContent } from './SidebarContent'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { protectString, ResourceAny, ResourceId, ResourceType, unprotectString } from '@shared/models'
 import { flatten } from '@shared/lib'
 import { ResourceData } from './resource/ResourceData'
 import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
@@ -76,14 +76,15 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		detailedFiltersExpanded,
 	} = computed(() => store.guiStore.resourceLibrary).get()
 	const selectedResource = useMemoComputedObject(
-		() => (selectedResourceIds.length === 1 ? store.resourcesStore.resources[selectedResourceIds[0]] : undefined),
+		() =>
+			selectedResourceIds.length === 1 ? store.resourcesStore.resources.get(selectedResourceIds[0]) : undefined,
 		[selectedResourceIds]
 	)
 	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 
 	const sortedResources = useMemoComputedArray(() => {
-		return Object.values(store.resourcesStore.resources).sort((a, b) => {
+		return Array.from(store.resourcesStore.resources.values()).sort((a, b) => {
 			if (a.deviceId > b.deviceId) return 1
 			if (a.deviceId < b.deviceId) return -1
 
@@ -217,7 +218,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			for (const resource of resources) {
 				allListItems.push({
 					type: 'resource',
-					key: resource.id,
+					key: unprotectString(resource.id),
 					resource,
 				})
 			}
@@ -246,17 +247,22 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				// Add all resources between the last selected and this one:
 
 				const mainIndex = lastSelectedResourceId
-					? allListItems.findIndex((i) => i.type === 'resource' && i.key === lastSelectedResourceId)
+					? allListItems.findIndex(
+							(i) => i.type === 'resource' && i.key === unprotectString(lastSelectedResourceId)
+					  )
 					: 0
-				const thisIndex = allListItems.findIndex((i) => i.type === 'resource' && i.key === resource.id)
+				const thisIndex = allListItems.findIndex(
+					(i) => i.type === 'resource' && i.key === unprotectString(resource.id)
+				)
 				if (mainIndex === -1 || thisIndex === -1) return
 				if (mainIndex < thisIndex) {
 					for (let i = mainIndex + 1; i <= thisIndex; i++) {
 						const item = allListItems[i]
 						if (item.type === 'resource') {
-							const foundIndex = selectedResourceIds.indexOf(item.key)
+							const protectedKey = protectString<ResourceId>(item.key)
+							const foundIndex = selectedResourceIds.indexOf(protectedKey)
 							if (foundIndex === -1) {
-								selectedResourceIds.push(item.key)
+								selectedResourceIds.push(protectedKey)
 							}
 						}
 					}
@@ -264,9 +270,10 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 					for (let i = mainIndex - 1; i >= thisIndex; i--) {
 						const item = allListItems[i]
 						if (item.type === 'resource') {
-							const foundIndex = selectedResourceIds.indexOf(item.key)
+							const protectedKey = protectString<ResourceId>(item.key)
+							const foundIndex = selectedResourceIds.indexOf(protectedKey)
 							if (foundIndex === -1) {
-								selectedResourceIds.push(item.key)
+								selectedResourceIds.push(protectedKey)
 							}
 						}
 					}
@@ -495,7 +502,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 							)
 						} else {
 							return (
-								<React.Fragment key={item.resource.id}>
+								<React.Fragment key={unprotectString(item.resource.id)}>
 									<ResourceLibraryItem
 										resource={item.resource}
 										selected={selectedResourceIds.includes(item.resource.id)}

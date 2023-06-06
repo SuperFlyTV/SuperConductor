@@ -8,7 +8,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData } from '../models/App/AppData'
 import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
-import { ResourceAny } from '@shared/models'
+import { protectString, ResourceAny, ResourceId } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
@@ -51,9 +51,9 @@ export class StorageHandler extends EventEmitter {
 	private rundownsHasChanged = new Set<string>()
 	private emittedRundowns = new Set<string>()
 
-	private resources: { [resourceId: string]: FileResource } = {}
-	private resourcesHasChanged = new Set<string>()
-	private emittedResources = new Set<string>()
+	private resources: Map<ResourceId, FileResource> = new Map()
+	private resourcesHasChanged = new Set<ResourceId>()
+	private emittedResources = new Set<ResourceId>()
 	private resourcesNeedsWrite = false
 
 	private analogInputs: { [fullIdentifier: string]: FileAnalogInput } = {}
@@ -464,31 +464,31 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
-	getResources(): { [id: string]: ResourceAny } {
-		const resources: { [id: string]: ResourceAny } = {}
-		for (const [id, resource] of Object.entries(this.resources)) {
+	getResources(): Map<ResourceId, ResourceAny> {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		for (const [id, resource] of this.resources.entries()) {
 			if (resource.deleted) continue
-			resources[id] = resource.resource
+			resources.set(id, resource.resource)
 		}
 		return resources
 	}
-	getResource(id: string): ResourceAny | undefined {
-		const resource = this.resources[id] as FileResource | undefined
+	getResource(id: ResourceId): ResourceAny | undefined {
+		const resource = this.resources.get(id)
 		if (resource?.deleted) return undefined
 		else return resource?.resource
 	}
-	getResourceIds(deviceId: string): string[] {
-		const ids: string[] = []
-		for (const [id, resource] of Object.entries(this.resources)) {
+	getResourceIds(deviceId: string): ResourceId[] {
+		const ids: ResourceId[] = []
+		for (const [id, resource] of this.resources.entries()) {
 			if (resource.deleted) continue
 			if (resource.resource.deviceId === deviceId) ids.push(id)
 		}
 		return ids
 	}
-	updateResource(id: string, resource: ResourceAny | null): void {
+	updateResource(id: ResourceId, resource: ResourceAny | null): void {
 		if (resource) {
 			// Set added and modified timestamps
-			let existing = this.resources[id] as FileResource | undefined
+			let existing = this.resources.get(id)
 
 			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
 				// It has been deleted for some time
@@ -514,16 +514,17 @@ export class StorageHandler extends EventEmitter {
 			}
 
 			if (hasChanged) {
-				this.resources[id] = {
+				this.resources.set(id, {
 					version: CURRENT_STORAGE_VERSION,
 					id,
 					resource,
-				}
-				this.triggerUpdate({ resources: { [id]: true } })
+				})
+				this.triggerUpdate({ resources: new Set([id]) })
 			}
 		} else {
-			this.resources[id].deleted = Date.now()
-			this.triggerUpdate({ resources: { [id]: true } })
+			const resource = this.resources.get(id)
+			if (resource) resource.deleted = Date.now()
+			this.triggerUpdate({ resources: new Set([id]) })
 		}
 	}
 	/**
@@ -594,7 +595,7 @@ export class StorageHandler extends EventEmitter {
 		project?: true
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
-		resources?: { [resourceId: string]: true }
+		resources?: Set<ResourceId>
 		analogInputs?: { [fullIdentifier: string]: true }
 		gddCache?: true
 	}): void {
@@ -613,7 +614,7 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 		if (updates.resources) {
-			for (const resourceId of Object.keys(updates.resources)) {
+			for (const resourceId of updates.resources.keys()) {
 				this.resourcesHasChanged.add(resourceId)
 				this.resourcesNeedsWrite = true
 			}
@@ -823,16 +824,16 @@ export class StorageHandler extends EventEmitter {
 
 		return rundown
 	}
-	private loadResources(): { [resourceId: string]: FileResource } {
-		let resources: { [resourceId: string]: FileResource } | undefined = {}
+	private loadResources(): Map<ResourceId, FileResource> {
+		let resources: Map<ResourceId, FileResource> | undefined = undefined
 		const resourcesPath = this.resourcesPath(this._projectId)
 		try {
 			const read = fs.readFileSync(resourcesPath, 'utf8')
-			resources = JSON.parse(read)
+			resources = new Map(Object.entries(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				resources = {}
+				resources = undefined
 			} else {
 				throw new Error(`Unable to read Resources file "${resourcesPath}": ${error}`)
 			}
@@ -843,13 +844,14 @@ export class StorageHandler extends EventEmitter {
 			const tmpPath = this.getTmpFilePath(resourcesPath)
 			try {
 				const read = fs.readFileSync(tmpPath, 'utf8')
-				resources = JSON.parse(read)
+				resources = new Map(Object.entries(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
 
 				// If we only have a temporary file, we should write to the real one asap:
 				this.resourcesNeedsWrite = true
 			} catch (error) {
 				if ((error as any)?.code === 'ENOENT') {
 					// not found
+					resources = undefined
 				} else {
 					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
 				}
@@ -862,18 +864,19 @@ export class StorageHandler extends EventEmitter {
 					typeof oldResource === 'object' &&
 					(oldResource.version === undefined || oldResource.resource === undefined)
 				) {
+					const protectedId = protectString<ResourceId>(id)
 					const newResource: FileResource = {
 						version: CURRENT_STORAGE_VERSION,
-						id: id,
+						id: protectedId,
 						resource: oldResource,
 					}
-					resources[id] = newResource
+					resources.set(protectedId, newResource)
 				}
 			}
 		}
 
 		if (!resources) {
-			resources = {}
+			resources = new Map()
 		}
 
 		return resources
@@ -971,7 +974,7 @@ export class StorageHandler extends EventEmitter {
 			for (const fileName of this.emittedRundowns.keys()) {
 				this.rundownsHasChanged.add(fileName)
 			}
-			for (const resourceId of Object.keys(this.resources)) {
+			for (const resourceId of this.resources.keys()) {
 				this.resourcesHasChanged.add(resourceId)
 			}
 			// Also add previously emitted resources, so that removed resources are emitted:
@@ -1013,7 +1016,7 @@ export class StorageHandler extends EventEmitter {
 			else this.emittedRundowns.delete(fileName)
 		}
 		for (const resourceId of this.resourcesHasChanged.keys()) {
-			let resource = this.resources[resourceId] as FileResource | undefined
+			let resource = this.resources.get(resourceId)
 			if (resource && resource.deleted) resource = undefined
 			const emittedResource = resource?.resource ?? null
 			this.emit('resource', resourceId, emittedResource)
@@ -1213,9 +1216,9 @@ export class StorageHandler extends EventEmitter {
 	private cleanUpData() {
 		const GRACE_PERIOD = 1000 * 60 // 1 minute
 		// Remove deleted resources:
-		for (const [resourceId, resource] of Object.entries(this.resources)) {
+		for (const [resourceId, resource] of this.resources.entries()) {
 			if (resource.deleted && Date.now() - resource.deleted > GRACE_PERIOD) {
-				delete this.resources[resourceId]
+				this.resources.delete(resourceId)
 			}
 		}
 	}
@@ -1277,7 +1280,7 @@ interface FileRundown {
 }
 interface FileResource {
 	version: number
-	id: string
+	id: ResourceId
 
 	/**
 	 * Is set when the resource is deleted. [timestamp]

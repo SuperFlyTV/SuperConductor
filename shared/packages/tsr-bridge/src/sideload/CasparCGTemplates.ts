@@ -7,8 +7,8 @@ import * as cheerio from 'cheerio'
 
 import { CasparCG, Config } from 'casparcg-connection'
 import got from 'got'
-import { ResourceAny, ResourceType, CasparCGTemplate } from '@shared/models'
-import { literal } from '@shared/lib'
+import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString } from '@shared/models'
+import { getResourceIdFromResource, literal } from '@shared/lib'
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 const recursiveReadDirAsync = util.promisify(recursiveReadDir)
@@ -17,7 +17,7 @@ const recursiveReadDirAsync = util.promisify(recursiveReadDir)
  * Populates the resource collection using the basic CasparCG TLS command
  */
 export async function addTemplatesToResourcesFromCasparCG(
-	resources: { [id: string]: ResourceAny },
+	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
 	deviceId: string
 ): Promise<void> {
@@ -32,11 +32,12 @@ export async function addTemplatesToResourcesFromCasparCG(
 		const resource: CasparCGTemplate = {
 			resourceType: ResourceType.CASPARCG_TEMPLATE,
 			deviceId: deviceId,
-			id: `${deviceId}_template_${template.name}`,
+			id: protectString(''), // set by getResourceIdFromResource() later
 			...template,
 			displayName: template.name,
 		}
-		resources[resource.id] = resource
+		resource.id = getResourceIdFromResource(resource)
+		resources.set(resource.id, resource)
 	}
 }
 
@@ -45,7 +46,7 @@ export async function addTemplatesToResourcesFromCasparCG(
  * @returns true if succeeded
  */
 export async function addTemplatesToResourcesFromCasparCGMediaScanner(
-	resources: { [id: string]: ResourceAny },
+	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
 	deviceId: string
 ): Promise<boolean> {
@@ -67,7 +68,7 @@ export async function addTemplatesToResourcesFromCasparCGMediaScanner(
  * @returns true if succeeded
  */
 export async function addTemplatesToResourcesFromDisk(
-	resources: { [id: string]: ResourceAny },
+	resources: Map<ResourceId, ResourceAny>,
 	casparCG: CasparCG,
 	deviceId: string
 ): Promise<boolean> {
@@ -194,22 +195,26 @@ interface MediaScannerTemplateDataTemplate {
 	gdd?: any
 }
 function populateResources(
-	resources: { [id: string]: ResourceAny },
+	resources: Map<ResourceId, ResourceAny>,
 	jsonData: MediaScannerTemplateData,
 	deviceId: string
 ): void {
 	for (const template of jsonData.templates) {
-		let resource = resources[template.id] as CasparCGTemplate | undefined
+		const newResource = literal<CasparCGTemplate>({
+			resourceType: ResourceType.CASPARCG_TEMPLATE,
+			deviceId: deviceId,
+			id: protectString(''), // set by getResourceIdFromResource() later
+			name: template.id,
+			size: 0,
+			changed: 0,
+			displayName: template.id,
+		})
+		newResource.id = getResourceIdFromResource(newResource)
+
+		let resource = resources.get(newResource.id) as CasparCGTemplate | undefined
 		if (!resource || resource.resourceType !== ResourceType.CASPARCG_TEMPLATE) {
-			resources[template.id] = resource = literal<CasparCGTemplate>({
-				resourceType: ResourceType.CASPARCG_TEMPLATE,
-				deviceId: deviceId,
-				id: `${deviceId}_template_${template.id}`,
-				name: template.id,
-				size: 0,
-				changed: 0,
-				displayName: template.id,
-			})
+			resources.set(newResource.id, newResource)
+			resource = newResource
 		}
 
 		if (template.error) resource.errorMessage = template.error

@@ -1,7 +1,8 @@
 import { DeviceOptionsTCPSend } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, TCPRequest } from '@shared/models'
+import { protectString, ResourceAny, ResourceId, ResourceType, TCPRequest } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class TCPSendSideload implements SideLoadDevice {
 	constructor(private deviceId: string, _deviceOptions: DeviceOptionsTCPSend, _log: LoggerLike) {}
@@ -12,19 +13,20 @@ export class TCPSendSideload implements SideLoadDevice {
 		// Nothing to cleanup.
 	}
 	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+		const resources: Map<ResourceId, ResourceAny> = new Map()
 
 		// HTTP Request
 		{
 			const resource: TCPRequest = {
 				resourceType: ResourceType.TCP_REQUEST,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_tcp_request`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'TCP Request',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
-		return Object.values(resources)
+		return Array.from(resources.values())
 	}
 }

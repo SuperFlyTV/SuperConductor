@@ -10,7 +10,7 @@ import { AppData } from '../models/App/AppData'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceId, unprotectString } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
@@ -155,7 +155,7 @@ export class SuperConductor {
 			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
 				if (this.shuttingDown) return
 				// Added/Updated:
-				const newResouceIds = new Set<string>()
+				const newResouceIds = new Set<ResourceId>()
 				for (const resource of resources) {
 					newResouceIds.add(resource.id)
 					if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
@@ -346,7 +346,7 @@ export class SuperConductor {
 						const removedParts: Part[] = []
 						let j = -1
 						for (const r of resources) {
-							const partId = `${group.id}_af_${hash(r.resource.id)}`
+							const partId = `${group.id}_af_${hash(unprotectString(r.resource.id))}`
 
 							// Try to find a matching part
 							let foundPart: Part | undefined = undefined
@@ -389,7 +389,6 @@ export class SuperConductor {
 									}
 
 									const timelineObj: TimelineObj = {
-										resourceId: r.resource.id,
 										obj: r.obj,
 										resolved: { instances: [] }, // set later
 									}
@@ -422,7 +421,7 @@ export class SuperConductor {
 						}
 					} else if (group.autoFill.mode === AutoFillMode.APPEND) {
 						for (const r of resources) {
-							const partId = `${group.id}_af_${hash(r.resource.id)}`
+							const partId = `${group.id}_af_${hash(unprotectString(r.resource.id))}`
 
 							const foundPart = group.parts.find((p) => p.id === partId)
 							if (!foundPart) {
@@ -435,7 +434,6 @@ export class SuperConductor {
 								}
 
 								const timelineObj: TimelineObj = {
-									resourceId: r.resource.id,
 									obj: r.obj,
 									resolved: { instances: [] }, // set later
 								}
@@ -495,7 +493,7 @@ export class SuperConductor {
 		// Remove resources of devices we don't have anymore:
 		const project = this.storage.getProject()
 		const deviceIds = listAvailableDeviceIDs(project.bridges)
-		for (const [id, resource] of Object.entries(this.storage.getResources())) {
+		for (const [id, resource] of this.storage.getResources().entries()) {
 			if (!deviceIds.has(resource.deviceId)) {
 				this.storage.updateResource(id, null)
 			}

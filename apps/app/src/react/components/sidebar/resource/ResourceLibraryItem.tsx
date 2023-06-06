@@ -27,7 +27,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 					const storeResources = store.resourcesStore.resources
 					const resources = compact(
 						selectedResourceIds.map((resourceId) => {
-							return storeResources[resourceId]
+							return storeResources.get(resourceId)
 						})
 					)
 					return { type: DragItemTypes.RESOURCE_ITEM, resources }
