@@ -2,7 +2,7 @@ import { IPCClientMethods, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny, ResourceId } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
@@ -22,7 +22,10 @@ export class IPCClient implements IPCClientMethods {
 			updateAppData?: (appData: AppData) => void
 			updateProject?: (project: Project) => void
 			updateRundown?: (fileName: string, rundown: Rundown) => void
-			updateResources?: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
+			updateResourcesAndMetadata?: (
+				resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+				metadata: { [deviceId: string]: MetadataAny | null }
+			) => void
 			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
 			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
@@ -60,8 +63,11 @@ export class IPCClient implements IPCClientMethods {
 	updateRundown(fileName: string, rundown: Rundown): void {
 		this.callbacks.updateRundown?.(fileName, rundown)
 	}
-	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
-		this.callbacks.updateResources?.(resources)
+	updateResourcesAndMetadata(
+		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+		metadata: { [deviceId: string]: MetadataAny | null }
+	): void {
+		this.callbacks.updateResourcesAndMetadata?.(resources, metadata)
 	}
 	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
 		this.callbacks.updateBridgeStatus?.(id, bridgeStatus)

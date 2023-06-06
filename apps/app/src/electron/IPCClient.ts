@@ -1,6 +1,6 @@
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny, ResourceId } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { PeripheralStatus } from '../models/project/Peripheral'
 import { BrowserWindow } from 'electron'
@@ -31,8 +31,11 @@ export class IPCClient implements IPCClientMethods {
 	updateRundown(fileName: string, rundown: Rundown): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateRundown', fileName, rundown)
 	}
-	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
-		this.mainWindow?.webContents.send('callMethod', 'updateResources', resources)
+	updateResourcesAndMetadata(
+		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+		metadata: { [deviceId: string]: MetadataAny | null }
+	): void {
+		this.mainWindow?.webContents.send('callMethod', 'updateResourcesAndMetadata', resources, metadata)
 	}
 	updateBridgeStatus(id: string, status: BridgeStatus | null): void {
 		this.mainWindow?.webContents.send('callMethod', 'updateBridgeStatus', id, status)

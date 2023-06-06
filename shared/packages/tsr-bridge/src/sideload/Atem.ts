@@ -13,6 +13,9 @@ import {
 	AtemSsrcProps,
 	ResourceId,
 	protectString,
+	AtemMetadata,
+	MetadataAny,
+	MetadataType,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -22,6 +25,7 @@ export class AtemSideload implements SideLoadDevice {
 	private atem: Atem
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: AtemMetadata = { metadataType: MetadataType.ATEM, inputs: [] }
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: LoggerLike) {
 		this.atem = new Atem()
@@ -38,17 +42,21 @@ export class AtemSideload implements SideLoadDevice {
 			this.atem.connect(deviceOptions.options.host, deviceOptions.options?.port).catch(log.error)
 		}
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.atem.destroy()
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: AtemMetadata = { metadataType: MetadataType.ATEM, inputs: [] }
 
 		if (this.atem.status !== AtemConnectionStatus.CONNECTED || !this.atem.state) {
-			return Array.from(this.cacheResources.values())
+			return {
+				resources: Array.from(this.cacheResources.values()),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		for (const me of this.atem.state.video.mixEffects) {
@@ -195,7 +203,19 @@ export class AtemSideload implements SideLoadDevice {
 			resources.set(resource.id, resource)
 		}
 
+		for (const input of Object.values(this.atem.state.inputs)) {
+			if (input) {
+				metadata.inputs.push({
+					...input,
+				})
+			}
+		}
+
 		this.cacheResources = resources
-		return Array.from(resources.values())
+		this.cacheMetadata = metadata
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

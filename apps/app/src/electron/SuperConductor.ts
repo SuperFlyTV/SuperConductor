@@ -10,7 +10,7 @@ import { AppData } from '../models/App/AppData'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny, ResourceId, unprotectString } from '@shared/models'
+import { ResourceAny, ResourceId, unprotectString, MetadataAny } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
@@ -47,8 +47,9 @@ export class SuperConductor {
 	bridgeHandler: BridgeHandler
 
 	private shuttingDown = false
-	private resourceUpdatesToSend = new Map<string, ResourceAny | null>()
-	private __triggerBatchSendResourcesTimeout: NodeJS.Timeout | null = null
+	private resourceUpdatesToSend = new Map<ResourceId, ResourceAny | null>()
+	private metadataUpdatesToSend = new Map<string, MetadataAny | null>()
+	private __triggerBatchSendResourcesAndMetadataTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
 		timer: NodeJS.Timer
@@ -102,10 +103,16 @@ export class SuperConductor {
 			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
 			this.triggers.registerGlobalKeyboardTriggers()
 		})
-		this.storage.on('resource', (id: string, resource: ResourceAny | null) => {
+		this.storage.on('resource', (id: ResourceId, resource: ResourceAny | null) => {
 			// Add the resource to the list of resources to send to the client in batches later:
 			this.resourceUpdatesToSend.set(id, resource)
-			this._triggerBatchSendResources()
+			this._triggerBatchSendResourcesAndMetadata()
+			this.triggerHandleAutoFill()
+		})
+		this.storage.on('metadata', (id: string, metadata: MetadataAny | null) => {
+			// Add the metadata to the list of metadatas to send to the client in batches later:
+			this.metadataUpdatesToSend.set(id, metadata)
+			this._triggerBatchSendResourcesAndMetadata()
 			this.triggerHandleAutoFill()
 		})
 		this.storage.on('analogInput', (fullIdentifier: string, analogInput: AnalogInput | null) => {
@@ -152,19 +159,35 @@ export class SuperConductor {
 		})
 
 		this.bridgeHandler = new BridgeHandler(this.log, this.session, this.storage, {
-			updatedResources: (deviceId: string, resources: ResourceAny[]): void => {
+			updatedResourcesAndMetadata: (
+				deviceId: string,
+				resources: ResourceAny[],
+				metadata: MetadataAny | null
+			): void => {
 				if (this.shuttingDown) return
-				// Added/Updated:
-				const newResouceIds = new Set<ResourceId>()
-				for (const resource of resources) {
-					newResouceIds.add(resource.id)
-					if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
-						this.storage.updateResource(resource.id, resource)
+
+				// Resources
+				{
+					// Added/Updated:
+					const newResouceIds = new Set<ResourceId>()
+					for (const resource of resources) {
+						newResouceIds.add(resource.id)
+						if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
+							this.storage.updateResource(resource.id, resource)
+						}
+					}
+					// Removed:
+					for (const id of this.storage.getResourceIds(deviceId)) {
+						if (!newResouceIds.has(id)) this.storage.updateResource(id, null)
 					}
 				}
-				// Removed:
-				for (const id of this.storage.getResourceIds(deviceId)) {
-					if (!newResouceIds.has(id)) this.storage.updateResource(id, null)
+
+				// Metadata
+				{
+					// Added, updated, or removed:
+					if (!_.isEqual(this.storage.getMetadata(deviceId), metadata)) {
+						this.storage.updateMetadata(deviceId, metadata)
+					}
 				}
 			},
 			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {
@@ -276,20 +299,28 @@ export class SuperConductor {
 			}, 1000)
 		}
 	}
-	private _triggerBatchSendResources() {
-		// Send updates of resources in batches to the client.
+	private _triggerBatchSendResourcesAndMetadata() {
+		// Send updates of resources and metadata in batches to the client.
 		// This is done to improve performance,
 		// it turns out that sending a large amount of messages is slowly received by the client.
-		if (!this.__triggerBatchSendResourcesTimeout) {
-			this.__triggerBatchSendResourcesTimeout = setTimeout(() => {
-				this.__triggerBatchSendResourcesTimeout = null
+		if (!this.__triggerBatchSendResourcesAndMetadataTimeout) {
+			this.__triggerBatchSendResourcesAndMetadataTimeout = setTimeout(() => {
+				this.__triggerBatchSendResourcesAndMetadataTimeout = null
 
-				const resourceUpdatesToSend: { id: string; resource: ResourceAny | null }[] = []
+				const resourceUpdatesToSend: { id: ResourceId; resource: ResourceAny | null }[] = []
 				for (const [id, resource] of this.resourceUpdatesToSend.entries()) {
 					resourceUpdatesToSend.push({ id, resource })
 				}
-				if (resourceUpdatesToSend.length) {
-					this.clients.forEach((clients) => clients.ipcClient.updateResources(resourceUpdatesToSend))
+
+				const metadataUpdatesToSend: { [deviceId: string]: MetadataAny | null } = {}
+				for (const [deviceId, metadata] of this.metadataUpdatesToSend.entries()) {
+					metadataUpdatesToSend[deviceId] = metadata
+				}
+
+				if (resourceUpdatesToSend.length || Object.keys(metadataUpdatesToSend).length) {
+					this.clients.forEach((clients) =>
+						clients.ipcClient.updateResourcesAndMetadata(resourceUpdatesToSend, metadataUpdatesToSend)
+					)
 				}
 				this.resourceUpdatesToSend.clear()
 			}, 100)

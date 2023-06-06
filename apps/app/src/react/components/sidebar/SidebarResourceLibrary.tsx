@@ -77,14 +77,16 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	} = computed(() => store.guiStore.resourceLibrary).get()
 	const selectedResource = useMemoComputedObject(
 		() =>
-			selectedResourceIds.length === 1 ? store.resourcesStore.resources.get(selectedResourceIds[0]) : undefined,
+			selectedResourceIds.length === 1
+				? store.resourcesAndMetadataStore.resources.get(selectedResourceIds[0])
+				: undefined,
 		[selectedResourceIds]
 	)
-	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
+	const refreshStatuses = useMemoComputedObject(() => store.resourcesAndMetadataStore.refreshStatuses, [])
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 
 	const sortedResources = useMemoComputedArray(() => {
-		return Array.from(store.resourcesStore.resources.values()).sort((a, b) => {
+		return Array.from(store.resourcesAndMetadataStore.resources.values()).sort((a, b) => {
 			if (a.deviceId > b.deviceId) return 1
 			if (a.deviceId < b.deviceId) return -1
 
@@ -204,7 +206,10 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		},
 		[ipcServer, handleError]
 	)
-	const isAnyDeviceRefreshing = useMemoComputedValue(() => store.resourcesStore.isAnyDeviceRefreshing(), [])
+	const isAnyDeviceRefreshing = useMemoComputedValue(
+		() => store.resourcesAndMetadataStore.isAnyDeviceRefreshing(),
+		[]
+	)
 
 	const allListItems = useMemo(() => {
 		const allListItems: RowItem[] = []

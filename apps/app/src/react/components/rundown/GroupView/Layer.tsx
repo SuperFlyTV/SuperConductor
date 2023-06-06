@@ -93,6 +93,7 @@ export const Layer: React.FC<{
 							msPerPixel={msPerPixel}
 							locked={locked}
 							warnings={warnings}
+							deviceId={mapping?.deviceId}
 						></TimelineObject>
 					)
 				})}

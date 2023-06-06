@@ -1,7 +1,7 @@
 import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
 import { Project } from '../models/project/Project'
-import { ResourceAny, ResourceId } from '@shared/models'
+import { ResourceAny, ResourceId, MetadataAny } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
@@ -238,7 +238,10 @@ export interface IPCClientMethods {
 	updateAppData: (appData: AppData) => void
 	updateProject: (project: Project) => void
 	updateRundown: (fileName: string, rundown: Rundown) => void
-	updateResources: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
+	updateResourcesAndMetadata: (
+		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+		metadata: { [deviceId: string]: MetadataAny }
+	) => void
 	updateBridgeStatus: (id: string, status: BridgeStatus | null) => void
 	updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) => void
 	updatePeripheralTriggers: (peripheralTriggers: ActiveTriggers) => void

@@ -8,7 +8,7 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData } from '../models/App/AppData'
 import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
-import { protectString, ResourceAny, ResourceId } from '@shared/models'
+import { protectString, ResourceAny, ResourceId, MetadataAny } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
@@ -55,6 +55,11 @@ export class StorageHandler extends EventEmitter {
 	private resourcesHasChanged = new Set<ResourceId>()
 	private emittedResources = new Set<ResourceId>()
 	private resourcesNeedsWrite = false
+
+	private metadata: { [deviceId: string]: FileMetadata } = {}
+	private metadataHasChanged = new Set<string>()
+	private emittedMetadata = new Set<string>()
+	private metadataNeedsWrite = false
 
 	private analogInputs: { [fullIdentifier: string]: FileAnalogInput } = {}
 	private analogInputsHasChanged = new Set<string>()
@@ -527,6 +532,54 @@ export class StorageHandler extends EventEmitter {
 			this.triggerUpdate({ resources: new Set([id]) })
 		}
 	}
+
+	getMetadata(deviceId: string): MetadataAny | undefined {
+		const metadata = this.metadata[deviceId] as FileMetadata | undefined
+		if (metadata?.deleted) return undefined
+		else return metadata?.metadata
+	}
+	updateMetadata(deviceId: string, metadata: MetadataAny | null): void {
+		if (metadata) {
+			// Set added and modified timestamps
+			let existing = this.metadata[deviceId] as FileMetadata | undefined
+
+			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
+				// It has been deleted for some time
+				existing = undefined
+			}
+
+			let hasChanged: boolean
+
+			if (existing) {
+				metadata.added = existing.metadata.added
+
+				if (_.isEqual(_.omit(existing.metadata, 'added', 'modified'), _.omit(metadata, 'added', 'modified'))) {
+					// No change
+					hasChanged = false
+				} else {
+					metadata.modified = Date.now()
+					hasChanged = true
+				}
+			} else {
+				metadata.added = Date.now()
+				metadata.modified = Date.now()
+				hasChanged = true
+			}
+
+			if (hasChanged) {
+				this.metadata[deviceId] = {
+					version: CURRENT_STORAGE_VERSION,
+					deviceId,
+					metadata,
+				}
+				this.triggerUpdate({ metadata: { [deviceId]: true } })
+			}
+		} else {
+			this.metadata[deviceId].deleted = Date.now()
+			this.triggerUpdate({ metadata: { [deviceId]: true } })
+		}
+	}
+
 	/**
 	 * This function is intended for developers only.
 	 * When called, it replaces all data with a "large" dataset, which can be used to test the GUI.
@@ -598,6 +651,7 @@ export class StorageHandler extends EventEmitter {
 		resources?: Set<ResourceId>
 		analogInputs?: { [fullIdentifier: string]: true }
 		gddCache?: true
+		metadata?: { [deviceId: string]: true }
 	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
@@ -627,6 +681,12 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.gddCache) {
 			this.gddCacheNeedsWrite = true
+		}
+		if (updates.metadata) {
+			for (const deviceId of Object.keys(updates.metadata)) {
+				this.metadataHasChanged.add(deviceId)
+				this.metadataNeedsWrite = true
+			}
 		}
 
 		if (!this.emitTimeout) {
@@ -1025,6 +1085,16 @@ export class StorageHandler extends EventEmitter {
 			if (emittedResource) this.emittedResources.add(resourceId)
 			else this.emittedResources.delete(resourceId)
 		}
+		for (const deviceId of this.metadataHasChanged.keys()) {
+			let metadata = this.metadata[deviceId] as FileMetadata | undefined
+			if (metadata && metadata.deleted) metadata = undefined
+			const emittedMetadata = metadata?.metadata ?? null
+			this.emit('metadata', deviceId, emittedMetadata)
+
+			this.metadataHasChanged.delete(deviceId)
+			if (emittedMetadata) this.emittedMetadata.add(deviceId)
+			else this.emittedMetadata.delete(deviceId)
+		}
 		for (const fullIdentifier of this.analogInputsHasChanged.keys()) {
 			const analogInput = this.analogInputs[fullIdentifier] as FileAnalogInput | undefined
 
@@ -1221,6 +1291,12 @@ export class StorageHandler extends EventEmitter {
 				this.resources.delete(resourceId)
 			}
 		}
+		// Remove deleted metadata:
+		for (const [deviceId, metadata] of Object.entries(this.metadata)) {
+			if (metadata.deleted && Date.now() - metadata.deleted > GRACE_PERIOD) {
+				delete this.metadata[deviceId]
+			}
+		}
 	}
 
 	private rundownsDir(projectId: string): string {
@@ -1292,6 +1368,16 @@ interface FileAnalogInput {
 	version: number
 
 	analogInput: AnalogInput
+}
+interface FileMetadata {
+	version: number
+	deviceId: string
+
+	/**
+	 * Is set when the metadata is deleted. [timestamp]
+	 * Used to keep the metadata around for some time, in case there is a "blip" where a metadata is temporary removed (like on startups). */
+	deleted?: number
+	metadata: MetadataAny
 }
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_STORAGE_VERSION = 0

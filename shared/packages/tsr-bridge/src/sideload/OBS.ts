@@ -12,6 +12,9 @@ import {
 	OBSMute,
 	ResourceId,
 	protectString,
+	MetadataAny,
+	OBSMetadata,
+	MetadataType,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -21,6 +24,7 @@ export class OBSSideload implements SideLoadDevice {
 	private obs: OBSWebsocket
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: OBSMetadata = { metadataType: MetadataType.OBS }
 	private obsConnected = false
 	private obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
 
@@ -44,8 +48,8 @@ export class OBSSideload implements SideLoadDevice {
 
 		this._connect().catch((error) => this.log.error('OBS Connect error: ' + stringifyError(error)))
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.obs.disconnect()
@@ -80,11 +84,15 @@ export class OBSSideload implements SideLoadDevice {
 			})
 		}
 	}
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: OBSMetadata = { metadataType: MetadataType.OBS }
 
 		if (!this.obsConnected) {
-			return Array.from(this.cacheResources.values())
+			return {
+				resources: Array.from(this.cacheResources.values()),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Scenes and Scene Items
@@ -176,6 +184,10 @@ export class OBSSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Array.from(resources.values())
+		this.cacheMetadata = metadata
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

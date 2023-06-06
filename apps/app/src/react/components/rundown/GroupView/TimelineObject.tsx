@@ -30,6 +30,7 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
 	warnings?: string[]
+	deviceId?: string
 }> = observer(function TimelineObject({
 	groupId,
 	partId,
@@ -39,6 +40,7 @@ export const TimelineObject: React.FC<{
 	msPerPixel,
 	locked,
 	warnings,
+	deviceId,
 }) {
 	const ref = useRef<HTMLDivElement>(null)
 
@@ -52,6 +54,8 @@ export const TimelineObject: React.FC<{
 
 	const selectable = !locked
 	const movable = !locked
+
+	const deviceMetadata = deviceId ? store.resourcesAndMetadataStore.getMetadata(deviceId) : null
 
 	const dragData = useRef({
 		msPerPixel,
@@ -192,7 +196,7 @@ export const TimelineObject: React.FC<{
 		widthPercentage = null
 	}
 
-	const description = describeTimelineObject(obj)
+	const description = describeTimelineObject(obj, deviceMetadata)
 
 	useEffect(() => {
 		const onKey = () => {

@@ -1,6 +1,6 @@
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, MetadataAny } from '@shared/models'
 
 export interface SideLoadDevice {
-	refreshResources: () => Promise<ResourceAny[]>
+	refreshResourcesAndMetadata: () => Promise<{ resources: ResourceAny[]; metadata: MetadataAny }>
 	close: () => Promise<void>
 }

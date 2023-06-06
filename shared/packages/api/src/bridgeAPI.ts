@@ -1,4 +1,4 @@
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny } from '@shared/models'
 import { AnalogValue, KnownPeripheral, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
@@ -11,7 +11,7 @@ export namespace BridgeAPI {
 			| Status
 			| DeviceStatus
 			| DeviceRemoved
-			| UpdatedResources
+			| UpdatedResourcesAndMetadata
 			| TimelineIds
 			| PeripheralStatus
 			| PeripheralTrigger
@@ -47,10 +47,11 @@ export namespace BridgeAPI {
 			type: 'deviceRemoved'
 			deviceId: string
 		}
-		export interface UpdatedResources extends MessageBase {
-			type: 'updatedResources'
+		export interface UpdatedResourcesAndMetadata extends MessageBase {
+			type: 'updatedResourcesAndMetadata'
 			deviceId: string
 			resources: ResourceAny[]
+			metadata: MetadataAny
 		}
 		export interface TimelineIds extends MessageBase {
 			type: 'timelineIds'

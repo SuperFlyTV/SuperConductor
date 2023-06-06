@@ -1,6 +1,15 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia, ResourceId, protectString } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	CasparCGMedia,
+	ResourceId,
+	protectString,
+	MetadataAny,
+	CasparCGMetadata,
+	MetadataType,
+} from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import {
@@ -14,6 +23,7 @@ export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
 	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
 		this.ccg = new CasparCG({
@@ -28,18 +38,22 @@ export class CasparCGSideload implements SideLoadDevice {
 			},
 		})
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.ccg.disconnect()
 	}
 
-	private async _refreshResources() {
+	private async _refreshResourcesAndMetadata() {
 		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
 		if (!this.ccg.connected) {
-			return Array.from(this.cacheResources.values())
+			return {
+				resources: Array.from(this.cacheResources.values()),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Temporary fix for when there are MANY items, to avoid out-of-memory when loading too many thumbnails..
@@ -117,6 +131,10 @@ export class CasparCGSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Array.from(resources.values())
+		this.cacheMetadata = metadata
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

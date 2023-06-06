@@ -56,7 +56,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 	onSave: OnSave
 }> = observer(function EditTimelineObjCasparCGAny({ objs, resourceIds, onSave: onSave0 }) {
-	const allResources = store.resourcesStore.resources
+	const allResources = store.resourcesAndMetadataStore.resources
 	const mappings = store.projectStore.project.mappings
 
 	let settings: JSX.Element = <></>
@@ -2107,7 +2107,7 @@ const CasparEditTemplateData: React.FC<{
 
 	const resources: ResourceAny[] = []
 	for (const resourceId of resourceIds) {
-		const resource = computed(() => store.resourcesStore.getResource(resourceId)).get()
+		const resource = computed(() => store.resourcesAndMetadataStore.getResource(resourceId)).get()
 		if (resource) resources.push(resource)
 	}
 

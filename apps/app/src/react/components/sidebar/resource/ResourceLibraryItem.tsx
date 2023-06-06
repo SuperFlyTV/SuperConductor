@@ -24,7 +24,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 				// If this resource is a selected resource, drag all selected resources.
 				// otherwise, drag just this resource.
 				if (selectedResourceIds.includes(resource.id)) {
-					const storeResources = store.resourcesStore.resources
+					const storeResources = store.resourcesAndMetadataStore.resources
 					const resources = compact(
 						selectedResourceIds.map((resourceId) => {
 							return storeResources.get(resourceId)

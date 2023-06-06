@@ -15,7 +15,7 @@ import { StorageHandler } from './storageHandler'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { Datastore, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
 import { AnalogInput } from '../models/project/AnalogInput'
 
@@ -295,7 +295,7 @@ export class BridgeHandler {
 }
 
 interface BridgeConnectionCallbacks {
-	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
+	updatedResourcesAndMetadata: (deviceId: string, resources: ResourceAny[], metadata: MetadataAny | null) => void
 	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
 	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
 }
@@ -455,7 +455,7 @@ abstract class AbstractBridgeConnection {
 
 		delete bridgeStatus.devices[deviceId]
 
-		this.callbacks.updatedResources(deviceId, [])
+		this.callbacks.updatedResourcesAndMetadata(deviceId, [], null)
 		this.session.updateBridgeStatus(this.bridgeId, bridgeStatus)
 	}
 	protected _onPeripheralStatus(deviceId: string, info: PeripheralInfo, status: 'connected' | 'disconnected') {
@@ -504,8 +504,8 @@ abstract class AbstractBridgeConnection {
 			if (this.onDeviceStatus) this.onDeviceStatus(msg.deviceId, msg.ok, msg.message)
 		} else if (msg.type === 'deviceRemoved') {
 			this.onDeviceRemoved(msg.deviceId)
-		} else if (msg.type === 'updatedResources') {
-			this.callbacks.updatedResources(msg.deviceId, msg.resources)
+		} else if (msg.type === 'updatedResourcesAndMetadata') {
+			this.callbacks.updatedResourcesAndMetadata(msg.deviceId, msg.resources, msg.metadata)
 		} else if (msg.type === 'timelineIds') {
 			this._syncTimelineIds(msg.timelineIds)
 		} else if (msg.type === 'PeripheralStatus') {
