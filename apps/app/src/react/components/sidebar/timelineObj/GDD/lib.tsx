@@ -98,10 +98,13 @@ function makePartialDataInner(newData: any, oldData: any, diff: any, diffKey: st
 
 		// No good way to handle arrays..
 		diff[diffKey] = newData
+	} else if (newData === null) {
+		if (oldData !== null) diff[diffKey] = newData
 	} else if (typeof newData === 'object') {
 		if (typeof oldData !== 'object') diff[diffKey] = newData
 
-		const allKeys = new Set([...Object.keys(newData), ...Object.keys(oldData)])
+		const oldKeys = oldData ? Object.keys(oldData) : [] // Handle null
+		const allKeys = new Set([...Object.keys(newData), ...oldKeys])
 
 		const innerDiff: any = {}
 		for (const key of allKeys.keys()) {
@@ -126,6 +129,7 @@ try {
 
 	assert(makePartialData({ a: 1 }, { a: 1, b: 2 }), { b: undefined })
 	assert(makePartialData({ a: 1 }, { a: 1, b: { c: 1 } }), { b: undefined })
+	assert(makePartialData({ a: null }, { a: { b: 1 } }), { a: null })
 } catch (e) {
 	// eslint-disable-next-line no-console
 	console.log(e)
