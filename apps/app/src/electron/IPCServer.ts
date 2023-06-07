@@ -1897,7 +1897,7 @@ export class IPCServer
 		value: boolean
 	}): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
-		const originalValue = Boolean(group.collapsed)
+		const originalValue = group.collapsed ?? false
 
 		group.collapsed = arg.value
 
@@ -1912,6 +1912,33 @@ export class IPCServer
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
+	async toggleAllGroupsCollapse(arg: { rundownId: string; value: boolean }): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
+
+		const originalValues = new Map<string, boolean>(rundown.groups.map((g) => [g.id, g.collapsed ?? false]))
+
+		for (const group of rundown.groups) {
+			group.collapsed = arg.value
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown } = this.getRundown(arg)
+
+				for (const group of rundown.groups) {
+					const originalValue = originalValues.get(group.id)
+					if (originalValue !== undefined) {
+						group.collapsed = originalValue
+					}
+				}
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleAllGroupsCollapse,
 		}
 	}
 	async refreshResources(): Promise<void> {

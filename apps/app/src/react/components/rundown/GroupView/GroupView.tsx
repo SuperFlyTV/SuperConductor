@@ -432,13 +432,23 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		ipcServer
-			.toggleGroupCollapse({
-				rundownId,
-				groupId: group.id,
-				value: !group.collapsed,
-			})
-			.catch(handleError)
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('AltLeft') || pressed.includes('AltRight')) {
+			ipcServer
+				.toggleAllGroupsCollapse({
+					rundownId,
+					value: !group.collapsed,
+				})
+				.catch(handleError)
+		} else {
+			ipcServer
+				.toggleGroupCollapse({
+					rundownId,
+					groupId: group.id,
+					value: !group.collapsed,
+				})
+				.catch(handleError)
+		}
 	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
 
 	// Disable button:

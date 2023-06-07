@@ -183,6 +183,11 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	async toggleGroupCollapse(...args: ServerArgs<'toggleGroupCollapse'>): ServerReturn<'toggleGroupCollapse'> {
 		return this.invokeServerMethod('toggleGroupCollapse', ...args)
 	}
+	async toggleAllGroupsCollapse(
+		...args: ServerArgs<'toggleAllGroupsCollapse'>
+	): ServerReturn<'toggleAllGroupsCollapse'> {
+		return this.invokeServerMethod('toggleAllGroupsCollapse', ...args)
+	}
 	async refreshResources(...args: ServerArgs<'refreshResources'>): ServerReturn<'refreshResources'> {
 		return this.invokeServerMethod('refreshResources', ...args)
 	}
