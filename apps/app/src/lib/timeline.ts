@@ -1,5 +1,5 @@
 import { deepClone, ensureArray } from '@shared/lib'
-import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject } from 'superfly-timeline'
+import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject, TimelineObjectInstance } from 'superfly-timeline'
 import { DeviceType, TimelineObjEmpty, TSRTimeline, TSRTimelineObjBase } from 'timeline-state-resolver-types'
 import {
 	GroupPreparedPlayData,
@@ -360,4 +360,8 @@ function updateTimelineExpression<T extends Expression | undefined>(changedIds: 
 
 		return expr
 	}
+}
+
+export function areInstancesOverlapping(a: TimelineObjectInstance, b: TimelineObjectInstance): boolean {
+	return a.start < (b.end ?? Infinity) && (a.end ?? Infinity) > b.start
 }

@@ -32,6 +32,7 @@ export const TimelineObject: React.FC<{
 	locked?: boolean
 	warnings?: string[]
 	deviceId?: TSRDeviceId
+	overlapping?: boolean
 }> = observer(function TimelineObject({
 	groupId,
 	partId,
@@ -42,6 +43,7 @@ export const TimelineObject: React.FC<{
 	locked,
 	warnings,
 	deviceId,
+	overlapping,
 }) {
 	const ref = useRef<HTMLDivElement>(null)
 
@@ -379,6 +381,7 @@ export const TimelineObject: React.FC<{
 				isAtMinWidth,
 				locked,
 				warning: warnings && warnings.length > 0,
+				overlapping,
 			})}
 			style={{
 				left: `${startPercentage}%`,

@@ -13,6 +13,7 @@ import { useMemoArray } from '../../../mobx/lib'
 import { DropZone } from '../../util/DropZone'
 import { TimelineObject } from './TimelineObject'
 import { protectString } from '@shared/models'
+import { areInstancesOverlapping } from '../../../../lib/timeline'
 
 export const Layer: React.FC<{
 	rundownId: string
@@ -31,6 +32,7 @@ export const Layer: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const project = useContext(ProjectContext)
+
 	const [{ isOver }, drop] = useDrop(
 		// Use case: Drag Resources over this Layer, to insert them as TimelineObjects at this Layer
 		() => ({
@@ -62,8 +64,32 @@ export const Layer: React.FC<{
 
 	// Optimization:
 	const objectsOnLayerWithWarnings = useMemoArray(() => {
+		// Prepare: Find overlapping objects/instances:
+		const overlappingObjects = new Set<string>()
+		for (const objA of objectsOnLayer) {
+			if (overlappingObjects.has(objA.timelineObj.obj.id)) continue
+
+			for (const instanceA of objA.resolved.instances) {
+				if (overlappingObjects.has(objA.timelineObj.obj.id)) continue
+
+				for (const objB of objectsOnLayer) {
+					if (objB === objA) continue
+					if (overlappingObjects.has(objA.timelineObj.obj.id)) continue
+
+					for (const instanceB of objB.resolved.instances) {
+						if (areInstancesOverlapping(instanceA, instanceB)) {
+							overlappingObjects.add(objA.timelineObj.obj.id)
+							overlappingObjects.add(objB.timelineObj.obj.id)
+							break
+						}
+					}
+				}
+			}
+		}
+
 		return objectsOnLayer.map((objectOnLayer) => {
 			const warnings = []
+			const overlapping = overlappingObjects.has(objectOnLayer.timelineObj.obj.id)
 
 			if (typeof mapping !== 'undefined' && !filterMapping(mapping, objectOnLayer.timelineObj.obj)) {
 				warnings.push('This object is not allowed on this layer type.')
@@ -72,9 +98,15 @@ export const Layer: React.FC<{
 			if (typeof mapping === 'undefined') {
 				warnings.push(`The layer "${layerId}" could not be found.`)
 			}
+
+			if (overlapping) {
+				warnings.push('This object overlaps another object on the same layer.')
+			}
+
 			return {
 				objectOnLayer,
 				warnings,
+				overlapping,
 			}
 		})
 	}, [objectsOnLayer])
@@ -82,7 +114,7 @@ export const Layer: React.FC<{
 	return (
 		<DropZone ref={drop} className="layer" isOver={isOver} data-layer-id={layerId}>
 			<div className="layer__content">
-				{objectsOnLayerWithWarnings.map(({ objectOnLayer, warnings }) => {
+				{objectsOnLayerWithWarnings.map(({ objectOnLayer, warnings, overlapping }) => {
 					return (
 						<TimelineObject
 							key={objectOnLayer.timelineObj.obj.id}
@@ -94,6 +126,7 @@ export const Layer: React.FC<{
 							msPerPixel={msPerPixel}
 							locked={locked}
 							warnings={warnings}
+							overlapping={overlapping}
 							deviceId={protectString(mapping?.deviceId)}
 						></TimelineObject>
 					)
