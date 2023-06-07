@@ -237,7 +237,9 @@ export class GuiStore {
 	}
 }
 
-interface GroupSettings {
-	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
-	collapsed?: boolean
-}
+/**
+ * This used to have content but doesn't anymore.
+ * We're keeping it around temporarily just in case it becomes useful again.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface GroupSettings {}

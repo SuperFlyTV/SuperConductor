@@ -1891,6 +1891,29 @@ export class IPCServer
 			description: ActionDescription.ToggleGroupLock,
 		}
 	}
+	async toggleGroupCollapse(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult<void>> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = Boolean(group.collapsed)
+
+		group.collapsed = arg.value
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.collapsed = originalValue
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}

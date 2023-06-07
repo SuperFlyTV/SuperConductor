@@ -40,6 +40,7 @@ export const enum ActionDescription {
 	toggleGroupOneAtATime = 'toggle group one-at-a-time',
 	ToggleGroupDisable = 'toggle group disable',
 	ToggleGroupLock = 'toggle group lock',
+	ToggleGroupCollapse = 'toggle group collapse',
 	NewRundown = 'new rundown',
 	DeleteRundown = 'delete rundown',
 	OpenRundown = 'open rundown',
@@ -194,6 +195,7 @@ export interface IPCServerMethods {
 	toggleGroupOneAtATime: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupDisable: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
+	toggleGroupCollapse: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	refreshResources: () => void
 	refreshResourcesSetAuto: (arg: { interval: number }) => void
 	triggerHandleAutoFill: () => void
