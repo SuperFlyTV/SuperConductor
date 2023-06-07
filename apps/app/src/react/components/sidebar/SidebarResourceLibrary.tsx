@@ -522,15 +522,13 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 										selected={selectedResourceIds.includes(item.resource.id)}
 										onSelect={handleResourceLibraryItemSelect}
 									/>
-									{selectedResource && currentRundownId && item.resource.id === selectedResource.id && (
-										<>
-											<ResourceData resource={item.resource} />
-											{/* <AddToTimeline
-												currentRundownId={currentRundownId}
-												resource={item.resource}
-											/> */}
-										</>
-									)}
+									{selectedResource &&
+										currentRundownId &&
+										item.resource.id === selectedResource.id && (
+											<>
+												<ResourceData resource={item.resource} />
+											</>
+										)}
 								</React.Fragment>
 							)
 						}
