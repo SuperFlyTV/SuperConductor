@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const { ipcRenderer } = window.require('electron')
-import ReactHtmlParser from 'react-html-parser'
 
 import '@fontsource/barlow/300.css'
 import '@fontsource/barlow/400.css'
@@ -116,7 +115,7 @@ export const App = observer(function App() {
 				const message = (
 					<>
 						<div>
-							<p>{ReactHtmlParser(messageStr)}</p>
+							<p dangerouslySetInnerHTML={{ __html: messageStr }}></p>
 							<>
 								{options.displayRestartButton && (
 									<TextBtn
