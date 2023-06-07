@@ -1,5 +1,5 @@
 import { DeviceOptionsAtem } from 'timeline-state-resolver'
-import { Atem, AtemConnectionStatus } from 'atem-connection'
+import { Atem, AtemConnectionStatus, AtemState } from 'atem-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -16,6 +16,7 @@ import {
 	AtemMetadata,
 	MetadataAny,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -27,7 +28,7 @@ export class AtemSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: AtemMetadata = { metadataType: MetadataType.ATEM, inputs: [] }
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsAtem, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsAtem, private log: LoggerLike) {
 		this.atem = new Atem()
 
 		this.atem.on('connected', () => {
@@ -203,7 +204,7 @@ export class AtemSideload implements SideLoadDevice {
 			resources.set(resource.id, resource)
 		}
 
-		for (const input of Object.values(this.atem.state.inputs)) {
+		for (const input of Object.values<AtemState['inputs'][0]>(this.atem.state.inputs)) {
 			if (input) {
 				metadata.inputs.push({
 					...input,

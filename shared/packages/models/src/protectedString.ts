@@ -5,7 +5,12 @@
  * in order to provide stringer typings.
  */
 export interface ProtectedString<T> {
+	/**
+	 * @deprecated This property doesn't actually exist, don't try to use it.
+	 */
 	_protectedType: T
+	// Note: the toString method exists to make linters happy that ProtectedString can be used as a string
+	toString(): string
 }
 export type ProtectedStringProperties<T, K extends keyof T> = {
 	[P in keyof T]: P extends K ? ProtectedString<any> : T[P]
@@ -24,10 +29,12 @@ export function protectStringObject<O extends object, Props extends keyof O>(
 ): ProtectedStringProperties<O, Props> {
 	return obj as any as ProtectedStringProperties<O, Props>
 }
-export function unprotectString(protectedStr: ProtectedString<any>): string
-export function unprotectString(protectedStr: ProtectedString<any> | null): string | null
-export function unprotectString(protectedStr: ProtectedString<any> | undefined): string | undefined
-export function unprotectString(protectedStr: ProtectedString<any> | undefined | null): string | undefined | null {
+export function unprotectString<T extends ProtectedString<any>>(protectedStr: T): string
+export function unprotectString<T extends ProtectedString<any>>(protectedStr: T | null): string | null
+export function unprotectString<T extends ProtectedString<any>>(protectedStr: T | undefined): string | undefined
+export function unprotectString<T extends ProtectedString<any>>(
+	protectedStr: T | undefined | null
+): string | undefined | null {
 	return protectedStr as any as string
 }
 export function unprotectStringArray(protectedStrs: Array<ProtectedString<any>>): string[] {
@@ -62,4 +69,17 @@ export function unprotectObjectArray<T extends object>(obj: T[] | readonly T[]):
 }
 export function isStringOrProtectedString<T extends ProtectedString<any>>(val: unknown): val is string | T {
 	return typeof val === 'string'
+}
+export type SerializedProtectedMap<T extends ProtectedString<any>, V> = Array<[T, V]>
+export function serializeProtectedMap<T extends ProtectedString<any>, V>(map: Map<T, V>): SerializedProtectedMap<T, V> {
+	return Array.from(map.entries())
+}
+export function deserializeProtectedMap<T extends ProtectedString<any>, V>(
+	serialized: SerializedProtectedMap<T, V>
+): Map<T, V> {
+	return new Map<T, V>(serialized)
+}
+
+export function protectTupleArray<T extends ProtectedString<any>, V>(arr: [string, V][]): [T, V][] {
+	return arr as any
 }

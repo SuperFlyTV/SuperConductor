@@ -269,7 +269,6 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 			let useResource: ResourceAny | undefined = undefined
 			// Try to find resource in library:
 			for (const resource of store.resourcesAndMetadataStore.resources.values()) {
-				// for (const resource of Object.values(store.resourcesAndMetadataStore.resources)) {
 				if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 					if (resource.name === item.name) {
 						useResource = resource

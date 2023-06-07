@@ -15,6 +15,7 @@ import {
 	MetadataAny,
 	OBSMetadata,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -28,7 +29,7 @@ export class OBSSideload implements SideLoadDevice {
 	private obsConnected = false
 	private obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsOBS, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsOBS, private log: LoggerLike) {
 		this.obs = new OBSWebsocket()
 
 		this.obs.on('ConnectionOpened', () => {

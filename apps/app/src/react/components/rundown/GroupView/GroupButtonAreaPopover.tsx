@@ -8,6 +8,9 @@ import { store } from '../../../mobx/store'
 import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral'
 import { useMemoComputedObject } from '../../../mobx/lib'
 import { getPeripheralId } from '@shared/lib'
+import { BridgeId, PeripheralId } from '@shared/api'
+import { protectString } from '@shared/models'
+import { Bridge, BridgePeripheralSettings } from '../../../../models/project/Bridge'
 
 export const GroupButtonAreaPopover: React.FC<{ group: GroupGUI }> = observer(function GroupButtonAreaPopover({
 	group,
@@ -19,17 +22,22 @@ export const GroupButtonAreaPopover: React.FC<{ group: GroupGUI }> = observer(fu
 
 	const allAreas = useMemoComputedObject(() => {
 		const allAreas0: {
-			bridgeId: string
-			deviceId: string
+			bridgeId: BridgeId
+			deviceId: PeripheralId
 			areaId: string
 			area: PeripheralArea
 			peripheralStatus: PeripheralStatus | undefined
 		}[] = []
-		for (const [bridgeId, bridge] of Object.entries(project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
-				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+		for (const [bridgeId0, bridge] of Object.entries<Bridge>(project.bridges)) {
+			const bridgeId = protectString<BridgeId>(bridgeId0)
+			for (const [deviceId0, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+				bridge.clientSidePeripheralSettings
+			)) {
+				const deviceId = protectString<PeripheralId>(deviceId0)
+
+				for (const [areaId, area] of Object.entries<PeripheralArea>(peripheralSettings.areas)) {
 					const peripheralId = getPeripheralId(bridgeId, deviceId)
-					const peripheralStatus = appStore.peripherals[peripheralId] as PeripheralStatus | undefined
+					const peripheralStatus = appStore.peripherals.get(peripheralId)
 
 					allAreas0.push({ area, areaId, bridgeId, deviceId, peripheralStatus })
 				}

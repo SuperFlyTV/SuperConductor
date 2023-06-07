@@ -271,7 +271,7 @@ function deepDescribeValues(value: any, inner?: boolean): string {
 	} else if (value === null) {
 		return 'null'
 	} else if (typeof value === 'object') {
-		const values = Object.values(value)
+		const values = Object.values<any>(value)
 		if (values.length === 1) {
 			return deepDescribeValues(values[0])
 		} else {
@@ -387,7 +387,7 @@ function escapeHtml(unsafe: any) {
 }
 function parametersToCasparXML(params: { [key: string]: string }): string {
 	let xml = ''
-	for (const [key, value] of Object.entries(params)) {
+	for (const [key, value] of Object.entries<string>(params)) {
 		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(value)}" /></componentData>`
 	}
 

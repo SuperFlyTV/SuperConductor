@@ -53,45 +53,47 @@ const AnalogInputsPageContent: React.FC = observer(function AnalogInputsPageCont
 		<>
 			<RoundedSection title="Analog Inputs">
 				<ScList
-					list={Object.entries(project.analogInputSettings).map(([datastoreKey, analogInputSetting]) => {
-						const analogInput = analogInputSetting.fullIdentifier
-							? store.analogStore.getAnalogInput(analogInputSetting.fullIdentifier)
-							: undefined
-						return {
-							id: datastoreKey,
-							header: (
-								<div className="analog-input-header-item">
-									<ScListItemLabel title={analogInputSetting.label} />
+					list={Object.entries<AnalogInputSetting>(project.analogInputSettings).map(
+						([datastoreKey, analogInputSetting]) => {
+							const analogInput = analogInputSetting.fullIdentifier
+								? store.analogStore.getAnalogInput(analogInputSetting.fullIdentifier)
+								: undefined
+							return {
+								id: datastoreKey,
+								header: (
+									<div className="analog-input-header-item">
+										<ScListItemLabel title={analogInputSetting.label} />
 
-									<div className="identifier">{analogInput?.activeAnalog.identifier}</div>
+										<div className="identifier">{analogInput?.activeAnalog.identifier}</div>
 
-									{analogInput?.value !== undefined && (
-										<div className="value">
-											Value:
-											<div className="content">{analogInput?.value}</div>
+										{analogInput?.value !== undefined && (
+											<div className="value">
+												Value:
+												<div className="content">{analogInput?.value}</div>
+											</div>
+										)}
+
+										<div className="trash">
+											<TrashBtn
+												className="delete"
+												title={'Delete'}
+												onClick={() => {
+													setShowDeleteConfirmationDialog(datastoreKey)
+												}}
+											/>
 										</div>
-									)}
-
-									<div className="trash">
-										<TrashBtn
-											className="delete"
-											title={'Delete'}
-											onClick={() => {
-												setShowDeleteConfirmationDialog(datastoreKey)
-											}}
-										/>
 									</div>
-								</div>
-							),
-							content: (
-								<AnalogInputSettings
-									project={project}
-									analogInputSetting={analogInputSetting}
-									analogInput={analogInput}
-								/>
-							),
+								),
+								content: (
+									<AnalogInputSettings
+										project={project}
+										analogInputSetting={analogInputSetting}
+										analogInput={analogInput}
+									/>
+								),
+							}
 						}
-					})}
+					)}
 					openByDefault={newlyCreatedKey ? [newlyCreatedKey] : undefined}
 				/>
 				<div className="bottom-controls">

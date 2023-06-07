@@ -1,5 +1,12 @@
 import { deepClone } from '@shared/lib'
-import { ResolvedTimeline, TimelineEnable, Resolver, ResolverCache, TimelineObjectInstance } from 'superfly-timeline'
+import {
+	ResolvedTimeline,
+	TimelineEnable,
+	Resolver,
+	ResolverCache,
+	TimelineObjectInstance,
+	ResolvedTimelineObject,
+} from 'superfly-timeline'
 import { TimelineObj, DEFAULT_DURATION } from '../models/rundown/TimelineObj'
 import { TimelineObjectMove } from '../react/mobx/GuiStore'
 import { getResolvedTimelineTotalDuration, shortID } from './util'
@@ -225,7 +232,7 @@ export function applyMovementToTimeline(args: {
 
 	// Go through all objects, making sure that none of them starts before 0
 	let deltaTimeAdjust = 0
-	for (const obj of Object.values(resolvedTimeline.objects)) {
+	for (const obj of Object.values<ResolvedTimelineObject>(resolvedTimeline.objects)) {
 		for (const instance of obj.resolved.instances) {
 			if (instance.start < 0) {
 				deltaTimeAdjust = Math.max(deltaTimeAdjust, -instance.start)

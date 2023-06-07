@@ -8,13 +8,14 @@ import {
 	MetadataAny,
 	HTTPSendMetadata,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource } from '@shared/lib'
 
 export class HTTPSendSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsHTTPSend, _log: LoggerLike) {}
+	constructor(private deviceId: TSRDeviceId, _deviceOptions: DeviceOptionsHTTPSend, _log: LoggerLike) {}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
 		return this._refreshResourcesAndMetadata()
 	}

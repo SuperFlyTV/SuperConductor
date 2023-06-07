@@ -25,12 +25,12 @@ import { assertNever } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
-	[fileName: string]: {
-		name: string
-		open: boolean
-	}
+	[fileName: string]: IRundownsItem
 }
-
+interface IRundownsItem {
+	name: string
+	open: boolean
+}
 type ArrayElement<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[]
 	? ElementType
 	: never
@@ -476,7 +476,7 @@ export class RundownsStore {
 			return []
 		}
 
-		return Object.entries(this.rundowns)
+		return Object.entries<IRundownsItem>(this.rundowns)
 			.filter(([_rundownId, rundown]) => {
 				return rundown.open === true
 			})
@@ -494,7 +494,7 @@ export class RundownsStore {
 			return []
 		}
 
-		return Object.entries(this.rundowns)
+		return Object.entries<IRundownsItem>(this.rundowns)
 			.filter(([_rundownId, rundown]) => {
 				return rundown.open === false
 			})

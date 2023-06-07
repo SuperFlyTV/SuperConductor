@@ -2338,7 +2338,7 @@ const CasparEditTemplatePlainData: React.FC<{
 	}
 
 	const dataEntries: Array<{ key: string; value: any }> = []
-	for (const [key, value] of Object.entries(parsed)) {
+	for (const [key, value] of Object.entries<string>(parsed)) {
 		if (key === '__gdd') continue
 		dataEntries.push({ key, value })
 	}

@@ -12,6 +12,7 @@ import {
 	HyperdeckMetadata,
 	MetadataAny,
 	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -23,7 +24,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: HyperdeckMetadata = { metadataType: MetadataType.HYPERDECK }
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
 		this.hyperdeck = new Hyperdeck()
 
 		this.hyperdeck.on('connected', () => {

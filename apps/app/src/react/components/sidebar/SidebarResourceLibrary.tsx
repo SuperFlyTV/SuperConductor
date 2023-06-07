@@ -2,7 +2,15 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { SidebarContent } from './SidebarContent'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
-import { protectString, ResourceAny, ResourceId, ResourceType, unprotectString } from '@shared/models'
+import {
+	protectString,
+	protectStringArray,
+	ResourceAny,
+	ResourceId,
+	ResourceType,
+	TSRDeviceId,
+	unprotectString,
+} from '@shared/models'
 import { flatten } from '@shared/lib'
 import { ResourceData } from './resource/ResourceData'
 import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
@@ -135,24 +143,25 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	}, [debouncedNameFilterValue, resourcesFilteredByType])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
-		const ret: { [deviceId: string]: ResourceAny[] } = {}
+		const ret = new Map<TSRDeviceId, ResourceAny[]>()
 
 		for (const resource of resourcesFilteredByDeviceAndName) {
-			if (!(resource.deviceId in ret)) {
-				ret[resource.deviceId] = []
+			let r = ret.get(resource.deviceId)
+			if (!r) {
+				r = []
+				ret.set(resource.deviceId, r)
 			}
-			ret[resource.deviceId].push(resource)
+			r.push(resource)
 		}
-
 		return ret
 	}, [resourcesFilteredByDeviceAndName])
 
 	const deviceIds = useMemo(() => {
-		const deviceIds = new Set<string>()
+		const deviceIds = new Set<TSRDeviceId>()
 		for (const bridgeId in project.bridges) {
 			const bridge = project.bridges[bridgeId]
 			for (const deviceId in bridge.settings.devices) {
-				deviceIds.add(deviceId)
+				deviceIds.add(protectString<TSRDeviceId>(deviceId))
 			}
 		}
 		return Array.from(deviceIds)
@@ -186,7 +195,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		} = event
 		store.guiStore.updateResourceLibrary({
 			// On autofill we get a stringified value.
-			deviceFilterValue: typeof value === 'string' ? value.split(',') : value,
+			deviceFilterValue: Array.isArray(value) ? value : protectStringArray(value.split(',')),
 		})
 	}, [])
 
@@ -213,7 +222,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 
 	const allListItems = useMemo(() => {
 		const allListItems: RowItem[] = []
-		for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
+		for (const [deviceId, resources] of filteredResourcesByDeviceId.entries()) {
 			allListItems.push({
 				type: 'device',
 				key: `__device${deviceId}`,
@@ -448,7 +457,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 							MenuProps={MenuProps}
 						>
 							{deviceIds.map((deviceId) => (
-								<MenuItem key={deviceId} value={deviceId} dense>
+								<MenuItem key={unprotectString(deviceId)} value={unprotectString(deviceId)} dense>
 									<SmallCheckbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
 									<ListItemText primary={getDeviceName(project, deviceId)} />
 								</MenuItem>
@@ -499,9 +508,9 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 						if (item.type === 'device') {
 							return (
 								<DeviceHeader
-									key={item.deviceId}
+									key={unprotectString(item.deviceId)}
 									deviceName={getDeviceName(project, item.deviceId)}
-									isRefreshing={refreshStatuses[item.deviceId]}
+									isRefreshing={refreshStatuses.has(item.deviceId)}
 									resourceCount={item.resourceCount}
 								/>
 							)
@@ -513,15 +522,13 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 										selected={selectedResourceIds.includes(item.resource.id)}
 										onSelect={handleResourceLibraryItemSelect}
 									/>
-									{selectedResource && currentRundownId && item.resource.id === selectedResource.id && (
-										<>
-											<ResourceData resource={item.resource} />
-											{/* <AddToTimeline
-												currentRundownId={currentRundownId}
-												resource={item.resource}
-											/> */}
-										</>
-									)}
+									{selectedResource &&
+										currentRundownId &&
+										item.resource.id === selectedResource.id && (
+											<>
+												<ResourceData resource={item.resource} />
+											</>
+										)}
 								</React.Fragment>
 							)
 						}
@@ -536,7 +543,7 @@ type RowItem =
 	| {
 			type: 'device'
 			key: string
-			deviceId: string
+			deviceId: TSRDeviceId
 			resourceCount: number
 	  }
 	| {

@@ -1,3 +1,5 @@
+import { BridgeId } from '@shared/api'
+
 export interface AppData {
 	windowPosition: WindowPosition
 	settings: AppSettings
@@ -14,7 +16,7 @@ export interface AppSettings {
 	listenPort: number
 
 	superConductorHost: string
-	bridgeId: string
+	bridgeId: BridgeId
 }
 export type WindowPosition =
 	| {

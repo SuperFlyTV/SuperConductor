@@ -16,6 +16,7 @@ import { computed } from 'mobx'
 import { millisecondsToTime } from '../../../../lib/timeLib'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 import { CB } from '../../../lib/errorHandling'
+import { TSRDeviceId } from '@shared/models'
 
 const HANDLE_WIDTH = 8
 
@@ -30,7 +31,7 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
 	warnings?: string[]
-	deviceId?: string
+	deviceId?: TSRDeviceId
 }> = observer(function TimelineObject({
 	groupId,
 	partId,

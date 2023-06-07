@@ -6,17 +6,20 @@ import { IPCClient } from '../api/IPCClient'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { ClientSideLogger } from '../api/logger'
 import { setConstants } from '../constants'
+import { BridgeId } from '@shared/api'
+import { TSRDeviceId, protectString } from '@shared/models'
+import { BridgePeripheralId } from '@shared/lib'
 const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
-	bridgeStatuses: { [bridgeId: string]: BridgeStatus } = {}
-	peripherals: { [peripheralId: string]: PeripheralStatus } = {}
+	bridgeStatuses = new Map<BridgeId, BridgeStatus>()
+	peripherals = new Map<BridgePeripheralId, PeripheralStatus>()
 
 	serverAPI: IPCServer
 	logger: ClientSideLogger
 	ipcClient: IPCClient
 
-	allDeviceStatuses: { [deviceId: string]: BridgeDevice } = {}
+	allDeviceStatuses = new Map<TSRDeviceId, BridgeDevice>()
 
 	private _data?: AppData = undefined
 
@@ -24,9 +27,9 @@ export class AppStore {
 		this.serverAPI = new IPCServer(ipcRenderer)
 		this.logger = new ClientSideLogger(this.serverAPI)
 		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
-			updateBridgeStatus: (bridgeId: string, status: BridgeStatus | null) =>
+			updateBridgeStatus: (bridgeId: BridgeId, status: BridgeStatus | null) =>
 				this.updateBridgeStatus(bridgeId, status),
-			updatePeripheral: (peripheralId: string, peripheral: PeripheralStatus | null) =>
+			updatePeripheral: (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) =>
 				this.updatePeripheral(peripheralId, peripheral),
 		})
 
@@ -48,35 +51,30 @@ export class AppStore {
 		})
 	}
 
-	updateBridgeStatus(bridgeId: string, status: BridgeStatus | null): void {
-		const newStatuses = { ...this.bridgeStatuses }
+	updateBridgeStatus(bridgeId: BridgeId, status: BridgeStatus | null): void {
 		if (status) {
-			newStatuses[bridgeId] = status
+			this.bridgeStatuses.set(bridgeId, status)
 		} else {
-			delete newStatuses[bridgeId]
+			this.bridgeStatuses.delete(bridgeId)
 		}
-		this.bridgeStatuses = newStatuses
 
 		this._updateAllDeviceStatuses()
 	}
 
-	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
-		const newPeripherals = { ...this.peripherals }
+	updatePeripheral(peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null): void {
+		// const newPeripherals = { ...this.peripherals }
 		if (peripheral) {
-			newPeripherals[peripheralId] = peripheral
+			this.peripherals.set(peripheralId, peripheral)
 		} else {
-			delete newPeripherals[peripheralId]
+			this.peripherals.delete(peripheralId)
 		}
-		this.peripherals = newPeripherals
 	}
 
 	private _updateAllDeviceStatuses() {
-		const allDeviceStatuses: { [deviceId: string]: BridgeDevice } = {}
-		for (const bridgeStatus of Object.values(this.bridgeStatuses)) {
-			for (const [deviceId, deviceStatus] of Object.entries(bridgeStatus.devices)) {
-				allDeviceStatuses[deviceId] = deviceStatus
+		for (const bridgeStatus of this.bridgeStatuses.values()) {
+			for (const [deviceId, deviceStatus] of Object.entries<BridgeDevice>(bridgeStatus.devices)) {
+				this.allDeviceStatuses.set(protectString<TSRDeviceId>(deviceId), deviceStatus)
 			}
 		}
-		this.allDeviceStatuses = allDeviceStatuses
 	}
 }

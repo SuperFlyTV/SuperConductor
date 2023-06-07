@@ -39,7 +39,7 @@ export async function handleURL(context: ClipBoardContext, str: string): Promise
 				name: '',
 			}
 			const resource = literal<CasparCGTemplate>({
-				deviceId: mapping.mapping.deviceId,
+				deviceId: protectString(mapping.mapping.deviceId),
 				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: url.hostname,
 				resourceType: ResourceType.CASPARCG_TEMPLATE,

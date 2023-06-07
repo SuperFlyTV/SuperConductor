@@ -1,7 +1,8 @@
-import { MetadataAny, ResourceAny } from '@shared/models'
-import { AnalogValue, KnownPeripheral, PeripheralSettingsAny } from './peripherals'
+import { MetadataAny, ResourceAny, TSRDeviceId, SerializedProtectedMap } from '@shared/models'
+import { AnalogValue, KnownPeripheral, PeripheralId, PeripheralSettingsAny } from './peripherals'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
+import { BridgeId } from './bridge'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {
@@ -27,7 +28,7 @@ export namespace BridgeAPI {
 		/** Bridge starts by sending this upon connection (and it has its id): */
 		export interface Init extends MessageBase {
 			type: 'init'
-			id: string
+			id: BridgeId
 			version: string
 			/** Set to true if the bridge is the one connecting to SuperConector (incoming bridge)  */
 			incoming: boolean
@@ -38,18 +39,18 @@ export namespace BridgeAPI {
 		}
 		export interface DeviceStatus extends MessageBase {
 			type: 'deviceStatus'
-			deviceId: string
+			deviceId: TSRDeviceId
 
 			ok: boolean
 			message: string
 		}
 		export interface DeviceRemoved extends MessageBase {
 			type: 'deviceRemoved'
-			deviceId: string
+			deviceId: TSRDeviceId
 		}
 		export interface UpdatedResourcesAndMetadata extends MessageBase {
 			type: 'updatedResourcesAndMetadata'
-			deviceId: string
+			deviceId: TSRDeviceId
 			resources: ResourceAny[]
 			metadata: MetadataAny
 		}
@@ -60,19 +61,19 @@ export namespace BridgeAPI {
 		}
 		export interface PeripheralStatus extends MessageBase {
 			type: 'PeripheralStatus'
-			deviceId: string
+			deviceId: PeripheralId
 			info: PeripheralInfo
 			status: 'connected' | 'disconnected'
 		}
 		export interface PeripheralTrigger extends MessageBase {
 			type: 'PeripheralTrigger'
-			deviceId: string
+			deviceId: PeripheralId
 			trigger: 'keyDown' | 'keyUp'
 			identifier: string
 		}
 		export interface PeripheralAnalog extends MessageBase {
 			type: 'PeripheralAnalog'
-			deviceId: string
+			deviceId: PeripheralId
 			identifier: string
 			value: AnalogValue
 		}
@@ -86,14 +87,12 @@ export namespace BridgeAPI {
 		 */
 		export interface DeviceRefreshStatus extends MessageBase {
 			type: 'DeviceRefreshStatus'
-			deviceId: string
+			deviceId: TSRDeviceId
 			refreshing: boolean
 		}
 		export interface KnownPeripherals extends MessageBase {
 			type: 'KnownPeripherals'
-			peripherals: {
-				[peripheralId: string]: KnownPeripheral
-			}
+			peripherals: SerializedProtectedMap<PeripheralId, KnownPeripheral>
 			// A reply to GetKnownPeripherals
 		}
 	}
@@ -113,17 +112,13 @@ export namespace BridgeAPI {
 		/** This is a reply to InitRequestId */
 		export interface SetId extends MessageBase {
 			type: 'setId'
-			id: string
+			id: BridgeId
 		}
 		export interface SetSettings extends MessageBase {
 			type: 'setSettings'
 
-			devices: {
-				[deviceId: string]: DeviceOptionsAny
-			}
-			peripherals: {
-				[deviceId: string]: PeripheralSettingsAny
-			}
+			devices: SerializedProtectedMap<TSRDeviceId, DeviceOptionsAny>
+			peripherals: SerializedProtectedMap<PeripheralId, PeripheralSettingsAny>
 			autoConnectToAllPeripherals: boolean
 		}
 		export interface AddTimeline extends MessageBase {
@@ -164,7 +159,7 @@ export namespace BridgeAPI {
 		}
 		export interface PeripheralSetKeyDisplay extends MessageBase {
 			type: 'peripheralSetKeyDisplay'
-			deviceId: string
+			deviceId: PeripheralId
 			identifier: string
 			keyDisplay: KeyDisplay | KeyDisplayTimeline
 		}

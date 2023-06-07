@@ -23,7 +23,7 @@ export class HTTPAPI {
 			ctx.response.status = 200
 		})
 		this.router.get(`/api/internal`, async (ctx) => {
-			const methods = Object.entries(this.methodSignatures)
+			const methods = Object.entries<{ endpoint: string; type: string }>(this.methodSignatures)
 				.map(([_fullEndpoint, e]) => {
 					const url = `/api/internal/${e.endpoint}/?`
 

@@ -10,7 +10,15 @@ import { AppData } from '../models/App/AppData'
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny, ResourceId, unprotectString, MetadataAny } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceId,
+	unprotectString,
+	MetadataAny,
+	SerializedProtectedMap,
+	TSRDeviceId,
+	serializeProtectedMap,
+} from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
 import _ from 'lodash'
 import { BridgeStatus } from '../models/project/Bridge'
@@ -18,14 +26,14 @@ import { PeripheralStatus } from '../models/project/Peripheral'
 import { TriggersHandler } from './triggersHandler'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { LoggerLike } from '@shared/api'
+import { BridgeId, LoggerLike } from '@shared/api'
 import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
 import { findAutoFillResources } from '../lib/autoFill'
 import { Part } from '../models/rundown/Part'
 import { getDefaultPart } from '../lib/defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
-import { assertNever } from '@shared/lib'
+import { BridgePeripheralId, assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { HTTPAPI } from './HTTPAPI'
@@ -48,13 +56,13 @@ export class SuperConductor {
 
 	private shuttingDown = false
 	private resourceUpdatesToSend = new Map<ResourceId, ResourceAny | null>()
-	private metadataUpdatesToSend = new Map<string, MetadataAny | null>()
+	private metadataUpdatesToSend = new Map<TSRDeviceId, MetadataAny | null>()
 	private __triggerBatchSendResourcesAndMetadataTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
 		timer: NodeJS.Timer
 	} | null = null
-	private refreshStatus: { [deviceId: string]: number } = {}
+	private refreshStatus = new Map<TSRDeviceId, number>()
 
 	private hasStoredStartupUserStatistics = false
 
@@ -64,10 +72,10 @@ export class SuperConductor {
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
 
-		this.session.on('bridgeStatus', (id: string, status: BridgeStatus | null) => {
+		this.session.on('bridgeStatus', (id: BridgeId, status: BridgeStatus | null) => {
 			this.clients.forEach((clients) => clients.ipcClient.updateBridgeStatus(id, status))
 		})
-		this.session.on('peripheral', (peripheralId: string, peripheral: PeripheralStatus | null) => {
+		this.session.on('peripheral', (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) => {
 			this.triggers.onPeripheralStatus(peripheralId, peripheral)
 			this.clients.forEach((clients) => clients.ipcClient.updatePeripheral(peripheralId, peripheral))
 		})
@@ -109,7 +117,7 @@ export class SuperConductor {
 			this._triggerBatchSendResourcesAndMetadata()
 			this.triggerHandleAutoFill()
 		})
-		this.storage.on('metadata', (id: string, metadata: MetadataAny | null) => {
+		this.storage.on('metadata', (id: TSRDeviceId, metadata: MetadataAny | null) => {
 			// Add the metadata to the list of metadatas to send to the client in batches later:
 			this.metadataUpdatesToSend.set(id, metadata)
 			this._triggerBatchSendResourcesAndMetadata()
@@ -160,7 +168,7 @@ export class SuperConductor {
 
 		this.bridgeHandler = new BridgeHandler(this.log, this.session, this.storage, {
 			updatedResourcesAndMetadata: (
-				deviceId: string,
+				deviceId: TSRDeviceId,
 				resources: ResourceAny[],
 				metadata: MetadataAny | null
 			): void => {
@@ -190,7 +198,7 @@ export class SuperConductor {
 					}
 				}
 			},
-			onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string): void => {
+			onVersionMismatch: (bridgeId: BridgeId, bridgeVersion: string, ourVersion: string): void => {
 				this.clients.forEach((client) => {
 					dialog
 						.showMessageBox(client.window, {
@@ -207,9 +215,9 @@ export class SuperConductor {
 			onDeviceRefreshStatus: (deviceId, refreshing) => {
 				if (this.shuttingDown) return
 				if (refreshing) {
-					this.refreshStatus[deviceId] = Date.now()
+					this.refreshStatus.set(deviceId, Date.now())
 				} else {
-					delete this.refreshStatus[deviceId]
+					this.refreshStatus.delete(deviceId)
 				}
 				this.clients.forEach((clients) => clients.ipcClient.updateDeviceRefreshStatus(deviceId, refreshing))
 			},
@@ -312,10 +320,8 @@ export class SuperConductor {
 					resourceUpdatesToSend.push({ id, resource })
 				}
 
-				const metadataUpdatesToSend: { [deviceId: string]: MetadataAny | null } = {}
-				for (const [deviceId, metadata] of this.metadataUpdatesToSend.entries()) {
-					metadataUpdatesToSend[deviceId] = metadata
-				}
+				const metadataUpdatesToSend: SerializedProtectedMap<TSRDeviceId, MetadataAny | null> =
+					serializeProtectedMap(this.metadataUpdatesToSend)
 
 				if (resourceUpdatesToSend.length || Object.keys(metadataUpdatesToSend).length) {
 					this.clients.forEach((clients) =>
@@ -344,7 +350,7 @@ export class SuperConductor {
 						this.autoRefreshInterval = null
 					} else {
 						let anyRefreshing = false
-						for (const refreshTime of Object.values(this.refreshStatus)) {
+						for (const refreshTime of this.refreshStatus.values()) {
 							if (Date.now() - refreshTime < 10000) {
 								anyRefreshing = true
 								break

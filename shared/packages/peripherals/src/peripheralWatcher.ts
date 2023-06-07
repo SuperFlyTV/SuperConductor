@@ -1,14 +1,14 @@
-import { KnownPeripheral } from '@shared/api'
+import { KnownPeripheral, PeripheralId } from '@shared/api'
 import EventEmitter from 'events'
 import { PeripheralMIDI } from './peripherals/midi'
 import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 
 export interface PeripheralWatcherEvents {
-	knownPeripheralDiscovered: (peripheralId: string, info: KnownPeripheral) => void
-	knownPeripheralReconnected: (peripheralId: string, info: KnownPeripheral) => void
-	knownPeripheralDisconnected: (peripheralId: string) => void
-	knownPeripheralsChanged: (peripherals: { [peripheralId: string]: KnownPeripheral }) => void
+	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
+	knownPeripheralReconnected: (peripheralId: PeripheralId, info: KnownPeripheral) => void
+	knownPeripheralDisconnected: (peripheralId: PeripheralId) => void
+	knownPeripheralsChanged: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
 }
 export interface PeripheralWatcher {
 	on<U extends keyof PeripheralWatcherEvents>(event: U, listener: PeripheralWatcherEvents[U]): this
@@ -16,7 +16,7 @@ export interface PeripheralWatcher {
 }
 
 export class PeripheralWatcher extends EventEmitter {
-	private knownPeripherals = new Map<string, KnownPeripheral>()
+	private knownPeripherals = new Map<PeripheralId, KnownPeripheral>()
 	private subwatchers: { stop: () => void }[] = []
 
 	constructor() {
@@ -38,7 +38,7 @@ export class PeripheralWatcher extends EventEmitter {
 	 * If prior info was present and info is now null, knownPeripheralDisconnected will be emitted.
 	 * In all cases, knownPeripheralsChanged will be emitted.
 	 */
-	private updateDiscoveredPeripheral(peripheralId: string, info: KnownPeripheral | null): void {
+	private updateDiscoveredPeripheral(peripheralId: PeripheralId, info: KnownPeripheral | null): void {
 		if (this.knownPeripherals.has(peripheralId)) {
 			if (info) {
 				this.knownPeripherals.set(peripheralId, info)
@@ -67,10 +67,10 @@ export class PeripheralWatcher extends EventEmitter {
 	/**
 	 * @returns The list peripherals seen at any point during this session, be they currently connected or not.
 	 */
-	getKnownPeripherals(): { [peripheralId: string]: KnownPeripheral } {
-		return Object.fromEntries(this.knownPeripherals.entries())
+	getKnownPeripherals(): Map<PeripheralId, KnownPeripheral> {
+		return new Map<PeripheralId, KnownPeripheral>(this.knownPeripherals.entries())
 	}
-	getKnownPeripheral(peripheralId: string): KnownPeripheral | undefined {
+	getKnownPeripheral(peripheralId: PeripheralId): KnownPeripheral | undefined {
 		return this.knownPeripherals.get(peripheralId)
 	}
 }

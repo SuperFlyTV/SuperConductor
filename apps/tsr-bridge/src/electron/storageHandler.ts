@@ -2,10 +2,11 @@ import fs from 'fs'
 import path from 'path'
 import EventEmitter from 'events'
 import * as os from 'os'
-import { LoggerLike } from '@shared/api'
+import { BridgeId, LoggerLike } from '@shared/api'
 import { AppData, WindowPosition } from '../models/AppData'
 import { baseFolder } from './lib/baseFolder'
 import { shortID } from './lib/lib'
+import { protectString } from '@shared/models'
 
 const fsWriteFile = fs.promises.writeFile
 const fsRename = fs.promises.rename
@@ -147,7 +148,7 @@ export class StorageHandler extends EventEmitter {
 					acceptConnections: true,
 
 					superConductorHost: 'ws://127.0.0.1:5400',
-					bridgeId: `${os.hostname()}_${shortID()}`,
+					bridgeId: protectString<BridgeId>(`${os.hostname()}_${shortID()}`),
 				},
 			},
 		}
