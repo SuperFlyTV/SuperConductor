@@ -3,6 +3,11 @@ import React, { useCallback, useState } from 'react'
 
 type OptionsEnum = { [key: string]: any }
 type OptionsArray = { value: string; label: string }[]
+
+interface OptionInternal {
+	value: string | number
+	label: string
+}
 export const SelectEnum: React.FC<{
 	label: React.ReactNode
 	currentValue: any
@@ -32,7 +37,7 @@ export const SelectEnum: React.FC<{
 }) => {
 	const [hasFocus, setHasFocus] = useState<boolean>(false)
 
-	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
+	const allOptions: { [key: string]: OptionInternal } = {}
 
 	// Convert Typescript-enum to key-values:
 
@@ -80,7 +85,7 @@ export const SelectEnum: React.FC<{
 		}
 	}
 
-	const allOptionsList = Object.entries(allOptions)
+	const allOptionsList = Object.entries<OptionInternal>(allOptions)
 
 	if (indeterminate) {
 		allOptionsList.unshift(['__indeterminate', { value: '__indeterminate', label: '-- Different values --' }])

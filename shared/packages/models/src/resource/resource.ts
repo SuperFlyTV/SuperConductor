@@ -6,16 +6,20 @@ import { OBSAny } from './OBS'
 import { OSCAny } from './OSC'
 import { TCPSendAny } from './TCPSend'
 import { VMixAny } from './VMix'
+import { ProtectedString } from '../protectedString'
+import { TSRDeviceId } from '../tsrDevice'
 
 export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny | HyperdeckAny | TCPSendAny
+
+export type ResourceId = ProtectedString<'resourceId'>
 
 export interface ResourceBase {
 	resourceType: ResourceType
 
-	deviceId: string
+	deviceId: TSRDeviceId
 
 	/** Must be globally unique. */
-	id: string
+	id: ResourceId
 
 	/** Required because it is used to search/filter resources in the sidebar. Does not need to be unique. */
 	displayName: string
@@ -71,4 +75,6 @@ export enum ResourceType {
 	HYPERDECK_CLIP = 'HYPERDECK_CLIP',
 
 	TCP_REQUEST = 'TCP_REQUEST',
+
+	INVALID = 'INVALID',
 }

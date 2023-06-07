@@ -56,9 +56,10 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 		next: { triggers: [], label: 'Next' },
 		delete: { triggers: [], label: 'Delete' },
 	}
-	for (const [triggerAction0, triggers] of Object.entries(appDataTriggers)) {
+	for (const [triggerAction0, triggers] of Object.entries<ApplicationTrigger[] | undefined>(appDataTriggers)) {
 		const triggerAction = triggerAction0 as ApplicationTrigger['action']
-		if (appActions[triggerAction]) {
+
+		if (triggers && appActions[triggerAction]) {
 			appActions[triggerAction].triggers = triggers
 		}
 	}
@@ -71,7 +72,10 @@ const ApplicationActions: React.FC = observer(function ApplicationActions() {
 		Group(s) or Part(s).'
 			>
 				<ScList
-					list={Object.entries(appActions).map(([actionType, appAction]) => {
+					list={Object.entries<{
+						label: string
+						triggers: ApplicationTrigger[]
+					}>(appActions).map(([actionType, appAction]) => {
 						const anyGlobalTriggerFailed = appAction.triggers.some((trigger) =>
 							failedGlobalShortcuts.has(
 								trigger.fullIdentifiers.map(convertSorensenToElectron).filter(Boolean).join('+')

@@ -14,6 +14,8 @@ import { NewDeviceDialog } from '../bridgesPage/NewDeviceDialog'
 
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
+import { TSRDeviceId, unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 export const BridgeItemContent: React.FC<{
 	id: string
@@ -26,7 +28,7 @@ export const BridgeItemContent: React.FC<{
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const [addDeviceOpen, setAddDeviceOpen] = useState(false)
-	const [newlyCreatedDeviceId, setNewlyCreatedDeviceId] = useState<string | undefined>()
+	const [newlyCreatedDeviceId, setNewlyCreatedDeviceId] = useState<TSRDeviceId | undefined>()
 
 	const [name, setName] = useState(props.bridge.name)
 	const [url, setUrl] = useState(props.bridge.url)
@@ -56,7 +58,7 @@ export const BridgeItemContent: React.FC<{
 	)
 
 	const removeBridge = useCallback(() => {
-		delete project.bridges[props.bridge.id]
+		delete project.bridges[unprotectString<BridgeId>(props.bridge.id)]
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [props.bridge.id, handleError, ipcServer, project])
 

@@ -10,19 +10,26 @@ import {
 	OBSSourceSettings,
 	OBSRender,
 	OBSMute,
+	ResourceId,
+	protectString,
+	MetadataAny,
+	OBSMetadata,
+	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { stringifyError } from '@shared/lib'
+import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class OBSSideload implements SideLoadDevice {
 	private obs: OBSWebsocket
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: OBSMetadata = { metadataType: MetadataType.OBS }
 	private obsConnected = false
 	private obsConnectionRetryTimeout: NodeJS.Timeout | undefined = undefined
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsOBS, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsOBS, private log: LoggerLike) {
 		this.obs = new OBSWebsocket()
 
 		this.obs.on('ConnectionOpened', () => {
@@ -42,8 +49,8 @@ export class OBSSideload implements SideLoadDevice {
 
 		this._connect().catch((error) => this.log.error('OBS Connect error: ' + stringifyError(error)))
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.obs.disconnect()
@@ -78,24 +85,29 @@ export class OBSSideload implements SideLoadDevice {
 			})
 		}
 	}
-	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+	private async _refreshResourcesAndMetadata() {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: OBSMetadata = { metadataType: MetadataType.OBS }
 
 		if (!this.obsConnected) {
-			return Object.values(this.cacheResources)
+			return {
+				resources: Array.from(this.cacheResources.values()),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Scenes and Scene Items
 		const { scenes } = await this.obs.send('GetSceneList')
 		for (const scene of scenes) {
-			const sceneResource: OBSScene = {
+			const resource: OBSScene = {
 				resourceType: ResourceType.OBS_SCENE,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_scene_${scene.name}`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				name: scene.name,
 				displayName: `Scene: ${scene.name}`,
 			}
-			resources[sceneResource.id] = sceneResource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Transitions
@@ -104,11 +116,12 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSTransition = {
 				resourceType: ResourceType.OBS_TRANSITION,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_transition_${transition.name}`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				name: transition.name,
 				displayName: `Transition: ${transition.name}`,
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Recording
@@ -116,10 +129,11 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSRecording = {
 				resourceType: ResourceType.OBS_RECORDING,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_recording`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Recording',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Streaming
@@ -127,10 +141,11 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSStreaming = {
 				resourceType: ResourceType.OBS_STREAMING,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_streaming`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Streaming',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Mute
@@ -138,10 +153,11 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSMute = {
 				resourceType: ResourceType.OBS_MUTE,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_mute`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Mute',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Render
@@ -149,10 +165,11 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSRender = {
 				resourceType: ResourceType.OBS_RENDER,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_render`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Scene Item Render',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Source Settings
@@ -160,13 +177,18 @@ export class OBSSideload implements SideLoadDevice {
 			const resource: OBSSourceSettings = {
 				resourceType: ResourceType.OBS_SOURCE_SETTINGS,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_source_settings`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Source Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		this.cacheMetadata = metadata
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

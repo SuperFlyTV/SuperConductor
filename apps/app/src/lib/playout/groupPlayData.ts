@@ -73,7 +73,7 @@ export function getGroupPlayData(prepared: GroupPreparedPlayData | null, now = D
 				if (playhead.partPauseTime === undefined) playData.allPartsArePaused = false
 			}
 		} else if (prepared.type === 'multi') {
-			for (const [partId, sections] of Object.entries(prepared.sections)) {
+			for (const [partId, sections] of Object.entries<GroupPreparedPlayDataSection[]>(prepared.sections)) {
 				for (const section of sections) {
 					const playhead = getPlayheadForSection(playData, now, section)
 

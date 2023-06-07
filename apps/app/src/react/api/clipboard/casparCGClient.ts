@@ -1,4 +1,5 @@
-import { assertNever, literal } from '@shared/lib'
+import { getResourceIdFromResource, assertNever, literal } from '@shared/lib'
+import { protectString } from '@shared/models'
 import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultGroup, getDefaultPart } from '../../../lib/defaults'
@@ -267,7 +268,7 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 
 			let useResource: ResourceAny | undefined = undefined
 			// Try to find resource in library:
-			for (const resource of Object.values(store.resourcesStore.resources)) {
+			for (const resource of store.resourcesAndMetadataStore.resources.values()) {
 				if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 					if (resource.name === item.name) {
 						useResource = resource
@@ -293,7 +294,7 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 
 					useResource = literal<CasparCGMedia>({
 						deviceId: deviceId,
-						id: shortID(),
+						id: protectString(''), // set by getResourceIdFromResource() later
 						displayName: item.name,
 						resourceType: ResourceType.CASPARCG_MEDIA,
 						type: type,
@@ -307,9 +308,10 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 						channel: parseInt(item.channel, 10) || undefined,
 						layer: parseInt(item.videolayer, 10) || undefined,
 					})
+					useResource.id = getResourceIdFromResource(useResource)
 				}
 			}
-			if (useResource) {
+			if (useResource && useResource.resourceType === ResourceType.CASPARCG_MEDIA) {
 				useResource.duration = parseInt(item.duration, 10) || 0
 				useResource.channel = parseInt(item.channel, 10) || undefined
 				useResource.layer = parseInt(item.videolayer, 10) || undefined
@@ -326,7 +328,7 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 
 			let useResource: ResourceAny | undefined = undefined
 			// Try to find resource in library:
-			for (const resource of Object.values(store.resourcesStore.resources)) {
+			for (const resource of store.resourcesAndMetadataStore.resources.values()) {
 				if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 					if (resource.name === item.name) {
 						useResource = resource
@@ -340,16 +342,21 @@ function parsePart(context: ClipBoardContext, item: ItemAny): { part: Part; reso
 				if (deviceId) {
 					useResource = literal<CasparCGTemplate>({
 						deviceId: deviceId,
-						id: shortID(),
+						id: protectString(''), // set by getResourceIdFromResource() later
 						displayName: item.name,
 						resourceType: ResourceType.CASPARCG_TEMPLATE,
 						name: item.name,
 						size: 0,
 						changed: Date.now(),
 					})
+					useResource.id = getResourceIdFromResource(useResource)
 				}
 			}
-			if (useResource) {
+			if (
+				useResource &&
+				(useResource.resourceType === ResourceType.CASPARCG_TEMPLATE ||
+					useResource?.resourceType === ResourceType.CASPARCG_MEDIA)
+			) {
 				if (useResource.resourceType === ResourceType.CASPARCG_TEMPLATE) {
 					useResource.data = item.templatedata
 					useResource.sendDataAsXML = item.sendasjson !== 'true'

@@ -1,5 +1,5 @@
 import { assertNever, literal } from '@shared/lib'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { GDDSchema } from 'graphics-data-definition'
 import {
 	DeviceType,
@@ -229,102 +229,118 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 }
 
 /** Tries to guess which device a timelineObject is likely to be using */
-export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): string | undefined {
+export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): TSRDeviceId | undefined {
 	const allDeviceIds = listAvailableDeviceIDs(project.bridges)
 	const sortedMappings = sortMappings(project.mappings)
 
 	for (const { mapping } of sortedMappings) {
 		// Does the layer have a device?
-		if (!allDeviceIds.has(mapping.deviceId)) continue
+		if (!allDeviceIds.has(protectString<TSRDeviceId>(mapping.deviceId))) continue
 		// Is the layer compatible?
 		if (!filterMapping(mapping, obj)) continue
 
-		return mapping.deviceId
+		return protectString(mapping.deviceId)
 	}
 	return undefined
 }
 export function getMappingFromTimelineObject(
 	obj: TSRTimelineObj,
-	deviceId: string,
+	deviceId: TSRDeviceId,
 	resource: ResourceAny | undefined
 ): Mapping | undefined {
+	const deviceIdStr = unprotectString(deviceId)
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
 		return literal<MappingAbstract>({
 			device: DeviceType.ABSTRACT,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Abstract',
 		})
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		// MappingAtem
 
 		switch (obj.content.type) {
-			case TimelineContentTypeAtem.ME:
+			case TimelineContentTypeAtem.ME: {
+				const index = resource?.resourceType === ResourceType.ATEM_ME ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem ME 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem ME ${index + 1}`,
 					mappingType: MappingAtemType.MixEffect,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.DSK:
+			case TimelineContentTypeAtem.DSK: {
+				const index = resource?.resourceType === ResourceType.ATEM_DSK ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem DSK 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem DSK ${index + 1}`,
 					mappingType: MappingAtemType.DownStreamKeyer,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.SSRC:
+			case TimelineContentTypeAtem.SSRC: {
+				const index = resource?.resourceType === ResourceType.ATEM_SSRC ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem SS 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem SS ${index + 1}`,
 					mappingType: MappingAtemType.SuperSourceBox,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.AUX:
+			case TimelineContentTypeAtem.AUX: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUX ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem AUX 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem AUX ${index + 1}`,
 					mappingType: MappingAtemType.Auxilliary,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.MEDIAPLAYER:
+			case TimelineContentTypeAtem.MEDIAPLAYER: {
+				const index = resource?.resourceType === ResourceType.ATEM_MEDIA_PLAYER ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem MP 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem MP ${index + 1}`,
 					mappingType: MappingAtemType.MediaPlayer,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.SSRCPROPS:
+			case TimelineContentTypeAtem.SSRCPROPS: {
+				const index = resource?.resourceType === ResourceType.ATEM_SSRC_PROPS ? resource.index : 0
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem SS 1 props',
+					deviceId: deviceIdStr,
+					layerName: `Atem SS ${index + 1} props`,
 					mappingType: MappingAtemType.SuperSourceProperties,
-					index: 0,
+					index,
 				})
+			}
 
-			case TimelineContentTypeAtem.AUDIOCHANNEL:
+			case TimelineContentTypeAtem.AUDIOCHANNEL: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_CHANNEL ? resource.index : 0
+
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
-					layerName: 'Atem Audio 1',
+					deviceId: deviceIdStr,
+					layerName: `Atem Audio ${index + 1}`,
 					mappingType: MappingAtemType.AudioChannel,
-					index: 0,
+					index,
 				})
+			}
 
 			case TimelineContentTypeAtem.MACROPLAYER:
 				return literal<MappingAtem>({
 					device: DeviceType.ATEM,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Atem Macro 1',
 					mappingType: MappingAtemType.MacroPlayer,
 					index: 0,
@@ -372,7 +388,7 @@ export function getMappingFromTimelineObject(
 		}
 		return literal<MappingCasparCG>({
 			device: DeviceType.CASPARCG,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: `CasparCG ${channel}-${layer}`,
 			channel: channel,
 			layer: layer,
@@ -381,14 +397,14 @@ export function getMappingFromTimelineObject(
 		// MappingHTTPSend
 		return literal<MappingHTTPSend>({
 			device: DeviceType.HTTPSEND,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'HTTP Send',
 		})
 	} else if (obj.content.deviceType === DeviceType.TCPSEND) {
 		// MappingTCPSend
 		return literal<MappingTCPSend>({
 			device: DeviceType.TCPSEND,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'TCP Send',
 		})
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
@@ -398,7 +414,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeHyperdeck.TRANSPORT:
 				return literal<MappingHyperdeck>({
 					device: DeviceType.HYPERDECK,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'HyperDeck 1',
 					mappingType: MappingHyperdeckType.TRANSPORT,
 					index: 0,
@@ -414,21 +430,21 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeLawo.SOURCES:
 				return literal<MappingLawo>({
 					device: DeviceType.LAWO,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Lawo source',
 					mappingType: MappingLawoType.SOURCE,
 				})
 			case TimelineContentTypeLawo.EMBER_PROPERTY:
 				return literal<MappingLawo>({
 					device: DeviceType.LAWO,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Lawo property',
 					mappingType: MappingLawoType.FULL_PATH,
 				})
 			case TimelineContentTypeLawo.TRIGGER_VALUE:
 				return literal<MappingLawo>({
 					device: DeviceType.LAWO,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Lawo Trigger',
 					mappingType: MappingLawoType.TRIGGER_VALUE,
 				})
@@ -442,49 +458,49 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeOBS.CURRENT_TRANSITION:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Transition',
 					mappingType: MappingOBSType.CurrentTransition,
 				})
 			case TimelineContentTypeOBS.CURRENT_SCENE:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Scene',
 					mappingType: MappingOBSType.CurrentScene,
 				})
 			case TimelineContentTypeOBS.RECORDING:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Record',
 					mappingType: MappingOBSType.Recording,
 				})
 			case TimelineContentTypeOBS.STREAMING:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Streaming',
 					mappingType: MappingOBSType.Streaming,
 				})
 			case TimelineContentTypeOBS.SCENE_ITEM_RENDER:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Item render',
 					mappingType: MappingOBSType.SceneItemRender,
 				})
 			case TimelineContentTypeOBS.MUTE:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Mute',
 					mappingType: MappingOBSType.Mute,
 				})
 			case TimelineContentTypeOBS.SOURCE_SETTINGS:
 				return literal<MappingOBS>({
 					device: DeviceType.OBS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'OBS Source settings',
 					mappingType: MappingOBSType.SourceSettings,
 				})
@@ -495,14 +511,14 @@ export function getMappingFromTimelineObject(
 		// MappingOSC
 		return literal<MappingOSC>({
 			device: DeviceType.OSC,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'OSC',
 		})
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
 		// MappingPharos
 		return literal<MappingPharos>({
 			device: DeviceType.PHAROS,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Pharos',
 		})
 	} else if (obj.content.deviceType === DeviceType.PANASONIC_PTZ) {
@@ -512,28 +528,28 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypePanasonicPtz.SPEED:
 				return literal<MappingPanasonicPtz>({
 					device: DeviceType.PANASONIC_PTZ,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'PTZ Speed',
 					mappingType: MappingPanasonicPtzType.PRESET_SPEED,
 				})
 			case TimelineContentTypePanasonicPtz.PRESET:
 				return literal<MappingPanasonicPtz>({
 					device: DeviceType.PANASONIC_PTZ,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'PTZ Preset',
 					mappingType: MappingPanasonicPtzType.PRESET,
 				})
 			case TimelineContentTypePanasonicPtz.ZOOM:
 				return literal<MappingPanasonicPtz>({
 					device: DeviceType.PANASONIC_PTZ,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'PTZ Zoom',
 					mappingType: MappingPanasonicPtzType.ZOOM,
 				})
 			case TimelineContentTypePanasonicPtz.ZOOM_SPEED:
 				return literal<MappingPanasonicPtz>({
 					device: DeviceType.PANASONIC_PTZ,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'PTZ Zoom Speed',
 					mappingType: MappingPanasonicPtzType.ZOOM_SPEED,
 				})
@@ -544,7 +560,7 @@ export function getMappingFromTimelineObject(
 		// MappingQuantel
 		return literal<MappingQuantel>({
 			device: DeviceType.QUANTEL,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Quantel 1',
 			channelId: 1,
 			portId: 'port-id',
@@ -553,7 +569,7 @@ export function getMappingFromTimelineObject(
 		// MappingShotoku
 		return literal<MappingShotoku>({
 			device: DeviceType.SHOTOKU,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Shotoku',
 		})
 	} else if (obj.content.deviceType === DeviceType.SISYFOS) {
@@ -564,7 +580,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeSisyfos.TRIGGERVALUE:
 				return literal<MappingSisyfos>({
 					device: DeviceType.SISYFOS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Channel 1',
 					mappingType: MappingSisyfosType.CHANNEL,
 					channel: 0,
@@ -573,7 +589,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeSisyfos.CHANNELS:
 				return literal<MappingSisyfos>({
 					device: DeviceType.SISYFOS,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Channels',
 					mappingType: MappingSisyfosType.CHANNELS,
 				})
@@ -585,7 +601,7 @@ export function getMappingFromTimelineObject(
 		// MappingSingularLive
 		return literal<MappingSingularLive>({
 			device: DeviceType.SINGULAR_LIVE,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Singular Live',
 			compositionName: 'composition-name',
 		})
@@ -596,7 +612,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeVMix.PROGRAM:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Program',
 					mappingType: MappingVMixType.Program,
 					index: 1,
@@ -604,23 +620,25 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeVMix.PREVIEW:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Preview',
 					mappingType: MappingVMixType.Preview,
 					index: 1,
 				})
-			case TimelineContentTypeVMix.INPUT:
+			case TimelineContentTypeVMix.INPUT: {
+				const index = resource?.resourceType === ResourceType.VMIX_INPUT ? resource.number : 1
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Input',
 					mappingType: MappingVMixType.Input,
-					index: 1,
+					index,
 				})
+			}
 			case TimelineContentTypeVMix.AUDIO:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'AudioChannel',
 					mappingType: MappingVMixType.AudioChannel,
 					index: 1,
@@ -628,7 +646,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeVMix.OUTPUT:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Output',
 					mappingType: MappingVMixType.Output,
 					index: '2',
@@ -636,7 +654,7 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeVMix.OVERLAY:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Overlay',
 					mappingType: MappingVMixType.Overlay,
 					index: 1,
@@ -644,35 +662,35 @@ export function getMappingFromTimelineObject(
 			case TimelineContentTypeVMix.RECORDING:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Recording',
 					mappingType: MappingVMixType.Recording,
 				})
 			case TimelineContentTypeVMix.STREAMING:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Streaming',
 					mappingType: MappingVMixType.Streaming,
 				})
 			case TimelineContentTypeVMix.EXTERNAL:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'External',
 					mappingType: MappingVMixType.External,
 				})
 			case TimelineContentTypeVMix.FADE_TO_BLACK:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'FadeToBlack',
 					mappingType: MappingVMixType.FadeToBlack,
 				})
 			case TimelineContentTypeVMix.FADER:
 				return literal<MappingVMixAny>({
 					device: DeviceType.VMIX,
-					deviceId: deviceId,
+					deviceId: deviceIdStr,
 					layerName: 'Fader',
 					mappingType: MappingVMixType.Fader,
 				})
@@ -683,20 +701,20 @@ export function getMappingFromTimelineObject(
 		// MappingVizMSE
 		return literal<MappingVizMSE>({
 			device: DeviceType.VIZMSE,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'VizMSE',
 		})
 	} else if (obj.content.deviceType === DeviceType.SOFIE_CHEF) {
 		return literal<MappingSofieChef>({
 			device: DeviceType.SOFIE_CHEF,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Chef window',
 			windowId: 'default',
 		})
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return literal<Mapping>({
 			device: DeviceType.TELEMETRICS,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: 'Telemetrics',
 		})
 	} else {
@@ -886,19 +904,20 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 
 export function getDefaultMappingForDeviceType(
 	deviceType: DeviceType,
-	deviceId: string,
+	deviceId: TSRDeviceId,
 	allMappings: Mappings
 ): Mapping {
+	const deviceIdStr = unprotectString(deviceId)
 	// Filter mapping for deviceId:
 	const mappings: Mappings = {}
-	for (const [id, mapping] of Object.entries(allMappings)) {
-		if (mapping.deviceId === deviceId) mappings[id] = mapping
+	for (const [id, mapping] of Object.entries<Mapping>(allMappings)) {
+		if (protectString(mapping.deviceId) === deviceId) mappings[id] = mapping
 	}
 
 	if (deviceType === DeviceType.ABSTRACT) {
 		const m = literal<MappingAbstract>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -911,7 +930,7 @@ export function getDefaultMappingForDeviceType(
 			channel,
 			layer,
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -921,7 +940,7 @@ export function getDefaultMappingForDeviceType(
 		const m = literal<MappingAtem>({
 			index,
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingAtemType.MixEffect,
 			layerName: '', // Set later
 		})
@@ -930,7 +949,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.LAWO) {
 		const m = literal<MappingLawo>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingLawoType.SOURCE,
 			layerName: '', // Set later
 		})
@@ -939,7 +958,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.HTTPSEND) {
 		const m = literal<MappingHTTPSend>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -947,7 +966,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.PANASONIC_PTZ) {
 		const m = literal<MappingPanasonicPtz>({
 			device: DeviceType.PANASONIC_PTZ,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 			mappingType: MappingPanasonicPtzType.PRESET,
 		})
@@ -956,7 +975,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.TCPSEND) {
 		const m = literal<MappingTCPSend>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -965,7 +984,7 @@ export function getDefaultMappingForDeviceType(
 		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? -1) + 1
 		const m = literal<MappingHyperdeck>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingHyperdeckType.TRANSPORT,
 			index,
 			layerName: '', // Set later
@@ -975,7 +994,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.PHAROS) {
 		const m = literal<MappingPharos>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -983,7 +1002,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.OSC) {
 		const m = literal<MappingOSC>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -991,7 +1010,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.HTTPWATCHER) {
 		const m = literal<MappingHTTPWatcher>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -1004,7 +1023,7 @@ export function getDefaultMappingForDeviceType(
 			) ?? -1) + 1
 		const m = literal<MappingSisyfos>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingSisyfosType.CHANNEL,
 			channel,
 			layerName: '', // Set later
@@ -1017,7 +1036,7 @@ export function getDefaultMappingForDeviceType(
 
 		const m = literal<MappingQuantel>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			channelId,
 			layerName: '', // Set later
 			portId: 'port-id',
@@ -1027,7 +1046,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.VIZMSE) {
 		const m = literal<MappingVizMSE>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -1035,7 +1054,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.SINGULAR_LIVE) {
 		const m = literal<MappingSingularLive>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 			compositionName: 'composition-name',
 		})
@@ -1044,7 +1063,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.SHOTOKU) {
 		const m = literal<MappingShotoku>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -1053,7 +1072,7 @@ export function getDefaultMappingForDeviceType(
 		const m = literal<MappingVMixProgram>({
 			index: 1,
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingVMixType.Program,
 			layerName: '', // Set later
 		})
@@ -1062,7 +1081,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.OBS) {
 		const m = literal<MappingOBS>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			mappingType: MappingOBSType.CurrentScene,
 			layerName: '', // Set later
 		})
@@ -1071,7 +1090,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.SOFIE_CHEF) {
 		const m = literal<MappingSofieChef>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 			windowId: 'default',
 		})
@@ -1080,7 +1099,7 @@ export function getDefaultMappingForDeviceType(
 	} else if (deviceType === DeviceType.TELEMETRICS) {
 		const m = literal<Mapping>({
 			device: deviceType,
-			deviceId,
+			deviceId: deviceIdStr,
 			layerName: '', // Set later
 		})
 		m.layerName = getDefaultLayerName(m)
@@ -1089,7 +1108,7 @@ export function getDefaultMappingForDeviceType(
 		assertNever(deviceType)
 		const m = literal<Mapping>({
 			device: deviceType,
-			deviceId: deviceId,
+			deviceId: deviceIdStr,
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
@@ -1187,7 +1206,7 @@ function getLastBiggestValue(
 	filterFunction: (mapping: AnyMapping) => number | false | undefined
 ): number | undefined {
 	let lastBiggest: number | undefined = undefined
-	Object.values(mappings).forEach((mapping) => {
+	Object.values<Mapping>(mappings).forEach((mapping) => {
 		const value = filterFunction(mapping as any)
 		if (value !== undefined && value !== false) {
 			if (lastBiggest === undefined || value > lastBiggest) {
@@ -1232,7 +1251,7 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 
 export type SortedMappings = { layerId: string; mapping: Mapping }[]
 export function sortMappings(mappings: Mappings): SortedMappings {
-	return Object.entries(mappings)
+	return Object.entries<Mapping>(mappings)
 		.map(([layerId, mapping]) => ({
 			layerId,
 			mapping,

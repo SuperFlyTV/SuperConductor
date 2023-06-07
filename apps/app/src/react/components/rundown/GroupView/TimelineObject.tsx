@@ -16,6 +16,7 @@ import { computed } from 'mobx'
 import { millisecondsToTime } from '../../../../lib/timeLib'
 import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
 import { CB } from '../../../lib/errorHandling'
+import { TSRDeviceId } from '@shared/models'
 
 const HANDLE_WIDTH = 8
 
@@ -30,6 +31,8 @@ export const TimelineObject: React.FC<{
 	resolved: ResolvedTimelineObject['resolved']
 	locked?: boolean
 	warnings?: string[]
+	deviceId?: TSRDeviceId
+	overlapping?: boolean
 }> = observer(function TimelineObject({
 	groupId,
 	partId,
@@ -39,6 +42,8 @@ export const TimelineObject: React.FC<{
 	msPerPixel,
 	locked,
 	warnings,
+	deviceId,
+	overlapping,
 }) {
 	const ref = useRef<HTMLDivElement>(null)
 
@@ -52,6 +57,8 @@ export const TimelineObject: React.FC<{
 
 	const selectable = !locked
 	const movable = !locked
+
+	const deviceMetadata = deviceId ? store.resourcesAndMetadataStore.getMetadata(deviceId) : null
 
 	const dragData = useRef({
 		msPerPixel,
@@ -192,7 +199,7 @@ export const TimelineObject: React.FC<{
 		widthPercentage = null
 	}
 
-	const description = describeTimelineObject(obj)
+	const description = describeTimelineObject(obj, deviceMetadata)
 
 	useEffect(() => {
 		const onKey = () => {
@@ -374,6 +381,7 @@ export const TimelineObject: React.FC<{
 				isAtMinWidth,
 				locked,
 				warning: warnings && warnings.length > 0,
+				overlapping,
 			})}
 			style={{
 				left: `${startPercentage}%`,

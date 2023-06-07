@@ -1,30 +1,46 @@
 import { DeviceOptionsTCPSend } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, TCPRequest } from '@shared/models'
+import {
+	protectString,
+	ResourceAny,
+	ResourceId,
+	ResourceType,
+	TCPRequest,
+	TCPSendMetadata,
+	MetadataAny,
+	MetadataType,
+	TSRDeviceId,
+} from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class TCPSendSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsTCPSend, _log: LoggerLike) {}
-	async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	constructor(private deviceId: TSRDeviceId, _deviceOptions: DeviceOptionsTCPSend, _log: LoggerLike) {}
+	async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
-	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+	private async _refreshResourcesAndMetadata() {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: TCPSendMetadata = { metadataType: MetadataType.TCP_SEND }
 
-		// HTTP Request
+		// TCP Request
 		{
 			const resource: TCPRequest = {
 				resourceType: ResourceType.TCP_REQUEST,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_tcp_request`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'TCP Request',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

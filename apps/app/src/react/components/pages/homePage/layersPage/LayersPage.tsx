@@ -14,6 +14,7 @@ import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
+import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
 
 export const LayersPage: React.FC<{ project: Project }> = observer(function LayersPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
@@ -31,7 +32,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 	)
 
 	const devicesWithMappings: Map<
-		string,
+		TSRDeviceId,
 		{
 			device: DeviceOptionsAny | undefined
 			mappings: SortedMappings
@@ -45,13 +46,14 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 		})
 	}
 	for (const m of sortMappings(project.mappings)) {
-		let d = devicesWithMappings.get(m.mapping.deviceId)
+		const mappingDeviceId = protectString<TSRDeviceId>(m.mapping.deviceId)
+		let d = devicesWithMappings.get(mappingDeviceId)
 		if (!d) {
 			d = {
 				device: undefined,
 				mappings: [],
 			}
-			devicesWithMappings.set(m.mapping.deviceId, d)
+			devicesWithMappings.set(mappingDeviceId, d)
 		}
 		d.mappings.push(m)
 	}
@@ -62,13 +64,15 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 				const device = d.device
 				const mappings = d.mappings
 
+				const deviceIdStr = unprotectString(deviceId)
+
 				const deviceName = getDeviceName(project, deviceId)
 
 				const nameToShow = deviceName ? deviceName : 'Untitled device'
 
 				return (
 					<RoundedSection
-						key={deviceId}
+						key={deviceIdStr}
 						title={
 							<>
 								<DeviceIcon type={device?.type} />
@@ -79,7 +83,7 @@ export const LayersPage: React.FC<{ project: Project }> = observer(function Laye
 						<ScList
 							list={mappings
 								.filter(({ mapping }) => {
-									return mapping.deviceId === deviceId
+									return mapping.deviceId === deviceIdStr
 								})
 								.map(({ layerId, mapping }) => {
 									return {

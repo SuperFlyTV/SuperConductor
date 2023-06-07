@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { Conductor, ConductorOptions, DeviceOptionsAny, DeviceType, OSCDeviceType } from 'timeline-state-resolver'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny, TSRDeviceId, unprotectString } from '@shared/models'
 import { BridgeAPI, LoggerLike } from '@shared/api'
 import { CasparCGSideload } from './sideload/CasparCG'
 import { AtemSideload } from './sideload/Atem'
@@ -17,13 +17,12 @@ export class TSR {
 	public newConnection = false
 	public conductor: Conductor
 	public send: (message: BridgeAPI.FromBridge.Any) => void
-	private devices: { [deviceId: string]: DeviceOptionsAny } = {}
+	private devices = new Map<TSRDeviceId, DeviceOptionsAny>()
 
-	private sideLoadedDevices: {
-		[deviceId: string]: SideLoadDevice
-	} = {}
+	private sideLoadedDevices = new Map<TSRDeviceId, SideLoadDevice>()
+
 	private currentTimeDiff = 0
-	private deviceStatus: { [deviceId: string]: DeviceStatus } = {}
+	private deviceStatus = new Map<TSRDeviceId, DeviceStatus>()
 
 	constructor(private log: LoggerLike) {
 		const c: ConductorOptions = {
@@ -61,20 +60,19 @@ export class TSR {
 		return Date.now() + this.currentTimeDiff
 	}
 
-	public async updateDevices(newDevices: { [deviceId: string]: DeviceOptionsAny }): Promise<void> {
+	public async updateDevices(newDevices: Map<TSRDeviceId, DeviceOptionsAny>): Promise<void> {
 		// Added/updated:
-		for (const deviceId in newDevices) {
-			const newDevice = newDevices[deviceId]
+		for (const [deviceId, newDevice] of newDevices.entries()) {
 			if (newDevice.disable) continue
 
-			const existingDevice = this.devices[deviceId]
+			const existingDevice = this.devices.get(deviceId)
 
 			if (!existingDevice || !_.isEqual(existingDevice, newDevice)) {
 				if (existingDevice) {
-					await this.conductor.removeDevice(deviceId)
+					await this.conductor.removeDevice(unprotectString(deviceId))
 				}
 
-				this.devices[deviceId] = newDevice
+				this.devices.set(deviceId, newDevice)
 				this.onDeviceStatus(deviceId, {
 					statusCode: StatusCode.UNKNOWN,
 					messages: ['Initializing'],
@@ -86,7 +84,7 @@ export class TSR {
 					this.sideLoadDevice(deviceId, newDevice)
 
 					// Create the device, but don't initialize it:
-					const device = await this.conductor.createDevice(deviceId, newDevice)
+					const device = await this.conductor.createDevice(unprotectString(deviceId), newDevice)
 
 					await device.device.on('connectionChanged', (...args) => {
 						// TODO: figure out why the arguments to this event callback lost the correct typings
@@ -99,30 +97,31 @@ export class TSR {
 					// await device.device.on('error', (e: any, ...args: any[]) => this.logger.error(fixError(e), ...args))
 
 					// now initialize it
-					await this.conductor.initDevice(deviceId, newDevice)
+					await this.conductor.initDevice(unprotectString(deviceId), newDevice)
 
 					this.onDeviceStatus(deviceId, await device.device.getStatus())
 				})().catch((error) => this.log.error('TSR device error: ' + stringifyError(error)))
 			}
 		}
 		// Removed:
-		for (const deviceId in this.devices) {
-			const newDevice = newDevices[deviceId]
+		for (const deviceId of this.devices.keys()) {
+			const newDevice = newDevices.get(deviceId)
 			if (!newDevice || newDevice.disable) {
 				// Delete the sideloaded device, if any
-				if (deviceId in this.sideLoadedDevices) {
-					await this.sideLoadedDevices[deviceId].close()
-					delete this.sideLoadedDevices[deviceId]
+				const sideLoadedDevice = this.sideLoadedDevices.get(deviceId)
+				if (sideLoadedDevice) {
+					await sideLoadedDevice.close()
+					this.sideLoadedDevices.delete(deviceId)
 				}
 
 				// HACK: There are some scenarios in which this method will never return.
 				// For example, when trying to remove a CasparCG device that has never connected.
 				// So, to prevent this code from being blocked indefinitely waiting for this promise
 				// to resolve, we instead let it run async.
-				this.conductor.removeDevice(deviceId).catch((e) => this.log.error(e))
+				this.conductor.removeDevice(unprotectString(deviceId)).catch((e) => this.log.error(e))
 
-				delete this.devices[deviceId]
-				delete this.deviceStatus[deviceId]
+				this.devices.delete(deviceId)
+				this.deviceStatus.delete(deviceId)
 				this.reportRemovedDevice(deviceId)
 				this.log.info(`TSR Device ${deviceId} removed.`)
 			}
@@ -130,8 +129,10 @@ export class TSR {
 
 		this.newConnection = false
 	}
-	public refreshResources(cb: (deviceId: string, resources: ResourceAny[]) => void): void {
-		for (const [deviceId, sideload] of Object.entries(this.sideLoadedDevices)) {
+	public refreshResourcesAndMetadata(
+		cb: (deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny) => void
+	): void {
+		for (const [deviceId, sideload] of this.sideLoadedDevices.entries()) {
 			let timedOut = false
 			this.send({
 				type: 'DeviceRefreshStatus',
@@ -149,9 +150,9 @@ export class TSR {
 			}, 10 * 1000)
 
 			sideload
-				.refreshResources()
-				.then((resources) => {
-					cb(deviceId, resources)
+				.refreshResourcesAndMetadata()
+				.then((resourcesAndMetadata) => {
+					cb(deviceId, resourcesAndMetadata.resources, resourcesAndMetadata.metadata)
 				})
 				.catch((e) => this.log.error(e))
 				.finally(() => {
@@ -167,45 +168,45 @@ export class TSR {
 		}
 	}
 	public reportAllStatuses(): void {
-		for (const deviceId of Object.keys(this.deviceStatus)) {
+		for (const deviceId of this.deviceStatus.keys()) {
 			this.reportDeviceStatus(deviceId)
 		}
 	}
-	private sideLoadDevice(deviceId: string, deviceOptions: DeviceOptionsAny) {
+	private sideLoadDevice(deviceId: TSRDeviceId, deviceOptions: DeviceOptionsAny) {
 		// So yeah, this is a hack, ideally we should be able to get references
 		// to the devices out of TSR, but hit will do for now...
 
-		const existingDevice = this.sideLoadedDevices[deviceId]
+		const existingDevice = this.sideLoadedDevices.get(deviceId)
 		if (existingDevice) {
 			return
 		}
 
 		if (deviceOptions.type === DeviceType.CASPARCG) {
-			this.sideLoadedDevices[deviceId] = new CasparCGSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new CasparCGSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.ATEM) {
-			this.sideLoadedDevices[deviceId] = new AtemSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new AtemSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.OBS) {
-			this.sideLoadedDevices[deviceId] = new OBSSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new OBSSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.VMIX) {
-			this.sideLoadedDevices[deviceId] = new VMixSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new VMixSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.OSC) {
-			this.sideLoadedDevices[deviceId] = new OSCSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new OSCSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.HTTPSEND) {
-			this.sideLoadedDevices[deviceId] = new HTTPSendSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new HTTPSendSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.HYPERDECK) {
-			this.sideLoadedDevices[deviceId] = new HyperdeckSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new HyperdeckSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.TCPSEND) {
-			this.sideLoadedDevices[deviceId] = new TCPSendSideload(deviceId, deviceOptions, this.log)
+			this.sideLoadedDevices.set(deviceId, new TCPSendSideload(deviceId, deviceOptions, this.log))
 		}
 	}
-	private onDeviceStatus(deviceId: string, status: DeviceStatus) {
-		this.deviceStatus[deviceId] = status
+	private onDeviceStatus(deviceId: TSRDeviceId, status: DeviceStatus) {
+		this.deviceStatus.set(deviceId, status)
 
 		this.reportDeviceStatus(deviceId)
 	}
-	private reportDeviceStatus(deviceId: string) {
-		const status = this.deviceStatus[deviceId]
-		const device = this.devices[deviceId]
+	private reportDeviceStatus(deviceId: TSRDeviceId) {
+		const status = this.deviceStatus.get(deviceId)
+		const device = this.devices.get(deviceId)
 
 		if (status && device) {
 			// Hack to get rid of warnings for UDP OSC devices, which always have an UNKNOWN status code.
@@ -220,7 +221,7 @@ export class TSR {
 			})
 		}
 	}
-	private reportRemovedDevice(deviceId: string) {
+	private reportRemovedDevice(deviceId: TSRDeviceId) {
 		this.send({
 			type: 'deviceRemoved',
 			deviceId,

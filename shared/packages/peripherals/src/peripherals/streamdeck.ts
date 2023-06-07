@@ -1,12 +1,13 @@
 import _ from 'lodash'
 import sharp from 'sharp'
-import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralInfo, PeripheralType } from '@shared/api'
+import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
 import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
+import { protectString } from '@shared/models'
 
 export class PeripheralStreamDeck extends Peripheral {
 	private static Watching = false
@@ -72,10 +73,12 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 	}
 
-	private static GetStreamDeckId(this: void, streamDeck: StreamDeckDeviceInfo): string {
-		return streamDeck.serialNumber
-			? `streamdeck-serial_${streamDeck.serialNumber}`
-			: `streamdeck-path_${streamDeck.path}`
+	private static GetStreamDeckId(this: void, streamDeck: StreamDeckDeviceInfo): PeripheralId {
+		return protectString(
+			streamDeck.serialNumber
+				? `streamdeck-serial_${streamDeck.serialNumber}`
+				: `streamdeck-path_${streamDeck.path}`
+		)
 	}
 
 	private static GetStreamDeckName(streamDeck: StreamDeckDeviceInfo | StreamDeck): string {
@@ -119,7 +122,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private virtualPage = 0
 
-	constructor(log: LoggerLike, id: string, private path: string) {
+	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
 		super(log, id)
 	}
 
@@ -304,7 +307,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			if (oldKeyDisplay?.area?.areaId !== keyDisplay.area?.areaId) {
 				const adjacentButtons = this.getAdjacentKeys(key)
 
-				for (const keyIndex of Object.values(adjacentButtons)) {
+				for (const keyIndex of Object.values<number | null>(adjacentButtons)) {
 					if (keyIndex !== null) {
 						const identifier = this.keyIndexToIdentifier(keyIndex, 'button')
 						await this._setKeyDisplayInternal(identifier, this.displayKeyDisplay[identifier], true)

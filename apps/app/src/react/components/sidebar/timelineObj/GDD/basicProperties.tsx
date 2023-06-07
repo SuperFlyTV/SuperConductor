@@ -16,7 +16,8 @@ import { FloatInput } from '../../../inputs/FloatInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { componentAny } from './componentAny'
-import { EditProperty, getEditPropertyMeta, PropertyProps } from './lib'
+import { getEditPropertyMeta, PropertyProps } from './lib'
+import { EditProperty } from './util'
 
 export const basicPropertyUnknown: React.FC<PropertyProps<GDDSchema> & { basicType: string }> = (props) => {
 	return (
@@ -122,7 +123,7 @@ export const basicPropertyArray: React.FC<PropertyProps<GDDSchemaPropertyArray>>
 
 	let columns: [string, GDDSchemaProperty][] = []
 	if (schema.items.type === 'object') {
-		columns = Object.entries(schema.items.properties)
+		columns = Object.entries<GDDSchemaProperty>(schema.items.properties)
 	} else {
 		columns = [['', schema.items]]
 	}
@@ -208,7 +209,7 @@ export const basicPropertyObject: React.FC<PropertyProps<GDDSchemaPropertyObject
 	if (props.inTableRow) {
 		return (
 			<>
-				{Object.entries(properties).map(([subProperty, subSchema]) => {
+				{Object.entries<GDDSchemaProperty>(properties).map(([subProperty, subSchema]) => {
 					const propData = data[subProperty]
 					const propSetData = (d: any) => {
 						data[subProperty] = d
@@ -233,7 +234,7 @@ export const basicPropertyObject: React.FC<PropertyProps<GDDSchemaPropertyObject
 		return (
 			<EditProperty className="gdd-edit-data__object" {...props}>
 				<div className="gdd-edit-data__properties">
-					{Object.entries(properties).map(([subProperty, subSchema]) => {
+					{Object.entries<GDDSchemaProperty>(properties).map(([subProperty, subSchema]) => {
 						const propData = data[subProperty]
 						const propSetData = (d: any) => {
 							data[subProperty] = d

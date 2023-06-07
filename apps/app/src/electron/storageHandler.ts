@@ -8,16 +8,17 @@ import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData } from '../models/App/AppData'
 import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
-import { ResourceAny } from '@shared/models'
+import { protectString, ResourceAny, ResourceId, MetadataAny, TSRDeviceId } from '@shared/models'
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
 import { getPartLabel, shortID } from '../lib/util'
-import { DeviceType, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { DeviceType, Mapping, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
+import { Bridge } from '../models/project/Bridge'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -51,10 +52,15 @@ export class StorageHandler extends EventEmitter {
 	private rundownsHasChanged = new Set<string>()
 	private emittedRundowns = new Set<string>()
 
-	private resources: { [resourceId: string]: FileResource } = {}
-	private resourcesHasChanged = new Set<string>()
-	private emittedResources = new Set<string>()
+	private resources: Map<ResourceId, FileResource> = new Map()
+	private resourcesHasChanged = new Set<ResourceId>()
+	private emittedResources = new Set<ResourceId>()
 	private resourcesNeedsWrite = false
+
+	private metadata = new Map<TSRDeviceId, FileMetadata>()
+	private metadataHasChanged = new Set<TSRDeviceId>()
+	private emittedMetadata = new Set<TSRDeviceId>()
+	private metadataNeedsWrite = false
 
 	private analogInputs: { [fullIdentifier: string]: FileAnalogInput } = {}
 	private analogInputsHasChanged = new Set<string>()
@@ -270,7 +276,7 @@ export class StorageHandler extends EventEmitter {
 		} else return rundown
 	}
 	getAllRundowns(): Rundown[] {
-		return Object.entries(this.openRundowns).map(([fileName, fileRundown]) => {
+		return Object.entries<FileRundown>(this.openRundowns).map(([fileName, fileRundown]) => {
 			return {
 				id: fileName,
 				...fileRundown.rundown,
@@ -464,31 +470,31 @@ export class StorageHandler extends EventEmitter {
 		return newFileName
 	}
 
-	getResources(): { [id: string]: ResourceAny } {
-		const resources: { [id: string]: ResourceAny } = {}
-		for (const [id, resource] of Object.entries(this.resources)) {
+	getResources(): Map<ResourceId, ResourceAny> {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		for (const [id, resource] of this.resources.entries()) {
 			if (resource.deleted) continue
-			resources[id] = resource.resource
+			resources.set(id, resource.resource)
 		}
 		return resources
 	}
-	getResource(id: string): ResourceAny | undefined {
-		const resource = this.resources[id] as FileResource | undefined
+	getResource(id: ResourceId): ResourceAny | undefined {
+		const resource = this.resources.get(id)
 		if (resource?.deleted) return undefined
 		else return resource?.resource
 	}
-	getResourceIds(deviceId: string): string[] {
-		const ids: string[] = []
-		for (const [id, resource] of Object.entries(this.resources)) {
+	getResourceIds(deviceId: TSRDeviceId): ResourceId[] {
+		const ids: ResourceId[] = []
+		for (const [id, resource] of this.resources.entries()) {
 			if (resource.deleted) continue
 			if (resource.resource.deviceId === deviceId) ids.push(id)
 		}
 		return ids
 	}
-	updateResource(id: string, resource: ResourceAny | null): void {
+	updateResource(id: ResourceId, resource: ResourceAny | null): void {
 		if (resource) {
 			// Set added and modified timestamps
-			let existing = this.resources[id] as FileResource | undefined
+			let existing = this.resources.get(id)
 
 			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
 				// It has been deleted for some time
@@ -514,18 +520,70 @@ export class StorageHandler extends EventEmitter {
 			}
 
 			if (hasChanged) {
-				this.resources[id] = {
+				this.resources.set(id, {
 					version: CURRENT_STORAGE_VERSION,
 					id,
 					resource,
-				}
-				this.triggerUpdate({ resources: { [id]: true } })
+				})
+				this.triggerUpdate({ resources: new Set([id]) })
 			}
 		} else {
-			this.resources[id].deleted = Date.now()
-			this.triggerUpdate({ resources: { [id]: true } })
+			const resource = this.resources.get(id)
+			if (resource) resource.deleted = Date.now()
+			this.triggerUpdate({ resources: new Set([id]) })
 		}
 	}
+
+	getMetadata(deviceId: TSRDeviceId): MetadataAny | undefined {
+		const metadata = this.metadata.get(deviceId)
+		if (metadata?.deleted) return undefined
+		else return metadata?.metadata
+	}
+	updateMetadata(deviceId: TSRDeviceId, metadata: MetadataAny | null): void {
+		if (metadata) {
+			// Set added and modified timestamps
+			let existing = this.metadata.get(deviceId)
+
+			if (existing && existing.deleted && Date.now() - existing.deleted > 10 * 1000) {
+				// It has been deleted for some time
+				existing = undefined
+			}
+
+			let hasChanged: boolean
+
+			if (existing) {
+				metadata.added = existing.metadata.added
+
+				if (_.isEqual(_.omit(existing.metadata, 'added', 'modified'), _.omit(metadata, 'added', 'modified'))) {
+					// No change
+					hasChanged = false
+				} else {
+					metadata.modified = Date.now()
+					hasChanged = true
+				}
+			} else {
+				metadata.added = Date.now()
+				metadata.modified = Date.now()
+				hasChanged = true
+			}
+
+			if (hasChanged) {
+				this.metadata.set(deviceId, {
+					version: CURRENT_STORAGE_VERSION,
+					deviceId,
+					metadata,
+				})
+				this.triggerUpdate({ metadata: [deviceId] })
+			}
+		} else {
+			const existing = this.metadata.get(deviceId)
+			if (existing) {
+				existing.deleted = Date.now()
+				this.triggerUpdate({ metadata: [deviceId] })
+			}
+		}
+	}
+
 	/**
 	 * This function is intended for developers only.
 	 * When called, it replaces all data with a "large" dataset, which can be used to test the GUI.
@@ -594,9 +652,10 @@ export class StorageHandler extends EventEmitter {
 		project?: true
 		rundowns?: { [rundownId: string]: true }
 		closedRundowns?: true
-		resources?: { [resourceId: string]: true }
+		resources?: Set<ResourceId>
 		analogInputs?: { [fullIdentifier: string]: true }
 		gddCache?: true
+		metadata?: TSRDeviceId[]
 	}): void {
 		if (updates.appData) {
 			this.appDataHasChanged = true
@@ -613,7 +672,7 @@ export class StorageHandler extends EventEmitter {
 			}
 		}
 		if (updates.resources) {
-			for (const resourceId of Object.keys(updates.resources)) {
+			for (const resourceId of updates.resources.keys()) {
 				this.resourcesHasChanged.add(resourceId)
 				this.resourcesNeedsWrite = true
 			}
@@ -626,6 +685,12 @@ export class StorageHandler extends EventEmitter {
 		}
 		if (updates.gddCache) {
 			this.gddCacheNeedsWrite = true
+		}
+		if (updates.metadata) {
+			for (const deviceId of updates.metadata) {
+				this.metadataHasChanged.add(deviceId)
+				this.metadataNeedsWrite = true
+			}
 		}
 
 		if (!this.emitTimeout) {
@@ -823,16 +888,16 @@ export class StorageHandler extends EventEmitter {
 
 		return rundown
 	}
-	private loadResources(): { [resourceId: string]: FileResource } {
-		let resources: { [resourceId: string]: FileResource } | undefined = {}
+	private loadResources(): Map<ResourceId, FileResource> {
+		let resources: Map<ResourceId, FileResource> | undefined = undefined
 		const resourcesPath = this.resourcesPath(this._projectId)
 		try {
 			const read = fs.readFileSync(resourcesPath, 'utf8')
-			resources = JSON.parse(read)
+			resources = new Map(Object.entries<unknown>(JSON.parse(read))) as unknown as Map<ResourceId, FileResource>
 		} catch (error) {
 			if ((error as any)?.code === 'ENOENT') {
 				// not found
-				resources = {}
+				resources = undefined
 			} else {
 				throw new Error(`Unable to read Resources file "${resourcesPath}": ${error}`)
 			}
@@ -843,13 +908,17 @@ export class StorageHandler extends EventEmitter {
 			const tmpPath = this.getTmpFilePath(resourcesPath)
 			try {
 				const read = fs.readFileSync(tmpPath, 'utf8')
-				resources = JSON.parse(read)
+				resources = new Map(Object.entries<unknown>(JSON.parse(read))) as unknown as Map<
+					ResourceId,
+					FileResource
+				>
 
 				// If we only have a temporary file, we should write to the real one asap:
 				this.resourcesNeedsWrite = true
 			} catch (error) {
 				if ((error as any)?.code === 'ENOENT') {
 					// not found
+					resources = undefined
 				} else {
 					throw new Error(`Unable to read temp Resources file "${tmpPath}": ${error}`)
 				}
@@ -862,18 +931,19 @@ export class StorageHandler extends EventEmitter {
 					typeof oldResource === 'object' &&
 					(oldResource.version === undefined || oldResource.resource === undefined)
 				) {
+					const protectedId = protectString<ResourceId>(id)
 					const newResource: FileResource = {
 						version: CURRENT_STORAGE_VERSION,
-						id: id,
+						id: protectedId,
 						resource: oldResource,
 					}
-					resources[id] = newResource
+					resources.set(protectedId, newResource)
 				}
 			}
 		}
 
 		if (!resources) {
-			resources = {}
+			resources = new Map()
 		}
 
 		return resources
@@ -971,7 +1041,7 @@ export class StorageHandler extends EventEmitter {
 			for (const fileName of this.emittedRundowns.keys()) {
 				this.rundownsHasChanged.add(fileName)
 			}
-			for (const resourceId of Object.keys(this.resources)) {
+			for (const resourceId of this.resources.keys()) {
 				this.resourcesHasChanged.add(resourceId)
 			}
 			// Also add previously emitted resources, so that removed resources are emitted:
@@ -1013,7 +1083,7 @@ export class StorageHandler extends EventEmitter {
 			else this.emittedRundowns.delete(fileName)
 		}
 		for (const resourceId of this.resourcesHasChanged.keys()) {
-			let resource = this.resources[resourceId] as FileResource | undefined
+			let resource = this.resources.get(resourceId)
 			if (resource && resource.deleted) resource = undefined
 			const emittedResource = resource?.resource ?? null
 			this.emit('resource', resourceId, emittedResource)
@@ -1021,6 +1091,16 @@ export class StorageHandler extends EventEmitter {
 			this.resourcesHasChanged.delete(resourceId)
 			if (emittedResource) this.emittedResources.add(resourceId)
 			else this.emittedResources.delete(resourceId)
+		}
+		for (const deviceId of this.metadataHasChanged.keys()) {
+			let metadata = this.metadata.get(deviceId)
+			if (metadata && metadata.deleted) metadata = undefined
+			const emittedMetadata = metadata?.metadata ?? null
+			this.emit('metadata', deviceId, emittedMetadata)
+
+			this.metadataHasChanged.delete(deviceId)
+			if (emittedMetadata) this.emittedMetadata.add(deviceId)
+			else this.emittedMetadata.delete(deviceId)
 		}
 		for (const fullIdentifier of this.analogInputsHasChanged.keys()) {
 			const analogInput = this.analogInputs[fullIdentifier] as FileAnalogInput | undefined
@@ -1122,7 +1202,7 @@ export class StorageHandler extends EventEmitter {
 		}
 	}
 	private ensureCompatibilityProject(project: Omit<Project, 'id'>) {
-		for (const bridge of Object.values(project.bridges)) {
+		for (const bridge of Object.values<Bridge>(project.bridges)) {
 			// This object was renamed on 2022-10-16 to avoid confusion.
 			if (!bridge.clientSidePeripheralSettings) {
 				if ((bridge as any).peripheralSettings) {
@@ -1149,7 +1229,7 @@ export class StorageHandler extends EventEmitter {
 		// Ensure mapping id's are valid, Timeline-wise:
 		const mappings = project.mappings
 		project.mappings = {}
-		for (const [layerName, mapping] of Object.entries(mappings)) {
+		for (const [layerName, mapping] of Object.entries<Mapping>(mappings)) {
 			project.mappings[ensureValidId(layerName)] = mapping
 		}
 	}
@@ -1213,9 +1293,15 @@ export class StorageHandler extends EventEmitter {
 	private cleanUpData() {
 		const GRACE_PERIOD = 1000 * 60 // 1 minute
 		// Remove deleted resources:
-		for (const [resourceId, resource] of Object.entries(this.resources)) {
+		for (const [resourceId, resource] of this.resources.entries()) {
 			if (resource.deleted && Date.now() - resource.deleted > GRACE_PERIOD) {
-				delete this.resources[resourceId]
+				this.resources.delete(resourceId)
+			}
+		}
+		// Remove deleted metadata:
+		for (const [deviceId, metadata] of this.metadata.entries()) {
+			if (metadata.deleted && Date.now() - metadata.deleted > GRACE_PERIOD) {
+				this.metadata.delete(deviceId)
 			}
 		}
 	}
@@ -1277,7 +1363,7 @@ interface FileRundown {
 }
 interface FileResource {
 	version: number
-	id: string
+	id: ResourceId
 
 	/**
 	 * Is set when the resource is deleted. [timestamp]
@@ -1289,6 +1375,16 @@ interface FileAnalogInput {
 	version: number
 
 	analogInput: AnalogInput
+}
+interface FileMetadata {
+	version: number
+	deviceId: TSRDeviceId
+
+	/**
+	 * Is set when the metadata is deleted. [timestamp]
+	 * Used to keep the metadata around for some time, in case there is a "blip" where a metadata is temporary removed (like on startups). */
+	deleted?: number
+	metadata: MetadataAny
 }
 /** Current version, used to migrate old data structures into new ones */
 const CURRENT_STORAGE_VERSION = 0

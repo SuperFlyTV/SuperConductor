@@ -22,7 +22,7 @@ export const SelectEnumMultiple: React.FC<SelectEnumMultipleProps<string> | Sele
 	width,
 	disabled,
 }) => {
-	const allOptions: { [key: string]: { value: string | number; label: string } } = {}
+	const allOptions: { [key: string]: OptionInternal } = {}
 
 	// Convert Typescript-enum to key-values:
 
@@ -80,7 +80,7 @@ export const SelectEnumMultiple: React.FC<SelectEnumMultipleProps<string> | Sele
 				sx={{ width: width }}
 				disabled={disabled}
 			>
-				{Object.entries(allOptions).map(([key, value]) => {
+				{Object.entries<OptionInternal>(allOptions).map(([key, value]) => {
 					return (
 						<MenuItem key={key} value={value.value}>
 							{value.label}
@@ -90,4 +90,8 @@ export const SelectEnumMultiple: React.FC<SelectEnumMultipleProps<string> | Sele
 			</Select>
 		</FormControl>
 	)
+}
+interface OptionInternal {
+	value: string | number
+	label: string
 }

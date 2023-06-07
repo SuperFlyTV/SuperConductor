@@ -1,4 +1,4 @@
-import { Group, PlayoutMode } from '../../models/rundown/Group'
+import { Group, PlayingPart, PlayoutMode } from '../../models/rundown/Group'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataMulti,
@@ -49,7 +49,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 
 		let lastStopTime: number | undefined = undefined
 		let userAction: PlayAction | undefined = undefined
-		for (const [playingPartId, playingPart] of Object.entries(group.playout.playingParts)) {
+		for (const [playingPartId, playingPart] of Object.entries<PlayingPart>(group.playout.playingParts)) {
 			if (!playingPart.fromSchedule) {
 				if (!userAction || userAction.time < playingPart.startTime) {
 					userAction = {
@@ -270,7 +270,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 		const actions: { [partId: string]: PlayAction[] } = {}
 		const lastStopTime: { [partId: string]: number } = {}
 
-		for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+		for (const [partId, playingPart] of Object.entries<PlayingPart>(group.playout.playingParts)) {
 			if (!actions[partId]) actions[partId] = []
 			if (!playingPart.fromSchedule) {
 				actions[partId].push({
@@ -310,7 +310,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 			}
 		}
 
-		for (const actionsForPart of Object.values(actions)) {
+		for (const actionsForPart of Object.values<PlayAction[]>(actions)) {
 			// Sort in time ascending:
 			actionsForPart.sort((a, b) => {
 				return a.time + (a.pauseTime ?? 0) - (b.time + (b.pauseTime ?? 0))
@@ -332,7 +332,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 				validUntil: validUntil,
 			}
 
-			for (const [partId, partActions] of Object.entries(actions)) {
+			for (const [partId, partActions] of Object.entries<PlayAction[]>(actions)) {
 				const partSections: GroupPreparedPlayDataSection[] = []
 
 				const actionPart = findPart(group, partId)

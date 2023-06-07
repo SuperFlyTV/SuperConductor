@@ -63,10 +63,6 @@
 				}
 			}
 
-			&.warning {
-				background: $invalidLayerColor !important;
-			}
-
 			.transition {
 				z-index: 1;
 				position: absolute;
@@ -166,6 +162,14 @@
 			}
 
 			@include useObjectTypeStyles();
+
+			&.warning {
+				background: $invalidLayerColor;
+
+				&.overlapping {
+					animation: timeline-obj-overlap-animation 1.5s steps(1, start) 0s infinite;
+				}
+			}
 		}
 	}
 }
@@ -177,5 +181,11 @@
 				transition: none;
 			}
 		}
+	}
+}
+
+@keyframes timeline-obj-overlap-animation {
+	50% {
+		background: #c2424290;
 	}
 }

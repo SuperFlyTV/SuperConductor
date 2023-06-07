@@ -5,6 +5,7 @@ import { AppSettings, AppSystem } from '../../models/AppData'
 import { IPCServerContext } from '../contexts/IPCServer'
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 import classNames from 'classnames'
+import { protectString } from '@shared/models'
 
 function logError(...args: any[]): void {
 	// eslint-disable-next-line no-console
@@ -119,7 +120,7 @@ export const Settings: React.FC<{
 									label="Bridge ID"
 									value={bridgeId}
 									sx={{ marginRight: '0.5rem' }}
-									onChange={(event) => setBridgeId(event.target.value)}
+									onChange={(event) => setBridgeId(protectString(event.target.value))}
 									onBlur={() => updateSettings({ bridgeId })}
 								/>
 							</div>

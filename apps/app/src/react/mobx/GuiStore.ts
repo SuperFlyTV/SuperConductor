@@ -1,4 +1,5 @@
 import { deepClone } from '@shared/lib'
+import { ResourceId, TSRDeviceId } from '@shared/models'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import {
@@ -54,11 +55,11 @@ export interface TimelineObjectMove {
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 interface ResourceLibrarySettings {
 	/** A list of the selected resources, sorted in the order they where selected */
-	selectedResourceIds: string[]
+	selectedResourceIds: ResourceId[]
 	/** A reference to the latest selected Resource */
-	lastSelectedResourceId: string | null
+	lastSelectedResourceId: ResourceId | null
 	nameFilterValue: string
-	deviceFilterValue: string[]
+	deviceFilterValue: TSRDeviceId[]
 	resourceTypeFilterValue: string[]
 	detailedFiltersExpanded: boolean
 }

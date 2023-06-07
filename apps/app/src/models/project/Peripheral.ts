@@ -1,9 +1,10 @@
-import { PeripheralInfo } from '@shared/api'
+import { BridgeId, PeripheralId, PeripheralInfo } from '@shared/api'
 import { RundownTrigger } from '../rundown/Trigger'
+import { protectString } from '@shared/models'
 
 export interface PeripheralStatus {
-	id: string
-	bridgeId: string
+	id: PeripheralId
+	bridgeId: BridgeId
 
 	info: PeripheralInfo
 
@@ -20,3 +21,5 @@ export interface PeripheralArea {
 	assignedToGroupId: string | undefined
 	action: RundownTrigger['action']
 }
+
+export const PERIPHERAL_KEYBOARD = protectString(`keyboard`)

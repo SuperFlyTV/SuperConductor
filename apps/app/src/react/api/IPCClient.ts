@@ -2,7 +2,7 @@ import { IPCClientMethods, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny, ResourceId, SerializedProtectedMap, TSRDeviceId } from '@shared/models'
 import { Rundown } from '../../models/rundown/Rundown'
 import { AppData } from '../../models/App/AppData'
 import { ActiveTriggers } from '../../models/rundown/Trigger'
@@ -10,6 +10,8 @@ import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ClientSideLogger } from './logger'
 import { ActiveAnalog } from '../../models/rundown/Analog'
 import { AnalogInput } from '../../models/project/AnalogInput'
+import { BridgeId } from '@shared/api'
+import { BridgePeripheralId } from '@shared/lib'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {
@@ -22,12 +24,15 @@ export class IPCClient implements IPCClientMethods {
 			updateAppData?: (appData: AppData) => void
 			updateProject?: (project: Project) => void
 			updateRundown?: (fileName: string, rundown: Rundown) => void
-			updateResources?: (resources: Array<{ id: string; resource: ResourceAny | null }>) => void
-			updateBridgeStatus?: (id: string, status: BridgeStatus | null) => void
-			updatePeripheral?: (peripheralId: string, peripheral: PeripheralStatus | null) => void
+			updateResourcesAndMetadata?: (
+				resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+				metadata: SerializedProtectedMap<TSRDeviceId, MetadataAny | null>
+			) => void
+			updateBridgeStatus?: (id: BridgeId, status: BridgeStatus | null) => void
+			updatePeripheral?: (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) => void
 			updatePeripheralTriggers?: (peripheralTriggers: ActiveTriggers) => void
 			updatePeripheralAnalog?: (fullIdentifier: string, analog: ActiveAnalog | null) => void
-			updateDeviceRefreshStatus?: (deviceId: string, refreshing: boolean) => void
+			updateDeviceRefreshStatus?: (deviceId: TSRDeviceId, refreshing: boolean) => void
 			displayAboutDialog?: () => void
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
 			updateFailedGlobalTriggers?: (identifiers: string[]) => void
@@ -60,13 +65,16 @@ export class IPCClient implements IPCClientMethods {
 	updateRundown(fileName: string, rundown: Rundown): void {
 		this.callbacks.updateRundown?.(fileName, rundown)
 	}
-	updateResources(resources: Array<{ id: string; resource: ResourceAny | null }>): void {
-		this.callbacks.updateResources?.(resources)
+	updateResourcesAndMetadata(
+		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
+		metadata: SerializedProtectedMap<TSRDeviceId, MetadataAny | null>
+	): void {
+		this.callbacks.updateResourcesAndMetadata?.(resources, metadata)
 	}
-	updateBridgeStatus(id: string, bridgeStatus: BridgeStatus | null): void {
+	updateBridgeStatus(id: BridgeId, bridgeStatus: BridgeStatus | null): void {
 		this.callbacks.updateBridgeStatus?.(id, bridgeStatus)
 	}
-	updatePeripheral(peripheralId: string, peripheral: PeripheralStatus | null): void {
+	updatePeripheral(peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null): void {
 		this.callbacks.updatePeripheral?.(peripheralId, peripheral)
 	}
 	updatePeripheralTriggers(peripheralTriggers: ActiveTriggers): void {
@@ -75,7 +83,7 @@ export class IPCClient implements IPCClientMethods {
 	updatePeripheralAnalog(fullIdentifier: string, analog: ActiveAnalog | null): void {
 		this.callbacks.updatePeripheralAnalog?.(fullIdentifier, analog)
 	}
-	updateDeviceRefreshStatus(deviceId: string, refreshing: boolean): void {
+	updateDeviceRefreshStatus(deviceId: TSRDeviceId, refreshing: boolean): void {
 		this.callbacks.updateDeviceRefreshStatus?.(deviceId, refreshing)
 	}
 	displayAboutDialog(): void {
