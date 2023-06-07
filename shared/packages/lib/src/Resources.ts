@@ -3,6 +3,7 @@ import { assertNever } from './lib'
 import {
 	TSRTimelineObj,
 	Mappings,
+	Mapping,
 	DeviceType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeCasparCg,
@@ -547,8 +548,9 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 /**
  * Returns a string that uniquely identifies the Resource which would result in a certain TimelineObj.
  */
-export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId {
-	const mapping = mappings[obj.layer]
+export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId | undefined {
+	const mapping = mappings[obj.layer] as Mapping | undefined
+	if (!mapping) return undefined
 	const resourceType = getResourceTypeFromTimelineObj(obj)
 	const locator = getResourceLocatorFromTimelineObj(obj, resourceType, mappings)
 

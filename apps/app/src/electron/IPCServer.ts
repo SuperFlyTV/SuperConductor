@@ -1583,7 +1583,7 @@ export class IPCServer
 
 		const project = this.getProject()
 		const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
-		const resource = this.storage.getResource(resourceId)
+		const resource = resourceId && this.storage.getResource(resourceId)
 
 		const originalLayer = timelineObj.obj.layer
 		const result = this._findBestOrCreateLayer({
@@ -2055,7 +2055,7 @@ export class IPCServer
 						const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
 
 						let deviceId: TSRDeviceId | undefined
-						const resource = this.storage.getResource(resourceId)
+						const resource = resourceId && this.storage.getResource(resourceId)
 						if (resource) {
 							deviceId = resource.deviceId
 						}

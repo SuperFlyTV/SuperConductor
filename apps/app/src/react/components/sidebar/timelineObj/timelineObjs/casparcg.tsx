@@ -1716,7 +1716,8 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 		let mediaResourceForFirstObj: CasparCGMedia | undefined = undefined
 		if (objs.length === 1) {
-			const res = allResources.get(getResourceIdFromTimelineObj(firstObj, mappings))
+			const resourceId = getResourceIdFromTimelineObj(firstObj, mappings)
+			const res = resourceId && allResources.get(resourceId)
 			if (res?.resourceType === ResourceType.CASPARCG_MEDIA) {
 				mediaResourceForFirstObj = res
 			}
