@@ -100,6 +100,8 @@ $margin-v: 2rem;
 			}
 			&.controls-space {
 				flex-grow: 1;
+				display: flex;
+				justify-content: center;
 			}
 			&.controls-right {
 				cursor: initial;
