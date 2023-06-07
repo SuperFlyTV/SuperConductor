@@ -49,6 +49,7 @@
 		"webpack-dev-server": "^4.11.1"
 	},
 	"dependencies": {
+		"@babel/core": "^7.22.1",
 		"@mui/material": "^5.10.14",
 		"@shared/api": "^0.11.0",
 		"@shared/lib": "^0.11.0",
