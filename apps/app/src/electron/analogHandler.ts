@@ -66,7 +66,9 @@ export class AnalogHandler extends EventEmitter {
 			}
 		>()
 
-		for (const [datastoreKey, analogInputSetting] of Object.entries(project.analogInputSettings)) {
+		for (const [datastoreKey, analogInputSetting] of Object.entries<AnalogInputSetting>(
+			project.analogInputSettings
+		)) {
 			if (analogInputSetting.fullIdentifier) {
 				this.lookupMap.set(analogInputSetting.fullIdentifier, {
 					datastoreKey,

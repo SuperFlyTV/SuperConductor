@@ -6,11 +6,12 @@ import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 import './style.scss'
 import { ProjectContext } from '../../../../contexts/Project'
 import { getDeviceName, getMappingName } from '../../../../../lib/util'
+import { TSRDeviceId } from '@shared/models'
 
 export const LayerItemHeader: React.FC<{
 	id: string
 	mapping: Mapping
-	deviceId: string
+	deviceId: TSRDeviceId
 }> = (props) => {
 	const project = useContext(ProjectContext)
 	const mappingDescription = describeMappingConfiguration(props.mapping)

@@ -1,9 +1,10 @@
 import { literal } from '@shared/lib'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, protectString } from '@shared/models'
 import {
 	DeviceOptionsAtem,
 	DeviceOptionsCasparCG,
 	DeviceType,
+	Mapping,
 	MappingAtem,
 	MappingAtemType,
 	MappingCasparCG,
@@ -21,6 +22,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
 import { postProcessPart } from './rundown'
 import { StorageHandler } from './storageHandler'
+import { BridgeId } from '@shared/api'
 
 export function makeDevData(): {
 	project: Project
@@ -37,8 +39,9 @@ export function makeDevData(): {
 
 	// Bridge:
 	{
-		const bridgeId = shortID()
-		const bridge = (project.bridges[bridgeId] = literal<Bridge>({
+		const bridgeIdStr = shortID()
+		const bridgeId = protectString<BridgeId>(bridgeIdStr)
+		const bridge = (project.bridges[bridgeIdStr] = literal<Bridge>({
 			id: bridgeId,
 			name: `Bridge ${bridgeId}`,
 			outgoing: false,
@@ -135,12 +138,11 @@ export function makeDevData(): {
 				// Timeline
 				{
 					const layerId = pickRandom(
-						Object.entries(project.mappings).filter((e) => e[1].deviceId === casparDeviceId),
+						Object.entries<Mapping>(project.mappings).filter((e) => e[1].deviceId === casparDeviceId),
 						notRandom
 					)[0]
 
 					const obj: TimelineObj = {
-						resourceId: '',
 						obj: literal<TSRTimelineObj<TimelineContentCCGMedia>>({
 							id: shortID(),
 							enable: {

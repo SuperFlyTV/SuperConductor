@@ -1,9 +1,9 @@
-import { Group, GroupBase, GroupGUI } from '../models/rundown/Group'
+import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group'
 import { Part, PartBase } from '../models/rundown/Part'
-import { ResolvedTimeline } from 'superfly-timeline'
+import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
 import { Rundown, RundownBase } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getGroupPlayData, GroupPlayData } from './playout/groupPlayData'
+import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData'
 import { Project } from '../models/project/Project'
 import {
 	DeviceOptionsAny,
@@ -18,7 +18,7 @@ import {
 	MappingVMix,
 	MappingVMixType,
 } from 'timeline-state-resolver-types'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
@@ -123,8 +123,8 @@ export function getResolvedTimelineTotalDuration(
 ): number | null {
 	let maxDuration = 0
 	let isInfinite = false
-	Object.values(resolvedTimeline.objects).forEach((obj) => {
-		Object.values(obj.resolved.instances).forEach((instance) => {
+	Object.values<ResolvedTimelineObject>(resolvedTimeline.objects).forEach((obj) => {
+		obj.resolved.instances.forEach((instance) => {
 			if (instance.end === null) {
 				isInfinite = true
 			} else if (instance.end) {
@@ -177,7 +177,7 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 
 	const prevPlayingParts = group.playout.playingParts
 	group.playout.playingParts = {}
-	for (const [partId, playhead] of Object.entries(playData.playheads)) {
+	for (const [partId, playhead] of Object.entries<GroupPlayDataPlayhead>(playData.playheads)) {
 		const prevPlayingPart = prevPlayingParts[partId]
 
 		group.playout.playingParts[partId] = {
@@ -188,7 +188,7 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 		}
 	}
 	// Also add previously stopped playingParts, so that the stops still block sheduled playing parts:
-	for (const [partId, prevPlayingPart] of Object.entries(prevPlayingParts)) {
+	for (const [partId, prevPlayingPart] of Object.entries<PlayingPart>(prevPlayingParts)) {
 		if (!group.playout.playingParts[partId] && prevPlayingPart.stopTime) {
 			if (!group.parts.find((p) => p.id === partId)) continue
 			group.playout.playingParts[partId] = prevPlayingPart
@@ -248,21 +248,22 @@ function hashCode(str: string): number {
 
 export const EMPTY_LAYER_ID_PREFIX = '__empty'
 
-export function findDevice(bridges: Project['bridges'], deviceId: string): DeviceOptionsAny | undefined {
+export function findDevice(bridges: Project['bridges'], deviceId: TSRDeviceId): DeviceOptionsAny | undefined {
+	const deviceIdStr = unprotectString(deviceId)
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
-		if (deviceId in bridge.settings.devices) {
-			return bridge.settings.devices[deviceId]
+		if (deviceIdStr in bridge.settings.devices) {
+			return bridge.settings.devices[deviceIdStr]
 		}
 	}
 }
 
-export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<string> {
-	const deviceIds = new Set<string>()
+export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?: DeviceType): Set<TSRDeviceId> {
+	const deviceIds = new Set<TSRDeviceId>()
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
-		for (const deviceId in bridge.settings.devices) {
-			const device = bridge.settings.devices[deviceId]
+		for (const [deviceId0, device] of Object.entries<DeviceOptionsAny>(bridge.settings.devices)) {
+			const deviceId = protectString<TSRDeviceId>(deviceId0)
 			if (deviceType === undefined || device.type === deviceType) {
 				deviceIds.add(deviceId)
 			}
@@ -274,13 +275,13 @@ export function listAvailableDeviceIDs(bridges: Project['bridges'], deviceType?:
 /**
  * @returns If found, the ID of the first device of the specified deviceType. Else, undefined.
  */
-export function findDeviceOfType(bridges: Project['bridges'], deviceType: DeviceType): string | undefined {
+export function findDeviceOfType(bridges: Project['bridges'], deviceType: DeviceType): TSRDeviceId | undefined {
 	for (const bridgeId in bridges) {
 		const bridge = bridges[bridgeId]
 		for (const deviceId in bridge.settings.devices) {
 			const device = bridge.settings.devices[deviceId]
 			if (device.type === deviceType) {
-				return deviceId
+				return protectString<TSRDeviceId>(deviceId)
 			}
 		}
 	}
@@ -599,7 +600,11 @@ export function generateNewTimelineObjIds(input: Readonly<Part['timeline']>): Pa
  * arrayToBeSorted.sort(sortOn((x) => x))
  * arrayToBeSorted.sort(sortOn((x) => [x.rank, x.id]))
  */
-export function sortOn<A>(getSortValue: (value: A) => number | string | undefined | (number | string | undefined)[]) {
+export function sortOn<A>(
+	getSortValue: (
+		value: A
+	) => number | string | undefined | ProtectedString<any> | (number | string | undefined | ProtectedString<any>)[]
+) {
 	return (a: A, b: A): number => {
 		const valA = getSortValue(a)
 		const valB = getSortValue(b)
@@ -636,8 +641,9 @@ export function shortID(): string {
 	return shortUUID.generate().slice(0, 8)
 }
 
-export function getDeviceName(project: Project, deviceId: string): string {
-	return project.deviceNames?.[deviceId] || deviceId
+export function getDeviceName(project: Project, deviceId: TSRDeviceId): string {
+	const deviceIdStr = unprotectString(deviceId)
+	return project.deviceNames?.[deviceIdStr] || deviceIdStr
 }
 export function getMappingName(mapping: Mapping, layerId: string): string {
 	return mapping.layerName ?? layerId

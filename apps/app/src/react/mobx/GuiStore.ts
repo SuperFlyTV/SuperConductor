@@ -1,4 +1,5 @@
 import { deepClone } from '@shared/lib'
+import { ResourceId, TSRDeviceId } from '@shared/models'
 import _ from 'lodash'
 import { makeAutoObservable } from 'mobx'
 import {
@@ -54,11 +55,11 @@ export interface TimelineObjectMove {
 export type HomePageId = 'project' | 'bridgesSettings' | 'mappingsSettings'
 interface ResourceLibrarySettings {
 	/** A list of the selected resources, sorted in the order they where selected */
-	selectedResourceIds: string[]
+	selectedResourceIds: ResourceId[]
 	/** A reference to the latest selected Resource */
-	lastSelectedResourceId: string | null
+	lastSelectedResourceId: ResourceId | null
 	nameFilterValue: string
-	deviceFilterValue: string[]
+	deviceFilterValue: TSRDeviceId[]
 	resourceTypeFilterValue: string[]
 	detailedFiltersExpanded: boolean
 }
@@ -236,7 +237,9 @@ export class GuiStore {
 	}
 }
 
-interface GroupSettings {
-	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
-	collapsed?: boolean
-}
+/**
+ * This used to have content but doesn't anymore.
+ * We're keeping it around temporarily just in case it becomes useful again.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface GroupSettings {}

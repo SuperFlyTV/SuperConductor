@@ -1,5 +1,5 @@
 import { deepClone, ensureArray } from '@shared/lib'
-import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject } from 'superfly-timeline'
+import { Expression, TimelineEnable, TimelineKeyframe, TimelineObject, TimelineObjectInstance } from 'superfly-timeline'
 import { DeviceType } from 'timeline-state-resolver-types'
 import {
 	GroupPreparedPlayData,
@@ -103,7 +103,7 @@ export function getTimelineForGroup(
 				isGroup: true,
 				children: [],
 			}
-			for (const [partId, sections] of Object.entries(prepared.sections)) {
+			for (const [partId, sections] of Object.entries<GroupPreparedPlayDataSection[]>(prepared.sections)) {
 				for (let i = 0; i < sections.length; i++) {
 					const section = sections[i]
 
@@ -360,4 +360,8 @@ function updateTimelineExpression<T extends Expression | undefined>(changedIds: 
 
 		return expr
 	}
+}
+
+export function areInstancesOverlapping(a: TimelineObjectInstance, b: TimelineObjectInstance): boolean {
+	return a.start < (b.end ?? Infinity) && (a.end ?? Infinity) > b.start
 }

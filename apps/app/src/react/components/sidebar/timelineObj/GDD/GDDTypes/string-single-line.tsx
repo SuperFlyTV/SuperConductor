@@ -1,7 +1,8 @@
 import { GDDTypeSingleLine } from 'graphics-data-definition'
 import React from 'react'
 import { TextInput } from '../../../../inputs/TextInput'
-import { EditProperty, getEditPropertyMeta, PropertyProps } from '../lib'
+import { getEditPropertyMeta, PropertyProps } from '../lib'
+import { EditProperty } from '../util'
 
 export const gddTypeSingleLine: React.FC<PropertyProps<GDDTypeSingleLine>> = (props) => {
 	const data = props.data || ''

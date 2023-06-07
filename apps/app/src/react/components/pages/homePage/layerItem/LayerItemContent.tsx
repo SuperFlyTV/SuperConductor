@@ -7,6 +7,7 @@ import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { Mapping } from 'timeline-state-resolver-types'
 import { DeviceSpecificSettings } from '../layersPage/DeviceSpecificSettings'
 import './style.scss'
+import { getDefaultLayerName } from '../../../../../lib/TSRMappings'
 
 export const LayerItemContent: React.FC<{
 	mappingId: string
@@ -39,6 +40,12 @@ export const LayerItemContent: React.FC<{
 	}, [handleError, ipcServer, props.mappingId, project])
 
 	const handleSpecificMappingSettingsUpdate = (mappingUpdate: Mapping) => {
+		const oldMapping = project.mappings[props.mappingId]
+		if (oldMapping && oldMapping.layerName === getDefaultLayerName(oldMapping)) {
+			// If the layername is the default, update it to the new default:
+			mappingUpdate.layerName = getDefaultLayerName(mappingUpdate)
+		}
+
 		project.mappings[props.mappingId] = mappingUpdate
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}

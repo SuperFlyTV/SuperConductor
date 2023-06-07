@@ -1,6 +1,6 @@
 {
 	"name": "@shared/api",
-	"version": "0.11.0-alpha.3",
+	"version": "0.11.0",
 	"description": "",
 	"author": {
 		"name": "SuperFlyTV AB",
@@ -41,11 +41,11 @@
 		]
 	},
 	"dependencies": {
-		"@shared/models": "^0.11.0-alpha.3"
+		"@shared/models": "^0.11.0"
 	},
 	"devDependencies": {
 		"@types/ws": "^8.2.2",
 		"superfly-timeline": "^8.2.5",
-		"xkeys": "^2.4.0"
+		"xkeys": "^3.0.0"
 	}
 }

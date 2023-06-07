@@ -1,6 +1,9 @@
 import { makeAutoObservable } from 'mobx'
 import { Project } from '../../models/project/Project'
 import { PeripheralArea } from '../../models/project/Peripheral'
+import { BridgeId, PeripheralId } from '@shared/api'
+import { protectString } from '@shared/models'
+import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge'
 
 /**
  * Information about currently opened project.
@@ -21,15 +24,15 @@ export class ProjectStore {
 
 	public assignedAreas: {
 		assignedToGroupId: string
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 		area: PeripheralArea
 	}[] = []
 
 	public availableAreas: {
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 		area: PeripheralArea
 	}[] = []
@@ -48,9 +51,15 @@ export class ProjectStore {
 		this.assignedAreas = []
 		this.availableAreas = []
 
-		for (const [bridgeId, bridge] of Object.entries(this.project.bridges)) {
-			for (const [deviceId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
-				for (const [areaId, area] of Object.entries(peripheralSettings.areas)) {
+		for (const [bridgeId0, bridge] of Object.entries<Bridge>(this.project.bridges)) {
+			const bridgeId = protectString<BridgeId>(bridgeId0)
+
+			for (const [deviceId0, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+				bridge.clientSidePeripheralSettings
+			)) {
+				const deviceId = protectString<PeripheralId>(deviceId0)
+
+				for (const [areaId, area] of Object.entries<PeripheralArea>(peripheralSettings.areas)) {
 					this.availableAreas.push({
 						bridgeId,
 						deviceId,

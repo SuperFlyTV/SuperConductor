@@ -1,3 +1,4 @@
+import { ProtectedString } from '@shared/models'
 import type { TimelineKeyframe, TimelineObject } from 'superfly-timeline'
 import { XKeysInfo } from 'xkeys'
 
@@ -118,3 +119,5 @@ export interface AnalogValue {
 	/** Recommendation on what value to use. true=use absolute, false= use relative */
 	rAbs: boolean | undefined
 }
+
+export type PeripheralId = ProtectedString<'PeripheralId'>

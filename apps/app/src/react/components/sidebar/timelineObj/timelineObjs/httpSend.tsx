@@ -48,50 +48,61 @@ export const EditTimelineObjHTTPSendAny: React.FC<{
 					<>-- Different values -- </>
 				) : (
 					<>
-						{Object.entries(firstObj.content.params || {}).map(([key, value], index) => (
-							<React.Fragment key={index}>
-								<Stack direction="row" justifyContent="space-between">
-									<Typography variant="body2">Param #{index}</Typography>
-									<TrashBtn
-										onClick={() => {
-											onSave({ content: { params: { [key]: undefined } } })
-										}}
-										title="Delete parameter"
-									/>
-								</Stack>
+						{Object.entries<any>(firstObj.content.params || {}).map(([key, value], index) => {
+							if (value === undefined) return null
+							return (
+								<React.Fragment key={index}>
+									<Stack direction="row" justifyContent="space-between">
+										<Typography variant="body2">Param #{index}</Typography>
+										<TrashBtn
+											onClick={() => {
+												onSave({ content: { params: { [key]: undefined } } })
+											}}
+											title="Delete parameter"
+										/>
+									</Stack>
 
-								<div className="setting">
-									<TextInput
-										label="Key"
-										fullWidth
-										currentValue={key}
-										onChange={(v) => {
-											onSave({
-												content: {
-													params: {
-														[v]: value,
-														[key]: undefined,
+									<div className="setting">
+										<TextInput
+											label="Key"
+											fullWidth
+											currentValue={key}
+											onChange={(v) => {
+												// Ensure that the key is unique:
+												let i = 0
+												let vUnique = v
+												while (firstObj.content.params[vUnique] !== undefined) {
+													i++
+													vUnique = `${v}_${i}`
+												}
+
+												onSave({
+													content: {
+														params: {
+															[vUnique]: value,
+															[key]: undefined,
+														},
 													},
-												},
-											})
-										}}
-										allowUndefined={false}
-									/>
-								</div>
+												})
+											}}
+											allowUndefined={false}
+										/>
+									</div>
 
-								<div className="setting">
-									<TextInput
-										label="Value"
-										fullWidth
-										currentValue={value}
-										onChange={(v) => {
-											onSave({ content: { params: { [key]: v } } })
-										}}
-										allowUndefined={false}
-									/>
-								</div>
-							</React.Fragment>
-						))}
+									<div className="setting">
+										<TextInput
+											label="Value"
+											fullWidth
+											currentValue={value}
+											onChange={(v) => {
+												onSave({ content: { params: { [key]: v } } })
+											}}
+											allowUndefined={false}
+										/>
+									</div>
+								</React.Fragment>
+							)
+						})}
 						<Button
 							style={{ marginBottom: '1rem' }}
 							variant="contained"

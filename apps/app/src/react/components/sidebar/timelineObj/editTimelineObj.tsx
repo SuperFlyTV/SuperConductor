@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-import { assertNever, compact } from '@shared/lib'
+import { assertNever, compact, getResourceIdFromTimelineObj } from '@shared/lib'
 import React from 'react'
 import {
 	DeviceType,
@@ -51,6 +51,8 @@ import { EditTimelineObjTelemetricsAny } from './timelineObjs/telemetrics'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj'
 import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
 import { EditTimelineObjTriCasterAny } from './timelineObjs/tricaster'
+import { store } from '../../../mobx/store'
+import { observer } from 'mobx-react-lite'
 
 export const EditTimelineObjContent: React.FC<{
 	modifiableObjects: {
@@ -60,13 +62,14 @@ export const EditTimelineObjContent: React.FC<{
 		groupOrPartLocked?: boolean | undefined
 	}[]
 	onSave: OnSave
-}> = ({ modifiableObjects, onSave }) => {
+}> = observer(function EditTimelineObjContent({ modifiableObjects, onSave }) {
 	let editElement: JSX.Element | null = null
 
 	const indeterminate =
 		isIndeterminate(modifiableObjects, (o) => o.timelineObj.obj.content.deviceType) ||
 		isIndeterminate(modifiableObjects, (o) => (o.timelineObj.obj.content as any).type)
 	const firstObj = firstValue(modifiableObjects, (o) => o.timelineObj.obj)
+	const mappings = store.projectStore.project.mappings
 
 	if (!firstObj) return null
 
@@ -74,7 +77,7 @@ export const EditTimelineObjContent: React.FC<{
 		return <div>-- Different types --</div>
 	}
 	const objs = modifiableObjects.map((o) => o.timelineObj.obj)
-	const resourceIds = compact(modifiableObjects.map((o) => o.timelineObj.resourceId))
+	const resourceIds = compact(modifiableObjects.map((o) => getResourceIdFromTimelineObj(o.timelineObj.obj, mappings)))
 
 	if (
 		firstObj.content.deviceType === DeviceType.ABSTRACT &&
@@ -172,4 +175,4 @@ export const EditTimelineObjContent: React.FC<{
 	}
 
 	return editElement
-}
+})

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useCallback, useContext } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { Bridge as BridgeType } from '../../../../../models/project/Bridge'
@@ -9,6 +8,8 @@ import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
 import * as Yup from 'yup'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
+import { protectString, unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 export const NewBridgeDialog: React.FC<{
 	open: boolean
@@ -22,7 +23,7 @@ export const NewBridgeDialog: React.FC<{
 		(name: string, url: string) => {
 			const numBridges = Object.keys(project.bridges).length
 			const newBridge = literal<BridgeType>({
-				id: `bridge${numBridges}`,
+				id: protectString<BridgeId>(`bridge${numBridges}`),
 				name: name,
 				outgoing: true,
 				url: url,
@@ -34,7 +35,7 @@ export const NewBridgeDialog: React.FC<{
 				clientSidePeripheralSettings: {},
 			})
 
-			project.bridges[newBridge.id] = newBridge
+			project.bridges[unprotectString<BridgeId>(newBridge.id)] = newBridge
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 
 			props.onClose()

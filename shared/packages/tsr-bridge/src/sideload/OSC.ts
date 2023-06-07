@@ -1,30 +1,46 @@
 import { DeviceOptionsOSC } from 'timeline-state-resolver'
-import { ResourceAny, ResourceType, OSCMessage } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	OSCMessage,
+	ResourceId,
+	protectString,
+	OSCMetadata,
+	MetadataAny,
+	MetadataType,
+	TSRDeviceId,
+} from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class OSCSideload implements SideLoadDevice {
-	constructor(private deviceId: string, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	constructor(private deviceId: TSRDeviceId, _deviceOptions: DeviceOptionsOSC, _log: LoggerLike) {}
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		// Nothing to cleanup.
 	}
-	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+	private async _refreshResourcesAndMetadata() {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: OSCMetadata = { metadataType: MetadataType.OSC }
 
 		// Message
 		{
 			const resource: OSCMessage = {
 				resourceType: ResourceType.OSC_MESSAGE,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_osc_message`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'OSC Message',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

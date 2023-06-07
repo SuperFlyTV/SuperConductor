@@ -1,4 +1,5 @@
-import { literal } from '@shared/lib'
+import { getResourceIdFromResource, literal } from '@shared/lib'
+import { protectString } from '@shared/models'
 import { CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { getDefaultPart } from '../../../lib/defaults'
@@ -6,6 +7,7 @@ import { sortMappings } from '../../../lib/TSRMappings'
 import { shortID } from '../../../lib/util'
 import { Part } from '../../../models/rundown/Part'
 import { ClipBoardContext, insertParts } from './lib'
+import { transformURL } from './transformURL'
 
 /**
  * Handle various pasted data that might be useful for the user to be able to past
@@ -18,11 +20,10 @@ export async function handleConvenience(context: ClipBoardContext, str: string):
 }
 
 export async function handleURL(context: ClipBoardContext, str: string): Promise<boolean> {
-	const match = matchHTTPUrl(str)
-	if (!match) return false
+	let url = makeURL(str)
+	if (!url) return false
 
-	const url = match[0]
-	const hostName = match[2]
+	url = transformURL(url)
 
 	if (!context.project) return false
 
@@ -38,17 +39,18 @@ export async function handleURL(context: ClipBoardContext, str: string): Promise
 				name: '',
 			}
 			const resource = literal<CasparCGTemplate>({
-				deviceId: mapping.mapping.deviceId,
-				id: shortID(),
-				displayName: hostName,
+				deviceId: protectString(mapping.mapping.deviceId),
+				id: protectString(''), // set by getResourceIdFromResource() later
+				displayName: url.hostname,
 				resourceType: ResourceType.CASPARCG_TEMPLATE,
 				size: 0,
-				name: url,
+				name: url.href,
 				changed: Date.now(),
 				useStopCommand: false,
 
-				duration: undefined,
+				duration: null,
 			})
+			resource.id = getResourceIdFromResource(resource)
 
 			parts.push({ part, resources: [resource] })
 			break
@@ -62,8 +64,10 @@ export async function handleURL(context: ClipBoardContext, str: string): Promise
 	return true
 }
 
-function matchHTTPUrl(str: string) {
-	return str.match(
-		/https?:\/\/(www\.)?([-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6})\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/
-	)
+function makeURL(str: string): URL | null {
+	try {
+		return new URL(str)
+	} catch {
+		return null
+	}
 }

@@ -1,18 +1,20 @@
-import { BridgeAPI, LoggerLike } from '@shared/api'
+import { BridgeAPI, BridgeId, LoggerLike } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { ResourceAny } from '@shared/models'
+import { MetadataAny, ResourceAny, serializeProtectedMap } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
 import { clone } from 'lodash'
 import { Datastore } from 'timeline-state-resolver'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import { TSR } from './TSR'
+import { TSRDeviceId } from '@shared/models'
+import { deserializeProtectedMap } from '@shared/models'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
 
 export class BaseBridge {
 	peripheralsHandler: PeripheralsHandler | null = null
-	private myBridgeId: string | null = null
+	private myBridgeId: BridgeId | null = null
 	private tsr: TSR
 	private storedTimelines: {
 		[id: string]: TSRTimeline
@@ -36,21 +38,21 @@ export class BaseBridge {
 		this.tsr.send = this.sendAndCatch
 	}
 
-	private setupPeripheralsHandler(bridgeId: string): PeripheralsHandler {
+	private setupPeripheralsHandler(bridgeId: BridgeId): PeripheralsHandler {
 		const peripheralsHandler = new PeripheralsHandler(this.log, bridgeId)
 
 		peripheralsHandler.on('connected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'connected' })
 			this.peripheralsHandlerSend({
 				type: 'KnownPeripherals',
-				peripherals: peripheralsHandler.getKnownPeripherals(),
+				peripherals: serializeProtectedMap(peripheralsHandler.getKnownPeripherals()),
 			})
 		})
 		peripheralsHandler.on('disconnected', (deviceId, info) => {
 			this.peripheralsHandlerSend({ type: 'PeripheralStatus', deviceId, info, status: 'disconnected' })
 			this.peripheralsHandlerSend({
 				type: 'KnownPeripherals',
-				peripherals: peripheralsHandler.getKnownPeripherals(),
+				peripherals: serializeProtectedMap(peripheralsHandler.getKnownPeripherals()),
 			})
 		})
 		peripheralsHandler.on('keyDown', (deviceId, identifier) => {
@@ -63,7 +65,7 @@ export class BaseBridge {
 			this.peripheralsHandlerSend({ type: 'PeripheralAnalog', deviceId, identifier, value })
 		})
 		peripheralsHandler.on('knownPeripherals', (peripherals) => {
-			this.peripheralsHandlerSend({ type: 'KnownPeripherals', peripherals })
+			this.peripheralsHandlerSend({ type: 'KnownPeripherals', peripherals: serializeProtectedMap(peripherals) })
 		})
 
 		peripheralsHandler.init()
@@ -110,13 +112,13 @@ export class BaseBridge {
 
 		const fullTimeline: TSRTimeline = []
 
-		for (const timeline of Object.values(this.storedTimelines)) {
+		for (const timeline of Object.values<TSRTimeline>(this.storedTimelines)) {
 			for (const obj of timeline) {
 				fullTimeline.push(obj)
 			}
 		}
-		// log.info('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
-		// log.info('mapping', JSON.stringify(mapping, undefined, 2))
+		// this.log.info('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
+		// this.log.info('mapping', JSON.stringify(this.mappings, undefined, 2))
 
 		this.tsr.conductor.setTimelineAndMappings(fullTimeline, this.mappings)
 	}
@@ -131,7 +133,7 @@ export class BaseBridge {
 		this.updateTSR(currentTime)
 	}
 	/** To be called when our bridgeId has been determined. This is basivally the initialize function */
-	async onReceivedBridgeId(bridgeId: string): Promise<void> {
+	async onReceivedBridgeId(bridgeId: BridgeId): Promise<void> {
 		if (this.myBridgeId !== bridgeId) {
 			this.myBridgeId = bridgeId
 
@@ -178,18 +180,21 @@ export class BaseBridge {
 		} else if (msg.type === 'setSettings') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
-			this.tsr.updateDevices(msg.devices).catch((e) => this.log?.error(e))
+			this.tsr.updateDevices(deserializeProtectedMap(msg.devices)).catch((e) => this.log?.error(e))
 			this.peripheralsHandler
-				.updatePeripheralsSettings(msg.peripherals, msg.autoConnectToAllPeripherals)
+				.updatePeripheralsSettings(deserializeProtectedMap(msg.peripherals), msg.autoConnectToAllPeripherals)
 				.catch((e) => this.log?.error(e))
 		} else if (msg.type === 'refreshResources') {
-			this.tsr.refreshResources((deviceId: string, resources: ResourceAny[]) => {
-				this.send({
-					type: 'updatedResources',
-					deviceId,
-					resources,
-				})
-			})
+			this.tsr.refreshResourcesAndMetadata(
+				(deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny) => {
+					this.send({
+						type: 'updatedResourcesAndMetadata',
+						deviceId,
+						resources,
+						metadata,
+					})
+				}
+			)
 		} else if (msg.type === 'peripheralSetKeyDisplay') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
@@ -197,7 +202,10 @@ export class BaseBridge {
 		} else if (msg.type === 'getKnownPeripherals') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
-			this.send({ type: 'KnownPeripherals', peripherals: this.peripheralsHandler.getKnownPeripherals() })
+			this.send({
+				type: 'KnownPeripherals',
+				peripherals: serializeProtectedMap(this.peripheralsHandler.getKnownPeripherals()),
+			})
 		} else {
 			assertNever(msg)
 		}

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { TextField } from '@mui/material'
-import { version } from 'process'
 import React from 'react'
 import { IntInput } from '../../../../inputs/IntInput'
 import { MappingCasparCG } from 'timeline-state-resolver-types'

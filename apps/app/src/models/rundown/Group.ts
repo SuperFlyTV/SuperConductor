@@ -33,6 +33,9 @@ export interface GroupBase {
 
 	/** This is populated by the backend, as the timeline is build. */
 	preparedPlayData: GroupPreparedPlayData | null
+
+	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
+	collapsed?: boolean
 }
 export interface PlayingPart {
 	/** Timestamp of when the part started playing (unix timestamp) */

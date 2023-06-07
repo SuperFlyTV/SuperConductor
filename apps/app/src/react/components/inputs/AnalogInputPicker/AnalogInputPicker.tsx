@@ -11,6 +11,7 @@ import './style.scss'
 import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
 import { OnSave } from '../../sidebar/timelineObj/timelineObjs/lib'
 import { observer } from 'mobx-react-lite'
+import { AnalogInputSetting } from '../../../../models/project/Project'
 
 const POPOVER_ANCHOR_ORIGIN: {
 	vertical: 'bottom'
@@ -26,6 +27,11 @@ const POPOVER_TRANSFORM_ORIGIN: {
 	vertical: 'top',
 	horizontal: 'right',
 }
+
+interface AnalogInputOption {
+	label: string
+	fullIdentifier: string | null
+}
 export const AnalogInputOverridePicker: React.FC<{
 	objs: TSRTimelineObj<TSRTimelineContent>[]
 	path: string
@@ -35,9 +41,11 @@ export const AnalogInputOverridePicker: React.FC<{
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
 	const analogInputOptions = useMemoComputedObject(() => {
-		const options: { [datastoreKey: string]: { label: string; fullIdentifier: string | null } } = {}
+		const options: { [datastoreKey: string]: AnalogInputOption } = {}
 
-		for (const [datastoreKey, setting] of Object.entries(store.projectStore.project.analogInputSettings)) {
+		for (const [datastoreKey, setting] of Object.entries<AnalogInputSetting>(
+			store.projectStore.project.analogInputSettings
+		)) {
 			options[datastoreKey] = {
 				label: setting.label,
 				fullIdentifier: setting.fullIdentifier,
@@ -138,7 +146,7 @@ export const AnalogInputOverridePicker: React.FC<{
 							Remove Analog Input link
 						</MenuItem>
 					)}
-					{Object.entries(analogInputOptions).map(([datastoreKey, option]) => (
+					{Object.entries<AnalogInputOption>(analogInputOptions).map(([datastoreKey, option]) => (
 						<MenuItem key={datastoreKey} data-value={datastoreKey} onClick={onSelect}>
 							{option.label}
 						</MenuItem>

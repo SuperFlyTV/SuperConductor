@@ -8,6 +8,7 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
+	TimelineContentAtemME,
 	TimelineTransition,
 	Transition,
 	TransportStatus,
@@ -20,6 +21,7 @@ import { TimelineObj } from '../models/rundown/TimelineObj'
 import { formatDuration } from './timeLib'
 import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
 import { TimelineObject } from 'superfly-timeline'
+import { MetadataAny, MetadataType } from '@shared/models'
 
 export interface TimelineObjectDescription {
 	label: string
@@ -36,7 +38,10 @@ export interface TimelineObjectDescription {
 	}
 }
 
-export function describeTimelineObject(obj: TSRTimelineObj<TSRTimelineContent>): TimelineObjectDescription {
+export function describeTimelineObject(
+	obj: TSRTimelineObj<TSRTimelineContent>,
+	deviceMetadata?: MetadataAny | null
+): TimelineObjectDescription {
 	let label: string = obj.id
 	let inTransition: TimelineObjectDescription['inTransition'] = undefined
 	let outTransition: TimelineObjectDescription['outTransition'] = undefined
@@ -106,6 +111,19 @@ export function describeTimelineObject(obj: TSRTimelineObj<TSRTimelineContent>):
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		if (obj.content.type === TimelineContentTypeAtem.ME) {
 			label = `Input ${obj.content.me.input}`
+
+			if (deviceMetadata?.metadataType === MetadataType.ATEM) {
+				const inputMetadata = deviceMetadata.inputs.find((input) => {
+					if (input.inputId === (obj as TSRTimelineObj<TimelineContentAtemME>).content.me.input) {
+						return true
+					}
+
+					return false
+				})
+				if (inputMetadata) {
+					label = `${obj.content.me.input} - ${inputMetadata.longName}`
+				}
+			}
 
 			if (obj.content.me.transition !== undefined) {
 				if (obj.content.me.transition === AtemTransitionStyle.MIX) {
@@ -256,12 +274,14 @@ function deepDescribeValues(value: any, inner?: boolean): string {
 	} else if (value === null) {
 		return 'null'
 	} else if (typeof value === 'object') {
-		const values = Object.values(value)
+		const values = Object.values<any>(value)
 		if (values.length === 1) {
 			return deepDescribeValues(values[0])
 		} else {
 			return values.map((v) => deepDescribeValues(v, true)).join(', ')
 		}
+	} else if (value === undefined) {
+		return ''
 	} else return String(value)
 }
 
@@ -370,7 +390,7 @@ function escapeHtml(unsafe: any) {
 }
 function parametersToCasparXML(params: { [key: string]: string }): string {
 	let xml = ''
-	for (const [key, value] of Object.entries(params)) {
+	for (const [key, value] of Object.entries<string>(params)) {
 		xml += `<componentData id="${key}"><data id="text" value="${escapeHtml(value)}" /></componentData>`
 	}
 

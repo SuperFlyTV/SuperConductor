@@ -31,7 +31,16 @@ export function setupClipboard(context: ClipBoardContext): void {
 	document.addEventListener(
 		'paste',
 		CB(() => {
+			// Don't paste if the window doesn't have focus
 			if (!document.hasFocus()) return
+
+			// Don't handle the paste if an input element is focused
+			if (
+				document.activeElement &&
+				(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')
+			) {
+				return
+			}
 
 			navigator.clipboard
 				.read()
@@ -58,7 +67,13 @@ export function setupClipboard(context: ClipBoardContext): void {
 						}
 					}
 				})
-				.catch(context.handleError)
+				.catch((error) => {
+					if (`${error}`.match(/no valid data/i)) {
+						// This is a user error, not something we need to handle.
+						return
+					}
+					context.handleError(error)
+				})
 		})
 	)
 }

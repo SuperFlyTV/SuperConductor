@@ -8,6 +8,8 @@ import { shortID } from './util'
 import { Part } from '../models/rundown/Part'
 import { RepeatingType } from './timeLib'
 import { AppData } from '../models/App/AppData'
+import { unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 export function getDefaultAppData(currentVersion: string): AppData {
 	return {
@@ -22,6 +24,7 @@ export function getDefaultAppData(currentVersion: string): AppData {
 		version: {
 			seenVersion: null,
 			currentVersion: currentVersion,
+			currentVersionIsPrerelease: false, // placeholder, it'll be set in storageHandler soon anyway.
 		},
 		project: {
 			id: 'default',
@@ -129,7 +132,7 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		},
 
 		bridges: {
-			[INTERNAL_BRIDGE_ID]: {
+			[unprotectString<BridgeId>(INTERNAL_BRIDGE_ID)]: {
 				id: INTERNAL_BRIDGE_ID,
 				name: 'Internal bridge',
 				outgoing: false,
@@ -175,7 +178,6 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 						name: 'Part 1',
 						timeline: [
 							{
-								resourceId: 'someResource0',
 								obj: {
 									id: shortID(),
 									enable: {

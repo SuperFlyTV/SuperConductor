@@ -8,13 +8,15 @@ import { IPCServerContext } from '../../../../contexts/IPCServer'
 import { ProjectContext } from '../../../../contexts/Project'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { BooleanInput } from '../../../inputs/BooleanInput'
+import Toggle from 'react-toggle'
+import { TSRDeviceId, unprotectString } from '@shared/models'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
 
 export const DeviceItemContent: React.FC<{
 	bridge: Bridge
-	deviceId: string
+	deviceId: TSRDeviceId
 	deviceName: string
 	device: BridgeDevice
 }> = ({ bridge, deviceId, deviceName }) => {
@@ -25,7 +27,7 @@ export const DeviceItemContent: React.FC<{
 	const [host, setHost] = useState('')
 	const [port, setPort] = useState(MIN_PORT)
 	const [password, setPassword] = useState('')
-	const deviceSettings = bridge.settings.devices[deviceId]
+	const deviceSettings = bridge.settings.devices[unprotectString<TSRDeviceId>(deviceId)]
 
 	const handleDeviceNameChange = useCallback(
 		(newName: string) => {
@@ -35,9 +37,9 @@ export const DeviceItemContent: React.FC<{
 
 			if (project.deviceNames) {
 				// Ensure compatibility with old project versions
-				project.deviceNames[deviceId] = newName
+				project.deviceNames[unprotectString<TSRDeviceId>(deviceId)] = newName
 			} else {
-				project.deviceNames = { [deviceId]: newName }
+				project.deviceNames = { [unprotectString<TSRDeviceId>(deviceId)]: newName }
 			}
 
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
@@ -85,7 +87,7 @@ export const DeviceItemContent: React.FC<{
 	)
 
 	const removeDevice = useCallback(() => {
-		delete bridge.settings.devices[deviceId]
+		delete bridge.settings.devices[unprotectString<TSRDeviceId>(deviceId)]
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [bridge.settings.devices, deviceId, handleError, ipcServer, project])
 
@@ -240,6 +242,18 @@ export const DeviceItemContent: React.FC<{
 			</div>
 			<div className="actions">
 				<TextBtn label="Delete" style="danger" onClick={removeDevice} />
+				<>
+					<label>Enabled&nbsp;</label>
+					<div className="sc-switch">
+						<Toggle
+							checked={!deviceSettings.disable}
+							onChange={() => {
+								deviceSettings.disable = !deviceSettings.disable
+								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+							}}
+						/>
+					</div>
+				</>
 			</div>
 		</div>
 	)

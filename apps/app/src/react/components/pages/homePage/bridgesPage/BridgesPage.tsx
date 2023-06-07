@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useMemo, useState } from 'react'
-import { INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
+import { Bridge, INTERNAL_BRIDGE_ID } from '../../../../../models/project/Bridge'
 import { Project } from '../../../../../models/project/Project'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
 import { IPCServerContext } from '../../../../contexts/IPCServer'
@@ -15,6 +15,8 @@ import { NewBridgeDialog } from './NewBridgeDialog'
 
 import Toggle from 'react-toggle'
 import 'react-toggle/style.css'
+import { unprotectString } from '@shared/models'
+import { BridgeId } from '@shared/api'
 
 export const BridgesPage: React.FC<{ project: Project }> = observer(function BridgesPage({ project }) {
 	const ipcServer = useContext(IPCServerContext)
@@ -25,17 +27,17 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 	const bridgeStatuses = store.appStore.bridgeStatuses
 
 	const internalBridge = useMemo(() => {
-		return project.bridges[INTERNAL_BRIDGE_ID]
+		return project.bridges[unprotectString<BridgeId>(INTERNAL_BRIDGE_ID)]
 	}, [project.bridges])
 
 	const incomingBridges = useMemo(() => {
-		return Object.values(project.bridges).filter((bridge) => {
+		return Object.values<Bridge>(project.bridges).filter((bridge) => {
 			return !bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])
 
 	const outgoingBridges = useMemo(() => {
-		return Object.values(project.bridges).filter((bridge) => {
+		return Object.values<Bridge>(project.bridges).filter((bridge) => {
 			return bridge.outgoing && bridge.id !== INTERNAL_BRIDGE_ID
 		})
 	}, [project.bridges])
@@ -47,6 +49,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 
 	const thereIsOnlyOneBridge = (internalBridge ? 1 : 0) + incomingBridges.length + outgoingBridges.length === 1
 
+	const internalBridgeStatus = bridgeStatuses.get(INTERNAL_BRIDGE_ID)
 	return (
 		<ProjectPageLayout
 			title="Bridges"
@@ -65,7 +68,7 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 					</div>
 				}
 			>
-				{internalBridge && project.settings.enableInternalBridge && bridgeStatuses[INTERNAL_BRIDGE_ID] ? (
+				{internalBridge && project.settings.enableInternalBridge && internalBridgeStatus ? (
 					<ScList
 						list={[
 							{
@@ -74,14 +77,14 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 									<BridgeItemHeader
 										id="internalBridge"
 										bridge={internalBridge}
-										bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]}
+										bridgeStatus={internalBridgeStatus}
 									/>
 								),
 								content: (
 									<BridgeItemContent
 										id="internalBridge"
 										bridge={internalBridge}
-										bridgeStatus={bridgeStatuses[INTERNAL_BRIDGE_ID]}
+										bridgeStatus={internalBridgeStatus}
 										isInternal
 									/>
 								),
@@ -98,19 +101,19 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 				<ScList
 					list={incomingBridges.map((bridge) => {
 						return {
-							id: bridge.id,
+							id: unprotectString(bridge.id),
 							header: (
 								<BridgeItemHeader
-									id={bridge.id}
+									id={unprotectString(bridge.id)}
 									bridge={bridge}
-									bridgeStatus={bridgeStatuses[bridge.id]}
+									bridgeStatus={bridgeStatuses.get(bridge.id)}
 								/>
 							),
 							content: (
 								<BridgeItemContent
-									id={bridge.id}
+									id={unprotectString(bridge.id)}
 									bridge={bridge}
-									bridgeStatus={bridgeStatuses[bridge.id]}
+									bridgeStatus={bridgeStatuses.get(bridge.id)}
 								/>
 							),
 						}
@@ -127,26 +130,26 @@ export const BridgesPage: React.FC<{ project: Project }> = observer(function Bri
 				<ScList
 					list={outgoingBridges.map((bridge) => {
 						return {
-							id: bridge.id,
+							id: unprotectString(bridge.id),
 							header: (
 								<BridgeItemHeader
-									id={bridge.id}
+									id={unprotectString(bridge.id)}
 									bridge={bridge}
-									bridgeStatus={bridgeStatuses[bridge.id]}
+									bridgeStatus={bridgeStatuses.get(bridge.id)}
 								/>
 							),
 							content: (
 								<BridgeItemContent
-									id={bridge.id}
+									id={unprotectString(bridge.id)}
 									bridge={bridge}
-									bridgeStatus={bridgeStatuses[bridge.id]}
+									bridgeStatus={bridgeStatuses.get(bridge.id)}
 								/>
 							),
 						}
 					})}
 				/>
 
-				{outgoingBridges.filter((bridge) => bridgeStatuses[bridge.id]).length === 0 && (
+				{outgoingBridges.filter((bridge) => bridgeStatuses.get(bridge.id)).length === 0 && (
 					<div className="central">There are no outgoing bridges.</div>
 				)}
 			</RoundedSection>

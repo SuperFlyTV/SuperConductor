@@ -28,9 +28,16 @@ import {
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group } from '../models/rundown/Group'
+import { Group, PlayingPart } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
-import { TSRTimelineObj, Mapping, DeviceType, MappingCasparCG, TSRTimelineContent } from 'timeline-state-resolver-types'
+import {
+	TSRTimelineObj,
+	Mapping,
+	DeviceType,
+	MappingCasparCG,
+	TSRTimelineContent,
+	DeviceOptionsAny,
+} from 'timeline-state-resolver-types'
 import {
 	ActionDescription,
 	IPCServerMethods,
@@ -42,8 +49,16 @@ import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
 import { SessionHandler } from './sessionHandler'
-import { ResourceAny, ResourceType } from '@shared/models'
-import { assertNever, deepClone } from '@shared/lib'
+import {
+	isProtectedString,
+	protectString,
+	ResourceAny,
+	ResourceId,
+	ResourceType,
+	TSRDeviceId,
+	unprotectString,
+} from '@shared/models'
+import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
@@ -61,16 +76,16 @@ import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { TSRTimelineObjFromResource } from '../lib/resources'
 import { PeripheralArea } from '../models/project/Peripheral'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { LoggerLike, LogLevel } from '@shared/api'
+import { BridgeId, LoggerLike, LogLevel, PeripheralId } from '@shared/api'
 import { postProcessPart } from './rundown'
 import _ from 'lodash'
 import { getLastEndTime } from '../lib/partTimeline'
 import { CurrentSelectionAny } from '../lib/GUI'
-import { BridgePeripheralSettings } from '../models/project/Bridge'
+import { Bridge, BridgePeripheralSettings } from '../models/project/Bridge'
 import { TriggersHandler } from './triggersHandler'
-import { autoUpdater } from 'electron-updater'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 import * as RundownActions from './rundownActions'
+import { SuperConductor } from './SuperConductor'
 
 type UndoLedger = Action[]
 type UndoPointer = number
@@ -125,6 +140,7 @@ export class IPCServer
 		private _log: LoggerLike,
 		private _renderLog: LoggerLike,
 		private storage: StorageHandler,
+		private superConductor: SuperConductor,
 		private session: SessionHandler,
 		private callbacks: {
 			onClientConnected: () => void
@@ -298,6 +314,7 @@ export class IPCServer
 	async acknowledgeSeenVersion(): Promise<void> {
 		const appData = this.storage.getAppData()
 		appData.version.seenVersion = appData.version.currentVersion
+
 		this.storage.updateAppData(appData)
 	}
 	async acknowledgeUserAgreement(arg: { agreementVersion: string }): Promise<void> {
@@ -958,7 +975,7 @@ export class IPCServer
 		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
 		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
 		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
-			for (const [partId, playingPart] of Object.entries(group.playout.playingParts)) {
+			for (const [partId, playingPart] of Object.entries<PlayingPart>(group.playout.playingParts)) {
 				if (playingPart.stopTime) delete group.playout.playingParts[partId]
 			}
 		}
@@ -1360,7 +1377,6 @@ export class IPCServer
 		partId: string
 		timelineObjId: string
 		timelineObj: {
-			resourceId?: TimelineObj['resourceId']
 			obj: PartialDeep<TimelineObj['obj']>
 		}
 	}): Promise<UndoableResult<void> | undefined> {
@@ -1377,7 +1393,6 @@ export class IPCServer
 		const timelineObjPreChange = deepClone(timelineObj)
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
-		if (arg.timelineObj.resourceId !== undefined) timelineObj.resourceId = arg.timelineObj.resourceId
 		if (arg.timelineObj.obj !== undefined) deepExtend(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
@@ -1573,11 +1588,11 @@ export class IPCServer
 		const timelineObj = findTimelineObj(part, arg.timelineObjId)
 		if (!timelineObj) throw new Error(`A timelineObj with the ID "${arg.timelineObjId}" could not be found.`)
 
-		if (!timelineObj.resourceId) throw new Error(`TimelineObj "${arg.timelineObjId}" lacks a resourceId.`)
-		const resource = this.storage.getResource(timelineObj.resourceId)
+		const project = this.getProject()
+		const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
+		const resource = resourceId && this.storage.getResource(resourceId)
 
 		const originalLayer = timelineObj.obj.layer
-		const project = this.getProject()
 		const result = this._findBestOrCreateLayer({
 			project,
 			rundown,
@@ -1617,7 +1632,7 @@ export class IPCServer
 		groupId: string
 		partId: string
 		layerId: string | null
-		resourceIds: (string | ResourceAny)[]
+		resourceIds: (ResourceId | ResourceAny)[]
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1633,7 +1648,7 @@ export class IPCServer
 		if (arg.resourceIds.length === 0) throw new Error(`Internal error: ResourceIds-array is empty.`)
 
 		for (const resourceId of arg.resourceIds) {
-			const resource = typeof resourceId === 'string' ? this.storage.getResource(resourceId) : resourceId
+			const resource = isProtectedString(resourceId) ? this.storage.getResource(resourceId) : resourceId
 			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
 
 			const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(resource)
@@ -1692,7 +1707,6 @@ export class IPCServer
 				)
 			}
 			const timelineObj: TimelineObj = {
-				resourceId: resource.id,
 				obj,
 				resolved: { instances: [] }, // set later, in postProcessPart
 			}
@@ -1884,6 +1898,56 @@ export class IPCServer
 			description: ActionDescription.ToggleGroupLock,
 		}
 	}
+	async toggleGroupCollapse(arg: {
+		rundownId: string
+		groupId: string
+		value: boolean
+	}): Promise<UndoableResult<void>> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.collapsed ?? false
+
+		group.collapsed = arg.value
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.collapsed = originalValue
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
+	async toggleAllGroupsCollapse(arg: { rundownId: string; value: boolean }): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
+
+		const originalValues = new Map<string, boolean>(rundown.groups.map((g) => [g.id, g.collapsed ?? false]))
+
+		for (const group of rundown.groups) {
+			group.collapsed = arg.value
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown } = this.getRundown(arg)
+
+				for (const group of rundown.groups) {
+					const originalValue = originalValues.get(group.id)
+					if (originalValue !== undefined) {
+						group.collapsed = originalValue
+					}
+				}
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleAllGroupsCollapse,
+		}
+	}
 	async refreshResources(): Promise<void> {
 		this.callbacks.refreshResources()
 	}
@@ -1897,13 +1961,21 @@ export class IPCServer
 		const appData = this.storage.getAppData()
 
 		if (arg.preReleaseAutoUpdate !== undefined) {
+			// If preReleaseAutoUpdate is set to true when the application is a pre-release version,
+			// set it to undefined, since preReleaseAutoUpdate will default to that anyway.
+			// (And the reverse when app is a release version)
+			// This will allow for both setting it specifically to auto-update/downgrade,
+			// but also avoid an unintentional update/downgrade when installing a (pre-)release version manually.
+			if (appData.version.currentVersionIsPrerelease) {
+				if (arg.preReleaseAutoUpdate === true) {
+					arg.preReleaseAutoUpdate = undefined
+				}
+			} else {
+				if (arg.preReleaseAutoUpdate === false) {
+					arg.preReleaseAutoUpdate = undefined
+				}
+			}
 			appData.preReleaseAutoUpdate = arg.preReleaseAutoUpdate
-
-			autoUpdater.allowPrerelease = !!appData.preReleaseAutoUpdate
-
-			setTimeout(() => {
-				autoUpdater.checkForUpdatesAndNotify().catch(this._log.error)
-			}, 1000)
 		}
 		if (arg.guiDecimalCount !== undefined) {
 			appData.guiDecimalCount = arg.guiDecimalCount
@@ -2037,21 +2109,22 @@ export class IPCServer
 			for (const part of group.parts) {
 				for (const timelineObj of part.timeline) {
 					if (timelineObj.obj.layer === arg.mappingId) {
-						if (!timelineObj.resourceId)
-							throw new Error(`TimelineObj "${timelineObj.obj.id}" lacks a resourceId.`)
+						const resourceId = getResourceIdFromTimelineObj(timelineObj.obj, project.mappings)
 
-						let deviceId: string | undefined
-						const resource = this.storage.getResource(timelineObj.resourceId)
+						let deviceId: TSRDeviceId | undefined
+						const resource = resourceId && this.storage.getResource(resourceId)
 						if (resource) {
 							deviceId = resource.deviceId
 						}
 						if (!deviceId) {
 							// Pick the first compatible deviceId we find:
-							for (const bridge of Object.values(project.bridges)) {
+							for (const bridge of Object.values<Bridge>(project.bridges)) {
 								if (deviceId) break
-								for (const [findDeviceId, device] of Object.entries(bridge.settings.devices)) {
+								for (const [findDeviceId, device] of Object.entries<DeviceOptionsAny>(
+									bridge.settings.devices
+								)) {
 									if (device.type === timelineObj.obj.content.deviceType) {
-										deviceId = findDeviceId
+										deviceId = protectString<TSRDeviceId>(findDeviceId)
 										break
 									}
 								}
@@ -2075,7 +2148,7 @@ export class IPCServer
 				throw new Error('No layer could be automatically created.')
 			case 1: {
 				newLayerId = Object.keys(createdMappings)[0]
-				const newMapping = Object.values(createdMappings)[0]
+				const newMapping = Object.values<Mapping>(createdMappings)[0]
 
 				if (!newMapping.layerName) {
 					throw new Error('INTERNAL ERROR: Layer lacks a name.')
@@ -2107,16 +2180,19 @@ export class IPCServer
 		}
 	}
 
-	async addPeripheralArea(arg: { bridgeId: string; deviceId: string }): Promise<UndoableResult<void>> {
+	async addPeripheralArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId }): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[arg.bridgeId]
+
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
-		let peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+		let peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (!peripheralSettings) {
-			bridge.clientSidePeripheralSettings[arg.deviceId] = peripheralSettings = {
+			bridge.clientSidePeripheralSettings[deviceIdStr] = peripheralSettings = {
 				areas: {},
 			}
 		}
@@ -2135,9 +2211,9 @@ export class IPCServer
 			undo: async () => {
 				if (newAreaId) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[arg.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -2150,17 +2226,19 @@ export class IPCServer
 		}
 	}
 	async removePeripheralArea(data: {
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 	}): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(data.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(data.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
 
 		let removedArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (peripheralSettings) {
@@ -2174,9 +2252,9 @@ export class IPCServer
 			undo: async () => {
 				if (removedArea) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
@@ -2189,27 +2267,29 @@ export class IPCServer
 			description: ActionDescription.RemovePeripheralArea,
 		}
 	}
-	async updatePeripheralArea(data: {
-		bridgeId: string
-		deviceId: string
+	async updatePeripheralArea(arg: {
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 		areaId: string
 		update: Partial<PeripheralArea>
 	}): Promise<UndoableResult<void>> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.storage.getProject()
-		const bridge = project.bridges[data.bridgeId]
-		if (!bridge) throw new Error(`Bridge "${data.bridgeId}" not found`)
+		const bridge = project.bridges[bridgeIdStr]
+		if (!bridge) throw new Error(`Bridge "${arg.bridgeId}" not found`)
 
 		let orgArea: PeripheralArea | undefined
 
-		const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 			| BridgePeripheralSettings
 			| undefined
 		if (peripheralSettings) {
-			orgArea = deepClone(peripheralSettings.areas[data.areaId])
+			orgArea = deepClone(peripheralSettings.areas[arg.areaId])
 
-			peripheralSettings.areas[data.areaId] = {
-				...peripheralSettings.areas[data.areaId],
-				...data.update,
+			peripheralSettings.areas[arg.areaId] = {
+				...peripheralSettings.areas[arg.areaId],
+				...arg.update,
 			}
 
 			this._saveUpdates({ project })
@@ -2219,14 +2299,14 @@ export class IPCServer
 			undo: async () => {
 				if (orgArea) {
 					const project = this.storage.getProject()
-					const bridge = project.bridges[data.bridgeId]
+					const bridge = project.bridges[bridgeIdStr]
 					if (!bridge) return
-					const peripheralSettings = bridge.clientSidePeripheralSettings[data.deviceId] as
+					const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr] as
 						| BridgePeripheralSettings
 						| undefined
 					if (!peripheralSettings) return
 
-					peripheralSettings.areas[data.areaId] = orgArea
+					peripheralSettings.areas[arg.areaId] = orgArea
 
 					this._saveUpdates({ project })
 				}
@@ -2237,14 +2317,16 @@ export class IPCServer
 	async assignAreaToGroup(arg: {
 		groupId: string | undefined
 		areaId: string
-		bridgeId: string
-		deviceId: string
+		bridgeId: BridgeId
+		deviceId: PeripheralId
 	}): Promise<UndoableResult<void> | undefined> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.getProject()
 
-		const bridge = project.bridges[arg.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) return
-		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2257,9 +2339,9 @@ export class IPCServer
 			undo: async () => {
 				const project = this.storage.getProject()
 
-				const bridge = project.bridges[arg.bridgeId]
+				const bridge = project.bridges[bridgeIdStr]
 				if (!bridge) return
-				const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+				const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 				if (!peripheralSettings) return
 				const area = peripheralSettings.areas[arg.areaId]
 				if (!area) return
@@ -2270,12 +2352,14 @@ export class IPCServer
 			description: ActionDescription.AssignAreaToGroup,
 		}
 	}
-	async startDefiningArea(arg: { bridgeId: string; deviceId: string; areaId: string }): Promise<void> {
+	async startDefiningArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }): Promise<void> {
+		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
+		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
 		const project = this.getProject()
 
-		const bridge = project.bridges[arg.bridgeId]
+		const bridge = project.bridges[bridgeIdStr]
 		if (!bridge) return
-		const peripheralSettings = bridge.clientSidePeripheralSettings[arg.deviceId]
+		const peripheralSettings = bridge.clientSidePeripheralSettings[deviceIdStr]
 		if (!peripheralSettings) return
 		const area = peripheralSettings.areas[arg.areaId]
 		if (!area) return
@@ -2355,6 +2439,7 @@ export class IPCServer
 	}) {
 		if (updates.appData) {
 			this.storage.updateAppData(updates.appData)
+			this.superConductor.setAutoUpdateAllowPrerelease(false)
 		}
 		if (updates.project) {
 			this.storage.updateProject(updates.project)
@@ -2428,11 +2513,12 @@ export class IPCServer
 
 		// First, try to pick next free layer:
 		for (const { layerId, mapping } of sortMappings(arg.project.mappings)) {
+			const mappingDeviceId = protectString(mapping.deviceId)
 			// Is the layer on the same device as the resource?
-			if (arg.resource && arg.resource.deviceId !== mapping.deviceId) continue
+			if (arg.resource && arg.resource.deviceId !== mappingDeviceId) continue
 
 			// Does the layer have a device?
-			if (!allDeviceIds.has(mapping.deviceId)) continue
+			if (!allDeviceIds.has(mappingDeviceId)) continue
 
 			// Is the layer compatible?
 			if (!filterMapping(mapping, arg.obj)) continue
@@ -2482,7 +2568,7 @@ export class IPCServer
 			}
 		}
 
-		const bestLayer = Object.entries(possibleLayers).reduce(
+		const bestLayer = Object.entries<number>(possibleLayers).reduce(
 			(prev, current) => {
 				if (current[1] > prev[1]) return current
 				return prev

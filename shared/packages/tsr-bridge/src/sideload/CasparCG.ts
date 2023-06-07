@@ -1,6 +1,16 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
 import { CasparCG, AMCP } from 'casparcg-connection'
-import { ResourceAny, ResourceType, CasparCGMedia } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	CasparCGMedia,
+	ResourceId,
+	protectString,
+	MetadataAny,
+	CasparCGMetadata,
+	MetadataType,
+	TSRDeviceId,
+} from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import {
@@ -8,13 +18,15 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates'
+import { getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
 		this.ccg = new CasparCG({
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,
@@ -27,18 +39,22 @@ export class CasparCGSideload implements SideLoadDevice {
 			},
 		})
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.ccg.disconnect()
 	}
 
-	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+	private async _refreshResourcesAndMetadata() {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
 		if (!this.ccg.connected) {
-			return Object.values(this.cacheResources)
+			return {
+				resources: Array.from(this.cacheResources.values()),
+				metadata: this.cacheMetadata,
+			}
 		}
 
 		// Temporary fix for when there are MANY items, to avoid out-of-memory when loading too many thumbnails..
@@ -77,10 +93,11 @@ export class CasparCGSideload implements SideLoadDevice {
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_media_${media.name}`,
+					id: protectString(''), // set by getResourceIdFromResource() later
 					...media,
 					displayName: media.name,
 				}
+				resource.id = getResourceIdFromResource(resource)
 
 				if ((media.type === 'image' || media.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
 					try {
@@ -96,7 +113,7 @@ export class CasparCGSideload implements SideLoadDevice {
 					}
 				}
 
-				resources[resource.id] = resource
+				resources.set(resource.id, resource)
 			}
 		}
 
@@ -115,6 +132,10 @@ export class CasparCGSideload implements SideLoadDevice {
 		}
 
 		this.cacheResources = resources
-		return Object.values(resources)
+		this.cacheMetadata = metadata
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }

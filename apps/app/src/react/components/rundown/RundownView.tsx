@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import sorensen from '@sofie-automation/sorensen'
 import { GroupView } from './GroupView/GroupView'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { useDrop } from 'react-dnd'
@@ -15,6 +16,8 @@ import { Btn } from '../inputs/Btn/Btn'
 import { getClassNameFromResource } from '../../../lib/resources'
 import { MoveTarget } from '../../../lib/util'
 import { ErrorBoundary } from '../util/ErrorBoundary'
+import { assertNever } from '@shared/lib'
+import { CurrentSelectionAny } from '../../../lib/GUI'
 
 export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
 	// Drag n' Drop:
@@ -80,6 +83,85 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 
 		return store.rundownsStore.getRundown(currentRundownId)
 	}, [])
+
+	const currentRundownId = useMemo(() => {
+		return currentRundown?.id
+	}, [currentRundown])
+
+	useEffect(() => {
+		const onKeySelectAll = () => {
+			function areAllAlreadySelected(selection: CurrentSelectionAny[]): boolean {
+				let allAreAlreadySelected = true
+				for (const select of selection) {
+					if (!store.guiStore.isSelected(select)) {
+						allAreAlreadySelected = false
+						break
+					}
+				}
+				return allAreAlreadySelected
+			}
+			function selectAll(selection: CurrentSelectionAny[]): void {
+				for (const select of selection) {
+					store.guiStore.addSelected(select)
+				}
+			}
+
+			if (currentRundownId) {
+				const mainSelected = store.guiStore.mainSelected
+
+				const selection: CurrentSelectionAny[] = []
+
+				if (!mainSelected || mainSelected.type === 'group') {
+					// Select all groups
+					for (const group of store.rundownsStore.getRundownGroups(currentRundownId)) {
+						selection.push({ type: 'group', groupId: group.id })
+					}
+				} else if (mainSelected.type === 'part') {
+					// Select all parts in Group
+					for (const part of store.rundownsStore.getGroupParts(mainSelected.groupId)) {
+						selection.push({ type: 'part', groupId: mainSelected.groupId, partId: part.id })
+					}
+				} else if (mainSelected.type === 'timelineObj') {
+					// Select all timeline objets in Group:
+
+					for (const obj of store.rundownsStore.getPartTimeline(mainSelected.partId)) {
+						selection.push({
+							type: 'timelineObj',
+							groupId: mainSelected.groupId,
+							partId: mainSelected.partId,
+							timelineObjId: obj.obj.id,
+						})
+					}
+				} else {
+					assertNever(mainSelected)
+				}
+				// If selection is already selected, clear selection instead:
+				if (!areAllAlreadySelected(selection)) {
+					selectAll(selection)
+					if (mainSelected) {
+						// Keep original mainSelected:
+						store.guiStore.addSelected(mainSelected)
+					}
+				} else {
+					store.guiStore.clearSelected()
+				}
+			}
+		}
+		// Select All
+		sorensen.bind('Control+KeyA', onKeySelectAll, {
+			up: false,
+			global: true,
+		})
+		sorensen.bind('Command+KeyA', onKeySelectAll, {
+			up: false,
+			global: true,
+		})
+
+		return () => {
+			sorensen.unbind('Control+KeyA', onKeySelectAll)
+			sorensen.unbind('Command+KeyA', onKeySelectAll)
+		}
+	}, [currentRundownId])
 
 	if (!currentRundown) return null
 

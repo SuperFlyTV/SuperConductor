@@ -1,5 +1,5 @@
-import { KeyDisplay, KeyDisplayTimeline, LoggerLike } from '@shared/api'
-import { assertNever, literal } from '@shared/lib'
+import { BridgeId, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralId } from '@shared/api'
+import { BridgePeripheralId, assertNever, literal } from '@shared/lib'
 import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
@@ -19,10 +19,12 @@ import {
 	prepareTriggersAreaMap,
 } from '../lib/triggers/keyDisplay/keyDisplay'
 import { SessionHandler } from './sessionHandler'
-import { PeripheralStatus } from '../models/project/Peripheral'
+import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
 import { convertSorensenToElectron } from '../lib/triggers/identifiers'
+import { protectString, unprotectString } from '@shared/models'
+import { BridgePeripheralSettings } from '../models/project/Bridge'
 
 export interface TriggersHandlerEvents {
 	error: (error: Error) => void
@@ -97,14 +99,14 @@ export class TriggersHandler extends EventEmitter {
 	updateDefiningArea(definingArea: DefiningArea | null): void {
 		this.definingArea = definingArea
 	}
-	onPeripheralStatus(peripheralId: string, peripheral: PeripheralStatus | null): void {
+	onPeripheralStatus(peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null): void {
 		if (!peripheral?.status.connected) {
 			// The peripheral has been disconnected
 
 			// Delete the sent keyDisplays for that device,
 			// so that updates will be sent later if it reconnects:
 			for (const fullIdentifier of Object.keys(this.sentkeyDisplays)) {
-				if (fullIdentifier.startsWith(peripheralId)) {
+				if (fullIdentifier.startsWith(unprotectString(peripheralId))) {
 					delete this.sentkeyDisplays[fullIdentifier]
 				}
 			}
@@ -139,7 +141,7 @@ export class TriggersHandler extends EventEmitter {
 
 		const triggersAreaMap = prepareTriggersAreaMap(project)
 
-		for (const [fullIdentifier, trigger] of Object.entries(this.allTriggers)) {
+		for (const [fullIdentifier, trigger] of Object.entries<ActiveTrigger>(this.allTriggers)) {
 			const used = usedTriggers[fullIdentifier]
 
 			const peripheralStatus = this.session.getPeripheralStatus(trigger.bridgeId, trigger.deviceId)
@@ -447,16 +449,20 @@ export class TriggersHandler extends EventEmitter {
 	private addTriggerToArea(definingArea: DefiningArea, activeTrigger: ActiveTrigger) {
 		const project = this.storage.getProject()
 
-		const bridge = project.bridges[definingArea.bridgeId]
+		const bridge = project.bridges[unprotectString<BridgeId>(definingArea.bridgeId)]
 		if (!bridge) return
 		// Check if the trigger is already in another
 
 		let found = false
-		for (const [peripheralId, peripheralSettings] of Object.entries(bridge.clientSidePeripheralSettings)) {
+		for (const [peripheralId0, peripheralSettings] of Object.entries<BridgePeripheralSettings>(
+			bridge.clientSidePeripheralSettings
+		)) {
 			if (found) break
 
+			const peripheralId = protectString<PeripheralId>(peripheralId0)
+
 			if (peripheralId === definingArea.deviceId) {
-				for (const area of Object.values(peripheralSettings.areas)) {
+				for (const area of Object.values<PeripheralArea>(peripheralSettings.areas)) {
 					if (found) break
 					if (area.identifiers.includes(activeTrigger.identifier)) {
 						found = true
@@ -467,7 +473,8 @@ export class TriggersHandler extends EventEmitter {
 
 		if (!found) {
 			// Add the trigger to the area:
-			const peripheralSettings = bridge.clientSidePeripheralSettings[definingArea.deviceId]
+			const peripheralSettings =
+				bridge.clientSidePeripheralSettings[unprotectString<PeripheralId>(definingArea.deviceId)]
 			if (!peripheralSettings) return
 			const area = peripheralSettings.areas[definingArea.areaId]
 			if (!area) return

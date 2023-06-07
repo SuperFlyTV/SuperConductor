@@ -115,10 +115,6 @@ export const GroupView: React.FC<{
 		setActiveParts(activeParts0)
 	}, [group])
 
-	const guiSettings = computed(() => store.guiStore.getGroupSettings(groupId))
-
-	const groupCollapsed = guiSettings.get().collapsed
-
 	const groupIsPlaying = computed(() => store.groupPlayDataStore.groups.get(group.id)?.groupIsPlaying || false).get()
 	const groupWillPlay = computed(
 		() => (store.groupPlayDataStore.groups.get(group.id)?.groupScheduledToPlay ?? []).length > 0 || false
@@ -436,11 +432,24 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		const settings = store.guiStore.getGroupSettings(groupId)
-		store.guiStore.setGroupSettings(groupId, {
-			collapsed: !settings.collapsed,
-		})
-	}, [groupId])
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('AltLeft') || pressed.includes('AltRight')) {
+			ipcServer
+				.toggleAllGroupsCollapse({
+					rundownId,
+					value: !group.collapsed,
+				})
+				.catch(handleError)
+		} else {
+			ipcServer
+				.toggleGroupCollapse({
+					rundownId,
+					groupId: group.id,
+					value: !group.collapsed,
+				})
+				.catch(handleError)
+		}
+	}, [group.collapsed, group.id, handleError, ipcServer, rundownId])
 
 	// Disable button:
 	const toggleDisable = useCallback(() => {
@@ -572,7 +581,7 @@ export const GroupView: React.FC<{
 					ref={wrapperRef}
 					className={classNames('group', {
 						disabled: group.disabled,
-						collapsed: groupCollapsed,
+						collapsed: group.collapsed,
 						dragging: isDragging,
 						selected: isSelected.get(),
 						selectable: selectable,
@@ -591,8 +600,8 @@ export const GroupView: React.FC<{
 						</div>
 
 						<div
-							className={classNames('collapse', { 'collapse--collapsed': groupCollapsed })}
-							title={groupCollapsed ? 'Expand Group' : 'Collapse Group'}
+							className={classNames('collapse', { 'collapse--collapsed': group.collapsed })}
+							title={group.collapsed ? 'Expand Group' : 'Collapse Group'}
 						>
 							<MdChevronRight size={22} onClick={handleCollapse} />
 						</div>
@@ -779,7 +788,13 @@ export const GroupView: React.FC<{
 								<GroupAutoFillPopover rundownId={rundownId} group={group} />
 							</Popover>
 						</div>
-						<div className="controls controls-space"></div>
+						<div className="controls controls-space">
+							{group.collapsed ? (
+								<div>
+									{group.partIds.length} {group.partIds.length === 1 ? 'Part' : 'Parts'}
+								</div>
+							) : null}
+						</div>
 						<div className="controls controls-right">
 							<DuplicateBtn className="duplicate" title="Duplicate Group" onClick={handleDuplicate} />
 
@@ -791,7 +806,7 @@ export const GroupView: React.FC<{
 							/>
 						</div>
 					</div>
-					{!groupCollapsed && (
+					{!group.collapsed && (
 						<div className="group__content">
 							<div
 								className="group__content__parts"
@@ -1199,24 +1214,24 @@ const GroupControlButtons: React.FC<{
 			<Button
 				variant="contained"
 				size="small"
-				disabled={!canStepDown}
-				onClick={handleStepDown}
-				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
-				title="Play next"
-			>
-				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
-					<AiFillStepForward size={22} />
-				</div>
-			</Button>
-			<Button
-				variant="contained"
-				size="small"
 				disabled={!canStepUp}
 				onClick={handleStepUp}
 				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
 				title="Play previous"
 			>
 				<div style={{ transform: 'rotate(-90deg) translateY(3px)' }}>
+					<AiFillStepForward size={22} />
+				</div>
+			</Button>
+			<Button
+				variant="contained"
+				size="small"
+				disabled={!canStepDown}
+				onClick={handleStepDown}
+				sx={{ visibility: group.oneAtATime ? 'visible' : 'hidden' }}
+				title="Play next"
+			>
+				<div style={{ transform: 'rotate(90deg) translateY(3px)' }}>
 					<AiFillStepForward size={22} />
 				</div>
 			</Button>

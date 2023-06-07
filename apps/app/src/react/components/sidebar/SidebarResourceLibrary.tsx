@@ -2,7 +2,15 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { SidebarContent } from './SidebarContent'
 import { IPCServerContext } from '../../contexts/IPCServer'
 import { ProjectContext } from '../../contexts/Project'
-import { ResourceAny, ResourceType } from '@shared/models'
+import {
+	protectString,
+	protectStringArray,
+	ResourceAny,
+	ResourceId,
+	ResourceType,
+	TSRDeviceId,
+	unprotectString,
+} from '@shared/models'
 import { flatten } from '@shared/lib'
 import { ResourceData } from './resource/ResourceData'
 import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
@@ -76,14 +84,17 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		detailedFiltersExpanded,
 	} = computed(() => store.guiStore.resourceLibrary).get()
 	const selectedResource = useMemoComputedObject(
-		() => (selectedResourceIds.length === 1 ? store.resourcesStore.resources[selectedResourceIds[0]] : undefined),
+		() =>
+			selectedResourceIds.length === 1
+				? store.resourcesAndMetadataStore.resources.get(selectedResourceIds[0])
+				: undefined,
 		[selectedResourceIds]
 	)
-	const refreshStatuses = useMemoComputedObject(() => store.resourcesStore.refreshStatuses, [])
+	const refreshStatuses = useMemoComputedObject(() => store.resourcesAndMetadataStore.refreshStatuses, [])
 	const debouncedNameFilterValue = useDebounce(nameFilterValue, NAME_FILTER_DEBOUNCE)
 
 	const sortedResources = useMemoComputedArray(() => {
-		return Object.values(store.resourcesStore.resources).sort((a, b) => {
+		return Array.from(store.resourcesAndMetadataStore.resources.values()).sort((a, b) => {
 			if (a.deviceId > b.deviceId) return 1
 			if (a.deviceId < b.deviceId) return -1
 
@@ -132,24 +143,25 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 	}, [debouncedNameFilterValue, resourcesFilteredByType])
 
 	const filteredResourcesByDeviceId = useMemo(() => {
-		const ret: { [deviceId: string]: ResourceAny[] } = {}
+		const ret = new Map<TSRDeviceId, ResourceAny[]>()
 
 		for (const resource of resourcesFilteredByDeviceAndName) {
-			if (!(resource.deviceId in ret)) {
-				ret[resource.deviceId] = []
+			let r = ret.get(resource.deviceId)
+			if (!r) {
+				r = []
+				ret.set(resource.deviceId, r)
 			}
-			ret[resource.deviceId].push(resource)
+			r.push(resource)
 		}
-
 		return ret
 	}, [resourcesFilteredByDeviceAndName])
 
 	const deviceIds = useMemo(() => {
-		const deviceIds = new Set<string>()
+		const deviceIds = new Set<TSRDeviceId>()
 		for (const bridgeId in project.bridges) {
 			const bridge = project.bridges[bridgeId]
 			for (const deviceId in bridge.settings.devices) {
-				deviceIds.add(deviceId)
+				deviceIds.add(protectString<TSRDeviceId>(deviceId))
 			}
 		}
 		return Array.from(deviceIds)
@@ -183,7 +195,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		} = event
 		store.guiStore.updateResourceLibrary({
 			// On autofill we get a stringified value.
-			deviceFilterValue: typeof value === 'string' ? value.split(',') : value,
+			deviceFilterValue: Array.isArray(value) ? value : protectStringArray(value.split(',')),
 		})
 	}, [])
 
@@ -203,11 +215,14 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 		},
 		[ipcServer, handleError]
 	)
-	const isAnyDeviceRefreshing = useMemoComputedValue(() => store.resourcesStore.isAnyDeviceRefreshing(), [])
+	const isAnyDeviceRefreshing = useMemoComputedValue(
+		() => store.resourcesAndMetadataStore.isAnyDeviceRefreshing(),
+		[]
+	)
 
 	const allListItems = useMemo(() => {
 		const allListItems: RowItem[] = []
-		for (const [deviceId, resources] of Object.entries(filteredResourcesByDeviceId)) {
+		for (const [deviceId, resources] of filteredResourcesByDeviceId.entries()) {
 			allListItems.push({
 				type: 'device',
 				key: `__device${deviceId}`,
@@ -217,7 +232,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			for (const resource of resources) {
 				allListItems.push({
 					type: 'resource',
-					key: resource.id,
+					key: unprotectString(resource.id),
 					resource,
 				})
 			}
@@ -246,17 +261,22 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				// Add all resources between the last selected and this one:
 
 				const mainIndex = lastSelectedResourceId
-					? allListItems.findIndex((i) => i.type === 'resource' && i.key === lastSelectedResourceId)
+					? allListItems.findIndex(
+							(i) => i.type === 'resource' && i.key === unprotectString(lastSelectedResourceId)
+					  )
 					: 0
-				const thisIndex = allListItems.findIndex((i) => i.type === 'resource' && i.key === resource.id)
+				const thisIndex = allListItems.findIndex(
+					(i) => i.type === 'resource' && i.key === unprotectString(resource.id)
+				)
 				if (mainIndex === -1 || thisIndex === -1) return
 				if (mainIndex < thisIndex) {
 					for (let i = mainIndex + 1; i <= thisIndex; i++) {
 						const item = allListItems[i]
 						if (item.type === 'resource') {
-							const foundIndex = selectedResourceIds.indexOf(item.key)
+							const protectedKey = protectString<ResourceId>(item.key)
+							const foundIndex = selectedResourceIds.indexOf(protectedKey)
 							if (foundIndex === -1) {
-								selectedResourceIds.push(item.key)
+								selectedResourceIds.push(protectedKey)
 							}
 						}
 					}
@@ -264,9 +284,10 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 					for (let i = mainIndex - 1; i >= thisIndex; i--) {
 						const item = allListItems[i]
 						if (item.type === 'resource') {
-							const foundIndex = selectedResourceIds.indexOf(item.key)
+							const protectedKey = protectString<ResourceId>(item.key)
+							const foundIndex = selectedResourceIds.indexOf(protectedKey)
 							if (foundIndex === -1) {
-								selectedResourceIds.push(item.key)
+								selectedResourceIds.push(protectedKey)
 							}
 						}
 					}
@@ -436,7 +457,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 							MenuProps={MenuProps}
 						>
 							{deviceIds.map((deviceId) => (
-								<MenuItem key={deviceId} value={deviceId} dense>
+								<MenuItem key={unprotectString(deviceId)} value={unprotectString(deviceId)} dense>
 									<SmallCheckbox checked={deviceFilterValue.indexOf(deviceId) > -1} />
 									<ListItemText primary={getDeviceName(project, deviceId)} />
 								</MenuItem>
@@ -487,29 +508,27 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 						if (item.type === 'device') {
 							return (
 								<DeviceHeader
-									key={item.deviceId}
+									key={unprotectString(item.deviceId)}
 									deviceName={getDeviceName(project, item.deviceId)}
-									isRefreshing={refreshStatuses[item.deviceId]}
+									isRefreshing={refreshStatuses.has(item.deviceId)}
 									resourceCount={item.resourceCount}
 								/>
 							)
 						} else {
 							return (
-								<React.Fragment key={item.resource.id}>
+								<React.Fragment key={unprotectString(item.resource.id)}>
 									<ResourceLibraryItem
 										resource={item.resource}
 										selected={selectedResourceIds.includes(item.resource.id)}
 										onSelect={handleResourceLibraryItemSelect}
 									/>
-									{selectedResource && currentRundownId && item.resource.id === selectedResource.id && (
-										<>
-											<ResourceData resource={item.resource} />
-											{/* <AddToTimeline
-												currentRundownId={currentRundownId}
-												resource={item.resource}
-											/> */}
-										</>
-									)}
+									{selectedResource &&
+										currentRundownId &&
+										item.resource.id === selectedResource.id && (
+											<>
+												<ResourceData resource={item.resource} />
+											</>
+										)}
 								</React.Fragment>
 							)
 						}
@@ -524,7 +543,7 @@ type RowItem =
 	| {
 			type: 'device'
 			key: string
-			deviceId: string
+			deviceId: TSRDeviceId
 			resourceCount: number
 	  }
 	| {

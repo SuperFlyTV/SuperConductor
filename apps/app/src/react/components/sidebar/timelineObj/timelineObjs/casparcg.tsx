@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState } from 'react'
-import { assertNever, deepClone } from '@shared/lib'
+import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import {
 	ChannelFormat,
 	Direction,
@@ -42,20 +42,25 @@ import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/Ana
 import { HiOutlineX } from 'react-icons/hi'
 import { store } from '../../../../mobx/store'
 import { computed } from 'mobx'
-import { ResourceAny, ResourceType } from '@shared/models'
+import { CasparCGMedia, ResourceAny, ResourceId, ResourceType } from '@shared/models'
 import { usePromise } from '../../../../mobx/lib'
 import { EditGDDData } from '../GDD/gddEdit'
 import { GDDSchema } from 'graphics-data-definition'
 import { PartialDeep } from 'type-fest'
 import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
 import { makePartialData } from '../GDD/lib'
+import { sortMappings } from '../../../../../lib/TSRMappings'
+import { observer } from 'mobx-react-lite'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentCasparCGAny>[]
-	resourceIds: string[]
+	resourceIds: ResourceId[]
 
 	onSave: OnSave
-}> = ({ objs, resourceIds, onSave: onSave0 }) => {
+}> = observer(function EditTimelineObjCasparCGAny({ objs, resourceIds, onSave: onSave0 }) {
+	const allResources = store.resourcesAndMetadataStore.resources
+	const mappings = store.projectStore.project.mappings
+
 	let settings: JSX.Element = <></>
 
 	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentCasparCGAny>>
@@ -1721,6 +1726,15 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
+		let mediaResourceForFirstObj: CasparCGMedia | undefined = undefined
+		if (objs.length === 1) {
+			const resourceId = getResourceIdFromTimelineObj(firstObj, mappings)
+			const res = resourceId && allResources.get(resourceId)
+			if (res?.resourceType === ResourceType.CASPARCG_MEDIA) {
+				mediaResourceForFirstObj = res
+			}
+		}
+
 		settings = (
 			<>
 				<div className="setting">
@@ -1734,6 +1748,13 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						allowUndefined={false}
 					/>
 				</div>
+				{mediaResourceForFirstObj?.thumbnail ? (
+					<img
+						style={{ width: '100%' }}
+						src={mediaResourceForFirstObj.thumbnail}
+						alt={mediaResourceForFirstObj.name}
+					/>
+				) : null}
 				<div className="setting">
 					<BooleanInput
 						label="Looping content"
@@ -1927,7 +1948,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 				<CasparEditTemplateData objs={objs} resourceIds={resourceIds} onSave={onSave0} />
 
-				{/* {showAllButton} */}
+				{getSettingsMixer(objs)}
+
+				{showAllButton}
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.HTMLPAGE) {
@@ -1947,6 +1970,9 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 						allowUndefined={false}
 					/>
 				</div>
+				{getSettingsMixer(objs)}
+				{getSettingsTransitions(objs)}
+				{showAllButton}
 			</>
 		)
 	} else if (contentType === TimelineContentTypeCasparCg.ROUTE) {
@@ -1956,13 +1982,21 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
+		const sourceMappingsOptions: { value: string; label: string }[] = sortMappings(
+			store.projectStore.project.mappings
+		).map((m) => ({
+			value: m.layerId,
+			label: m.mapping.layerName || m.layerId,
+		}))
+
 		settings = (
 			<>
 				<div className="setting">
-					<TextInput
-						label="mappedLayer"
+					<SelectEnum
+						label="Source Layer"
 						fullWidth
 						{...inputValue(objs, (obj) => obj.content.mappedLayer, undefined)}
+						options={sourceMappingsOptions}
 						onChange={(v) => {
 							onSave({ content: { mappedLayer: v } })
 						}}
@@ -2030,7 +2064,7 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 
 				{getSettingsChannelLayout(objs)}
 				{getSettingsVideoAudioFilters(objs)}
-				{getSettingsTransitions(objs)}
+				{getSettingsMixer(objs)}
 				{showAllButton}
 			</>
 		)
@@ -2075,11 +2109,11 @@ export const EditTimelineObjCasparCGAny: React.FC<{
 			{settings}
 		</EditWrapper>
 	)
-}
+})
 
 const CasparEditTemplateData: React.FC<{
 	objs: TSRTimelineObj<TimelineContentCCGTemplate>[]
-	resourceIds: string[]
+	resourceIds: ResourceId[]
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave }) => {
 	const initializedGDDValidator = usePromise(() =>
@@ -2088,7 +2122,7 @@ const CasparEditTemplateData: React.FC<{
 
 	const resources: ResourceAny[] = []
 	for (const resourceId of resourceIds) {
-		const resource = computed(() => store.resourcesStore.getResource(resourceId)).get()
+		const resource = computed(() => store.resourcesAndMetadataStore.getResource(resourceId)).get()
 		if (resource) resources.push(resource)
 	}
 
@@ -2319,7 +2353,7 @@ const CasparEditTemplatePlainData: React.FC<{
 	}
 
 	const dataEntries: Array<{ key: string; value: any }> = []
-	for (const [key, value] of Object.entries(parsed)) {
+	for (const [key, value] of Object.entries<string>(parsed)) {
 		if (key === '__gdd') continue
 		dataEntries.push({ key, value })
 	}
@@ -2354,6 +2388,7 @@ const CasparEditTemplatePlainData: React.FC<{
 							<td colSpan={3}></td>
 						</tr>
 						{dataEntries.map(({ key, value }) => {
+							if (value === undefined) return null
 							return (
 								<tr key={key}>
 									<td className="key">

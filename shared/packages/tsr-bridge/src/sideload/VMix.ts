@@ -14,17 +14,24 @@ import {
 	VMixFadeToBlack,
 	VMixFader,
 	VMixPreview,
+	ResourceId,
+	protectString,
+	VMixMetadata,
+	MetadataAny,
+	MetadataType,
+	TSRDeviceId,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
-import { stringifyError } from '@shared/lib'
+import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class VMixSideload implements SideLoadDevice {
 	private vmix: VMix
 	/** A cache of resources to be used when the device is offline. */
-	private cacheResources: { [id: string]: ResourceAny } = {}
+	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
+	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
-	constructor(private deviceId: string, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
+	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
 		this.vmix = new VMix(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
 
 		this.vmix.on('connected', () => {
@@ -34,27 +41,31 @@ export class VMixSideload implements SideLoadDevice {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection disconnected`)
 		})
 
-		if (deviceOptions.options?.host && deviceOptions.options?.port) {
+		if (this.deviceOptions.options?.host && this.deviceOptions.options?.port) {
 			// No idea why TypeScript thinks this is a promise that must be marked as `void`.
 			// It's just `void`. No promise.
 			try {
-				void this.vmix.connect(deviceOptions.options.host, deviceOptions.options.port)
+				void this.vmix.connect(this.deviceOptions.options.host, this.deviceOptions.options.port)
 			} catch (error) {
 				this.log.error(stringifyError(error))
 			}
 		}
 	}
-	public async refreshResources(): Promise<ResourceAny[]> {
-		return this._refreshResources()
+	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
+		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
 		return this.vmix.disconnect()
 	}
-	private async _refreshResources() {
-		const resources: { [id: string]: ResourceAny } = {}
+	private async _refreshResourcesAndMetadata() {
+		const resources: Map<ResourceId, ResourceAny> = new Map()
+		const metadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
 		if (!this.vmix.connected) {
-			return Object.values(resources)
+			return {
+				resources: Array.from(resources.values()),
+				metadata,
+			}
 		}
 
 		// Inputs
@@ -64,12 +75,13 @@ export class VMixSideload implements SideLoadDevice {
 				const resource: VMixInput = {
 					resourceType: ResourceType.VMIX_INPUT,
 					deviceId: this.deviceId,
-					id: `${this.deviceId}_input_${key}`,
+					id: protectString(''), // set by getResourceIdFromResource() later
 					number: input.number,
 					type: input.type,
 					displayName: `Input ${input.number}`,
 				}
-				resources[resource.id] = resource
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
 			}
 		}
 
@@ -78,10 +90,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixInputSettings = {
 				resourceType: ResourceType.VMIX_INPUT_SETTINGS,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_input_settings`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Input Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Recording
@@ -89,10 +102,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixRecording = {
 				resourceType: ResourceType.VMIX_RECORDING,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_recording`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Recording',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Streaming
@@ -100,10 +114,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixStreaming = {
 				resourceType: ResourceType.VMIX_STREAMING,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_streaming`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Streaming',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Audio Settings
@@ -111,10 +126,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixAudioSettings = {
 				resourceType: ResourceType.VMIX_AUDIO_SETTINGS,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_audio_settings`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Audio Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Fader
@@ -122,10 +138,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixFader = {
 				resourceType: ResourceType.VMIX_FADER,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_fader`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Transition Fader',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Preview
@@ -133,10 +150,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixPreview = {
 				resourceType: ResourceType.VMIX_PREVIEW,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_preview`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Preview',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Output Settings
@@ -144,10 +162,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixOutputSettings = {
 				resourceType: ResourceType.VMIX_OUTPUT_SETTINGS,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_output_settings`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Output Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Overlay Settings
@@ -155,10 +174,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixOverlaySettings = {
 				resourceType: ResourceType.VMIX_OVERLAY_SETTINGS,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_overlay_settings`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Overlay Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Externals
@@ -166,10 +186,11 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixExternal = {
 				resourceType: ResourceType.VMIX_EXTERNAL,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_external`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'External Output Settings',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
 		// Fade To Black
@@ -177,12 +198,16 @@ export class VMixSideload implements SideLoadDevice {
 			const resource: VMixFadeToBlack = {
 				resourceType: ResourceType.VMIX_FADE_TO_BLACK,
 				deviceId: this.deviceId,
-				id: `${this.deviceId}_fade_to_black`,
+				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Fade To Black',
 			}
-			resources[resource.id] = resource
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
 		}
 
-		return Object.values(resources)
+		return {
+			resources: Array.from(resources.values()),
+			metadata,
+		}
 	}
 }
