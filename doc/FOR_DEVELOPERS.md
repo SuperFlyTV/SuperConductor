@@ -15,7 +15,6 @@ SuperConductor has some native dependencies which need to be (re)built from sour
 - [Install Yarn](https://yarnpkg.com/getting-started/install)
 - `cd >>path-to-this-folder<<`
 - `yarn`
-- `yarn setup`
 - `yarn start` (Builds the project and starts the SuperConductor)
 
 ## Architecture Overview
@@ -36,8 +35,6 @@ This project is a Lerna monorepo, which means that installing dependencies is ha
 # Installs all dependencies, including Lerna.
 yarn
 
-# Installs all dependencies and symlinks projects together, using Lerna.
-yarn setup
 ```
 
 ## Building the project

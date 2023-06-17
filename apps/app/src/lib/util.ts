@@ -27,8 +27,14 @@ import { describeTimelineObject } from './TimelineObj'
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
 }
+export const findGroupByExternalId = (rundown: Rundown, externalId: string): Group | undefined => {
+	return rundown.groups.find((g) => g.externalId === externalId)
+}
 export const findPart = (group: Group, partId: string): Part | undefined => {
 	return group.parts.find((r) => r.id === partId)
+}
+export const findPartByExternalId = (group: Group, externalId: string): Part | undefined => {
+	return group.parts.find((r) => r.externalId === externalId)
 }
 export const findPartInRundown = (rundown: Rundown, partId: string): { part: Part; group: Group } | undefined => {
 	for (const group of rundown.groups) {
@@ -41,6 +47,12 @@ export const findPartInRundown = (rundown: Rundown, partId: string): { part: Par
 }
 export function findPartInGroup(group: Group, partId: string): Part | undefined {
 	const part = findPart(group, partId)
+	if (!part) return undefined
+
+	return part
+}
+export function findPartInGroupByExternalId(group: Group, externalId: string): Part | undefined {
+	const part = findPartByExternalId(group, externalId)
 	if (!part) return undefined
 
 	return part
@@ -430,7 +442,8 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			return (
 				resource.resourceType === ResourceType.HYPERDECK_PLAY ||
 				resource.resourceType === ResourceType.HYPERDECK_RECORD ||
-				resource.resourceType === ResourceType.HYPERDECK_PREVIEW
+				resource.resourceType === ResourceType.HYPERDECK_PREVIEW ||
+				resource.resourceType === ResourceType.HYPERDECK_CLIP
 			)
 		}
 	} else if (mapping.device === DeviceType.LAWO) {

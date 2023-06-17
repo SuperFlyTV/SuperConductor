@@ -36,6 +36,9 @@ export interface GroupBase {
 
 	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
 	collapsed?: boolean
+
+	/** An additional, optional ID to be used by API clients to track the Groups they are responsible for */
+	externalId?: string
 }
 export interface PlayingPart {
 	/** Timestamp of when the part started playing (unix timestamp) */
