@@ -17,7 +17,6 @@
 		"tests/**"
 	],
 	"scripts": {
-		"setup": "lerna bootstrap",
 		"version": "node scripts/version.js",
 		"prepare": "husky install",
 		"lerna": "lerna",
