@@ -33,7 +33,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn setup
+          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
       - name: Typecheck
         run: yarn build
       - name: Lint
