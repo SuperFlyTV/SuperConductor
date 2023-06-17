@@ -214,13 +214,13 @@ export const App = observer(function App() {
 			return
 		}
 
-		// 5 keypresses in a quick succession triggers various errors.
+		// 10 keypresses in a quick succession triggers various errors.
 		// This is used to test reporting of errors as telemetry.
 		const onF12Key = () => {
 			const timeSinceLast = Date.now() - debugKeyPressesLastTime.current
-			if (timeSinceLast < 1000) {
+			if (timeSinceLast < 500) {
 				debugKeyPresses.current++
-				if (debugKeyPresses.current === 5) {
+				if (debugKeyPresses.current === 10) {
 					serverAPI.debugThrowError({ type: 'sync' }).catch(handleError)
 					serverAPI.debugThrowError({ type: 'async' }).catch(handleError)
 					serverAPI.debugThrowError({ type: 'setTimeout' }).catch(handleError)
