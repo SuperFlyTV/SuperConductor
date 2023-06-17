@@ -9,7 +9,9 @@ import {
 	deletePart,
 	deleteTimelineObj,
 	findGroup,
+	findGroupByExternalId,
 	findPartInGroup,
+	findPartInGroupByExternalId,
 	findPartInRundown,
 	findTimelineObj,
 	findTimelineObjIndex,
@@ -51,7 +53,7 @@ import {
 	TSRDeviceId,
 	unprotectString,
 } from '@shared/models'
-import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
+import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
@@ -209,9 +211,23 @@ export class IPCServer
 
 		return this._getGroupOfRundown(rundown, arg.groupId)
 	}
+	private getGroupByExternalId(arg: { rundownId: string; externalId: string }): { rundown: Rundown; group: Group } {
+		const { rundown } = this.getRundown(arg)
+
+		return this._getGroupOfRundownByExternalId(rundown, arg.externalId)
+	}
 	private _getGroupOfRundown(rundown: Rundown, groupId: string): { rundown: Rundown; group: Group } {
 		const group = findGroup(rundown, groupId)
 		if (!group) throw new Error(`Group ${groupId} not found in rundown "${rundown.id}" ("${rundown.name}").`)
+
+		return { rundown, group }
+	}
+	private _getGroupOfRundownByExternalId(rundown: Rundown, externalId: string): { rundown: Rundown; group: Group } {
+		const group = findGroupByExternalId(rundown, externalId)
+		if (!group)
+			throw new Error(
+				`Group with external ID ${externalId} not found in rundown "${rundown.id}" ("${rundown.name}").`
+			)
 
 		return { rundown, group }
 	}
@@ -224,6 +240,19 @@ export class IPCServer
 		const { rundown, group } = this.getGroup(arg)
 		const part = findPartInGroup(group, arg.partId)
 		if (!part) throw new Error(`Part ${arg.partId} not found in group ${group.id} ("${group.name}").`)
+
+		return { rundown, group, part }
+	}
+
+	public getPartByExternalId(arg: { rundownId: string; groupId: string; externalId: string }): {
+		rundown: Rundown
+		group: Group
+		part: Part
+	} {
+		const { rundown, group } = this.getGroup(arg)
+		const part = findPartInGroupByExternalId(group, arg.externalId)
+		if (!part)
+			throw new Error(`Part with external ID ${arg.externalId} not found in group ${group.id} ("${group.name}").`)
 
 		return { rundown, group, part }
 	}
@@ -826,6 +855,88 @@ export class IPCServer
 			description: ActionDescription.UpdatePart,
 		}
 	}
+	async upsertPart(arg: {
+		rundownId: string
+		groupId: string
+		partId: string | undefined
+		part: Partial<Part>
+	}): Promise<UndoableResult<void> | undefined> {
+		const { group } = this.getGroup(arg)
+		let existingPart: Part | undefined
+		if (arg.partId) {
+			try {
+				const result = this.getPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: arg.partId })
+				existingPart = result.part
+			} catch (_error) {
+				// Discard error.
+			}
+		}
+
+		let partIdToUpdate = arg.partId
+		let newPartResult:
+			| UndoableResult<{
+					partId: string
+					groupId?: string | undefined
+			  }>
+			| undefined
+
+		if (!existingPart) {
+			newPartResult = await this.newPart({
+				rundownId: arg.rundownId,
+				groupId: arg.groupId,
+				name: arg.part.name ?? `Part #${group.parts.length + 1}`,
+			})
+			partIdToUpdate = newPartResult?.result?.partId
+		}
+
+		if (!partIdToUpdate) {
+			throw new Error('Failed to upsert part because no partId was provided, located, or generated.')
+		}
+
+		const updatePartResult = await this.updatePart({
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
+			partId: partIdToUpdate,
+			part: {
+				...arg.part,
+				id: partIdToUpdate,
+			},
+		})
+
+		return {
+			undo: async () => {
+				if (updatePartResult) {
+					await updatePartResult.undo()
+				}
+
+				if (newPartResult) {
+					await newPartResult.undo()
+				}
+			},
+			description: ActionDescription.UpsertPart,
+		}
+	}
+	async upsertPartByExternalId(arg: {
+		rundownId: string
+		groupId: string
+		externalId: string
+		part: Partial<Part>
+	}): Promise<UndoableResult<void> | undefined> {
+		let partId: string | undefined
+		try {
+			const { part } = this.getPartByExternalId(arg)
+			partId = part.id
+		} catch (error) {
+			// Discard error.
+		}
+
+		return this.upsertPart({
+			rundownId: arg.rundownId,
+			groupId: arg.groupId,
+			partId,
+			part: arg.part,
+		})
+	}
 	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
 			...getDefaultGroup(),
@@ -986,6 +1097,115 @@ export class IPCServer
 			},
 			description: ActionDescription.UpdateGroup,
 		}
+	}
+	async upsertGroup(arg: {
+		rundownId: string
+		groupId: string | undefined
+		group: PartialDeep<Group>
+		useExternalIdForParts?: boolean
+	}): Promise<UndoableResult<void> | undefined> {
+		const { rundown } = this.getRundown(arg)
+		let existingGroup: Group | undefined
+		if (arg.groupId) {
+			try {
+				const result = this.getGroup({ rundownId: arg.rundownId, groupId: arg.groupId })
+				existingGroup = result.group
+			} catch (_error) {
+				// Discard error.
+			}
+		}
+
+		let groupIdToUpdate = arg.groupId
+		let newGroupResult: UndoableResult<string> | undefined
+		if (!existingGroup) {
+			newGroupResult = await this.newGroup({
+				rundownId: arg.rundownId,
+				name: arg.group.name ?? `Group #${rundown.groups.length + 1}`,
+			})
+			groupIdToUpdate = newGroupResult.result
+		}
+
+		if (!groupIdToUpdate) {
+			throw new Error('Failed to upsert group because no groupId was provided, located, or generated.')
+		}
+
+		const updateGroupResult = await this.updateGroup({
+			rundownId: arg.rundownId,
+			groupId: groupIdToUpdate,
+			group: {
+				...omit(arg.group, 'parts'), // We'll update the parts next.
+				id: groupIdToUpdate,
+			},
+		})
+
+		const upsertPartResults: UndoableResult<void>[] = []
+		for (const part of arg.group.parts ?? []) {
+			let result: UndoableResult<void> | undefined
+			if (arg.useExternalIdForParts) {
+				if (!part.externalId) {
+					throw new Error(`Part named "${part.name}" does not have an external ID`)
+				}
+
+				result = await this.upsertPartByExternalId({
+					rundownId: arg.rundownId,
+					groupId: groupIdToUpdate,
+					externalId: part.externalId,
+					part,
+				})
+			} else {
+				if (!part.id) {
+					throw new Error(`Part named "${part.name}" does not have an ID`)
+				}
+
+				result = await this.upsertPart({
+					rundownId: arg.rundownId,
+					groupId: groupIdToUpdate,
+					partId: part.id,
+					part,
+				})
+			}
+
+			if (result) {
+				upsertPartResults.push(result)
+			}
+		}
+
+		return {
+			undo: async () => {
+				for (const result of upsertPartResults) {
+					await result.undo()
+				}
+
+				if (updateGroupResult) {
+					await updateGroupResult.undo()
+				}
+
+				if (newGroupResult) {
+					await newGroupResult.undo()
+				}
+			},
+			description: ActionDescription.UpsertGroup,
+		}
+	}
+	async upsertGroupByExternalId(arg: {
+		rundownId: string
+		externalId: string
+		group: PartialDeep<Group>
+	}): Promise<UndoableResult<void> | undefined> {
+		let groupId: string | undefined
+		try {
+			const { group } = this.getGroupByExternalId(arg)
+			groupId = group.id
+		} catch (error) {
+			// Ignore error.
+		}
+
+		return this.upsertGroup({
+			rundownId: arg.rundownId,
+			groupId,
+			group: arg.group,
+			useExternalIdForParts: true,
+		})
 	}
 	async deletePart(arg: {
 		rundownId: string

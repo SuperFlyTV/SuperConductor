@@ -57,6 +57,8 @@ export const enum ActionDescription {
 	AssignAreaToGroup = 'Assign Area to Group',
 	// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
 	SetApplicationTrigger = 'Assign trigger',
+	UpsertGroup = 'upsert group',
+	UpsertPart = 'upsert part',
 }
 
 export type UndoFunction = () => Promise<void> | void
