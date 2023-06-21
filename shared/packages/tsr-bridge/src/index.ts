@@ -117,8 +117,8 @@ export class BaseBridge {
 				fullTimeline.push(obj)
 			}
 		}
-		// this.log.info('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
-		// this.log.info('mapping', JSON.stringify(this.mappings, undefined, 2))
+		this.log.info('fullTimeline', JSON.stringify(fullTimeline, undefined, 2))
+		this.log.info('mapping', JSON.stringify(this.mappings, undefined, 2))
 
 		this.tsr.conductor.setTimelineAndMappings(fullTimeline, this.mappings)
 	}
@@ -180,7 +180,8 @@ export class BaseBridge {
 		} else if (msg.type === 'setSettings') {
 			if (!this.peripheralsHandler) throw new Error('PeripheralsHandler not initialized')
 
-			this.tsr.updateDevices(deserializeProtectedMap(msg.devices)).catch((e) => this.log?.error(e))
+			this.tsr.deviceOptions = deserializeProtectedMap(msg.devices)
+			this.tsr.triggerUpdateDevices()
 			this.peripheralsHandler
 				.updatePeripheralsSettings(deserializeProtectedMap(msg.peripherals), msg.autoConnectToAllPeripherals)
 				.catch((e) => this.log?.error(e))

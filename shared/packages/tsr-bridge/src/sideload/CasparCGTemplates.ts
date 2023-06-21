@@ -5,7 +5,7 @@ import { exec } from 'child_process'
 import recursiveReadDir from 'recursive-readdir'
 import * as cheerio from 'cheerio'
 
-import { CasparCG, Config } from 'casparcg-connection'
+import { CasparCG } from 'casparcg-connection'
 import got from 'got'
 import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString, TSRDeviceId } from '@shared/models'
 import { getResourceIdFromResource, literal } from '@shared/lib'
@@ -22,7 +22,10 @@ export async function addTemplatesToResourcesFromCasparCG(
 	deviceId: TSRDeviceId
 ): Promise<void> {
 	const res = await casparCG.tls()
-	const templatesList = res.response.data as {
+	if (res.error) throw res.error
+	const response = await res.request
+
+	const templatesList = response.data as {
 		type: 'template'
 		name: string
 		size: number

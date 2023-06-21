@@ -24,6 +24,11 @@ export class TSR {
 	private currentTimeDiff = 0
 	private deviceStatus = new Map<TSRDeviceId, DeviceStatus>()
 
+	public deviceOptions = new Map<TSRDeviceId, DeviceOptionsAny>()
+	private _triggerUpdateDevicesCheckAgain = false
+	private _triggerUpdateDevicesTimeout: NodeJS.Timeout | undefined
+	private _updateDevicesIsRunning = false
+
 	constructor(private log: LoggerLike) {
 		const c: ConductorOptions = {
 			getCurrentTime: () => this.getCurrentTime(),
@@ -40,6 +45,9 @@ export class TSR {
 		})
 		this.conductor.on('warning', (msg, ...args) => {
 			log.warn('TSR', msg, ...args)
+		})
+		this.conductor.on('debug', (msg, ...args) => {
+			log.debug('TSR', msg, ...args)
 		})
 
 		this.conductor.setTimelineAndMappings([], undefined)
@@ -60,9 +68,44 @@ export class TSR {
 		return Date.now() + this.currentTimeDiff
 	}
 
-	public async updateDevices(newDevices: Map<TSRDeviceId, DeviceOptionsAny>): Promise<void> {
+	public triggerUpdateDevices(): void {
+		if (this._triggerUpdateDevicesTimeout) {
+			clearTimeout(this._triggerUpdateDevicesTimeout)
+		}
+		this._triggerUpdateDevicesTimeout = undefined
+
+		if (this._updateDevicesIsRunning) {
+			this._triggerUpdateDevicesCheckAgain = true
+			return
+		}
+		this._updateDevicesIsRunning = true
+
+		// Defer:
+		setTimeout(() => {
+			this._updateDevices()
+
+				.catch(() => {
+					if (this._triggerUpdateDevicesCheckAgain)
+						this.log.error('triggerUpdateDevices from updateDevices promise rejected')
+				})
+				.finally(() => {
+					this._updateDevicesIsRunning = false
+					if (!this._triggerUpdateDevicesCheckAgain) {
+						return
+					}
+					if (this._triggerUpdateDevicesTimeout) {
+						clearTimeout(this._triggerUpdateDevicesTimeout)
+					}
+					this._triggerUpdateDevicesTimeout = setTimeout(() => this.triggerUpdateDevices(), 1000)
+					this._triggerUpdateDevicesCheckAgain = false
+				})
+		}, 10)
+	}
+
+	private async _updateDevices(): Promise<void> {
 		// Added/updated:
-		for (const [deviceId, newDevice] of newDevices.entries()) {
+		const deviceOptions = this.deviceOptions
+		for (const [deviceId, newDevice] of deviceOptions.entries()) {
 			if (newDevice.disable) continue
 
 			const existingDevice = this.devices.get(deviceId)
@@ -84,7 +127,15 @@ export class TSR {
 					this.sideLoadDevice(deviceId, newDevice)
 
 					// Create the device, but don't initialize it:
-					const device = await this.conductor.createDevice(unprotectString(deviceId), newDevice)
+					const devicePr = this.conductor.createDevice(unprotectString(deviceId), newDevice)
+
+					this.onDeviceStatus(deviceId, {
+						active: true,
+						statusCode: StatusCode.BAD,
+						messages: ['Starting up'],
+					})
+
+					const device = await devicePr
 
 					await device.device.on('connectionChanged', (...args) => {
 						// TODO: figure out why the arguments to this event callback lost the correct typings
@@ -95,6 +146,28 @@ export class TSR {
 					// await device.device.on('info', (e: any, ...args: any[]) => this.logger.info(fixError(e), ...args))
 					// await device.device.on('warning', (e: any, ...args: any[]) => this.logger.warn(fixError(e), ...args))
 					// await device.device.on('error', (e: any, ...args: any[]) => this.logger.error(fixError(e), ...args))
+					// await device.device.on('error', (e: any, ...args: any[]) => this.logger.error(fixError(e), ...args))
+
+					device.onChildClose = () => {
+						// Called if a child is closed / crashed
+						this.log.warn(`Child of device ${deviceId} closed/crashed`)
+
+						this.onDeviceStatus(deviceId, {
+							active: true,
+							statusCode: StatusCode.BAD,
+							messages: ['Child process closed'],
+						})
+
+						this._removeDevice(deviceId).then(
+							() => this.triggerUpdateDevices(),
+							() => this.triggerUpdateDevices()
+						)
+					}
+
+					await device.device.on('debug', (...args: any[]) => {
+						const data = args.map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : arg))
+						this.log.debug(`Device "${device.deviceName || deviceId}" (${device.instanceId})`, { data })
+					})
 
 					// now initialize it
 					await this.conductor.initDevice(unprotectString(deviceId), newDevice)
@@ -105,29 +178,33 @@ export class TSR {
 		}
 		// Removed:
 		for (const deviceId of this.devices.keys()) {
-			const newDevice = newDevices.get(deviceId)
+			const newDevice = deviceOptions.get(deviceId)
 			if (!newDevice || newDevice.disable) {
-				// Delete the sideloaded device, if any
-				const sideLoadedDevice = this.sideLoadedDevices.get(deviceId)
-				if (sideLoadedDevice) {
-					await sideLoadedDevice.close()
-					this.sideLoadedDevices.delete(deviceId)
-				}
+				await this._removeDevice(deviceId)
 
-				// HACK: There are some scenarios in which this method will never return.
-				// For example, when trying to remove a CasparCG device that has never connected.
-				// So, to prevent this code from being blocked indefinitely waiting for this promise
-				// to resolve, we instead let it run async.
-				this.conductor.removeDevice(unprotectString(deviceId)).catch((e) => this.log.error(stringifyError(e)))
-
-				this.devices.delete(deviceId)
-				this.deviceStatus.delete(deviceId)
 				this.reportRemovedDevice(deviceId)
 				this.log.info(`TSR Device ${deviceId} removed.`)
 			}
 		}
 
 		this.newConnection = false
+	}
+	private async _removeDevice(deviceId: TSRDeviceId): Promise<void> {
+		// Delete the sideloaded device, if any
+		const sideLoadedDevice = this.sideLoadedDevices.get(deviceId)
+		if (sideLoadedDevice) {
+			await sideLoadedDevice.close()
+			this.sideLoadedDevices.delete(deviceId)
+		}
+
+		// HACK: There are some scenarios in which this method will never return.
+		// For example, when trying to remove a CasparCG device that has never connected.
+		// So, to prevent this code from being blocked indefinitely waiting for this promise
+		// to resolve, we instead let it run async.
+		this.conductor.removeDevice(unprotectString(deviceId)).catch((e) => this.log.error(stringifyError(e)))
+
+		this.devices.delete(deviceId)
+		this.deviceStatus.delete(deviceId)
 	}
 	public refreshResourcesAndMetadata(
 		cb: (deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny) => void

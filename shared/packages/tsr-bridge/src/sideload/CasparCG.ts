@@ -1,5 +1,5 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
-import { CasparCG, AMCP } from 'casparcg-connection'
+import { CasparCG } from 'casparcg-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -31,12 +31,15 @@ export class CasparCGSideload implements SideLoadDevice {
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,
 			autoConnect: true,
-			onConnected: (): void => {
-				this.log.info(`CasparCG ${this.deviceId}: Sideload connection initialized`)
-			},
-			onDisconnected: (): void => {
-				this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
-			},
+		})
+		this.ccg.on('connect', () => {
+			this.log.info(`CasparCG ${this.deviceId}: Sideload connection initialized`)
+		})
+		this.ccg.on('disconnect', () => {
+			this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
+		})
+		this.ccg.on('error', (error) => {
+			this.log.info(`CasparCG Error: ${error}`)
 		})
 	}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
@@ -74,9 +77,12 @@ export class CasparCGSideload implements SideLoadDevice {
 			}[]
 			try {
 				const res = await this.ccg.cls()
-				mediaList = res.response.data
+				if (res.error) throw res.error
+
+				const response = await res.request
+				mediaList = response.data
 			} catch (error) {
-				if ((error as AMCP.ClsCommand)?.response?.code === 501) {
+				if (`${error}`.match(/501/)) {
 					// This probably means that media-scanner isn't running
 					mediaList = []
 				} else {
@@ -101,11 +107,16 @@ export class CasparCGSideload implements SideLoadDevice {
 
 				if ((media.type === 'image' || media.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
 					try {
-						const thumbnail = await this.ccg.thumbnailRetrieve(media.name)
-						resource.thumbnail = thumbnail.response.data
+						const thumbnailQuery = await this.ccg.thumbnailRetrieve({ filename: media.name })
+						if (thumbnailQuery.error) throw thumbnailQuery.error
+
+						const thumbnail = await thumbnailQuery.request
+						console.log('thumbnail')
+						console.log(thumbnail.data)
+						resource.thumbnail = thumbnail.data as any
 						TMP_THUMBNAIL_LIMIT--
 					} catch (error) {
-						if ((error as AMCP.ThumbnailRetrieveCommand)?.response?.code === 404) {
+						if (`${error}`.match(/404/)) {
 							// Suppress error, this is probably because CasparCG's media-scanner isn't running.
 						} else {
 							this.log.error(`Could not set thumbnail for media "${media.name}".`, error)
