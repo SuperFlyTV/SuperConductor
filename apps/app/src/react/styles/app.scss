@@ -35,11 +35,11 @@
 	// height: 100vh;
 	// box-sizing: border-box;
 
-	$sidebar-width: 30rem;
+	/*$sidebar-width: 30rem;*/
 	$top-header-height: 3rem;
 
 	display: grid;
-	grid-template-columns: 1fr 0fr;
+	grid-template-columns: 1fr 1fr;
 	grid-template-rows: 0fr 1fr;
 	grid-template-areas:
 		'top top'
@@ -52,12 +52,17 @@
 	> .main-area {
 		grid-area: main;
 		// background: $mainBg;
+		display: flex;
+		width: 80vw;
+		min-width: 50vw;
 		overflow: auto;
+		resize: horizontal;
 	}
 	> .side-bar {
 		grid-area: sidebar;
 		// background-color: $sidebarBg;
-		width: 30rem;
+		display: flex;
+		width: 100%;
 		overflow: auto;
 		position: relative;
 		background: $sidebar-background;
