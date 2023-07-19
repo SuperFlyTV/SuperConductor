@@ -39,11 +39,11 @@
 	$top-header-height: 3rem;
 
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: 1fr 0fr 1fr;
 	grid-template-rows: 0fr 1fr;
 	grid-template-areas:
-		'top top'
-		'main sidebar';
+		'top top top'
+		'main separator sidebar';
 
 	> .header-bar {
 		grid-area: top;
@@ -55,8 +55,24 @@
 		display: flex;
 		width: 80vw;
 		min-width: 50vw;
+		max-width: 90vw;
 		overflow: auto;
-		resize: horizontal;
+	}
+	> .movable-separator {
+		grid-area: separator;
+		background-color: $partMetaColor;
+		color: rgba(0, 0, 0, 0.4);
+		position: relative;
+		size: 70;
+		height: 100%;
+		width: 0.8rem;
+		cursor: col-resize;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		> .movable-separator-icon {
+			display: block;
+		}
 	}
 	> .side-bar {
 		grid-area: sidebar;

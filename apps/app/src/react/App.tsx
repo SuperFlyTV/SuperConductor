@@ -47,7 +47,7 @@ import { CB } from './lib/errorHandling'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
 import { TextBtn } from './components/inputs/textBtn/TextBtn'
-import { HiOutlineX } from 'react-icons/hi'
+import { HiOutlineX, HiDotsVertical } from 'react-icons/hi'
 import { protectString } from '@shared/models'
 import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral'
 
@@ -609,6 +609,29 @@ export const App = observer(function App() {
 		)
 	}
 
+	const handleClickResizer: React.MouseEventHandler<HTMLDivElement> = (e) => {
+		const tarEl = e.target as HTMLElement
+		if (tarEl.closest('.movable-separator')) {
+			e.preventDefault()
+			window.addEventListener('mousemove', resizeMainArea)
+			window.addEventListener('mouseup', endResizeMainArea)
+		}
+	}
+
+	function resizeMainArea(e: MouseEvent) {
+		const mainArea = document.getElementsByClassName('main-area')[0] as HTMLElement
+		mainArea.style.width = e.pageX.toString() + 'px'
+	}
+
+	function endResizeMainArea() {
+		window.removeEventListener('mousemove', resizeMainArea)
+		window.removeEventListener('mouseup', endResizeMainArea)
+
+		const mainArea = document.getElementsByClassName('main-area')[0] as HTMLElement
+		mainArea.style.width =
+			((100 * parseInt(mainArea.style.width.replace('px', ''))) / window.innerWidth).toString() + 'vw'
+	}
+
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<LoggerContext.Provider value={logger}>
@@ -656,6 +679,11 @@ export const App = observer(function App() {
 											<ErrorBoundary>
 												<RundownView mappings={project.mappings} />
 											</ErrorBoundary>
+										</div>
+										<div className="movable-separator" onMouseDown={handleClickResizer}>
+											<div className="movable-separator-icon">
+												<HiDotsVertical />
+											</div>
 										</div>
 										<div className="side-bar">
 											<ErrorBoundary>
