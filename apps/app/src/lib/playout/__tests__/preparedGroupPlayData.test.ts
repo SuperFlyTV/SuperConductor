@@ -615,6 +615,145 @@ describe('prepareGroupPlayData', () => {
 				expect(Object.keys(playData.countdowns)).toHaveLength(0)
 			}
 		})
+		test('When Group and Part A are looping, return all the way to Part A', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+			group0.loop = true
+
+			const partA = getPart(group0, 'partA')
+			partA.loop = true
+
+			const partB = getPart(group0, 'partB')
+
+			// Play Part B:
+			RundownActions.playPart(group0, partB, 1000)
+			postProcessGroup(group0, 1000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 1001)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				{
+					const playData = getGroupPlayData(prepared, 1001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 8999,
+						sectionEndTime: 10000,
+						sectionEndAction: SectionEndAction.NEXT_SECTION,
+					})
+				}
+				// Check that After B, C and D, it goes back to A:
+				{
+					const playData = getGroupPlayData(prepared, 10001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 999,
+						sectionEndTime: 11000,
+						sectionEndAction: SectionEndAction.LOOP_SELF,
+					})
+					expect(Object.keys(playData.playheads)).toHaveLength(1)
+					expect(playData.playheads['partA']).toMatchObject({
+						playheadTime: 1,
+						partStartTime: 10000,
+						partPauseTime: undefined,
+						partEndTime: 11000,
+						partDuration: 1000,
+						partId: 'partA',
+						endAction: PlayPartEndAction.LOOP_SELF,
+						fromSchedule: false,
+					})
+					expect(Object.keys(playData.countdowns)).toStrictEqual(['partA'])
+				}
+			}
+		})
+		test('When Group and Part B are looping, return all the way to Part B', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+			group0.loop = true
+
+			const partB = getPart(group0, 'partB')
+			partB.loop = true
+			
+			const partC = getPart(group0, 'partC')
+
+			// Play Part C:
+			RundownActions.playPart(group0, partC, 3000)
+			postProcessGroup(group0, 3000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 3001)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				{
+					const playData = getGroupPlayData(prepared, 3001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 6999,
+						sectionEndTime: 10000,
+						sectionEndAction: SectionEndAction.NEXT_SECTION,
+					})
+				}
+				// Check that After C and D, it goes go back to A:
+				{
+					const playData = getGroupPlayData(prepared, 10001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 999,
+						sectionEndTime: 11000,
+						sectionEndAction: SectionEndAction.NEXT_SECTION,
+					})
+					expect(Object.keys(playData.playheads)).toHaveLength(1)
+					expect(playData.playheads['partA']).toMatchObject({
+						playheadTime: 1,
+						partStartTime: 10000,
+						partPauseTime: undefined,
+						partEndTime: 11000,
+						partDuration: 1000,
+						partId: 'partA',
+						endAction: PlayPartEndAction.NEXT_PART,
+						fromSchedule: false,
+					})
+					expect(Object.keys(playData.countdowns)).toStrictEqual(['partB'])
+				}
+				// Check that After A, it plays B:
+				{
+					const playData = getGroupPlayData(prepared, 11001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 1999,
+						sectionEndTime: 13000,
+						sectionEndAction: SectionEndAction.LOOP_SELF,
+					})
+					expect(Object.keys(playData.playheads)).toHaveLength(1)
+					expect(playData.playheads['partB']).toMatchObject({
+						playheadTime: 1,
+						partStartTime: 11000,
+						partPauseTime: undefined,
+						partEndTime: 13000,
+						partDuration: 2000,
+						partId: 'partB',
+						endAction: PlayPartEndAction.LOOP_SELF,
+						fromSchedule: false,
+					})
+					expect(Object.keys(playData.countdowns)).toStrictEqual(['partB'])
+				}
+			}
+		})
 	})
 
 	// Test cases to add:
