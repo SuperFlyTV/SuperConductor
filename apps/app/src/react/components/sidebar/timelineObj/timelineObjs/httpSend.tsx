@@ -71,19 +71,26 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny
 												// Ensure that the key is unique:
 												let i = 0
 												let vUnique = v
-												while (firstObj.content.params[vUnique] !== undefined) {
-													i++
-													vUnique = `${v}_${i}`
-												}
-
-												onSave({
+												const objectUpdates = {
 													content: {
-														params: {
-															[vUnique]: value,
-															[key]: undefined,
-														},
+														params: {},
 													},
-												})
+												}
+												if (v !== key) {
+													while (firstObj.content.params[vUnique] !== undefined) {
+														i++
+														vUnique = `${v}_${i}`
+													}
+													objectUpdates.content.params = {
+														[vUnique]: value,
+														[key]: undefined,
+													}
+												} else {
+													objectUpdates.content.params = {
+														[vUnique]: value,
+													}
+												}
+												onSave(objectUpdates)
 											}}
 											allowUndefined={false}
 										/>
@@ -108,7 +115,14 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny
 							variant="contained"
 							onClick={() => {
 								const numParams = Object.keys(firstObj.content.params).length
-								onSave({ content: { params: { [`param${numParams}`]: 'value' } } })
+								const v = `param${numParams}`
+								let i = 0
+								let vUnique = v
+								while (firstObj.content.params[vUnique] !== undefined) {
+									i++
+									vUnique = `${v}_${i}`
+								}
+								onSave({ content: { params: { [vUnique]: 'value' } } })
 							}}
 						>
 							Add Parameter
