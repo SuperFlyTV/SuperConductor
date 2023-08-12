@@ -193,7 +193,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 
 				saveSection(data.sections, section)
 
-				if (group.loop && section.endTime !== null && !endLoopingPart) {
+				if (group.loop && group.autoPlay && section.endTime !== null && !endLoopingPart) {
 					// Looping parts:
 
 					const loopSection: GroupPreparedPlayDataSection = {

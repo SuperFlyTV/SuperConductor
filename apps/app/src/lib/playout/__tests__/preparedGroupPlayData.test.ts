@@ -754,6 +754,37 @@ describe('prepareGroupPlayData', () => {
 				}
 			}
 		})
+		test('Group with looping, w/o autoPlay, stops after first started Part', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+			group0.autoPlay = false
+			group0.loop = true
+
+			const partB = getPart(group0, 'partB')
+
+			// Play Part B:
+			RundownActions.playPart(group0, partB, 1000)
+			postProcessGroup(group0, 1000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 1001)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				expect(prepared.sections.length).toBe(1)
+				{
+					const playData = getGroupPlayData(prepared, 1001)
+
+					expect(playData).toMatchObject({
+						groupIsPlaying: true,
+						anyPartIsPlaying: true,
+						allPartsArePaused: false,
+						sectionTimeToEnd: 1999,
+						sectionEndTime: 3000,
+						sectionEndAction: SectionEndAction.STOP,
+					})
+				}
+			}
+		})
 	})
 
 	// Test cases to add:
