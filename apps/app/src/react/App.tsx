@@ -618,20 +618,6 @@ export const App = observer(function App() {
 		}
 	}
 
-	function resizeMainArea(e: MouseEvent) {
-		const mainArea = document.getElementsByClassName('main-area')[0] as HTMLElement
-		mainArea.style.width = e.pageX.toString() + 'px'
-	}
-
-	function endResizeMainArea() {
-		window.removeEventListener('mousemove', resizeMainArea)
-		window.removeEventListener('mouseup', endResizeMainArea)
-
-		const mainArea = document.getElementsByClassName('main-area')[0] as HTMLElement
-		mainArea.style.width =
-			((100 * parseInt(mainArea.style.width.replace('px', ''))) / window.innerWidth).toString() + 'vw'
-	}
-
 	return (
 		<HotkeyContext.Provider value={hotkeyContext}>
 			<LoggerContext.Provider value={logger}>
@@ -674,23 +660,45 @@ export const App = observer(function App() {
 										<HomePage project={project} />
 									</ErrorBoundary>
 								) : (
-									<>
-										<div className="main-area">
+									<div
+										className="rundown-area"
+										style={{
+											gridTemplateColumns:
+												store.guiStore.mainAreaWidth !== undefined
+													? `${store.guiStore.mainAreaWidth * 100}vw 0.4rem 1fr`
+													: undefined,
+										}}
+									>
+										<div
+											className="main-area"
+											style={{
+												minWidth:
+													store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
+											}}
+										>
 											<ErrorBoundary>
 												<RundownView mappings={project.mappings} />
 											</ErrorBoundary>
 										</div>
-										<div className="movable-separator" onMouseDown={handleClickResizer}>
-											<div className="movable-separator-icon">
-												<HiDotsVertical />
+										<div className="movable-separator">
+											<div className="movable-separator-content" onMouseDown={handleClickResizer}>
+												<div className="movable-separator-icon">
+													<HiDotsVertical />
+												</div>
 											</div>
 										</div>
-										<div className="side-bar">
+										<div
+											className="side-bar"
+											style={{
+												minWidth:
+													store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
+											}}
+										>
 											<ErrorBoundary>
 												<Sidebar mappings={project.mappings} />
 											</ErrorBoundary>
 										</div>
-									</>
+									</div>
 								)}
 								<ErrorBoundary>
 									<ConfirmationDialog
@@ -718,3 +726,12 @@ export const App = observer(function App() {
 		</HotkeyContext.Provider>
 	)
 })
+
+function resizeMainArea(e: MouseEvent) {
+	store.guiStore.mainAreaWidth = Math.max(0.01, Math.min(0.99, e.pageX / window.innerWidth))
+}
+
+function endResizeMainArea() {
+	window.removeEventListener('mousemove', resizeMainArea)
+	window.removeEventListener('mouseup', endResizeMainArea)
+}

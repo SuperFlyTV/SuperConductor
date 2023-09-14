@@ -79,6 +79,8 @@ export class GuiStore {
 
 	definingArea: DefiningArea | null = null
 
+	public mainAreaWidth: number | undefined = undefined
+
 	private groupSettings = new Map<string, GroupSettings>()
 
 	private _activeTabId = 'home'
