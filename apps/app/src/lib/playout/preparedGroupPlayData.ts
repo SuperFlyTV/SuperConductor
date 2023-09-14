@@ -193,7 +193,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 
 				saveSection(data.sections, section)
 
-				if (group.loop && section.endTime !== null && !endLoopingPart) {
+				if (group.loop && group.autoPlay && section.endTime !== null && !endLoopingPart) {
 					// Looping parts:
 
 					const loopSection: GroupPreparedPlayDataSection = {
@@ -214,7 +214,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 					for (const part of playableParts) {
 						if (part.loop) {
 							endLoopingPart = part
-							section.repeating = false
+							loopSection.repeating = false
 							break
 						}
 
@@ -233,7 +233,9 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 							break
 						}
 					}
-					saveSection(data.sections, loopSection)
+					if (loopSection.parts.length) {
+						saveSection(data.sections, loopSection)
+					}
 				}
 
 				// Handle the case when a part is looping:
