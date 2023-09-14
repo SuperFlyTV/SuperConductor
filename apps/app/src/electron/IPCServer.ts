@@ -5,6 +5,7 @@ import {
 	allowMovingPartIntoGroup,
 	copyGroup,
 	copyPart,
+	deepExtendRemovingUndefined,
 	deleteGroup,
 	deletePart,
 	deleteTimelineObj,
@@ -1606,7 +1607,7 @@ export class IPCServer
 		const timelineObjPreChange = deepClone(timelineObj)
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
-		if (arg.timelineObj.obj !== undefined) deepExtend(timelineObj.obj, arg.timelineObj.obj)
+		if (arg.timelineObj.obj !== undefined) deepExtendRemovingUndefined(timelineObj.obj, arg.timelineObj.obj)
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
