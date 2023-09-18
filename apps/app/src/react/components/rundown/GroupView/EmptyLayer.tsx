@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react'
+import React, { useCallback, useContext, useMemo } from 'react'
 import { useDrop } from 'react-dnd'
 import { EMPTY_LAYER_ID_PREFIX } from '../../../../lib/util'
 import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
@@ -44,6 +44,43 @@ export const EmptyLayer: React.FC<{
 		return `${EMPTY_LAYER_ID_PREFIX}_${EMPTY_LAYER_ID_COUNTER++}`
 	}, [])
 
+	const [insertMarkerPercentage, setInsertMarkerPercentaeg] = React.useState<number | undefined>(undefined)
+
+	const onMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+		const targetElement = e.target as HTMLDivElement
+		if (targetElement.closest('.layer__content')) {
+			const rect = targetElement.getBoundingClientRect()
+
+			const percentage = (e.clientX - rect.x) / rect.width
+
+			setInsertMarkerPercentaeg(percentage)
+		}
+	}, [])
+	const onMouseClick = useCallback(() => {
+		if (insertMarkerPercentage !== undefined && insertMarkerPercentage > 0) {
+			const part = store.rundownsStore.getPart(partId)
+			const markers = part.markers
+			if (part.duration) {
+				const insertTime = insertMarkerPercentage * part.duration
+
+				markers.push({
+					time: insertTime,
+				})
+
+				ipcServer
+					.updatePart({
+						rundownId,
+						groupId,
+						partId,
+						part: {
+							markers,
+						},
+					})
+					.catch(handleError)
+			}
+		}
+	}, [handleError, ipcServer, rundownId, groupId, partId, insertMarkerPercentage])
+
 	const canMoveTimelineObjToThisEmptyLayer = useMemoComputedValue(() => {
 		return (
 			store.guiStore.timelineObjMove.moveType === 'whole' &&
@@ -60,7 +97,11 @@ export const EmptyLayer: React.FC<{
 			isOver={isOver || canMoveTimelineObjToThisEmptyLayer}
 			data-layer-id={layerId}
 		>
-			<div className="layer__content">{/* empty */}</div>
+			<div className="layer__content" onMouseMove={onMouseMove} onClick={onMouseClick}>
+				{insertMarkerPercentage && (
+					<div className="insert-marker" style={{ left: `${insertMarkerPercentage * 100}%` }}></div>
+				)}
+			</div>
 		</DropZone>
 	)
 })

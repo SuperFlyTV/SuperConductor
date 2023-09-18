@@ -21,6 +21,15 @@
 		position: relative;
 		flex: 1;
 
+		> .insert-marker {
+			position: absolute;
+			top: 0;
+			height: 100%;
+			left: 0;
+			width: 0.4em;
+			background: $markerColor;
+		}
+
 		.timeline-object {
 			height: $layerHeight;
 			display: flex;

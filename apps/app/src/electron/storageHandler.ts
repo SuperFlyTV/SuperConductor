@@ -1265,6 +1265,10 @@ export class StorageHandler extends EventEmitter {
 					part.triggers = []
 				}
 				if (!part.resolved.label) part.resolved.label = getPartLabel(part)
+				if (!part.markers) {
+					part.markers = []
+				}
+
 				for (const obj of part.timeline) {
 					// Guard against bad data which can crash the UI
 					// @TODO: Figure out how this bad data gets there in the first place.

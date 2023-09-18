@@ -202,6 +202,7 @@ export function getDefaultRundown(newName = 'Default Rundown'): Omit<Rundown, 'i
 							},
 						],
 						triggers: [],
+						markers: [],
 						resolved: {
 							duration: 5000,
 							label: 'Main',
@@ -251,5 +252,6 @@ export function getDefaultPart(): Omit<Part, 'id' | 'name'> {
 			label: '',
 		},
 		triggers: [],
+		markers: [],
 	}
 }
