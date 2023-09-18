@@ -7,6 +7,7 @@
 		"baseUrl": "./"
 	},
 	"exclude": [
-		"src/**/__tests__/**/*"
+		"src/**/__tests__/**/*",
+		"dist/**/*"
 	]
 }

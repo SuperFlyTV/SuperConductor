@@ -29,7 +29,7 @@
 		"build:shared:changed": "lerna run build --stream --scope=@shared/* --since head --exclude-dependents --stream",
 		"start": "yarn && yarn build:shared && yarn dev:electron",
 		"start:all": "yarn build:shared && lerna run dev --stream",
-		"start:bridge": "yarn build:shared && lerna run dev:bridge --stream",
+		"start:bridge": "yarn build:shared && yarn dev:bridge",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
 		"test": "lerna run test",
