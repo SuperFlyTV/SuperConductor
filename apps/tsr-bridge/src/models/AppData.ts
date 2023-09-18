@@ -17,6 +17,11 @@ export interface AppSettings {
 
 	superConductorHost: string
 	bridgeId: BridgeId
+
+	/**
+	 * True if the app should start automatically upon system startup
+	 */
+	autostart: boolean
 }
 export type WindowPosition =
 	| {

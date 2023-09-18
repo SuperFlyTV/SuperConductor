@@ -51,6 +51,21 @@ export const Settings: React.FC<{
 			</a>
 			<div className="content">
 				<div className="setting">
+					<div className="label">Autostart on system startup</div>
+					<div className="value">
+						<div className="sc-switch">
+							<Toggle
+								defaultChecked={settings.autostart}
+								onChange={() =>
+									updateSettings({
+										autostart: !settings.autostart,
+									})
+								}
+							/>
+						</div>
+					</div>
+				</div>
+				<div className="setting">
 					<div className="label">Mode select: Client / Server</div>
 					<div className="value">
 						<div className="sc-switch">
