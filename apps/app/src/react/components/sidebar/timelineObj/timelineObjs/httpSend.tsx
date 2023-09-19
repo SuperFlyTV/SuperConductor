@@ -2,6 +2,7 @@ import { Button, Stack, Typography } from '@mui/material'
 import React from 'react'
 import { TimelineContentTypeHTTP, TimelineObjHTTPSendAny } from 'timeline-state-resolver-types'
 import { inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
+import { BooleanInput } from '../../../inputs/BooleanInput'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
@@ -52,8 +53,28 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny
 							if (value === undefined) return null
 							return (
 								<React.Fragment key={index}>
-									<Stack direction="row" justifyContent="space-between">
+									<Stack direction="row" justifyContent="space-between" alignItems="center">
 										<Typography variant="body2">Param #{index}</Typography>
+										<BooleanInput
+											label="JSON"
+											tooltip="Treat value as JSON"
+											currentValue={typeof value !== 'string'}
+											onChange={(v) => {
+												if (v) {
+													if (typeof value !== 'string') return
+													let parsed
+													try {
+														parsed = JSON.parse(value)
+													} catch (e) {
+														//
+													}
+													onSave({ content: { params: { [key]: parsed } } })
+												} else {
+													if (typeof value === 'string') return
+													onSave({ content: { params: { [key]: JSON.stringify(value) } } })
+												}
+											}}
+										/>
 										<TrashBtn
 											onClick={() => {
 												onSave({ content: { params: { [key]: undefined } } })
@@ -98,9 +119,10 @@ export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny
 										<TextInput
 											label="Value"
 											fullWidth
-											currentValue={value}
+											currentValue={typeof value !== 'string' ? JSON.stringify(value) : value}
 											onChange={(v) => {
-												onSave({ content: { params: { [key]: v } } })
+												const parsed = typeof value !== 'string' ? JSON.parse(v) : v
+												onSave({ content: { params: { [key]: parsed } } })
 											}}
 											allowUndefined={false}
 										/>

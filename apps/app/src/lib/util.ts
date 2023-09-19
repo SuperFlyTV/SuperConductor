@@ -844,4 +844,5 @@ export const deepExtendRemovingUndefined = deepmergeIntoCustom({
 			}
 		}
 	},
+	mergeArrays: false,
 })
