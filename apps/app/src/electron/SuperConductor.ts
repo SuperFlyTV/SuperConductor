@@ -1,8 +1,8 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
-import { IPCServer } from './IPCServer'
-import { IPCClient } from './IPCClient'
+import { EverythingService } from './IPCServer'
+import { ClientEventBus } from './ClientEventBus'
 import { updateTimeline } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { StorageHandler } from './storageHandler'
@@ -36,16 +36,17 @@ import { postProcessPart } from './rundown'
 import { BridgePeripheralId, assertNever } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
-import { HTTPAPI } from './HTTPAPI'
+import { ApiServer } from './api/ApiServer'
 import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
 
 export class SuperConductor {
-	ipcServer: IPCServer
-	clients: { ipcClient: IPCClient; window: BrowserWindow }[] = []
-	httpAPI?: HTTPAPI
+	ipcServer: EverythingService
+	windows: { window: BrowserWindow }[] = []
+	clientEventBus: ClientEventBus
+	httpAPI?: ApiServer
 
 	session: SessionHandler
 	storage: StorageHandler
@@ -71,25 +72,26 @@ export class SuperConductor {
 
 	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
 		this.session = new SessionHandler()
+		this.clientEventBus = new ClientEventBus()
 
 		this.session.on('bridgeStatus', (id: BridgeId, status: BridgeStatus | null) => {
-			this.clients.forEach((clients) => clients.ipcClient.updateBridgeStatus(id, status))
+			this.clientEventBus.updateBridgeStatus(id, status)
 		})
 		this.session.on('peripheral', (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) => {
 			this.triggers.onPeripheralStatus(peripheralId, peripheral)
-			this.clients.forEach((clients) => clients.ipcClient.updatePeripheral(peripheralId, peripheral))
+			this.clientEventBus.updatePeripheral(peripheralId, peripheral)
 		})
 		this.session.on('activeTriggers', (activeTriggers: ActiveTriggers) => {
 			this.triggers?.updateActiveTriggers(activeTriggers)
-			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralTriggers(activeTriggers))
+			this.clientEventBus.updatePeripheralTriggers(activeTriggers)
 		})
 		this.session.on('activeAnalog', (fullIdentifier: string, analog: ActiveAnalog | null) => {
 			this.analogHandler?.updateActiveAnalog(fullIdentifier, analog)
-			this.clients.forEach((clients) => clients.ipcClient.updatePeripheralAnalog(fullIdentifier, analog))
+			this.clientEventBus.updatePeripheralAnalog(fullIdentifier, analog)
 		})
 		this.session.on('definingArea', (definingArea: DefiningArea | null) => {
 			this.triggers?.updateDefiningArea(definingArea)
-			this.clients.forEach((clients) => clients.ipcClient.updateDefiningArea(definingArea))
+			this.clientEventBus.updateDefiningArea(definingArea)
 		})
 		this.session.on('allTrigger', (fullIdentifier: string, trigger: ActiveTrigger | null) => {
 			this.triggers?.registerTrigger(fullIdentifier, trigger)
@@ -100,15 +102,15 @@ export class SuperConductor {
 
 		this.storage = new StorageHandler(log, CURRENT_VERSION)
 		this.storage.on('appData', (appData: AppData) => {
-			this.clients.forEach((clients) => clients.ipcClient.updateAppData(appData))
+			this.clientEventBus.updateAppData(appData)
 			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('project', (project: Project) => {
-			this.clients.forEach((clients) => clients.ipcClient.updateProject(project))
+			this.clientEventBus.updateProject(project)
 			this.handleAutoRefresh()
 		})
 		this.storage.on('rundown', (fileName: string, rundown: Rundown) => {
-			this.clients.forEach((clients) => clients.ipcClient.updateRundown(fileName, rundown))
+			this.clientEventBus.updateRundown(fileName, rundown)
 			this.triggers.registerGlobalKeyboardTriggers()
 		})
 		this.storage.on('resource', (id: ResourceId, resource: ResourceAny | null) => {
@@ -124,7 +126,7 @@ export class SuperConductor {
 			this.triggerHandleAutoFill()
 		})
 		this.storage.on('analogInput', (fullIdentifier: string, analogInput: AnalogInput | null) => {
-			this.clients.forEach((clients) => clients.ipcClient.updateAnalogInput(fullIdentifier, analogInput))
+			this.clientEventBus.updateAnalogInput(fullIdentifier, analogInput)
 			this.bridgeHandler.updateAnalogInput(analogInput)
 		})
 
@@ -199,7 +201,7 @@ export class SuperConductor {
 				}
 			},
 			onVersionMismatch: (bridgeId: BridgeId, bridgeVersion: string, ourVersion: string): void => {
-				this.clients.forEach((client) => {
+				this.windows.forEach((client) => {
 					dialog
 						.showMessageBox(client.window, {
 							type: 'warning',
@@ -219,11 +221,11 @@ export class SuperConductor {
 				} else {
 					this.refreshStatus.delete(deviceId)
 				}
-				this.clients.forEach((clients) => clients.ipcClient.updateDeviceRefreshStatus(deviceId, refreshing))
+				this.clientEventBus.updateDeviceRefreshStatus(deviceId, refreshing)
 			},
 		})
 
-		this.ipcServer = new IPCServer(ipcMain, this.log, this.renderLog, this.storage, this, this.session, {
+		this.ipcServer = new EverythingService(ipcMain, this.log, this.renderLog, this.storage, this, this.session, {
 			refreshResources: () => {
 				this.refreshResources()
 			},
@@ -273,9 +275,7 @@ export class SuperConductor {
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
 		this.triggers.on('error', (e) => this.log.error(e))
 		this.triggers.on('failedGlobalTriggers', (failedGlobalTriggers) => {
-			this.clients.forEach((client) =>
-				client.ipcClient.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
-			)
+			this.clientEventBus.updateFailedGlobalTriggers(Array.from(failedGlobalTriggers))
 		})
 		this.ipcServer.triggers = this.triggers
 
@@ -283,13 +283,14 @@ export class SuperConductor {
 		this.analogHandler.on('error', (e) => this.log.error(e))
 
 		if (this.disableInternalHttpApi) {
+			// TODO: now this becomes an API that also serves the contents of the Electron window - it should not be disabled
 			this.log.info(`Internal HTTP API disabled`)
 		} else {
-			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
+			this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
 		}
 	}
 	sendSystemMessage(message: string, options: SystemMessageOptions): void {
-		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
+		this.clientEventBus.systemMessage(message, options)
 	}
 	public setAutoUpdateAllowPrerelease(forceCheckUpdates: boolean): void {
 		const appData = this.storage.getAppData()
@@ -324,9 +325,7 @@ export class SuperConductor {
 					serializeProtectedMap(this.metadataUpdatesToSend)
 
 				if (resourceUpdatesToSend.length || Object.keys(metadataUpdatesToSend).length) {
-					this.clients.forEach((clients) =>
-						clients.ipcClient.updateResourcesAndMetadata(resourceUpdatesToSend, metadataUpdatesToSend)
-					)
+					this.clientEventBus.updateResourcesAndMetadata(resourceUpdatesToSend, metadataUpdatesToSend)
 				}
 				this.resourceUpdatesToSend.clear()
 			}, 100)
@@ -505,24 +504,18 @@ export class SuperConductor {
 	}
 
 	onNewWindow(window: BrowserWindow): {
-		ipcClient: IPCClient
 		close: () => void
 	} {
-		const ipcClient = new IPCClient(window)
-
 		const client = {
 			window,
-			ipcClient,
 		}
 
-		this.clients.push(client)
+		this.windows.push(client)
 
 		return {
-			ipcClient,
 			close: () => {
-				ipcClient.close()
-				const index = this.clients.findIndex((c) => c === client)
-				if (index >= 0) this.clients.splice(index)
+				const index = this.windows.findIndex((c) => c === client)
+				if (index >= 0) this.windows.splice(index)
 			},
 		}
 	}

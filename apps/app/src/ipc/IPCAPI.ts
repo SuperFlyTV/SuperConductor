@@ -16,6 +16,7 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
 import { BridgePeripheralId } from '@shared/lib'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -74,6 +75,7 @@ export interface Action {
 	undo: UndoFunction
 }
 
+// --- legacy
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
 	// Note: All these methods must only accept a single parameter.
@@ -84,7 +86,6 @@ export interface IPCServerMethods {
 	debugThrowError: (arg: { type: 'sync' | 'async' | 'setTimeout' }) => void
 	installUpdate: () => void
 	triggerSendAll: () => void
-	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
 	makeDevData(): void
 
@@ -101,9 +102,9 @@ export interface IPCServerMethods {
 	listProjects: () => { name: string; id: string }[]
 	openProject: (arg: { projectId: string }) => void
 
-	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
-	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
-	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => void
+	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => Rundown
+	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => Rundown
+	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => Rundown
 	setPartTrigger: (arg: {
 		rundownId: string
 		groupId: string
@@ -207,7 +208,7 @@ export interface IPCServerMethods {
 	updateAppData: (arg: UpdateAppDataOptions) => void
 	updateProject: (arg: { id: string; project: Project }) => void
 
-	newRundown: (arg: { name: string }) => string
+	newRundown: (arg: { name: string }) => Rundown
 	deleteRundown: (arg: { rundownId: string }) => void
 	openRundown: (arg: { rundownId: string }) => void
 	closeRundown: (arg: { rundownId: string }) => void
@@ -255,6 +256,8 @@ export interface IPCClientMethods {
 	updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 	updateFailedGlobalTriggers: (identifiers: string[]) => void
 	updateAnalogInput: (fullIdentifier: string, analogInput: AnalogInput | null) => void
+	updateDeviceRefreshStatus: (deviceId: TSRDeviceId, refreshing: boolean) => void
+	updateDefiningArea: (area: DefiningArea | null) => void
 }
 
 export interface SystemMessageOptions {

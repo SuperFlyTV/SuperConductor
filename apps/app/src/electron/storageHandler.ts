@@ -324,9 +324,10 @@ export class StorageHandler extends EventEmitter {
 		this.triggerEmitAll()
 	}
 
-	newRundown(name: string): string {
+	newRundown(name: string): Rundown {
 		const fileName = this.getRundownFilename(name)
-		this.openRundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
+		const rundown = this._loadRundown(this._projectId, fileName, name)
+		this.openRundowns[fileName] = rundown
 		this.appData.appData.rundowns[fileName] = {
 			name: name,
 			open: true,
@@ -334,7 +335,10 @@ export class StorageHandler extends EventEmitter {
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
-		return fileName
+		return {
+			...rundown.rundown,
+			id: fileName,
+		}
 	}
 	openRundown(fileName: string): void {
 		const fileRundown = this._loadRundown(this._projectId, fileName)
@@ -597,7 +601,7 @@ export class StorageHandler extends EventEmitter {
 
 		this.updateProject(devData.project)
 		for (const rundown of devData.rundowns) {
-			const filename = this.newRundown(rundown.name)
+			const filename = this.newRundown(rundown.name).id
 			rundown.id = filename
 
 			this.openRundown(filename)

@@ -4,11 +4,11 @@ import { Project } from '../../../models/project/Project'
 import { Group } from '../../../models/rundown/Group'
 import { Part } from '../../../models/rundown/Part'
 import { store } from '../../mobx/store'
-import { IPCServer } from '../IPCServer'
+import { ApiClient } from '../ApiClient'
 
 export interface ClipBoardContext {
 	project?: Project
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	handleError: (error: unknown) => void
 }
 export async function insertGroups(

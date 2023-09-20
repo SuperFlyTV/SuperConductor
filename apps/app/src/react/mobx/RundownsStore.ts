@@ -2,8 +2,8 @@ import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
 import { getDefaultGroup } from '../../lib/defaults'
 import { Rundown, RundownGUI } from '../../models/rundown/Rundown'
 import { Group, GroupGUI } from '../../models/rundown/Group'
-import { IPCClient } from '../api/IPCClient'
-import { IPCServer } from '../api/IPCServer'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
+import { ApiClient } from '../api/ApiClient'
 import { store } from './store'
 import {
 	allowMovingPartIntoGroup,
@@ -22,7 +22,6 @@ import { ActionAny, RundownActionLight } from '../../lib/triggers/action'
 import _ from 'lodash'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { assertNever } from '@shared/lib'
-const { ipcRenderer } = window.require('electron')
 
 interface IRundownsItems {
 	[fileName: string]: IRundownsItem
@@ -61,34 +60,15 @@ export class RundownsStore {
 	private _uiParts = new Map<string, PartGUI>()
 	private _uiTimeline = new Map<string, TimelineObj>()
 
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	logger: ClientSideLogger
-	ipcClient: IPCClient
+	ipcClient: RealtimeDataProvider
 
 	constructor() {
-		this.serverAPI = new IPCServer(ipcRenderer)
+		this.serverAPI = new ApiClient()
 		this.logger = new ClientSideLogger(this.serverAPI)
-		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
-			updateRundown: (rundownId: string, rundown: Rundown) => {
-				runInAction(() => {
-					this._rundownsClean.set(rundownId, rundown)
-					this._updateRundown(rundownId, rundown)
-
-					// Update selection to remove any selections of non-existent things:
-					store.guiStore.updateSelection((selected) => {
-						if (selected.type === 'group') {
-							return store.rundownsStore.hasGroup(selected.groupId)
-						} else if (selected.type === 'part') {
-							return store.rundownsStore.hasPart(selected.partId)
-						} else if (selected.type === 'timelineObj') {
-							return store.rundownsStore.hasTimelineObj(selected.timelineObjId)
-						} else {
-							assertNever(selected)
-							return false
-						}
-					})
-				})
-			},
+		this.ipcClient = new RealtimeDataProvider(this.logger, {
+			updateRundown: this.updateRundown,
 		})
 		makeAutoObservable(this)
 	}
@@ -109,6 +89,27 @@ export class RundownsStore {
 
 			if (firstRundown) this.setCurrentRundown(firstRundown.rundownId)
 		}
+	}
+
+	updateRundown = (rundownId: string, rundown: Rundown): void => {
+		runInAction(() => {
+			this._rundownsClean.set(rundownId, rundown)
+			this._updateRundown(rundownId, rundown)
+
+			// Update selection to remove any selections of non-existent things:
+			store.guiStore.updateSelection((selected) => {
+				if (selected.type === 'group') {
+					return store.rundownsStore.hasGroup(selected.groupId)
+				} else if (selected.type === 'part') {
+					return store.rundownsStore.hasPart(selected.partId)
+				} else if (selected.type === 'timelineObj') {
+					return store.rundownsStore.hasTimelineObj(selected.timelineObjId)
+				} else {
+					assertNever(selected)
+					return false
+				}
+			})
+		})
 	}
 
 	hasRundown(rundownId: string): boolean {
@@ -450,12 +451,21 @@ export class RundownsStore {
 	 * @param rundownId ID of the new current rundown
 	 */
 	setCurrentRundown(rundownId: string | undefined): void {
+		if (this._currentRundownId) {
+			// TODO: is there a better place to unsubscribe, in order not to leave a hanging subscription?
+			this.serverAPI.unsubscribe(this._currentRundownId).catch(() => {
+				// TODO
+			})
+		}
 		if (rundownId) {
 			this._currentRundownId = rundownId
 			store.guiStore.activeTabId = rundownId
-			this.serverAPI.triggerSendRundown({ rundownId }).catch(() => {
-				//TODO
-			})
+			this.serverAPI
+				.getRundown(rundownId)
+				.then((rundown) => this.updateRundown(rundown.id, rundown))
+				.catch(() => {
+					//TODO
+				})
 		} else {
 			this._currentRundownId = undefined
 		}

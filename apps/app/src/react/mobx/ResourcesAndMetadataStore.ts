@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx'
-import { IPCServer } from '../api/IPCServer'
-const { ipcRenderer } = window.require('electron')
-import { IPCClient } from '../api/IPCClient'
+import { ApiClient } from '../api/ApiClient'
+// const { ipcRenderer } = window.require('electron')
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import {
 	MetadataAny,
 	ResourceAny,
@@ -22,17 +22,17 @@ export class ResourcesAndMetadataStore {
 	metadata: Metadata = new Map()
 	refreshStatuses = new Set<TSRDeviceId>()
 
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	logger: ClientSideLogger
-	ipcClient: IPCClient
+	ipcClient: RealtimeDataProvider
 
 	private resourceHashes: Map<ResourceId, string> // Not defined here, this should not be an observable
 	private metadataHashes: Map<TSRDeviceId, string> // Not defined here, this should not be an observable
 
 	constructor(init?: Resources) {
-		this.serverAPI = new IPCServer(ipcRenderer)
+		this.serverAPI = new ApiClient()
 		this.logger = new ClientSideLogger(this.serverAPI)
-		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+		this.ipcClient = new RealtimeDataProvider(this.logger, {
 			updateResourcesAndMetadata: (resources, metadata) => this.updateResourcesAndMetadata(resources, metadata),
 			updateDeviceRefreshStatus: (deviceId, refreshing) => this._updateDeviceRefreshStatus(deviceId, refreshing),
 		})

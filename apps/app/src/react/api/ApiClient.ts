@@ -1,24 +1,49 @@
 import { IPCServerMethods } from '../../ipc/IPCAPI'
 import { replaceUndefined } from '../../lib/util'
 
-type Promisify<T> = {
-	[K in keyof T]: T[K] extends (...arg: any[]) => any
-		? (...args: Parameters<T[K]>) => Promise<ReturnType<T[K]>>
-		: T[K]
+import { feathers } from '@feathersjs/feathers'
+import socketio, { SocketService } from '@feathersjs/socketio-client'
+import io from 'socket.io-client'
+import { Rundown } from '../../models/rundown/Rundown'
+import { ServiceTypes } from '../../electron/api/ApiServer'
+
+type AddTypeToProperties<T, U> = {
+	[K in keyof T]: U & T[K]
 }
+
+const socket = io('127.0.0.1:5500') // TODO
+export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
+const socketClient = socketio(socket)
+app.configure(socketClient)
+
+// TODO this type assertion below should be unnecessary
+app.use('rundowns', socketClient.service('rundowns') as SocketService & ServiceTypes['rundowns'], {
+	methods: ['get', 'create', 'playPart', 'pausePart', 'stopPart', 'unsubscribe'],
+})
 
 type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
 type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServerMethods[T]>>
 
 /** This class is used client-side, to send requests to the server */
-export class IPCServer implements Promisify<IPCServerMethods> {
-	constructor(private ipcRenderer: Electron.IpcRenderer) {}
+export class ApiClient {
+	private readonly rundownService = app.service('rundowns') // TODO: DI?
 
+	// --- legacy code
 	private async invokeServerMethod<T extends keyof IPCServerMethods>(methodname: T, ...args: any[]): ServerReturn<T> {
 		// Stringifying and parsing data will convert Mobx observable objects into object literals.
 		// Otherwise, Electron won't be able to clone it.
-		return this.ipcRenderer.invoke(methodname, replaceUndefined(args))
+		return new Promise((resolve, reject) => {
+			socket.emit(methodname, 'legacy', [...replaceUndefined(args)], {}, (error: any, data: any) => {
+				if (error) {
+					reject(error)
+				} else {
+					console.log('Called ', methodname, 'received', data)
+					resolve(data)
+				}
+			})
+		}) as ServerReturn<T>
 	}
+	// --- legacy code end
 
 	async log(...args: ServerArgs<'log'>): ServerReturn<'log'> {
 		return this.invokeServerMethod('log', ...args)
@@ -35,8 +60,13 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	async triggerSendAll(...args: ServerArgs<'triggerSendAll'>): ServerReturn<'triggerSendAll'> {
 		return this.invokeServerMethod('triggerSendAll', ...args)
 	}
-	async triggerSendRundown(...args: ServerArgs<'triggerSendRundown'>): ServerReturn<'triggerSendRundown'> {
-		return this.invokeServerMethod('triggerSendRundown', ...args)
+
+	async getRundown(rundownId: string): Promise<Rundown> {
+		return await this.rundownService.get(rundownId)
+	}
+
+	async unsubscribe(rundownId: string): Promise<void> {
+		return await this.rundownService.unsubscribe(rundownId, {})
 	}
 
 	async setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>): ServerReturn<'setKeyboardKeys'> {
@@ -80,14 +110,14 @@ export class IPCServer implements Promisify<IPCServerMethods> {
 	async openProject(...args: ServerArgs<'openProject'>): ServerReturn<'openProject'> {
 		return this.invokeServerMethod('openProject', ...args)
 	}
-	async playPart(...args: ServerArgs<'playPart'>): ServerReturn<'playPart'> {
-		return this.invokeServerMethod('playPart', ...args)
+	async playPart(...args: Parameters<ServiceTypes['rundowns']['playPart']>): Promise<void> {
+		return await this.rundownService.playPart(...args)
 	}
-	async pausePart(...args: ServerArgs<'pausePart'>): ServerReturn<'pausePart'> {
-		return this.invokeServerMethod('pausePart', ...args)
+	async pausePart(...args: Parameters<ServiceTypes['rundowns']['pausePart']>): Promise<void> {
+		return await this.rundownService.pausePart(...args)
 	}
-	async stopPart(...args: ServerArgs<'stopPart'>): ServerReturn<'stopPart'> {
-		return this.invokeServerMethod('stopPart', ...args)
+	async stopPart(...args: Parameters<ServiceTypes['rundowns']['playPart']>): Promise<void> {
+		return await this.rundownService.stopPart(...args)
 	}
 	async setPartTrigger(...args: ServerArgs<'setPartTrigger'>): ServerReturn<'setPartTrigger'> {
 		return this.invokeServerMethod('setPartTrigger', ...args)
