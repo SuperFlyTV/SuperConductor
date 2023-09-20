@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
-import { EverythingService } from './IPCServer'
+import { EverythingService } from './EverythingService'
 import { ClientEventBus } from './ClientEventBus'
 import { updateTimeline } from './timeline'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'

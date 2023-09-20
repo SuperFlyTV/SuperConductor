@@ -1,4 +1,4 @@
-import { EverythingService } from '../IPCServer'
+import { EverythingService } from '../EverythingService'
 import { Application } from '@feathersjs/feathers'
 import { ClientEventBus } from '../ClientEventBus'
 import EventEmitter from 'node:events'

@@ -1,4 +1,4 @@
-import { EverythingService } from '../IPCServer'
+import { EverythingService } from '../EverythingService'
 import { LoggerLike } from '@shared/api'
 
 import { HookContext, feathers } from '@feathersjs/feathers'
@@ -8,8 +8,6 @@ import { Rundown } from '../../models/rundown/Rundown'
 import { ClientEventBus } from '../ClientEventBus'
 import { RundownService, RUNDOWN_CHANNEL_PREFIX } from './RundownService'
 import { LegacyService } from './LegacyService'
-
-// ---
 
 export type ServiceTypes = {
 	rundowns: RundownService
