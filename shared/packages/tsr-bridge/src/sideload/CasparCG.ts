@@ -1,5 +1,5 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
-import { CasparCG } from 'casparcg-connection'
+import { CasparCG, ClipInfo, Response } from 'casparcg-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -18,7 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates'
-import { getResourceIdFromResource } from '@shared/lib'
+import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
@@ -64,63 +64,65 @@ export class CasparCGSideload implements SideLoadDevice {
 		let TMP_THUMBNAIL_LIMIT = 500
 		// Refresh media:
 		{
-			let mediaList: {
-				type: 'image' | 'video' | 'audio'
-				name: string
-				size: number
-				changed: number
-				frames: number
-				frameTime: string
-				frameRate: number
-				duration: number
-				thumbnail?: string
-			}[]
-			try {
-				const res = await this.ccg.cls()
-				if (res.error) throw res.error
+			let mediaList: ClipInfo[] = []
 
-				const response = await res.request
+			const res = await this.ccg.cls()
+			if (res.error) throw res.error
+
+			const response = await res.request
+			if (this._isSuccessful(response)) {
 				mediaList = response.data
-			} catch (error) {
-				if (`${error}`.match(/501/)) {
-					// This probably means that media-scanner isn't running
-					mediaList = []
-				} else {
-					throw error
-				}
+			} else if (response.responseCode !== 501) {
+				// This probably means it's something other than media-scanner not running
+				this.log.error(`Could not get media list. Received response:`, response.responseCode, response.message)
 			}
 
 			for (const media of mediaList) {
-				if (media.name.startsWith('__')) {
+				if (media.clip.startsWith('__')) {
 					// Ignore these
 					continue
+				}
+
+				let type: CasparCGMedia['type']
+				if (media.type === 'STILL') {
+					type = 'image'
+				} else if (media.type === 'MOVIE') {
+					type = 'video'
+				} else if (media.type === 'AUDIO') {
+					type = 'audio'
+				} else {
+					assertNever(media.type)
+					type = 'video'
 				}
 
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
 					id: protectString(''), // set by getResourceIdFromResource() later
-					...media,
-					displayName: media.name,
+					type,
+					name: media.clip,
+					displayName: media.clip,
+					changed: media.datetime,
+					duration: media.frames / media.framerate,
+					frameRate: media.framerate,
+					frames: media.frames,
+					size: media.size,
+					frameTime: '',
 				}
 				resource.id = getResourceIdFromResource(resource)
 
-				if ((media.type === 'image' || media.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
+				if ((resource.type === 'image' || resource.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
 					try {
-						const thumbnailQuery = await this.ccg.thumbnailRetrieve({ filename: media.name })
+						const thumbnailQuery = await this.ccg.thumbnailRetrieve({ filename: resource.name })
 						if (thumbnailQuery.error) throw thumbnailQuery.error
 
 						const thumbnail = await thumbnailQuery.request
-						console.log('thumbnail')
-						console.log(thumbnail.data)
-						resource.thumbnail = thumbnail.data as any
-						TMP_THUMBNAIL_LIMIT--
+						if (this._isSuccessful(thumbnail)) {
+							resource.thumbnail = thumbnail.data && this._toPngDataUri(thumbnail.data[0])
+							TMP_THUMBNAIL_LIMIT--
+						} // else: probably CasparCG's media-scanner isn't running
 					} catch (error) {
-						if (`${error}`.match(/404/)) {
-							// Suppress error, this is probably because CasparCG's media-scanner isn't running.
-						} else {
-							this.log.error(`Could not set thumbnail for media "${media.name}".`, error)
-						}
+						this.log.error(`Could not set thumbnail for media "${resource.name}".`, error)
 					}
 				}
 
@@ -148,5 +150,13 @@ export class CasparCGSideload implements SideLoadDevice {
 			resources: Array.from(resources.values()),
 			metadata,
 		}
+	}
+
+	private _isSuccessful<T>(response: Response<T>): boolean {
+		return response.responseCode < 400 && response.data != null
+	}
+
+	private _toPngDataUri(imageBase64: string) {
+		return `data:image/png;base64,${imageBase64}`
 	}
 }
