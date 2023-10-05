@@ -14,6 +14,7 @@ import {
 	TimelineContentAtemMediaPlayer,
 	TimelineContentAtemSsrc,
 	TimelineContentAtemSsrcProps,
+	TimelineContentAtemAudioRouting,
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -917,6 +918,27 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TSRTimelineObj<TimelineCon
 								onSave({ content: { audioChannel: { mixOption: v } } })
 							}}
 							allowUndefined={true}
+						/>
+					</div>
+				</>
+			)
+		} else if (contentType === TimelineContentTypeAtem.AUDIOROUTING) {
+			const objs = objs0 as TSRTimelineObj<TimelineContentAtemAudioRouting>[]
+			const firstObj = objs[0]
+			if (!firstObj) return null
+			const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemAudioRouting>>
+			settings = (
+				<>
+					<div className="setting">
+						<IntInput
+							label="Source"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.audioRouting.sourceId, 0)}
+							onChange={(v) => {
+								onSave({ content: { audioRouting: { sourceId: v } } })
+							}}
+							allowUndefined={true}
+							caps={[0, 65381]}
 						/>
 					</div>
 				</>

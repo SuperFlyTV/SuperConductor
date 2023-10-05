@@ -44,6 +44,7 @@ enum GeneralResourceType {
 	SSRC_PROPS = 'ssrcProps',
 	MACRO_PLAYER = 'macroPlayer',
 	AUDIO_CHANNEL = 'audioChan',
+	AUDIO_OUTPUT = 'audioOut',
 	MEDIA_PLAYER = 'mp',
 	CURRENT_SCENE = 'CURRENT_SCENE',
 	CURRENT_TRANSITION = 'CURRENT_TRANSITION',
@@ -90,6 +91,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.AUDIO_CHANNEL
 		case ResourceType.ATEM_MEDIA_PLAYER:
 			return GeneralResourceType.MEDIA_PLAYER
+		case ResourceType.ATEM_AUDIO_OUTPUT:
+			return GeneralResourceType.AUDIO_OUTPUT
 		case ResourceType.OBS_SCENE:
 			return GeneralResourceType.CURRENT_SCENE
 		case ResourceType.OBS_TRANSITION:
@@ -169,6 +172,8 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj<TSRTimelineCo
 					return ResourceType.ATEM_SSRC
 				case TimelineContentTypeAtem.SSRCPROPS:
 					return ResourceType.ATEM_SSRC_PROPS
+				case TimelineContentTypeAtem.AUDIOROUTING:
+					return ResourceType.ATEM_AUDIO_OUTPUT
 				default:
 					assertNever(obj.content)
 			}
@@ -456,6 +461,7 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
+		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return String((mapping as MappingAtem).index)
 		case ResourceType.CASPARCG_MEDIA:
 			return (obj as TSRTimelineObj<TimelineContentCCGMedia>).content.file.toUpperCase()
@@ -547,6 +553,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
+		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return `${resource.index}`
 		case ResourceType.ATEM_MACRO_PLAYER:
 			return `0`

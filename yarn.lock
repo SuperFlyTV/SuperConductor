@@ -3691,10 +3691,10 @@ at-least-node@^1.0.0:
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
 
-atem-connection@2.4.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/atem-connection/-/atem-connection-2.4.0.tgz#bcaf5713e6a3f64be45583bf98b0c294255b7f86"
-  integrity sha512-/D+fWWRrCcxzfCbSdUMT00nCR/S8xCwFTSE6oqFkFSb0mtxgCORs8WKMF0KZddPPuUU2S/4ZfR+Oh53Hm/d/jQ==
+atem-connection@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/atem-connection/-/atem-connection-2.5.0.tgz#dceb616595af37d0b3c118d0a9e6f613f1a2d419"
+  integrity sha512-JZI0B9jfw91ALSx4hOQH8Mk5TGQuJcK1/tdHQDIvoPW+z7qOds2JPlxNHkk5Thg5pLVKBgMHxIXDWfQ5vHPw8w==
   dependencies:
     big-integer "^1.6.51"
     eventemitter3 "^4.0.4"
@@ -3704,10 +3704,10 @@ atem-connection@2.4.0:
     tslib "^1.13.0"
     wavefile "^8.4.4"
 
-atem-state@^0.12.2:
-  version "0.12.2"
-  resolved "https://registry.yarnpkg.com/atem-state/-/atem-state-0.12.2.tgz#40a97b77d32ed9effee5e99505193d1e0c94deca"
-  integrity sha512-4OFp3HHpvhmcBHOpx7M/8Gjpf1xUkH5GZZGdPJGQt3N9JOZggONbC7ndoko4qhwapl7EQkM2eMhkI+uDAKj8LQ==
+atem-state@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/atem-state/-/atem-state-0.13.0.tgz#07f6452364550cc2af0c9ddfdf1ffe40010e81c9"
+  integrity sha512-uEzt15vP8c155OfsyuWrkbxb3PKoLBpy4Q7WAlqx2t4AZTGSbHCpQz8YIx/9Zg9zPw9bDLt8eVUJBp30QYLp8Q==
   dependencies:
     deepmerge "^4.2.2"
     tslib "^2.3.1"
@@ -4281,19 +4281,19 @@ casparcg-connection@^5.1.0:
     xml2js "^0.4.19"
     xmlbuilder "^9.0.7"
 
-casparcg-connection@^6.0.0:
-  version "6.0.2"
-  resolved "https://registry.yarnpkg.com/casparcg-connection/-/casparcg-connection-6.0.2.tgz#f83c71a693fff33b377f92680940a08c90f425e6"
-  integrity sha512-hxrdB2HaiZXrgrFi+Q0jfRLya3UQKlJ5Nko+Btk9/aH+4Z+R59WzgMlZDA510Y2PLW/037saDLX5vutnP5x5xQ==
+casparcg-connection@^6.0.3:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/casparcg-connection/-/casparcg-connection-6.0.3.tgz#e868b7dc7ae92670e6d2767fe625b8e78d7a9d4a"
+  integrity sha512-QJ06lEA1Xsft+UhS057KhhUAZ2GE9O7p+/nVge8pN7VTqrspWBDClbaAjhfoLa5KuKgaVQLntJFzXlpYwyAdpg==
   dependencies:
     eventemitter3 "^4.0.7"
     tslib "^2.5.0"
     xml2js "^0.4.23"
 
-casparcg-connection@^6.0.3:
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/casparcg-connection/-/casparcg-connection-6.0.3.tgz#e868b7dc7ae92670e6d2767fe625b8e78d7a9d4a"
-  integrity sha512-QJ06lEA1Xsft+UhS057KhhUAZ2GE9O7p+/nVge8pN7VTqrspWBDClbaAjhfoLa5KuKgaVQLntJFzXlpYwyAdpg==
+casparcg-connection@^6.0.6:
+  version "6.0.6"
+  resolved "https://registry.yarnpkg.com/casparcg-connection/-/casparcg-connection-6.0.6.tgz#88975bb9b1f1ee6db89ab420ca058fde79b01d2f"
+  integrity sha512-VFGKg1KslF0mMteZoCz2gQBN+KYUbM3YiNsVWTUNyPuDV6o57iP8V++LY8geAKRYSjQ/RTB4I1QI81L7QZeJaA==
   dependencies:
     eventemitter3 "^4.0.7"
     tslib "^2.5.0"
@@ -12584,22 +12584,22 @@ timed-out@^4.0.1:
   resolved "https://registry.yarnpkg.com/timed-out/-/timed-out-4.0.1.tgz#f32eacac5a175bea25d7fab565ab3ed8741ef56f"
   integrity sha1-8y6srFoXW+ol1/q1Zas+2HQe9W8=
 
-timeline-state-resolver-types@8.0.0-release49.0:
-  version "8.0.0-release49.0"
-  resolved "https://registry.yarnpkg.com/timeline-state-resolver-types/-/timeline-state-resolver-types-8.0.0-release49.0.tgz#d9e2f6a7692864951c962bdd1a40b79269924019"
-  integrity sha512-sh0m6dsKwFOcJY3mhak+/tyf+jYw0sGd8/QrL6B2iw8SwWHnPgLKcW8k+joTv/4bMMvUGhefoz4ZtZx3si7Ldw==
+timeline-state-resolver-types@8.0.0, timeline-state-resolver-types@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/timeline-state-resolver-types/-/timeline-state-resolver-types-8.0.0.tgz#16586a8a5f5c6ff56e1f964b240bfc07923638a6"
+  integrity sha512-bu4vJx7V0fape4WBGmz88mDi9G3y+UnxSisrmg+K39AtgtPWH4LXu++Qb95gzReNumJJzt3RtXtoSnEz1p+w7w==
   dependencies:
     tslib "^2.4.1"
 
-timeline-state-resolver@8.0.0-release49.0:
-  version "8.0.0-release49.0"
-  resolved "https://registry.yarnpkg.com/timeline-state-resolver/-/timeline-state-resolver-8.0.0-release49.0.tgz#f632a8784995cb832ae48210aed97bd82c3236c9"
-  integrity sha512-fwSw6Iig+uhLesvaGUa96BFZ83PAH9aL2840Y6apPiGog1mCX5aLpu71dBQF378xDamgHW79GYVamJjyr6nA8w==
+timeline-state-resolver@^8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/timeline-state-resolver/-/timeline-state-resolver-8.0.0.tgz#13268dfbea56088fcfbe2f7e0a2d6ef67610181b"
+  integrity sha512-oDUGqpZTIEySV86qeQdK3WkHK3kM1zszMHDO4MWmEhDg7NWgXxI++tdH3AeK29HfeRJ4KDL/Ape3/F4G/Tn0WQ==
   dependencies:
     "@tv2media/v-connection" "^7.3.0"
-    atem-connection "2.4.0"
-    atem-state "^0.12.2"
-    casparcg-connection "^6.0.0"
+    atem-connection "2.5.0"
+    atem-state "0.13.0"
+    casparcg-connection "^6.0.6"
     casparcg-state "^3.0.2"
     debug "^4.3.1"
     deepmerge "^4.2.2"
@@ -12616,7 +12616,7 @@ timeline-state-resolver@8.0.0-release49.0:
     sprintf-js "^1.1.2"
     superfly-timeline "^8.3.1"
     threadedclass "^1.2.0"
-    timeline-state-resolver-types "8.0.0-release49.0"
+    timeline-state-resolver-types "8.0.0"
     tslib "^2.4.1"
     tv-automation-quantel-gateway-client "^3.0.2"
     underscore "^1.13.4"

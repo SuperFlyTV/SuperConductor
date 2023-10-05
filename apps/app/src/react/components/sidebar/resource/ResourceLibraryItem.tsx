@@ -99,6 +99,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.OBS_SCENE ||
 			resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER ||
 			resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL ||
+			resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT ||
 			resource.resourceType === ResourceType.ATEM_MACRO_PLAYER ||
 			resource.resourceType === ResourceType.ATEM_SSRC_PROPS ||
 			resource.resourceType === ResourceType.ATEM_SSRC ||

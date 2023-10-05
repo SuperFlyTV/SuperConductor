@@ -423,6 +423,8 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 			return resource.resourceType === ResourceType.ATEM_SSRC
 		} else if (mapping0.mappingType === MappingAtemType.SuperSourceProperties) {
 			return resource.resourceType === ResourceType.ATEM_SSRC_PROPS
+		} else if (mapping0.mappingType === MappingAtemType.AudioRouting) {
+			return resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT
 		} else {
 			assertNever(mapping0.mappingType)
 		}

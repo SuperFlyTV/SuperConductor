@@ -76,6 +76,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 				return atemMapping.mappingType === MappingAtemType.AudioChannel
 			case TimelineContentTypeAtem.MACROPLAYER:
 				return atemMapping.mappingType === MappingAtemType.MacroPlayer
+			case TimelineContentTypeAtem.AUDIOROUTING:
+				return atemMapping.mappingType === MappingAtemType.AudioRouting
 			default:
 				assertNever(obj.content)
 				return false
@@ -353,6 +355,18 @@ export function getMappingFromTimelineObject(
 					mappingType: MappingAtemType.MacroPlayer,
 					index: 0,
 				})
+
+			case TimelineContentTypeAtem.AUDIOROUTING: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_OUTPUT ? resource.index : 0
+
+				return literal<MappingAtem>({
+					device: DeviceType.ATEM,
+					deviceId: deviceIdStr,
+					layerName: `Atem Audio Routing ${index + 1}`,
+					mappingType: MappingAtemType.AudioRouting,
+					index,
+				})
+			}
 
 			default:
 				assertNever(obj.content)
@@ -824,6 +838,8 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 					return `Audio Channel: ${typedMapping.index}`
 				case MappingAtemType.MacroPlayer:
 					return `Macro Player: ${typedMapping.index}`
+				case MappingAtemType.AudioRouting:
+					return `Audio Output: ${typedMapping.index}`
 				default:
 					assertNever(typedMapping.mappingType)
 					return ''

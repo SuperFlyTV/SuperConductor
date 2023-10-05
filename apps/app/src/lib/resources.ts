@@ -44,6 +44,7 @@ import {
 	TimelineContentHTTPRequest,
 	TimelineContentHyperdeckTransport,
 	TimelineContentTCPRequest,
+	TimelineContentAtemAudioRouting,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -271,6 +272,22 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				deviceType: DeviceType.ATEM,
 				type: TimelineContentTypeAtem.AUDIOCHANNEL,
 				audioChannel: {},
+			},
+		})
+	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT) {
+		return literal<TSRTimelineObj<TimelineContentAtemAudioRouting>>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.ATEM,
+				type: TimelineContentTypeAtem.AUDIOROUTING,
+				audioRouting: {
+					sourceId: 0,
+				},
 			},
 		})
 	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
@@ -677,6 +694,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'Macros'
 		case ResourceType.ATEM_AUDIO_CHANNEL:
 			return 'Audio'
+		case ResourceType.ATEM_AUDIO_OUTPUT:
+			return 'Audio Output'
 		case ResourceType.OBS_SCENE:
 			return 'Scenes'
 		case ResourceType.OBS_TRANSITION:

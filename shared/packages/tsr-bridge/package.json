@@ -50,7 +50,7 @@
 		"lodash": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
 		"casparcg-connection": "^6.0.3",
-		"timeline-state-resolver": "8.0.0-release49.0",
+		"timeline-state-resolver": "^8.0.0",
 		"winston": "^3.7.2"
 	},
 	"devDependencies": {

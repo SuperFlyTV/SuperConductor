@@ -91,6 +91,13 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				{universalRows}
 			</ResourceDataInner>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT) {
+		return (
+			<ResourceDataInner title="ATEM Audio Output">
+				<DataRow label="Index" value={resource.index} />
+				{universalRows}
+			</ResourceDataInner>
+		)
 	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 		return (
 			<ResourceDataInner title="ATEM Media Player">

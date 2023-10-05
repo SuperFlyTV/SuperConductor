@@ -9,6 +9,7 @@ export type AtemAny =
 	| AtemMacroPlayer
 	| AtemAudioChannel
 	| AtemMediaPlayer
+	| AtemAudioOutput
 
 export interface AtemMe extends ResourceBase {
 	resourceType: ResourceType.ATEM_ME
@@ -60,5 +61,12 @@ export interface AtemMediaPlayer extends ResourceBase {
 	resourceType: ResourceType.ATEM_MEDIA_PLAYER
 
 	/** The 0-based index of the Media Player */
+	index: number
+}
+
+export interface AtemAudioOutput extends ResourceBase {
+	resourceType: ResourceType.ATEM_AUDIO_OUTPUT
+
+	/** The 0-based index of the Audio Output */
 	index: number
 }

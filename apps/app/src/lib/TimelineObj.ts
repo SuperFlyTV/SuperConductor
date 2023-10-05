@@ -160,6 +160,8 @@ export function describeTimelineObject(
 			} else {
 				assertNever(obj.content.mediaPlayer.sourceType)
 			}
+		} else if (obj.content.type === TimelineContentTypeAtem.AUDIOROUTING) {
+			label = `Audio Routing`
 		} else {
 			assertNever(obj.content)
 		}
