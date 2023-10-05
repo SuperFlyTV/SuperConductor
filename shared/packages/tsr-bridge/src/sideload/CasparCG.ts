@@ -118,7 +118,11 @@ export class CasparCGSideload implements SideLoadDevice {
 
 						const thumbnail = await thumbnailQuery.request
 						if (this._isSuccessful(thumbnail)) {
-							resource.thumbnail = thumbnail.data && this._toPngDataUri(thumbnail.data[0])
+							const thumbnailData =
+								Array.isArray(thumbnail.data) && typeof thumbnail.data[0] === 'string'
+									? thumbnail.data[0]
+									: undefined
+							resource.thumbnail = thumbnailData && this._toPngDataUri(thumbnailData)
 							TMP_THUMBNAIL_LIMIT--
 						} // else: probably CasparCG's media-scanner isn't running
 					} catch (error) {
