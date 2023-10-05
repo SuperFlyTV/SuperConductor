@@ -25,19 +25,16 @@ export async function addTemplatesToResourcesFromCasparCG(
 	if (res.error) throw res.error
 	const response = await res.request
 
-	const templatesList = response.data as {
-		type: 'template'
-		name: string
-		size: number
-		changed: number
-	}[]
+	const templatesList = response.data
 	for (const template of templatesList) {
 		const resource: CasparCGTemplate = {
 			resourceType: ResourceType.CASPARCG_TEMPLATE,
 			deviceId: deviceId,
 			id: protectString(''), // set by getResourceIdFromResource() later
-			...template,
-			displayName: template.name,
+			name: template,
+			displayName: template,
+			size: 0,
+			changed: Date.now(),
 		}
 		resource.id = getResourceIdFromResource(resource)
 		resources.set(resource.id, resource)
@@ -77,10 +74,15 @@ export async function addTemplatesToResourcesFromDisk(
 ): Promise<boolean> {
 	// If CasparCG is running locally, we could try reading the template files manually.
 	if (casparCG.host === '127.0.0.1' || casparCG.host === 'localhost') {
-		const config = await casparCG.infoConfig()
-		const configData: Config.Intermediate.CasparCGConfig = config.response.data
+		const request = await casparCG.infoConfig()
+		if (request.error) throw request.error
+		const response = await request.request
+		const configData = response.data
 		if (configData) {
-			const templatePath = configData.paths.templatePath
+			const templatePath = configData.paths?.templates
+			if (templatePath == null) {
+				return false
+			}
 
 			let absoluteTemplatePath = ''
 
