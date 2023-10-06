@@ -6,10 +6,12 @@ import { CURRENT_VERSION, TSRBridgeServer } from './electron/server'
 import { IPCClient } from './electron/IPCClient'
 import { StorageHandler } from './electron/storageHandler'
 import { IPCServer } from './electron/IPCServer'
-import { AppSystem } from './models/AppData'
+import { AppData, AppSettings, AppSystem } from './models/AppData'
 import os from 'os'
 
 let isQuitting = false
+
+const APP_NAME = 'SuperConductor TSR-Bridge'
 
 // Keep a global reference to prevent garbage collection.
 let tray: Tray
@@ -73,9 +75,10 @@ const createWindow = async (): Promise<void> => {
 
 	await win.loadURL(isDev ? 'http://localhost:9125' : `file://${app.getAppPath()}/dist/index.html`)
 
-	storage.on('appData', (appData) => {
+	storage.on('appData', (appData: AppData) => {
 		ipcClient.settings(appData.settings)
 		updateSystem()
+		onUpdatedSettings(appData.settings)
 	})
 
 	const assetsPath = app.isPackaged
@@ -104,7 +107,7 @@ const createWindow = async (): Promise<void> => {
 		},
 	])
 	tray.setContextMenu(trayContextMenu)
-	tray.setToolTip('TSR-Bridge')
+	tray.setToolTip(APP_NAME)
 
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:
 	const updateSizeAndPosition = () => {
@@ -173,6 +176,23 @@ const createWindow = async (): Promise<void> => {
 	systemInterval = setInterval(() => {
 		updateSystem()
 	}, 10000)
+
+	const prevSettings: Partial<AppSettings> = {}
+	function onUpdatedSettings(settings: AppSettings) {
+		const autostart = Boolean(settings.autostart)
+		if (prevSettings.autostart !== autostart) {
+			prevSettings.autostart = autostart
+
+			const loginItemSettings = app.getLoginItemSettings()
+
+			if (loginItemSettings.openAtLogin !== autostart) {
+				log.info(`Setting open at login to ${autostart}`)
+				app.setLoginItemSettings({
+					openAtLogin: autostart,
+				})
+			}
+		}
+	}
 
 	log.info('TSR-Bridge current version:', CURRENT_VERSION)
 

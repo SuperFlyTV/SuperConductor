@@ -23,6 +23,7 @@ import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
 import { describeTimelineObject } from './TimelineObj'
+import { deepmergeIntoCustom, getKeys } from 'deepmerge-ts'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
 	return rundown.groups.find((g) => g.id === groupId)
@@ -844,3 +845,14 @@ export function unReplaceUndefined(obj: any): any {
 	}
 	return obj
 }
+
+export const deepExtendRemovingUndefined = deepmergeIntoCustom({
+	mergeRecords(m_target, values, utils, meta) {
+		utils.defaultMergeFunctions.mergeRecords(m_target, values, utils, meta)
+		for (const key of getKeys(values)) {
+			if (values[1] && key in values[1] && values[1][key] === undefined) {
+				delete m_target.value[key]
+			}
+		}
+	},
+})

@@ -149,6 +149,7 @@ export class StorageHandler extends EventEmitter {
 
 					superConductorHost: 'ws://127.0.0.1:5400',
 					bridgeId: protectString<BridgeId>(`${os.hostname()}_${shortID()}`),
+					autostart: false,
 				},
 			},
 		}
