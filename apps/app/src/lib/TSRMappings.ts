@@ -30,6 +30,14 @@ import {
 	MappingSisyfosType,
 	MappingSofieChef,
 	MappingTCPSend,
+	MappingTriCaster,
+	MappingTriCasterAudioChannel,
+	MappingTriCasterDownStreamKeyer,
+	MappingTriCasterInput,
+	MappingTriCasterMatrixOutput,
+	MappingTriCasterMixEffect,
+	MappingTriCasterMixOutput,
+	MappingTriCasterType,
 	MappingVizMSE,
 	MappingVMix,
 	MappingVMixAny,
@@ -41,7 +49,14 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePanasonicPtz,
 	TimelineContentTypeSisyfos,
+	TimelineContentTypeTriCaster,
 	TimelineContentTypeVMix,
+	TriCasterAudioChannelName,
+	TriCasterInputName,
+	TriCasterKeyerName,
+	TriCasterMatrixOutputName,
+	TriCasterMixEffectName,
+	TriCasterMixOutputName,
 	TSRTimelineContent,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
@@ -747,11 +762,88 @@ export function getMappingFromTimelineObject(
 			layerName: 'Telemetrics',
 		})
 	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
-		return literal<Mapping>({
-			device: DeviceType.TRICASTER,
-			deviceId: deviceIdStr,
-			layerName: 'Tricaster',
-		})
+		switch (obj.content.type) {
+			case TimelineContentTypeTriCaster.ME: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_ME
+						? (resource.name as TriCasterMixEffectName) // TODO: perhaps resource.name should be of this type?
+						: 'main'
+				return literal<MappingTriCasterMixEffect>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.ME,
+					layerName: `TriCaster ME ${name}`,
+					name: name,
+				})
+			}
+			case TimelineContentTypeTriCaster.AUDIO_CHANNEL: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL
+						? (resource.name as TriCasterAudioChannelName) // TODO: perhaps resource.name should be of this type?
+						: 'master'
+				return literal<MappingTriCasterAudioChannel>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.AUDIO_CHANNEL,
+					layerName: `TriCaster Audio Channel ${name}`,
+					name: name,
+				})
+			}
+			case TimelineContentTypeTriCaster.DSK: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_DSK
+						? (resource.name as TriCasterKeyerName) // TODO: perhaps resource.name should be of this type?
+						: 'dsk1'
+				return literal<MappingTriCasterDownStreamKeyer>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.DSK,
+					layerName: `TriCaster DSK ${name}`,
+					name: name,
+				})
+			}
+			case TimelineContentTypeTriCaster.INPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_INPUT
+						? (resource.name as TriCasterInputName) // TODO: perhaps resource.name should be of this type?
+						: 'input1'
+				return literal<MappingTriCasterInput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.INPUT,
+					layerName: `TriCaster Input ${name}`,
+					name: name,
+				})
+			}
+			case TimelineContentTypeTriCaster.MATRIX_OUTPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT
+						? (resource.name as TriCasterMatrixOutputName) // TODO: perhaps resource.name should be of this type?
+						: 'out1'
+				return literal<MappingTriCasterMatrixOutput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.MATRIX_OUTPUT,
+					layerName: `TriCaster Matrix Out ${name}`,
+					name: name,
+				})
+			}
+			case TimelineContentTypeTriCaster.MIX_OUTPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
+						? (resource.name as TriCasterMixOutputName) // TODO: perhaps resource.name should be of this type?
+						: 'mix1'
+				return literal<MappingTriCasterMixOutput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.MIX_OUTPUT,
+					layerName: `TriCaster Mix Out ${name}`,
+					name: name,
+				})
+			}
+			default:
+				assertNever(obj.content)
+		}
 	} else {
 		assertNever(obj.content)
 	}
@@ -1269,6 +1361,7 @@ type AnyMapping =
 	| MappingTCPSend
 	| MappingVizMSE
 	| MappingVMixAny
+	| MappingTriCaster
 
 function getLastBiggestValue(
 	mappings: Mappings,
@@ -1299,6 +1392,7 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 
 		DeviceType.ATEM,
 		DeviceType.VMIX,
+		DeviceType.TRICASTER,
 
 		DeviceType.HYPERDECK,
 		DeviceType.HTTPSEND,
@@ -1424,7 +1518,12 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			} else if (device === DeviceType.TELEMETRICS) {
 				// Nothing
 			} else if (device === DeviceType.TRICASTER) {
-				// Nothing
+				const _a = a.mapping as MappingTriCaster
+				const _b = b.mapping as MappingTriCaster
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				if ((_a.name || 0) > (_b.name || 0)) return 1
+				if ((_a.name || 0) < (_b.name || 0)) return -1
 			} else if (device === DeviceType.MULTI_OSC) {
 				// Nothing
 			} else {

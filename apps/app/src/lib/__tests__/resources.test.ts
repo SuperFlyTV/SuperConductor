@@ -1,6 +1,7 @@
 import { getResourceIdFromResource, getResourceIdFromTimelineObj, literal } from '@shared/lib'
 import {
 	AtemAudioChannel,
+	AtemAudioOutput,
 	AtemAux,
 	AtemDsk,
 	AtemMacroPlayer,
@@ -39,8 +40,15 @@ import {
 	VMixPreview,
 	VMixRecording,
 	VMixStreaming,
+	VMixScript,
+	TriCasterMe,
+	TriCasterMixOutput,
+	TriCasterDsk,
+	TriCasterInput,
+	TriCasterMatrixOutput,
+	TriCasterAudioChannel
 } from '@shared/models'
-import { Mappings, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { Mappings, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TSRTimelineObjFromResource } from '../resources'
 import { getMappingFromTimelineObject } from '../TSRMappings'
 describe('resourceId generation', () => {
@@ -51,7 +59,7 @@ describe('resourceId generation', () => {
 		r.id = getResourceIdFromResource(r)
 
 		// Generate timelineObj from resource:
-		const obj: TSRTimelineObj = TSRTimelineObjFromResource(r)
+		const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(r)
 
 		const mapping = getMappingFromTimelineObject(obj, DEVICE_ID, r)
 		if (!mapping) throw new Error('Mapping is undefined')
@@ -188,6 +196,16 @@ describe('resourceId generation', () => {
 				resourceType: ResourceType.ATEM_AUDIO_CHANNEL,
 				index: 7,
 				displayName: `ATEM Audio Channel`,
+			})
+		)
+	})
+	test('ATEM_AUDIO_OUTPUT', () => {
+		testResource(
+			literal<AtemAudioOutput>({
+				...COMMON,
+				resourceType: ResourceType.ATEM_AUDIO_OUTPUT,
+				index: 7,
+				displayName: `ATEM Audio Output`,
 			})
 		)
 	})
@@ -348,6 +366,14 @@ describe('resourceId generation', () => {
 			})
 		)
 	})
+	test('VMIX_SCRIPT', () => {
+		testResource(
+			literal<VMixScript>({
+				...COMMON,
+				resourceType: ResourceType.VMIX_SCRIPT,
+			})
+		)
+	})
 	test('OSC_MESSAGE', () => {
 		testResource(
 			literal<OSCMessage>({
@@ -406,6 +432,60 @@ describe('resourceId generation', () => {
 			literal<TCPRequest>({
 				...COMMON,
 				resourceType: ResourceType.TCP_REQUEST,
+			})
+		)
+	})
+	test('TRICASTER_ME', () => {
+		testResource(
+			literal<TriCasterMe>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_ME,
+			})
+		)
+	})
+	test('TRICASTER_DSK', () => {
+		testResource(
+			literal<TriCasterDsk>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_DSK,
+			})
+		)
+	})
+	test('TRICASTER_INPUT', () => {
+		testResource(
+			literal<TriCasterInput>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_INPUT,
+			})
+		)
+	})
+	test('TRICASTER_AUDIO_CHANNEL', () => {
+		testResource(
+			literal<TriCasterAudioChannel>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_AUDIO_CHANNEL,
+			})
+		)
+	})
+	test('TRICASTER_MIX_OUTPUT', () => {
+		testResource(
+			literal<TriCasterMixOutput>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_MIX_OUTPUT,
+			})
+		)
+	})
+	test('TRICASTER_MATRIX_OUTPUT', () => {
+		testResource(
+			literal<TriCasterMatrixOutput>({
+				...COMMON,
+				name: 'v1',
+				resourceType: ResourceType.TRICASTER_MATRIX_OUTPUT,
 			})
 		)
 	})

@@ -113,7 +113,13 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.HYPERDECK_RECORD ||
 			resource.resourceType === ResourceType.HYPERDECK_PREVIEW ||
 			resource.resourceType === ResourceType.HYPERDECK_CLIP ||
-			resource.resourceType === ResourceType.TCP_REQUEST
+			resource.resourceType === ResourceType.TCP_REQUEST ||
+			resource.resourceType === ResourceType.TRICASTER_ME ||
+			resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL ||
+			resource.resourceType === ResourceType.TRICASTER_DSK ||
+			resource.resourceType === ResourceType.TRICASTER_INPUT ||
+			resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT ||
+			resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
 		) {
 			return (
 				<>

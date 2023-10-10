@@ -145,6 +145,18 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.MEDIA
 		case ResourceType.TCP_REQUEST:
 			return GeneralResourceType.TCP_REQUEST
+		case ResourceType.TRICASTER_ME:
+			return GeneralResourceType.ME
+		case ResourceType.TRICASTER_DSK:
+			return GeneralResourceType.DSK
+		case ResourceType.TRICASTER_INPUT:
+			return GeneralResourceType.INPUT
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+			return GeneralResourceType.AUDIO_CHANNEL
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+			return GeneralResourceType.AUX
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+			return GeneralResourceType.AUX
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
@@ -599,6 +611,13 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_INPUT:
 			// todo: something might be wrong here, type doesn't seem to be used
 			return `${resource.number}`
+		case ResourceType.TRICASTER_ME:
+		case ResourceType.TRICASTER_DSK:
+		case ResourceType.TRICASTER_INPUT:
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+			return `${resource.name}`
 		default: {
 			assertNever(resource)
 			// eslint-disable-next-line no-console

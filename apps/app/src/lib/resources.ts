@@ -46,6 +46,13 @@ import {
 	TimelineContentTCPRequest,
 	TimelineContentAtemAudioRouting,
 	TimelineContentVMixScript,
+	TimelineContentTypeTriCaster,
+	TimelineContentTriCasterME,
+	TimelineContentTriCasterDSK,
+	TimelineContentTriCasterInput,
+	TimelineContentTriCasterAudioChannel,
+	TimelineContentTriCasterMatrixOutput,
+	TimelineContentTriCasterMixOutput,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -54,7 +61,14 @@ import { GDDSchema, getDefaultDataFromSchema } from 'graphics-data-definition'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj<TSRTimelineContent> {
 	const INFINITE_DURATION = null
-
+	const baseInfiniteObject = {
+		id: shortID(),
+		layer: '', // set later,
+		enable: {
+			start: 0,
+			duration: INFINITE_DURATION,
+		},
+	}
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
 		return {
 			id: shortID(),
@@ -673,6 +687,68 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				message: '',
 			},
 		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_ME) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterME>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.ME,
+				me: {
+					programInput: 'input1',
+					transitionEffect: 'cut',
+				},
+			},
+		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_DSK) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterDSK>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.DSK,
+				keyer: { input: 'input1', onAir: true },
+			},
+		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_INPUT) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterInput>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.INPUT,
+				input: {
+					videoSource: 'black',
+				},
+			},
+		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterAudioChannel>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.AUDIO_CHANNEL,
+				audioChannel: {
+					isMuted: false,
+					volume: 0,
+				},
+			},
+		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterMatrixOutput>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.MATRIX_OUTPUT,
+				source: 'mix1',
+			},
+		})
+	} else if (resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT) {
+		return literal<TSRTimelineObj<TimelineContentTriCasterMixOutput>>({
+			...baseInfiniteObject,
+			content: {
+				deviceType: DeviceType.TRICASTER,
+				type: TimelineContentTypeTriCaster.MIX_OUTPUT,
+				source: 'main',
+			},
+		})
 	} else {
 		assertNever(resource)
 		// @ts-expect-error never
@@ -696,10 +772,14 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.CASPARCG_SERVER:
 			return 'Servers'
 		case ResourceType.ATEM_ME:
+		case ResourceType.TRICASTER_ME:
 			return 'MEs'
 		case ResourceType.ATEM_DSK:
+		case ResourceType.TRICASTER_DSK:
 			return 'DSKs'
 		case ResourceType.ATEM_AUX:
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
 			return 'Auxes'
 		case ResourceType.ATEM_SSRC:
 			return 'SSRC'
@@ -709,6 +789,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_SCRIPT:
 			return 'Macros'
 		case ResourceType.ATEM_AUDIO_CHANNEL:
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
 			return 'Audio'
 		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return 'Audio Output'
@@ -730,6 +811,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.OBS_RENDER:
 			return 'Render'
 		case ResourceType.VMIX_INPUT:
+		case ResourceType.TRICASTER_INPUT:
 			return 'Inputs'
 		case ResourceType.VMIX_PREVIEW:
 		case ResourceType.HYPERDECK_PREVIEW:

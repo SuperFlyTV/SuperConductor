@@ -8,8 +8,18 @@ import { TCPSendAny } from './TCPSend'
 import { VMixAny } from './VMix'
 import { ProtectedString } from '../protectedString'
 import { TSRDeviceId } from '../tsrDevice'
+import { TriCasterAny } from './TriCaster'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny | HyperdeckAny | TCPSendAny
+export type ResourceAny =
+	| CasparCGAny
+	| AtemAny
+	| OBSAny
+	| VMixAny
+	| OSCAny
+	| HTTPSendAny
+	| HyperdeckAny
+	| TCPSendAny
+	| TriCasterAny
 
 export type ResourceId = ProtectedString<'resourceId'>
 
