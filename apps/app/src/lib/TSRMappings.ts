@@ -791,7 +791,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.ME,
 					layerName: `TriCaster ME ${name}`,
-					name: name,
+					name,
 				})
 			}
 			case TimelineContentTypeTriCaster.AUDIO_CHANNEL: {
@@ -804,7 +804,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.AUDIO_CHANNEL,
 					layerName: `TriCaster Audio Channel ${name}`,
-					name: name,
+					name,
 				})
 			}
 			case TimelineContentTypeTriCaster.DSK: {
@@ -817,7 +817,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.DSK,
 					layerName: `TriCaster DSK ${name}`,
-					name: name,
+					name,
 				})
 			}
 			case TimelineContentTypeTriCaster.INPUT: {
@@ -830,7 +830,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.INPUT,
 					layerName: `TriCaster Input ${name}`,
-					name: name,
+					name,
 				})
 			}
 			case TimelineContentTypeTriCaster.MATRIX_OUTPUT: {
@@ -843,7 +843,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.MATRIX_OUTPUT,
 					layerName: `TriCaster Matrix Out ${name}`,
-					name: name,
+					name,
 				})
 			}
 			case TimelineContentTypeTriCaster.MIX_OUTPUT: {
@@ -856,7 +856,7 @@ export function getMappingFromTimelineObject(
 					device: DeviceType.TRICASTER,
 					mappingType: MappingTriCasterType.MIX_OUTPUT,
 					layerName: `TriCaster Mix Out ${name}`,
-					name: name,
+					name,
 				})
 			}
 			default:

@@ -439,7 +439,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterMe>({
 				...COMMON,
-				name: 'v1',
+				name: 'main',
 				resourceType: ResourceType.TRICASTER_ME,
 			})
 		)
@@ -448,7 +448,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterDsk>({
 				...COMMON,
-				name: 'v1',
+				name: 'dsk1',
 				resourceType: ResourceType.TRICASTER_DSK,
 			})
 		)
@@ -457,7 +457,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterInput>({
 				...COMMON,
-				name: 'v1',
+				name: 'input1',
 				resourceType: ResourceType.TRICASTER_INPUT,
 			})
 		)
@@ -466,7 +466,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterAudioChannel>({
 				...COMMON,
-				name: 'v1',
+				name: 'input1',
 				resourceType: ResourceType.TRICASTER_AUDIO_CHANNEL,
 			})
 		)
@@ -475,7 +475,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterMixOutput>({
 				...COMMON,
-				name: 'v1',
+				name: 'mix1',
 				resourceType: ResourceType.TRICASTER_MIX_OUTPUT,
 			})
 		)
@@ -484,7 +484,7 @@ describe('resourceId generation', () => {
 		testResource(
 			literal<TriCasterMatrixOutput>({
 				...COMMON,
-				name: 'v1',
+				name: 'out1',
 				resourceType: ResourceType.TRICASTER_MATRIX_OUTPUT,
 			})
 		)

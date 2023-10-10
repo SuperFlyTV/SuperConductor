@@ -26,12 +26,8 @@ import {
 	TimelineContentOBSCurrentScene,
 	TimelineContentOBSCurrentTransition,
 	TimelineContentVMixProgram,
-	TimelineContentTriCasterME,
-	TimelineContentTriCasterDSK,
-	TimelineContentTriCasterInput,
-	TimelineContentTriCasterMixOutput,
-	TimelineContentTriCasterMatrixOutput,
 	MappingAtem,
+	MappingTriCaster,
 } from 'timeline-state-resolver-types'
 
 enum GeneralResourceType {
@@ -522,29 +518,13 @@ export function getResourceLocatorFromTimelineObj(
 			const vmixObj = obj as TSRTimelineObj<TimelineContentVMixProgram>
 			return `${vmixObj.content.input}`
 		}
-		case ResourceType.TRICASTER_ME: {
-			const tricasterObj = obj as TSRTimelineObj<TimelineContentTriCasterME>
-			return JSON.stringify(tricasterObj.content.me) // hack, we might want to change this later?
-		}
-		case ResourceType.TRICASTER_DSK: {
-			const tricasterObj = obj as TSRTimelineObj<TimelineContentTriCasterDSK>
-			return JSON.stringify(tricasterObj.content.keyer) // hack, we might want to change this later?
-		}
-		case ResourceType.TRICASTER_INPUT: {
-			const tricasterObj = obj as TSRTimelineObj<TimelineContentTriCasterInput>
-			return `${tricasterObj.content.input.videoSource}`
-		}
-		case ResourceType.TRICASTER_AUDIO_CHANNEL: {
-			return '0'
-		}
-		case ResourceType.TRICASTER_MIX_OUTPUT: {
-			const tricasterObj = obj as TSRTimelineObj<TimelineContentTriCasterMixOutput>
-			return `${tricasterObj.content.source}`
-		}
-		case ResourceType.TRICASTER_MATRIX_OUTPUT: {
-			const tricasterObj = obj as TSRTimelineObj<TimelineContentTriCasterMatrixOutput>
-			return `${tricasterObj.content.source}`
-		}
+		case ResourceType.TRICASTER_ME:
+		case ResourceType.TRICASTER_DSK:
+		case ResourceType.TRICASTER_INPUT:
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+			return (mapping as MappingTriCaster).name
 		default:
 			assertNever(resourceType)
 	}
