@@ -243,7 +243,25 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return true
 	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
-		return true
+		const triCasterMapping = mapping as MappingTriCaster
+
+		switch (obj.content.type) {
+			case TimelineContentTypeTriCaster.ME:
+				return triCasterMapping.mappingType === MappingTriCasterType.ME
+			case TimelineContentTypeTriCaster.AUDIO_CHANNEL:
+				return triCasterMapping.mappingType === MappingTriCasterType.AUDIO_CHANNEL
+			case TimelineContentTypeTriCaster.DSK:
+				return triCasterMapping.mappingType === MappingTriCasterType.DSK
+			case TimelineContentTypeTriCaster.INPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.INPUT
+			case TimelineContentTypeTriCaster.MATRIX_OUTPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.MATRIX_OUTPUT
+			case TimelineContentTypeTriCaster.MIX_OUTPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.MIX_OUTPUT
+			default:
+				assertNever(obj.content)
+				return false
+		}
 	} else {
 		assertNever(obj.content)
 		return false
@@ -1522,8 +1540,7 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 				const _b = b.mapping as MappingTriCaster
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
-				if ((_a.name || 0) > (_b.name || 0)) return 1
-				if ((_a.name || 0) < (_b.name || 0)) return -1
+				return compareStringsEndingWithNumber(_a.name ?? '', _b.name ?? '') // TODO: find a better alternative
 			} else if (device === DeviceType.MULTI_OSC) {
 				// Nothing
 			} else {
@@ -1550,4 +1567,21 @@ export function getCompatibleMappings(
 		}
 		return true
 	})
+}
+
+// for strings like input1, input2, ..., input10, ...
+function compareStringsEndingWithNumber(a: string, b: string) {
+	const regex = /(\D+)|(\d+)/g
+	const aParts = a.match(regex) ?? [a, '0']
+	const bParts = b.match(regex) ?? [b, '0']
+
+	const alphabeticComparison = aParts[0].localeCompare(bParts[0])
+
+	if (alphabeticComparison === 0) {
+		const numA = parseInt(aParts[1])
+		const numB = parseInt(bParts[1])
+		return numA - numB
+	}
+
+	return alphabeticComparison
 }

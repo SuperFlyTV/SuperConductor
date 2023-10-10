@@ -14,6 +14,8 @@ import {
 	TransportStatus,
 	TSRTimelineContent,
 	TSRTimelineObj,
+	TimelineContentTypeTriCaster,
+	TriCasterMixEffectInMixMode,
 } from 'timeline-state-resolver-types'
 import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
@@ -247,6 +249,29 @@ export function describeTimelineObject(
 			}
 		} else {
 			label = `${capitalizeFirstLetter(obj.content.status)}`
+		}
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		if (obj.content.type === TimelineContentTypeTriCaster.ME) {
+			const me = obj.content.me as TriCasterMixEffectInMixMode
+			label = `Source ${me.programInput}`
+			if (me.transitionDuration) {
+				inTransition = {
+					duration: me.transitionDuration,
+					label: `${me.transitionEffect} (${me.transitionDuration})`,
+				}
+			}
+		} else if (obj.content.type === TimelineContentTypeTriCaster.DSK) {
+			label = `Source ${obj.content.keyer.input}`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.AUDIO_CHANNEL) {
+			label = `Audio Channel Props`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.INPUT) {
+			label = `Input Props`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.MATRIX_OUTPUT) {
+			label = `Source ${obj.content.source}`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.MIX_OUTPUT) {
+			label = `Source ${obj.content.source}`
+		} else {
+			assertNever(obj.content)
 		}
 	} else {
 		// todo: for later:

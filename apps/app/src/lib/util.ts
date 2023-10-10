@@ -15,6 +15,8 @@ import {
 	MappingHyperdeckType,
 	MappingOBS,
 	MappingOBSType,
+	MappingTriCaster,
+	MappingTriCasterType,
 	MappingVMix,
 	MappingVMixType,
 } from 'timeline-state-resolver-types'
@@ -521,8 +523,7 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
 			return resource.resourceType === ResourceType.VMIX_STREAMING
 		} else if (mapping0.mappingType === MappingVMixType.Script) {
-			// @TODO
-			return false
+			return resource.resourceType === ResourceType.VMIX_SCRIPT
 		} else {
 			assertNever(mapping0.mappingType)
 		}
@@ -533,8 +534,23 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.TRICASTER) {
-		// @TODO
-		return false
+		const mapping0 = mapping as MappingTriCaster
+		switch (mapping0.mappingType) {
+			case MappingTriCasterType.ME:
+				return resource.resourceType === ResourceType.TRICASTER_ME
+			case MappingTriCasterType.AUDIO_CHANNEL:
+				return resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL
+			case MappingTriCasterType.DSK:
+				return resource.resourceType === ResourceType.TRICASTER_DSK
+			case MappingTriCasterType.INPUT:
+				return resource.resourceType === ResourceType.TRICASTER_INPUT
+			case MappingTriCasterType.MATRIX_OUTPUT:
+				return resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT
+			case MappingTriCasterType.MIX_OUTPUT:
+				return resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
+			default:
+				assertNever(mapping0)
+		}
 	} else if (mapping.device === DeviceType.MULTI_OSC) {
 		// @TODO
 		return false

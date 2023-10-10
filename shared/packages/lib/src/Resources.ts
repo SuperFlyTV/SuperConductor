@@ -617,7 +617,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.TRICASTER_AUDIO_CHANNEL:
 		case ResourceType.TRICASTER_MATRIX_OUTPUT:
 		case ResourceType.TRICASTER_MIX_OUTPUT:
-			return `${resource.name}`
+			return resource.name
 		default: {
 			assertNever(resource)
 			// eslint-disable-next-line no-console

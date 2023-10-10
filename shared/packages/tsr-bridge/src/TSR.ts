@@ -11,6 +11,7 @@ import { HTTPSendSideload } from './sideload/HTTPSend'
 import { HyperdeckSideload } from './sideload/Hyperdeck'
 import { SideLoadDevice } from './sideload/sideload'
 import { TCPSendSideload } from './sideload/TCPSend'
+import { TriCasterSideload } from './sideload/TriCaster'
 import { stringifyError } from '@shared/lib'
 
 export class TSR {
@@ -274,6 +275,8 @@ export class TSR {
 			this.sideLoadedDevices.set(deviceId, new HyperdeckSideload(deviceId, deviceOptions, this.log))
 		} else if (deviceOptions.type === DeviceType.TCPSEND) {
 			this.sideLoadedDevices.set(deviceId, new TCPSendSideload(deviceId, deviceOptions, this.log))
+		} else if (deviceOptions.type === DeviceType.TRICASTER) {
+			this.sideLoadedDevices.set(deviceId, new TriCasterSideload(deviceId, deviceOptions, this.log))
 		}
 	}
 	private onDeviceStatus(deviceId: TSRDeviceId, status: DeviceStatus) {
