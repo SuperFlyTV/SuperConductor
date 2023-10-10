@@ -129,6 +129,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.FADER
 		case ResourceType.VMIX_PREVIEW:
 			return GeneralResourceType.PREVIEW
+		case ResourceType.VMIX_SCRIPT:
+			return GeneralResourceType.MACRO_PLAYER
 		case ResourceType.OSC_MESSAGE:
 			return GeneralResourceType.OSC
 		case ResourceType.HTTP_REQUEST:
@@ -592,6 +594,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_PREVIEW:
 		case ResourceType.VMIX_RECORDING:
 		case ResourceType.VMIX_STREAMING:
+		case ResourceType.VMIX_SCRIPT:
 			return '0'
 		case ResourceType.VMIX_INPUT:
 			// todo: something might be wrong here, type doesn't seem to be used

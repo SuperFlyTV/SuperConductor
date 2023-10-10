@@ -20,6 +20,7 @@ import {
 	MetadataAny,
 	MetadataType,
 	TSRDeviceId,
+	VMixScript,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -200,6 +201,18 @@ export class VMixSideload implements SideLoadDevice {
 				deviceId: this.deviceId,
 				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Fade To Black',
+			}
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
+		}
+
+		// Script
+		{
+			const resource: VMixScript = {
+				resourceType: ResourceType.VMIX_SCRIPT,
+				deviceId: this.deviceId,
+				id: protectString(''), // set by getResourceIdFromResource() later
+				displayName: 'Script',
 			}
 			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)

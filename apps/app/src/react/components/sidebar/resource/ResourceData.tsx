@@ -157,6 +157,8 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <ResourceDataInner title="vMix Fader">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
 		return <ResourceDataInner title="vMix Preview">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.VMIX_SCRIPT) {
+		return <ResourceDataInner title="vMix Streaming">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
 		return <ResourceDataInner title="OSC Message">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {

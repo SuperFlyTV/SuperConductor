@@ -12,6 +12,7 @@ export type VMixAny =
 	| VMixExternal
 	| VMixFadeToBlack
 	| VMixFader
+	| VMixScript
 
 export interface VMixInput extends ResourceBase {
 	resourceType: ResourceType.VMIX_INPUT
@@ -58,4 +59,8 @@ export interface VMixFadeToBlack extends ResourceBase {
 
 export interface VMixFader extends ResourceBase {
 	resourceType: ResourceType.VMIX_FADER
+}
+
+export interface VMixScript extends ResourceBase {
+	resourceType: ResourceType.VMIX_SCRIPT
 }

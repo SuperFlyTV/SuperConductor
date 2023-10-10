@@ -45,6 +45,7 @@ import {
 	TimelineContentHyperdeckTransport,
 	TimelineContentTCPRequest,
 	TimelineContentAtemAudioRouting,
+	TimelineContentVMixScript,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -551,6 +552,20 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				position: 255,
 			},
 		})
+	} else if (resource.resourceType === ResourceType.VMIX_SCRIPT) {
+		return literal<TSRTimelineObj<TimelineContentVMixScript>>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.VMIX,
+				type: TimelineContentTypeVMix.SCRIPT,
+				name: '',
+			},
+		})
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
 		return literal<TSRTimelineObj<TimelineContentOSCMessage>>({
 			id: shortID(),
@@ -691,6 +706,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.ATEM_SSRC_PROPS:
 			return 'SSRC'
 		case ResourceType.ATEM_MACRO_PLAYER:
+		case ResourceType.VMIX_SCRIPT:
 			return 'Macros'
 		case ResourceType.ATEM_AUDIO_CHANNEL:
 			return 'Audio'

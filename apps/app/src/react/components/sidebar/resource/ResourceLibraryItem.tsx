@@ -89,6 +89,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK ||
 			resource.resourceType === ResourceType.VMIX_FADER ||
 			resource.resourceType === ResourceType.VMIX_PREVIEW ||
+			resource.resourceType === ResourceType.VMIX_SCRIPT ||
 			resource.resourceType === ResourceType.OSC_MESSAGE ||
 			resource.resourceType === ResourceType.OBS_RENDER ||
 			resource.resourceType === ResourceType.OBS_MUTE ||
