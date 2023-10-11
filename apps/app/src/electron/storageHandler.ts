@@ -4,7 +4,7 @@ import EventEmitter from 'events'
 import * as semver from 'semver'
 import { LoggerLike } from '@shared/api'
 import { omit } from '@shared/lib'
-import { Project } from '../models/project/Project'
+import { Project, ProjectBase } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData } from '../models/App/AppData'
 import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
@@ -289,7 +289,7 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 
-	async newProject(name: string): Promise<void> {
+	async newProject(name: string): Promise<ProjectBase> {
 		if (this.project) {
 			// Write any pending changes before switching project
 			// to ensure that any changes are saved
@@ -308,6 +308,7 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({ project: true, appData: true })
 
 		this.cleanUpData()
+		return { id: projectId, name }
 	}
 	async openProject(id: string): Promise<void> {
 		if (this.project) {

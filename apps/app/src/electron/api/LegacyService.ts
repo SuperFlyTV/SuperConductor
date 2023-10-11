@@ -2,7 +2,7 @@ import { EverythingService } from '../EverythingService'
 import { Application } from '@feathersjs/feathers'
 import { ClientEventBus } from '../ClientEventBus'
 import EventEmitter from 'node:events'
-import { ServiceTypes } from './ApiServer'
+import { ServiceTypes } from '../../ipc/IPCAPI'
 
 // --- this is only for a rapid prototype, exposing ALL the IPC over WebSocket
 export class LegacyService extends EventEmitter {

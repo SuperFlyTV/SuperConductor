@@ -1,10 +1,12 @@
 import { Mappings } from 'timeline-state-resolver-types'
 import { Bridge } from './Bridge'
 
-export interface Project {
+export interface ProjectBase {
 	id: string
 	name: string
+}
 
+export interface Project extends ProjectBase {
 	mappings: Mappings
 	bridges: {
 		[BridgeId: string]: Bridge

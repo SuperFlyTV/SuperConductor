@@ -26,10 +26,10 @@ export class ClientEventBus extends EventEmitter implements IPCClientMethods {
 		this.emit('callMethod', 'updateAppData', appData)
 	}
 	updateProject(project: Project): void {
-		this.emit('callMethod', 'updateProject', project)
+		this.emit('updateProject', project) // TODO: some type safety, please
 	}
-	updateRundown(fileName: string, rundown: Rundown): void {
-		this.emit('callMethod', 'updateRundown', fileName, rundown)
+	updateRundown(_fileName: string, rundown: Rundown): void {
+		this.emit('updateRundown', rundown) // TODO: some type safety, please
 	}
 	updateResourcesAndMetadata(
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,

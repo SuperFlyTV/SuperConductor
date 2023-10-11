@@ -1,11 +1,11 @@
-import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
 import { replaceUndefined } from '../../lib/util'
 
 import { feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
 import { Rundown } from '../../models/rundown/Rundown'
-import { ServiceTypes } from '../../electron/api/ApiServer'
+import { Project } from '../../models/project/Project'
 
 type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]
@@ -16,24 +16,70 @@ export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
 const socketClient = socketio(socket)
 app.configure(socketClient)
 
+type GroupArg<T extends keyof ServiceTypes[ServiceName.GROUPS]> = Parameters<ServiceTypes[ServiceName.GROUPS][T]>[0]
+type PartArg<T extends keyof ServiceTypes[ServiceName.PARTS]> = Parameters<ServiceTypes[ServiceName.PARTS][T]>[0]
+type RundownArg<T extends keyof ServiceTypes[ServiceName.RUNDOWNS]> = Parameters<
+	ServiceTypes[ServiceName.RUNDOWNS][T]
+>[0]
+// type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
+// 	ServiceTypes[ServiceName.PROJECTS][T]
+// >[0]
+type ReportingArg<T extends keyof ServiceTypes[ServiceName.REPORTING]> = Parameters<
+	ServiceTypes[ServiceName.REPORTING][T]
+>[0]
+
 // TODO this type assertion below should be unnecessary
-app.use('rundowns', socketClient.service('rundowns') as SocketService & ServiceTypes['rundowns'], {
-	methods: ['get', 'create', 'playPart', 'pausePart', 'stopPart', 'unsubscribe'],
+app.use(
+	ServiceName.GROUPS,
+	socketClient.service(ServiceName.GROUPS) as SocketService & ServiceTypes[ServiceName.GROUPS],
+	{
+		methods: ClientMethods[ServiceName.GROUPS],
+	}
+)
+app.use(ServiceName.PARTS, socketClient.service(ServiceName.PARTS) as SocketService & ServiceTypes[ServiceName.PARTS], {
+	methods: ClientMethods[ServiceName.PARTS],
 })
+app.use(
+	ServiceName.PROJECTS,
+	socketClient.service(ServiceName.PROJECTS) as SocketService & ServiceTypes[ServiceName.PROJECTS],
+	{
+		methods: ClientMethods[ServiceName.PROJECTS],
+	}
+)
+app.use(
+	ServiceName.RUNDOWNS,
+	socketClient.service(ServiceName.RUNDOWNS) as SocketService & ServiceTypes[ServiceName.RUNDOWNS],
+	{
+		methods: ClientMethods[ServiceName.RUNDOWNS],
+	}
+)
+app.use(
+	ServiceName.REPORTING,
+	socketClient.service(ServiceName.REPORTING) as SocketService & ServiceTypes[ServiceName.REPORTING],
+	{
+		methods: ClientMethods[ServiceName.REPORTING],
+	}
+)
 
 type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
 type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServerMethods[T]>>
 
 /** This class is used client-side, to send requests to the server */
 export class ApiClient {
-	private readonly rundownService = app.service('rundowns') // TODO: DI?
+	private readonly groupService = app.service(ServiceName.GROUPS)
+	private readonly partService = app.service(ServiceName.PARTS)
+	private readonly projectService = app.service(ServiceName.PROJECTS)
+	private readonly reportingService = app.service(ServiceName.REPORTING)
+	private readonly rundownService = app.service(ServiceName.RUNDOWNS) // TODO: DI?
 
-	// --- legacy code
+	/**
+	 * @deprecated legacy code
+	 */
 	private async invokeServerMethod<T extends keyof IPCServerMethods>(methodname: T, ...args: any[]): ServerReturn<T> {
 		// Stringifying and parsing data will convert Mobx observable objects into object literals.
 		// Otherwise, Electron won't be able to clone it.
 		return new Promise((resolve, reject) => {
-			socket.emit(methodname, 'legacy', [...replaceUndefined(args)], {}, (error: any, data: any) => {
+			socket.emit(methodname, ServiceName.LEGACY, [...replaceUndefined(args)], {}, (error: any, data: any) => {
 				if (error) {
 					reject(error)
 				} else {
@@ -45,14 +91,14 @@ export class ApiClient {
 	}
 	// --- legacy code end
 
-	async log(...args: ServerArgs<'log'>): ServerReturn<'log'> {
-		return this.invokeServerMethod('log', ...args)
+	async log(data: ReportingArg<'log'>): Promise<void> {
+		await this.reportingService.log(data)
 	}
-	async handleClientError(...args: ServerArgs<'handleClientError'>): ServerReturn<'handleClientError'> {
-		return this.invokeServerMethod('handleClientError', ...args)
+	async handleClientError(data: ReportingArg<'handleClientError'>): Promise<void> {
+		await this.reportingService.handleClientError(data)
 	}
-	async debugThrowError(...args: ServerArgs<'debugThrowError'>): ServerReturn<'debugThrowError'> {
-		return this.invokeServerMethod('debugThrowError', ...args)
+	async debugThrowError(data: ReportingArg<'debugThrowError'>): Promise<void> {
+		await this.reportingService.debugThrowError(data)
 	}
 	async installUpdate(...args: ServerArgs<'installUpdate'>): ServerReturn<'installUpdate'> {
 		return this.invokeServerMethod('installUpdate', ...args)
@@ -65,8 +111,8 @@ export class ApiClient {
 		return await this.rundownService.get(rundownId)
 	}
 
-	async unsubscribe(rundownId: string): Promise<void> {
-		return await this.rundownService.unsubscribe(rundownId, {})
+	async unsubscribe(rundownId: RundownArg<'unsubscribe'>): Promise<void> {
+		return await this.rundownService.unsubscribe(rundownId, {}) // TODO: this second param should be unnecessary
 	}
 
 	async setKeyboardKeys(...args: ServerArgs<'setKeyboardKeys'>): ServerReturn<'setKeyboardKeys'> {
@@ -76,15 +122,13 @@ export class ApiClient {
 		return this.invokeServerMethod('makeDevData', ...args)
 	}
 
-	async acknowledgeSeenVersion(
-		...args: ServerArgs<'acknowledgeSeenVersion'>
-	): ServerReturn<'acknowledgeSeenVersion'> {
-		return this.invokeServerMethod('acknowledgeSeenVersion', ...args)
+	async acknowledgeSeenVersion(): ServerReturn<'acknowledgeSeenVersion'> {
+		await this.reportingService.acknowledgeSeenVersion()
 	}
 	async acknowledgeUserAgreement(
-		...args: ServerArgs<'acknowledgeUserAgreement'>
+		data: ReportingArg<'acknowledgeUserAgreement'>
 	): ServerReturn<'acknowledgeUserAgreement'> {
-		return this.invokeServerMethod('acknowledgeUserAgreement', ...args)
+		await this.reportingService.acknowledgeUserAgreement(data)
 	}
 	async fetchGDDCache(...args: ServerArgs<'fetchGDDCache'>): ServerReturn<'fetchGDDCache'> {
 		return this.invokeServerMethod('fetchGDDCache', ...args)
@@ -95,105 +139,101 @@ export class ApiClient {
 	async updateGUISelection(...args: ServerArgs<'updateGUISelection'>): ServerReturn<'updateGUISelection'> {
 		return this.invokeServerMethod('updateGUISelection', ...args)
 	}
-	async exportProject(...args: ServerArgs<'exportProject'>): ServerReturn<'exportProject'> {
-		return this.invokeServerMethod('exportProject', ...args)
+	async exportProject(): ServerReturn<'exportProject'> {
+		await this.projectService.export()
 	}
-	async importProject(...args: ServerArgs<'importProject'>): ServerReturn<'importProject'> {
-		return this.invokeServerMethod('importProject', ...args)
+	async importProject(): ServerReturn<'importProject'> {
+		await this.projectService.import()
 	}
-	async newProject(...args: ServerArgs<'newProject'>): ServerReturn<'newProject'> {
-		return this.invokeServerMethod('newProject', ...args)
+	async newProject(): ServerReturn<'newProject'> {
+		return await this.projectService.create()
 	}
-	async listProjects(...args: ServerArgs<'listProjects'>): ServerReturn<'listProjects'> {
-		return this.invokeServerMethod('listProjects', ...args)
+	async listProjects(): ServerReturn<'listProjects'> {
+		return await this.projectService.getAll({})
 	}
 	async openProject(...args: ServerArgs<'openProject'>): ServerReturn<'openProject'> {
-		return this.invokeServerMethod('openProject', ...args)
+		await this.projectService.open(...args)
 	}
-	async playPart(...args: Parameters<ServiceTypes['rundowns']['playPart']>): Promise<void> {
-		return await this.rundownService.playPart(...args)
+	async playPart(data: PartArg<'play'>): Promise<void> {
+		return await this.partService.play(data)
 	}
-	async pausePart(...args: Parameters<ServiceTypes['rundowns']['pausePart']>): Promise<void> {
-		return await this.rundownService.pausePart(...args)
+	async pausePart(data: PartArg<'pause'>): Promise<void> {
+		return await this.partService.pause(data)
 	}
-	async stopPart(...args: Parameters<ServiceTypes['rundowns']['playPart']>): Promise<void> {
-		return await this.rundownService.stopPart(...args)
+	async stopPart(data: PartArg<'stop'>): Promise<void> {
+		return await this.partService.stop(data)
 	}
-	async setPartTrigger(...args: ServerArgs<'setPartTrigger'>): ServerReturn<'setPartTrigger'> {
-		return this.invokeServerMethod('setPartTrigger', ...args)
+	async setPartTrigger(data: PartArg<'setPartTrigger'>): Promise<void> {
+		return await this.partService.setPartTrigger(data)
 	}
-	async stopGroup(...args: ServerArgs<'stopGroup'>): ServerReturn<'stopGroup'> {
-		return this.invokeServerMethod('stopGroup', ...args)
+	async stopGroup(data: GroupArg<'stop'>): Promise<void> {
+		return await this.groupService.stop(data)
 	}
-	async playGroup(...args: ServerArgs<'playGroup'>): ServerReturn<'playGroup'> {
-		return this.invokeServerMethod('playGroup', ...args)
+	async playGroup(data: GroupArg<'play'>): Promise<void> {
+		return await this.groupService.play(data)
 	}
-	async pauseGroup(...args: ServerArgs<'pauseGroup'>): ServerReturn<'pauseGroup'> {
-		return this.invokeServerMethod('pauseGroup', ...args)
+	async pauseGroup(data: GroupArg<'pause'>): Promise<void> {
+		return await this.groupService.pause(data)
 	}
-	async playNext(...args: ServerArgs<'playNext'>): ServerReturn<'playNext'> {
-		return this.invokeServerMethod('playNext', ...args)
+	async playNext(data: GroupArg<'playNext'>): Promise<void> {
+		return await this.groupService.playNext(data)
 	}
-	async playPrev(...args: ServerArgs<'playPrev'>): ServerReturn<'playPrev'> {
-		return this.invokeServerMethod('playPrev', ...args)
+	async playPrev(data: GroupArg<'playPrev'>): Promise<void> {
+		return await this.groupService.playPrev(data)
 	}
-	async updateTimelineObj(...args: ServerArgs<'updateTimelineObj'>): ServerReturn<'updateTimelineObj'> {
-		return this.invokeServerMethod('updateTimelineObj', ...args)
+	async updateTimelineObj(data: RundownArg<'updateTimelineObj'>): Promise<void> {
+		return await this.rundownService.updateTimelineObj(data)
 	}
-	async moveTimelineObjToNewLayer(
-		...args: ServerArgs<'moveTimelineObjToNewLayer'>
-	): ServerReturn<'moveTimelineObjToNewLayer'> {
-		return this.invokeServerMethod('moveTimelineObjToNewLayer', ...args)
+	async moveTimelineObjToNewLayer(data: RundownArg<'moveTimelineObjToNewLayer'>): Promise<void> {
+		return await this.rundownService.moveTimelineObjToNewLayer(data)
 	}
 	/**
 	 * @returns An object containing the ID of the new part and, conditionally, the ID of the new group (if one was created).
 	 */
-	async newPart(...args: ServerArgs<'newPart'>): ServerReturn<'newPart'> {
-		return this.invokeServerMethod('newPart', ...args)
+	async newPart(data: PartArg<'create'>): ServerReturn<'newPart'> {
+		return await this.partService.create(data)
 	}
-	async insertParts(...args: ServerArgs<'insertParts'>): ServerReturn<'insertParts'> {
-		return this.invokeServerMethod('insertParts', ...args)
+	async insertParts(data: PartArg<'insert'>): ServerReturn<'insertParts'> {
+		return await this.partService.insert(data)
 	}
-	async updatePart(...args: ServerArgs<'updatePart'>): ServerReturn<'updatePart'> {
-		return this.invokeServerMethod('updatePart', ...args)
+	async updatePart(data: PartArg<'update'>): ServerReturn<'updatePart'> {
+		return await this.partService.update(data)
 	}
-	async newGroup(...args: ServerArgs<'newGroup'>): ServerReturn<'newGroup'> {
-		return this.invokeServerMethod('newGroup', ...args)
+	async newGroup(data: GroupArg<'create'>): ServerReturn<'newGroup'> {
+		return await this.groupService.create(data)
 	}
-	async insertGroups(...args: ServerArgs<'insertGroups'>): ServerReturn<'insertGroups'> {
-		return this.invokeServerMethod('insertGroups', ...args)
+	async insertGroups(data: GroupArg<'insert'>): ServerReturn<'insertGroups'> {
+		return await this.groupService.insert(data)
 	}
-	async updateGroup(...args: ServerArgs<'updateGroup'>): ServerReturn<'updateGroup'> {
-		return this.invokeServerMethod('updateGroup', ...args)
+	async updateGroup(data: GroupArg<'update'>): ServerReturn<'updateGroup'> {
+		return await this.groupService.update(data)
 	}
-	async deletePart(...args: ServerArgs<'deletePart'>): ServerReturn<'deletePart'> {
-		return this.invokeServerMethod('deletePart', ...args)
+	async deletePart(data: PartArg<'remove'>): ServerReturn<'deletePart'> {
+		return await this.partService.remove(data)
 	}
-	async deleteGroup(...args: ServerArgs<'deleteGroup'>): ServerReturn<'deleteGroup'> {
-		return this.invokeServerMethod('deleteGroup', ...args)
+	async deleteGroup(data: GroupArg<'remove'>): ServerReturn<'deleteGroup'> {
+		return await this.groupService.remove(data)
 	}
-	async moveParts(...args: ServerArgs<'moveParts'>): ServerReturn<'moveParts'> {
-		return this.invokeServerMethod('moveParts', ...args)
+	async moveParts(data: PartArg<'move'>): ServerReturn<'moveParts'> {
+		return await this.partService.move(data)
 	}
-	async duplicatePart(...args: ServerArgs<'duplicatePart'>): ServerReturn<'duplicatePart'> {
-		return this.invokeServerMethod('duplicatePart', ...args)
+	async duplicatePart(data: PartArg<'duplicate'>): ServerReturn<'duplicatePart'> {
+		return await this.partService.duplicate(data)
 	}
-	async moveGroups(...args: ServerArgs<'moveGroups'>): ServerReturn<'moveGroups'> {
-		return this.invokeServerMethod('moveGroups', ...args)
+	async moveGroups(data: GroupArg<'move'>): ServerReturn<'moveGroups'> {
+		return await this.groupService.move(data)
 	}
-	async duplicateGroup(...args: ServerArgs<'duplicateGroup'>): ServerReturn<'duplicateGroup'> {
-		return this.invokeServerMethod('duplicateGroup', ...args)
+	async duplicateGroup(data: GroupArg<'duplicate'>): ServerReturn<'duplicateGroup'> {
+		return await this.groupService.duplicate(data)
 	}
-	async deleteTimelineObj(...args: ServerArgs<'deleteTimelineObj'>): ServerReturn<'deleteTimelineObj'> {
-		return this.invokeServerMethod('deleteTimelineObj', ...args)
+	async deleteTimelineObj(data: RundownArg<'deleteTimelineObj'>): ServerReturn<'deleteTimelineObj'> {
+		return await this.rundownService.deleteTimelineObj(data)
 	}
-	async insertTimelineObjs(...args: ServerArgs<'insertTimelineObjs'>): ServerReturn<'insertTimelineObjs'> {
-		return this.invokeServerMethod('insertTimelineObjs', ...args)
+	async insertTimelineObjs(data: RundownArg<'insertTimelineObjs'>): ServerReturn<'insertTimelineObjs'> {
+		return await this.rundownService.insertTimelineObjs(data)
 	}
-	async addResourcesToTimeline(
-		...args: ServerArgs<'addResourcesToTimeline'>
-	): ServerReturn<'addResourcesToTimeline'> {
-		return this.invokeServerMethod('addResourcesToTimeline', ...args)
+	async addResourcesToTimeline(data: RundownArg<'addResourcesToTimeline'>): ServerReturn<'addResourcesToTimeline'> {
+		return await this.rundownService.addResourcesToTimeline(data)
 	}
 	async toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>): ServerReturn<'toggleGroupLoop'> {
 		return this.invokeServerMethod('toggleGroupLoop', ...args)
@@ -232,26 +272,26 @@ export class ApiClient {
 	async updateAppData(...args: ServerArgs<'updateAppData'>): ServerReturn<'updateAppData'> {
 		return this.invokeServerMethod('updateAppData', ...args)
 	}
-	async updateProject(...args: ServerArgs<'updateProject'>): ServerReturn<'updateProject'> {
-		return this.invokeServerMethod('updateProject', ...args)
+	async updateProject(data: { id: string; project: Project }): ServerReturn<'updateProject'> {
+		await this.projectService.update(data.id, data.project)
 	}
 	async newRundown(...args: ServerArgs<'newRundown'>): ServerReturn<'newRundown'> {
-		return this.invokeServerMethod('newRundown', ...args)
+		return await this.rundownService.create(...args)
 	}
-	async deleteRundown(...args: ServerArgs<'deleteRundown'>): ServerReturn<'deleteRundown'> {
-		return this.invokeServerMethod('deleteRundown', ...args)
+	async deleteRundown(data: RundownArg<'remove'>): ServerReturn<'deleteRundown'> {
+		await this.rundownService.remove(data)
 	}
-	async openRundown(...args: ServerArgs<'openRundown'>): ServerReturn<'openRundown'> {
-		return this.invokeServerMethod('openRundown', ...args)
+	async openRundown(data: RundownArg<'open'>): ServerReturn<'openRundown'> {
+		await this.rundownService.open(data)
 	}
-	async closeRundown(...args: ServerArgs<'closeRundown'>): ServerReturn<'closeRundown'> {
-		return this.invokeServerMethod('closeRundown', ...args)
+	async closeRundown(data: RundownArg<'open'>): ServerReturn<'closeRundown'> {
+		await this.rundownService.close(data)
 	}
-	async renameRundown(...args: ServerArgs<'renameRundown'>): ServerReturn<'renameRundown'> {
-		return this.invokeServerMethod('renameRundown', ...args)
+	async renameRundown(data: RundownArg<'rename'>): ServerReturn<'renameRundown'> {
+		return await this.rundownService.rename(data)
 	}
-	async isRundownPlaying(...args: ServerArgs<'isRundownPlaying'>): ServerReturn<'isRundownPlaying'> {
-		return this.invokeServerMethod('isRundownPlaying', ...args)
+	async isRundownPlaying(data: RundownArg<'isPlaying'>): ServerReturn<'isRundownPlaying'> {
+		return await this.rundownService.isPlaying(data)
 	}
 	async createMissingMapping(...args: ServerArgs<'createMissingMapping'>): ServerReturn<'createMissingMapping'> {
 		return this.invokeServerMethod('createMissingMapping', ...args)

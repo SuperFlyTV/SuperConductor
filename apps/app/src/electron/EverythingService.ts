@@ -56,7 +56,7 @@ import {
 } from '@shared/models'
 import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { Project } from '../models/project/Project'
+import { Project, ProjectBase } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
@@ -197,7 +197,7 @@ export class EverythingService
 	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	public getRundowns(): { rundownIds: string[] } {
+	private getRundowns(): { rundownIds: string[] } {
 		const rundowns = this.storage.getAllRundowns()
 		return { rundownIds: rundowns.map((r) => r.id) }
 	}
@@ -207,7 +207,7 @@ export class EverythingService
 
 		return { rundown }
 	}
-	public getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
+	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
 		return this._getGroupOfRundown(rundown, arg.groupId)
@@ -233,7 +233,7 @@ export class EverythingService
 		return { rundown, group }
 	}
 
-	public getPart(arg: { rundownId: string; groupId: string; partId: string }): {
+	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
@@ -245,7 +245,7 @@ export class EverythingService
 		return { rundown, group, part }
 	}
 
-	public getPartByExternalId(arg: { rundownId: string; groupId: string; externalId: string }): {
+	private getPartByExternalId(arg: { rundownId: string; groupId: string; externalId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
@@ -357,6 +357,7 @@ export class EverythingService
 	}
 
 	async exportProject(): Promise<void> {
+		// TODO: this won't work, needs to return project to the WS client
 		const result = await dialog.showSaveDialog({
 			title: 'Export Project',
 			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
@@ -377,6 +378,7 @@ export class EverythingService
 		}
 	}
 	async importProject(): Promise<void> {
+		// TODO: this won't work, needs to return project to the WS client
 		const result = await dialog.showOpenDialog({
 			title: 'Import Project',
 			buttonLabel: 'Import',
@@ -402,8 +404,8 @@ export class EverythingService
 			}
 		}
 	}
-	async newProject(): Promise<void> {
-		await this.storage.newProject('New Project')
+	async newProject(): Promise<ProjectBase> {
+		return await this.storage.newProject('New Project')
 	}
 	async listProjects(): Promise<{ name: string; id: string }[]> {
 		return this.storage.listProjects()

@@ -17,8 +17,93 @@ import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
 import { BridgePeripheralId } from '@shared/lib'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { type EverythingService } from '../electron/EverythingService'
+import { type PartService } from '../electron/api/PartService'
+import { type ProjectService } from '../electron/api/ProjectService'
+import { ReportingService } from '../electron/api/ReportingService'
+import { RundownService } from '../electron/api/RundownService'
+import { GroupService } from '../electron/api/GroupService'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
+
+export enum ServiceName {
+	GROUPS = 'groups',
+	LEGACY = 'legacy',
+	PARTS = 'parts',
+	PROJECTS = 'projects',
+	REPORTING = 'reporting',
+	RUNDOWNS = 'rundowns',
+}
+
+export type ServiceTypes = {
+	[ServiceName.GROUPS]: GroupService
+	[ServiceName.LEGACY]: EverythingService
+	[ServiceName.PARTS]: PartService
+	[ServiceName.PROJECTS]: ProjectService
+	[ServiceName.REPORTING]: ReportingService
+	[ServiceName.RUNDOWNS]: RundownService
+}
+
+type KeyArrays<T> = {
+	[K in keyof T]: Array<keyof T[K]>
+}
+
+type ServiceKeyArrays = KeyArrays<ServiceTypes>
+
+// TODO: this is temporary; Use decorators or something
+export const ClientMethods: ServiceKeyArrays = {
+	[ServiceName.GROUPS]: [
+		'create',
+		'duplicate',
+		'insert',
+		'move',
+		'play',
+		'pause',
+		'stop',
+		'playNext',
+		'playPrev',
+		'remove',
+		'update',
+	],
+	[ServiceName.LEGACY]: [],
+	[ServiceName.PARTS]: ['play', 'stop', 'pause', 'move', 'duplicate', 'create', 'update', 'remove', 'insert'],
+	[ServiceName.PROJECTS]: ['create', 'getAll', 'open', 'import', 'export'],
+	[ServiceName.REPORTING]: [
+		'log',
+		'handleClientError',
+		'debugThrowError',
+		'acknowledgeSeenVersion',
+		'acknowledgeUserAgreement',
+	],
+	[ServiceName.RUNDOWNS]: [
+		'get',
+		'create',
+		'unsubscribe',
+		'isPlaying',
+		'close',
+		'open',
+		'setPartTrigger',
+		// 'pauseGroup',
+		// 'playGroup',
+		// 'playNext',
+		// 'playPrev',
+		// 'stopGroup',
+		'updateTimelineObj',
+		'moveTimelineObjToNewLayer',
+		// 'newPart',
+		// 'insertParts',
+		// 'updatePart',
+		// 'newGroup',
+		// 'insertGroups',
+		// 'updateGroup',
+		// 'deletePart',
+		// 'deleteGroup',
+		// 'moveParts',
+		// 'duplicatePart',
+		// 'moveGroups',
+		// 'duplicateGroup',
+	],
+}
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
@@ -98,7 +183,7 @@ export interface IPCServerMethods {
 	updateGUISelection: (arg: { selection: Readonly<CurrentSelectionAny[]> }) => void
 	exportProject: () => void
 	importProject: () => void
-	newProject: () => void
+	newProject: () => { name: string; id: string }
 	listProjects: () => { name: string; id: string }[]
 	openProject: (arg: { projectId: string }) => void
 
