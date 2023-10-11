@@ -17,11 +17,11 @@ import {
 	TriCasterDsk,
 	TriCasterMixOutput,
 	TriCasterAudioChannel,
+	TriCasterMatrixOutput,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
-import { TriCasterMatrixOutput } from '@shared/models'
 
 const SPECIAL_AUDIO_CHANNELS = ['sound', 'master']
 
