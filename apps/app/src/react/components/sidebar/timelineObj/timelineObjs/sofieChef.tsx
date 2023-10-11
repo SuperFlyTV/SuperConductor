@@ -1,16 +1,20 @@
 import { assertNever } from '@shared/lib'
 import React from 'react'
-import { TimelineContentTypeSofieChef, TimelineObjSofieChefAny } from 'timeline-state-resolver-types'
+import {
+	TSRTimelineObj,
+	TimelineContentSofieChefAny,
+	TimelineContentTypeSofieChef,
+} from 'timeline-state-resolver-types'
 import { firstValue, inputValue } from '../../../../lib/multipleEdit'
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { TextInput } from '../../../inputs/TextInput'
 import { EditWrapper, OnSave, OnSaveType } from './lib'
 
-export const EditTimelineObjSofieChefAny: React.FC<{ objs: TimelineObjSofieChefAny[]; onSave: OnSave }> = ({
-	objs,
-	onSave: onSave0,
-}) => {
-	const onSave = onSave0 as OnSaveType<TimelineObjSofieChefAny>
+export const EditTimelineObjSofieChefAny: React.FC<{
+	objs: TSRTimelineObj<TimelineContentSofieChefAny>[]
+	onSave: OnSave
+}> = ({ objs, onSave: onSave0 }) => {
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentSofieChefAny>>
 	let settings: JSX.Element = <></>
 
 	const contentType = firstValue(objs, (obj) => obj.content.type)

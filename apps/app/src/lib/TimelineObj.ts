@@ -8,11 +8,14 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePharos,
 	TimelineContentTypeVMix,
-	TimelineObjAtemME,
+	TimelineContentAtemME,
 	TimelineTransition,
 	Transition,
 	TransportStatus,
+	TSRTimelineContent,
 	TSRTimelineObj,
+	TimelineContentTypeTriCaster,
+	TriCasterMixEffectInMixMode,
 } from 'timeline-state-resolver-types'
 import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
@@ -38,7 +41,7 @@ export interface TimelineObjectDescription {
 }
 
 export function describeTimelineObject(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	deviceMetadata?: MetadataAny | null
 ): TimelineObjectDescription {
 	let label: string = obj.id
@@ -113,7 +116,7 @@ export function describeTimelineObject(
 
 			if (deviceMetadata?.metadataType === MetadataType.ATEM) {
 				const inputMetadata = deviceMetadata.inputs.find((input) => {
-					if (input.inputId === (obj as TimelineObjAtemME).content.me.input) {
+					if (input.inputId === (obj as TSRTimelineObj<TimelineContentAtemME>).content.me.input) {
 						return true
 					}
 
@@ -159,6 +162,8 @@ export function describeTimelineObject(
 			} else {
 				assertNever(obj.content.mediaPlayer.sourceType)
 			}
+		} else if (obj.content.type === TimelineContentTypeAtem.AUDIOROUTING) {
+			label = `Audio Routing`
 		} else {
 			assertNever(obj.content)
 		}
@@ -219,6 +224,8 @@ export function describeTimelineObject(
 			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
 		} else if (obj.content.type === TimelineContentTypeVMix.STREAMING) {
 			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
+		} else if (obj.content.type === TimelineContentTypeVMix.SCRIPT) {
+			label = `Script ${obj.content.name}`
 		} else {
 			assertNever(obj.content)
 		}
@@ -242,6 +249,29 @@ export function describeTimelineObject(
 			}
 		} else {
 			label = `${capitalizeFirstLetter(obj.content.status)}`
+		}
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		if (obj.content.type === TimelineContentTypeTriCaster.ME) {
+			const me = obj.content.me as TriCasterMixEffectInMixMode
+			label = `Source ${me.programInput}`
+			if (me.transitionDuration) {
+				inTransition = {
+					duration: me.transitionDuration,
+					label: `${me.transitionEffect} (${me.transitionDuration})`,
+				}
+			}
+		} else if (obj.content.type === TimelineContentTypeTriCaster.DSK) {
+			label = `Source ${obj.content.keyer.input}`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.AUDIO_CHANNEL) {
+			label = `Audio Channel Props`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.INPUT) {
+			label = `Input Props`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.MATRIX_OUTPUT) {
+			label = `Source ${obj.content.source}`
+		} else if (obj.content.type === TimelineContentTypeTriCaster.MIX_OUTPUT) {
+			label = `Source ${obj.content.source}`
+		} else {
+			assertNever(obj.content)
 		}
 	} else {
 		// todo: for later:
@@ -286,7 +316,7 @@ function deepDescribeValues(value: any, inner?: boolean): string {
  * Modifies the provided object
  */
 export function modifyTimelineObjectForPlayout(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	playingPart: GroupPreparedPlayDataPart,
 	orgTimelineObj: TimelineObj,
 	pauseTime: number | undefined

@@ -1,5 +1,5 @@
 import { DeviceOptionsCasparCG } from 'timeline-state-resolver'
-import { CasparCG, AMCP } from 'casparcg-connection'
+import { CasparCG, ClipInfo, Response } from 'casparcg-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -18,7 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates'
-import { getResourceIdFromResource } from '@shared/lib'
+import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
 	private ccg: CasparCG
@@ -31,12 +31,15 @@ export class CasparCGSideload implements SideLoadDevice {
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,
 			autoConnect: true,
-			onConnected: (): void => {
-				this.log.info(`CasparCG ${this.deviceId}: Sideload connection initialized`)
-			},
-			onDisconnected: (): void => {
-				this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
-			},
+		})
+		this.ccg.on('connect', () => {
+			this.log.info(`CasparCG ${this.deviceId}: Sideload connection initialized`)
+		})
+		this.ccg.on('disconnect', () => {
+			this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
+		})
+		this.ccg.on('error', (error) => {
+			this.log.info(`CasparCG Error: ${error}`)
 		})
 	}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
@@ -61,55 +64,69 @@ export class CasparCGSideload implements SideLoadDevice {
 		let TMP_THUMBNAIL_LIMIT = 500
 		// Refresh media:
 		{
-			let mediaList: {
-				type: 'image' | 'video' | 'audio'
-				name: string
-				size: number
-				changed: number
-				frames: number
-				frameTime: string
-				frameRate: number
-				duration: number
-				thumbnail?: string
-			}[]
-			try {
-				const res = await this.ccg.cls()
-				mediaList = res.response.data
-			} catch (error) {
-				if ((error as AMCP.ClsCommand)?.response?.code === 501) {
-					// This probably means that media-scanner isn't running
-					mediaList = []
-				} else {
-					throw error
-				}
+			let mediaList: ClipInfo[] = []
+
+			const res = await this.ccg.cls()
+			if (res.error) throw res.error
+
+			const response = await res.request
+			if (this._isSuccessful(response)) {
+				mediaList = response.data
+			} else if (response.responseCode !== 501) {
+				// This probably means it's something other than media-scanner not running
+				this.log.error(`Could not get media list. Received response:`, response.responseCode, response.message)
 			}
 
 			for (const media of mediaList) {
-				if (media.name.startsWith('__')) {
+				if (media.clip.startsWith('__')) {
 					// Ignore these
 					continue
+				}
+
+				let type: CasparCGMedia['type']
+				if (media.type === 'STILL') {
+					type = 'image'
+				} else if (media.type === 'MOVIE') {
+					type = 'video'
+				} else if (media.type === 'AUDIO') {
+					type = 'audio'
+				} else {
+					assertNever(media.type)
+					type = 'video'
 				}
 
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
 					id: protectString(''), // set by getResourceIdFromResource() later
-					...media,
-					displayName: media.name,
+					type,
+					name: media.clip,
+					displayName: media.clip,
+					changed: media.datetime,
+					duration: media.frames / media.framerate,
+					frameRate: media.framerate,
+					frames: media.frames,
+					size: media.size,
+					frameTime: '',
 				}
 				resource.id = getResourceIdFromResource(resource)
 
-				if ((media.type === 'image' || media.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
+				if ((resource.type === 'image' || resource.type === 'video') && TMP_THUMBNAIL_LIMIT > 0) {
 					try {
-						const thumbnail = await this.ccg.thumbnailRetrieve(media.name)
-						resource.thumbnail = thumbnail.response.data
-						TMP_THUMBNAIL_LIMIT--
+						const thumbnailQuery = await this.ccg.thumbnailRetrieve({ filename: resource.name })
+						if (thumbnailQuery.error) throw thumbnailQuery.error
+
+						const thumbnail = await thumbnailQuery.request
+						if (this._isSuccessful(thumbnail)) {
+							const thumbnailData =
+								Array.isArray(thumbnail.data) && typeof thumbnail.data[0] === 'string'
+									? thumbnail.data[0]
+									: undefined
+							resource.thumbnail = thumbnailData && this._toPngDataUri(thumbnailData)
+							TMP_THUMBNAIL_LIMIT--
+						} // else: probably CasparCG's media-scanner isn't running
 					} catch (error) {
-						if ((error as AMCP.ThumbnailRetrieveCommand)?.response?.code === 404) {
-							// Suppress error, this is probably because CasparCG's media-scanner isn't running.
-						} else {
-							this.log.error(`Could not set thumbnail for media "${media.name}".`, error)
-						}
+						this.log.error(`Could not set thumbnail for media "${resource.name}".`, error)
 					}
 				}
 
@@ -137,5 +154,13 @@ export class CasparCGSideload implements SideLoadDevice {
 			resources: Array.from(resources.values()),
 			metadata,
 		}
+	}
+
+	private _isSuccessful<T>(response: Response<T>): boolean {
+		return response.responseCode < 400 && response.data != null
+	}
+
+	private _toPngDataUri(imageBase64: string) {
+		return `data:image/png;base64,${imageBase64}`
 	}
 }

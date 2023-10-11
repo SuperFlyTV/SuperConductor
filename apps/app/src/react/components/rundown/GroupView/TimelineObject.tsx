@@ -6,7 +6,7 @@ import { HotkeyContext } from '../../../contexts/Hotkey'
 import classNames from 'classnames'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
 import { store } from '../../../mobx/store'
 import { MdWarningAmber } from 'react-icons/md'
@@ -53,7 +53,7 @@ export const TimelineObject: React.FC<{
 	const [moveType, setMoveType] = useState<TimelineObjectMove['moveType']>('whole')
 	const wasMoving = useRef(false)
 
-	const obj: TSRTimelineObj = timelineObj.obj
+	const obj: TSRTimelineObj<TSRTimelineContent> = timelineObj.obj
 
 	const selectable = !locked
 	const movable = !locked

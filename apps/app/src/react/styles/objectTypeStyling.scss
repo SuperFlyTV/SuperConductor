@@ -10,16 +10,20 @@
 	}
 
 	&.me,
-	&.OUTPUT {
+	&.OUTPUT,
+	&.ME {
 		background: $mixEffectLayerColor;
 	}
 
-	&.dsk {
+	&.dsk,
+	&.DSK {
 		background: $downstreamKeyerLayerColor;
 	}
 
 	&.aux,
-	&.EXTERNAL {
+	&.EXTERNAL,
+	&.MIX_OUTPUT,
+	&.MATRIX_OUTPUT {
 		background: $auxiliaryLayerColor;
 	}
 
@@ -35,7 +39,8 @@
 		background: $macroPlayerLayerColor;
 	}
 
-	&.audioChan {
+	&.audioChan,
+	&.AUDIO_CHANNEL {
 		background: $audioLayerColor;
 	}
 

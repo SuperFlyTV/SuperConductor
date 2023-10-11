@@ -20,6 +20,7 @@ import {
 	MetadataAny,
 	MetadataType,
 	TSRDeviceId,
+	VMixScript,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload'
 import { LoggerLike } from '@shared/api'
@@ -32,7 +33,7 @@ export class VMixSideload implements SideLoadDevice {
 	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
 	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
-		this.vmix = new VMix()
+		this.vmix = new VMix(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
 
 		this.vmix.on('connected', () => {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection initialized`)
@@ -42,19 +43,20 @@ export class VMixSideload implements SideLoadDevice {
 		})
 
 		if (this.deviceOptions.options?.host && this.deviceOptions.options?.port) {
-			this.vmix
-				.connect({
-					host: this.deviceOptions.options.host,
-					port: this.deviceOptions.options.port,
-				})
-				.catch((error) => this.log.error('VMix Connect error: ' + stringifyError(error)))
+			// No idea why TypeScript thinks this is a promise that must be marked as `void`.
+			// It's just `void`. No promise.
+			try {
+				void this.vmix.connect(this.deviceOptions.options.host, this.deviceOptions.options.port)
+			} catch (error) {
+				this.log.error(stringifyError(error))
+			}
 		}
 	}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
 		return this._refreshResourcesAndMetadata()
 	}
 	async close(): Promise<void> {
-		return this.vmix.dispose()
+		return this.vmix.disconnect()
 	}
 	private async _refreshResourcesAndMetadata() {
 		const resources: Map<ResourceId, ResourceAny> = new Map()
@@ -199,6 +201,18 @@ export class VMixSideload implements SideLoadDevice {
 				deviceId: this.deviceId,
 				id: protectString(''), // set by getResourceIdFromResource() later
 				displayName: 'Fade To Black',
+			}
+			resource.id = getResourceIdFromResource(resource)
+			resources.set(resource.id, resource)
+		}
+
+		// Script
+		{
+			const resource: VMixScript = {
+				resourceType: ResourceType.VMIX_SCRIPT,
+				deviceId: this.deviceId,
+				id: protectString(''), // set by getResourceIdFromResource() later
+				displayName: 'Script',
 			}
 			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)

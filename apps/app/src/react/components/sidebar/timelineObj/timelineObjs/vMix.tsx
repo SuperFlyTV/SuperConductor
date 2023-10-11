@@ -1,20 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { Link, Typography } from '@mui/material'
 import { assertNever } from '@shared/lib'
 import React, { useState } from 'react'
 import {
 	TimelineContentTypeVMix,
-	TimelineObjVMixAny,
-	TimelineObjVMixAudio,
-	TimelineObjVMixExternal,
-	TimelineObjVMixFader,
-	TimelineObjVMixFadeToBlack,
-	TimelineObjVMixInput,
-	TimelineObjVMixOutput,
-	TimelineObjVMixOverlay,
-	TimelineObjVMixPreview,
-	TimelineObjVMixProgram,
-	TimelineObjVMixRecording,
-	TimelineObjVMixStreaming,
+	TimelineContentVMixAny,
+	TimelineContentVMixAudio,
+	TimelineContentVMixExternal,
+	TimelineContentVMixFader,
+	TimelineContentVMixFadeToBlack,
+	TimelineContentVMixInput,
+	TimelineContentVMixOutput,
+	TimelineContentVMixOverlay,
+	TimelineContentVMixPreview,
+	TimelineContentVMixProgram,
+	TimelineContentVMixRecording,
+	TimelineContentVMixScript,
+	TimelineContentVMixStreaming,
+	TSRTimelineObj,
 	VMixInputType,
 	VMixTransform,
 	VMixTransitionType,
@@ -43,12 +46,12 @@ enum VMixOutputSourceType {
 	Input = 'Input',
 }
 
-export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSave: OnSave }> = ({
+export const EditTimelineObjVMixAny: React.FC<{ objs: TSRTimelineObj<TimelineContentVMixAny>[]; onSave: OnSave }> = ({
 	objs,
 	onSave: onSave0,
 }) => {
 	const [showAll, setShowAll] = useState(false)
-	const onSave = onSave0 as OnSaveType<TimelineObjVMixAny>
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentVMixAny>>
 	let settings: JSX.Element = NOT_IMPLEMENTED_SETTINGS
 
 	const showAllButton = showAll ? (
@@ -70,7 +73,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 
 	const objs0 = objs
 	if (contentType === TimelineContentTypeVMix.AUDIO) {
-		const objs = objs0 as TimelineObjVMixAudio[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixAudio>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -151,7 +154,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.EXTERNAL) {
-		const objs = objs0 as TimelineObjVMixExternal[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixExternal>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -169,7 +172,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.FADER) {
-		const objs = objs0 as TimelineObjVMixFader[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixFader>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -189,7 +192,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.FADE_TO_BLACK) {
-		const objs = objs0 as TimelineObjVMixFadeToBlack[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixFadeToBlack>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -207,7 +210,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.INPUT) {
-		const objs = objs0 as TimelineObjVMixInput[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixInput>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -372,7 +375,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.OUTPUT) {
-		const objs = objs0 as TimelineObjVMixOutput[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixOutput>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -406,7 +409,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.OVERLAY) {
-		const objs = objs0 as TimelineObjVMixOverlay[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixOverlay>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -426,7 +429,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.PREVIEW) {
-		const objs = objs0 as TimelineObjVMixPreview[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixPreview>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -446,7 +449,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.PROGRAM) {
-		const objs = objs0 as TimelineObjVMixProgram[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixProgram>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 
@@ -530,7 +533,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.RECORDING) {
-		const objs = objs0 as TimelineObjVMixRecording[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixRecording>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -548,7 +551,7 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 			</>
 		)
 	} else if (contentType === TimelineContentTypeVMix.STREAMING) {
-		const objs = objs0 as TimelineObjVMixStreaming[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixStreaming>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 		settings = (
@@ -561,6 +564,25 @@ export const EditTimelineObjVMixAny: React.FC<{ objs: TimelineObjVMixAny[]; onSa
 							if (firstObj.content.type !== TimelineContentTypeVMix.STREAMING) return
 							onSave({ content: { on: v } })
 						}}
+					/>
+				</div>
+			</>
+		)
+	} else if (contentType === TimelineContentTypeVMix.SCRIPT) {
+		const objs = objs0 as TSRTimelineObj<TimelineContentVMixScript>[]
+		const firstObj = objs[0]
+		if (!firstObj) return null
+		settings = (
+			<>
+				<div className="setting">
+					<TextInput
+						label="Script Name"
+						fullWidth
+						{...inputValue(objs, (obj) => obj.content.name, '')}
+						onChange={(v) => {
+							onSave({ content: { name: v } })
+						}}
+						allowUndefined={true}
 					/>
 				</div>
 			</>

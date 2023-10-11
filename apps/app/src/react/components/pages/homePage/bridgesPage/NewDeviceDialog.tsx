@@ -9,6 +9,7 @@ import {
 	DeviceOptionsOBS,
 	DeviceOptionsOSC,
 	DeviceOptionsTCPSend,
+	DeviceOptionsTriCaster,
 	DeviceOptionsVMix,
 	DeviceType,
 	OSCDeviceType,
@@ -42,7 +43,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 			let newDevice: DeviceOptionsAny
 
 			switch (newDeviceType) {
-				case DeviceType.CASPARCG: {
+				case DeviceType.CASPARCG:
 					newDevice = literal<DeviceOptionsCasparCG>({
 						type: DeviceType.CASPARCG,
 						options: {
@@ -50,11 +51,9 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 5250,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.ATEM: {
+				case DeviceType.ATEM:
 					newDevice = literal<DeviceOptionsAtem>({
 						type: DeviceType.ATEM,
 						options: {
@@ -62,11 +61,9 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 9910,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.OBS: {
+				case DeviceType.OBS:
 					newDevice = literal<DeviceOptionsOBS>({
 						type: DeviceType.OBS,
 						options: {
@@ -74,23 +71,19 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 4444,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.VMIX: {
+				case DeviceType.VMIX:
 					newDevice = literal<DeviceOptionsVMix>({
 						type: DeviceType.VMIX,
 						options: {
 							host: '127.0.0.1',
-							port: 8088,
+							port: 8099,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.OSC: {
+				case DeviceType.OSC:
 					newDevice = literal<DeviceOptionsOSC>({
 						type: DeviceType.OSC,
 						options: {
@@ -99,20 +92,16 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							type: OSCDeviceType.UDP,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.HTTPSEND: {
+				case DeviceType.HTTPSEND:
 					newDevice = literal<DeviceOptionsHTTPSend>({
 						type: DeviceType.HTTPSEND,
 						options: {},
 					})
-
 					break
-				}
 
-				case DeviceType.HYPERDECK: {
+				case DeviceType.HYPERDECK:
 					newDevice = literal<DeviceOptionsHyperdeck>({
 						type: DeviceType.HYPERDECK,
 						options: {
@@ -120,11 +109,9 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 9993,
 						},
 					})
-
 					break
-				}
 
-				case DeviceType.TCPSEND: {
+				case DeviceType.TCPSEND:
 					newDevice = literal<DeviceOptionsTCPSend>({
 						type: DeviceType.TCPSEND,
 						options: {
@@ -132,9 +119,17 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 							port: 23,
 						},
 					})
-
 					break
-				}
+
+				case DeviceType.TRICASTER:
+					newDevice = literal<DeviceOptionsTriCaster>({
+						type: DeviceType.TRICASTER,
+						options: {
+							host: '192.168.0.10',
+							port: 80,
+						},
+					})
+					break
 
 				// @TODO: Add more device types
 
@@ -210,6 +205,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					<MenuItem value={DeviceType.HTTPSEND}>HTTP Send</MenuItem>
 					<MenuItem value={DeviceType.HYPERDECK}>HyperDeck</MenuItem>
 					<MenuItem value={DeviceType.TCPSEND}>TCP Send</MenuItem>
+					<MenuItem value={DeviceType.TRICASTER}>TriCaster</MenuItem>
 					{/* @TODO: More device types */}
 				</TextField>
 			</DialogContent>

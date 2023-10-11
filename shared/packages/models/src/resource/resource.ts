@@ -8,8 +8,18 @@ import { TCPSendAny } from './TCPSend'
 import { VMixAny } from './VMix'
 import { ProtectedString } from '../protectedString'
 import { TSRDeviceId } from '../tsrDevice'
+import { TriCasterAny } from './TriCaster'
 
-export type ResourceAny = CasparCGAny | AtemAny | OBSAny | VMixAny | OSCAny | HTTPSendAny | HyperdeckAny | TCPSendAny
+export type ResourceAny =
+	| CasparCGAny
+	| AtemAny
+	| OBSAny
+	| VMixAny
+	| OSCAny
+	| HTTPSendAny
+	| HyperdeckAny
+	| TCPSendAny
+	| TriCasterAny
 
 export type ResourceId = ProtectedString<'resourceId'>
 
@@ -44,6 +54,7 @@ export enum ResourceType {
 	ATEM_MACRO_PLAYER = 'ATEM_MACRO_PLAYER',
 	ATEM_AUDIO_CHANNEL = 'ATEM_AUDIO_CHANNEL',
 	ATEM_MEDIA_PLAYER = 'ATEM_MEDIA_PLAYER',
+	ATEM_AUDIO_OUTPUT = 'ATEM_AUDIO_OUTPUT',
 
 	OBS_SCENE = 'OBS_SCENE',
 	OBS_TRANSITION = 'OBS_TRANSITION',
@@ -64,6 +75,7 @@ export enum ResourceType {
 	VMIX_EXTERNAL = 'VMIX_EXTERNAL',
 	VMIX_FADE_TO_BLACK = 'VMIX_FADE_TO_BLACK',
 	VMIX_FADER = 'VMIX_FADER',
+	VMIX_SCRIPT = 'VMIX_SCRIPT',
 
 	OSC_MESSAGE = 'OSC_MESSAGE',
 
@@ -75,6 +87,13 @@ export enum ResourceType {
 	HYPERDECK_CLIP = 'HYPERDECK_CLIP',
 
 	TCP_REQUEST = 'TCP_REQUEST',
+
+	TRICASTER_ME = 'TRICASTER_ME',
+	TRICASTER_DSK = 'TRICASTER_DSK',
+	TRICASTER_INPUT = 'TRICASTER_INPUT',
+	TRICASTER_AUDIO_CHANNEL = 'TRICASTER_AUDIO_CHANNEL',
+	TRICASTER_MIX_OUTPUT = 'TRICASTER_MIX_OUTPUT',
+	TRICASTER_MATRIX_OUTPUT = 'TRICASTER_MATRIX_OUTPUT',
 
 	INVALID = 'INVALID',
 }

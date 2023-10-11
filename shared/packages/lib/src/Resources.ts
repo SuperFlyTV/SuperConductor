@@ -2,6 +2,7 @@ import { protectString, ResourceAny, ResourceType, ResourceId } from '@shared/mo
 import { assertNever } from './lib'
 import {
 	TSRTimelineObj,
+	TSRTimelineContent,
 	Mappings,
 	Mapping,
 	DeviceType,
@@ -19,12 +20,14 @@ import {
 	TimelineContentTypeSofieChef,
 	TimelineContentTypeVizMSE,
 	TimelineContentTypeVMix,
+	TimelineContentTypeTriCaster,
+	TimelineContentCCGMedia,
+	TimelineContentCCGTemplate,
+	TimelineContentOBSCurrentScene,
+	TimelineContentOBSCurrentTransition,
+	TimelineContentVMixProgram,
 	MappingAtem,
-	TimelineObjCCGMedia,
-	TimelineObjCCGTemplate,
-	TimelineObjOBSCurrentScene,
-	TimelineObjOBSCurrentTransition,
-	TimelineObjVMixProgram,
+	MappingTriCaster,
 } from 'timeline-state-resolver-types'
 
 enum GeneralResourceType {
@@ -37,6 +40,7 @@ enum GeneralResourceType {
 	SSRC_PROPS = 'ssrcProps',
 	MACRO_PLAYER = 'macroPlayer',
 	AUDIO_CHANNEL = 'audioChan',
+	AUDIO_OUTPUT = 'audioOut',
 	MEDIA_PLAYER = 'mp',
 	CURRENT_SCENE = 'CURRENT_SCENE',
 	CURRENT_TRANSITION = 'CURRENT_TRANSITION',
@@ -83,6 +87,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.AUDIO_CHANNEL
 		case ResourceType.ATEM_MEDIA_PLAYER:
 			return GeneralResourceType.MEDIA_PLAYER
+		case ResourceType.ATEM_AUDIO_OUTPUT:
+			return GeneralResourceType.AUDIO_OUTPUT
 		case ResourceType.OBS_SCENE:
 			return GeneralResourceType.CURRENT_SCENE
 		case ResourceType.OBS_TRANSITION:
@@ -119,6 +125,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.FADER
 		case ResourceType.VMIX_PREVIEW:
 			return GeneralResourceType.PREVIEW
+		case ResourceType.VMIX_SCRIPT:
+			return GeneralResourceType.MACRO_PLAYER
 		case ResourceType.OSC_MESSAGE:
 			return GeneralResourceType.OSC
 		case ResourceType.HTTP_REQUEST:
@@ -133,13 +141,25 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.MEDIA
 		case ResourceType.TCP_REQUEST:
 			return GeneralResourceType.TCP_REQUEST
+		case ResourceType.TRICASTER_ME:
+			return GeneralResourceType.ME
+		case ResourceType.TRICASTER_DSK:
+			return GeneralResourceType.DSK
+		case ResourceType.TRICASTER_INPUT:
+			return GeneralResourceType.INPUT
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+			return GeneralResourceType.AUDIO_CHANNEL
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+			return GeneralResourceType.AUX
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+			return GeneralResourceType.AUX
 		default:
 			assertNever(resource)
 			return GeneralResourceType.UNKNOWN
 	}
 }
 
-export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceType {
+export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj<TSRTimelineContent>): ResourceType {
 	switch (obj.content.deviceType) {
 		case DeviceType.ABSTRACT:
 			return ResourceType.INVALID
@@ -162,6 +182,8 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceTyp
 					return ResourceType.ATEM_SSRC
 				case TimelineContentTypeAtem.SSRCPROPS:
 					return ResourceType.ATEM_SSRC_PROPS
+				case TimelineContentTypeAtem.AUDIOROUTING:
+					return ResourceType.ATEM_AUDIO_OUTPUT
 				default:
 					assertNever(obj.content)
 			}
@@ -397,10 +419,32 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceTyp
 					return ResourceType.VMIX_RECORDING
 				case TimelineContentTypeVMix.STREAMING:
 					return ResourceType.VMIX_STREAMING
+				case TimelineContentTypeVMix.SCRIPT:
+					return ResourceType.VMIX_SCRIPT
 				default:
 					assertNever(obj.content)
 			}
 
+			break
+		}
+
+		case DeviceType.TRICASTER: {
+			switch (obj.content.type) {
+				case TimelineContentTypeTriCaster.ME:
+					return ResourceType.TRICASTER_ME
+				case TimelineContentTypeTriCaster.DSK:
+					return ResourceType.TRICASTER_DSK
+				case TimelineContentTypeTriCaster.INPUT:
+					return ResourceType.TRICASTER_INPUT
+				case TimelineContentTypeTriCaster.AUDIO_CHANNEL:
+					return ResourceType.TRICASTER_AUDIO_CHANNEL
+				case TimelineContentTypeTriCaster.MIX_OUTPUT:
+					return ResourceType.TRICASTER_MIX_OUTPUT
+				case TimelineContentTypeTriCaster.MATRIX_OUTPUT:
+					return ResourceType.TRICASTER_MATRIX_OUTPUT
+				default:
+					assertNever(obj.content)
+			}
 			break
 		}
 
@@ -413,7 +457,7 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj): ResourceTyp
 
 /** Returns a string that can uniquely identify a timelineObj (within its type)  */
 export function getResourceLocatorFromTimelineObj(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	resourceType: ResourceType,
 	mappings: Mappings
 ): string {
@@ -427,13 +471,14 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
+		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return String((mapping as MappingAtem).index)
 		case ResourceType.CASPARCG_MEDIA:
-			return (obj as TimelineObjCCGMedia).content.file.toUpperCase()
+			return (obj as TSRTimelineObj<TimelineContentCCGMedia>).content.file.toUpperCase()
 		case ResourceType.CASPARCG_SERVER:
 			return 'UNSUPPORTED' // not yet supported
 		case ResourceType.CASPARCG_TEMPLATE:
-			return (obj as TimelineObjCCGTemplate).content.name.toUpperCase()
+			return (obj as TSRTimelineObj<TimelineContentCCGTemplate>).content.name.toUpperCase()
 		case ResourceType.HTTP_REQUEST:
 			return '0'
 		case ResourceType.HYPERDECK_CLIP:
@@ -450,9 +495,9 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.OBS_SOURCE_SETTINGS:
 			return '0'
 		case ResourceType.OBS_SCENE:
-			return (obj as TimelineObjOBSCurrentScene).content.sceneName
+			return (obj as TSRTimelineObj<TimelineContentOBSCurrentScene>).content.sceneName
 		case ResourceType.OBS_TRANSITION:
-			return (obj as TimelineObjOBSCurrentTransition).content.transitionName
+			return (obj as TSRTimelineObj<TimelineContentOBSCurrentTransition>).content.transitionName
 		case ResourceType.OSC_MESSAGE:
 		case ResourceType.TCP_REQUEST:
 			return '0'
@@ -466,12 +511,20 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.VMIX_PREVIEW:
 		case ResourceType.VMIX_RECORDING:
 		case ResourceType.VMIX_STREAMING:
+		case ResourceType.VMIX_SCRIPT:
 			return '0'
 		case ResourceType.VMIX_INPUT: {
-			// TODO: something might be wrong here? (TimelineObjVMixProgram vs TimelineObjVMixInput)
-			const vmixObj = obj as TimelineObjVMixProgram
+			// TODO: something might be wrong here? (TimelineContentVMixProgram vs TimelineContentVMixInput)
+			const vmixObj = obj as TSRTimelineObj<TimelineContentVMixProgram>
 			return `${vmixObj.content.input}`
 		}
+		case ResourceType.TRICASTER_ME:
+		case ResourceType.TRICASTER_DSK:
+		case ResourceType.TRICASTER_INPUT:
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+			return (mapping as MappingTriCaster).name
 		default:
 			assertNever(resourceType)
 	}
@@ -494,6 +547,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
+		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return `${resource.index}`
 		case ResourceType.ATEM_MACRO_PLAYER:
 			return `0`
@@ -532,10 +586,18 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.VMIX_PREVIEW:
 		case ResourceType.VMIX_RECORDING:
 		case ResourceType.VMIX_STREAMING:
+		case ResourceType.VMIX_SCRIPT:
 			return '0'
 		case ResourceType.VMIX_INPUT:
 			// todo: something might be wrong here, type doesn't seem to be used
 			return `${resource.number}`
+		case ResourceType.TRICASTER_ME:
+		case ResourceType.TRICASTER_DSK:
+		case ResourceType.TRICASTER_INPUT:
+		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+		case ResourceType.TRICASTER_MATRIX_OUTPUT:
+		case ResourceType.TRICASTER_MIX_OUTPUT:
+			return resource.name
 		default: {
 			assertNever(resource)
 			// eslint-disable-next-line no-console
@@ -548,7 +610,10 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 /**
  * Returns a string that uniquely identifies the Resource which would result in a certain TimelineObj.
  */
-export function getResourceIdFromTimelineObj(obj: TSRTimelineObj, mappings: Mappings): ResourceId | undefined {
+export function getResourceIdFromTimelineObj(
+	obj: TSRTimelineObj<TSRTimelineContent>,
+	mappings: Mappings
+): ResourceId | undefined {
 	const mapping = mappings[obj.layer] as Mapping | undefined
 	if (!mapping) return undefined
 	const resourceType = getResourceTypeFromTimelineObj(obj)

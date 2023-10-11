@@ -5,7 +5,7 @@ import { exec } from 'child_process'
 import recursiveReadDir from 'recursive-readdir'
 import * as cheerio from 'cheerio'
 
-import { CasparCG, Config } from 'casparcg-connection'
+import { CasparCG } from 'casparcg-connection'
 import got from 'got'
 import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString, TSRDeviceId } from '@shared/models'
 import { getResourceIdFromResource, literal } from '@shared/lib'
@@ -22,19 +22,19 @@ export async function addTemplatesToResourcesFromCasparCG(
 	deviceId: TSRDeviceId
 ): Promise<void> {
 	const res = await casparCG.tls()
-	const templatesList = res.response.data as {
-		type: 'template'
-		name: string
-		size: number
-		changed: number
-	}[]
+	if (res.error) throw res.error
+	const response = await res.request
+
+	const templatesList = response.data
 	for (const template of templatesList) {
 		const resource: CasparCGTemplate = {
 			resourceType: ResourceType.CASPARCG_TEMPLATE,
 			deviceId: deviceId,
 			id: protectString(''), // set by getResourceIdFromResource() later
-			...template,
-			displayName: template.name,
+			name: template,
+			displayName: template,
+			size: 0,
+			changed: Date.now(),
 		}
 		resource.id = getResourceIdFromResource(resource)
 		resources.set(resource.id, resource)
@@ -74,10 +74,15 @@ export async function addTemplatesToResourcesFromDisk(
 ): Promise<boolean> {
 	// If CasparCG is running locally, we could try reading the template files manually.
 	if (casparCG.host === '127.0.0.1' || casparCG.host === 'localhost') {
-		const config = await casparCG.infoConfig()
-		const configData: Config.Intermediate.CasparCGConfig = config.response.data
+		const request = await casparCG.infoConfig()
+		if (request.error) throw request.error
+		const response = await request.request
+		const configData = response.data
 		if (configData) {
-			const templatePath = configData.paths.templatePath
+			const templatePath = configData.paths?.templates
+			if (templatePath == null) {
+				return false
+			}
 
 			let absoluteTemplatePath = ''
 

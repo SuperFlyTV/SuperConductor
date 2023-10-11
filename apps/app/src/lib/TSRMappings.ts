@@ -30,6 +30,14 @@ import {
 	MappingSisyfosType,
 	MappingSofieChef,
 	MappingTCPSend,
+	MappingTriCaster,
+	MappingTriCasterAudioChannel,
+	MappingTriCasterDownStreamKeyer,
+	MappingTriCasterInput,
+	MappingTriCasterMatrixOutput,
+	MappingTriCasterMixEffect,
+	MappingTriCasterMixOutput,
+	MappingTriCasterType,
 	MappingVizMSE,
 	MappingVMix,
 	MappingVMixAny,
@@ -41,7 +49,15 @@ import {
 	TimelineContentTypeOBS,
 	TimelineContentTypePanasonicPtz,
 	TimelineContentTypeSisyfos,
+	TimelineContentTypeTriCaster,
 	TimelineContentTypeVMix,
+	TriCasterAudioChannelName,
+	TriCasterInputName,
+	TriCasterKeyerName,
+	TriCasterMatrixOutputName,
+	TriCasterMixEffectName,
+	TriCasterMixOutputName,
+	TSRTimelineContent,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
 import { Project } from '../models/project/Project'
@@ -49,7 +65,7 @@ import { listAvailableDeviceIDs } from './util'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
-export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
+export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineContent>): boolean {
 	if (mapping.device !== obj.content.deviceType) return false
 
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
@@ -75,6 +91,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return atemMapping.mappingType === MappingAtemType.AudioChannel
 			case TimelineContentTypeAtem.MACROPLAYER:
 				return atemMapping.mappingType === MappingAtemType.MacroPlayer
+			case TimelineContentTypeAtem.AUDIOROUTING:
+				return atemMapping.mappingType === MappingAtemType.AudioRouting
 			default:
 				assertNever(obj.content)
 				return false
@@ -210,6 +228,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 				return vmixMapping.mappingType === MappingVMixType.FadeToBlack
 			case TimelineContentTypeVMix.FADER:
 				return vmixMapping.mappingType === MappingVMixType.Fader
+			case TimelineContentTypeVMix.SCRIPT:
+				return vmixMapping.mappingType === MappingVMixType.Script
 			default:
 				assertNever(obj.content)
 				return false
@@ -222,6 +242,26 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 		return true
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return true
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		const triCasterMapping = mapping as MappingTriCaster
+
+		switch (obj.content.type) {
+			case TimelineContentTypeTriCaster.ME:
+				return triCasterMapping.mappingType === MappingTriCasterType.ME
+			case TimelineContentTypeTriCaster.AUDIO_CHANNEL:
+				return triCasterMapping.mappingType === MappingTriCasterType.AUDIO_CHANNEL
+			case TimelineContentTypeTriCaster.DSK:
+				return triCasterMapping.mappingType === MappingTriCasterType.DSK
+			case TimelineContentTypeTriCaster.INPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.INPUT
+			case TimelineContentTypeTriCaster.MATRIX_OUTPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.MATRIX_OUTPUT
+			case TimelineContentTypeTriCaster.MIX_OUTPUT:
+				return triCasterMapping.mappingType === MappingTriCasterType.MIX_OUTPUT
+			default:
+				assertNever(obj.content)
+				return false
+		}
 	} else {
 		assertNever(obj.content)
 		return false
@@ -229,7 +269,10 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj): boolean {
 }
 
 /** Tries to guess which device a timelineObject is likely to be using */
-export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimelineObj): TSRDeviceId | undefined {
+export function guessDeviceIdFromTimelineObject(
+	project: Project,
+	obj: TSRTimelineObj<TSRTimelineContent>
+): TSRDeviceId | undefined {
 	const allDeviceIds = listAvailableDeviceIDs(project.bridges)
 	const sortedMappings = sortMappings(project.mappings)
 
@@ -244,7 +287,7 @@ export function guessDeviceIdFromTimelineObject(project: Project, obj: TSRTimeli
 	return undefined
 }
 export function getMappingFromTimelineObject(
-	obj: TSRTimelineObj,
+	obj: TSRTimelineObj<TSRTimelineContent>,
 	deviceId: TSRDeviceId,
 	resource: ResourceAny | undefined
 ): Mapping | undefined {
@@ -345,6 +388,18 @@ export function getMappingFromTimelineObject(
 					mappingType: MappingAtemType.MacroPlayer,
 					index: 0,
 				})
+
+			case TimelineContentTypeAtem.AUDIOROUTING: {
+				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_OUTPUT ? resource.index : 0
+
+				return literal<MappingAtem>({
+					device: DeviceType.ATEM,
+					deviceId: deviceIdStr,
+					layerName: `Atem Audio Routing ${index + 1}`,
+					mappingType: MappingAtemType.AudioRouting,
+					index,
+				})
+			}
 
 			default:
 				assertNever(obj.content)
@@ -694,6 +749,13 @@ export function getMappingFromTimelineObject(
 					layerName: 'Fader',
 					mappingType: MappingVMixType.Fader,
 				})
+			case TimelineContentTypeVMix.SCRIPT:
+				return literal<MappingVMixAny>({
+					device: DeviceType.VMIX,
+					deviceId: deviceIdStr,
+					layerName: 'Script',
+					mappingType: MappingVMixType.Script,
+				})
 			default:
 				assertNever(obj.content)
 		}
@@ -717,6 +779,89 @@ export function getMappingFromTimelineObject(
 			deviceId: deviceIdStr,
 			layerName: 'Telemetrics',
 		})
+	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
+		switch (obj.content.type) {
+			case TimelineContentTypeTriCaster.ME: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_ME
+						? (resource.name as TriCasterMixEffectName) // TODO: perhaps resource.name should be of this type?
+						: 'main'
+				return literal<MappingTriCasterMixEffect>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.ME,
+					layerName: `TriCaster ME ${name}`,
+					name,
+				})
+			}
+			case TimelineContentTypeTriCaster.AUDIO_CHANNEL: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL
+						? (resource.name as TriCasterAudioChannelName) // TODO: perhaps resource.name should be of this type?
+						: 'master'
+				return literal<MappingTriCasterAudioChannel>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.AUDIO_CHANNEL,
+					layerName: `TriCaster Audio Channel ${name}`,
+					name,
+				})
+			}
+			case TimelineContentTypeTriCaster.DSK: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_DSK
+						? (resource.name as TriCasterKeyerName) // TODO: perhaps resource.name should be of this type?
+						: 'dsk1'
+				return literal<MappingTriCasterDownStreamKeyer>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.DSK,
+					layerName: `TriCaster DSK ${name}`,
+					name,
+				})
+			}
+			case TimelineContentTypeTriCaster.INPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_INPUT
+						? (resource.name as TriCasterInputName) // TODO: perhaps resource.name should be of this type?
+						: 'input1'
+				return literal<MappingTriCasterInput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.INPUT,
+					layerName: `TriCaster Input ${name}`,
+					name,
+				})
+			}
+			case TimelineContentTypeTriCaster.MATRIX_OUTPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT
+						? (resource.name as TriCasterMatrixOutputName) // TODO: perhaps resource.name should be of this type?
+						: 'out1'
+				return literal<MappingTriCasterMatrixOutput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.MATRIX_OUTPUT,
+					layerName: `TriCaster Matrix Out ${name}`,
+					name,
+				})
+			}
+			case TimelineContentTypeTriCaster.MIX_OUTPUT: {
+				const name =
+					resource?.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
+						? (resource.name as TriCasterMixOutputName) // TODO: perhaps resource.name should be of this type?
+						: 'mix1'
+				return literal<MappingTriCasterMixOutput>({
+					deviceId: deviceIdStr,
+					device: DeviceType.TRICASTER,
+					mappingType: MappingTriCasterType.MIX_OUTPUT,
+					layerName: `TriCaster Mix Out ${name}`,
+					name,
+				})
+			}
+			default:
+				assertNever(obj.content)
+		}
 	} else {
 		assertNever(obj.content)
 	}
@@ -764,6 +909,10 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 			return 'Sofie Chef'
 		case DeviceType.TELEMETRICS:
 			return 'Telemetrics'
+		case DeviceType.TRICASTER:
+			return 'TriCaster'
+		case DeviceType.MULTI_OSC:
+			return 'Multi OSC'
 		default:
 			assertNever(deviceType)
 	}
@@ -799,6 +948,8 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 					return `Audio Channel: ${typedMapping.index}`
 				case MappingAtemType.MacroPlayer:
 					return `Macro Player: ${typedMapping.index}`
+				case MappingAtemType.AudioRouting:
+					return `Audio Output: ${typedMapping.index}`
 				default:
 					assertNever(typedMapping.mappingType)
 					return ''
@@ -855,6 +1006,8 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 					return ''
 				case MappingVMixType.Streaming:
 					return ''
+				case MappingVMixType.Script:
+					return ''
 				default:
 					assertNever(typedMapping)
 					return ''
@@ -894,6 +1047,12 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			return `Window ${typedMapping.windowId}`
 		}
 		case DeviceType.TELEMETRICS: {
+			return ''
+		}
+		case DeviceType.TRICASTER: {
+			return ''
+		}
+		case DeviceType.MULTI_OSC: {
 			return ''
 		}
 		default:
@@ -1104,6 +1263,22 @@ export function getDefaultMappingForDeviceType(
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
+	} else if (deviceType === DeviceType.TRICASTER) {
+		const m = literal<Mapping>({
+			device: deviceType,
+			deviceId: deviceIdStr,
+			layerName: '', // Set later
+		})
+		m.layerName = getDefaultLayerName(m)
+		return m
+	} else if (deviceType === DeviceType.MULTI_OSC) {
+		const m = literal<Mapping>({
+			device: deviceType,
+			deviceId: deviceIdStr,
+			layerName: '', // Set later
+		})
+		m.layerName = getDefaultLayerName(m)
+		return m
 	} else {
 		assertNever(deviceType)
 		const m = literal<Mapping>({
@@ -1174,6 +1349,10 @@ export function getDefaultLayerName(mapping: Mapping): string {
 		return `Chef window`
 	} else if (mapping.device === DeviceType.TELEMETRICS) {
 		return `Telemetrics`
+	} else if (mapping.device === DeviceType.TRICASTER) {
+		return `TriCaster`
+	} else if (mapping.device === DeviceType.MULTI_OSC) {
+		return `Multi OSC`
 	} else {
 		assertNever(mapping.device)
 		return 'N/A'
@@ -1200,6 +1379,7 @@ type AnyMapping =
 	| MappingTCPSend
 	| MappingVizMSE
 	| MappingVMixAny
+	| MappingTriCaster
 
 function getLastBiggestValue(
 	mappings: Mappings,
@@ -1230,6 +1410,7 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 
 		DeviceType.ATEM,
 		DeviceType.VMIX,
+		DeviceType.TRICASTER,
 
 		DeviceType.HYPERDECK,
 		DeviceType.HTTPSEND,
@@ -1354,6 +1535,14 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 				if (_a.windowId < _b.windowId) return -1
 			} else if (device === DeviceType.TELEMETRICS) {
 				// Nothing
+			} else if (device === DeviceType.TRICASTER) {
+				const _a = a.mapping as MappingTriCaster
+				const _b = b.mapping as MappingTriCaster
+				if (_a.mappingType > _b.mappingType) return 1
+				if (_a.mappingType < _b.mappingType) return -1
+				return compareStringsEndingWithNumber(_a.name ?? '', _b.name ?? '') // TODO: find a better alternative
+			} else if (device === DeviceType.MULTI_OSC) {
+				// Nothing
 			} else {
 				assertNever(device)
 			}
@@ -1365,7 +1554,7 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 /** Returns a list of mappings that are compatible with the provided timeline objects */
 export function getCompatibleMappings(
 	projectMappings: Mappings,
-	filterObjects: (TimelineObj | TSRTimelineObj)[]
+	filterObjects: (TimelineObj | TSRTimelineObj<TSRTimelineContent>)[]
 ): SortedMappings {
 	return sortMappings(projectMappings).filter((m) => {
 		// Filter out incompatible mappings:
@@ -1378,4 +1567,21 @@ export function getCompatibleMappings(
 		}
 		return true
 	})
+}
+
+// for strings like input1, input2, ..., input10, ...
+function compareStringsEndingWithNumber(a: string, b: string) {
+	const regex = /(\D+)|(\d+)/g
+	const aParts = a.match(regex) ?? [a, '0']
+	const bParts = b.match(regex) ?? [b, '0']
+
+	const alphabeticComparison = aParts[0].localeCompare(bParts[0])
+
+	if (alphabeticComparison === 0) {
+		const numA = parseInt(aParts[1])
+		const numB = parseInt(bParts[1])
+		return numA - numB
+	}
+
+	return alphabeticComparison
 }

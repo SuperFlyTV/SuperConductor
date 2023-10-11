@@ -5,12 +5,14 @@ import {
 	MappingAtem,
 	MappingCasparCG,
 	MappingOBS,
+	MappingTriCaster,
 	MappingVMixAny,
 } from 'timeline-state-resolver-types'
 import { CasparCGMappingSettings } from './device-specific-settings/CasparCGMappingSettings'
 import { AtemMappingSettings } from './device-specific-settings/AtemMappingSettings'
 import { OBSMappingSettings } from './device-specific-settings/OBSMappingSettings'
 import { VMixMappingSettings } from './device-specific-settings/VMixMappingSettings'
+import { TriCasterMappingSettings } from './device-specific-settings/TriCasterMappingSettings'
 
 export const DeviceSpecificSettings: React.FC<{
 	mapping?: Mapping
@@ -24,6 +26,8 @@ export const DeviceSpecificSettings: React.FC<{
 			return <AtemMappingSettings mapping={props.mapping as MappingAtem} />
 		case DeviceType.OBS:
 			return <OBSMappingSettings mapping={props.mapping as MappingOBS} />
+		case DeviceType.TRICASTER:
+			return <TriCasterMappingSettings mapping={props.mapping as MappingTriCaster} />
 		case DeviceType.VMIX:
 			return <VMixMappingSettings mapping={props.mapping as MappingVMixAny} onUpdate={props.onUpdate} />
 		default:

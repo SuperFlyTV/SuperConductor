@@ -91,6 +91,13 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				{universalRows}
 			</ResourceDataInner>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT) {
+		return (
+			<ResourceDataInner title="ATEM Audio Output">
+				<DataRow label="Index" value={resource.index} />
+				{universalRows}
+			</ResourceDataInner>
+		)
 	} else if (resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER) {
 		return (
 			<ResourceDataInner title="ATEM Media Player">
@@ -150,6 +157,8 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <ResourceDataInner title="vMix Fader">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.VMIX_PREVIEW) {
 		return <ResourceDataInner title="vMix Preview">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.VMIX_SCRIPT) {
+		return <ResourceDataInner title="vMix Streaming">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.OSC_MESSAGE) {
 		return <ResourceDataInner title="OSC Message">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.HTTP_REQUEST) {
@@ -171,6 +180,48 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		)
 	} else if (resource.resourceType === ResourceType.TCP_REQUEST) {
 		return <ResourceDataInner title="TCP Request">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.TRICASTER_ME) {
+		return (
+			<ResourceDataInner title="TriCaster ME">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
+	} else if (resource.resourceType === ResourceType.TRICASTER_DSK) {
+		return (
+			<ResourceDataInner title="TriCaster DSK">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
+	} else if (resource.resourceType === ResourceType.TRICASTER_INPUT) {
+		return (
+			<ResourceDataInner title="TriCaster Input">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
+	} else if (resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL) {
+		return (
+			<ResourceDataInner title="TriCaster Audio Channel">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
+	} else if (resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT) {
+		return (
+			<ResourceDataInner title="TriCaster Matrix Out">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
+	} else if (resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT) {
+		return (
+			<ResourceDataInner title="TriCaster Mix Out">
+				<DataRow label="Name" value={resource.name} />
+				{universalRows}
+			</ResourceDataInner>
+		)
 	} else {
 		assertNever(resource)
 		return null

@@ -1,6 +1,6 @@
 import { Button, Stack, Typography } from '@mui/material'
 import React from 'react'
-import { TimelineContentTypeHTTP, TimelineObjHTTPSendAny } from 'timeline-state-resolver-types'
+import { TSRTimelineObj, TimelineContentHTTPSendAny, TimelineContentTypeHTTP } from 'timeline-state-resolver-types'
 import { inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { IntInput } from '../../../inputs/IntInput'
 import { SelectEnum } from '../../../inputs/SelectEnum'
@@ -8,11 +8,11 @@ import { TextInput } from '../../../inputs/TextInput'
 import { TrashBtn } from '../../../inputs/TrashBtn'
 import { EditWrapper, OnSave, OnSaveType } from './lib'
 
-export const EditTimelineObjHTTPSendAny: React.FC<{ objs: TimelineObjHTTPSendAny[]; onSave: OnSave }> = ({
-	objs,
-	onSave: onSave0,
-}) => {
-	const onSave = onSave0 as OnSaveType<TimelineObjHTTPSendAny>
+export const EditTimelineObjHTTPSendAny: React.FC<{
+	objs: TSRTimelineObj<TimelineContentHTTPSendAny>[]
+	onSave: OnSave
+}> = ({ objs, onSave: onSave0 }) => {
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentHTTPSendAny>>
 
 	const firstObj = objs[0]
 	if (!firstObj) return null

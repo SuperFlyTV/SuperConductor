@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
 import { getCompatibleMappings } from '../../../../../lib/TSRMappings'
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { ProjectContext } from '../../../../contexts/Project'
 import { DurationInput } from '../../../inputs/DurationInput'
 import { TextInput } from '../../../inputs/TextInput'
@@ -9,11 +9,11 @@ import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipl
 import { SelectEnum } from '../../../inputs/SelectEnum'
 import { useMemoComputedObject } from '../../../../mobx/lib'
 
-export type OnSave = (update: PartialDeep<TSRTimelineObj>) => void
+export type OnSave = (update: PartialDeep<TSRTimelineObj<TSRTimelineContent>>) => void
 export type OnSaveType<T> = (update: PartialDeep<T>) => void
 
 export const EditWrapper: React.FC<{
-	objs: TSRTimelineObj[]
+	objs: TSRTimelineObj<TSRTimelineContent>[]
 	onSave: OnSave
 	children: JSX.Element | JSX.Element[]
 }> = ({ objs, onSave, children }) => {

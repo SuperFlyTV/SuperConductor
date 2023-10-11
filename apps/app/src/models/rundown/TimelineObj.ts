@@ -1,7 +1,7 @@
-import { TSRTimelineObj } from 'timeline-state-resolver-types'
+import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 
 export interface TimelineObj {
-	obj: TSRTimelineObj
+	obj: TSRTimelineObj<TSRTimelineContent>
 
 	resolved: {
 		instances: TimelineObjResolvedInstance[]

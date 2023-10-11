@@ -89,6 +89,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK ||
 			resource.resourceType === ResourceType.VMIX_FADER ||
 			resource.resourceType === ResourceType.VMIX_PREVIEW ||
+			resource.resourceType === ResourceType.VMIX_SCRIPT ||
 			resource.resourceType === ResourceType.OSC_MESSAGE ||
 			resource.resourceType === ResourceType.OBS_RENDER ||
 			resource.resourceType === ResourceType.OBS_MUTE ||
@@ -99,6 +100,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.OBS_SCENE ||
 			resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER ||
 			resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL ||
+			resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT ||
 			resource.resourceType === ResourceType.ATEM_MACRO_PLAYER ||
 			resource.resourceType === ResourceType.ATEM_SSRC_PROPS ||
 			resource.resourceType === ResourceType.ATEM_SSRC ||
@@ -111,7 +113,13 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.HYPERDECK_RECORD ||
 			resource.resourceType === ResourceType.HYPERDECK_PREVIEW ||
 			resource.resourceType === ResourceType.HYPERDECK_CLIP ||
-			resource.resourceType === ResourceType.TCP_REQUEST
+			resource.resourceType === ResourceType.TCP_REQUEST ||
+			resource.resourceType === ResourceType.TRICASTER_ME ||
+			resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL ||
+			resource.resourceType === ResourceType.TRICASTER_DSK ||
+			resource.resourceType === ResourceType.TRICASTER_INPUT ||
+			resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT ||
+			resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
 		) {
 			return (
 				<>

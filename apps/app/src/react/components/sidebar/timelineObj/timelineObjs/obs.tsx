@@ -1,27 +1,29 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { MenuItem, TextField } from '@mui/material'
 import { assertNever } from '@shared/lib'
 import React from 'react'
 import {
+	TSRTimelineObj,
+	TimelineContentOBSAny,
+	TimelineContentOBSCurrentScene,
+	TimelineContentOBSCurrentTransition,
+	TimelineContentOBSMute,
+	TimelineContentOBSRecording,
+	TimelineContentOBSSceneItemRender,
+	TimelineContentOBSSourceSettings,
+	TimelineContentOBSStreaming,
 	TimelineContentTypeOBS,
-	TimelineObjOBSAny,
-	TimelineObjOBSCurrentScene,
-	TimelineObjOBSCurrentTransition,
-	TimelineObjOBSMute,
-	TimelineObjOBSRecording,
-	TimelineObjOBSSceneItemRender,
-	TimelineObjOBSSourceSettings,
-	TimelineObjOBSStreaming,
 } from 'timeline-state-resolver-types'
 import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
 import { BooleanInput } from '../../../inputs/BooleanInput'
 import { TextInput } from '../../../inputs/TextInput'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
 
-export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave: OnSave }> = ({
+export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineContentOBSAny>[]; onSave: OnSave }> = ({
 	objs,
 	onSave: onSave0,
 }) => {
-	const onSave = onSave0 as OnSaveType<TimelineObjOBSAny>
+	const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentOBSAny>>
 	let settings: JSX.Element = <></>
 
 	const contentType = firstValue(objs, (obj) => obj.content.type)
@@ -29,7 +31,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 
 	const objs0 = objs
 	if (contentType === TimelineContentTypeOBS.CURRENT_SCENE) {
-		const objs = objs0 as TimelineObjOBSCurrentScene[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSCurrentScene>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -46,7 +48,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.CURRENT_TRANSITION) {
-		const objs = objs0 as TimelineObjOBSCurrentTransition[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSCurrentTransition>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -63,7 +65,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.RECORDING) {
-		const objs = objs0 as TimelineObjOBSRecording[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSRecording>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -78,7 +80,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.STREAMING) {
-		const objs = objs0 as TimelineObjOBSStreaming[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSStreaming>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -93,7 +95,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.MUTE) {
-		const objs = objs0 as TimelineObjOBSMute[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSMute>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -108,7 +110,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
-		const objs = objs0 as TimelineObjOBSSceneItemRender[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSSceneItemRender>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -123,7 +125,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TimelineObjOBSAny[]; onSave
 			</>
 		)
 	} else if (contentType === TimelineContentTypeOBS.SOURCE_SETTINGS) {
-		const objs = objs0 as TimelineObjOBSSourceSettings[]
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSSourceSettings>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
 

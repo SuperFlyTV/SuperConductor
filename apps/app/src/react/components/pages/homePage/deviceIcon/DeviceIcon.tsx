@@ -38,6 +38,9 @@ export const DeviceIcon: React.FC<{ type: DeviceType | PeripheralType | undefine
 		case DeviceType.TCPSEND:
 			iconElement = <span>TCP</span>
 			break
+		case DeviceType.TRICASTER:
+			iconElement = <span>TC</span>
+			break
 		case DeviceType.HYPERDECK:
 			iconElement = <img src={hyperdeck} alt="HyperDeck" />
 			break
