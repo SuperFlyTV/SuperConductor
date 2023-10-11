@@ -1597,9 +1597,7 @@ export class IPCServer
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: {
-			obj: PartialDeep<TimelineObj['obj']>
-		}
+		timelineObj: PartialDeep<Omit<TimelineObj, 'resolved'>>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1615,6 +1613,7 @@ export class IPCServer
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		if (arg.timelineObj.obj !== undefined) deepExtendRemovingUndefined(timelineObj.obj, arg.timelineObj.obj)
+		if (arg.timelineObj.customLabel !== undefined) timelineObj.customLabel = arg.timelineObj.customLabel
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })

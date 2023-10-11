@@ -162,9 +162,7 @@ export interface IPCServerMethods {
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: {
-			obj: PartialDeep<TimelineObj['obj']>
-		}
+		timelineObj: PartialDeep<Omit<TimelineObj, 'resolved'>>
 	}) => void
 	deleteTimelineObj: (arg: { rundownId: string; groupId: string; partId: string; timelineObjId: string }) => void
 	insertTimelineObjs: (arg: {

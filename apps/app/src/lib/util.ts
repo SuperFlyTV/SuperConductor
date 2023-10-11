@@ -833,7 +833,7 @@ export function getPartLabel(part: Part): string {
 	if (part.timeline) {
 		const firstTimelineObj = part.timeline[0]
 		if (firstTimelineObj) {
-			const description = describeTimelineObject(firstTimelineObj.obj)
+			const description = describeTimelineObject(firstTimelineObj)
 			return description.label
 		}
 	}

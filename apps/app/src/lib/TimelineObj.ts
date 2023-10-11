@@ -41,12 +41,14 @@ export interface TimelineObjectDescription {
 }
 
 export function describeTimelineObject(
-	obj: TSRTimelineObj<TSRTimelineContent>,
+	timelineObj: TimelineObj,
 	deviceMetadata?: MetadataAny | null
 ): TimelineObjectDescription {
+	const obj: TSRTimelineObj<TSRTimelineContent> = timelineObj.obj
 	let label: string = obj.id
 	let inTransition: TimelineObjectDescription['inTransition'] = undefined
 	let outTransition: TimelineObjectDescription['outTransition'] = undefined
+
 	if (obj.content.deviceType === DeviceType.CASPARCG) {
 		if (obj.content.type === TimelineContentTypeCasparCg.MEDIA) {
 			label = obj.content.file
@@ -276,6 +278,11 @@ export function describeTimelineObject(
 	} else {
 		// todo: for later:
 		// assertNever(obj.content)
+	}
+
+	if (timelineObj.customLabel !== undefined) {
+		const customLabel: string = `${timelineObj.customLabel || ''}`.trim()
+		if (customLabel) label = customLabel
 	}
 
 	// @ts-expect-error type
