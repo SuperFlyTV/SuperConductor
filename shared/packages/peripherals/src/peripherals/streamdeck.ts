@@ -508,25 +508,30 @@ export class PeripheralStreamDeck extends Peripheral {
 				textColor?: string
 				wrap?: boolean
 				maxLines?: number
-			}): string => {
-				if (!arg.fontSize) arg.fontSize = 1
+			}): { svg: string; actualFontSize: number } => {
 				let text = arg.text
+				const orgFontSize = arg.fontSize ?? defaultFontsize
 
-				if (!text.length) return ''
+				if (!text.length) return { svg: '', actualFontSize: orgFontSize }
 
 				if (text.includes('\n')) {
 					const lines = text.split('\n')
 					let textSVG = ''
 					if (arg.maxLines) lines.splice(arg.maxLines, 999)
+
+					let actualFontSize = orgFontSize
 					for (const line of lines) {
-						textSVG += svgTextLine({
+						const s = svgTextLine({
 							...arg,
+							fontSize: actualFontSize,
 							text: line,
 						})
+
+						textSVG += s.svg
+						actualFontSize = s.actualFontSize
 					}
-					return textSVG
+					return { svg: textSVG, actualFontSize }
 				} else {
-					const orgFontSize = Math.floor(defaultFontsize * arg.fontSize)
 					let actualFontSize = orgFontSize
 
 					let estTextWidth = estimateTextWidth(text, actualFontSize)
@@ -548,6 +553,7 @@ export class PeripheralStreamDeck extends Peripheral {
 						if (arg.maxLines) lines.splice(arg.maxLines, 999)
 						return svgTextLine({
 							...arg,
+							fontSize: actualFontSize,
 							wrap: false,
 							text: lines.join('\n'),
 						})
@@ -564,7 +570,7 @@ export class PeripheralStreamDeck extends Peripheral {
 									text-anchor="${arg.center ? 'middle' : 'start'}"
 									>${text}</text>`
 						y += Math.max(actualFontSize, orgFontSize)
-						return textSVG
+						return { svg: textSVG, actualFontSize }
 					}
 				}
 			}
@@ -733,29 +739,29 @@ export class PeripheralStreamDeck extends Peripheral {
 			if (keyDisplay.header) {
 				svg += svgTextLine({
 					text: keyDisplay.header.short || keyDisplay.header.long,
-					fontSize: 1.1,
+					fontSize: Math.floor(defaultFontsize * 1.1),
 					textColor,
 					center: key.type === 'encoder',
 					wrap: true,
 					maxLines: 2,
-				})
+				}).svg
 			}
 			if (keyDisplay.info) {
 				svg += svgTextLine({
 					text: keyDisplay.info.short || keyDisplay.info.long,
-					fontSize: 0.8,
+					fontSize: Math.floor(defaultFontsize * 0.8),
 					textColor,
 					center: key.type === 'encoder',
 					wrap: true,
 					maxLines: 3,
-				})
+				}).svg
 
 				if (keyDisplay.info.analogValue) {
 					svg += svgTextLine({
 						text: keyDisplay.info.analogValue,
 						textColor,
 						center: true,
-					})
+					}).svg
 				}
 			}
 		}
