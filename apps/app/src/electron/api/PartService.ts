@@ -4,10 +4,11 @@ import EventEmitter from 'node:events'
 import { GeneralError } from '@feathersjs/errors'
 import { RundownTrigger } from '../../models/rundown/Trigger'
 import { ClientEventBus } from '../ClientEventBus'
-import { ResourceAny } from '@shared/models'
+import { ResourceAny, ResourceId } from '@shared/models'
 import { MoveTarget } from '../../lib/util'
 import { Part } from '../../models/rundown/Part'
 import { ServiceTypes } from '../../ipc/IPCAPI'
+import { TimelineObj } from '../../models/rundown/TimelineObj'
 
 export class PartService extends EventEmitter {
 	constructor(
@@ -100,5 +101,47 @@ export class PartService extends EventEmitter {
 		// TODO: access control
 		const result = await this.everythingService.duplicatePart(data)
 		if (!result) throw new GeneralError()
+	}
+
+	async deleteTimelineObj(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjId: string
+	}): Promise<void> {
+		// TODO: access control
+		const result = await this.everythingService.deleteTimelineObj(data)
+		if (!result) throw new GeneralError()
+	}
+
+	async insertTimelineObjs(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+		timelineObjs: TimelineObj[]
+		target: MoveTarget | null
+	}): Promise<
+		{
+			groupId: string
+			partId: string
+			timelineObjId: string
+		}[]
+	> {
+		// TODO: access control
+		const result = await this.everythingService.insertTimelineObjs(data)
+		if (!result?.result) throw new GeneralError()
+		return result.result
+	}
+
+	async addResourcesToTimeline(data: {
+		rundownId: string
+		groupId: string
+		partId: string
+
+		layerId: string | null
+		resourceIds: (ResourceId | ResourceAny)[]
+	}): Promise<void> {
+		// TODO: access control
+		await this.everythingService.addResourcesToTimeline(data)
 	}
 }

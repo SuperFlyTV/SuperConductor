@@ -226,14 +226,14 @@ export class ApiClient {
 	async duplicateGroup(data: GroupArg<'duplicate'>): ServerReturn<'duplicateGroup'> {
 		return await this.groupService.duplicate(data)
 	}
-	async deleteTimelineObj(data: RundownArg<'deleteTimelineObj'>): ServerReturn<'deleteTimelineObj'> {
-		return await this.rundownService.deleteTimelineObj(data)
+	async deleteTimelineObj(data: PartArg<'deleteTimelineObj'>): ServerReturn<'deleteTimelineObj'> {
+		return await this.partService.deleteTimelineObj(data)
 	}
-	async insertTimelineObjs(data: RundownArg<'insertTimelineObjs'>): ServerReturn<'insertTimelineObjs'> {
-		return await this.rundownService.insertTimelineObjs(data)
+	async insertTimelineObjs(data: PartArg<'insertTimelineObjs'>): ServerReturn<'insertTimelineObjs'> {
+		return await this.partService.insertTimelineObjs(data)
 	}
-	async addResourcesToTimeline(data: RundownArg<'addResourcesToTimeline'>): ServerReturn<'addResourcesToTimeline'> {
-		return await this.rundownService.addResourcesToTimeline(data)
+	async addResourcesToTimeline(data: PartArg<'addResourcesToTimeline'>): ServerReturn<'addResourcesToTimeline'> {
+		return await this.partService.addResourcesToTimeline(data)
 	}
 	async toggleGroupLoop(...args: ServerArgs<'toggleGroupLoop'>): ServerReturn<'toggleGroupLoop'> {
 		return this.invokeServerMethod('toggleGroupLoop', ...args)
@@ -273,7 +273,7 @@ export class ApiClient {
 		return this.invokeServerMethod('updateAppData', ...args)
 	}
 	async updateProject(data: { id: string; project: Project }): ServerReturn<'updateProject'> {
-		await this.projectService.update(data.id, data.project)
+		return await this.projectService.update(data.id, data.project)
 	}
 	async newRundown(...args: ServerArgs<'newRundown'>): ServerReturn<'newRundown'> {
 		return await this.rundownService.create(...args)

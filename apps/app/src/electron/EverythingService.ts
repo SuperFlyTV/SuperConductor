@@ -122,7 +122,10 @@ type ConvertToServerSide<T> = {
 		: T[K]
 }
 
-/** This class is used server-side, to handle requests from the client */
+/**
+ * This class is used server-side, to handle requests from the client
+ * The methods in here will later be moved away to other Services
+ */
 export class EverythingService
 	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
 	implements ConvertToServerSide<IPCServerMethods>
@@ -2201,8 +2204,10 @@ export class EverythingService
 
 		this._saveUpdates({ appData })
 	}
-	async updateProject(arg: { id: string; project: Project }): Promise<void> {
+	async updateProject(arg: { id: string; project: Project }): Promise<Project> {
 		this._saveUpdates({ project: arg.project })
+
+		return this.storage.getProject()
 	}
 	async newRundown(arg: { name: string }): Promise<UndoableResult<Rundown>> {
 		const rundown = this.storage.newRundown(arg.name)

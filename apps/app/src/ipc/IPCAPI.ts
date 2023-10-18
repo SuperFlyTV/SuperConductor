@@ -20,9 +20,9 @@ import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
 import { type EverythingService } from '../electron/EverythingService'
 import { type PartService } from '../electron/api/PartService'
 import { type ProjectService } from '../electron/api/ProjectService'
-import { ReportingService } from '../electron/api/ReportingService'
-import { RundownService } from '../electron/api/RundownService'
-import { GroupService } from '../electron/api/GroupService'
+import { type ReportingService } from '../electron/api/ReportingService'
+import { type RundownService } from '../electron/api/RundownService'
+import { type GroupService } from '../electron/api/GroupService'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 
@@ -66,8 +66,23 @@ export const ClientMethods: ServiceKeyArrays = {
 		'update',
 	],
 	[ServiceName.LEGACY]: [],
-	[ServiceName.PARTS]: ['play', 'stop', 'pause', 'move', 'duplicate', 'create', 'update', 'remove', 'insert'],
-	[ServiceName.PROJECTS]: ['create', 'getAll', 'open', 'import', 'export'],
+	[ServiceName.PARTS]: [
+		'play',
+		'stop',
+		'pause',
+		'move',
+		'duplicate',
+		'create',
+		'update',
+		'remove',
+		'insert',
+		'setPartTrigger',
+
+		'addResourcesToTimeline',
+		'deleteTimelineObj',
+		'insertTimelineObjs',
+	],
+	[ServiceName.PROJECTS]: ['get', 'create', 'update', 'getAll', 'open', 'import', 'export', 'unsubscribe'],
 	[ServiceName.REPORTING]: [
 		'log',
 		'handleClientError',
@@ -78,11 +93,12 @@ export const ClientMethods: ServiceKeyArrays = {
 	[ServiceName.RUNDOWNS]: [
 		'get',
 		'create',
+		'remove',
+		'rename',
 		'unsubscribe',
 		'isPlaying',
 		'close',
 		'open',
-		'setPartTrigger',
 		// 'pauseGroup',
 		// 'playGroup',
 		// 'playNext',
@@ -90,6 +106,7 @@ export const ClientMethods: ServiceKeyArrays = {
 		// 'stopGroup',
 		'updateTimelineObj',
 		'moveTimelineObjToNewLayer',
+
 		// 'newPart',
 		// 'insertParts',
 		// 'updatePart',
@@ -291,7 +308,7 @@ export interface IPCServerMethods {
 	triggerHandleAutoFill: () => void
 
 	updateAppData: (arg: UpdateAppDataOptions) => void
-	updateProject: (arg: { id: string; project: Project }) => void
+	updateProject: (arg: { id: string; project: Project }) => Project
 
 	newRundown: (arg: { name: string }) => Rundown
 	deleteRundown: (arg: { rundownId: string }) => void

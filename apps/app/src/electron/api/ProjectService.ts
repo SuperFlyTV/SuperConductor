@@ -44,6 +44,11 @@ export class ProjectService extends EventEmitter {
 		return await this.everythingService.newProject()
 	}
 
+	async update(id: string, project: Project): Promise<ProjectBase> {
+		// TODO: access control
+		return await this.everythingService.updateProject({ id, project })
+	}
+
 	async open(data: { projectId: string }): Promise<void> {
 		// TODO: access control
 		return await this.everythingService.openProject(data)
