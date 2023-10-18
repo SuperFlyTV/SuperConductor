@@ -3,7 +3,7 @@ import { Application, Params } from '@feathersjs/feathers'
 import { Rundown } from '../../models/rundown/Rundown'
 import EventEmitter from 'node:events'
 import { GeneralError, NotFound } from '@feathersjs/errors'
-import { ServiceTypes } from '../../ipc/IPCAPI'
+import { RundownsEvents, ServiceTypes } from '../../ipc/IPCAPI'
 import { PartialDeep } from 'type-fest/source/partial-deep'
 import { TimelineObj } from '../../models/rundown/TimelineObj'
 import { ClientEventBus } from '../ClientEventBus'
@@ -34,7 +34,7 @@ export class RundownService extends EventEmitter {
 	) {
 		super()
 		clientEventBus.on('updateRundown', (rundown: Rundown) => {
-			this.emit('updated', rundown)
+			this.emit(RundownsEvents.UPDATED, rundown)
 		})
 	}
 

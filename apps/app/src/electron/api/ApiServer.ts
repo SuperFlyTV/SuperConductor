@@ -10,7 +10,7 @@ import { RundownService, RUNDOWN_CHANNEL_PREFIX } from './RundownService'
 import { LegacyService } from './LegacyService'
 import { ReportingService } from './ReportingService'
 import { PROJECTS_CHANNEL_PREFIX, ProjectService } from './ProjectService'
-import { ClientMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
+import { ClientMethods, ProjectsEvents, RundownsEvents, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
 import { Project, ProjectBase } from '../../models/project/Project'
 import { PartService } from './PartService'
 import { GroupService } from './GroupService'
@@ -40,7 +40,7 @@ export class ApiServer {
 
 		this.app.use(ServiceName.PROJECTS, new ProjectService(this.app, ipcServer, clientEventBus), {
 			methods: ClientMethods[ServiceName.PROJECTS],
-			serviceEvents: ['created', 'updated', 'deleted'],
+			serviceEvents: ['created', ProjectsEvents.UPDATED, 'deleted'],
 		})
 
 		this.app.use(ServiceName.PARTS, new PartService(this.app, ipcServer, clientEventBus), {
@@ -52,7 +52,7 @@ export class ApiServer {
 		this.app.use(ServiceName.RUNDOWNS, new RundownService(this.app, ipcServer, clientEventBus), {
 			// TODO: what if we made a base class for Services and made those arrays fields so that they live nearvy the implementation?
 			methods: ClientMethods[ServiceName.RUNDOWNS],
-			serviceEvents: ['created', 'updated', 'deleted'],
+			serviceEvents: ['created', RundownsEvents.UPDATED, 'deleted'],
 		})
 
 		this.app.use(ServiceName.REPORTING, new ReportingService(this.app, ipcServer), {

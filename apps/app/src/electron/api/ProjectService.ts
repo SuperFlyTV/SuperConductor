@@ -1,7 +1,7 @@
 import { EverythingService } from '../EverythingService'
 import { Application, Params } from '@feathersjs/feathers'
 import EventEmitter from 'node:events'
-import { ServiceTypes } from '../../ipc/IPCAPI'
+import { ProjectsEvents, ServiceTypes } from '../../ipc/IPCAPI'
 import { Project, ProjectBase } from '../../models/project/Project'
 import { ClientEventBus } from '../ClientEventBus'
 
@@ -14,7 +14,7 @@ export class ProjectService extends EventEmitter {
 	) {
 		super()
 		clientEventBus.on('updateProject', (project: Project) => {
-			this.emit('updated', project)
+			this.emit(ProjectsEvents.UPDATED, project)
 		})
 	}
 

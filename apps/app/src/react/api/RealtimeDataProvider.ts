@@ -1,4 +1,4 @@
-import { ServiceName, SystemMessageOptions } from '../../ipc/IPCAPI'
+import { ProjectsEvents, RundownsEvents, ServiceName, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
@@ -40,8 +40,10 @@ export class RealtimeDataProvider {
 		}
 	) {
 		// this is new:
-		app.service(ServiceName.RUNDOWNS).on('updated', (rundown) => this.updateRundown(rundown.id, rundown))
-		app.service(ServiceName.PROJECTS).on('updated', (project) => this.updateProject(project))
+		app.service(ServiceName.RUNDOWNS).on(RundownsEvents.UPDATED, (rundown) =>
+			this.updateRundown(rundown.id, rundown)
+		)
+		app.service(ServiceName.PROJECTS).on(ProjectsEvents.UPDATED, (project) => this.updateProject(project))
 		// app.service('project').on(...) etc.
 
 		// this is temporary:

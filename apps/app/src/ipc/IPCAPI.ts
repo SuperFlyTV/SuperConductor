@@ -369,3 +369,10 @@ export interface SystemMessageOptions {
 	displayRestartButton?: boolean
 }
 export type UpdateAppDataOptions = Pick<AppData, 'preReleaseAutoUpdate' | 'guiDecimalCount'>
+
+export enum RundownsEvents {
+	UPDATED = 'updated',
+}
+export enum ProjectsEvents {
+	UPDATED = 'updated',
+}
