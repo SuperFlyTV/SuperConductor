@@ -15,6 +15,8 @@ export interface KeyDisplay {
 		areaInDefinition: boolean
 		/** Color of the area */
 		color: string
+		/** Index of the key, in the area */
+		keyIndex: number
 		/** Label/Name of the area */
 		areaLabel: string
 		/** Label of this key in the area */

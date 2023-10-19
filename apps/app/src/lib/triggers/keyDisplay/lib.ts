@@ -192,6 +192,7 @@ export function triggersAreaToArea(
 	if (!triggerArea) return undefined
 	return {
 		areaInDefinition,
+		keyIndex: triggerArea.keyRank,
 		keyLabel: `${triggerArea.keyRank + 1}`,
 		areaLabel: triggerArea.area.name,
 		areaId: triggerArea.areaId,

@@ -736,7 +736,9 @@ export class PeripheralStreamDeck extends Peripheral {
 				textColor = dampenText ? '#333' : '#000'
 			}
 
+			let hasTextContent = false
 			if (keyDisplay.header) {
+				hasTextContent = true
 				svg += svgTextLine({
 					text: keyDisplay.header.short || keyDisplay.header.long,
 					fontSize: Math.floor(defaultFontsize * 1.1),
@@ -747,6 +749,7 @@ export class PeripheralStreamDeck extends Peripheral {
 				}).svg
 			}
 			if (keyDisplay.info) {
+				hasTextContent = true
 				svg += svgTextLine({
 					text: keyDisplay.info.short || keyDisplay.info.long,
 					fontSize: Math.floor(defaultFontsize * 0.8),
@@ -763,6 +766,14 @@ export class PeripheralStreamDeck extends Peripheral {
 						center: true,
 					}).svg
 				}
+			}
+			if (!hasTextContent && keyDisplay.area && keyDisplay.area.keyIndex === 0) {
+				// If there is nothing else, print the Area name on first key:
+				svg += svgTextLine({
+					text: keyDisplay.area.areaLabel,
+					fontSize: 0.8,
+					textColor,
+				})
 			}
 		}
 
