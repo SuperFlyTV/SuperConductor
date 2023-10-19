@@ -37,6 +37,7 @@
 		right: 0;
 		height: $top-header-height;
 		box-shadow: 0px 4px 5px 0px #191b23;
+		z-index: 1;
 	}
 	> .rundown-area {
 		position: absolute;
