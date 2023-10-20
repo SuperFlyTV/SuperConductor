@@ -39,6 +39,11 @@ export interface ResourceBase {
 
 	/** When the Resource was last modified [unix timestamp, ms] */
 	modified?: number
+
+	additionalInfo?: { label: string; value: string }[]
+
+	/** User facing message, explaining something is wrong with the resource */
+	errorMessage?: string
 }
 export enum ResourceType {
 	CASPARCG_SERVER = 'CASPARCG_SERVER',

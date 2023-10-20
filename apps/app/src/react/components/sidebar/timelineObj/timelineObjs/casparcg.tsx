@@ -2126,14 +2126,23 @@ const CasparEditTemplateData: React.FC<{
 		if (resource) resources.push(resource)
 	}
 
+	const errorMessage = firstValue(
+		resources,
+		(r) => r.resourceType === ResourceType.CASPARCG_TEMPLATE && r.errorMessage
+	)
+
 	const gddEdit = initializedGDDValidator ? prepareGDDEdit(resources) : undefined
 
-	if (gddEdit) {
-		return <CasparEditTemplateGDDData objs={objs} onSave={onSave} gddEdit={gddEdit} />
-	} else {
-		// Not GDD
-		return <CasparEditTemplatePlainData objs={objs} onSave={onSave} />
-	}
+	return (
+		<>
+			{errorMessage && <div className="setting">{errorMessage}</div>}
+			{gddEdit ? (
+				<CasparEditTemplateGDDData objs={objs} onSave={onSave} gddEdit={gddEdit} />
+			) : (
+				<CasparEditTemplatePlainData objs={objs} onSave={onSave} />
+			)}
+		</>
+	)
 }
 interface GDDEdit {
 	errorMessage: string | null

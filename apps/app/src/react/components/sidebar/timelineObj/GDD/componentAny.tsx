@@ -15,6 +15,9 @@ import { assertNever } from '@shared/lib'
 import { gddTypeMultiLine } from './GDDTypes/string-multi-line'
 import { gddTypeSelect } from './GDDTypes/select'
 import { gddTypeColorRRGGBB } from './GDDTypes/string-color-rrggbb'
+import { gddTypeColorRRGGBBAA } from './GDDTypes/string-color-rrggbbaa'
+import { gddTypeIntegerMs } from './GDDTypes/integer-duration-ms'
+import { gddTypePercentage } from './GDDTypes/number-percentage'
 
 export const componentAny: React.FC<ComponentAnyProps<GDDSchemaProperty>> = (props) => {
 	const schema = props.schema
@@ -34,17 +37,18 @@ export const componentAny: React.FC<ComponentAnyProps<GDDSchemaProperty>> = (pro
 			else if (gddSchema.gddType === 'multi-line') return gddTypeMultiLine(innerProps)
 			else if (gddSchema.gddType === 'select') return gddTypeSelect(innerProps)
 			else if (gddSchema.gddType === 'color-rrggbb') return gddTypeColorRRGGBB(innerProps)
+			else if (gddSchema.gddType === 'color-rrggbbaa') return gddTypeColorRRGGBBAA(innerProps)
 			// else if (gddSchema.gddType === 'file-path') return gddTypeFilePath(innerProps)
 			// else if (gddSchema.gddType === 'file-path/image-path') return gddTypeFilePathImagePath(innerProps)
 			// else assertNever(gddSchema)
 		} else if (gddSchema.type === 'integer') {
 			if (gddSchema.gddType === 'select') return gddTypeSelect(innerProps)
-			// else assertNever(gddSchema)
+			else if (gddSchema.gddType === 'duration-ms') return gddTypeIntegerMs(innerProps)
+			else assertNever(gddSchema)
 		} else if (gddSchema.type === 'number') {
 			if (gddSchema.gddType === 'select') return gddTypeSelect(innerProps)
-			// else if (gddSchema.gddType === 'duration-ms') return gddTypeDurationMS(innerProps)
-			// else if (gddSchema.gddType === 'percentage') return gddTypePercentage(innerProps)
-			// else assertNever(gddSchema)
+			else if (gddSchema.gddType === 'percentage') return gddTypePercentage(innerProps)
+			else assertNever(gddSchema)
 		} else {
 			assertNever(gddSchema)
 		}

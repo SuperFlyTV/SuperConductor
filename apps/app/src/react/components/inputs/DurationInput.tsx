@@ -10,9 +10,11 @@ export const DurationInput: React.FC<
 			allowUndefined: true
 			emptyPlaceholder?: string
 			label?: React.ReactNode
+			focusTooltip?: string
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			tooltip?: string
 			endAdornment?: React.ReactNode
 	  }
 	| {
@@ -24,9 +26,11 @@ export const DurationInput: React.FC<
 			emptyPlaceholder?: string
 			defaultValue: number
 			label?: React.ReactNode
+			focusTooltip?: string
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			tooltip?: string
 			endAdornment?: React.ReactNode
 	  }
 	| {
@@ -38,9 +42,11 @@ export const DurationInput: React.FC<
 			emptyPlaceholder?: string
 			defaultValue: number | null
 			label?: React.ReactNode
+			focusTooltip?: string
 			disabled?: boolean
 			fullWidth?: boolean
 			width?: string
+			tooltip?: string
 			endAdornment?: React.ReactNode
 	  }
 > = (props) => {
@@ -76,7 +82,9 @@ export const DurationInput: React.FC<
 			props.width,
 			undefined,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else if (props.allowNull) {
 		return ParsedValueInput<number | null>(
@@ -94,7 +102,9 @@ export const DurationInput: React.FC<
 			props.width,
 			undefined,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	} else {
 		return ParsedValueInput<number>(
@@ -112,7 +122,9 @@ export const DurationInput: React.FC<
 			props.width,
 			undefined,
 			onIncrement,
-			props.endAdornment
+			props.endAdornment,
+			props.tooltip,
+			props.focusTooltip
 		)
 	}
 }

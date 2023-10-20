@@ -7,7 +7,15 @@ import * as cheerio from 'cheerio'
 
 import { CasparCG } from 'casparcg-connection'
 import got from 'got'
-import { ResourceAny, ResourceType, CasparCGTemplate, ResourceId, protectString, TSRDeviceId } from '@shared/models'
+import {
+	ResourceAny,
+	ResourceType,
+	CasparCGTemplate,
+	ResourceId,
+	protectString,
+	TSRDeviceId,
+	GDDSchema,
+} from '@shared/models'
 import { getResourceIdFromResource, literal } from '@shared/lib'
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -223,7 +231,25 @@ function populateResources(
 		}
 
 		if (template.error) resource.errorMessage = template.error
-		if (template.gdd) resource.gdd = template.gdd
+		if (template.gdd) {
+			resource.gdd = template.gdd as GDDSchema
+
+			resource.additionalInfo = [
+				{
+					label: 'Has GDD Data',
+					value: 'Yes',
+				},
+			]
+
+			if (resource.gdd.authorName)
+				resource.additionalInfo.push({ label: 'Author', value: resource.gdd.authorName })
+			if (resource.gdd.authorEmail)
+				resource.additionalInfo.push({ label: 'Author email', value: resource.gdd.authorEmail })
+
+			if (resource.gdd.title) resource.additionalInfo.push({ label: 'Title', value: resource.gdd.title })
+			if (resource.gdd.description)
+				resource.additionalInfo.push({ label: 'Description', value: resource.gdd.description })
+		}
 	}
 }
 

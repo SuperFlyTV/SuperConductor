@@ -7409,10 +7409,10 @@ graphemer@^1.4.0:
   resolved "https://registry.yarnpkg.com/graphemer/-/graphemer-1.4.0.tgz#fb2f1d55e0e3a1849aeffc90c4fa0dd53a0e66c6"
   integrity sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==
 
-graphics-data-definition@0.1.1-nightly-fix-npm-repo-20230214-163658-dbb8098.0:
-  version "0.1.1-nightly-fix-npm-repo-20230214-163658-dbb8098.0"
-  resolved "https://registry.yarnpkg.com/graphics-data-definition/-/graphics-data-definition-0.1.1-nightly-fix-npm-repo-20230214-163658-dbb8098.0.tgz#4ec5057a62604535e289b5f4c8b0fd3b1258f435"
-  integrity sha512-EWzVyphRLplTTt5MNL+eizkcT+BIMKBMAnI4hqMEzIq972LOG1kLRcasDfwsEulX/Z0f1WB9GSOscVb6hOTOUg==
+graphics-data-definition@1.1.1, graphics-data-definition@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/graphics-data-definition/-/graphics-data-definition-1.1.1.tgz#4ad9d9dcd1e069439b7e09faed2c966416a92c41"
+  integrity sha512-OP96h+6tQYf1AEj9jxo8x+OPzQ73Fh6IjM1jGyMP7n7FXbWz14Fq6fDMSyMMao8beDYhX0IfoBF4Ca1RhdSUrA==
   dependencies:
     jsonschema "^1.4.1"
     node-fetch "^2.6.1"
