@@ -28,6 +28,9 @@
 		"precommit": "lint-staged",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
+	"dependencies": {
+		"graphics-data-definition": "^1.1.1"
+	},
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
 	},

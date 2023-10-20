@@ -96,7 +96,7 @@
 		"formik": "^2.2.9",
 		"formik-mui": "^5.0.0-alpha.0",
 		"got": "^11.8.2",
-		"graphics-data-definition": "0.1.1-nightly-fix-npm-repo-20230214-163658-dbb8098.0",
+		"graphics-data-definition": "1.1.1",
 		"koa": "^2.13.4",
 		"koa-bodyparser": "^4.4.0",
 		"lodash": "^4.17.21",

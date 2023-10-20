@@ -15,6 +15,10 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		<>
 			<DataRow label="Added" value={moment(resource.added).format(TIMESTAMP_FORMAT)} />
 			<DataRow label="Modified" value={moment(resource.modified).format(TIMESTAMP_FORMAT)} />
+			{resource.additionalInfo &&
+				resource.additionalInfo.map((info, index) => (
+					<DataRow key={index} label={info.label} value={info.value} />
+				))}
 		</>
 	)
 

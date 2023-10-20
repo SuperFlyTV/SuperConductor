@@ -16,6 +16,14 @@ export const gddTypeColorRRGGBB: React.FC<PropertyProps<GDDTypeColorRRGGBB>> = (
 					}}
 					onBlur={props.onSave}
 				/>
+				<input
+					type="text"
+					value={data}
+					onChange={(e) => {
+						props.setData(e.target.value)
+					}}
+					onBlur={props.onSave}
+				/>
 			</WithLabel>
 		</EditProperty>
 	)

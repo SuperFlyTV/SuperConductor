@@ -1,6 +1,9 @@
 import { ResourceBase, ResourceType } from './resource'
+import type { GDDSchema } from 'graphics-data-definition'
 
 export type CasparCGAny = CasparCGServer | CasparCGMedia | CasparCGTemplate
+
+export { GDDSchema }
 
 export interface CasparCGServer extends ResourceBase {
 	resourceType: ResourceType.CASPARCG_SERVER
@@ -41,6 +44,5 @@ export interface CasparCGTemplate extends ResourceBase {
 	channel?: number
 	layer?: number
 
-	errorMessage?: string
-	gdd?: any
+	gdd?: GDDSchema
 }
