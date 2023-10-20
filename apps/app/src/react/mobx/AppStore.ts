@@ -1,32 +1,31 @@
 import { makeAutoObservable } from 'mobx'
 import { BridgeDevice, BridgeStatus } from '../../models/project/Bridge'
 import { AppData } from '../../models/App/AppData'
-import { IPCServer } from '../api/IPCServer'
-import { IPCClient } from '../api/IPCClient'
+import { ApiClient } from '../api/ApiClient'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import { PeripheralStatus } from '../../models/project/Peripheral'
 import { ClientSideLogger } from '../api/logger'
 import { setConstants } from '../constants'
 import { BridgeId } from '@shared/api'
 import { TSRDeviceId, protectString } from '@shared/models'
 import { BridgePeripheralId } from '@shared/lib'
-const { ipcRenderer } = window.require('electron')
 
 export class AppStore {
 	bridgeStatuses = new Map<BridgeId, BridgeStatus>()
 	peripherals = new Map<BridgePeripheralId, PeripheralStatus>()
 
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	logger: ClientSideLogger
-	ipcClient: IPCClient
+	ipcClient: RealtimeDataProvider
 
 	allDeviceStatuses = new Map<TSRDeviceId, BridgeDevice>()
 
 	private _data?: AppData = undefined
 
 	constructor(init?: AppData) {
-		this.serverAPI = new IPCServer(ipcRenderer)
+		this.serverAPI = new ApiClient()
 		this.logger = new ClientSideLogger(this.serverAPI)
-		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+		this.ipcClient = new RealtimeDataProvider(this.logger, {
 			updateBridgeStatus: (bridgeId: BridgeId, status: BridgeStatus | null) =>
 				this.updateBridgeStatus(bridgeId, status),
 			updatePeripheral: (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) =>

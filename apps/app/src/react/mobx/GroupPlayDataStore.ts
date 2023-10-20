@@ -1,27 +1,27 @@
 import { getGroupPlayData, GroupPlayData } from '../../lib/playout/groupPlayData'
 import { makeAutoObservable } from 'mobx'
 import _ from 'lodash'
-import { IPCClient } from '../api/IPCClient'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import { Rundown } from '../../models/rundown/Rundown'
-import { IPCServer } from '../api/IPCServer'
+import { ApiClient } from '../api/ApiClient'
 import { ClientSideLogger } from '../api/logger'
-const { ipcRenderer } = window.require('electron')
+// const { ipcRenderer } = window.require('electron')
 
 export class GroupPlayDataStore {
 	groups: Map<string, GroupPlayData> = new Map()
 
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	logger: ClientSideLogger
-	ipcClient: IPCClient
+	ipcClient: RealtimeDataProvider
 	private updateGroupPlayDataLowLatency: boolean
 	private updateGroupPlayDataFrameCount: number
 
 	private rundown: Rundown | undefined = undefined
 
 	constructor() {
-		this.serverAPI = new IPCServer(ipcRenderer)
+		this.serverAPI = new ApiClient()
 		this.logger = new ClientSideLogger(this.serverAPI)
-		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+		this.ipcClient = new RealtimeDataProvider(this.logger, {
 			updateRundown: (_rundownId: string, rundown: Rundown) => {
 				this.rundown = rundown
 				this.updateGroupPlayDataLowLatency = true

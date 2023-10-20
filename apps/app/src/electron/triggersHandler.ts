@@ -4,7 +4,7 @@ import _ from 'lodash'
 import { getGroupPlayData } from '../lib/playout/groupPlayData'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
 import { BridgeHandler } from './bridgeHandler'
-import { IPCServer } from './IPCServer'
+import { EverythingService } from './EverythingService'
 import { StorageHandler } from './storageHandler'
 import {
 	ActionAny,
@@ -59,7 +59,7 @@ export class TriggersHandler extends EventEmitter {
 	constructor(
 		private log: LoggerLike,
 		private storage: StorageHandler,
-		private ipcServer: IPCServer,
+		private ipcServer: EverythingService,
 		private bridgeHandler: BridgeHandler,
 		private session: SessionHandler
 	) {

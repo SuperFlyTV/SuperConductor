@@ -71,7 +71,8 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 			superConductor.ipcServer.redo().catch(log.error)
 		},
 		onAboutClick: () => {
-			handler.ipcClient.displayAboutDialog()
+			// TODO: this should probably become a client-side only action
+			// handler.ipcClient.displayAboutDialog()
 		},
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		onUpdateClick: async () => {

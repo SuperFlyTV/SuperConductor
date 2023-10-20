@@ -1,27 +1,27 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { AnalogInput } from '../../models/project/AnalogInput'
 import { ActiveAnalog } from '../../models/rundown/Analog'
-import { IPCClient } from '../api/IPCClient'
-import { IPCServer } from '../api/IPCServer'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
+import { ApiClient } from '../api/ApiClient'
 import { ClientSideLogger } from '../api/logger'
-const { ipcRenderer } = window.require('electron')
+// const { ipcRenderer } = window.require('electron')
 
 export class AnalogStore {
 	private analogInputs = new Map<string, AnalogInput>()
 
 	private activeAnalogListeners: ((activeAnalog: ActiveAnalog) => void)[] // Not an observable
-	serverAPI: IPCServer
+	serverAPI: ApiClient
 	logger: ClientSideLogger
-	ipcClient: IPCClient
+	ipcClient: RealtimeDataProvider
 
 	constructor() {
 		makeAutoObservable(this)
 
 		this.activeAnalogListeners = []
 
-		this.serverAPI = new IPCServer(ipcRenderer)
+		this.serverAPI = new ApiClient()
 		this.logger = new ClientSideLogger(this.serverAPI)
-		this.ipcClient = new IPCClient(this.logger, ipcRenderer, {
+		this.ipcClient = new RealtimeDataProvider(this.logger, {
 			updateAnalogInput: (fullIdentifier: string, analogInput: AnalogInput | null) =>
 				this.updateAnalogInput(fullIdentifier, analogInput),
 		})

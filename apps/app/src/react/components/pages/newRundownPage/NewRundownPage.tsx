@@ -22,9 +22,9 @@ export const NewRundownPage = (): JSX.Element => {
 	const handleCreateNewRundown = (rundownName: string) => {
 		serverAPI
 			.newRundown({ name: rundownName })
-			.then((rundownId) => {
+			.then((rundown) => {
 				setTimeout(() => {
-					store.rundownsStore.setCurrentRundown(rundownId)
+					store.rundownsStore.setCurrentRundown(rundown.id)
 				}, 100)
 			})
 			.catch(handleError)

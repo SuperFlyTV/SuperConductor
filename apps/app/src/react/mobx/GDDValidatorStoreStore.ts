@@ -1,14 +1,14 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { SchemaValidator, setupSchemaValidator, ValidatorCache } from 'graphics-data-definition'
-import { IPCServer } from '../api/IPCServer'
-const { ipcRenderer } = window.require('electron')
+import { ApiClient } from '../api/ApiClient'
+// const { ipcRenderer } = window.require('electron')
 
 export class GDDValidatorStore {
 	private isInitialized = false
 
 	// private gddCache: ValidatorCache | null | undefined = undefined
 	public gddValidator: SchemaValidator | null = null
-	private serverAPI: IPCServer | null = null
+	private serverAPI: ApiClient | null = null
 
 	constructor() {
 		makeAutoObservable(this)
@@ -18,7 +18,7 @@ export class GDDValidatorStore {
 		if (this.isInitialized) return
 
 		this.isInitialized = true
-		if (!this.serverAPI) this.serverAPI = new IPCServer(ipcRenderer)
+		if (!this.serverAPI) this.serverAPI = new ApiClient()
 
 		// First, retrieve a cache from server, if possible:
 		let gddCache = await this.serverAPI.fetchGDDCache()

@@ -9,8 +9,8 @@ import {
 	CurrentSelectionTimelineObj,
 } from '../../lib/GUI'
 import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
-import { IPCServer } from '../api/IPCServer'
-const { ipcRenderer } = window.require('electron')
+import { ApiClient } from '../api/ApiClient'
+// const { ipcRenderer } = window.require('electron')
 
 /**
  * Store contains only information about user interface
@@ -64,7 +64,7 @@ interface ResourceLibrarySettings {
 	detailedFiltersExpanded: boolean
 }
 export class GuiStore {
-	serverAPI = new IPCServer(ipcRenderer)
+	serverAPI = new ApiClient()
 
 	private _selected: CurrentSelectionAny[] = []
 

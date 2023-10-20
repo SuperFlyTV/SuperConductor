@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-const { ipcRenderer } = window.require('electron')
+// const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
 import '@fontsource/barlow/400.css'
@@ -13,8 +13,8 @@ import './styles/app.scss'
 import { RundownView } from './components/rundown/RundownView'
 import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
-import { IPCClient } from './api/IPCClient'
-import { IPCServer } from './api/IPCServer'
+import { RealtimeDataProvider } from './api/RealtimeDataProvider'
+import { ApiClient } from './api/ApiClient'
 import { Project } from '../models/project/Project'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
@@ -74,8 +74,8 @@ export const App = observer(function App() {
 	const [sorensenInitialized, setSorensenInitialized] = useState(false)
 	const { enqueueSnackbar, closeSnackbar } = useSnackbar()
 
-	const serverAPI = useMemo<IPCServer>(() => {
-		return new IPCServer(ipcRenderer)
+	const serverAPI = useMemo<ApiClient>(() => {
+		return new ApiClient()
 	}, [])
 
 	const logger = useMemo(() => {
@@ -109,7 +109,7 @@ export const App = observer(function App() {
 
 	// Handle IPC-messages from server
 	useEffect(() => {
-		const ipcClient = new IPCClient(logger, ipcRenderer, {
+		const ipcClient = new RealtimeDataProvider(logger, {
 			systemMessage: (messageStr: string, options: SystemMessageOptions) => {
 				messageStr = messageStr.replace(/\n/g, '<br>')
 				const message = (

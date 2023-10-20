@@ -63,7 +63,7 @@ import {
 } from '@shared/models'
 import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@shared/lib'
 import { TimelineObj } from '../models/rundown/TimelineObj'
-import { Project } from '../models/project/Project'
+import { Project, ProjectBase } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
 import EventEmitter from 'events'
 import TypedEmitter from 'typed-emitter'
@@ -129,8 +129,11 @@ type ConvertToServerSide<T> = {
 		: T[K]
 }
 
-/** This class is used server-side, to handle requests from the client */
-export class IPCServer
+/**
+ * This class is used server-side, to handle requests from the client
+ * The methods in here will later be moved away to other Services
+ */
+export class EverythingService
 	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
 	implements ConvertToServerSide<IPCServerMethods>
 {
@@ -160,7 +163,7 @@ export class IPCServer
 		}
 	) {
 		super()
-		for (const methodName of Object.getOwnPropertyNames(IPCServer.prototype)) {
+		for (const methodName of Object.getOwnPropertyNames(EverythingService.prototype)) {
 			if (methodName[0] !== '_') {
 				const fcn = (this as any)[methodName].bind(this)
 				if (fcn) {
@@ -204,7 +207,7 @@ export class IPCServer
 	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	public getRundowns(): { rundownIds: string[] } {
+	private getRundowns(): { rundownIds: string[] } {
 		const rundowns = this.storage.getAllRundowns()
 		return { rundownIds: rundowns.map((r) => r.id) }
 	}
@@ -214,7 +217,7 @@ export class IPCServer
 
 		return { rundown }
 	}
-	public getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
+	private getGroup(arg: { rundownId: string; groupId: string }): { rundown: Rundown; group: Group } {
 		const { rundown } = this.getRundown(arg)
 
 		return this._getGroupOfRundown(rundown, arg.groupId)
@@ -240,7 +243,7 @@ export class IPCServer
 		return { rundown, group }
 	}
 
-	public getPart(arg: { rundownId: string; groupId: string; partId: string }): {
+	private getPart(arg: { rundownId: string; groupId: string; partId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
@@ -252,7 +255,7 @@ export class IPCServer
 		return { rundown, group, part }
 	}
 
-	public getPartByExternalId(arg: { rundownId: string; groupId: string; externalId: string }): {
+	private getPartByExternalId(arg: { rundownId: string; groupId: string; externalId: string }): {
 		rundown: Rundown
 		group: Group
 		part: Part
@@ -331,9 +334,6 @@ export class IPCServer
 
 		this.callbacks.onClientConnected()
 	}
-	async triggerSendRundown(arg: { rundownId: string }): Promise<void> {
-		this.storage.triggerEmitRundown(arg.rundownId)
-	}
 	async setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): Promise<void> {
 		this.callbacks.setKeyboardKeys(arg.activeKeys)
 	}
@@ -367,6 +367,7 @@ export class IPCServer
 	}
 
 	async exportProject(): Promise<void> {
+		// TODO: this won't work, needs to return project to the WS client
 		const result = await dialog.showSaveDialog({
 			title: 'Export Project',
 			defaultPath: `${convertToFilename(this.storage.getProject().name) || 'SuperConductor'}.project.json`,
@@ -387,6 +388,7 @@ export class IPCServer
 		}
 	}
 	async importProject(): Promise<void> {
+		// TODO: this won't work, needs to return project to the WS client
 		const result = await dialog.showOpenDialog({
 			title: 'Import Project',
 			buttonLabel: 'Import',
@@ -412,8 +414,8 @@ export class IPCServer
 			}
 		}
 	}
-	async newProject(): Promise<void> {
-		await this.storage.newProject('New Project')
+	async newProject(): Promise<ProjectBase> {
+		return await this.storage.newProject('New Project')
 	}
 	async listProjects(): Promise<{ name: string; id: string }[]> {
 		return this.storage.listProjects()
@@ -422,23 +424,26 @@ export class IPCServer
 		return this.storage.openProject(arg.projectId)
 	}
 
-	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+	async playPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<Rundown> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 
 		RundownActions.playPart(group, part, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+		return rundown // this should return something more granular (group or part)
 	}
 
-	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<void> {
+	async pausePart(arg: { rundownId: string; groupId: string; partId: string; time?: number }): Promise<Rundown> {
 		const now = Date.now()
 		const { rundown, group, part } = this.getPart(arg)
 		updateGroupPlayingParts(group)
 		RundownActions.pausePart(group, part, arg.time, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+		return rundown
 	}
+
 	async pauseParts(arg: { rundownId: string; groupId: string; partIds: string[]; time?: number }): Promise<void> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup({
@@ -458,14 +463,16 @@ export class IPCServer
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 	}
 
-	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<void> {
+	async stopPart(arg: { rundownId: string; groupId: string; partId: string }): Promise<Rundown> {
 		const now = Date.now()
 		const { rundown, group } = this.getGroup(arg)
 
 		RundownActions.stopPart(group, arg.partId, now)
 
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
+		return rundown
 	}
+
 	async setPartTrigger(arg: {
 		rundownId: string
 		groupId: string
@@ -2204,11 +2211,14 @@ export class IPCServer
 
 		this._saveUpdates({ appData })
 	}
-	async updateProject(arg: { id: string; project: Project }): Promise<void> {
+	async updateProject(arg: { id: string; project: Project }): Promise<Project> {
 		this._saveUpdates({ project: arg.project })
+
+		return this.storage.getProject()
 	}
-	async newRundown(arg: { name: string }): Promise<UndoableResult<string>> {
-		const fileName = this.storage.newRundown(arg.name)
+	async newRundown(arg: { name: string }): Promise<UndoableResult<Rundown>> {
+		const rundown = this.storage.newRundown(arg.name)
+		const fileName = rundown.name
 		this._saveUpdates({})
 
 		return {
@@ -2217,7 +2227,7 @@ export class IPCServer
 				this._saveUpdates({})
 			},
 			description: ActionDescription.NewRundown,
-			result: fileName,
+			result: rundown,
 		}
 	}
 	async deleteRundown(arg: { rundownId: string }): Promise<void> {

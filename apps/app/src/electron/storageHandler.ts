@@ -4,7 +4,7 @@ import EventEmitter from 'events'
 import * as semver from 'semver'
 import { LoggerLike } from '@shared/api'
 import { omit } from '@shared/lib'
-import { Project } from '../models/project/Project'
+import { Project, ProjectBase } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
 import { AppData } from '../models/App/AppData'
 import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
@@ -289,7 +289,7 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({ rundowns: { [fileName]: true } })
 	}
 
-	async newProject(name: string): Promise<void> {
+	async newProject(name: string): Promise<ProjectBase> {
 		if (this.project) {
 			// Write any pending changes before switching project
 			// to ensure that any changes are saved
@@ -308,6 +308,7 @@ export class StorageHandler extends EventEmitter {
 		this.triggerUpdate({ project: true, appData: true })
 
 		this.cleanUpData()
+		return { id: projectId, name }
 	}
 	async openProject(id: string): Promise<void> {
 		if (this.project) {
@@ -324,9 +325,10 @@ export class StorageHandler extends EventEmitter {
 		this.triggerEmitAll()
 	}
 
-	newRundown(name: string): string {
+	newRundown(name: string): Rundown {
 		const fileName = this.getRundownFilename(name)
-		this.openRundowns[fileName] = this._loadRundown(this._projectId, fileName, name)
+		const rundown = this._loadRundown(this._projectId, fileName, name)
+		this.openRundowns[fileName] = rundown
 		this.appData.appData.rundowns[fileName] = {
 			name: name,
 			open: true,
@@ -334,7 +336,10 @@ export class StorageHandler extends EventEmitter {
 		this.appDataHasChanged = true
 		this.appDataNeedsWrite = true
 		this.triggerUpdate({ appData: true, rundowns: { [fileName]: true } })
-		return fileName
+		return {
+			...rundown.rundown,
+			id: fileName,
+		}
 	}
 	openRundown(fileName: string): void {
 		const fileRundown = this._loadRundown(this._projectId, fileName)
@@ -597,7 +602,7 @@ export class StorageHandler extends EventEmitter {
 
 		this.updateProject(devData.project)
 		for (const rundown of devData.rundowns) {
-			const filename = this.newRundown(rundown.name)
+			const filename = this.newRundown(rundown.name).id
 			rundown.id = filename
 
 			this.openRundown(filename)

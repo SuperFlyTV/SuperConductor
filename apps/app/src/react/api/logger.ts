@@ -1,9 +1,9 @@
 import { LogLevel } from '@shared/api'
 import { stringifyError } from '@shared/lib'
-import { IPCServer } from './IPCServer'
+import { ApiClient } from './ApiClient'
 
 export class ClientSideLogger {
-	constructor(private serverAPI: IPCServer) {
+	constructor(private serverAPI: ApiClient) {
 		this.error = this.error.bind(this)
 		this.warn = this.warn.bind(this)
 		this.info = this.info.bind(this)

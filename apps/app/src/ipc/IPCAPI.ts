@@ -16,8 +16,111 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
 import { BridgePeripheralId } from '@shared/lib'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { type EverythingService } from '../electron/EverythingService'
+import { type PartService } from '../electron/api/PartService'
+import { type ProjectService } from '../electron/api/ProjectService'
+import { type ReportingService } from '../electron/api/ReportingService'
+import { type RundownService } from '../electron/api/RundownService'
+import { type GroupService } from '../electron/api/GroupService'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
+
+export enum ServiceName {
+	GROUPS = 'groups',
+	LEGACY = 'legacy',
+	PARTS = 'parts',
+	PROJECTS = 'projects',
+	REPORTING = 'reporting',
+	RUNDOWNS = 'rundowns',
+}
+
+export type ServiceTypes = {
+	[ServiceName.GROUPS]: GroupService
+	[ServiceName.LEGACY]: EverythingService
+	[ServiceName.PARTS]: PartService
+	[ServiceName.PROJECTS]: ProjectService
+	[ServiceName.REPORTING]: ReportingService
+	[ServiceName.RUNDOWNS]: RundownService
+}
+
+type KeyArrays<T> = {
+	[K in keyof T]: Array<keyof T[K]>
+}
+
+type ServiceKeyArrays = KeyArrays<ServiceTypes>
+
+// TODO: this is temporary; Use decorators or something
+export const ClientMethods: ServiceKeyArrays = {
+	[ServiceName.GROUPS]: [
+		'create',
+		'duplicate',
+		'insert',
+		'move',
+		'play',
+		'pause',
+		'stop',
+		'playNext',
+		'playPrev',
+		'remove',
+		'update',
+	],
+	[ServiceName.LEGACY]: [],
+	[ServiceName.PARTS]: [
+		'play',
+		'stop',
+		'pause',
+		'move',
+		'duplicate',
+		'create',
+		'update',
+		'remove',
+		'insert',
+		'setPartTrigger',
+
+		'addResourcesToTimeline',
+		'deleteTimelineObj',
+		'insertTimelineObjs',
+	],
+	[ServiceName.PROJECTS]: ['get', 'create', 'update', 'getAll', 'open', 'import', 'export', 'unsubscribe'],
+	[ServiceName.REPORTING]: [
+		'log',
+		'handleClientError',
+		'debugThrowError',
+		'acknowledgeSeenVersion',
+		'acknowledgeUserAgreement',
+	],
+	[ServiceName.RUNDOWNS]: [
+		'get',
+		'create',
+		'remove',
+		'rename',
+		'unsubscribe',
+		'isPlaying',
+		'close',
+		'open',
+		// 'pauseGroup',
+		// 'playGroup',
+		// 'playNext',
+		// 'playPrev',
+		// 'stopGroup',
+		'updateTimelineObj',
+		'moveTimelineObjToNewLayer',
+
+		// 'newPart',
+		// 'insertParts',
+		// 'updatePart',
+		// 'newGroup',
+		// 'insertGroups',
+		// 'updateGroup',
+		// 'deletePart',
+		// 'deleteGroup',
+		// 'moveParts',
+		// 'duplicatePart',
+		// 'moveGroups',
+		// 'duplicateGroup',
+	],
+}
 
 export const enum ActionDescription {
 	NewPart = 'create new part',
@@ -74,6 +177,7 @@ export interface Action {
 	undo: UndoFunction
 }
 
+// --- legacy
 /** Methods that can be called on the server, by the client */
 export interface IPCServerMethods {
 	// Note: All these methods must only accept a single parameter.
@@ -84,7 +188,6 @@ export interface IPCServerMethods {
 	debugThrowError: (arg: { type: 'sync' | 'async' | 'setTimeout' }) => void
 	installUpdate: () => void
 	triggerSendAll: () => void
-	triggerSendRundown: (arg: { rundownId: string }) => void
 	setKeyboardKeys(arg: { activeKeys: ActiveTrigger[] }): void
 	makeDevData(): void
 
@@ -97,13 +200,13 @@ export interface IPCServerMethods {
 	updateGUISelection: (arg: { selection: Readonly<CurrentSelectionAny[]> }) => void
 	exportProject: () => void
 	importProject: () => void
-	newProject: () => void
+	newProject: () => { name: string; id: string }
 	listProjects: () => { name: string; id: string }[]
 	openProject: (arg: { projectId: string }) => void
 
-	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => void
-	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => void
-	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => void
+	playPart: (arg: { rundownId: string; groupId: string; partId: string; resume?: boolean }) => Rundown
+	pausePart: (arg: { rundownId: string; groupId: string; partId: string; pauseTime?: number }) => Rundown
+	stopPart: (arg: { rundownId: string; groupId: string; partId: string }) => Rundown
 	setPartTrigger: (arg: {
 		rundownId: string
 		groupId: string
@@ -205,9 +308,9 @@ export interface IPCServerMethods {
 	triggerHandleAutoFill: () => void
 
 	updateAppData: (arg: UpdateAppDataOptions) => void
-	updateProject: (arg: { id: string; project: Project }) => void
+	updateProject: (arg: { id: string; project: Project }) => Project
 
-	newRundown: (arg: { name: string }) => string
+	newRundown: (arg: { name: string }) => Rundown
 	deleteRundown: (arg: { rundownId: string }) => void
 	openRundown: (arg: { rundownId: string }) => void
 	closeRundown: (arg: { rundownId: string }) => void
@@ -255,6 +358,8 @@ export interface IPCClientMethods {
 	updatePeripheralAnalog: (fullIdentifier: string, analog: ActiveAnalog | null) => void
 	updateFailedGlobalTriggers: (identifiers: string[]) => void
 	updateAnalogInput: (fullIdentifier: string, analogInput: AnalogInput | null) => void
+	updateDeviceRefreshStatus: (deviceId: TSRDeviceId, refreshing: boolean) => void
+	updateDefiningArea: (area: DefiningArea | null) => void
 }
 
 export interface SystemMessageOptions {
@@ -264,3 +369,10 @@ export interface SystemMessageOptions {
 	displayRestartButton?: boolean
 }
 export type UpdateAppDataOptions = Pick<AppData, 'preReleaseAutoUpdate' | 'guiDecimalCount'>
+
+export enum RundownsEvents {
+	UPDATED = 'updated',
+}
+export enum ProjectsEvents {
+	UPDATED = 'updated',
+}

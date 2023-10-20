@@ -1,4 +1,4 @@
-import { IPCClientMethods, SystemMessageOptions } from '../../ipc/IPCAPI'
+import { ProjectsEvents, RundownsEvents, ServiceName, SystemMessageOptions } from '../../ipc/IPCAPI'
 import { BridgeStatus } from '../../models/project/Bridge'
 import { Project } from '../../models/project/Project'
 import { PeripheralStatus } from '../../models/project/Peripheral'
@@ -12,12 +12,12 @@ import { ActiveAnalog } from '../../models/rundown/Analog'
 import { AnalogInput } from '../../models/project/AnalogInput'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
+import { app } from './ApiClient'
 
 /** This class is used client-side, to handle messages from the server */
-export class IPCClient implements IPCClientMethods {
+export class RealtimeDataProvider {
 	constructor(
 		private logger: ClientSideLogger,
-		private ipcRenderer: Electron.IpcRenderer,
 		private callbacks: {
 			systemMessage?: (message: string, options: SystemMessageOptions) => void
 
@@ -39,12 +39,20 @@ export class IPCClient implements IPCClientMethods {
 			updateAnalogInput?: (fullIdentifier: string, analogInput: AnalogInput | null) => void
 		}
 	) {
-		this.handleCallMethod = this.handleCallMethod.bind(this)
-		// eslint-disable-next-line @typescript-eslint/unbound-method
-		this.ipcRenderer.on('callMethod', this.handleCallMethod)
+		// this is new:
+		app.service(ServiceName.RUNDOWNS).on(RundownsEvents.UPDATED, (rundown) =>
+			this.updateRundown(rundown.id, rundown)
+		)
+		app.service(ServiceName.PROJECTS).on(ProjectsEvents.UPDATED, (project) => this.updateProject(project))
+		// app.service('project').on(...) etc.
+
+		// this is temporary:
+		app.service(ServiceName.LEGACY).on('callMethod', (args) => this.handleCallMethod(args[0], args.slice(1)))
 	}
 
-	private handleCallMethod(_event: Electron.IpcRendererEvent, methodname: string, ...args: any[]): void {
+	// --- legacy, remove
+
+	private handleCallMethod(methodname: string, args: any[]): void {
 		const fcn = (this as any)[methodname]
 		if (!fcn) {
 			this.logger.error(`IPCClient: method ${methodname} not found`)
@@ -100,6 +108,8 @@ export class IPCClient implements IPCClientMethods {
 	}
 	destroy(): void {
 		// eslint-disable-next-line @typescript-eslint/unbound-method
-		this.ipcRenderer.off('callMethod', this.handleCallMethod)
+		// this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
+
+	// --- legacy end
 }
