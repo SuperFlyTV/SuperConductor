@@ -25,7 +25,7 @@ export class TSR {
 	public newConnection = false
 	public conductor: Conductor
 	public send: (message: BridgeAPI.FromBridge.Any) => void
-	private devices = new Map<TSRDeviceId, DeviceOptionsAny & { abortController: AbortController }>()
+	private devices = new Map<TSRDeviceId, { abortController: AbortController; options: DeviceOptionsAny }>()
 
 	private sideLoadedDevices = new Map<TSRDeviceId, SideLoadDevice>()
 
@@ -113,12 +113,12 @@ export class TSR {
 	private async _updateDevices(): Promise<void> {
 		// Added/updated:
 		const deviceOptions = this.deviceOptions
-		for (const [deviceId, newDevice] of deviceOptions.entries()) {
-			if (newDevice.disable) continue
+		for (const [deviceId, newDeviceOptions] of deviceOptions.entries()) {
+			if (newDeviceOptions.disable) continue
 
 			const existingDevice = this.devices.get(deviceId)
 
-			if (!existingDevice || !_.isEqual(existingDevice, newDevice)) {
+			if (!existingDevice || !_.isEqual(existingDevice.options, newDeviceOptions)) {
 				if (existingDevice) {
 					existingDevice.abortController.abort()
 					await this.conductor.removeDevice(unprotectString(deviceId))
@@ -127,7 +127,7 @@ export class TSR {
 
 				const abortController = new AbortController()
 
-				this.devices.set(deviceId, { ...newDevice, abortController })
+				this.devices.set(deviceId, { options: newDeviceOptions, abortController })
 				this.onDeviceStatus(deviceId, {
 					statusCode: StatusCode.UNKNOWN,
 					messages: ['Initializing'],
@@ -136,10 +136,10 @@ export class TSR {
 
 				// Run async so as not to block other devices from being processed.
 				;(async () => {
-					this.sideLoadDevice(deviceId, newDevice)
+					this.sideLoadDevice(deviceId, newDeviceOptions)
 
 					// Create the device, but don't initialize it:
-					const devicePr = this.conductor.createDevice(unprotectString(deviceId), newDevice, {
+					const devicePr = this.conductor.createDevice(unprotectString(deviceId), newDeviceOptions, {
 						signal: abortController.signal,
 					})
 
@@ -184,7 +184,7 @@ export class TSR {
 					})
 
 					// now initialize it
-					await this.conductor.initDevice(unprotectString(deviceId), newDevice, undefined, {
+					await this.conductor.initDevice(unprotectString(deviceId), newDeviceOptions, undefined, {
 						signal: abortController.signal,
 					})
 
@@ -313,7 +313,8 @@ export class TSR {
 
 		if (status && device) {
 			// Hack to get rid of warnings for UDP OSC devices, which always have an UNKNOWN status code.
-			const isOscUdp = device.type === DeviceType.OSC && device.options?.type === OSCDeviceType.UDP
+			const isOscUdp =
+				device.options.type === DeviceType.OSC && device.options.options?.type === OSCDeviceType.UDP
 			const ok = isOscUdp ? true : status.statusCode === StatusCode.GOOD
 			const message = status.messages?.join(', ') ?? ''
 			this.send({
