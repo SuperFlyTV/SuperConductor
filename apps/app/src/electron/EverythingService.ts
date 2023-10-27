@@ -128,22 +128,6 @@ type ConvertToServerSide<T> = {
 		: T[K]
 }
 
-// const unreplaceUndefined = async (context: HookContext<any, EverythingService>, next: NextFunction) => {
-// 	context.arguments = unReplaceUndefined(context.arguments)
-// 	await next()
-// }
-
-// const undoable = async (context: HookContext<any, EverythingService>, next: NextFunction) => {
-// 	await next()
-// 	if (context.self && isUndoable(context.result)) {
-// 		context.self.registerUndoable(
-// 			context.arguments,
-// 			(context.self as any)[context.method ?? '']?.bind(context.self),
-// 			context.result
-// 		)
-// 	}
-// }
-
 function Undoable(target: EverythingService, _key: string, descriptor: PropertyDescriptor) {
 	const originalMethod = descriptor.value
 	descriptor.value = async function (...args: any) {
@@ -187,47 +171,6 @@ export class EverythingService
 		}
 	) {
 		super()
-		for (const methodName of Object.getOwnPropertyNames(EverythingService.prototype)) {
-			if (methodName[0] !== '_') {
-				const fcn = (this as any)[methodName].bind(this)
-				if (typeof fcn === 'function') {
-					// Monkey-patching methods in this class. There are definitely better ways to do it...
-					// ;(this as any)[methodName] = async (...args0: string[]) => {
-					// 	try {
-					// 		const args = unReplaceUndefined(args0)
-					// 		let result = fcn(...args)
-					// 		if (result instanceof Promise) result = await result
-					// 		if (isUndoable(result)) {
-					// 			// Clear any future things in the undo ledger:
-					// 			this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
-					// 			// Add the new action to the undo ledger:
-					// 			this.undoLedger.push({
-					// 				description: result.description,
-					// 				arguments: args,
-					// 				undo: result.undo,
-					// 				redo: fcn,
-					// 			})
-					// 			if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
-					// 				this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
-					// 			}
-					// 			this.undoPointer = this.undoLedger.length - 1
-					// 			this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
-					// 			// string represents "anything but undefined" here:
-					// 			return (result as UndoableResult<string>).result
-					// 		} else {
-					// 			return result
-					// 		}
-					// 	} catch (error) {
-					// 		this.callbacks.handleError(
-					// 			`Error when calling ${methodName}: ${error}`,
-					// 			typeof error === 'object' && (error as any).stack
-					// 		)
-					// 		throw error
-					// 	}
-					// }
-				}
-			}
-		}
 	}
 
 	// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
