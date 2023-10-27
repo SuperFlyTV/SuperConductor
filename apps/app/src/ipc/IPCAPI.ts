@@ -51,6 +51,7 @@ type KeyArrays<T> = {
 type ServiceKeyArrays = KeyArrays<ServiceTypes>
 
 // TODO: this is temporary; Use decorators or something
+// those are the arrays of service methods exposed to the clients
 export const ClientMethods: ServiceKeyArrays = {
 	[ServiceName.GROUPS]: [
 		'create',
@@ -82,7 +83,18 @@ export const ClientMethods: ServiceKeyArrays = {
 		'deleteTimelineObj',
 		'insertTimelineObjs',
 	],
-	[ServiceName.PROJECTS]: ['get', 'create', 'update', 'getAll', 'open', 'import', 'export', 'unsubscribe'],
+	[ServiceName.PROJECTS]: [
+		'get',
+		'create',
+		'update',
+		'getAll',
+		'open',
+		'import',
+		'export',
+		'unsubscribe',
+		'undo',
+		'redo',
+	],
 	[ServiceName.REPORTING]: [
 		'log',
 		'handleClientError',
@@ -99,26 +111,8 @@ export const ClientMethods: ServiceKeyArrays = {
 		'isPlaying',
 		'close',
 		'open',
-		// 'pauseGroup',
-		// 'playGroup',
-		// 'playNext',
-		// 'playPrev',
-		// 'stopGroup',
 		'updateTimelineObj',
 		'moveTimelineObjToNewLayer',
-
-		// 'newPart',
-		// 'insertParts',
-		// 'updatePart',
-		// 'newGroup',
-		// 'insertGroups',
-		// 'updateGroup',
-		// 'deletePart',
-		// 'deleteGroup',
-		// 'moveParts',
-		// 'duplicatePart',
-		// 'moveGroups',
-		// 'duplicateGroup',
 	],
 }
 

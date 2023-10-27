@@ -14,6 +14,7 @@ import { ClientMethods, ProjectsEvents, RundownsEvents, ServiceName, ServiceType
 import { Project, ProjectBase } from '../../models/project/Project'
 import { PartService } from './PartService'
 import { GroupService } from './GroupService'
+import { unReplaceUndefined } from '../../lib/util'
 
 export class ApiServer {
 	private app = koa<ServiceTypes>(feathers())
@@ -59,6 +60,17 @@ export class ApiServer {
 			methods: ClientMethods[ServiceName.REPORTING],
 			serviceEvents: [],
 			events: [],
+		})
+
+		// TODO: potentially may break some thing in ultra rare cases. Should we enable it only for selected methods?
+		this.app.hooks({
+			before: {
+				all: [
+					async (context: HookContext) => {
+						context.data = unReplaceUndefined(context.data)
+					},
+				],
+			},
 		})
 
 		this.app.service(ServiceName.RUNDOWNS).publish((data: Rundown, _context: HookContext) => {

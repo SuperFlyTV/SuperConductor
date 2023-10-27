@@ -1,7 +1,7 @@
 import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
 import { replaceUndefined } from '../../lib/util'
 
-import { feathers } from '@feathersjs/feathers'
+import { HookContext, feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
 import { Rundown } from '../../models/rundown/Rundown'
@@ -60,6 +60,16 @@ app.use(
 		methods: ClientMethods[ServiceName.REPORTING],
 	}
 )
+
+app.hooks({
+	before: {
+		all: [
+			async (context: HookContext) => {
+				context.data = replaceUndefined(context.data)
+			},
+		],
+	},
+})
 
 type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
 type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServerMethods[T]>>
@@ -319,5 +329,11 @@ export class ApiClient {
 	}
 	async setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>): ServerReturn<'setApplicationTrigger'> {
 		return this.invokeServerMethod('setApplicationTrigger', ...args)
+	}
+	async undo(): Promise<void> {
+		return this.projectService.undo()
+	}
+	async redo(): Promise<void> {
+		return this.projectService.redo()
 	}
 }

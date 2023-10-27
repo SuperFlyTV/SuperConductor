@@ -1,4 +1,5 @@
-import { deepExtendRemovingUndefined } from '../util'
+import { TimelineObj } from '../../models/rundown/TimelineObj'
+import { deepExtendRemovingUndefined, deleteTimelineObj } from '../util'
 
 test('deepExtendRemovingUndefined', () => {
 	{
@@ -84,4 +85,38 @@ test('deepExtendRemovingUndefined', () => {
 			},
 		})
 	}
+})
+
+function makeTestObject(id: string, start: string | number): TimelineObj {
+	return {
+		obj: {
+			content: {} as any,
+			enable: {
+				start,
+			},
+			id,
+			layer: '',
+		},
+		resolved: {} as any
+	}
+}
+
+describe('deleteTimelineObj', () => {
+	it('returns the same array if no changes', () => {
+		const timeline = [makeTestObject('obj1', '#obj2.end + 500'), makeTestObject('obj2', 1000)]
+		const result = deleteTimelineObj(timeline, 'obj3')
+		expect(result).toBe(timeline)
+	})
+
+	it('patches dependent objects', () => {
+		const timeline = [makeTestObject('obj1', '#obj2.end + 500'), makeTestObject('obj2', 1000)]
+		const result = deleteTimelineObj([makeTestObject('obj1', '#obj2.end + 500'), makeTestObject('obj2', 1000)], 'obj2')
+		expect(result).toEqual([makeTestObject('obj1', '1000 + 500')]) // not great, but acceptable
+	})
+
+	it('patches dependent objects 2', () => {
+		const timeline = [makeTestObject('obj1', '#obj2.end + 500'), makeTestObject('obj2', '#obj3.end'), makeTestObject('obj3', 0)]
+		const result = deleteTimelineObj(timeline, 'obj2')
+		expect(result).toEqual([makeTestObject('obj1', '#obj3.end + 500'), makeTestObject('obj3', 0)])
+	})
 })

@@ -65,4 +65,16 @@ export class ProjectService extends EventEmitter {
 		// TODO: access control
 		return await this.everythingService.importProject()
 	}
+
+	async undo(): Promise<void> {
+		// TODO: likely not the best place for this method
+		// TODO: access control
+		return await this.everythingService.undo()
+	}
+
+	async redo(): Promise<void> {
+		// TODO: likely not the best place for this method
+		// TODO: access control
+		return await this.everythingService.redo()
+	}
 }

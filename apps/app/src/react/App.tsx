@@ -519,16 +519,36 @@ export const App = observer(function App() {
 				handleError(error)
 			}
 		}
+		function onUndo(): void {
+			setUserAgreementScreenOpen(false)
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			serverAPI.undo().catch(handleError)
+		}
+		function onRedo(): void {
+			setUserAgreementScreenOpen(false)
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			serverAPI.redo().catch(handleError)
+		}
 		sorensen.bind('Escape', onEscapeKey, {
 			up: false,
 			global: true,
 			exclusive: true,
 			preventDefaultPartials: false,
 		})
+		sorensen.bind('Control+KeyZ', onUndo, {
+			up: false,
+			global: true,
+		})
+		sorensen.bind('Control+KeyY', onRedo, {
+			up: false,
+			global: true,
+		})
 		return () => {
 			sorensen.unbind('Escape', onEscapeKey)
+			sorensen.unbind('Control+KeyZ', onUndo)
+			sorensen.unbind('Control+KeyY', onRedo)
 		}
-	}, [sorensenInitialized, handleError, gui, currentRundownId])
+	}, [sorensenInitialized, handleError, gui, currentRundownId, serverAPI])
 
 	useMemoComputedValue(() => {
 		if (!project) return

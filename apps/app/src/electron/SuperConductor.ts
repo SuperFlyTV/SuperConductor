@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { BrowserWindow, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { EverythingService } from './EverythingService'
@@ -225,7 +225,7 @@ export class SuperConductor {
 			},
 		})
 
-		this.ipcServer = new EverythingService(ipcMain, this.log, this.renderLog, this.storage, this, this.session, {
+		this.ipcServer = new EverythingService(this.log, this.renderLog, this.storage, this, this.session, {
 			refreshResources: () => {
 				this.refreshResources()
 			},
