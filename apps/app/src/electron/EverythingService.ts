@@ -405,6 +405,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		return rundown
 	}
 
+	@Undoable
 	async setPartTrigger(arg: {
 		rundownId: string
 		groupId: string
