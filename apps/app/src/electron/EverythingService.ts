@@ -83,13 +83,6 @@ import { SuperConductor } from './SuperConductor'
 import { UndoLedgerKey, UndoLedgerService } from './UndoService'
 import { SpecialLedgers } from '../models/project/Project'
 
-// type IPCServerEvents = {
-// 	updatedUndoLedger: (
-// 		undoLedger: Readonly<{ [key: string | symbol]: UndoLedger }>,
-// 		undoPointer: Readonly<UndoPointer>
-// 	) => void
-// }
-
 export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
 		return false
