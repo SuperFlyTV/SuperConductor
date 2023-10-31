@@ -34,13 +34,13 @@ export class ClientEventBus extends EventEmitter<ClientEventBusEvents> implement
 		this.emit('callMethod', 'updateAppData', appData)
 	}
 	updateProject(project: Project): void {
-		this.emit('updateProject', project) // TODO: some type safety, please
+		this.emit('updateProject', project)
 	}
 	updateRundown(_fileName: string, rundown: Rundown): void {
-		this.emit('updateRundown', rundown) // TODO: some type safety, please
+		this.emit('updateRundown', rundown)
 	}
 	updateUndoLedgers(data: SerializableLedgers): void {
-		this.emit('updateUndoLedgers', data) // TODO: some type safety, please
+		this.emit('updateUndoLedgers', data)
 	}
 	updateResourcesAndMetadata(
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
