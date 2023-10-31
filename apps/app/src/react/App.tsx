@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-// const { ipcRenderer } = window.require('electron')
 
 import '@fontsource/barlow/300.css'
 import '@fontsource/barlow/400.css'
@@ -15,7 +14,7 @@ import { Sidebar } from './components/sidebar/Sidebar'
 import sorensen from '@sofie-automation/sorensen'
 import { RealtimeDataProvider } from './api/RealtimeDataProvider'
 import { ApiClient } from './api/ApiClient'
-import { Project } from '../models/project/Project'
+import { Project, SpecialLedgers } from '../models/project/Project'
 import { IPCServerContext } from './contexts/IPCServer'
 import { ProjectContext } from './contexts/Project'
 import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
@@ -50,6 +49,7 @@ import { TextBtn } from './components/inputs/textBtn/TextBtn'
 import { HiOutlineX, HiDotsVertical } from 'react-icons/hi'
 import { protectString } from '@shared/models'
 import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral'
+import { ElectronApi } from './api/ElectronApi'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -491,6 +491,13 @@ export const App = observer(function App() {
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
 
+	const undoLedgerKey = useMemoComputedValue(() => {
+		let key: string = SpecialLedgers.APPLICATION
+		if (gui.isPeripheralPopoverOpen) key = SpecialLedgers.PERIPHERALS
+		if (currentRundownId && !gui.isHomeSelected()) key = currentRundownId
+		return key
+	}, [gui, currentRundownId])
+
 	useEffect(() => {
 		if (!sorensenInitialized) {
 			return
@@ -521,13 +528,11 @@ export const App = observer(function App() {
 		}
 		function onUndo(): void {
 			setUserAgreementScreenOpen(false)
-			// eslint-disable-next-line @typescript-eslint/unbound-method
-			serverAPI.undo().catch(handleError)
+			if (undoLedgerKey) serverAPI.undo({ key: undoLedgerKey }).catch(handleError)
 		}
 		function onRedo(): void {
 			setUserAgreementScreenOpen(false)
-			// eslint-disable-next-line @typescript-eslint/unbound-method
-			serverAPI.redo().catch(handleError)
+			if (undoLedgerKey) serverAPI.redo({ key: undoLedgerKey }).catch(handleError)
 		}
 		sorensen.bind('Escape', onEscapeKey, {
 			up: false,
@@ -548,7 +553,14 @@ export const App = observer(function App() {
 			sorensen.unbind('Control+KeyZ', onUndo)
 			sorensen.unbind('Control+KeyY', onRedo)
 		}
-	}, [sorensenInitialized, handleError, gui, currentRundownId, serverAPI])
+	}, [sorensenInitialized, handleError, gui, currentRundownId, serverAPI, undoLedgerKey])
+
+	useEffect(() => {
+		if (ElectronApi) {
+			const ledger = store.appStore.undoLedgers[undoLedgerKey] ?? {}
+			ElectronApi.updateUndoLedger(undoLedgerKey, JSON.parse(JSON.stringify(ledger)))
+		}
+	}, [undoLedgerKey, store.appStore.undoLedgers])
 
 	useMemoComputedValue(() => {
 		if (!project) return

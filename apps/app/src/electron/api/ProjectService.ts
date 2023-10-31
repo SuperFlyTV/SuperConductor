@@ -4,6 +4,7 @@ import EventEmitter from 'node:events'
 import { ProjectsEvents, ServiceTypes } from '../../ipc/IPCAPI'
 import { Project, ProjectBase } from '../../models/project/Project'
 import { ClientEventBus } from '../ClientEventBus'
+import { SerializableLedgers } from '../../models/project/Project'
 
 export const PROJECTS_CHANNEL_PREFIX = 'projects'
 export class ProjectService extends EventEmitter {
@@ -15,6 +16,9 @@ export class ProjectService extends EventEmitter {
 		super()
 		clientEventBus.on('updateProject', (project: Project) => {
 			this.emit(ProjectsEvents.UPDATED, project)
+		})
+		clientEventBus.on('updateUndoLedgers', (ledgers: SerializableLedgers) => {
+			this.emit(ProjectsEvents.UNDO_LEDGERS_UPDATED, ledgers)
 		})
 	}
 
@@ -66,15 +70,15 @@ export class ProjectService extends EventEmitter {
 		return await this.everythingService.importProject()
 	}
 
-	async undo(): Promise<void> {
+	async undo(data: { key: string }): Promise<void> {
 		// TODO: likely not the best place for this method
 		// TODO: access control
-		return await this.everythingService.undo()
+		return await this.everythingService.undo(data.key)
 	}
 
-	async redo(): Promise<void> {
+	async redo(data: { key: string }): Promise<void> {
 		// TODO: likely not the best place for this method
 		// TODO: access control
-		return await this.everythingService.redo()
+		return await this.everythingService.redo(data.key)
 	}
 }

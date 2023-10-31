@@ -21,9 +21,9 @@ type PartArg<T extends keyof ServiceTypes[ServiceName.PARTS]> = Parameters<Servi
 type RundownArg<T extends keyof ServiceTypes[ServiceName.RUNDOWNS]> = Parameters<
 	ServiceTypes[ServiceName.RUNDOWNS][T]
 >[0]
-// type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
-// 	ServiceTypes[ServiceName.PROJECTS][T]
-// >[0]
+type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
+	ServiceTypes[ServiceName.PROJECTS][T]
+>[0]
 type ReportingArg<T extends keyof ServiceTypes[ServiceName.REPORTING]> = Parameters<
 	ServiceTypes[ServiceName.REPORTING][T]
 >[0]
@@ -330,10 +330,10 @@ export class ApiClient {
 	async setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>): ServerReturn<'setApplicationTrigger'> {
 		return this.invokeServerMethod('setApplicationTrigger', ...args)
 	}
-	async undo(): Promise<void> {
-		return this.projectService.undo()
+	async undo(data: ProjectArg<'undo'>): Promise<void> {
+		return this.projectService.undo(data)
 	}
-	async redo(): Promise<void> {
-		return this.projectService.redo()
+	async redo(data: ProjectArg<'redo'>): Promise<void> {
+		return this.projectService.redo(data)
 	}
 }

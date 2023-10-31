@@ -40,13 +40,7 @@ import {
 	TSRTimelineContent,
 	DeviceOptionsAny,
 } from 'timeline-state-resolver-types'
-import {
-	ActionDescription,
-	IPCServerMethods,
-	MAX_UNDO_LEDGER_LENGTH,
-	UndoableResult,
-	UpdateAppDataOptions,
-} from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, UndoableResult, UpdateAppDataOptions } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
@@ -64,8 +58,6 @@ import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@sha
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project, ProjectBase } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
-import EventEmitter from 'events'
-import TypedEmitter from 'typed-emitter'
 import {
 	filterMapping,
 	getMappingFromTimelineObject,
@@ -88,21 +80,15 @@ import { TriggersHandler } from './triggersHandler'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 import * as RundownActions from './rundownActions'
 import { SuperConductor } from './SuperConductor'
+import { UndoLedgerKey, UndoLedgerService } from './UndoService'
+import { SpecialLedgers } from '../models/project/Project'
 
-type UndoLedger = Action[]
-type UndoPointer = number
-type UndoFunction = () => Promise<void> | void
-type UndoableFunction = (...args: any[]) => Promise<UndoableResult<any>>
-interface Action {
-	description: ActionDescription
-	arguments: any[]
-	redo: UndoableFunction
-	undo: UndoFunction
-}
-
-type IPCServerEvents = {
-	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
-}
+// type IPCServerEvents = {
+// 	updatedUndoLedger: (
+// 		undoLedger: Readonly<{ [key: string | symbol]: UndoLedger }>,
+// 		undoPointer: Readonly<UndoPointer>
+// 	) => void
+// }
 
 export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
@@ -132,7 +118,9 @@ function Undoable(target: EverythingService, _key: string, descriptor: PropertyD
 	const originalMethod = descriptor.value
 	descriptor.value = async function (...args: any) {
 		const result = await originalMethod.apply(this, args)
-		target.registerUndoable.call(this, args, originalMethod.bind(this), result)
+		if (isUndoable(result)) {
+			target.pushUndoable.call(this, result.ledgerKey, args, originalMethod.bind(this), result)
+		}
 		return result
 	}
 	return descriptor
@@ -142,13 +130,8 @@ function Undoable(target: EverythingService, _key: string, descriptor: PropertyD
  * This class is used server-side, to handle requests from the client
  * The methods in here will later be moved away to other Services
  */
-export class EverythingService
-	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
-	implements ConvertToServerSide<IPCServerMethods>
-{
+export class EverythingService implements ConvertToServerSide<IPCServerMethods> {
 	public triggers?: TriggersHandler
-	private undoLedger: UndoLedger = []
-	private undoPointer: UndoPointer = -1
 
 	constructor(
 		private _log: LoggerLike,
@@ -156,6 +139,7 @@ export class EverythingService
 		private storage: StorageHandler,
 		private superConductor: SuperConductor,
 		private session: SessionHandler,
+		private undoService: UndoLedgerService,
 		private callbacks: {
 			onClientConnected: () => void
 			installUpdate: () => void
@@ -169,25 +153,10 @@ export class EverythingService
 			onAgreeToUserAgreement: () => void
 			handleError: (error: string, stack?: string) => void
 		}
-	) {
-		super()
-	}
+	) {}
 
-	// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-	public registerUndoable(args: any, fcn: () => any, result: UndoableResult): void {
-		this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
-		// Add the new action to the undo ledger:
-		this.undoLedger.push({
-			description: result.description,
-			arguments: args,
-			undo: result.undo,
-			redo: fcn,
-		})
-		if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
-			this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
-		}
-		this.undoPointer = this.undoLedger.length - 1
-		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	public pushUndoable(key: UndoLedgerKey, args: unknown[], fcn: () => any, result: UndoableResult): void {
+		this.undoService.pushUndoable(key, args, fcn, result)
 	}
 
 	public getProject(): Project {
@@ -254,34 +223,11 @@ export class EverythingService
 		return { rundown, group, part }
 	}
 
-	async undo(): Promise<void> {
-		const action = this.undoLedger[this.undoPointer]
-		try {
-			await action.undo()
-			this.undoPointer--
-		} catch (error) {
-			this._log.error('Error when undoing:', error)
-
-			// Clear
-			this.undoLedger.splice(0, this.undoLedger.length)
-			this.undoPointer = -1
-		}
-		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	async undo(key: string): Promise<void> {
+		await this.undoService.undo(key)
 	}
-	async redo(): Promise<void> {
-		const action = this.undoLedger[this.undoPointer + 1]
-		try {
-			const redoResult = await action.redo(...action.arguments)
-			action.undo = redoResult.undo
-			this.undoPointer++
-		} catch (error) {
-			this._log.error('Error when redoing:', error)
-
-			// Clear
-			this.undoLedger.splice(0, this.undoLedger.length)
-			this.undoPointer = -1
-		}
-		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	async redo(key: string): Promise<void> {
+		await this.undoService.redo(key)
 	}
 
 	async log(arg: { level: LogLevel; params: any[] }): Promise<void> {
@@ -498,6 +444,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetPartTrigger,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -654,6 +601,7 @@ export class EverythingService
 			},
 			description: ActionDescription.NewPart,
 			result,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -753,6 +701,7 @@ export class EverythingService
 				},
 				description: ActionDescription.InsertParts,
 				result: inserted,
+				ledgerKey: arg.rundownId,
 			}
 		} else {
 			return this._insertPartsAsTransparentGroup({
@@ -814,6 +763,7 @@ export class EverythingService
 		return {
 			...r,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -858,6 +808,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -920,6 +871,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpsertPart,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -964,6 +916,7 @@ export class EverythingService
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1056,6 +1009,7 @@ export class EverythingService
 			},
 			description: ActionDescription.InsertGroups,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1106,6 +1060,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1196,6 +1151,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpsertGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1262,6 +1218,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeletePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1293,6 +1250,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: deletedGroup })
 			},
 			description: ActionDescription.DeleteGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1479,6 +1437,7 @@ export class EverythingService
 			},
 			description: ActionDescription.MovePart,
 			result: resultingParts,
+			ledgerKey: arg.to.rundownId,
 		}
 	}
 	@Undoable
@@ -1529,6 +1488,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup ? undefined : group })
 			},
 			description: ActionDescription.DuplicatePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1573,6 +1533,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.MoveGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1599,6 +1560,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DuplicateGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
@@ -1640,6 +1602,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
@@ -1683,6 +1646,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.DeleteTimelineObj,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1809,6 +1773,7 @@ export class EverythingService
 			},
 			description: ActionDescription.AddTimelineObj,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -1863,6 +1828,7 @@ export class EverythingService
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
@@ -1986,6 +1952,7 @@ export class EverythingService
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.addResourcesToTimeline,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2017,6 +1984,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupLoop,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2048,6 +2016,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupAutoplay,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2090,6 +2059,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.toggleGroupOneAtATime,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2121,6 +2091,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupDisable,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2141,6 +2112,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupLock,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2165,6 +2137,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupCollapse,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	@Undoable
@@ -2193,6 +2166,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleAllGroupsCollapse,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async refreshResources(): Promise<void> {
@@ -2248,6 +2222,7 @@ export class EverythingService
 			},
 			description: ActionDescription.NewRundown,
 			result: rundown,
+			ledgerKey: rundown.id,
 		}
 	}
 	async deleteRundown(arg: { rundownId: string }): Promise<void> {
@@ -2278,6 +2253,7 @@ export class EverythingService
 				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
 	@Undoable
@@ -2301,6 +2277,7 @@ export class EverythingService
 				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
 
@@ -2322,6 +2299,7 @@ export class EverythingService
 			},
 			description: ActionDescription.RenameRundown,
 			result: newRundownId,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async isRundownPlaying(arg: { rundownId: string }): Promise<boolean> {
@@ -2432,6 +2410,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.CreateMissingMapping,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
@@ -2479,6 +2458,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
 	@Undoable
@@ -2522,6 +2502,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.RemovePeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
 	@Undoable
@@ -2570,6 +2551,7 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpdatePeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
 	@Undoable
@@ -2609,6 +2591,7 @@ export class EverythingService
 				this._saveUpdates({ project })
 			},
 			description: ActionDescription.AssignAreaToGroup,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
 	async startDefiningArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }): Promise<void> {
@@ -2676,6 +2659,7 @@ export class EverythingService
 				this._saveUpdates({ appData, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetApplicationTrigger,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
 

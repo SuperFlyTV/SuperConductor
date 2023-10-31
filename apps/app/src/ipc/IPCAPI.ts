@@ -1,6 +1,6 @@
 import { PartialDeep } from 'type-fest'
 import { BridgeStatus } from '../models/project/Bridge'
-import { Project } from '../models/project/Project'
+import { Project, SerializableLedger } from '../models/project/Project'
 import { ResourceAny, ResourceId, MetadataAny, SerializedProtectedMap, TSRDeviceId } from '@shared/models'
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
@@ -23,8 +23,7 @@ import { type ProjectService } from '../electron/api/ProjectService'
 import { type ReportingService } from '../electron/api/ReportingService'
 import { type RundownService } from '../electron/api/RundownService'
 import { type GroupService } from '../electron/api/GroupService'
-
-export const MAX_UNDO_LEDGER_LENGTH = 100
+import { type SpecialLedgers } from '../models/project/Project'
 
 export enum ServiceName {
 	GROUPS = 'groups',
@@ -117,50 +116,55 @@ export const ClientMethods: ServiceKeyArrays = {
 }
 
 export const enum ActionDescription {
-	NewPart = 'create new part',
-	InsertParts = 'insert part(s)',
-	UpdatePart = 'update part',
+	NewPart = 'Create new part',
+	InsertParts = 'Insert part(s)',
+	UpdatePart = 'Update part',
 	SetPartTrigger = 'Assign trigger',
-	NewGroup = 'create new group',
-	InsertGroups = 'insert group(s)',
-	UpdateGroup = 'update group',
-	DeletePart = 'delete part',
-	DeleteGroup = 'delete group',
-	MovePart = 'move part',
-	MoveGroup = 'move group',
-	UpdateTimelineObj = 'update timeline object',
-	DeleteTimelineObj = 'delete timeline object',
-	AddTimelineObj = 'add timeline obj',
-	addResourcesToTimeline = 'add resource to timeline',
-	ToggleGroupLoop = 'toggle group loop',
-	ToggleGroupAutoplay = 'toggle group autoplay',
-	toggleGroupOneAtATime = 'toggle group one-at-a-time',
-	ToggleGroupDisable = 'toggle group disable',
-	ToggleGroupLock = 'toggle group lock',
-	ToggleGroupCollapse = 'toggle group collapse',
-	ToggleAllGroupsCollapse = 'toggle all groups collapse',
-	NewRundown = 'new rundown',
-	DeleteRundown = 'delete rundown',
-	OpenRundown = 'open rundown',
-	CloseRundown = 'close rundown',
-	RenameRundown = 'rename rundown',
-	MoveTimelineObjToNewLayer = 'move timeline object to new layer',
-	CreateMissingMapping = 'create missing layer',
-	DuplicateGroup = 'duplicate group',
-	DuplicatePart = 'duplicate part',
+	NewGroup = 'Create new group',
+	InsertGroups = 'Insert group(s)',
+	UpdateGroup = 'Update group',
+	DeletePart = 'Delete part',
+	DeleteGroup = 'Delete group',
+	MovePart = 'Move part',
+	MoveGroup = 'Move group',
+	UpdateTimelineObj = 'Update timeline object',
+	DeleteTimelineObj = 'Delete timeline object',
+	AddTimelineObj = 'Add timeline obj',
+	addResourcesToTimeline = 'Add resource to timeline',
+	ToggleGroupLoop = 'Toggle group loop',
+	ToggleGroupAutoplay = 'Toggle group autoplay',
+	toggleGroupOneAtATime = 'Toggle group one-at-a-time',
+	ToggleGroupDisable = 'Toggle group disable',
+	ToggleGroupLock = 'Toggle group lock',
+	ToggleGroupCollapse = 'Toggle group collapse',
+	ToggleAllGroupsCollapse = 'Toggle all groups collapse',
+	NewRundown = 'New rundown',
+	DeleteRundown = 'Delete rundown',
+	OpenRundown = 'Open rundown',
+	CloseRundown = 'Close rundown',
+	RenameRundown = 'Rename rundown',
+	MoveTimelineObjToNewLayer = 'Move timeline object to new layer',
+	CreateMissingMapping = 'Create missing layer',
+	DuplicateGroup = 'Duplicate group',
+	DuplicatePart = 'Duplicate part',
 	AddPeripheralArea = 'Add button area',
 	UpdatePeripheralArea = 'Update button area',
 	RemovePeripheralArea = 'Remove button area',
 	AssignAreaToGroup = 'Assign Area to Group',
 	// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
 	SetApplicationTrigger = 'Assign trigger',
-	UpsertGroup = 'upsert group',
-	UpsertPart = 'upsert part',
+	UpsertGroup = 'Upsert group',
+	UpsertPart = 'Upsert part',
 }
 
 export type UndoFunction = () => Promise<void> | void
 
-export type UndoableResult<T = unknown> = { undo: UndoFunction; description: ActionDescription; result?: T }
+export type UndoableResult<T = unknown> = {
+	ledgerKey: string | SpecialLedgers
+	undo: UndoFunction
+	description: ActionDescription
+	result?: T
+}
 
 export type UndoableFunction = (...args: any[]) => Promise<UndoableResult>
 
@@ -169,6 +173,10 @@ export interface Action {
 	arguments: any[]
 	redo: UndoableFunction
 	undo: UndoFunction
+}
+
+export interface ElectronAPI {
+	updateUndoLedger: (key: string, data: SerializableLedger) => void
 }
 
 // --- legacy
@@ -369,4 +377,5 @@ export enum RundownsEvents {
 }
 export enum ProjectsEvents {
 	UPDATED = 'updated',
+	UNDO_LEDGERS_UPDATED = 'undo_ledgers_updated',
 }

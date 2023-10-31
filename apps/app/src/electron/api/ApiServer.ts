@@ -41,7 +41,7 @@ export class ApiServer {
 
 		this.app.use(ServiceName.PROJECTS, new ProjectService(this.app, ipcServer, clientEventBus), {
 			methods: ClientMethods[ServiceName.PROJECTS],
-			serviceEvents: ['created', ProjectsEvents.UPDATED, 'deleted'],
+			serviceEvents: ['created', ProjectsEvents.UPDATED, 'deleted', ProjectsEvents.UNDO_LEDGERS_UPDATED],
 		})
 
 		this.app.use(ServiceName.PARTS, new PartService(this.app, ipcServer, clientEventBus), {

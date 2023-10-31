@@ -41,6 +41,7 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
+import { UndoLedgerService } from './UndoService'
 
 export class SuperConductor {
 	ipcServer: EverythingService
@@ -225,52 +226,65 @@ export class SuperConductor {
 			},
 		})
 
-		this.ipcServer = new EverythingService(this.log, this.renderLog, this.storage, this, this.session, {
-			refreshResources: () => {
-				this.refreshResources()
-			},
-			refreshResourcesSetAuto: (interval: number) => {
-				const project = this.storage.getProject()
-				project.autoRefreshInterval = interval
-				this.storage.updateProject(project)
-			},
-			onClientConnected: () => {
-				// Nothing here yet
-			},
-			installUpdate: () => {
-				autoUpdater.autoRunAppAfterInstall = true
-				autoUpdater.quitAndInstall()
-			},
-			updateTimeline: (group: Group): GroupPreparedPlayData | null => {
-				return this.updateTimeline(group)
-			},
-			updatePeripherals: (): void => {
-				this.triggers?.triggerUpdatePeripherals()
-				this.analogHandler?.triggerUpdatePeripherals()
-			},
-			setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
-				this.triggers?.setKeyboardKeys(activeKeys)
-			},
-			triggerHandleAutoFill: () => {
-				this.triggerHandleAutoFill()
-			},
-			makeDevData: async () => {
-				await this.storage.makeDevData()
-			},
-			onAgreeToUserAgreement: () => {
-				this.telemetryHandler.setUserHasAgreed()
-				this.telemetryHandler.onAcceptUserAgreement()
-
-				if (!this.hasStoredStartupUserStatistics) {
-					this.hasStoredStartupUserStatistics = true
-					this.telemetryHandler.onStartup()
-				}
-			},
-			handleError: (error: string, stack?: string) => {
-				this.log.error(error, stack)
-				this.telemetryHandler.onError(error, stack)
-			},
+		const undoLedgerService = new UndoLedgerService(this.log)
+		undoLedgerService.on('updatedUndoLedger', (data) => {
+			this.clientEventBus.updateUndoLedgers(data)
 		})
+
+		this.ipcServer = new EverythingService(
+			this.log,
+			this.renderLog,
+			this.storage,
+			this,
+			this.session,
+			undoLedgerService,
+			{
+				refreshResources: () => {
+					this.refreshResources()
+				},
+				refreshResourcesSetAuto: (interval: number) => {
+					const project = this.storage.getProject()
+					project.autoRefreshInterval = interval
+					this.storage.updateProject(project)
+				},
+				onClientConnected: () => {
+					// Nothing here yet
+				},
+				installUpdate: () => {
+					autoUpdater.autoRunAppAfterInstall = true
+					autoUpdater.quitAndInstall()
+				},
+				updateTimeline: (group: Group): GroupPreparedPlayData | null => {
+					return this.updateTimeline(group)
+				},
+				updatePeripherals: (): void => {
+					this.triggers?.triggerUpdatePeripherals()
+					this.analogHandler?.triggerUpdatePeripherals()
+				},
+				setKeyboardKeys: (activeKeys: ActiveTrigger[]): void => {
+					this.triggers?.setKeyboardKeys(activeKeys)
+				},
+				triggerHandleAutoFill: () => {
+					this.triggerHandleAutoFill()
+				},
+				makeDevData: async () => {
+					await this.storage.makeDevData()
+				},
+				onAgreeToUserAgreement: () => {
+					this.telemetryHandler.setUserHasAgreed()
+					this.telemetryHandler.onAcceptUserAgreement()
+
+					if (!this.hasStoredStartupUserStatistics) {
+						this.hasStoredStartupUserStatistics = true
+						this.telemetryHandler.onStartup()
+					}
+				},
+				handleError: (error: string, stack?: string) => {
+					this.log.error(error, stack)
+					this.telemetryHandler.onError(error, stack)
+				},
+			}
+		)
 
 		this.triggers = new TriggersHandler(this.log, this.storage, this.ipcServer, this.bridgeHandler, this.session)
 		this.triggers.on('error', (e) => this.log.error(e))

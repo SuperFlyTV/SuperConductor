@@ -10,7 +10,6 @@ import {
 } from '../../lib/GUI'
 import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
 import { ApiClient } from '../api/ApiClient'
-// const { ipcRenderer } = window.require('electron')
 
 /**
  * Store contains only information about user interface
@@ -90,6 +89,8 @@ export class GuiStore {
 	set activeTabId(id: string) {
 		this._activeTabId = id
 	}
+
+	public isPeripheralPopoverOpen = false
 
 	/** A list of all selected items */
 	get selected(): Readonly<CurrentSelectionAny[]> {

@@ -4,7 +4,6 @@ import { ActiveAnalog } from '../../models/rundown/Analog'
 import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import { ApiClient } from '../api/ApiClient'
 import { ClientSideLogger } from '../api/logger'
-// const { ipcRenderer } = window.require('electron')
 
 export class AnalogStore {
 	private analogInputs = new Map<string, AnalogInput>()

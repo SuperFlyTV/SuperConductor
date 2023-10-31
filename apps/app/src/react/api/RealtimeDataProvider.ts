@@ -13,6 +13,7 @@ import { AnalogInput } from '../../models/project/AnalogInput'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
 import { app } from './ApiClient'
+import { SerializableLedgers } from '../../models/project/Project'
 
 /** This class is used client-side, to handle messages from the server */
 export class RealtimeDataProvider {
@@ -37,6 +38,7 @@ export class RealtimeDataProvider {
 			updateDefiningArea?: (definingArea: DefiningArea | null) => void
 			updateFailedGlobalTriggers?: (identifiers: string[]) => void
 			updateAnalogInput?: (fullIdentifier: string, analogInput: AnalogInput | null) => void
+			updateUndoLedgers?: (data: SerializableLedgers) => void
 		}
 	) {
 		// this is new:
@@ -44,7 +46,9 @@ export class RealtimeDataProvider {
 			this.updateRundown(rundown.id, rundown)
 		)
 		app.service(ServiceName.PROJECTS).on(ProjectsEvents.UPDATED, (project) => this.updateProject(project))
-		// app.service('project').on(...) etc.
+		app.service(ServiceName.PROJECTS).on(ProjectsEvents.UNDO_LEDGERS_UPDATED, (undoLedgers) =>
+			this.updateUndoLedgers(undoLedgers)
+		)
 
 		// this is temporary:
 		app.service(ServiceName.LEGACY).on('callMethod', (args) => this.handleCallMethod(args[0], args.slice(1)))
@@ -72,6 +76,9 @@ export class RealtimeDataProvider {
 	}
 	updateRundown(fileName: string, rundown: Rundown): void {
 		this.callbacks.updateRundown?.(fileName, rundown)
+	}
+	updateUndoLedgers(data: SerializableLedgers): void {
+		this.callbacks.updateUndoLedgers?.(data)
 	}
 	updateResourcesAndMetadata(
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,
