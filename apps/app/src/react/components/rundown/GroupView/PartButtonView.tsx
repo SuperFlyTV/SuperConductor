@@ -567,6 +567,7 @@ export const PartButtonView: React.FC<{
 	)
 
 	useEffect(() => {
+		console.log('dragRef', dragRef.current)
 		drag(dragRef)
 	}, [drag])
 
@@ -671,13 +672,16 @@ export const PartButtonView: React.FC<{
 			>
 				<div className={classNames('part-button__header', tabAdditionalClassNames)}>
 					<div className="part-button__header__controls">
+						{!groupLocked && (
+							<div ref={dragRef} className="part-button__drag-handle">
+								<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
+							</div>
+						)}
+
 						{renderEverything && (
 							<>
 								{!groupLocked ? (
 									<>
-										<div ref={dragRef} className="part-button__drag-handle">
-											<MdOutlineDragIndicator color="rgba(0, 0, 0, 0.5)" />
-										</div>
 										<PartEditControls
 											rundownId={rundownId}
 											parentGroupId={parentGroupId}
