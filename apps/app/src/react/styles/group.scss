@@ -1,7 +1,7 @@
 $group-background: #2c2c2c;
 $margin-v: 2rem;
 .group {
-	border: 0.1rem solid $partOutlineColor;
+	border: 0.1rem solid $groupOutlineColor;
 	position: relative;
 	margin: $margin-v 0;
 	padding-top: 0.4rem;
@@ -27,6 +27,9 @@ $margin-v: 2rem;
 		.group__content__parts {
 			cursor: initial;
 			// pointer-events: none;
+		}
+		.group__content__parts.buttons {
+			cursor: pointer;
 		}
 	}
 	&.selected {
@@ -130,9 +133,9 @@ $margin-v: 2rem;
 				border-top-right-radius: 5px;
 			}
 
-			border-top: 0.1rem solid $partOutlineColor;
-			border-left: 0.1rem solid $partOutlineColor;
-			border-right: 0.1rem solid $partOutlineColor;
+			border-top: 0.1rem solid $groupOutlineColor;
+			border-left: 0.1rem solid $groupOutlineColor;
+			border-right: 0.1rem solid $groupOutlineColor;
 
 			border-top-left-radius: 5px;
 			border-top-right-radius: 5px;
@@ -141,6 +144,15 @@ $margin-v: 2rem;
 
 	&__content {
 		padding: 0.5rem 1rem 0;
+	}
+
+	&__content__parts.buttons {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		align-items: stretch;
+		align-content: flex-start;
 	}
 
 	&.disabled {

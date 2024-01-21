@@ -258,6 +258,12 @@ export class ApiClient {
 	): ServerReturn<'toggleAllGroupsCollapse'> {
 		return this.invokeServerMethod('toggleAllGroupsCollapse', ...args)
 	}
+	async setGroupViewMode(...args: ServerArgs<'setGroupViewMode'>): ServerReturn<'setGroupViewMode'> {
+		return this.groupService.setViewMode(...args)
+	}
+	async setAllGroupsViewMode(...args: ServerArgs<'setAllGroupsViewMode'>): ServerReturn<'setAllGroupsViewMode'> {
+		return this.groupService.setAllViewMode(...args)
+	}
 	async refreshResources(...args: ServerArgs<'refreshResources'>): ServerReturn<'refreshResources'> {
 		return this.invokeServerMethod('refreshResources', ...args)
 	}

@@ -19,6 +19,7 @@ import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { ValidatorCache } from 'graphics-data-definition'
 import { Bridge } from '../models/project/Bridge'
+import { GroupViewMode } from '../models/rundown/Group'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -1244,6 +1245,9 @@ export class StorageHandler extends EventEmitter {
 				group.playout = {
 					playingParts: {},
 				}
+			}
+			if (group.viewMode === undefined) {
+				group.viewMode = GroupViewMode.TIMELINE
 			}
 			if (!group.autoFill) {
 				group.autoFill = getDefaultGroup().autoFill

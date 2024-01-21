@@ -1,6 +1,6 @@
 import { Project } from '../models/project/Project'
 import { Rundown } from '../models/rundown/Rundown'
-import { AutoFillMode, AutoFillSortMode, Group, PlayoutMode } from '../models/rundown/Group'
+import { AutoFillMode, AutoFillSortMode, Group, GroupViewMode, PlayoutMode } from '../models/rundown/Group'
 import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
 import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
@@ -241,6 +241,7 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 				type: RepeatingType.NO_REPEAT,
 			},
 		},
+		viewMode: GroupViewMode.TIMELINE,
 	}
 }
 export function getDefaultPart(): Omit<Part, 'id' | 'name'> {

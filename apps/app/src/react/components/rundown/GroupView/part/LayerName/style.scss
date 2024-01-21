@@ -1,8 +1,10 @@
 @import '../../../../../styles/foundation/all';
 
 $background-color: #464646;
-$background-color-selected: lighten($color: $background-color, $amount: 20);
-
+$background-color-selected: lighten(
+	$color: $background-color,
+	$amount: 20,
+);
 
 .layer-name {
 	height: $layerHeight;
@@ -59,8 +61,6 @@ $background-color-selected: lighten($color: $background-color, $amount: 20);
 	}
 
 	.mappings-dropdown-selector {
-
-
 		border: 0.1rem solid #545a78;
 		border-top: none;
 		display: none;
@@ -68,8 +68,8 @@ $background-color-selected: lighten($color: $background-color, $amount: 20);
 		width: 100%;
 		top: 100%;
 		left: 0;
-		z-index: 10;
-		background: $background-color
+		z-index: $dropdown-selector-zIndex;
+		background: $background-color;
 	}
 
 	.mapping {
