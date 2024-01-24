@@ -450,9 +450,15 @@ export function repeatTime(
 		const filterStart = options.now
 		const filterEnd = options.end
 
-		const start = dateTimeObject(filterStart)
-		const startMonday = dateTimeAdvance(start, { date: -start.weekDay - 7 })
+		const filterStartObj = dateTimeObject(filterStart)
+		const startMonday = dateTimeAdvance(filterStartObj, { date: -filterStartObj.weekDay - 7 })
 		if (!startMonday) return { startTimes: [], validUntil: undefined }
+
+		startMonday.hour = startTime.hour
+		startMonday.minute = startTime.minute
+		startMonday.second = startTime.second
+		startMonday.millisecond = startTime.millisecond
+		updateDateTimeObject(startMonday)
 
 		let days = 0
 		let prevTime = _.clone(startTime)
@@ -468,7 +474,11 @@ export function repeatTime(
 					if (time.unixTimestamp > filterEnd) break
 					if (time.unixTimestamp > (settings.repeatUntil?.unixTimestamp || Number.POSITIVE_INFINITY)) break
 
-					if (startTimes.length === 0 && prevTime.unixTimestamp !== time.unixTimestamp) {
+					if (
+						startTimes.length === 0 &&
+						prevTime.unixTimestamp !== time.unixTimestamp &&
+						prevTime.unixTimestamp >= start
+					) {
 						startTimes.push(prevTime.unixTimestamp)
 					}
 					startTimes.push(time.unixTimestamp)

@@ -347,7 +347,7 @@ test('repeatTime', () => {
 				],
 			},
 			{
-				now: strTime('2022-10-12 18:00:00'),
+				now: strTime('2022-10-12 18:12:34'),
 				end: strTime('2022-10-21 18:00:00'),
 				maxCount: 999,
 			}
@@ -376,7 +376,7 @@ test('repeatTime', () => {
 				],
 			},
 			{
-				now: strTime('2022-10-21 18:00:00'),
+				now: strTime('2022-10-21 18:12:34'),
 				end: strTime('2022-10-27 18:00:00'),
 				maxCount: 999,
 			}
@@ -403,7 +403,7 @@ test('repeatTime', () => {
 				],
 			},
 			{
-				now: strTime('2022-10-30 18:00:00'),
+				now: strTime('2022-10-30 18:12:34'),
 				end: strTime('2022-12-31 18:00:00'),
 				maxCount: 999,
 			}
@@ -415,6 +415,35 @@ test('repeatTime', () => {
 		strTime('2022-11-14 18:00:00'), // mon
 		strTime('2022-11-21 18:00:00'), // mon
 		strTime('2022-11-28 18:00:00'), // mon
+	])
+
+	expect(
+		repeatTime(
+			strDate('2022-10-12 09:00:00'), // A wednesday
+			{
+				type: RepeatingType.WEEKLY,
+				repeatUntil: strDate('2022-11-05 18:00:00'),
+				weekdays: [
+					false,
+					false,
+					false,
+					true, // wednesday
+					false,
+					false,
+					false,
+				],
+			},
+			{
+				now: strTime('2022-10-12 08:12:34'),
+				end: strTime('2022-12-31 18:00:00'),
+				maxCount: 999,
+			}
+		).startTimes
+	).toStrictEqual([
+		strTime('2022-10-12 09:00:00'), // wed
+		strTime('2022-10-19 09:00:00'), // wed
+		strTime('2022-10-26 09:00:00'), // wed
+		strTime('2022-11-02 09:00:00'), // wed
 	])
 })
 test('parseDateTime', () => {
