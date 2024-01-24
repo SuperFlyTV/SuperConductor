@@ -256,6 +256,10 @@ export interface DateTimeObjectBase {
 export interface DateTimeObject extends DateTimeObjectBase {
 	unixTimestamp: number
 }
+/**
+ * Recalculate the DateTimeObject.
+ * Essentially this updates the unixTimestamp, and the weekDay to match the year/month/date and hour/minute/second/millisecond.
+ */
 export function updateDateTimeObject(d: DateTimeObject): void {
 	const date = dateTimeObjectToDate(d)
 	const d2 = dateTimeObject(date)

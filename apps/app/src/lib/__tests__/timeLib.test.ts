@@ -6,6 +6,7 @@ import {
 	repeatTime,
 	RepeatingType,
 	parseDateTime,
+	updateDateTimeObject,
 } from '../timeLib'
 
 test('formatDurationLabeled', () => {
@@ -159,7 +160,7 @@ test('repeatTime', () => {
 				type: RepeatingType.NO_REPEAT,
 			},
 			{
-				now: strTime('2022-07-20 17:00:00'),
+				now: strTime('2022-07-20 17:01:23'),
 				end: strTime('2022-07-21 17:00:00'),
 				maxCount: 999,
 			}
@@ -174,7 +175,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2022-07-21 6:00:00'),
 			},
 			{
-				now: strTime('2022-07-20 18:00:00'),
+				now: strTime('2022-07-20 18:01:23'),
 				end: strTime('2022-07-21 17:00:00'),
 				maxCount: 999,
 			}
@@ -204,7 +205,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2022-07-21 6:00:00'),
 			},
 			{
-				now: strTime('2022-07-20 17:00:00'),
+				now: strTime('2022-07-20 17:01:23'),
 				end: strTime('2022-07-20 20:00:00'),
 				maxCount: 999,
 			}
@@ -219,7 +220,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2022-07-25 18:00:00'),
 			},
 			{
-				now: strTime('2022-07-20 19:00:00'),
+				now: strTime('2022-07-20 19:01:23'),
 				end: strTime('2022-07-31 18:00:00'),
 				maxCount: 999,
 			}
@@ -241,7 +242,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2022-11-05 18:00:00'),
 			},
 			{
-				now: strTime('2022-10-29 18:00:00'),
+				now: strTime('2022-10-29 18:01:23'),
 				end: strTime('2022-12-31 23:59:59'),
 				maxCount: 999,
 			}
@@ -261,7 +262,7 @@ test('repeatTime', () => {
 				repeatUntil: undefined,
 			},
 			{
-				now: strTime('2022-11-05 18:00:00'),
+				now: strTime('2022-11-05 18:01:23'),
 				end: strTime('2022-11-11 23:59:59'),
 				maxCount: 999,
 			}
@@ -281,7 +282,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2023-02-15 18:00:00'),
 			},
 			{
-				now: strTime('2022-07-20 19:00:00'),
+				now: strTime('2022-07-20 19:01:23'),
 				end: strTime('2023-07-31 18:00:00'),
 				maxCount: 999,
 			}
@@ -304,7 +305,7 @@ test('repeatTime', () => {
 				repeatUntil: strDate('2023-12-12 23:59:59'),
 			},
 			{
-				now: strTime('2022-10-15 18:00:00'),
+				now: strTime('2022-10-15 18:01:23'),
 				end: strTime('2023-05-31 18:00:00'),
 				maxCount: 999,
 			}
@@ -324,7 +325,7 @@ test('repeatTime', () => {
 				repeatUntil: undefined,
 			},
 			{
-				now: strTime('2023-03-15 18:00:00'),
+				now: strTime('2023-03-15 18:01:23'),
 				end: strTime('2023-05-31 18:00:00'),
 				maxCount: 999,
 			}
@@ -473,6 +474,31 @@ test('parseDateTime', () => {
 	expect(parseDateTime('2022-08-30 8:30')).toStrictEqual(dateTimeObject(new Date(`2022-08-30 08:30:00`)))
 	expect(parseDateTime('2022-08-30 830')).toStrictEqual(dateTimeObject(new Date(`2022-08-30 08:30:00`)))
 	expect(parseDateTime('2022-08-30 8')).toStrictEqual(dateTimeObject(new Date(`2022-08-30 08:00:00`)))
+})
+test('updateDateTimeObject', () => {
+	{
+		// No change
+		const d = strDate('2022-08-30 1:23:45')
+		const dOrg = { ...d }
+		updateDateTimeObject(d)
+		expect(d).toStrictEqual(dOrg)
+	}
+	{
+		// bad unix timestamp
+		const d = strDate('2022-08-30 1:23:45')
+		const dOrg = { ...d }
+		d.unixTimestamp = 1234
+		updateDateTimeObject(d)
+		expect(d).toStrictEqual(dOrg) // expect unixTimestamp to have been corrected
+	}
+	{
+		// bad weekday
+		const d = strDate('2022-08-30 1:23:45')
+		const dOrg = { ...d }
+		d.weekDay = -1
+		updateDateTimeObject(d)
+		expect(d).toStrictEqual(dOrg) // expect weekDay to have been corrected
+	}
 })
 function strTime(str: string) {
 	return new Date(str).getTime()
