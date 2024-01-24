@@ -315,6 +315,83 @@ describe('prepareGroupPlayData', () => {
 				expect(playData).toMatchSnapshot()
 			}
 		})
+		test('Play infinite Part B when stopped', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+
+			const part = getPart(group0, 'partB')
+			// Set the part to be infinite:
+			part.resolved.duration = null
+
+			// Play the part:
+			RundownActions.playPart(group0, part, 1000)
+			postProcessGroup(group0, 1000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 1000)
+				if (!prepared) throw new Error('Prepared is falsy')
+				expect(prepared).toMatchSnapshot()
+
+				const playData = getGroupPlayData(prepared, 1001)
+
+				expect(playData).toMatchObject({
+					groupIsPlaying: true,
+					anyPartIsPlaying: true,
+					allPartsArePaused: false,
+					sectionTimeToEnd: null,
+					sectionEndTime: null,
+					sectionEndAction: SectionEndAction.INFINITE,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(1)
+				expect(playData.playheads['partB']).toMatchObject({
+					playheadTime: 1,
+					partStartTime: 1000,
+					partPauseTime: undefined,
+					partEndTime: null,
+					partDuration: null,
+					partId: 'partB',
+					fromSchedule: false,
+				})
+				expect(Object.keys(playData.countdowns)).toHaveLength(0)
+
+				expect(playData).toMatchSnapshot()
+
+				// Ensure it is still playing long after:
+				{
+					const playData = getGroupPlayData(prepared, 900000)
+					expect(playData.playheads['partB']).toMatchObject({
+						playheadTime: 899000,
+						partStartTime: 1000,
+						partPauseTime: undefined,
+						partEndTime: null,
+						partDuration: null,
+						partId: 'partB',
+						fromSchedule: false,
+					})
+				}
+			}
+
+			// Now stop the part:
+			RundownActions.stopPart(group0, 'partB', 9000)
+			postProcessGroup(group0, 9000)
+			{
+				const prepared = prepareGroupPlayData(group0, 9000)
+				if (!prepared) throw new Error('Prepared is falsy')
+				expect(prepared).toMatchSnapshot()
+
+				const playData = getGroupPlayData(prepared, 9001)
+				expect(playData).toMatchObject({
+					groupIsPlaying: false,
+					anyPartIsPlaying: false,
+					// allPartsArePaused: true,
+					sectionTimeToEnd: null,
+					sectionEndTime: null,
+					sectionEndAction: null,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(0)
+				expect(playData).toMatchSnapshot()
+			}
+		})
 	})
 
 	describe('Playlist Group', () => {
@@ -679,7 +756,7 @@ describe('prepareGroupPlayData', () => {
 
 			const partB = getPart(group0, 'partB')
 			partB.loop = true
-			
+
 			const partC = getPart(group0, 'partC')
 
 			// Play Part C:
@@ -785,6 +862,187 @@ describe('prepareGroupPlayData', () => {
 				}
 			}
 		})
+		test('Play, when Part B is infinite', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeTruthy()
+
+			const partA = getPart(group0, 'partA')
+			const partB = getPart(group0, 'partB')
+
+			// Set part B to be infinite:
+			partB.resolved.duration = null
+
+			// Play part A:
+			RundownActions.playPart(group0, partA, 1000)
+			postProcessGroup(group0, 1000)
+
+			{
+				const prepared = prepareGroupPlayData(group0, 1001)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				const playData = getGroupPlayData(prepared, 1001)
+
+				expect(playData).toMatchObject({
+					groupIsPlaying: true,
+					anyPartIsPlaying: true,
+					allPartsArePaused: false,
+					sectionTimeToEnd: null,
+					sectionEndTime: null,
+					sectionEndAction: SectionEndAction.INFINITE,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(1)
+				expect(playData.playheads['partA']).toMatchObject({
+					playheadTime: 1,
+					partStartTime: 1000,
+					partPauseTime: undefined,
+					partEndTime: 2000,
+					partDuration: 1000,
+					partId: 'partA',
+					endAction: PlayPartEndAction.NEXT_PART,
+					fromSchedule: false,
+				})
+				expect(Object.keys(playData.countdowns)).toStrictEqual(['partB'])
+			}
+			{
+				const prepared = prepareGroupPlayData(group0, 3500)
+				if (!prepared) throw new Error('Prepared is falsy')
+
+				const playData = getGroupPlayData(prepared, 3501)
+
+				expect(playData).toMatchObject({
+					groupIsPlaying: true,
+					anyPartIsPlaying: true,
+					allPartsArePaused: false,
+					sectionTimeToEnd: null,
+					sectionEndTime: null,
+					sectionEndAction: SectionEndAction.INFINITE,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(1)
+				expect(playData.playheads['partB']).toMatchObject({
+					playheadTime: 1501,
+					partStartTime: 2000,
+					partPauseTime: undefined,
+					partEndTime: null,
+					partDuration: null,
+					partId: 'partB',
+					endAction: PlayPartEndAction.INFINITE,
+					fromSchedule: false,
+				})
+				expect(Object.keys(playData.countdowns)).toHaveLength(0)
+			}
+		})
+	})
+
+	describe('Multi-play Group', () => {
+		// Tests a Group set as a playlist
+		function getTestGroup(): Group {
+			const group = getCommonGroup()
+			group.oneAtATime = false
+			group.autoPlay = false
+			group.loop = false
+			return group
+		}
+		test('Play Part A, then B', () => {
+			const group0 = getTestGroup()
+			expect(group0.oneAtATime).toBeFalsy()
+
+			const partA = getPart(group0, 'partA')
+			const partB = getPart(group0, 'partB')
+
+			// Play part A:
+			RundownActions.playPart(group0, partA, 1000)
+			postProcessGroup(group0, 1000)
+			{
+				const prepared = prepareGroupPlayData(group0, 1001)
+				if (!prepared) throw new Error('Prepared is falsy')
+				expect(prepared).toMatchSnapshot()
+
+				expect(prepared).toMatchObject({
+					type: 'multi',
+				})
+				expect(Object.keys(prepared.sections)).toStrictEqual(['partA'])
+
+				const playData = getGroupPlayData(prepared, 1001)
+
+				expect(playData).toMatchObject({
+					groupIsPlaying: false,
+					anyPartIsPlaying: true,
+					allPartsArePaused: false,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(1)
+				expect(playData.playheads['partA']).toMatchObject({
+					playheadTime: 1,
+					partStartTime: 1000,
+					partPauseTime: undefined,
+					partEndTime: 2000,
+					partDuration: 1000,
+					partId: 'partA',
+					endAction: PlayPartEndAction.STOP,
+					fromSchedule: false,
+				})
+				expect(Object.keys(playData.countdowns)).toHaveLength(0)
+				expect(playData).toMatchSnapshot()
+
+				// Check that it would stop playing after a while:
+				const playDataLater = getGroupPlayData(prepared, 2001)
+				expect(Object.keys(playDataLater.playheads)).toHaveLength(0)
+				expect(Object.keys(playDataLater.countdowns)).toHaveLength(0)
+			}
+			// Play part B:
+			RundownActions.playPart(group0, partB, 1500)
+			postProcessGroup(group0, 1500)
+			{
+				const prepared = prepareGroupPlayData(group0, 1503)
+				if (!prepared) throw new Error('Prepared is falsy')
+				expect(prepared).toMatchSnapshot()
+
+				expect(Object.keys(prepared.sections)).toStrictEqual(['partA', 'partB'])
+
+				const playData = getGroupPlayData(prepared, 1503)
+
+				expect(playData).toMatchObject({
+					groupIsPlaying: false,
+					anyPartIsPlaying: true,
+					allPartsArePaused: false,
+				})
+				expect(Object.keys(playData.playheads)).toHaveLength(2)
+				expect(playData.playheads['partA']).toMatchObject({
+					playheadTime: 503,
+					partStartTime: 1000,
+					partPauseTime: undefined,
+					partEndTime: 2000,
+					partDuration: 1000,
+					partId: 'partA',
+					endAction: PlayPartEndAction.STOP,
+					fromSchedule: false,
+				})
+				expect(playData.playheads['partB']).toMatchObject({
+					playheadTime: 3,
+					partStartTime: 1500,
+					partPauseTime: undefined,
+					partEndTime: 3500,
+					partDuration: 2000,
+					partId: 'partB',
+					endAction: PlayPartEndAction.STOP,
+					fromSchedule: false,
+				})
+				expect(Object.keys(playData.countdowns)).toHaveLength(0)
+				expect(playData).toMatchSnapshot()
+
+				{
+					// Check that A stops playing after a while:
+					const playDataLater = getGroupPlayData(prepared, 2001)
+					expect(Object.keys(playDataLater.playheads)).toHaveLength(1)
+					expect(Object.keys(playDataLater.countdowns)).toHaveLength(0)
+				}
+				{
+					// Check that B stops playing after a while:
+					const playDataLater = getGroupPlayData(prepared, 3501)
+					expect(Object.keys(playDataLater.playheads)).toHaveLength(0)
+					expect(Object.keys(playDataLater.countdowns)).toHaveLength(0)
+				}
+			}
+		})
 	})
 
 	// Test cases to add:
@@ -794,9 +1052,6 @@ describe('prepareGroupPlayData', () => {
 
 	// Pause Part A when playing Part A
 	// Pause (cue) Part B when playing Part A
-
-	// Play infinite part
-	// Play looping part
 
 	// Schedule play
 })
