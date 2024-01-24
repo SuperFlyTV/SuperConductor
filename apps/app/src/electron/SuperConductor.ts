@@ -33,6 +33,8 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogHandler } from './analogHandler'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
+import { getTimelineForGroup } from '../lib/timeline'
+import { TSRTimeline } from 'timeline-state-resolver-types'
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -256,6 +258,8 @@ export class SuperConductor {
 		} else {
 			this.httpAPI = new HTTPAPI(this.internalHttpApiPort, this.ipcServer, this.log)
 		}
+
+		this._restoreTimelines()
 	}
 	sendSystemMessage(message: string, options: SystemMessageOptions): void {
 		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
@@ -508,6 +512,20 @@ export class SuperConductor {
 		if (!this.bridgeHandler) throw new Error('Internal Error: No bridgeHandler set')
 
 		return updateTimeline(this.storage, this.bridgeHandler, group)
+	}
+	private _restoreTimelines() {
+		const project = this.storage.getProject()
+
+		const openRundowns = this.storage.getAllRundowns()
+
+		for (const openRundown of openRundowns) {
+			for (const group of openRundown.groups) {
+				const timeline = getTimelineForGroup(group, group.preparedPlayData, undefined) as TSRTimeline
+				this.bridgeHandler.updateTimeline(group.id, timeline)
+			}
+		}
+
+		this.bridgeHandler.updateMappings(project.mappings)
 	}
 
 	/**
