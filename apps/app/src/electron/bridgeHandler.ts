@@ -25,6 +25,12 @@ export const SERVER_PORT = 5400
 
 type AnyBridgeConnection = WebsocketBridgeConnection | LocalBridgeConnection
 
+interface BridgeHandlerCallbacks {
+	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
+	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
+	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
+}
+
 /** This handles connected bridges */
 export class BridgeHandler {
 	server: WebsocketServer
@@ -55,7 +61,7 @@ export class BridgeHandler {
 		private log: LoggerLike,
 		private session: SessionHandler,
 		private storage: StorageHandler,
-		private callbacks: BridgeConnectionCallbacks
+		private callbacks: BridgeHandlerCallbacks
 	) {
 		this.server = new WebsocketServer(this.log, SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
@@ -65,7 +71,7 @@ export class BridgeHandler {
 				this.session,
 				this.storage,
 				connection,
-				this.callbacks
+				this.getBridgeConnectionCallbacks()
 			)
 
 			// Lookup and set the bridgeId, if it is an outgoing
@@ -106,7 +112,12 @@ export class BridgeHandler {
 		if (this.closed) return
 		if (project.settings.enableInternalBridge) {
 			if (!this.internalBridge) {
-				this.internalBridge = new LocalBridgeConnection(this.log, this.session, this.storage, this.callbacks)
+				this.internalBridge = new LocalBridgeConnection(
+					this.log,
+					this.session,
+					this.storage,
+					this.getBridgeConnectionCallbacks()
+				)
 				this.connectedBridges.push(this.internalBridge)
 			}
 		} else {
@@ -292,12 +303,18 @@ export class BridgeHandler {
 			bridgeConnection.refreshResources()
 		}
 	}
+	private getBridgeConnectionCallbacks(): BridgeConnectionCallbacks {
+		return {
+			...this.callbacks,
+			getTimelines: () => this.timelines,
+			getMappings: () => this.mappings,
+		}
+	}
 }
 
-interface BridgeConnectionCallbacks {
-	updatedResources: (deviceId: string, resources: ResourceAny[]) => void
-	onVersionMismatch: (bridgeId: string, bridgeVersion: string, ourVersion: string) => void
-	onDeviceRefreshStatus: (deviceId: string, refreshing: boolean) => void
+interface BridgeConnectionCallbacks extends BridgeHandlerCallbacks {
+	getTimelines: () => { [timelineId: string]: TSRTimeline }
+	getMappings: () => Mappings
 }
 
 abstract class AbstractBridgeConnection {
@@ -399,10 +416,11 @@ abstract class AbstractBridgeConnection {
 		} else {
 			this.log.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
-		if (this.sentMappings) {
-			this.setMappings(this.sentMappings, true)
+		const mappings = this.callbacks.getMappings()
+		if (mappings) {
+			this.setMappings(mappings, true)
 		}
-		for (const [timelineId, timeline] of Object.entries(this.sentTimelines)) {
+		for (const [timelineId, timeline] of Object.entries<TSRTimeline>(this.callbacks.getTimelines())) {
 			this.addTimeline(timelineId, timeline)
 		}
 		// Sync timelineIds:
