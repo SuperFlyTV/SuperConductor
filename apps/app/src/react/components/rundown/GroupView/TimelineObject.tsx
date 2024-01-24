@@ -199,7 +199,7 @@ export const TimelineObject: React.FC<{
 		widthPercentage = null
 	}
 
-	const description = describeTimelineObject(obj, deviceMetadata)
+	const description = describeTimelineObject(timelineObj, deviceMetadata)
 
 	useEffect(() => {
 		const onKey = () => {

@@ -1,5 +1,6 @@
 import React, { useCallback, useContext } from 'react'
 import { useSnackbar } from 'notistack'
+import { Tooltip } from '@mui/material'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
 
 import './style.scss'
@@ -22,15 +23,16 @@ export const DataRow = (props: { label: string; value: any }): JSX.Element => {
 			<div className="label" title={props.label}>
 				{props.label}
 			</div>
-			<div
-				className="value copy-to-clipboard"
-				title={`${props.value} (Click to copy)`}
-				onClick={() => {
-					void copyValueToClipboard()
-				}}
-			>
-				{props.value}
-			</div>
+			<Tooltip title={`Click to copy`}>
+				<div
+					className="value copy-to-clipboard"
+					onClick={() => {
+						void copyValueToClipboard()
+					}}
+				>
+					{props.value}
+				</div>
+			</Tooltip>
 		</div>
 	)
 }

@@ -14,9 +14,7 @@ interface TimelineObjectUpdate {
 	groupId: string
 	partId: string
 	timelineObjId: string
-	timelineObj: {
-		obj: PartialDeep<TimelineObj['obj']>
-	}
+	timelineObj: PartialDeep<TimelineObj>
 }
 
 interface TimelineObjectMove {
