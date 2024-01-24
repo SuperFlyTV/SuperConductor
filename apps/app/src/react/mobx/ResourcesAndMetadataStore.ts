@@ -1,6 +1,5 @@
 import { makeAutoObservable } from 'mobx'
 import { ApiClient } from '../api/ApiClient'
-// const { ipcRenderer } = window.require('electron')
 import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import {
 	MetadataAny,

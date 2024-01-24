@@ -1,5 +1,5 @@
 import { IPCServerContext } from '../../contexts/IPCServer'
-import React, { useContext, useState } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { Mappings } from 'timeline-state-resolver-types'
 import { TrashBtn } from '../inputs/TrashBtn'
 import { DataRow } from './DataRow/DataRow'
@@ -11,7 +11,12 @@ import { EditTimelineObjContent } from './timelineObj/editTimelineObj'
 import { describeTimelineObject } from '../../../lib/TimelineObj'
 import { ConfirmationDialog } from '../util/ConfirmationDialog'
 import { computed } from 'mobx'
-import { firstValue } from '../../lib/multipleEdit'
+import { anyAreTrue, firstValue, inputValue } from '../../lib/multipleEdit'
+import { TextInput } from '../inputs/TextInput'
+import { PartialDeep } from 'type-fest/source/partial-deep'
+import { OnSave } from './timelineObj/timelineObjs/lib'
+import { TimelineObj } from '../../../models/rundown/TimelineObj'
+import { Tooltip } from '@mui/material'
 
 export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
@@ -26,6 +31,7 @@ export const SideBarEditTimelineObject: React.FC<{
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
+	const [editCustomLabel, setEditCustomLabel] = useState(false)
 
 	const gui = store.guiStore
 
@@ -44,14 +50,40 @@ export const SideBarEditTimelineObject: React.FC<{
 			})
 	).get()
 
-	if (fullObjs.length === 0) return null
-
 	const modifiableObjects = fullObjs.filter((o) => !o.groupOrPartLocked)
 
+	const onSave = useCallback(
+		(update: PartialDeep<TimelineObj>) => {
+			modifiableObjects.forEach((o) => {
+				ipcServer
+					.updateTimelineObj({
+						rundownId: rundownId,
+						groupId: o.groupId,
+						partId: o.partId,
+						timelineObjId: o.timelineObjId,
+						timelineObj: update,
+					})
+					.catch(handleError)
+			})
+		},
+		[modifiableObjects, handleError, ipcServer, rundownId]
+	)
+	const onSaveObj = useCallback<OnSave>(
+		(updateObj) => {
+			onSave({ obj: updateObj })
+		},
+		[onSave]
+	)
+
+	if (fullObjs.length === 0) return null
+
 	let label = 'N/A'
+	let hasCustomLabel = false
 	if (fullObjs.length === 1) {
-		const desciption = firstValue(modifiableObjects, (o) => describeTimelineObject(o.timelineObj.obj))
-		if (desciption) label = desciption.label
+		const description = firstValue(modifiableObjects, (o) => describeTimelineObject(o.timelineObj))
+		if (description) label = description.label
+
+		hasCustomLabel = anyAreTrue(modifiableObjects, (o) => Boolean(o.timelineObj.customLabel))
 	} else {
 		label = `${fullObjs.length} objects`
 	}
@@ -60,11 +92,21 @@ export const SideBarEditTimelineObject: React.FC<{
 		<>
 			<div className="title">
 				<span>
-					{fullObjs.length > 1
-						? `${fullObjs.length} Timeline objects`
-						: `Timeline object: ${
-								firstValue(fullObjs, (o) => describeTimelineObject(o.timelineObj.obj)?.label) || ''
-						  }`}
+					{fullObjs.length > 1 ? (
+						`${fullObjs.length} Timeline objects`
+					) : (
+						<Tooltip title={`Click to set a custom label`}>
+							<a
+								onClick={(e) => {
+									e.preventDefault()
+									setEditCustomLabel(true)
+								}}
+							>
+								Timeline object: $
+								{firstValue(fullObjs, (o) => describeTimelineObject(o.timelineObj)?.label) || ''}
+							</a>
+						</Tooltip>
+					)}
 				</span>
 				<div>
 					<TrashBtn
@@ -86,24 +128,21 @@ export const SideBarEditTimelineObject: React.FC<{
 		<SidebarContent title={header} className="edit-timeline-obj">
 			<DataRow label="ID" value={fullObjs.length > 1 ? 'Different IDs' : fullObjs[0].partId} />
 
-			<EditTimelineObjContent
-				modifiableObjects={modifiableObjects}
-				onSave={(updateObj) => {
-					modifiableObjects.forEach((o) => {
-						ipcServer
-							.updateTimelineObj({
-								rundownId: rundownId,
-								groupId: o.groupId,
-								partId: o.partId,
-								timelineObjId: o.timelineObjId,
-								timelineObj: {
-									obj: updateObj,
-								},
-							})
-							.catch(handleError)
-					})
-				}}
-			/>
+			{(editCustomLabel || hasCustomLabel) && (
+				<div className="setting">
+					<TextInput
+						label="Custom label"
+						fullWidth
+						{...inputValue(modifiableObjects, (o) => o.timelineObj.customLabel, undefined)}
+						onChange={(v) => {
+							onSave({ customLabel: (v ?? '').trim() })
+						}}
+						allowUndefined={true}
+					/>
+				</div>
+			)}
+
+			<EditTimelineObjContent modifiableObjects={modifiableObjects} onSave={onSaveObj} />
 
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}

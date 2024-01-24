@@ -1,7 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { SchemaValidator, setupSchemaValidator, ValidatorCache } from 'graphics-data-definition'
 import { ApiClient } from '../api/ApiClient'
-// const { ipcRenderer } = window.require('electron')
 
 export class GDDValidatorStore {
 	private isInitialized = false

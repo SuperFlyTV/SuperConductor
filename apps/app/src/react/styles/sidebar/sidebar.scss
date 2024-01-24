@@ -23,6 +23,15 @@
 			display: flex;
 			justify-content: space-between;
 			padding: 0.6em;
+
+			a {
+				color: inherit;
+				text-decoration: none;
+			}
+			a:hover {
+				text-decoration: underline;
+				cursor: text;
+			}
 		}
 	}
 	> .sidebar__content {

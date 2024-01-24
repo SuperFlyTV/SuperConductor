@@ -3,6 +3,8 @@ import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-type
 export interface TimelineObj {
 	obj: TSRTimelineObj<TSRTimelineContent>
 
+	customLabel?: string
+
 	resolved: {
 		instances: TimelineObjResolvedInstance[]
 	}

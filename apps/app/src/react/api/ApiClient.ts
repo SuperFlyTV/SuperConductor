@@ -1,7 +1,7 @@
 import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
 import { replaceUndefined } from '../../lib/util'
 
-import { feathers } from '@feathersjs/feathers'
+import { HookContext, feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
 import { Rundown } from '../../models/rundown/Rundown'
@@ -21,9 +21,9 @@ type PartArg<T extends keyof ServiceTypes[ServiceName.PARTS]> = Parameters<Servi
 type RundownArg<T extends keyof ServiceTypes[ServiceName.RUNDOWNS]> = Parameters<
 	ServiceTypes[ServiceName.RUNDOWNS][T]
 >[0]
-// type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
-// 	ServiceTypes[ServiceName.PROJECTS][T]
-// >[0]
+type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
+	ServiceTypes[ServiceName.PROJECTS][T]
+>[0]
 type ReportingArg<T extends keyof ServiceTypes[ServiceName.REPORTING]> = Parameters<
 	ServiceTypes[ServiceName.REPORTING][T]
 >[0]
@@ -60,6 +60,16 @@ app.use(
 		methods: ClientMethods[ServiceName.REPORTING],
 	}
 )
+
+app.hooks({
+	before: {
+		all: [
+			async (context: HookContext) => {
+				context.data = replaceUndefined(context.data)
+			},
+		],
+	},
+})
 
 type ServerArgs<T extends keyof IPCServerMethods> = Parameters<IPCServerMethods[T]>
 type ServerReturn<T extends keyof IPCServerMethods> = Promise<ReturnType<IPCServerMethods[T]>>
@@ -325,5 +335,11 @@ export class ApiClient {
 	}
 	async setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>): ServerReturn<'setApplicationTrigger'> {
 		return this.invokeServerMethod('setApplicationTrigger', ...args)
+	}
+	async undo(data: ProjectArg<'undo'>): Promise<void> {
+		return this.projectService.undo(data)
+	}
+	async redo(data: ProjectArg<'redo'>): Promise<void> {
+		return this.projectService.redo(data)
 	}
 }

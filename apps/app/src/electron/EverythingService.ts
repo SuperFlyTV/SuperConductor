@@ -26,7 +26,6 @@ import {
 	listAvailableDeviceIDs,
 	MoveTarget,
 	shortID,
-	unReplaceUndefined,
 	updateGroupPlayingParts,
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
@@ -41,13 +40,7 @@ import {
 	TSRTimelineContent,
 	DeviceOptionsAny,
 } from 'timeline-state-resolver-types'
-import {
-	ActionDescription,
-	IPCServerMethods,
-	MAX_UNDO_LEDGER_LENGTH,
-	UndoableResult,
-	UpdateAppDataOptions,
-} from '../ipc/IPCAPI'
+import { ActionDescription, IPCServerMethods, UndoableResult, UpdateAppDataOptions } from '../ipc/IPCAPI'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
 import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
 import { Rundown } from '../models/rundown/Rundown'
@@ -65,8 +58,6 @@ import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@sha
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Project, ProjectBase } from '../models/project/Project'
 import { AppData } from '../models/App/AppData'
-import EventEmitter from 'events'
-import TypedEmitter from 'typed-emitter'
 import {
 	filterMapping,
 	getMappingFromTimelineObject,
@@ -89,21 +80,8 @@ import { TriggersHandler } from './triggersHandler'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
 import * as RundownActions from './rundownActions'
 import { SuperConductor } from './SuperConductor'
-
-type UndoLedger = Action[]
-type UndoPointer = number
-type UndoFunction = () => Promise<void> | void
-type UndoableFunction = (...args: any[]) => Promise<UndoableResult<any>>
-interface Action {
-	description: ActionDescription
-	arguments: any[]
-	redo: UndoableFunction
-	undo: UndoFunction
-}
-
-type IPCServerEvents = {
-	updatedUndoLedger: (undoLedger: Readonly<UndoLedger>, undoPointer: Readonly<UndoPointer>) => void
-}
+import { UndoLedgerKey, UndoLedgerService } from './UndoService'
+import { SpecialLedgers } from '../models/project/Project'
 
 export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
@@ -129,25 +107,32 @@ type ConvertToServerSide<T> = {
 		: T[K]
 }
 
+function Undoable(target: EverythingService, _key: string, descriptor: PropertyDescriptor) {
+	const originalMethod = descriptor.value
+	descriptor.value = async function (...args: any) {
+		const result = await originalMethod.apply(this, args)
+		if (isUndoable(result)) {
+			target.pushUndoable.call(this, result.ledgerKey, args, originalMethod.bind(this), result)
+		}
+		return result
+	}
+	return descriptor
+}
+
 /**
  * This class is used server-side, to handle requests from the client
  * The methods in here will later be moved away to other Services
  */
-export class EverythingService
-	extends (EventEmitter as new () => TypedEmitter<IPCServerEvents>)
-	implements ConvertToServerSide<IPCServerMethods>
-{
+export class EverythingService implements ConvertToServerSide<IPCServerMethods> {
 	public triggers?: TriggersHandler
-	private undoLedger: UndoLedger = []
-	private undoPointer: UndoPointer = -1
 
 	constructor(
-		ipcMain: Electron.IpcMain,
 		private _log: LoggerLike,
 		private _renderLog: LoggerLike,
 		private storage: StorageHandler,
 		private superConductor: SuperConductor,
 		private session: SessionHandler,
+		private undoService: UndoLedgerService,
 		private callbacks: {
 			onClientConnected: () => void
 			installUpdate: () => void
@@ -161,49 +146,12 @@ export class EverythingService
 			onAgreeToUserAgreement: () => void
 			handleError: (error: string, stack?: string) => void
 		}
-	) {
-		super()
-		for (const methodName of Object.getOwnPropertyNames(EverythingService.prototype)) {
-			if (methodName[0] !== '_') {
-				const fcn = (this as any)[methodName].bind(this)
-				if (fcn) {
-					ipcMain.handle(methodName, async (event, args0: string[]) => {
-						try {
-							const args = unReplaceUndefined(args0)
-							const result = await fcn(...args)
-							if (isUndoable(result)) {
-								// Clear any future things in the undo ledger:
-								this.undoLedger.splice(this.undoPointer + 1, this.undoLedger.length)
-								// Add the new action to the undo ledger:
-								this.undoLedger.push({
-									description: result.description,
-									arguments: args,
-									undo: result.undo,
-									redo: fcn,
-								})
-								if (this.undoLedger.length > MAX_UNDO_LEDGER_LENGTH) {
-									this.undoLedger.splice(0, this.undoLedger.length - MAX_UNDO_LEDGER_LENGTH)
-								}
-								this.undoPointer = this.undoLedger.length - 1
-								this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	) {}
 
-								// string represents "anything but undefined" here:
-								return (result as UndoableResult<string>).result
-							} else {
-								return result
-							}
-						} catch (error) {
-							this.callbacks.handleError(
-								`Error when calling ${methodName}: ${error}`,
-								typeof error === 'object' && (error as any).stack
-							)
-							throw error
-						}
-					})
-				}
-			}
-		}
+	public pushUndoable(key: UndoLedgerKey, args: unknown[], fcn: () => any, result: UndoableResult): void {
+		this.undoService.pushUndoable(key, args, fcn, result)
 	}
+
 	public getProject(): Project {
 		return this.storage.getProject()
 	}
@@ -268,34 +216,11 @@ export class EverythingService
 		return { rundown, group, part }
 	}
 
-	async undo(): Promise<void> {
-		const action = this.undoLedger[this.undoPointer]
-		try {
-			await action.undo()
-			this.undoPointer--
-		} catch (error) {
-			this._log.error('Error when undoing:', error)
-
-			// Clear
-			this.undoLedger.splice(0, this.undoLedger.length)
-			this.undoPointer = -1
-		}
-		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	async undo(key: string): Promise<void> {
+		await this.undoService.undo(key)
 	}
-	async redo(): Promise<void> {
-		const action = this.undoLedger[this.undoPointer + 1]
-		try {
-			const redoResult = await action.redo(...action.arguments)
-			action.undo = redoResult.undo
-			this.undoPointer++
-		} catch (error) {
-			this._log.error('Error when redoing:', error)
-
-			// Clear
-			this.undoLedger.splice(0, this.undoLedger.length)
-			this.undoPointer = -1
-		}
-		this.emit('updatedUndoLedger', this.undoLedger, this.undoPointer)
+	async redo(key: string): Promise<void> {
+		await this.undoService.redo(key)
 	}
 
 	async log(arg: { level: LogLevel; params: any[] }): Promise<void> {
@@ -473,6 +398,7 @@ export class EverythingService
 		return rundown
 	}
 
+	@Undoable
 	async setPartTrigger(arg: {
 		rundownId: string
 		groupId: string
@@ -512,6 +438,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetPartTrigger,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async stopGroup(arg: { rundownId: string; groupId: string }): Promise<void> {
@@ -607,6 +534,7 @@ export class EverythingService
 			await this.playPart({ rundownId: arg.rundownId, groupId: arg.groupId, partId: prevPart.id })
 		}
 	}
+	@Undoable
 	async newPart(arg: {
 		rundownId: string
 		/** The group to create the part into. If null; will create a "transparent group" */
@@ -667,8 +595,10 @@ export class EverythingService
 			},
 			description: ActionDescription.NewPart,
 			result,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async insertParts(arg: {
 		rundownId: string
 		groupId: string | null
@@ -765,6 +695,7 @@ export class EverythingService
 				},
 				description: ActionDescription.InsertParts,
 				result: inserted,
+				ledgerKey: arg.rundownId,
 			}
 		} else {
 			return this._insertPartsAsTransparentGroup({
@@ -774,6 +705,7 @@ export class EverythingService
 			})
 		}
 	}
+	@Undoable
 	private async _insertPartsAsTransparentGroup(arg: {
 		rundownId: string
 		parts: { part: Part; resources: ResourceAny[] }[]
@@ -825,8 +757,10 @@ export class EverythingService
 		return {
 			...r,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async updatePart(arg: {
 		rundownId: string
 		groupId: string
@@ -868,8 +802,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdatePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async upsertPart(arg: {
 		rundownId: string
 		groupId: string
@@ -929,8 +865,10 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpsertPart,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async upsertPartByExternalId(arg: {
 		rundownId: string
 		groupId: string
@@ -952,6 +890,7 @@ export class EverythingService
 			part: arg.part,
 		})
 	}
+	@Undoable
 	async newGroup(arg: { rundownId: string; name: string }): Promise<UndoableResult<string>> {
 		const newGroup: Group = {
 			...getDefaultGroup(),
@@ -971,8 +910,10 @@ export class EverythingService
 			},
 			description: ActionDescription.NewGroup,
 			result: newGroup.id,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async insertGroups(arg: {
 		rundownId: string
 		groups: {
@@ -1062,8 +1003,10 @@ export class EverythingService
 			},
 			description: ActionDescription.InsertGroups,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async updateGroup(arg: {
 		rundownId: string
 		groupId: string
@@ -1111,8 +1054,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.UpdateGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async upsertGroup(arg: {
 		rundownId: string
 		groupId: string | undefined
@@ -1200,8 +1145,10 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpsertGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async upsertGroupByExternalId(arg: {
 		rundownId: string
 		externalId: string
@@ -1222,6 +1169,7 @@ export class EverythingService
 			useExternalIdForParts: true,
 		})
 	}
+	@Undoable
 	async deletePart(arg: {
 		rundownId: string
 		groupId: string
@@ -1264,8 +1212,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DeletePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async deleteGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -1294,8 +1244,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: deletedGroup })
 			},
 			description: ActionDescription.DeleteGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async moveParts(arg: {
 		parts: { rundownId: string; partId: string }[]
 		to: { rundownId: string; groupId: string | null; target: MoveTarget }
@@ -1479,8 +1431,10 @@ export class EverythingService
 			},
 			description: ActionDescription.MovePart,
 			result: resultingParts,
+			ledgerKey: arg.to.rundownId,
 		}
 	}
+	@Undoable
 	async duplicatePart(arg: { rundownId: string; groupId: string; partId: string }): Promise<UndoableResult<void>> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1528,8 +1482,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group: newGroup ? undefined : group })
 			},
 			description: ActionDescription.DuplicatePart,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async moveGroups(arg: {
 		rundownId: string
 		groupIds: string[]
@@ -1571,8 +1527,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.MoveGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async duplicateGroup(arg: { rundownId: string; groupId: string }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 
@@ -1596,17 +1554,17 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.DuplicateGroup,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
+	@Undoable
 	async updateTimelineObj(arg: {
 		rundownId: string
 		groupId: string
 		partId: string
 		timelineObjId: string
-		timelineObj: {
-			obj: PartialDeep<TimelineObj['obj']>
-		}
+		timelineObj: PartialDeep<Omit<TimelineObj, 'resolved'>>
 	}): Promise<UndoableResult<void> | undefined> {
 		const { rundown, group, part } = this.getPart(arg)
 
@@ -1622,6 +1580,7 @@ export class EverythingService
 		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
 
 		if (arg.timelineObj.obj !== undefined) deepExtendRemovingUndefined(timelineObj.obj, arg.timelineObj.obj)
+		if (arg.timelineObj.customLabel !== undefined) timelineObj.customLabel = arg.timelineObj.customLabel
 
 		postProcessPart(part)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
@@ -1636,8 +1595,11 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.UpdateTimelineObj,
+			ledgerKey: arg.rundownId,
 		}
 	}
+
+	@Undoable
 	async deleteTimelineObj(arg: {
 		rundownId: string
 		groupId: string
@@ -1648,7 +1610,7 @@ export class EverythingService
 
 		const result = findTimelineObjInRundown(rundown, arg.timelineObjId)
 		if (!result) throw new Error(`TimelineObj ${arg.timelineObjId} not found.`)
-		const { group, part, timelineObj } = result
+		const { group, part } = result
 		const groupId = group.id
 		const partId = part.id
 
@@ -1656,10 +1618,13 @@ export class EverythingService
 			return
 		}
 
-		const timelineObjIndex = findTimelineObjIndex(part, arg.timelineObjId)
-		const modified = deleteTimelineObj(part, arg.timelineObjId)
+		const originalPartTimeline = part.timeline
+		const modifiedPartTimeline = deleteTimelineObj(originalPartTimeline, arg.timelineObjId)
 
-		if (modified) postProcessPart(part)
+		if (modifiedPartTimeline !== originalPartTimeline) {
+			part.timeline = modifiedPartTimeline
+			postProcessPart(part)
+		}
 		if (part.timeline.length <= 0)
 			this.stopPart({ rundownId: arg.rundownId, groupId, partId }).catch(this._log.error)
 		this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
@@ -1668,14 +1633,16 @@ export class EverythingService
 			undo: () => {
 				const { rundown, group, part } = this.getPart({ rundownId: arg.rundownId, groupId, partId })
 
-				// Re-insert the timelineObj in its original position.
-				part.timeline.splice(timelineObjIndex, 0, timelineObj)
+				// Replace with the original timeline.
+				part.timeline = originalPartTimeline
 				postProcessPart(part)
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.DeleteTimelineObj,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async insertTimelineObjs(arg: {
 		rundownId: string
 		groupId: string
@@ -1799,8 +1766,10 @@ export class EverythingService
 			},
 			description: ActionDescription.AddTimelineObj,
 			result: inserted,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async moveTimelineObjToNewLayer(arg: {
 		rundownId: string
 		groupId: string
@@ -1852,9 +1821,11 @@ export class EverythingService
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.MoveTimelineObjToNewLayer,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
+	@Undoable
 	async addResourcesToTimeline(arg: {
 		rundownId: string
 		groupId: string
@@ -1974,8 +1945,10 @@ export class EverythingService
 				this._saveUpdates({ project: updatedProject, rundownId: arg.rundownId, rundown })
 			},
 			description: ActionDescription.addResourcesToTimeline,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupLoop(arg: {
 		rundownId: string
 		groupId: string
@@ -2004,8 +1977,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupLoop,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupAutoplay(arg: {
 		rundownId: string
 		groupId: string
@@ -2034,8 +2009,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupAutoplay,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupOneAtATime(arg: {
 		rundownId: string
 		groupId: string
@@ -2075,8 +2052,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.toggleGroupOneAtATime,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupDisable(arg: {
 		rundownId: string
 		groupId: string
@@ -2105,8 +2084,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group })
 			},
 			description: ActionDescription.ToggleGroupDisable,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupLock(arg: { rundownId: string; groupId: string; value: boolean }): Promise<UndoableResult<void>> {
 		const { rundown, group } = this.getGroup(arg)
 		const originalValue = group.locked
@@ -2124,8 +2105,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupLock,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleGroupCollapse(arg: {
 		rundownId: string
 		groupId: string
@@ -2147,8 +2130,10 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleGroupCollapse,
+			ledgerKey: arg.rundownId,
 		}
 	}
+	@Undoable
 	async toggleAllGroupsCollapse(arg: { rundownId: string; value: boolean }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(arg)
 
@@ -2174,6 +2159,7 @@ export class EverythingService
 				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.ToggleAllGroupsCollapse,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async setGroupViewMode(arg: {
@@ -2266,6 +2252,7 @@ export class EverythingService
 
 		return this.storage.getProject()
 	}
+	@Undoable
 	async newRundown(arg: { name: string }): Promise<UndoableResult<Rundown>> {
 		const rundown = this.storage.newRundown(arg.name)
 		const fileName = rundown.name
@@ -2278,6 +2265,7 @@ export class EverythingService
 			},
 			description: ActionDescription.NewRundown,
 			result: rundown,
+			ledgerKey: rundown.id,
 		}
 	}
 	async deleteRundown(arg: { rundownId: string }): Promise<void> {
@@ -2297,6 +2285,7 @@ export class EverythingService
 
 		// Note: This is not undoable
 	}
+	@Undoable
 	async openRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
 		this.storage.openRundown(arg.rundownId)
 		this._saveUpdates({})
@@ -2307,8 +2296,10 @@ export class EverythingService
 				this._saveUpdates({})
 			},
 			description: ActionDescription.OpenRundown,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
+	@Undoable
 	async closeRundown(arg: { rundownId: string }): Promise<UndoableResult<void>> {
 		const { rundown } = this.getRundown(arg)
 		if (!rundown) {
@@ -2329,9 +2320,11 @@ export class EverythingService
 				this._saveUpdates({})
 			},
 			description: ActionDescription.CloseRundown,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
 
+	@Undoable
 	async renameRundown(arg: { rundownId: string; newName: string }): Promise<UndoableResult<string>> {
 		const rundown = this.storage.getRundown(arg.rundownId)
 		if (!rundown) {
@@ -2349,6 +2342,7 @@ export class EverythingService
 			},
 			description: ActionDescription.RenameRundown,
 			result: newRundownId,
+			ledgerKey: arg.rundownId,
 		}
 	}
 	async isRundownPlaying(arg: { rundownId: string }): Promise<boolean> {
@@ -2376,6 +2370,7 @@ export class EverythingService
 		const playData = getGroupPlayData(group.preparedPlayData)
 		return Boolean(playData.playheads[part.id])
 	}
+	@Undoable
 	async createMissingMapping(arg: { rundownId: string; mappingId: string }): Promise<UndoableResult<void>> {
 		const project = this.getProject()
 		const rundown = this.storage.getRundown(arg.rundownId)
@@ -2458,9 +2453,11 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.CreateMissingMapping,
+			ledgerKey: arg.rundownId,
 		}
 	}
 
+	@Undoable
 	async addPeripheralArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId }): Promise<UndoableResult<void>> {
 		const bridgeIdStr = unprotectString<BridgeId>(arg.bridgeId)
 		const deviceIdStr = unprotectString<PeripheralId>(arg.deviceId)
@@ -2504,8 +2501,10 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.AddPeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
+	@Undoable
 	async removePeripheralArea(data: {
 		bridgeId: BridgeId
 		deviceId: PeripheralId
@@ -2546,8 +2545,10 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.RemovePeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
+	@Undoable
 	async updatePeripheralArea(arg: {
 		bridgeId: BridgeId
 		deviceId: PeripheralId
@@ -2593,8 +2594,10 @@ export class EverythingService
 				}
 			},
 			description: ActionDescription.UpdatePeripheralArea,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
+	@Undoable
 	async assignAreaToGroup(arg: {
 		groupId: string | undefined
 		areaId: string
@@ -2631,6 +2634,7 @@ export class EverythingService
 				this._saveUpdates({ project })
 			},
 			description: ActionDescription.AssignAreaToGroup,
+			ledgerKey: SpecialLedgers.PERIPHERALS,
 		}
 	}
 	async startDefiningArea(arg: { bridgeId: BridgeId; deviceId: PeripheralId; areaId: string }): Promise<void> {
@@ -2658,6 +2662,7 @@ export class EverythingService
 	async finishDefiningArea(): Promise<void> {
 		this._saveUpdates({ definingArea: null })
 	}
+	@Undoable
 	async setApplicationTrigger(arg: {
 		triggerAction: ApplicationTrigger['action']
 		trigger: ApplicationTrigger | null
@@ -2697,6 +2702,7 @@ export class EverythingService
 				this._saveUpdates({ appData, noEffectOnPlayout: true })
 			},
 			description: ActionDescription.SetApplicationTrigger,
+			ledgerKey: SpecialLedgers.APPLICATION,
 		}
 	}
 

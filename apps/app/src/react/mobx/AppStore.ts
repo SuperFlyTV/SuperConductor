@@ -9,10 +9,13 @@ import { setConstants } from '../constants'
 import { BridgeId } from '@shared/api'
 import { TSRDeviceId, protectString } from '@shared/models'
 import { BridgePeripheralId } from '@shared/lib'
+import { SerializableLedgers, SpecialLedgers } from '../../models/project/Project'
 
 export class AppStore {
 	bridgeStatuses = new Map<BridgeId, BridgeStatus>()
 	peripherals = new Map<BridgePeripheralId, PeripheralStatus>()
+	undoLedgers: SerializableLedgers = {}
+	undoLedgerCurrentKey: string = SpecialLedgers.APPLICATION
 
 	serverAPI: ApiClient
 	logger: ClientSideLogger
@@ -30,6 +33,7 @@ export class AppStore {
 				this.updateBridgeStatus(bridgeId, status),
 			updatePeripheral: (peripheralId: BridgePeripheralId, peripheral: PeripheralStatus | null) =>
 				this.updatePeripheral(peripheralId, peripheral),
+			updateUndoLedgers: (data: SerializableLedgers) => this.updateUndoLedgers(data),
 		})
 
 		makeAutoObservable(this)
@@ -67,6 +71,10 @@ export class AppStore {
 		} else {
 			this.peripherals.delete(peripheralId)
 		}
+	}
+
+	updateUndoLedgers(data: SerializableLedgers): void {
+		this.undoLedgers = data
 	}
 
 	private _updateAllDeviceStatuses() {

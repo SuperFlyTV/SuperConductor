@@ -40,3 +40,17 @@ export interface AnalogInputSetting {
 	relativeMaxCap?: number
 	absoluteOffset?: number
 }
+
+export interface SerializableLedger {
+	undo?: { description?: string }
+	redo?: { description?: string }
+}
+
+export interface SerializableLedgers {
+	[key: string]: SerializableLedger
+}
+
+export enum SpecialLedgers {
+	APPLICATION = 'application',
+	PERIPHERALS = 'peripherals',
+}

@@ -18,6 +18,7 @@ import { getPeripheralId } from '@shared/lib'
 export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	const project = useContext(ProjectContext)
 	const appStore = store.appStore
+	const gui = store.guiStore
 
 	const [submenuPopover, setSubmenuPopover] = React.useState<{
 		anchorEl: HTMLAnchorElement
@@ -26,7 +27,8 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 	} | null>(null)
 	const closeSubMenu = useCallback(() => {
 		setSubmenuPopover(null)
-	}, [])
+		gui.isPeripheralPopoverOpen = true
+	}, [gui])
 
 	const [disabledPeripheralsPopover, setDisabledPeripheralsPopover] = React.useState<{
 		anchorEl: HTMLButtonElement
@@ -144,6 +146,7 @@ export const DeviceStatuses: React.FC = observer(function DeviceStatuses() {
 									bridgeId: peripheral.bridgeId,
 									deviceId: peripheral.id,
 								})
+								gui.isPeripheralPopoverOpen = true
 							}}
 						/>
 					)

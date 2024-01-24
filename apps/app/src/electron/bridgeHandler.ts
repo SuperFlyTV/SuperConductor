@@ -33,7 +33,11 @@ import { AnalogInput } from '../models/project/AnalogInput'
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
 
-type AnyBridgeConnection = WebsocketBridgeConnection | LocalBridgeConnection
+interface BridgeHandlerCallbacks {
+	updatedResourcesAndMetadata: (deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny | null) => void
+	onVersionMismatch: (bridgeId: BridgeId, bridgeVersion: string, ourVersion: string) => void
+	onDeviceRefreshStatus: (deviceId: TSRDeviceId, refreshing: boolean) => void
+}
 
 /** This handles connected bridges */
 export class BridgeHandler {
@@ -48,7 +52,7 @@ export class BridgeHandler {
 		}
 	> = new Map()
 	private internalBridge: LocalBridgeConnection | null = null
-	private connectedBridges: Array<AnyBridgeConnection> = []
+	private connectedBridges: Map<BridgeId, AbstractBridgeConnection> = new Map()
 	private mappings: Mappings = {}
 	private timelines: { [timelineId: string]: TSRTimeline } = {}
 	private settings: Map<BridgeId, Bridge['settings']> = new Map()
@@ -60,20 +64,15 @@ export class BridgeHandler {
 	} = {}
 	private datastore: Datastore = {}
 	private closed = false
-	private connectionCallbacks: BridgeConnectionCallbacks
+
 	reconnectToBridgesInterval: NodeJS.Timer
 
 	constructor(
 		private log: LoggerLike,
 		private session: SessionHandler,
 		private storage: StorageHandler,
-		callbacks: BridgeHandlerCallbacks
+		private callbacks: BridgeHandlerCallbacks
 	) {
-		this.connectionCallbacks = {
-			...callbacks,
-			getMappings: () => this.mappings,
-			getTimelines: () => this.timelines,
-		}
 		this.server = new WebsocketServer(this.log, SERVER_PORT, (connection: WebsocketConnection) => {
 			// On connection:
 
@@ -82,17 +81,16 @@ export class BridgeHandler {
 				this.session,
 				this.storage,
 				connection,
-				this.connectionCallbacks
+				this.getBridgeConnectionCallbacks()
 			)
 
 			// Lookup and set the bridgeId, if it is an outgoing
 			for (const [bridgeId, outgoing] of this.outgoingBridges.entries()) {
 				if (outgoing.connection?.connectionId === connection.connectionId) {
 					bridge.bridgeId = bridgeId
+					this.connectedBridges.set(bridgeId, bridge)
 				}
 			}
-
-			this.connectedBridges.push(bridge)
 		})
 
 		this.server.on('close', () => {
@@ -108,8 +106,8 @@ export class BridgeHandler {
 			this.reconnectToBridges()
 		}, 1000)
 	}
-	getBridgeConnection(bridgeId: BridgeId): AnyBridgeConnection | undefined {
-		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
+	getBridgeConnection(bridgeId: BridgeId): AbstractBridgeConnection | undefined {
+		return this.connectedBridges.get(bridgeId)
 	}
 	async onClose(): Promise<void> {
 		if (this.internalBridge) {
@@ -127,20 +125,15 @@ export class BridgeHandler {
 					this.log,
 					this.session,
 					this.storage,
-					this.connectionCallbacks
+					this.getBridgeConnectionCallbacks()
 				)
-				this.connectedBridges.push(this.internalBridge)
+				this.connectedBridges.set(INTERNAL_BRIDGE_ID, this.internalBridge)
 			}
 		} else {
 			if (this.internalBridge) {
 				this.session.updateBridgeStatus(INTERNAL_BRIDGE_ID, null)
-				const bridgeIndex = this.connectedBridges.findIndex(
-					(connectedBridge) => connectedBridge === this.internalBridge
-				)
-				if (bridgeIndex >= 0) {
-					this.connectedBridges.splice(bridgeIndex, 1)
-				}
 				const internalBridge = this.internalBridge
+				this.connectedBridges.delete(INTERNAL_BRIDGE_ID)
 				this.internalBridge = null
 				internalBridge.destroy().catch(this.log.error)
 			}
@@ -218,7 +211,7 @@ export class BridgeHandler {
 		if (!_.isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
-			for (const bridgeConnection of this.connectedBridges) {
+			for (const bridgeConnection of this.connectedBridges.values()) {
 				bridgeConnection.setMappings(mappings)
 			}
 		}
@@ -228,20 +221,20 @@ export class BridgeHandler {
 			if (timeline) {
 				this.timelines[timelineId] = timeline
 
-				for (const bridgeConnection of this.connectedBridges) {
+				for (const bridgeConnection of this.connectedBridges.values()) {
 					bridgeConnection.addTimeline(timelineId, timeline)
 				}
 			} else {
 				delete this.timelines[timelineId]
 
-				for (const bridgeConnection of this.connectedBridges) {
+				for (const bridgeConnection of this.connectedBridges.values()) {
 					bridgeConnection.removeTimeline(timelineId)
 				}
 			}
 		}
 	}
 	updateSettings(bridgeId: BridgeId, settings: Bridge['settings']): void {
-		const bridgeConnection = this.connectedBridges.find((bc) => bc.bridgeId === bridgeId)
+		const bridgeConnection = this.connectedBridges.get(bridgeId)
 		if (bridgeConnection) {
 			bridgeConnection.setSettings(settings)
 		}
@@ -303,26 +296,41 @@ export class BridgeHandler {
 			modified: number
 		}[]
 	): void {
-		for (const bridgeConnection of this.connectedBridges) {
+		for (const bridgeConnection of this.connectedBridges.values()) {
 			bridgeConnection.updateDatastore(updates)
 		}
 	}
 	refreshResources(): void {
-		for (const bridgeConnection of this.connectedBridges) {
+		for (const bridgeConnection of this.connectedBridges.values()) {
 			bridgeConnection.refreshResources()
+		}
+	}
+	private getBridgeConnectionCallbacks(): BridgeConnectionCallbacks {
+		return {
+			...this.callbacks,
+			getMappings: () => this.mappings,
+			getTimelines: () => this.timelines,
+			onInitialized: (connection) => {
+				if (connection.bridgeId == null) return
+				this.connectedBridges.set(connection.bridgeId, connection)
+			},
+			onDisconnected: (connection) => {
+				if (connection.bridgeId == null) return
+				const currentConnection = this.connectedBridges.get(connection.bridgeId)
+				if (currentConnection === connection) {
+					// delete only if that's the same connection, otherwise a new one might have been initiated before this one fully closed
+					this.connectedBridges.delete(connection.bridgeId)
+				}
+			},
 		}
 	}
 }
 
-interface BridgeHandlerCallbacks {
-	updatedResourcesAndMetadata: (deviceId: TSRDeviceId, resources: ResourceAny[], metadata: MetadataAny | null) => void
-	onVersionMismatch: (bridgeId: BridgeId, bridgeVersion: string, ourVersion: string) => void
-	onDeviceRefreshStatus: (deviceId: TSRDeviceId, refreshing: boolean) => void
-}
-
 interface BridgeConnectionCallbacks extends BridgeHandlerCallbacks {
-	getMappings: () => Mappings
 	getTimelines: () => { [timelineId: string]: TSRTimeline }
+	getMappings: () => Mappings
+	onInitialized: (connection: AbstractBridgeConnection) => void
+	onDisconnected: (connection: AbstractBridgeConnection) => void
 }
 
 abstract class AbstractBridgeConnection {
@@ -412,6 +420,7 @@ abstract class AbstractBridgeConnection {
 		} else if (this.bridgeId !== id) {
 			throw new Error(`bridgeId ID mismatch: "${this.bridgeId}" vs "${id}"`)
 		}
+		this.callbacks.onInitialized(this)
 
 		if (version !== CURRENT_VERSION) {
 			this.callbacks.onVersionMismatch(id, version, CURRENT_VERSION)
@@ -430,6 +439,7 @@ abstract class AbstractBridgeConnection {
 			this.log.error(`Error: Settings bridge "${this.bridgeId}" not found`)
 		}
 		this.setMappings(this.callbacks.getMappings(), true)
+
 		for (const [timelineId, timeline] of Object.entries<TSRTimeline>(this.callbacks.getTimelines())) {
 			this.addTimeline(timelineId, timeline)
 		}
@@ -625,6 +635,7 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 
 					this.session.updateBridgeStatus(this.bridgeId, status)
 				}
+				this.callbacks.onDisconnected(this)
 			}
 		})
 		this.connection.on('message', this.handleMessage.bind(this))
