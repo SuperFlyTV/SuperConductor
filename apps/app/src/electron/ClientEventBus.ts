@@ -11,10 +11,18 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
-import { EventEmitter } from 'stream'
+import EventEmitter from 'eventemitter3'
+import { SerializableLedgers } from '../models/project/Project'
+
+type ClientEventBusEvents = {
+	callMethod: (...args: any[]) => void // legacy
+	updateUndoLedgers: (undoLedgers: SerializableLedgers) => void
+	updateRundown: (rundown: Rundown) => void
+	updateProject: (rundown: Project) => void
+}
 
 // --- some of it might be needed, most of it hopefully not
-export class ClientEventBus extends EventEmitter implements IPCClientMethods {
+export class ClientEventBus extends EventEmitter<ClientEventBusEvents> implements IPCClientMethods {
 	close(): void {
 		// Nothing here
 	}
@@ -26,10 +34,13 @@ export class ClientEventBus extends EventEmitter implements IPCClientMethods {
 		this.emit('callMethod', 'updateAppData', appData)
 	}
 	updateProject(project: Project): void {
-		this.emit('updateProject', project) // TODO: some type safety, please
+		this.emit('updateProject', project)
 	}
 	updateRundown(_fileName: string, rundown: Rundown): void {
-		this.emit('updateRundown', rundown) // TODO: some type safety, please
+		this.emit('updateRundown', rundown)
+	}
+	updateUndoLedgers(data: SerializableLedgers): void {
+		this.emit('updateUndoLedgers', data)
 	}
 	updateResourcesAndMetadata(
 		resources: Array<{ id: ResourceId; resource: ResourceAny | null }>,

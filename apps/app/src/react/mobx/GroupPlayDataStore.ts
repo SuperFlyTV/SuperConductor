@@ -5,7 +5,6 @@ import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
 import { Rundown } from '../../models/rundown/Rundown'
 import { ApiClient } from '../api/ApiClient'
 import { ClientSideLogger } from '../api/logger'
-// const { ipcRenderer } = window.require('electron')
 
 export class GroupPlayDataStore {
 	groups: Map<string, GroupPlayData> = new Map()

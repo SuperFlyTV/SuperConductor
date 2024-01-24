@@ -119,12 +119,46 @@ export const deletePart = (group: Group, partId: string): Part | undefined => {
 	}
 	return deletedPart
 }
-export const deleteTimelineObj = (part: Part, timelineObjId: string): boolean => {
-	if (part.timeline.find((t) => t.obj.id === timelineObjId)) {
-		part.timeline = part.timeline.filter((t) => t.obj.id !== timelineObjId)
-		return true
+export const deleteTimelineObj = (timeline: TimelineObj[], timelineObjId: string): TimelineObj[] => {
+	const foundObj = timeline.find((t) => t.obj.id === timelineObjId)
+	if (!foundObj) return timeline
+	const idRegexEnd = new RegExp(`#${timelineObjId}.end`, 'g')
+	const firstEnable = Array.isArray(foundObj.obj.enable) ? foundObj.obj.enable[0] : foundObj.obj.enable
+	const start = firstEnable?.start
+	if (typeof start === 'string' || typeof start === 'number') {
+		timeline = timeline.map((tObj) => {
+			const enableArray = Array.isArray(tObj.obj.enable) ? tObj.obj.enable : [tObj.obj.enable]
+			for (const enable of enableArray) {
+				if (enable.start && typeof enable.start === 'string') {
+					// TODO: immer js?
+					tObj = {
+						...tObj,
+						obj: {
+							...tObj.obj,
+							enable: {
+								...enable,
+								start: enable.start.replace(idRegexEnd, start.toString()),
+							},
+						},
+					}
+				}
+				if (enable.end && typeof enable.end === 'string') {
+					tObj = {
+						...tObj,
+						obj: {
+							...tObj.obj,
+							enable: {
+								...enable,
+								end: enable.end.replace(idRegexEnd, start.toString()),
+							},
+						},
+					}
+				}
+			}
+			return tObj
+		})
 	}
-	return false
+	return timeline.filter((t) => t.obj.id !== timelineObjId)
 }
 
 export function getResolvedTimelineTotalDuration(resolvedTimeline: ResolvedTimeline, filterInfinites: true): number

@@ -1,5 +1,5 @@
 import { literal, stringifyError } from '@shared/lib'
-import { app, BrowserWindow, dialog, Menu, shell, screen } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell, screen, ipcMain } from 'electron'
 import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
@@ -9,6 +9,7 @@ import { createLoggers } from './lib/logging'
 import { baseFolder } from './lib/baseFolder'
 import path from 'path'
 import winston from 'winston'
+import { SerializableLedger } from './models/project/Project'
 
 function createWindow(log: winston.Logger, superConductor: SuperConductor): void {
 	const appData = superConductor.storage.getAppData()
@@ -20,8 +21,9 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		height: appData.windowPosition.height,
 
 		webPreferences: {
-			nodeIntegration: true,
-			contextIsolation: false,
+			nodeIntegration: false,
+			contextIsolation: true,
+			preload: path.join(__dirname, 'preload.js'),
 		},
 		title: 'SuperConductor',
 	})
@@ -64,12 +66,10 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		undoEnabled: false,
 		redoLabel: 'Redo',
 		redoEnabled: false,
-		onUndoClick: () => {
-			superConductor.ipcServer.undo().catch(log.error)
-		},
-		onRedoClick: () => {
-			superConductor.ipcServer.redo().catch(log.error)
-		},
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		onUndoClick: () => {},
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		onRedoClick: () => {},
 		onAboutClick: () => {
 			// TODO: this should probably become a client-side only action
 			// handler.ipcClient.displayAboutDialog()
@@ -113,13 +113,17 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 	const menu = generateMenu(menuOpts, log)
 	Menu.setApplicationMenu(menu)
 
-	superConductor.ipcServer.on('updatedUndoLedger', (undoLedger, undoPointer) => {
-		const undoAction = undoLedger[undoPointer]
-		const redoAction = undoLedger[undoPointer + 1]
-		menuOpts.undoLabel = undoAction ? `Undo ${undoAction.description}` : 'Undo'
-		menuOpts.undoEnabled = Boolean(undoAction)
-		menuOpts.redoLabel = redoAction ? `Redo ${redoAction.description}` : 'Redo'
-		menuOpts.redoEnabled = Boolean(redoAction)
+	ipcMain.on('updateUndoLedger', (_event, key: string, undoLedger: SerializableLedger) => {
+		menuOpts.undoLabel = undoLedger.undo ? `Undo ${undoLedger.undo.description}` : 'Undo'
+		menuOpts.undoEnabled = Boolean(undoLedger.undo)
+		menuOpts.onUndoClick = () => {
+			superConductor.ipcServer.undo(key).catch(log.error)
+		}
+		menuOpts.redoLabel = undoLedger.redo ? `Redo ${undoLedger.redo.description}` : 'Redo'
+		menuOpts.redoEnabled = Boolean(undoLedger.redo)
+		menuOpts.onRedoClick = () => {
+			superConductor.ipcServer.redo(key).catch(log.error)
+		}
 		const menu = generateMenu(menuOpts, log)
 		Menu.setApplicationMenu(menu)
 	})
