@@ -219,7 +219,7 @@ function sectionToTimelineObj(
 		if (usePart) {
 			// Add the part to the timeline:
 			const obj: TimelineObjEmpty | null = partToTimelineObj(
-				makeUniqueId(part.part.id),
+				makeUniqueId(`${id}_${part.part.id}`),
 				group,
 				part,
 				partStartTime,
