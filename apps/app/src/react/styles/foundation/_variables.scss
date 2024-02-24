@@ -16,3 +16,10 @@ $default-transition: all 150ms ease;
 $default-transition-time: 150ms ease;
 $timelineObjHandleWidth: 8px;
 $top-header-height: 5rem;
+
+// z-indexes:
+
+$timeline-cover-zIndex: 998;
+$playhead-zIndex: 999;
+
+$dropdown-selector-zIndex: 10000;

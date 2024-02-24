@@ -5,7 +5,7 @@ import { ResourceAny, ResourceId, MetadataAny, SerializedProtectedMap, TSRDevice
 import { Rundown } from '../models/rundown/Rundown'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { Part } from '../models/rundown/Part'
-import { Group } from '../models/rundown/Group'
+import { Group, GroupViewMode } from '../models/rundown/Group'
 import { AppData } from '../models/App/AppData'
 import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
 import { ActiveTrigger, ActiveTriggers, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
@@ -64,6 +64,8 @@ export const ClientMethods: ServiceKeyArrays = {
 		'playPrev',
 		'remove',
 		'update',
+		'setViewMode',
+		'setAllViewMode',
 	],
 	[ServiceName.LEGACY]: [],
 	[ServiceName.PARTS]: [
@@ -303,6 +305,8 @@ export interface IPCServerMethods {
 	toggleGroupLock: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleGroupCollapse: (arg: { rundownId: string; groupId: string; value: boolean }) => void
 	toggleAllGroupsCollapse: (arg: { rundownId: string; value: boolean }) => void
+	setGroupViewMode: (arg: { rundownId: string; groupId: string; viewMode: GroupViewMode }) => void
+	setAllGroupsViewMode: (arg: { rundownId: string; viewMode: GroupViewMode }) => void
 	refreshResources: () => void
 	refreshResourcesSetAuto: (arg: { interval: number }) => void
 	triggerHandleAutoFill: () => void

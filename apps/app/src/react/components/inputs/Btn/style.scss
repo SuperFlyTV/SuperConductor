@@ -1,4 +1,8 @@
+@use 'sass:color';
 @import './../../../styles/foundation/variables';
+
+$btnTextColor: #fff;
+$btnBgColor: #545a78;
 
 .btn {
 	cursor: pointer;
@@ -19,18 +23,13 @@
 	text-transform: uppercase;
 	border-radius: 4px;
 
-	color: #fff;
-	background: #545a78;
+	color: $btnTextColor;
+	background: $btnBgColor;
 	padding: 6px 16px;
 	min-width: 22px;
 	min-height: 22px;
 	border: none;
-	// background: none;
-	// opacity: 0.3;
 
-	// &.selected {
-	// 	opacity: 1;
-	// }
 	transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
 		box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,
 		color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
@@ -48,7 +47,8 @@
 	}
 
 	&.disabled {
-		opacity: 0.5;
+		color: color.adjust($btnTextColor, $lightness: -40%);
+		background: color.adjust($btnBgColor, $lightness: -10%);
 		pointer-events: none;
 		cursor: inherit;
 	}

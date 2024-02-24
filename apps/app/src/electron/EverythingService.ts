@@ -30,7 +30,7 @@ import {
 } from '../lib/util'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group, PlayingPart } from '../models/rundown/Group'
+import { Group, GroupViewMode, PlayingPart } from '../models/rundown/Group'
 import { Part } from '../models/rundown/Part'
 import {
 	TSRTimelineObj,
@@ -2160,6 +2160,56 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 			},
 			description: ActionDescription.ToggleAllGroupsCollapse,
 			ledgerKey: arg.rundownId,
+		}
+	}
+	async setGroupViewMode(arg: {
+		rundownId: string
+		groupId: string
+		viewMode: GroupViewMode
+	}): Promise<UndoableResult<void>> {
+		const { rundown, group } = this.getGroup(arg)
+		const originalValue = group.viewMode
+
+		group.viewMode = arg.viewMode
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown, group } = this.getGroup(arg)
+
+				group.viewMode = originalValue
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, group, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleGroupCollapse,
+		}
+	}
+	async setAllGroupsViewMode(arg: { rundownId: string; viewMode: GroupViewMode }): Promise<UndoableResult<void>> {
+		const { rundown } = this.getRundown(arg)
+
+		const originalValues = new Map<string, GroupViewMode>(rundown.groups.map((g) => [g.id, g.viewMode]))
+
+		for (const group of rundown.groups) {
+			group.viewMode = arg.viewMode
+		}
+
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+
+		return {
+			undo: () => {
+				const { rundown } = this.getRundown(arg)
+
+				for (const group of rundown.groups) {
+					const originalValue = originalValues.get(group.id)
+					if (originalValue !== undefined) {
+						group.viewMode = originalValue
+					}
+				}
+
+				this._saveUpdates({ rundownId: arg.rundownId, rundown, noEffectOnPlayout: true })
+			},
+			description: ActionDescription.ToggleAllGroupsCollapse,
 		}
 	}
 	async refreshResources(): Promise<void> {

@@ -26,14 +26,15 @@ interface SortedLayer {
 	layerId: string
 	objectIds: string[]
 }
+export interface TimelineObjectsOnLayer {
+	layerId: string
+	objectsOnLayer: Array<{ resolved: ResolvedTimelineObject['resolved']; timelineObj: TimelineObj }>
+}
 export function timelineObjsOntoLayers(
 	sortedLayers: SortedLayer[],
 	resolvedTimeline: ResolvedTimeline,
 	timeline: TimelineObj[]
-): Array<{
-	layerId: string
-	objectsOnLayer: Array<{ resolved: ResolvedTimelineObject['resolved']; timelineObj: TimelineObj }>
-}> {
+): Array<TimelineObjectsOnLayer> {
 	return sortedLayers.map(({ layerId, objectIds }) => {
 		const objectsOnLayer: {
 			resolved: ResolvedTimelineObject['resolved']

@@ -37,6 +37,9 @@ export interface GroupBase {
 	/** Whether or not this Group should be visually collapsed in the app view. Does not affect playout. */
 	collapsed?: boolean
 
+	/** How the group is displayed in the GUI. Defaults to Timeline. */
+	viewMode: GroupViewMode
+
 	/** An additional, optional ID to be used by API clients to track the Groups they are responsible for */
 	externalId?: string
 }
@@ -103,4 +106,9 @@ export interface ScheduleSettings {
 	/** timestamp */
 	startTime?: DateTimeObject
 	repeating: RepeatingSettingsAny
+}
+
+export enum GroupViewMode {
+	TIMELINE = 0, // default
+	BUTTONS = 1,
 }

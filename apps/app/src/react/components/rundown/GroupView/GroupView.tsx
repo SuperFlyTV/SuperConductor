@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import sorensen from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn'
-import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
+import { GroupBase, GroupGUI, GroupViewMode } from '../../../../models/rundown/Group'
 import { PartView } from './PartView'
 import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead'
 import { IPCServerContext } from '../../../contexts/IPCServer'
@@ -30,6 +30,8 @@ import {
 	MdPlaylistPlay,
 	MdRepeat,
 	MdOutlineDragIndicator,
+	MdGridView,
+	MdOutlineViewAgenda,
 } from 'react-icons/md'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
@@ -55,6 +57,7 @@ import { ErrorBoundary } from '../../util/ErrorBoundary'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
 import { useFrame } from '../../../lib/useFrame'
 import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
+import { PartButtonView } from './PartButtonView'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -137,6 +140,7 @@ export const GroupView: React.FC<{
 
 		if (
 			targetEl.closest('.part') ||
+			targetEl.closest('.part-button') ||
 			targetEl.closest('.controls-left>*') ||
 			targetEl.closest('.controls-right>*') ||
 			targetEl.closest('button') ||
@@ -473,6 +477,31 @@ export const GroupView: React.FC<{
 			.catch(handleError)
 	}, [group.id, group.locked, handleError, ipcServer, rundownId])
 
+	const cycleViewMode = useCallback(() => {
+		let newValue: GroupViewMode = GroupViewMode.TIMELINE
+		if (group.viewMode === GroupViewMode.TIMELINE) {
+			newValue = GroupViewMode.BUTTONS
+		}
+
+		const pressed = sorensen.getPressedKeys()
+		if (pressed.includes('AltLeft') || pressed.includes('AltRight')) {
+			ipcServer
+				.setAllGroupsViewMode({
+					rundownId,
+					viewMode: newValue,
+				})
+				.catch(handleError)
+		} else {
+			ipcServer
+				.setGroupViewMode({
+					rundownId,
+					groupId: group.id,
+					viewMode: newValue,
+				})
+				.catch(handleError)
+		}
+	}, [group.id, group.viewMode, handleError, ipcServer, rundownId])
+
 	// One-at-a-time button:
 	const toggleOneAtATime = useCallback(() => {
 		ipcServer
@@ -682,6 +711,24 @@ export const GroupView: React.FC<{
 
 							<ToggleButton
 								title={
+									group.viewMode === GroupViewMode.TIMELINE
+										? 'Timeline View Mode.\n\n(EXPERIMENTAL)\nClick to switch to Button View Mode.'
+										: 'Button View Mode. \n(EXPERIMENTAL)\n\n Click to switch to Timeline View Mode.'
+								}
+								value="viewMode"
+								selected={false}
+								size="small"
+								onChange={cycleViewMode}
+							>
+								{group.viewMode === GroupViewMode.TIMELINE ? (
+									<MdOutlineViewAgenda size={18} />
+								) : (
+									<MdGridView size={18} />
+								)}
+							</ToggleButton>
+
+							<ToggleButton
+								title={
 									group.oneAtATime
 										? 'The Group plays one Part at a time (like a playlist).\n\nClick to set Group to play Parts independently of each other.'
 										: 'Parts are played independently of each other.\n\nClick to set Group to instead play one Part at a time (like a playlist).'
@@ -809,25 +856,38 @@ export const GroupView: React.FC<{
 					{!group.collapsed && (
 						<div className="group__content">
 							<div
-								className="group__content__parts"
+								className={classNames(
+									'group__content__parts',
+									group.viewMode === GroupViewMode.TIMELINE ? 'timeline' : 'buttons'
+								)}
 								ref={contentPartsRef}
 								style={{
 									height: hidePartsHeight ? `${hidePartsHeight}px` : undefined,
 								}}
 							>
 								{hidePartsHeight === null &&
-									group.partIds.map((partId) => (
-										<PartView
-											key={partId}
-											rundownId={rundownId}
-											partId={partId}
-											parentGroupId={group.id}
-											mappings={mappings}
-										/>
-									))}
+									(group.viewMode === GroupViewMode.TIMELINE
+										? group.partIds.map((partId) => (
+												<PartView
+													key={partId}
+													rundownId={rundownId}
+													partId={partId}
+													parentGroupId={group.id}
+													mappings={mappings}
+												/>
+										  ))
+										: group.partIds.map((partId) => (
+												<PartButtonView
+													key={partId}
+													rundownId={rundownId}
+													partId={partId}
+													parentGroupId={group.id}
+													mappings={mappings}
+												/>
+										  )))}
 							</div>
 
-							{!group.locked && <GroupOptions rundownId={rundownId} group={group} />}
+							{!group.locked && <GroupAddPartArea rundownId={rundownId} group={group} />}
 						</div>
 					)}
 
@@ -856,7 +916,7 @@ export const GroupView: React.FC<{
 	}
 })
 
-const GroupOptions: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundownId, group }) => {
+const GroupAddPartArea: React.FC<{ rundownId: string; group: GroupGUI }> = ({ rundownId, group }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)
 	const [newPartOpen, setNewPartOpen] = React.useState(false)

@@ -6,7 +6,7 @@ import { PartialDeep } from 'type-fest/source/partial-deep'
 import { ClientEventBus } from '../ClientEventBus'
 import { ResourceAny } from '@shared/models'
 import { MoveTarget } from '../../lib/util'
-import { Group } from '../../models/rundown/Group'
+import { Group, GroupViewMode } from '../../models/rundown/Group'
 import { ServiceTypes } from '../../ipc/IPCAPI'
 
 interface GroupData {
@@ -94,6 +94,24 @@ export class GroupService extends EventEmitter {
 	async duplicate(data: { rundownId: string; groupId: string }): Promise<void> {
 		// TODO: access control
 		const result = await this.everythingService.duplicateGroup(data)
+		if (!result) throw new GeneralError()
+	}
+
+	async setViewMode(data: { rundownId: string; groupId: string; viewMode: GroupViewMode }): Promise<void> {
+		// TODO: access control
+		const result = await this.everythingService.setGroupViewMode({
+			rundownId: data.rundownId,
+			groupId: data.groupId,
+			viewMode: data.viewMode,
+		})
+		if (!result) throw new GeneralError()
+	}
+	async setAllViewMode(data: { rundownId: string; viewMode: GroupViewMode }): Promise<void> {
+		// TODO: access control
+		const result = await this.everythingService.setAllGroupsViewMode({
+			rundownId: data.rundownId,
+			viewMode: data.viewMode,
+		})
 		if (!result) throw new GeneralError()
 	}
 }
