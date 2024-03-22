@@ -22,6 +22,10 @@ export class ProjectService extends EventEmitter {
 		})
 	}
 
+	async find(): Promise<string[]> {
+		const project = this.everythingService.getProject()
+		return [project.id]
+	}
 	async get(_id: string): Promise<Project> {
 		return this.everythingService.getProject()
 	}

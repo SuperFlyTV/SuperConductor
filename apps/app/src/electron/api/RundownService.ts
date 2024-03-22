@@ -36,6 +36,11 @@ export class RundownService extends EventEmitter {
 		})
 	}
 
+	async find(_params: Params): Promise<string[]> {
+		// TODO: access control
+		const rundowns = this.everythingService.getRundowns()
+		return rundowns.rundownIds
+	}
 	async get(id: string, params: Params): Promise<Rundown> {
 		// TODO: access control
 		const rundown = this.everythingService.getRundown({ rundownId: id })

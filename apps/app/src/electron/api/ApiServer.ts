@@ -77,9 +77,11 @@ export class ApiServer {
 			return this.app.channel(RUNDOWN_CHANNEL_PREFIX + data.id)
 		})
 
-		this.app.service(ServiceName.PROJECTS).publish((_data: Project | ProjectBase, _context: HookContext) => {
-			return this.app.channel(PROJECTS_CHANNEL_PREFIX)
-		})
+		this.app
+			.service(ServiceName.PROJECTS)
+			.publish((_data: string | Project | ProjectBase, _context: HookContext) => {
+				return this.app.channel(PROJECTS_CHANNEL_PREFIX)
+			})
 
 		// --- legacy code, only for a rapid prototype
 		this.app.use(

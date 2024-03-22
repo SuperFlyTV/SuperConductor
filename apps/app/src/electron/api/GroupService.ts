@@ -73,13 +73,23 @@ export class GroupService extends EventEmitter {
 		return result.result
 	}
 
-	async update(data: { rundownId: string; groupId: string; group: PartialDeep<Group> }): Promise<void> {
+	async update(
+		data: { rundownId: string; groupId: string; group: PartialDeep<Group> },
+		body?: unknown
+	): Promise<void> {
+		if ((data === null || typeof data === 'string') && body) data = body as any // fix for when called via REST
+
 		// TODO: access control
 		const result = await this.everythingService.updateGroup(data)
 		if (!result) throw new GeneralError()
 	}
 
-	async remove(data: { rundownId: string; groupId: string }): Promise<void> {
+	async remove(data: { rundownId: string; groupId: string } | `${string}:${string}`): Promise<void> {
+		if (typeof data === 'string') {
+			const [rundownId, groupId] = data.split(':')
+			data = { rundownId, groupId }
+		}
+
 		// TODO: access control
 		const result = await this.everythingService.deleteGroup(data)
 		if (!result) throw new GeneralError()

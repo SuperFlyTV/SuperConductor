@@ -53,7 +53,9 @@ type ServiceKeyArrays = KeyArrays<ServiceTypes>
 // those are the arrays of service methods exposed to the clients
 export const ClientMethods: ServiceKeyArrays = {
 	[ServiceName.GROUPS]: [
-		'create',
+		'create', // POST
+		'update', // PUT
+		'remove', // DELETE
 		'duplicate',
 		'insert',
 		'move',
@@ -62,8 +64,6 @@ export const ClientMethods: ServiceKeyArrays = {
 		'stop',
 		'playNext',
 		'playPrev',
-		'remove',
-		'update',
 	],
 	[ServiceName.LEGACY]: [],
 	[ServiceName.PARTS]: [
@@ -83,6 +83,7 @@ export const ClientMethods: ServiceKeyArrays = {
 		'insertTimelineObjs',
 	],
 	[ServiceName.PROJECTS]: [
+		'find',
 		'get',
 		'create',
 		'update',
@@ -102,6 +103,7 @@ export const ClientMethods: ServiceKeyArrays = {
 		'acknowledgeUserAgreement',
 	],
 	[ServiceName.RUNDOWNS]: [
+		'find',
 		'get',
 		'create',
 		'remove',

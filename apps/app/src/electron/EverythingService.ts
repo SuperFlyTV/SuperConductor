@@ -155,7 +155,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 	public getProject(): Project {
 		return this.storage.getProject()
 	}
-	private getRundowns(): { rundownIds: string[] } {
+	public getRundowns(): { rundownIds: string[] } {
 		const rundowns = this.storage.getAllRundowns()
 		return { rundownIds: rundowns.map((r) => r.id) }
 	}
