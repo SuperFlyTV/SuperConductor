@@ -1,11 +1,12 @@
 import Koa from 'koa'
 import Router from '@koa/router'
+import bodyParser from 'koa-bodyparser'
 import { IPCServer, isUndoable } from './IPCServer'
 import { stringifyError } from '@shared/lib'
 import { LoggerLike } from '@shared/api'
 
 export class HTTPAPI {
-	private app = new Koa()
+	private app: Koa
 	private router = new Router()
 
 	private methodSignatures: {
@@ -16,6 +17,9 @@ export class HTTPAPI {
 	} = {}
 
 	constructor(port: number, ipcServer: IPCServer, log: LoggerLike) {
+		this.app = new Koa()
+		this.app.use(bodyParser())
+
 		this.router.get(`/`, async (ctx) => {
 			ctx.response.body = `<html><body>
 			<a href="/api/internal">Internal API (unstable)</a>
@@ -98,7 +102,9 @@ export class HTTPAPI {
 				endpointType = 'POST'
 				this.router.post(`/api/internal/${endpoint}`, async (ctx) => {
 					try {
-						const result = await fcn(ctx.request.query)
+						const payload = (ctx.request as any).body || ctx.request.query
+
+						const result = await fcn(payload)
 						if (isUndoable(result)) {
 							ctx.response.body = result.result
 						} else {
