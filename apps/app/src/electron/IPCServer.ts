@@ -864,6 +864,7 @@ export class IPCServer
 		const originalGroupIds = rundown.groups.map((group) => group.id)
 
 		let nextTarget: MoveTarget = arg.target
+		const groupsToUpdate: Group[] = []
 		for (const group of arg.groups) {
 			// Ensure that the group id is unique:
 			if (rundown.groups.find((g) => g.id === group.group.id)) {
@@ -881,6 +882,7 @@ export class IPCServer
 
 			const insertPosition = getPositionFromTarget(nextTarget, rundown.groups)
 			rundown.groups.splice(insertPosition, 0, group.group)
+			groupsToUpdate.push(group.group)
 			nextTarget = {
 				type: 'after',
 				id: group.group.id,
@@ -890,7 +892,7 @@ export class IPCServer
 			})
 		}
 
-		this._saveUpdates({ rundownId: arg.rundownId, rundown })
+		this._saveUpdates({ rundownId: arg.rundownId, rundown, group: groupsToUpdate })
 
 		// Now, also add the resources as timeline-objects into the parts:
 		const addedResourcesUndo: (() => void | Promise<void>)[] = []
