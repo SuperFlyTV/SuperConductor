@@ -4,7 +4,14 @@
 		"rootDir": "src",
 		"outDir": "dist",
 		"jsx": "react",
-		"baseUrl": "./"
+		"baseUrl": "./",
+		"paths": {
+			"@/*": ["./src/*"],
+			"$components/*": ["./src/react/components/*"],
+			"$stores/*": ["./src/react/mobx/*"],
+			"$contexts/*": ["./src/react/contexts/*"],
+			"$api/*": ["./src/react/api/*"]
+		}
 	},
 	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
 }

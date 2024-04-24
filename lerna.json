@@ -5,6 +5,5 @@
 		"tests/**"
 	],
 	"version": "0.12.0-alpha.5",
-	"npmClient": "yarn",
-	"useWorkspaces": true
+	"npmClient": "yarn"
 }

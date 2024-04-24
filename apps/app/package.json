@@ -15,9 +15,9 @@
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",
 		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"test": "jest",
-		"precommit": "lint-staged",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"test": "run -T jest",
+		"precommit": "run -T lint-staged",
+		"lint:raw": "run -T eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
 	"repository": {
 		"type": "git",

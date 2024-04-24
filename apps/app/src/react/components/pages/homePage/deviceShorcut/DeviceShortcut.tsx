@@ -1,5 +1,5 @@
 import React from 'react'
-import { BridgeDevice } from 'src/models/project/Bridge'
+import { BridgeDevice } from '@/models/project/Bridge'
 import { DeviceType } from 'timeline-state-resolver-types'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon'
 import { StatusCircle } from '../scList/StatusCircle'
