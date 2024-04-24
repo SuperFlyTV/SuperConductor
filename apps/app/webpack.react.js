@@ -14,6 +14,10 @@ module.exports = {
 	resolve: {
 		alias: {
 			['@']: path.resolve(__dirname, 'src'),
+			['$components']: path.resolve(__dirname, 'src/react/components'),
+			['$stores']: path.resolve(__dirname, 'src/react/mobx'),
+			['$contexts']: path.resolve(__dirname, 'src/react/contexts'),
+			['$api']: path.resolve(__dirname, 'src/react/api'),
 		},
 		extensions: ['.tsx', '.ts', '.js'],
 		fallback: { url: require.resolve('url/') },

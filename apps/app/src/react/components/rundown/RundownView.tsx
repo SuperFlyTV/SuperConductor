@@ -1,25 +1,27 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import sorensen from '@sofie-automation/sorensen'
 import { GroupView } from './GroupView/GroupView'
-import { IPCServerContext } from '../../contexts/IPCServer'
+import { IPCServerContext } from '$contexts/IPCServer'
 import { useDrop } from 'react-dnd'
-import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes'
-import { Mappings } from 'timeline-state-resolver-types'
+import { DragItemTypes, isPartDragItem, isResourceDragItem } from '$api/DragItemTypes'
 import { PartPropertiesDialog } from './PartPropertiesDialog'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '$contexts/ErrorHandler'
+import { MappingsContext } from '$contexts/Mappings'
 import { DropZone } from '../util/DropZone'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../mobx/store'
-import { useMemoComputedObject } from '../../mobx/lib'
-import { Btn } from '../inputs/Btn/Btn'
-import { getClassNameFromResource } from '../../../lib/resources'
-import { MoveTarget } from '../../../lib/util'
+import { store } from '$stores/store'
+import { useMemoComputedObject } from '$stores/lib'
+import { Btn } from '$components/inputs/Btn/Btn'
+import { getClassNameFromResource } from '@/lib/resources'
+import { MoveTarget } from '@/lib/util'
 import { ErrorBoundary } from '../util/ErrorBoundary'
 import { assertNever } from '@shared/lib'
-import { CurrentSelectionAny } from '../../../lib/GUI'
+import { CurrentSelectionAny } from '@/lib/GUI'
 
-export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
+export const RundownView: React.FC = observer(function RundownView() {
+	const mappings = useContext(MappingsContext)
+
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(

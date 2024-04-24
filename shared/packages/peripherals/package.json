@@ -25,8 +25,8 @@
 	"scripts": {
 		"build": "rimraf dist && yarn build:main",
 		"build:main": "tsc -p tsconfig.json",
-		"precommit": "lint-staged",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"precommit": "run -T lint-staged",
+		"lint:raw": "run -T eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
