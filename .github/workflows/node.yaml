@@ -16,9 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'yarn'
+      - name: Enable Corepack
+        run: corepack enable
       - name: apt-get update
         run: sudo apt-get update
       - name: Install libasound2-dev
@@ -50,9 +53,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'yarn'
+      - name: Enable Corepack
+        run: corepack enable
       - name: restore node_modules
         uses: actions/cache@v3
         with:
@@ -72,9 +78,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'yarn'
+      - name: Enable Corepack
+        run: corepack enable
       - name: restore node_modules
         uses: actions/cache@v3
         with:
