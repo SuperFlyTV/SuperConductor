@@ -8,7 +8,7 @@ export const Tab: React.FC<{
 	id: string
 	name: string
 	active?: boolean
-	onClick: () => void
+	onMouseDown: () => void
 	onDoubleClick?: () => void
 	onClose?: (id: string) => void
 	disableClose?: boolean
@@ -21,7 +21,7 @@ export const Tab: React.FC<{
 				active: props.active,
 			})}
 			title="Double-click to edit"
-			onClick={props.onClick}
+			onMouseDown={props.onMouseDown}
 			onDoubleClick={props.onDoubleClick}
 		>
 			{props.icon && <div className="icon">{props.icon}</div>}
