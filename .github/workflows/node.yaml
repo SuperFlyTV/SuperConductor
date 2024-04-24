@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get install -y libasound2-dev
       - name: Install libudev-dev
         run: sudo apt-get install -y libudev-dev
-      - name: restore node_modules
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -36,7 +36,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Typecheck
         run: yarn build
       - name: Lint
@@ -59,7 +59,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'yarn'
-      - name: restore node_modules
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -67,7 +67,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |
           yarn build
@@ -84,7 +84,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'yarn'
-      - name: restore node_modules
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -92,7 +92,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |
           yarn build
