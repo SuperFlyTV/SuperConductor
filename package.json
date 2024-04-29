@@ -38,7 +38,8 @@
 		"release:prerelease": "lerna version prerelease --force-publish --no-push",
 		"release:preminor": "lerna version preminor --force-publish --no-push",
 		"lint-staged": "cd $INIT_CWD && \"$PROJECT_CWD/node_modules/.bin/lint-staged\"",
-		"eslint": "cd $INIT_CWD && \"$PROJECT_CWD/node_modules/.bin/eslint\""
+		"eslint": "cd $INIT_CWD && \"$PROJECT_CWD/node_modules/.bin/eslint\"",
+		"tsc": "cd $INIT_CWD && \"$PROJECT_CWD/node_modules/.bin/tsc\""
 	},
 	"resolutions": {
 		"prebuild-install": "^7.0.0",

@@ -297,6 +297,12 @@ export const App = observer(function App() {
 
 	const gui = store.guiStore
 
+	const extensions = store.extensions
+
+	useEffect(() => {
+		void extensions.init()
+	}, [extensions])
+
 	useMemoComputedValue(() => {
 		// Report any changes to the selection to the backend,
 		// to that actions are handled properly:

@@ -24,6 +24,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 			nodeIntegration: false,
 			contextIsolation: true,
 			preload: path.join(__dirname, 'preload.js'),
+			webSecurity: false, // @TODO: needs fixing using a custom file protocol
 		},
 		title: 'SuperConductor',
 	})

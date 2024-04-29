@@ -12,7 +12,7 @@ import { protectString, ResourceAny, ResourceId, MetadataAny, TSRDeviceId } from
 import { baseFolder } from '../lib/baseFolder'
 import * as _ from 'lodash'
 import { makeDevData } from './makeDevData'
-import { getPartLabel, shortID } from '../lib/util'
+import { IDisposable, getPartLabel, shortID } from '../lib/util'
 import { DeviceType, Mapping, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
@@ -414,6 +414,29 @@ export class StorageHandler extends EventEmitter {
 		this.rundownsHasChanged.add(rundown.id)
 		this.rundownsNeedsWrite.add(rundown.id)
 		this.triggerUpdate({ rundowns: { [rundown.id]: true } })
+	}
+
+	createExtensionWatcher(callback: (type: 'added' | 'removed', filePath: string) => void): IDisposable {
+		// TODO: Make more better
+		fs.readdir(this.extensionsPath, (err, fileNames) => {
+			if (err) {
+				this.log.error('Could not list files in extension directory', err)
+				return
+			}
+
+			for (const fileName of fileNames) {
+				fs.access(path.join(this.extensionsPath, fileName, 'package.json'), (err) => {
+					if (err) return
+					callback('added', path.join(this.extensionsPath, fileName))
+				})
+			}
+		})
+
+		return {
+			dispose: () => {
+				// noop
+			},
+		}
 	}
 
 	triggerEmitAll(): void {
@@ -1331,6 +1354,9 @@ export class StorageHandler extends EventEmitter {
 	}
 	private gddCachePath(): string {
 		return path.join(this._baseFolder, 'gddCache.json')
+	}
+	private get extensionsPath(): string {
+		return path.join(this._baseFolder, 'Extensions')
 	}
 	private get appDataPath(): string {
 		return path.join(this._baseFolder, 'appData.json')

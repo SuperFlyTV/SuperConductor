@@ -7,13 +7,13 @@ module.exports = {
 	target: 'web',
 	devtool: 'source-map',
 	devServer: {
-		static: path.join(__dirname, 'dist/renderer.js'),
+		static: path.join(__dirname, 'dist'),
 		compress: true,
 		port: 9124,
 	},
 	resolve: {
 		alias: {
-			['@']: path.resolve(__dirname, 'src'),
+			['src']: path.resolve(__dirname, 'src'),
 			['$components']: path.resolve(__dirname, 'src/react/components'),
 			['$stores']: path.resolve(__dirname, 'src/react/mobx'),
 			['$contexts']: path.resolve(__dirname, 'src/react/contexts'),

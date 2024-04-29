@@ -6,12 +6,16 @@
 		"jsx": "react",
 		"baseUrl": "./",
 		"paths": {
-			"@/*": ["./src/*"],
+			"src/*": ["./src/*"],
 			"$components/*": ["./src/react/components/*"],
 			"$stores/*": ["./src/react/mobx/*"],
 			"$contexts/*": ["./src/react/contexts/*"],
 			"$api/*": ["./src/react/api/*"]
-		}
+		},
+		"lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker", "WebWorker.ImportScripts", "Webworker.Iterable"],
 	},
-	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
+	"exclude": [
+		"src/**/__tests__/**/*",
+		"dist/**/*"
+	]
 }

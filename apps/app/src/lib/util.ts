@@ -907,3 +907,7 @@ export const deepExtendRemovingUndefined = deepmergeIntoCustom({
 	},
 	mergeArrays: false,
 })
+
+export interface IDisposable {
+	dispose: () => void
+}

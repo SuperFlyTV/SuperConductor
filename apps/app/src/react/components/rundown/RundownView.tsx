@@ -13,11 +13,11 @@ import { observer } from 'mobx-react-lite'
 import { store } from '$stores/store'
 import { useMemoComputedObject } from '$stores/lib'
 import { Btn } from '$components/inputs/Btn/Btn'
-import { getClassNameFromResource } from '@/lib/resources'
-import { MoveTarget } from '@/lib/util'
+import { getClassNameFromResource } from 'src/lib/resources'
+import { MoveTarget } from 'src/lib/util'
 import { ErrorBoundary } from '../util/ErrorBoundary'
 import { assertNever } from '@shared/lib'
-import { CurrentSelectionAny } from '@/lib/GUI'
+import { CurrentSelectionAny } from 'src/lib/GUI'
 
 export const RundownView: React.FC = observer(function RundownView() {
 	const mappings = useContext(MappingsContext)

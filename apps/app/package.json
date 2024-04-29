@@ -9,13 +9,16 @@
 	},
 	"scripts": {
 		"build": "rimraf ./dist && tsc && webpack",
-		"build:electron": "tsc -p tsconfig.electron.json",
+		"build:electron": "run -T tsc -p tsconfig.electron.json",
+		"build:extensionHost": "run -T tsc -p tsconfig.worker.json",
 		"build:binary": "electron-builder",
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
+		"extensionHost:dev": "run -T tsc -p tsconfig.worker.json --watch",
 		"electron:dev": "nodemon",
-		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
+		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\" \"yarn extensionHost:dev\"",
 		"test": "run -T jest",
+		"tsc": "run -T tsc",
 		"precommit": "run -T lint-staged",
 		"lint:raw": "run -T eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
