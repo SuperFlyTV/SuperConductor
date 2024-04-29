@@ -24,6 +24,7 @@ import { type ReportingService } from '../electron/api/ReportingService'
 import { type RundownService } from '../electron/api/RundownService'
 import { type GroupService } from '../electron/api/GroupService'
 import { type SpecialLedgers } from '../models/project/Project'
+import { type ExtensionsService } from '../electron/api/ExtensionService'
 
 export enum ServiceName {
 	GROUPS = 'groups',
@@ -32,6 +33,7 @@ export enum ServiceName {
 	PROJECTS = 'projects',
 	REPORTING = 'reporting',
 	RUNDOWNS = 'rundowns',
+	EXTENSIONS = 'extensions',
 }
 
 export type ServiceTypes = {
@@ -41,6 +43,7 @@ export type ServiceTypes = {
 	[ServiceName.PROJECTS]: ProjectService
 	[ServiceName.REPORTING]: ReportingService
 	[ServiceName.RUNDOWNS]: RundownService
+	[ServiceName.EXTENSIONS]: ExtensionsService
 }
 
 type KeyArrays<T> = {
@@ -115,6 +118,7 @@ export const ClientMethods: ServiceKeyArrays = {
 		'updateTimelineObj',
 		'moveTimelineObjToNewLayer',
 	],
+	[ServiceName.EXTENSIONS]: ['find', 'get', 'getAll', 'unsubscribe'],
 }
 
 export const enum ActionDescription {
@@ -378,4 +382,8 @@ export enum RundownsEvents {
 export enum ProjectsEvents {
 	UPDATED = 'updated',
 	UNDO_LEDGERS_UPDATED = 'undo_ledgers_updated',
+}
+export enum ExtensionsEvents {
+	ADDED = 'added',
+	REMOVED = 'removed',
 }

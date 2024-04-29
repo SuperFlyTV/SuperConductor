@@ -7,6 +7,7 @@ import { ProjectStore } from './ProjectStore'
 import { TriggersStore } from './TriggersStore'
 import { AnalogStore } from './AnalogStore'
 import { GDDValidatorStore } from './GDDValidatorStoreStore'
+import { ExtensionsStore } from './ExtensionsStore'
 
 export const store = {
 	guiStore: new GuiStore(),
@@ -19,4 +20,6 @@ export const store = {
 	analogStore: new AnalogStore(),
 
 	gddValidatorStore: new GDDValidatorStore(),
+
+	extensions: new ExtensionsStore(),
 }

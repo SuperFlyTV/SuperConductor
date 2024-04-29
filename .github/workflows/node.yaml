@@ -16,16 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+      - name: Enable Corepack
+        run: corepack enable
       - name: apt-get update
         run: sudo apt-get update
       - name: Install libasound2-dev
         run: sudo apt-get install -y libasound2-dev
       - name: Install libudev-dev
         run: sudo apt-get install -y libudev-dev
-      - name: restore node_modules
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -33,7 +35,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Typecheck
         run: yarn build
       - name: Lint
@@ -50,10 +52,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: restore node_modules
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -61,7 +65,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |
           yarn build
@@ -72,10 +76,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: restore node_modules
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Restore node_modules
         uses: actions/cache@v3
         with:
           path: |
@@ -83,7 +89,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          yarn --frozen-lockfile --network-timeout 1000000
       - name: Build
         run: |
           yarn build

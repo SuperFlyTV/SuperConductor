@@ -10,16 +10,32 @@ import { RundownService, RUNDOWN_CHANNEL_PREFIX } from './RundownService'
 import { LegacyService } from './LegacyService'
 import { ReportingService } from './ReportingService'
 import { PROJECTS_CHANNEL_PREFIX, ProjectService } from './ProjectService'
-import { ClientMethods, ProjectsEvents, RundownsEvents, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
+import {
+	ClientMethods,
+	ExtensionsEvents,
+	ProjectsEvents,
+	RundownsEvents,
+	ServiceName,
+	ServiceTypes,
+} from '../../ipc/IPCAPI'
 import { Project, ProjectBase } from '../../models/project/Project'
 import { PartService } from './PartService'
 import { GroupService } from './GroupService'
 import { unReplaceUndefined } from '../../lib/util'
+import { ExtensionsService } from './ExtensionService'
+import { StorageHandler } from '../storageHandler'
+import { CURRENT_VERSION } from '../bridgeHandler'
 
 export class ApiServer {
 	private app = koa<ServiceTypes>(feathers())
 
-	constructor(port: number, ipcServer: EverythingService, clientEventBus: ClientEventBus, log: LoggerLike) {
+	constructor(
+		port: number,
+		ipcServer: EverythingService,
+		clientEventBus: ClientEventBus,
+		storageHandler: StorageHandler,
+		log: LoggerLike
+	) {
 		this.app.use(serveStatic('src'))
 
 		this.app.use(
@@ -75,6 +91,12 @@ export class ApiServer {
 
 		this.app.service(ServiceName.RUNDOWNS).publish((data: Rundown, _context: HookContext) => {
 			return this.app.channel(RUNDOWN_CHANNEL_PREFIX + data.id)
+		})
+
+		this.app.use(ServiceName.EXTENSIONS, new ExtensionsService(this.app, storageHandler, CURRENT_VERSION, log), {
+			methods: ClientMethods[ServiceName.EXTENSIONS],
+			serviceEvents: [ExtensionsEvents.ADDED, ExtensionsEvents.REMOVED],
+			events: [],
 		})
 
 		this.app

@@ -6,6 +6,7 @@ import socketio, { SocketService } from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
 import { Rundown } from '../../models/rundown/Rundown'
 import { Project } from '../../models/project/Project'
+import { ExtensionData } from 'src/models/GUI/Extension'
 
 type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]
@@ -60,6 +61,13 @@ app.use(
 		methods: ClientMethods[ServiceName.REPORTING],
 	}
 )
+app.use(
+	ServiceName.EXTENSIONS,
+	socketClient.service(ServiceName.EXTENSIONS) as SocketService & ServiceTypes[ServiceName.EXTENSIONS],
+	{
+		methods: ClientMethods[ServiceName.EXTENSIONS],
+	}
+)
 
 app.hooks({
 	before: {
@@ -81,6 +89,7 @@ export class ApiClient {
 	private readonly projectService = app.service(ServiceName.PROJECTS)
 	private readonly reportingService = app.service(ServiceName.REPORTING)
 	private readonly rundownService = app.service(ServiceName.RUNDOWNS) // TODO: DI?
+	private readonly extensionsService = app.service(ServiceName.EXTENSIONS)
 
 	/**
 	 * @deprecated legacy code
@@ -329,6 +338,9 @@ export class ApiClient {
 	}
 	async setApplicationTrigger(...args: ServerArgs<'setApplicationTrigger'>): ServerReturn<'setApplicationTrigger'> {
 		return this.invokeServerMethod('setApplicationTrigger', ...args)
+	}
+	async getAllExtensions(): Promise<ExtensionData[]> {
+		return this.extensionsService.getAll({})
 	}
 	async undo(data: ProjectArg<'undo'>): Promise<void> {
 		return this.projectService.undo(data)

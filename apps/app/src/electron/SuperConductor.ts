@@ -44,6 +44,7 @@ import { SystemMessageOptions } from '../ipc/IPCAPI'
 import { getTimelineForGroup } from '../lib/timeline'
 import { TSRTimeline } from 'timeline-state-resolver-types'
 import { UndoLedgerService } from './UndoService'
+import { ExtensionHandler } from './extensionHandler'
 
 export class SuperConductor {
 	ipcServer: EverythingService
@@ -57,7 +58,9 @@ export class SuperConductor {
 	triggers: TriggersHandler
 	analogHandler: AnalogHandler
 	bridgeHandler: BridgeHandler
+	extensionHandler: ExtensionHandler
 
+	private hasLoaded = false
 	private shuttingDown = false
 	private resourceUpdatesToSend = new Map<ResourceId, ResourceAny | null>()
 	private metadataUpdatesToSend = new Map<TSRDeviceId, MetadataAny | null>()
@@ -233,6 +236,20 @@ export class SuperConductor {
 			this.clientEventBus.updateUndoLedgers(data)
 		})
 
+		this.extensionHandler = new ExtensionHandler(this.log, this.storage, CURRENT_VERSION, {
+			onExtensionAdded: (extensionManifest, baseUrl) => {
+				this.sendSystemMessage(`New extension: "${extensionManifest.name}" "${baseUrl}"`, {
+					variant: 'success',
+				})
+			},
+			onExtensionRemoved: (extensionName) => {
+				this.sendSystemMessage(`Extension removed: "${extensionName}"`, {
+					variant: 'success',
+				})
+			},
+		})
+		this.extensionHandler.init()
+
 		this.ipcServer = new EverythingService(
 			this.log,
 			this.renderLog,
@@ -302,7 +319,13 @@ export class SuperConductor {
 			// TODO: now this becomes an API that also serves the contents of the Electron window - it should not be disabled
 			this.log.info(`Internal HTTP API disabled`)
 		} else {
-			this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
+			this.httpAPI = new ApiServer(
+				this.internalHttpApiPort,
+				this.ipcServer,
+				this.clientEventBus,
+				this.storage,
+				this.log
+			)
 		}
 
 		this._restoreTimelines()

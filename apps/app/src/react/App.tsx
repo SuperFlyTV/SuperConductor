@@ -50,6 +50,7 @@ import { HiOutlineX, HiDotsVertical } from 'react-icons/hi'
 import { protectString } from '@shared/models'
 import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral'
 import { ElectronApi } from './api/ElectronApi'
+import { MappingsContext } from '$contexts/Mappings'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -295,6 +296,12 @@ export const App = observer(function App() {
 	}, [handleError, triggers, serverAPI])
 
 	const gui = store.guiStore
+
+	const extensions = store.extensions
+
+	useEffect(() => {
+		void extensions.init()
+	}, [extensions])
 
 	useMemoComputedValue(() => {
 		// Report any changes to the selection to the backend,
@@ -692,45 +699,50 @@ export const App = observer(function App() {
 										<HomePage project={project} />
 									</ErrorBoundary>
 								) : (
-									<div
-										className="rundown-area"
-										style={{
-											gridTemplateColumns:
-												store.guiStore.mainAreaWidth !== undefined
-													? `${store.guiStore.mainAreaWidth * 100}vw 0.4rem 1fr`
-													: undefined,
-										}}
-									>
+									<MappingsContext.Provider value={project.mappings}>
 										<div
-											className="main-area"
+											className="rundown-area"
 											style={{
-												minWidth:
-													store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
+												gridTemplateColumns:
+													store.guiStore.mainAreaWidth !== undefined
+														? `${store.guiStore.mainAreaWidth * 100}vw 0.4rem 1fr`
+														: undefined,
 											}}
 										>
-											<ErrorBoundary>
-												<RundownView mappings={project.mappings} />
-											</ErrorBoundary>
-										</div>
-										<div className="movable-separator">
-											<div className="movable-separator-content" onMouseDown={handleClickResizer}>
-												<div className="movable-separator-icon">
-													<HiDotsVertical />
+											<div
+												className="main-area"
+												style={{
+													minWidth:
+														store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
+												}}
+											>
+												<ErrorBoundary>
+													<RundownView />
+												</ErrorBoundary>
+											</div>
+											<div className="movable-separator">
+												<div
+													className="movable-separator-content"
+													onMouseDown={handleClickResizer}
+												>
+													<div className="movable-separator-icon">
+														<HiDotsVertical />
+													</div>
 												</div>
 											</div>
+											<div
+												className="side-bar"
+												style={{
+													minWidth:
+														store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
+												}}
+											>
+												<ErrorBoundary>
+													<Sidebar />
+												</ErrorBoundary>
+											</div>
 										</div>
-										<div
-											className="side-bar"
-											style={{
-												minWidth:
-													store.guiStore.mainAreaWidth !== undefined ? 'auto' : undefined,
-											}}
-										>
-											<ErrorBoundary>
-												<Sidebar mappings={project.mappings} />
-											</ErrorBoundary>
-										</div>
-									</div>
+									</MappingsContext.Provider>
 								)}
 								<ErrorBoundary>
 									<ConfirmationDialog

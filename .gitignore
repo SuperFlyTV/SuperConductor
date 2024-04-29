@@ -17,3 +17,12 @@ yarn-error.log*
 lerna-debug.log*
 .vscode/*
 !.vscode/launch.json
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
