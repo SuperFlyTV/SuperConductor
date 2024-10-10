@@ -8,7 +8,7 @@
 		"node": "20"
 	},
 	"scripts": {
-		"build": "rimraf ./dist && run -B -T tsc && webpack",
+		"build": "run -B -T rimraf ./dist && run -B -T tsc && webpack",
 		"build:binary": "electron-builder",
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
@@ -37,7 +37,6 @@
 		"html-webpack-plugin": "^5.6.0",
 		"node-loader": "^2.0.0",
 		"nodemon": "^2.0.22",
-		"rimraf": "^3.0.2",
 		"sass": "^1.79.4",
 		"sass-loader": "^13.3.3",
 		"style-loader": "^3.3.4",

@@ -23,7 +23,7 @@
 		"url": "git+https://github.com/SuperFlyTV/SuperConductor.git"
 	},
 	"scripts": {
-		"build": "rimraf dist && yarn build:main",
+		"build": "run -B -T rimraf dist && yarn build:main",
 		"build:main": "run -B -T tsc -p tsconfig.json",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
