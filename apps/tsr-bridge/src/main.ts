@@ -1,6 +1,5 @@
 import path from 'path'
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen } from 'electron'
-import isDev from 'electron-is-dev'
 import { addLoggerTransport, createLogger } from './logging'
 import { CURRENT_VERSION, TSRBridgeServer } from './electron/server'
 import { IPCClient } from './electron/IPCClient'
@@ -27,7 +26,7 @@ const storage = new StorageHandler(log, {
 	maximized: false,
 })
 let server: TSRBridgeServer | undefined
-let systemInterval: NodeJS.Timer | undefined
+let systemInterval: NodeJS.Timeout | undefined
 
 const createWindow = async (): Promise<void> => {
 	const appData = storage.getAppData()
@@ -153,7 +152,7 @@ const createWindow = async (): Promise<void> => {
 		if (!isQuitting) {
 			event.preventDefault()
 			win.hide()
-			event.returnValue = false
+			// event.returnValue = false
 		}
 	})
 	function updateSystem() {

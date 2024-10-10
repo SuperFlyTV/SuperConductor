@@ -64,7 +64,7 @@ export class SuperConductor {
 	private __triggerBatchSendResourcesAndMetadataTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
-		timer: NodeJS.Timer
+		timer: NodeJS.Timeout
 	} | null = null
 	private refreshStatus = new Map<TSRDeviceId, number>()
 

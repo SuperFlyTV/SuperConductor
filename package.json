@@ -9,7 +9,7 @@
 	"repository": "https://github.com/SuperFlyTV/SuperConductor",
 	"private": true,
 	"engines": {
-		"node": "^16.16.0 || 18"
+		"node": "20"
 	},
 	"workspaces": [
 		"shared/**",
@@ -45,7 +45,7 @@
 	"devDependencies": {
 		"@sofie-automation/code-standard-preset": "^2.4.7",
 		"@types/jest": "^29.5.13",
-		"@types/node": "^18.19.55",
+		"@types/node": "^20.16.11",
 		"eslint": "^8.57.1",
 		"eslint-plugin-react": "^7.37.1",
 		"eslint-plugin-react-hooks": "^4.6.2",

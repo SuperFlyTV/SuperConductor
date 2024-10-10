@@ -5,7 +5,7 @@
 	"description": "A playout client for Windows, Linux or MacOS to control CasparCG, Atem, OBS and more!",
 	"main": "dist/main.js",
 	"engines": {
-		"node": "^16.16.0 || 18"
+		"node": "20"
 	},
 	"scripts": {
 		"build": "rimraf ./dist && run -B -T tsc && webpack",
@@ -48,8 +48,8 @@
 		"@welldone-software/why-did-you-render": "^7.0.1",
 		"concurrently": "^7.6.0",
 		"css-loader": "^6.11.0",
-		"electron": "^19.1.9",
-		"electron-builder": "^23.6.0",
+		"electron": "^32.2.0",
+		"electron-builder": "25.1.7",
 		"electron-notarize": "^1.2.2",
 		"html-webpack-plugin": "^5.6.0",
 		"jest": "^29.7.0",
@@ -91,7 +91,7 @@
 		"classnames": "^2.5.1",
 		"deep-extend": "^0.6.0",
 		"deepmerge-ts": "^5.1.0",
-		"electron-updater": "^5.3.0",
+		"electron-updater": "^6.3.9",
 		"eventemitter3": "^5.0.1",
 		"file-loader": "^6.2.0",
 		"formik": "^2.2.9",

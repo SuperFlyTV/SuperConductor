@@ -65,7 +65,7 @@ export class BridgeHandler {
 	private datastore: Datastore = {}
 	private closed = false
 
-	reconnectToBridgesInterval: NodeJS.Timer
+	reconnectToBridgesInterval: NodeJS.Timeout
 
 	constructor(
 		private log: LoggerLike,
