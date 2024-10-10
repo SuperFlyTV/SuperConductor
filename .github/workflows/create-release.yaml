@@ -26,10 +26,10 @@ jobs:
     needs: create-release
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: restore node_modules
         uses: actions/cache@v3
         with:
@@ -38,7 +38,12 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build
@@ -71,10 +76,10 @@ jobs:
     needs: create-release
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: apt-get update
         run: sudo apt-get update
       - name: Install libasound2-dev
@@ -89,7 +94,12 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build
@@ -118,10 +128,10 @@ jobs:
     needs: create-release
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: restore node_modules
         uses: actions/cache@v3
         with:
@@ -130,7 +140,12 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build
@@ -157,10 +172,10 @@ jobs:
     needs: [create-release, build-macos-binary-TSR-bridge]
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: restore node_modules
         uses: actions/cache@v3
         with:
@@ -169,7 +184,12 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build

@@ -21,15 +21,15 @@
 		"prepare": "husky install",
 		"lerna": "lerna",
 		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
-		"lintfix": "yarn lint --fix",
+		"lintfix": "run lint --fix",
 		"lint:changed": "lerna exec --since head --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "lerna run build",
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
 		"build:shared:changed": "lerna run build --stream --scope=@shared/* --since head --exclude-dependents --stream",
-		"start": "yarn && yarn build:shared && yarn dev:electron",
-		"start:all": "yarn build:shared && lerna run dev --stream",
-		"start:bridge": "yarn build:shared && yarn dev:bridge",
+		"start": "yarn && run build:shared && run dev:electron",
+		"start:all": "run build:shared && lerna run dev --stream",
+		"start:bridge": "run build:shared && run dev:bridge",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
 		"test": "lerna run test",
@@ -52,11 +52,12 @@
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"jest": "^29.5.0",
 		"lerna": "^6.0.3",
+		"lint-staged": "^15.2.10",
 		"nexe": "^4.0.0-rc.1",
 		"rimraf": "^3.0.2",
 		"ts-jest": "^29.0.5",
 		"typescript": "^4.9.5"
 	},
 	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
-	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+	"packageManager": "yarn@4.5.0"
 }

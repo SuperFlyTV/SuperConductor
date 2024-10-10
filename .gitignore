@@ -4,6 +4,8 @@ dist
 # env vars
 /.env
 
+/.yarn
+
 # misc
 .DS_Store
 .env.local

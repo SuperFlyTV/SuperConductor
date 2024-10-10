@@ -25,7 +25,6 @@
 	"scripts": {
 		"build": "rimraf dist && yarn build:main",
 		"build:main": "tsc -p tsconfig.json",
-		"precommit": "lint-staged",
 		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
 	},
 	"bugs": {
