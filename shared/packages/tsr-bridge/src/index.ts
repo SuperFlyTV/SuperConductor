@@ -9,7 +9,7 @@ import { TSR } from './TSR'
 import { TSRDeviceId } from '@shared/models'
 import { deserializeProtectedMap } from '@shared/models'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
 
 export class BaseBridge {

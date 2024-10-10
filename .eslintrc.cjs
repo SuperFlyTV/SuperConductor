@@ -34,6 +34,8 @@ module.exports = {
 			},
 		],
 		'@typescript-eslint/no-namespace': 'off',
+		'@typescript-eslint/no-redundant-type-constituents': 'off',
+		'@typescript-eslint/no-duplicate-type-constituents': 'off',
 	},
 	settings: {
 		jest: {

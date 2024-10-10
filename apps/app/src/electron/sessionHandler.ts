@@ -11,23 +11,19 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { unprotectString } from '@shared/models'
 
 export interface SessionHandlerEvents {
-	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
+	knownPeripheralDiscovered: [peripheralId: PeripheralId, info: KnownPeripheral]
 
-	bridgeStatus: (bridgeId: BridgeId, status: BridgeStatus | null) => void
-	peripheral: (peripheralId: BridgePeripheralId, status: PeripheralStatus | null) => void
-	allTrigger: (fullIdentifier: string, activeTrigger: ActiveTrigger | null) => void
-	activeTriggers: (activeTriggers: ActiveTriggers) => void
-	activeAnalog: (fullIdentifier: string, activeAnalog: ActiveAnalog | null) => void
-	definingArea: (definingArea: DefiningArea | null) => void
-	selection: (selection: Readonly<CurrentSelectionAny[]>) => void
-}
-export interface SessionHandler {
-	on<U extends keyof SessionHandlerEvents>(event: U, listener: SessionHandlerEvents[U]): this
-	emit<U extends keyof SessionHandlerEvents>(event: U, ...args: Parameters<SessionHandlerEvents[U]>): boolean
+	bridgeStatus: [bridgeId: BridgeId, status: BridgeStatus | null]
+	peripheral: [peripheralId: BridgePeripheralId, status: PeripheralStatus | null]
+	allTrigger: [fullIdentifier: string, activeTrigger: ActiveTrigger | null]
+	activeTriggers: [activeTriggers: ActiveTriggers]
+	activeAnalog: [fullIdentifier: string, activeAnalog: ActiveAnalog | null]
+	definingArea: [definingArea: DefiningArea | null]
+	selection: [selection: Readonly<CurrentSelectionAny[]>]
 }
 
 /** This class handles all non-persistant data */
-export class SessionHandler extends EventEmitter {
+export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 	private bridgeStatuses = new Map<BridgeId, BridgeStatus>()
 	private bridgeStatusesHasChanged = new Set<BridgeId>()
 

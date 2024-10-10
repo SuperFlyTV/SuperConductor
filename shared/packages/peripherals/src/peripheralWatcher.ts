@@ -5,17 +5,13 @@ import { PeripheralStreamDeck } from './peripherals/streamdeck'
 import { PeripheralXkeys } from './peripherals/xkeys'
 
 export interface PeripheralWatcherEvents {
-	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
-	knownPeripheralReconnected: (peripheralId: PeripheralId, info: KnownPeripheral) => void
-	knownPeripheralDisconnected: (peripheralId: PeripheralId) => void
-	knownPeripheralsChanged: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
-}
-export interface PeripheralWatcher {
-	on<U extends keyof PeripheralWatcherEvents>(event: U, listener: PeripheralWatcherEvents[U]): this
-	emit<U extends keyof PeripheralWatcherEvents>(event: U, ...args: Parameters<PeripheralWatcherEvents[U]>): boolean
+	knownPeripheralDiscovered: [peripheralId: PeripheralId, info: KnownPeripheral]
+	knownPeripheralReconnected: [peripheralId: PeripheralId, info: KnownPeripheral]
+	knownPeripheralDisconnected: [peripheralId: PeripheralId]
+	knownPeripheralsChanged: [peripherals: Map<PeripheralId, KnownPeripheral>]
 }
 
-export class PeripheralWatcher extends EventEmitter {
+export class PeripheralWatcher extends EventEmitter<PeripheralWatcherEvents> {
 	private knownPeripherals = new Map<PeripheralId, KnownPeripheral>()
 	private subwatchers: { stop: () => void }[] = []
 

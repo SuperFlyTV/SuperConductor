@@ -111,7 +111,7 @@ export class StorageHandler extends EventEmitter {
 			try {
 				const read = fs.readFileSync(projectPath, 'utf8')
 				project = JSON.parse(read)
-			} catch (error) {
+			} catch (_error) {
 				// ignore
 			}
 
@@ -135,7 +135,7 @@ export class StorageHandler extends EventEmitter {
 		let files: string[] = []
 		try {
 			files = fs.readdirSync(rundownsDir)
-		} catch (e) {
+		} catch (_e) {
 			// ignore, it's probably because the folder doesn't exist yet
 		}
 

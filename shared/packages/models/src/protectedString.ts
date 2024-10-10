@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
 /** Runtime-wise, this is a string.
  * In compile-time, this is used to make sure that the "right" string is provided, typings-wise,
  * in order to provide stringer typings.

@@ -62,7 +62,7 @@ const ENABLE_WHY_DID_YOU_RENDER = false
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
 	// eslint-disable-next-line no-console
 	console.log('Why-did-you-render-enabled')
-	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
+	// eslint-disable-next-line @typescript-eslint/no-require-imports, node/no-unpublished-require
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
 	whyDidYouRender(React, {
 		trackAllPureComponents: true,

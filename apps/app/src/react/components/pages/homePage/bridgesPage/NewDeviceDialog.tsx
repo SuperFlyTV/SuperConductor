@@ -39,7 +39,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const onNewDeviceAccepted = useCallback(
-		(newDeviceType: number) => {
+		(newDeviceType: DeviceType) => {
 			let newDevice: DeviceOptionsAny
 
 			switch (newDeviceType) {

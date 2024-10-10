@@ -7,7 +7,7 @@ module.exports = {
 		'plugin:node/recommended',
 		'plugin:jest/recommended',
 		'plugin:prettier/recommended',
-		'plugin:@sofie-automation/all',
+		// 'plugin:@sofie-automation/all',
 	],
 	tsExtends: [
 		'eslint:recommended',
@@ -33,7 +33,10 @@ module.exports = {
 		'no-unused-vars': 'off',
 		'@typescript-eslint/no-explicit-any': 'off',
 		'@typescript-eslint/interface-name-prefix': 'off',
-		'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_(.+)' }],
+		'@typescript-eslint/no-unused-vars': [
+			'error',
+			{ argsIgnorePattern: '^_', varsIgnorePattern: '^_(.+)', caughtErrorsIgnorePattern: '^_' },
+		],
 		'@typescript-eslint/no-floating-promises': 'error',
 		'@typescript-eslint/explicit-module-boundary-types': ['error'],
 		'@typescript-eslint/promise-function-async': 'error',

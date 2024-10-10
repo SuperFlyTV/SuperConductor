@@ -273,6 +273,7 @@ export function hashObj(obj: unknown): string {
 		}
 		return hash(strs.join('|'))
 	} else {
+		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		return obj + ''
 	}
 }

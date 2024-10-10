@@ -27,15 +27,11 @@ import { protectString, unprotectString } from '@shared/models'
 import { BridgePeripheralSettings } from '../models/project/Bridge'
 
 export interface TriggersHandlerEvents {
-	error: (error: Error) => void
-	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
-}
-export interface TriggersHandler {
-	on<U extends keyof TriggersHandlerEvents>(event: U, listener: TriggersHandlerEvents[U]): this
-	emit<U extends keyof TriggersHandlerEvents>(event: U, ...args: Parameters<TriggersHandlerEvents[U]>): boolean
+	error: [error: Error]
+	failedGlobalTriggers: [identifiers: Readonly<Set<string>>]
 }
 
-export class TriggersHandler extends EventEmitter {
+export class TriggersHandler extends EventEmitter<TriggersHandlerEvents> {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	/** Contains a collection of the currently active (pressed) keys on the keyboard */

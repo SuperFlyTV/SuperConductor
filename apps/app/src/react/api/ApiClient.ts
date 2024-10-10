@@ -100,7 +100,7 @@ export class ApiClient {
 		return new Promise((resolve, reject) => {
 			socket.emit(methodname, ServiceName.LEGACY, [...replaceUndefined(args)], {}, (error: any, data: any) => {
 				if (error) {
-					reject(error)
+					reject(error as Error)
 				} else {
 					console.log('Called ', methodname, 'received', data)
 					resolve(data)

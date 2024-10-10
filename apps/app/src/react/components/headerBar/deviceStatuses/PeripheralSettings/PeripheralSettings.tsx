@@ -13,7 +13,7 @@ import { StreamdeckSettings } from './streamdeck'
 import { XKeysSettings } from './xkeys'
 import { MIDISettings } from './midi'
 import { TrashBtn } from '../../../../components/inputs/TrashBtn'
-import { BridgeId, PeripheralId } from '@shared/api'
+import { BridgeId, PeripheralId, PeripheralType } from '@shared/api'
 import { unprotectString } from '@shared/models'
 
 export const PeripheralSettings: React.FC<{
@@ -73,7 +73,7 @@ export const PeripheralSettings: React.FC<{
 			<div>Name: {peripheral.info.name}</div>
 
 			<div className="peripheral-settings__popover__settings">
-				{peripheral.info.gui.type === 'streamdeck' && (
+				{peripheral.info.gui.type === PeripheralType.STREAMDECK && (
 					<StreamdeckSettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
@@ -81,7 +81,7 @@ export const PeripheralSettings: React.FC<{
 						definingArea={definingArea}
 					/>
 				)}
-				{peripheral.info.gui.type === 'xkeys' && (
+				{peripheral.info.gui.type === PeripheralType.XKEYS && (
 					<XKeysSettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
@@ -89,7 +89,7 @@ export const PeripheralSettings: React.FC<{
 						definingArea={definingArea}
 					/>
 				)}
-				{peripheral.info.gui.type === 'midi' && (
+				{peripheral.info.gui.type === PeripheralType.MIDI && (
 					<MIDISettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}

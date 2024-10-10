@@ -4,7 +4,7 @@ import { BaseBridge } from '@shared/tsr-bridge'
 import { AppSettings } from '../models/AppData'
 import { StorageHandler } from './storageHandler'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 
 export class TSRBridgeServer {

@@ -2177,7 +2177,9 @@ function prepareGDDEdit(resources: ResourceAny[]): GDDEdit | undefined {
 			gddIsIndeterminate = isIndeterminate(gdds, (gdd) => gdd.schema)
 
 			if (!gddIsIndeterminate) {
-				store.gddValidatorStore.initializeGDDSchemaValidator().catch((window as any).handleError)
+				store.gddValidatorStore.initializeGDDSchemaValidator().catch((e) => {
+					;(window as any).handleError(e)
+				})
 				const gddValidator = computed(() => store.gddValidatorStore.gddValidator).get()
 				if (gddValidator) {
 					for (const gdd of gdds) {

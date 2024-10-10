@@ -1,6 +1,6 @@
 import { LoggerLike } from '@shared/api'
 import { ActionDescription, UndoableResult } from '../ipc/IPCAPI'
-import EventEmitter from 'eventemitter3'
+import EventEmitter from 'events'
 import _ from 'lodash'
 import { SerializableLedgers } from '../models/project/Project'
 import { SpecialLedgers } from '../models/project/Project'
@@ -23,7 +23,7 @@ interface Action {
 }
 
 type UndoServiceEvents = {
-	updatedUndoLedger: (undoLedgers: SerializableLedgers) => void
+	updatedUndoLedger: [undoLedgers: SerializableLedgers]
 }
 
 export class UndoLedgerService extends EventEmitter<UndoServiceEvents> {

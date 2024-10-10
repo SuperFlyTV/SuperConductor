@@ -175,6 +175,7 @@ export class WebsocketConnection extends EventEmitter {
 			this.lastPingReceived = Date.now()
 		})
 		ws.on('message', (data) => {
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string
 			this._onMessage(data.toString())
 		})
 	}

@@ -260,7 +260,7 @@ async function checkIfPathExists(path: string): Promise<boolean> {
 	try {
 		await fs.promises.access(path, fs.constants.R_OK)
 		return true
-	} catch (e) {
+	} catch (_e) {
 		return false
 	}
 }
@@ -323,7 +323,7 @@ async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<domE
 		const externalGDDPath = path.resolve(path.dirname(filePath), src)
 		try {
 			gddContent = await fs.promises.readFile(externalGDDPath, { encoding: 'utf-8' })
-		} catch (error) {
+		} catch (_error) {
 			throw new Error(`Failed to read external GDD "${src}" from "${filePath}", does the file exist?`)
 		}
 	} else {
@@ -332,7 +332,7 @@ async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<domE
 
 	try {
 		return JSON.parse(gddContent)
-	} catch (error) {
+	} catch (_error) {
 		throw new Error(`Failed to parse GDD from "${filePath}", is it valid JSON?`)
 	}
 }

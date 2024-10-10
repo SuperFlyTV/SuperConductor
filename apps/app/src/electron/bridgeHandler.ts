@@ -29,7 +29,7 @@ import {
 import { BaseBridge } from '@shared/tsr-bridge'
 import { AnalogInput } from '../models/project/AnalogInput'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
 
@@ -202,7 +202,7 @@ export class BridgeHandler {
 					// remove bridge:
 					delete bridge.connection
 				})
-			} catch (error) {
+			} catch (_error) {
 				// this.log.warn(`Failed to create a websocket connection to "${bridge.bridge.url}"`)
 			}
 		}

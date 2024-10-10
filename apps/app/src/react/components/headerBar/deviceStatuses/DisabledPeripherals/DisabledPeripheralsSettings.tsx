@@ -44,7 +44,7 @@ export const DisabledPeripheralsSettings: React.FC<{
 					key={`${peripheral.bridgeId}-${peripheral.deviceId}`}
 					onClick={() => {
 						toggleManualConnect(peripheral)
-						onPeripheralClicked && onPeripheralClicked()
+						onPeripheralClicked?.()
 					}}
 				>
 					<DeviceIcon type={peripheral.info.type} />

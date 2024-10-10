@@ -879,7 +879,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		try {
 			const { part } = this.getPartByExternalId(arg)
 			partId = part.id
-		} catch (error) {
+		} catch (_error) {
 			// Discard error.
 		}
 
@@ -1158,7 +1158,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		try {
 			const { group } = this.getGroupByExternalId(arg)
 			groupId = group.id
-		} catch (error) {
+		} catch (_error) {
 			// Ignore error.
 		}
 
@@ -1354,7 +1354,9 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 				if (insertPosition === -1)
 					throw new Error(
-						`Internal error: part insertAfterId "${nextTarget}" not found in group "${toGroup.id}"`
+						`Internal error: part insertAfterId "${JSON.stringify(nextTarget)}" not found in group "${
+							toGroup.id
+						}"`
 					)
 				toGroup.parts.splice(insertPosition, 0, part)
 
@@ -1848,7 +1850,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 		for (const resourceId of arg.resourceIds) {
 			const resource = isProtectedString(resourceId) ? this.storage.getResource(resourceId) : resourceId
-			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
+			if (!resource) throw new Error(`Resource ${JSON.stringify(resourceId)} not found.`)
 
 			const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(resource)
 

@@ -780,7 +780,7 @@ export class PeripheralStreamDeck extends Peripheral {
 					text: keyDisplay.area.areaLabel,
 					fontSize: 0.8,
 					textColor,
-				})
+				}).svg
 			}
 		}
 

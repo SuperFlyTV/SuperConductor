@@ -11,14 +11,14 @@ import { ActiveAnalog } from '../models/rundown/Analog'
 import { AnalogInput } from '../models/project/AnalogInput'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
-import EventEmitter from 'eventemitter3'
+import EventEmitter from 'events'
 import { SerializableLedgers } from '../models/project/Project'
 
 type ClientEventBusEvents = {
-	callMethod: (...args: any[]) => void // legacy
-	updateUndoLedgers: (undoLedgers: SerializableLedgers) => void
-	updateRundown: (rundown: Rundown) => void
-	updateProject: (rundown: Project) => void
+	callMethod: [...args: any[]] // legacy
+	updateUndoLedgers: [undoLedgers: SerializableLedgers]
+	updateRundown: [rundown: Rundown]
+	updateProject: [rundown: Project]
 }
 
 // --- some of it might be needed, most of it hopefully not

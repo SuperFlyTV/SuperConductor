@@ -9,14 +9,10 @@ import _ from 'lodash'
 import { BridgeHandler } from './bridgeHandler'
 
 export interface AnalogHandlerEvents {
-	error: (error: Error) => void
-}
-export interface AnalogHandler {
-	on<U extends keyof AnalogHandlerEvents>(event: U, listener: AnalogHandlerEvents[U]): this
-	emit<U extends keyof AnalogHandlerEvents>(event: U, ...args: Parameters<AnalogHandlerEvents[U]>): boolean
+	error: [error: Error]
 }
 
-export class AnalogHandler extends EventEmitter {
+export class AnalogHandler extends EventEmitter<AnalogHandlerEvents> {
 	/** Contains a collection of the currently active analog values on all Panels */
 	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
 

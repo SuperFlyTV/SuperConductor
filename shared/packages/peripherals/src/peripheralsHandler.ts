@@ -19,20 +19,17 @@ import { PeripheralMIDI } from './peripherals/midi'
 import { assertNever, deepClone } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {
-	connected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
-	disconnected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
+	connected: [peripheralId: PeripheralId, peripheralInfo: PeripheralInfo]
+	disconnected: [peripheralId: PeripheralId, peripheralInfo: PeripheralInfo]
 
-	keyDown: (peripheralId: PeripheralId, identifier: string) => void
-	keyUp: (peripheralId: PeripheralId, identifier: string) => void
-	analog: (peripheralId: PeripheralId, identifier: string, value: AnalogValue) => void
+	keyDown: [peripheralId: PeripheralId, identifier: string]
+	keyUp: [peripheralId: PeripheralId, identifier: string]
+	analog: [peripheralId: PeripheralId, identifier: string, value: AnalogValue]
 
-	knownPeripherals: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
+	knownPeripherals: [peripherals: Map<PeripheralId, KnownPeripheral>]
 }
-export interface PeripheralsHandler {
-	on<U extends keyof PeripheralsHandlerEvents>(event: U, listener: PeripheralsHandlerEvents[U]): this
-	emit<U extends keyof PeripheralsHandlerEvents>(event: U, ...args: Parameters<PeripheralsHandlerEvents[U]>): boolean
-}
-export class PeripheralsHandler extends EventEmitter {
+
+export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 	private peripherals = new Map<PeripheralId, Peripheral>()
 	private peripheralStatuses = new Map<
 		PeripheralId,

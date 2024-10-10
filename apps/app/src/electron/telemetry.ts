@@ -124,7 +124,7 @@ export class TelemetryHandler {
 			if (!report) continue
 			try {
 				JSON.parse(report)
-			} catch (err) {
+			} catch (_err) {
 				// if it's not parseable, don't send it
 				continue
 			}

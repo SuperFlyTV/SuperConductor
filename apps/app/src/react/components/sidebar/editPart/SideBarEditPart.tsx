@@ -192,7 +192,7 @@ export const SideBarEditPart: React.FC<{
 				title="Delete Part"
 				acceptLabel="Delete"
 				onAccepted={() => {
-					fullParts
+					// fullParts
 					modifiableParts.forEach((p) => handleDelete(p.groupId, p.partId))
 					setDeleteConfirmationOpen(false)
 				}}
