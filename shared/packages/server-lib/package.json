@@ -46,6 +46,6 @@
 	},
 	"devDependencies": {
 		"@types/ws": "^8.5.12",
-		"superfly-timeline": "^8.2.5"
+		"superfly-timeline": "^8.3.1"
 	}
 }
