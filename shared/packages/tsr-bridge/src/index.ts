@@ -5,7 +5,7 @@ import { PeripheralsHandler } from '@shared/peripherals'
 import { clone } from 'lodash'
 import { Datastore } from 'timeline-state-resolver'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { TSR } from './TSR'
+import { TSR } from './TSR.js'
 import { TSRDeviceId } from '@shared/models'
 import { deserializeProtectedMap } from '@shared/models'
 

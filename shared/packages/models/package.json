@@ -10,11 +10,12 @@
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
+	"type": "module",
 	"engines": {
 		"node": "20"
 	},
-	"main": "dist/index",
-	"types": "dist/index",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"files": [
 		"dist"
 	],

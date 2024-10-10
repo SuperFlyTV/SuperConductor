@@ -10,11 +10,12 @@
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
+	"type": "module",
 	"engines": {
 		"node": "20"
 	},
-	"main": "dist/index",
-	"types": "dist/index",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"files": [
 		"dist"
 	],
@@ -41,7 +42,7 @@
 		"@shared/lib": "^0.12.0-alpha.5",
 		"@shared/models": "^0.12.0-alpha.5",
 		"lodash": "^4.17.21",
-		"p-queue": "^6.6.2",
+		"p-queue": "^8.0.1",
 		"sharp": "^0.31.3",
 		"superfly-timeline": "^8.3.1",
 		"xkeys": "^3.1.2"

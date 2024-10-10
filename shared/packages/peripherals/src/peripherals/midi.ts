@@ -1,7 +1,7 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import _ from 'lodash'
 import * as MIDI from '@julusian/midi'
-import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { protectString } from '@shared/models'
 
 export type DevicesMap = Map<PeripheralId, { port: number; name: string }>

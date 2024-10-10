@@ -1,6 +1,6 @@
 import { GDDSchema } from 'graphics-data-definition'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
-// eslint-disable-next-line node/no-missing-import
+// eslint-disable-next-line n/no-missing-import
 import { OnSave } from '../timelineObjs/lib'
 
 export function getBasicType(schemaType: string | string[]): string {

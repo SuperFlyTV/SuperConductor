@@ -7,7 +7,7 @@ import {
 	TimelineObjectInstance,
 } from 'superfly-timeline'
 import _ from 'lodash'
-import { deepClone } from './lib'
+import { deepClone } from './lib.js'
 
 export class TimelineTracker {
 	private timeline: TimelineObject[]

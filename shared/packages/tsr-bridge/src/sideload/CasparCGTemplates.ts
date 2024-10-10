@@ -4,7 +4,7 @@ import * as util from 'util'
 import { exec } from 'child_process'
 import recursiveReadDir from 'recursive-readdir'
 import * as cheerio from 'cheerio'
-// eslint-disable-next-line node/no-extraneous-import
+// eslint-disable-next-line n/no-extraneous-import
 import type { Element as domElement } from 'domhandler'
 
 import { CasparCG } from 'casparcg-connection'

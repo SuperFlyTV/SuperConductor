@@ -11,11 +11,11 @@ import {
 	PeripheralId,
 	BridgeId,
 } from '@shared/api'
-import { Peripheral } from './peripherals/peripheral'
-import { PeripheralWatcher } from './peripheralWatcher'
-import { PeripheralStreamDeck } from './peripherals/streamdeck'
-import { PeripheralXkeys } from './peripherals/xkeys'
-import { PeripheralMIDI } from './peripherals/midi'
+import { Peripheral } from './peripherals/peripheral.js'
+import { PeripheralWatcher } from './peripheralWatcher.js'
+import { PeripheralStreamDeck } from './peripherals/streamdeck.js'
+import { PeripheralXkeys } from './peripherals/xkeys.js'
+import { PeripheralMIDI } from './peripherals/midi.js'
 import { assertNever, deepClone } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {

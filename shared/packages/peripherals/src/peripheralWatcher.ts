@@ -1,8 +1,8 @@
 import { KnownPeripheral, PeripheralId } from '@shared/api'
 import EventEmitter from 'events'
-import { PeripheralMIDI } from './peripherals/midi'
-import { PeripheralStreamDeck } from './peripherals/streamdeck'
-import { PeripheralXkeys } from './peripherals/xkeys'
+import { PeripheralMIDI } from './peripherals/midi.js'
+import { PeripheralStreamDeck } from './peripherals/streamdeck.js'
+import { PeripheralXkeys } from './peripherals/xkeys.js'
 
 export interface PeripheralWatcherEvents {
 	knownPeripheralDiscovered: [peripheralId: PeripheralId, info: KnownPeripheral]

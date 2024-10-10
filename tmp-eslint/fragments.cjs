@@ -4,7 +4,7 @@ module.exports = {
 
 	commonExtends: [
 		'eslint:recommended',
-		'plugin:node/recommended',
+		'plugin:n/recommended',
 		'plugin:jest/recommended',
 		'plugin:prettier/recommended',
 		// 'plugin:@sofie-automation/all',
@@ -14,7 +14,7 @@ module.exports = {
 		'plugin:@typescript-eslint/eslint-recommended',
 		'plugin:@typescript-eslint/recommended',
 		'plugin:@typescript-eslint/recommended-requiring-type-checking',
-		'plugin:node/recommended',
+		'plugin:n/recommended',
 		'plugin:jest/recommended',
 		'prettier',
 		'plugin:prettier/recommended',
@@ -24,7 +24,7 @@ module.exports = {
 		'prettier/prettier': 'error',
 		'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_(.+)' }],
 		'no-extra-semi': 'off',
-		'node/no-unsupported-features/es-syntax': ['error', { ignores: ['modules'] }],
+		'n/no-unsupported-features/es-syntax': ['error', { ignores: ['modules'] }],
 		'no-use-before-define': 'off',
 		'no-warning-comments': ['error', { terms: ['nocommit', '@nocommit', '@no-commit'] }],
 		'jest/no-mocks-import': 'off',

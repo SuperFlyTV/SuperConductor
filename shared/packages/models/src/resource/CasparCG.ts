@@ -1,4 +1,4 @@
-import { ResourceBase, ResourceType } from './resource'
+import { ResourceBase, ResourceType } from './resource.js'
 import type { GDDSchema } from 'graphics-data-definition'
 
 export type CasparCGAny = CasparCGServer | CasparCGMedia | CasparCGTemplate

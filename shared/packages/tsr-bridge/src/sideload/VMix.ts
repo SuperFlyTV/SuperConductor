@@ -1,5 +1,5 @@
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
-import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection'
+import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection.js'
 import {
 	ResourceAny,
 	ResourceType,
@@ -22,7 +22,7 @@ import {
 	TSRDeviceId,
 	VMixScript,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 

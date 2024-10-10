@@ -10,7 +10,7 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource } from '@shared/lib'
 

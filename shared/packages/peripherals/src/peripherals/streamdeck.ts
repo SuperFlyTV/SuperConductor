@@ -3,10 +3,10 @@ import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
-import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
-import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
+import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize.js'
 import PQueue from 'p-queue'
-import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
+import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device.js'
 import { protectString } from '@shared/models'
 
 export class PeripheralStreamDeck extends Peripheral {

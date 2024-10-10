@@ -2,7 +2,7 @@ import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, P
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
-import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { protectString } from '@shared/models'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */

@@ -11,13 +11,13 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import {
 	addTemplatesToResourcesFromCasparCG,
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
-} from './CasparCGTemplates'
+} from './CasparCGTemplates.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {

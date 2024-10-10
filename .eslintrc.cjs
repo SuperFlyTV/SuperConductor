@@ -8,19 +8,19 @@ module.exports = {
 	ignorePatterns: ['**/dist/**/*', '**/__tests__/**/*'],
 	rules: {
 		'no-console': 'warn',
-		'node/no-unpublished-import': [
+		'n/no-unpublished-import': [
 			'error',
 			{
 				allowModules: ['electron', 'typed-emitter', 'electron-devtools-installer'],
 			},
 		],
-		'node/no-unpublished-require': [
+		'n/no-unpublished-require': [
 			'error',
 			{
 				allowModules: ['html-webpack-plugin', 'electron-notarize'],
 			},
 		],
-		'node/no-extraneous-import': [
+		'n/no-extraneous-import': [
 			'error',
 			{
 				allowModules: [
@@ -59,8 +59,8 @@ module.exports = {
 			rules: {
 				...commonRules,
 				...tsRules,
-				// "node/no-extraneous-import": "off", // because there are a lot of them as dev-dependencies
-				'node/no-missing-import': 'off', // erroring on every single import
+				// "n/no-extraneous-import": "off", // because there are a lot of them as dev-dependencies
+				'n/no-missing-import': 'off', // erroring on every single import
 				'react/prop-types': 'off', // we don't use this
 				// "@typescript-eslint/no-empty-interface": "off", // many prop/state types are {}
 				'@typescript-eslint/promise-function-async': 'off', // event handlers can't be async
