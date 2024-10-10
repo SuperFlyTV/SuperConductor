@@ -11,7 +11,12 @@ type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]
 }
 
-const socket = io('127.0.0.1:5500') // TODO
+const socketUri =
+	window.location.protocol === 'file:' // When served through electron, always connect back to localhost
+		? 'http://127.0.0.1:5500'
+		: `${window.location.protocol}//${window.location.hostname}:5500`
+
+const socket = io(socketUri)
 export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
 const socketClient = socketio(socket)
 app.configure(socketClient)
