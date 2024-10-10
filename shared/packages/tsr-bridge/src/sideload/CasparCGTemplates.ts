@@ -4,6 +4,8 @@ import * as util from 'util'
 import { exec } from 'child_process'
 import recursiveReadDir from 'recursive-readdir'
 import * as cheerio from 'cheerio'
+// eslint-disable-next-line node/no-extraneous-import
+import type { Element as domElement } from 'domhandler'
 
 import { CasparCG } from 'casparcg-connection'
 import got from 'got'
@@ -303,7 +305,7 @@ function getId(fileDir: string, filePath: string): string {
 		.toUpperCase()
 }
 
-async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<cheerio.Element> | undefined> {
+async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<domElement> | undefined> {
 	const html = await fs.promises.readFile(filePath)
 	const $ = cheerio.load(html)
 	const gddScripts = $('script[name="graphics-data-definition"]')
@@ -314,7 +316,7 @@ async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<ch
 	}
 }
 
-async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<cheerio.Element>) {
+async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<domElement>) {
 	const src = scriptElem.attr('src')
 	let gddContent
 	if (src) {

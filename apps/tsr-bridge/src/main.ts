@@ -59,7 +59,7 @@ const createWindow = async (): Promise<void> => {
 	if (appData.windowPosition.maximized) {
 		win.maximize()
 	}
-	if (isDev) {
+	if (!app.isPackaged) {
 		win.webContents.openDevTools()
 	}
 
@@ -73,7 +73,7 @@ const createWindow = async (): Promise<void> => {
 		},
 	})
 
-	await win.loadURL(isDev ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/dist/index.html`)
+	await win.loadURL(!app.isPackaged ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/dist/index.html`)
 
 	storage.on('appData', (appData: AppData) => {
 		ipcClient.settings(appData.settings)

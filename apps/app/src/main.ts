@@ -1,6 +1,5 @@
 import { literal, stringifyError } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu, shell, screen, ipcMain } from 'electron'
-import isDev from 'electron-is-dev'
 import { autoUpdater } from 'electron-updater'
 import { CURRENT_VERSION } from './electron/bridgeHandler'
 import { generateMenu, GenerateMenuArgs } from './electron/menu'
@@ -49,7 +48,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		handler.close()
 	})
 
-	if (isDev) {
+	if (!app.isPackaged) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
 		// installExtension(REACT_DEVELOPER_TOOLS)
 		// 	.then((name) => log.info(`Added Extension:  ${name}`))
@@ -59,7 +58,9 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		// 	.catch((err) => log.info('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
-	win.loadURL(isDev ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
+	win.loadURL(!app.isPackaged ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(
+		log.error
+	)
 
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',

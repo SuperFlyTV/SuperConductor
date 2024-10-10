@@ -2144,7 +2144,7 @@ __metadata:
   dependencies:
     "@shared/api": "npm:^0.12.0-alpha.5"
     "@shared/models": "npm:^0.12.0-alpha.5"
-    fast-copy: "npm:^2.1.7"
+    fast-copy: "npm:^3.0.2"
     lodash: "npm:^4.17.21"
     superfly-timeline: "npm:^8.3.1"
     winston: "npm:^3.15.0"
@@ -6571,13 +6571,6 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"electron-is-dev@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "electron-is-dev@npm:2.0.0"
-  checksum: 10c0/aa540115f144f9c8c788e13fc581be7b0f9f83422eecb940af6367c67d63c3a656e03ad9c1138f17bcfbafc9edca8b83f655feff24dead2cc4866169c6e565f9
-  languageName: node
-  linkType: hard
-
 "electron-notarize@npm:^1.2.2":
   version: 1.2.2
   resolution: "electron-notarize@npm:1.2.2"
@@ -7557,10 +7550,10 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"fast-copy@npm:^2.1.7":
-  version: 2.1.7
-  resolution: "fast-copy@npm:2.1.7"
-  checksum: 10c0/1fa3c6f21305fa49581d543812f0c96429c0748b97c074b1aca5d2d6d43520ff1452a8021b4051f5a894c0fdbcac463797b5660e0813399054914dd91e7f27f5
+"fast-copy@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "fast-copy@npm:3.0.2"
+  checksum: 10c0/02e8b9fd03c8c024d2987760ce126456a0e17470850b51e11a1c3254eed6832e4733ded2d93316c82bc0b36aeb991ad1ff48d1ba95effe7add7c3ab8d8eb554a
   languageName: node
   linkType: hard
 
@@ -11970,18 +11963,20 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"mobx-react-lite@npm:^3.4.3":
-  version: 3.4.3
-  resolution: "mobx-react-lite@npm:3.4.3"
+"mobx-react-lite@npm:^4.0.7":
+  version: 4.0.7
+  resolution: "mobx-react-lite@npm:4.0.7"
+  dependencies:
+    use-sync-external-store: "npm:^1.2.0"
   peerDependencies:
-    mobx: ^6.1.0
+    mobx: ^6.9.0
     react: ^16.8.0 || ^17 || ^18
   peerDependenciesMeta:
     react-dom:
       optional: true
     react-native:
       optional: true
-  checksum: 10c0/c58692751ac69b4e9fcf840c43b3aac99869b0268aa8ba06189de5737a8ad27b1d3a2ec20699554e7e5a670e6957d22e3cb0f451448491a640240d7b9e98325a
+  checksum: 10c0/175e190c5e6c35136ce2b8ef7e9ddeae68b180b585a907a891cd1781038c97eaad195ce9846b0f8e6fe87ac8bc005e31310003d1f7b402f81e460b9411d801d8
   languageName: node
   linkType: hard
 
@@ -15280,13 +15275,13 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"short-uuid@npm:^4.2.2":
-  version: 4.2.2
-  resolution: "short-uuid@npm:4.2.2"
+"short-uuid@npm:^5.2.0":
+  version: 5.2.0
+  resolution: "short-uuid@npm:5.2.0"
   dependencies:
     any-base: "npm:^1.1.0"
-    uuid: "npm:^8.3.2"
-  checksum: 10c0/ffc5ef95c978dc122dda7a6c04a232101f1bc72082633ea9f4ac00ff730adbed365768b3dcee0e2ff96282b61269c8bc53d5b51e9c03d1ec0f8e77675f7ae8be
+    uuid: "npm:^9.0.1"
+  checksum: 10c0/24f9c34b9c0bb9daf2ed2167a78ff5e3467859ac52d5a783f2881c4c0d09b1224bbbd009f480fbc1c18a3fe8b7e73110275d8d2befa5d585a86997b14099ee93
   languageName: node
   linkType: hard
 
@@ -16130,7 +16125,6 @@ asn1@evs-broadcast/node-asn1:
     deepmerge-ts: "npm:^5.1.0"
     electron: "npm:^19.1.9"
     electron-builder: "npm:^23.6.0"
-    electron-is-dev: "npm:^2.0.0"
     electron-notarize: "npm:^1.2.2"
     electron-updater: "npm:^5.3.0"
     eventemitter3: "npm:^5.0.1"
@@ -16145,7 +16139,7 @@ asn1@evs-broadcast/node-asn1:
     koa-bodyparser: "npm:^4.4.1"
     lodash: "npm:^4.17.21"
     mobx: "npm:^6.13.3"
-    mobx-react-lite: "npm:^3.4.3"
+    mobx-react-lite: "npm:^4.0.7"
     moment: "npm:^2.30.1"
     nodemon: "npm:^2.0.22"
     notistack: "npm:^2.0.8"
@@ -16161,7 +16155,7 @@ asn1@evs-broadcast/node-asn1:
     sass: "npm:^1.79.4"
     sass-loader: "npm:^13.3.3"
     semver: "npm:^7.6.3"
-    short-uuid: "npm:^4.2.2"
+    short-uuid: "npm:^5.2.0"
     socket.io-client: "npm:^4.8.0"
     style-loader: "npm:^3.3.4"
     superfly-timeline: "npm:^8.3.1"
@@ -16172,7 +16166,7 @@ asn1@evs-broadcast/node-asn1:
     type-fest: "npm:^3.13.1"
     typed-emitter: "npm:^2.1.0"
     url: "npm:^0.11.4"
-    utf-8-validate: "npm:^5.0.10"
+    utf-8-validate: "npm:^6.0.4"
     webpack: "npm:^5.95.0"
     webpack-cli: "npm:^4.10.0"
     webpack-dev-server: "npm:^4.15.2"
@@ -16752,7 +16746,6 @@ asn1@evs-broadcast/node-asn1:
     css-loader: "npm:^6.11.0"
     electron: "npm:^19.1.9"
     electron-builder: "npm:^23.6.0"
-    electron-is-dev: "npm:^2.0.0"
     electron-notarize: "npm:^1.2.2"
     electron-updater: "npm:^5.3.0"
     html-webpack-plugin: "npm:^5.6.0"
@@ -16767,7 +16760,7 @@ asn1@evs-broadcast/node-asn1:
     rimraf: "npm:^3.0.2"
     sass: "npm:^1.79.4"
     sass-loader: "npm:^13.3.3"
-    short-uuid: "npm:^4.2.2"
+    short-uuid: "npm:^5.2.0"
     style-loader: "npm:^3.3.4"
     ts-loader: "npm:^9.5.1"
     webpack: "npm:^5.95.0"
@@ -17246,6 +17239,15 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
+"use-sync-external-store@npm:^1.2.0":
+  version: 1.2.2
+  resolution: "use-sync-external-store@npm:1.2.2"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+  checksum: 10c0/23b1597c10adf15b26ade9e8c318d8cc0abc9ec0ab5fc7ca7338da92e89c2536abd150a5891bf076836c352fdfa104fc7231fb48f806fd9960e0cbe03601abaf
+  languageName: node
+  linkType: hard
+
 "utf-8-validate@npm:^5.0.10":
   version: 5.0.10
   resolution: "utf-8-validate@npm:5.0.10"
@@ -17253,6 +17255,16 @@ asn1@evs-broadcast/node-asn1:
     node-gyp: "npm:latest"
     node-gyp-build: "npm:^4.3.0"
   checksum: 10c0/23cd6adc29e6901aa37ff97ce4b81be9238d0023c5e217515b34792f3c3edb01470c3bd6b264096dd73d0b01a1690b57468de3a24167dd83004ff71c51cc025f
+  languageName: node
+  linkType: hard
+
+"utf-8-validate@npm:^6.0.4":
+  version: 6.0.4
+  resolution: "utf-8-validate@npm:6.0.4"
+  dependencies:
+    node-gyp: "npm:latest"
+    node-gyp-build: "npm:^4.3.0"
+  checksum: 10c0/f7042d94aec6ca02461b64e725bdc7262266610dbb787331e5bbd49374ef6f75fe9900600df3fc63d97906c23614a965c8989b4bf95d70bf35dc617da99215e7
   languageName: node
   linkType: hard
 
@@ -17322,6 +17334,15 @@ asn1@evs-broadcast/node-asn1:
   bin:
     uuid: ./bin/uuid
   checksum: 10c0/1c13950df865c4f506ebfe0a24023571fa80edf2e62364297a537c80af09c618299797bbf2dbac6b1f8ae5ad182ba474b89db61e0e85839683991f7e08795347
+  languageName: node
+  linkType: hard
+
+"uuid@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "uuid@npm:9.0.1"
+  bin:
+    uuid: dist/bin/uuid
+  checksum: 10c0/1607dd32ac7fc22f2d8f77051e6a64845c9bce5cd3dd8aa0070c074ec73e666a1f63c7b4e0f4bf2bc8b9d59dc85a15e17807446d9d2b17c8485fbc2147b27f9b
   languageName: node
   linkType: hard
 
