@@ -5,7 +5,7 @@ import { Log } from './components/log/Log'
 import { LogEntry } from './components/log/LogEntry'
 import { IPCClient } from './api/IPCClient'
 import { Settings } from './components/Settings'
-import { AppSettings, AppSystem } from 'src/models/AppData'
+import { AppSettings, AppSystem } from '../models/AppData'
 import { IPCServerContext } from './contexts/IPCServer'
 import { IPCServer } from './api/IPCServer'
 

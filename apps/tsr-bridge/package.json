@@ -13,8 +13,7 @@
 		"start": "yarn build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",
-		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\""
 	},
 	"repository": {
 		"type": "git",
@@ -64,14 +63,6 @@
 		"short-uuid": "^5.2.0",
 		"winston": "^3.15.0",
 		"winston-transport": "^4.8.0"
-	},
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
 	},
 	"build": {
 		"productName": "TSR-Bridge",

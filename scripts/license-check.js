@@ -1,3 +1,4 @@
+/* eslint-disable no-process-exit, node/no-unpublished-require, node/no-extraneous-require */
 'use strict'
 const fs = require('fs')
 const path = require('path')

@@ -15,8 +15,7 @@
 		"react:dev": "webpack serve --mode=development",
 		"electron:dev": "nodemon",
 		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"test": "jest",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"test": "jest"
 	},
 	"repository": {
 		"type": "git",
@@ -125,14 +124,6 @@
 		"winston-daily-rotate-file": "^4.7.1",
 		"winston-transport": "^4.8.0",
 		"yup": "1.4.0"
-	},
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
 	},
 	"build": {
 		"productName": "SuperConductor",

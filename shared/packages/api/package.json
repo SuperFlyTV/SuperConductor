@@ -24,19 +24,10 @@
 	},
 	"scripts": {
 		"build": "run -B -T rimraf dist && yarn build:main",
-		"build:main": "run -B -T tsc -p tsconfig.json",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"build:main": "run -B -T tsc -p tsconfig.json"
 	},
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
-	},
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
 	},
 	"dependencies": {
 		"@shared/models": "^0.12.0-alpha.5"

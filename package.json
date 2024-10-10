@@ -20,9 +20,9 @@
 		"version": "node scripts/version.js",
 		"postinstall": "husky",
 		"lerna": "lerna",
-		"lint": "lerna exec -- eslint . --ext .js,.jsx,.ts,.tsx",
+		"lint:raw": "eslint --ext .js,.jsx,.ts,.tsx",
+		"lint": "run lint:raw .",
 		"lintfix": "run lint --fix",
-		"lint:changed": "lerna exec --since head --include-dependents -- eslint . --ext .js,.jsx,.ts,.tsx",
 		"build": "lerna run build",
 		"build:binary": "lerna run build:binary",
 		"build:shared": "lerna run build --stream --scope=@shared/*",
@@ -46,6 +46,7 @@
 		"@sofie-automation/eslint-plugin": "^0.1.1",
 		"@types/jest": "^29.5.13",
 		"@types/node": "^20.16.11",
+		"@types/shelljs": "^0",
 		"@typescript-eslint/eslint-plugin": "^8.8.1",
 		"@typescript-eslint/parser": "^8.8.1",
 		"eslint": "^8.57.1",
@@ -61,8 +62,17 @@
 		"lint-staged": "^15.2.10",
 		"prettier": "^2.8.8",
 		"rimraf": "^6.0.1",
+		"shelljs": "^0.8.5",
 		"ts-jest": "^29.2.5",
 		"typescript": "~5.1"
+	},
+	"lint-staged": {
+		"*.{css,json,md,scss}": [
+			"prettier --write"
+		],
+		"*.{ts,tsx,js,jsx}": [
+			"yarn lint:raw --fix"
+		]
 	},
 	"packageManager": "yarn@4.5.0"
 }
