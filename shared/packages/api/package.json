@@ -44,8 +44,8 @@
 		"@shared/models": "^0.12.0-alpha.5"
 	},
 	"devDependencies": {
-		"@types/ws": "^8.2.2",
+		"@types/ws": "^8.5.12",
 		"superfly-timeline": "^8.2.5",
-		"xkeys": "^3.0.0"
+		"xkeys": "^3.1.2"
 	}
 }

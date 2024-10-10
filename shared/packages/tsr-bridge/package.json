@@ -51,10 +51,10 @@
 		"lodash": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
 		"timeline-state-resolver": "^8.0.0",
-		"winston": "^3.7.2"
+		"winston": "^3.15.0"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.178",
-		"@types/recursive-readdir": "^2.2.1"
+		"@types/lodash": "^4.17.10",
+		"@types/recursive-readdir": "^2.2.4"
 	}
 }

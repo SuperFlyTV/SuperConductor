@@ -39,9 +39,8 @@
 		"release:preminor": "lerna version preminor --force-publish --no-push"
 	},
 	"resolutions": {
-		"prebuild-install": "^7.0.0",
 		"threadedclass": "^1.2.1",
-		"node-hid": "github:julusian/node-hid#v2.1.2-1",
+		"node-hid": "^3.1.0",
 		"serialport": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
 	},
 	"devDependencies": {
