@@ -33,7 +33,6 @@
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
 	},
-	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
 	"lint-staged": {
 		"*.{css,json,md,scss}": [
 			"prettier --write"

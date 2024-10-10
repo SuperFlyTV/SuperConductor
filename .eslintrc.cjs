@@ -1,12 +1,7 @@
-const {
-	tsExtends,
-	commonRules,
-	tsRules,
-	tsParser,
-} = require('./node_modules/@sofie-automation/code-standard-preset/eslint/fragments') // eslint-disable-line node/no-unpublished-require
+const { tsExtends, commonRules, tsRules, tsParser } = require('./tmp-eslint/fragments.cjs')
 
 module.exports = {
-	extends: './node_modules/@sofie-automation/code-standard-preset/eslint/main',
+	extends: './tmp-eslint/main.cjs',
 	env: {
 		node: true,
 	},
