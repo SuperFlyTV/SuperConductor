@@ -44,7 +44,7 @@
 		"winston": "^3.15.0"
 	},
 	"dependencies": {
-		"@elgato-stream-deck/node": "^5.7.2",
+		"@elgato-stream-deck/node": "^6.2.2",
 		"@julusian/jpeg-turbo": "^2.2.0",
 		"@julusian/midi": "^3.6.1",
 		"@shared/api": "^0.12.0-alpha.5",

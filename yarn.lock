@@ -478,27 +478,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@elgato-stream-deck/core@npm:5.7.0":
-  version: 5.7.0
-  resolution: "@elgato-stream-deck/core@npm:5.7.0"
+"@elgato-stream-deck/core@npm:6.2.2":
+  version: 6.2.2
+  resolution: "@elgato-stream-deck/core@npm:6.2.2"
   dependencies:
     eventemitter3: "npm:^4.0.7"
-    tslib: "npm:^2.4.0"
-  checksum: 10c0/b0042439c3ca2a3d624ba335a4f3626e5f283dc5a105e33d5c59fc8f24c5a65bef3e1ebef0b92fb85d7e2d5282df575cf7b4e1709d8de2758bad52cc87a9daff
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/40d32aa0a1e60cfbe2c0c7813d65a5a9d689a46aef657e7efbda4adfddd64c363235c478dae0d7800e4a5451b6d01d3b122c8f244f21cd53e3d03fd9097f77c1
   languageName: node
   linkType: hard
 
-"@elgato-stream-deck/node@npm:^5.7.2":
-  version: 5.7.2
-  resolution: "@elgato-stream-deck/node@npm:5.7.2"
+"@elgato-stream-deck/node@npm:^6.2.2":
+  version: 6.2.2
+  resolution: "@elgato-stream-deck/node@npm:6.2.2"
   dependencies:
-    "@elgato-stream-deck/core": "npm:5.7.0"
-    jpeg-js: "npm:^0.4.2"
-    node-hid: "npm:^2.1.1"
-    tslib: "npm:^2.4.0"
+    "@elgato-stream-deck/core": "npm:6.2.2"
+    jpeg-js: "npm:^0.4.4"
+    node-hid: "npm:^3.1.0"
+    tslib: "npm:^2.6.3"
   peerDependencies:
     "@julusian/jpeg-turbo": ^1.1.2 || ^2.0.0
-  checksum: 10c0/fc63e860834733c444c851faf363adc556654fffab609f9d8dde2906bb693c5c56f5283fbbf2256d186285ceb9e27b3c26eaa5e5744d8d39a663ebd5e87d992d
+  checksum: 10c0/f0eb9512e82d008cc0c01f8929012a2e04316ba2208015bbadb9b240548fb7af30acb0122dae7692118b2f228c4c6f624eed049f7f4294e78615388c9cf08cda
   languageName: node
   linkType: hard
 
@@ -2764,7 +2764,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shared/peripherals@workspace:shared/packages/peripherals"
   dependencies:
-    "@elgato-stream-deck/node": "npm:^5.7.2"
+    "@elgato-stream-deck/node": "npm:^6.2.2"
     "@julusian/jpeg-turbo": "npm:^2.2.0"
     "@julusian/midi": "npm:^3.6.1"
     "@shared/api": "npm:^0.12.0-alpha.5"
@@ -10824,10 +10824,10 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"jpeg-js@npm:^0.4.2":
-  version: 0.4.3
-  resolution: "jpeg-js@npm:0.4.3"
-  checksum: 10c0/f1d6f38e5250e80f0ff9020f09f216f1493d4bd1ce091fff1ae361fcdab199df5df03a6d81a418964074b572b8f6ecfad3cf4ea807e5aa96477c092b3d247a12
+"jpeg-js@npm:^0.4.4":
+  version: 0.4.4
+  resolution: "jpeg-js@npm:0.4.4"
+  checksum: 10c0/4d0d5097f8e55d8bbce6f1dc32ffaf3f43f321f6222e4e6490734fdc6d005322e3bd6fb992c2df7f5b587343b1441a1c333281dc3285bc9116e369fd2a2b43a7
   languageName: node
   linkType: hard
 
@@ -12666,7 +12666,7 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"node-hid@npm:^3.1.0":
+"node-hid@npm:^3.0.0, node-hid@npm:^3.1.0":
   version: 3.1.0
   resolution: "node-hid@npm:3.1.0"
   dependencies:
@@ -17052,6 +17052,13 @@ asn1@evs-broadcast/node-asn1:
   version: 2.5.0
   resolution: "tslib@npm:2.5.0"
   checksum: 10c0/e32fc99cc730dd514e53c44e668d76016e738f0bcc726aad5dbd2d335cf19b87a95a9b1e4f0a9993e370f1d702b5e471cdd4acabcac428a3099d496b9af2021e
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^2.6.3":
+  version: 2.7.0
+  resolution: "tslib@npm:2.7.0"
+  checksum: 10c0/469e1d5bf1af585742128827000711efa61010b699cb040ab1800bcd3ccdd37f63ec30642c9e07c4439c1db6e46345582614275daca3e0f4abae29b0083f04a6
   languageName: node
   linkType: hard
 
