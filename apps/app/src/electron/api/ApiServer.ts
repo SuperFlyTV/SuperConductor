@@ -104,8 +104,8 @@ export class ApiServer {
 		// ---- end legacy code
 
 		this.app
-			.listen(port)
-			.then(() => log.info('Feathers server listening on localhost:' + port))
+			.listen(port, '127.0.0.1')
+			.then(() => log.info('Feathers server listening on 127.0.0.1:' + port))
 			.catch(log.error)
 	}
 }

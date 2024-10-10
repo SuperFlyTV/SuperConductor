@@ -45,7 +45,7 @@ export const NewBridgeDialog: React.FC<{
 
 	return (
 		<Formik
-			initialValues={{ name: '', url: 'ws://localhost:5401' }}
+			initialValues={{ name: '', url: 'ws://127.0.0.1:5401' }}
 			validationSchema={Yup.object({
 				name: Yup.string().label('Rundown Name').required(),
 			})}

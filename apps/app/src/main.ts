@@ -59,7 +59,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		// 	.catch((err) => log.info('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
-	win.loadURL(isDev ? 'http://localhost:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
+	win.loadURL(isDev ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
 
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',

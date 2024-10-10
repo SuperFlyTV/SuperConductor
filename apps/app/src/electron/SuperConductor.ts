@@ -298,12 +298,12 @@ export class SuperConductor {
 		this.analogHandler = new AnalogHandler(this.storage, this.bridgeHandler)
 		this.analogHandler.on('error', (e) => this.log.error(e))
 
-		if (this.disableInternalHttpApi) {
-			// TODO: now this becomes an API that also serves the contents of the Electron window - it should not be disabled
-			this.log.info(`Internal HTTP API disabled`)
-		} else {
-			this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
-		}
+		// TODO: this also serves the contents of the Electron window - it cannot be disabled
+		// if (this.disableInternalHttpApi) {
+		// 	this.log.info(`Internal HTTP API disabled`)
+		// } else {
+		this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
+		// }
 
 		this._restoreTimelines()
 	}
