@@ -88,7 +88,6 @@
 		"@sofie-automation/sorensen": "^1.4.3",
 		"axios": "^1.7.7",
 		"bufferutil": "^4.0.8",
-		"casparcg-connection": "^6.0.6",
 		"classnames": "^2.5.1",
 		"deep-extend": "^0.6.0",
 		"deepmerge-ts": "^5.1.0",

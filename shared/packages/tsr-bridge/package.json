@@ -44,7 +44,6 @@
 		"@shared/lib": "^0.12.0-alpha.5",
 		"@shared/models": "^0.12.0-alpha.5",
 		"@shared/peripherals": "^0.12.0-alpha.5",
-		"casparcg-connection": "6.1.0-nightly-feat-return-data-more-20231006-080324-f41399cf.0",
 		"cheerio": "^1.0.0-rc.12",
 		"got": "^11.8.5",
 		"lodash": "^4.17.21",
