@@ -8,8 +8,8 @@
 		"node": "^16.16.0 || 18"
 	},
 	"scripts": {
-		"build": "rimraf ./dist && tsc && webpack",
-		"build:electron": "tsc -p tsconfig.electron.json",
+		"build": "rimraf ./dist && run -B -T tsc && webpack",
+		"build:electron": "run -B -T tsc -p tsconfig.electron.json",
 		"build:binary": "electron-builder",
 		"start": "run build && electron dist/main.js",
 		"react:dev": "webpack serve --mode=development",
