@@ -68,9 +68,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		undoEnabled: false,
 		redoLabel: 'Redo',
 		redoEnabled: false,
-		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		onUndoClick: () => {},
-		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		onRedoClick: () => {},
 		onAboutClick: () => {
 			// TODO: this should probably become a client-side only action
@@ -294,7 +292,7 @@ function onAppReady(): void {
 					console.error(_err)
 				})
 				log.on('finish', () => {
-					// eslint-disable-next-line no-process-exit
+					// eslint-disable-next-line n/no-process-exit
 					process.exit(0)
 					// app.quit()
 				})

@@ -20,7 +20,7 @@
 		"version": "node scripts/version.js",
 		"postinstall": "husky",
 		"lerna": "lerna",
-		"lint:raw": "eslint --ext .js,.jsx,.ts,.tsx",
+		"lint:raw": "eslint",
 		"lint": "run lint:raw .",
 		"lintfix": "run lint --fix",
 		"build": "lerna run build",
@@ -50,9 +50,7 @@
 		"@types/lodash-es": "^4.17.12",
 		"@types/node": "^20.16.11",
 		"@types/shelljs": "^0",
-		"@typescript-eslint/eslint-plugin": "^8.8.1",
-		"@typescript-eslint/parser": "^8.8.1",
-		"eslint": "^8.57.1",
+		"eslint": "^9.12.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-jest": "^28.8.3",
 		"eslint-plugin-n": "^17.11.1",
@@ -67,7 +65,8 @@
 		"rimraf": "^6.0.1",
 		"shelljs": "^0.8.5",
 		"ts-jest": "^29.2.5",
-		"typescript": "~5.6.3"
+		"typescript": "~5.6.3",
+		"typescript-eslint": "^8.8.1"
 	},
 	"lint-staged": {
 		"*.{css,json,md,scss}": [

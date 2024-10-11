@@ -1,3 +1,4 @@
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import { assertNever, compact } from '@shared/lib'
 import { CB } from '../../lib/errorHandling.js'
 import { store } from '../../mobx/store.js'

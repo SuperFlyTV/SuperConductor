@@ -1,5 +1,6 @@
-import { ClientMethods, ServiceName, ServiceTypes } from '../IPCAPI'
+// eslint-disable-next-line n/no-extraneous-import
 import { jest } from '@jest/globals'
+import { ClientMethods, ServiceName, ServiceTypes } from '../IPCAPI.js'
 
 // Mock electron as it doesn't provide sensible exports during tests
 jest.unstable_mockModule('electron', () => ({
@@ -7,12 +8,12 @@ jest.unstable_mockModule('electron', () => ({
 }))
 
 // Delay import after the mock ahs been setup
-const { EverythingService } = await import('../../electron/EverythingService')
-const { PartService } = await import('../../electron/api/PartService')
-const { ProjectService } = await import('../../electron/api/ProjectService')
-const { ReportingService } = await import('../../electron/api/ReportingService')
-const { RundownService } = await import('../../electron/api/RundownService')
-const { GroupService } = await import('../../electron/api/GroupService')
+const { EverythingService } = await import('../../electron/EverythingService.js')
+const { PartService } = await import('../../electron/api/PartService.js')
+const { ProjectService } = await import('../../electron/api/ProjectService.js')
+const { ReportingService } = await import('../../electron/api/ReportingService.js')
+const { RundownService } = await import('../../electron/api/RundownService.js')
+const { GroupService } = await import('../../electron/api/GroupService.js')
 
 describe('ClientMethods', () => {
 	const services: ServiceTypes = {
@@ -27,7 +28,7 @@ describe('ClientMethods', () => {
 		const missingMethods: string[] = []
 		const IGNORE_METHODS = ['constructor', 'getMaxListeners']
 		for (const [serviceType, service] of Object.entries(services)) {
-			if (serviceType === ServiceName.LEGACY) continue // skip legacy service
+			if ((serviceType as ServiceName) === ServiceName.LEGACY) continue // skip legacy service
 
 			const clientServiceMethods = (ClientMethods as any)[serviceType]
 
@@ -48,7 +49,7 @@ describe('ClientMethods', () => {
 		const nonexistantMethods: string[] = []
 
 		for (const [serviceType, clientMethods] of Object.entries(ClientMethods)) {
-			if (serviceType === ServiceName.LEGACY) continue // skip legacy service
+			if ((serviceType as ServiceName) === ServiceName.LEGACY) continue // skip legacy service
 
 			const serviceMethods = (services as any)[serviceType]
 

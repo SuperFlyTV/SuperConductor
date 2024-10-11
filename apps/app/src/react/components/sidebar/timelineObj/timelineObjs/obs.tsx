@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { MenuItem, TextField } from '@mui/material'
 import { assertNever } from '@shared/lib'
 import React from 'react'

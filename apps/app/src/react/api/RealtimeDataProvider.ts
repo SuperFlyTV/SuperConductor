@@ -114,7 +114,6 @@ export class RealtimeDataProvider {
 		this.callbacks.updateAnalogInput?.(fullIdentifier, analogInput)
 	}
 	destroy(): void {
-		// eslint-disable-next-line @typescript-eslint/unbound-method
 		// this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 

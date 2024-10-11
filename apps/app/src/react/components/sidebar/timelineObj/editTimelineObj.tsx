@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { assertNever, compact, getResourceIdFromTimelineObj } from '@shared/lib'
 import React from 'react'
 import {

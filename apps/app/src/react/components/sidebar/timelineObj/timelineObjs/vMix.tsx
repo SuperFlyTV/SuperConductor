@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import { Link, Typography } from '@mui/material'
 import { assertNever } from '@shared/lib'
 import React, { useState } from 'react'

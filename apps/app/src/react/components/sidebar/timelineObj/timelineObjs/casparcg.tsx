@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState } from 'react'
 import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import {
@@ -2116,7 +2115,7 @@ const CasparEditTemplateData: React.FC<{
 	resourceIds: ResourceId[]
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave }) => {
-	const initializedGDDValidator = usePromise(() =>
+	const initializedGDDValidator = usePromise(async () =>
 		store.gddValidatorStore.initializeGDDSchemaValidator().then(() => true)
 	)
 

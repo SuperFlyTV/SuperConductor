@@ -1,3 +1,4 @@
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import React, { useCallback, useContext } from 'react'
 import { useSnackbar } from 'notistack'
 import { Tooltip } from '@mui/material'

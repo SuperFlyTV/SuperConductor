@@ -1,12 +1,8 @@
 {
-	"extends": "../../tsconfig.json",
+	"extends": "./tsconfig.build.json",
 	"compilerOptions": {
-		"rootDir": "src",
-		"outDir": "dist",
-		"jsx": "react",
-		"lib": ["DOM"],
-		"baseUrl": "./"
+		"types": ["node", "jest"]
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mts"],
-	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
+	"include": ["src/**/*"],
+	"exclude": ["dist"]
 }

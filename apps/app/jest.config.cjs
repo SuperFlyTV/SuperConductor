@@ -1,4 +1,4 @@
-// eslint-disable-next-line n/no-unpublished-require
+/* eslint-disable @typescript-eslint/no-require-imports */
 const base = require('../../jest.config.base.cjs')
 const packageJson = require('./package')
 

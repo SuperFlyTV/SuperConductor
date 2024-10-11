@@ -1,5 +1,6 @@
 /* Based on https://kilianvalkhof.com/2019/electron/notarizing-your-electron-application/ */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { notarize } = require('electron-notarize')
 
 exports.default = async function notarizing(context) {

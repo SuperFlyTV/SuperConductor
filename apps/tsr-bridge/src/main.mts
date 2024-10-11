@@ -220,6 +220,5 @@ app.on('before-quit', () => {
 })
 
 app.on('ready', () => {
-	// eslint-disable-next-line no-console
 	createWindow().catch(log.error)
 })

@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "src",
+		"outDir": "dist",
+		"jsx": "react",
+		"lib": ["DOM"],
+		"baseUrl": "./"
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mts"],
+	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
+}

@@ -1,4 +1,4 @@
-/* eslint-disable n/no-process-exit, n/no-unpublished-require, n/no-extraneous-require */
+/* eslint-disable n/no-process-exit, n/no-extraneous-require,@typescript-eslint/no-require-imports */
 'use strict'
 const fs = require('fs')
 const path = require('path')

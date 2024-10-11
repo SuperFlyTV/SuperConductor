@@ -7,7 +7,7 @@ import {
 	RepeatingType,
 	parseDateTime,
 	updateDateTimeObject,
-} from '../timeLib'
+} from '../timeLib.js'
 
 test('formatDurationLabeled', () => {
 	expect(parseDuration('')).toBe(null)
