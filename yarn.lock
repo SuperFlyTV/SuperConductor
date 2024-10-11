@@ -1490,16 +1490,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@koa/router@npm:^12.0.2":
-  version: 12.0.2
-  resolution: "@koa/router@npm:12.0.2"
+"@koa/router@npm:^13.1.0":
+  version: 13.1.0
+  resolution: "@koa/router@npm:13.1.0"
   dependencies:
-    debug: "npm:^4.3.4"
     http-errors: "npm:^2.0.0"
     koa-compose: "npm:^4.1.0"
-    methods: "npm:^1.1.2"
     path-to-regexp: "npm:^6.3.0"
-  checksum: 10c0/9d33af8b5cb7e80cf2a17e156fe1821ad31ad672ff8e9df62a3af2d2e4a6f49abbbb7038edaea45ef078cabdd8a1ce595ad7da810e96b17c5b954ee46f7e554d
+  checksum: 10c0/7237aab14b48cf8b4120eaba33f4caf0d2d9a9b6fb88a47788c71e5e3af3c39e74ed35b5e48e7000bffb34fe41e901e34896877bdc223face94b92fcbb22a806
   languageName: node
   linkType: hard
 
@@ -2856,10 +2854,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/deep-extend@npm:0.4.32":
-  version: 0.4.32
-  resolution: "@types/deep-extend@npm:0.4.32"
-  checksum: 10c0/92c683b339a1d7a585ca7ae1d41458318959b28635c5e9bcce6028a6e2991a9994eeae22da702b5aec417471b707f53f0c5a3d0896b008b13d10a5ae7be73dd6
+"@types/deep-extend@npm:0.6.2":
+  version: 0.6.2
+  resolution: "@types/deep-extend@npm:0.6.2"
+  checksum: 10c0/dcab03e2e17309c04bd18352575cbb17fed28cceed14f0826e4f8c01d577b13f7e20825a162cb90a181ee9aa05eb56a12c4c8c2ae6f8ec4aaa5aa2c2bf29400f
   languageName: node
   linkType: hard
 
@@ -6688,12 +6686,12 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-hooks@npm:^4.6.2":
-  version: 4.6.2
-  resolution: "eslint-plugin-react-hooks@npm:4.6.2"
+"eslint-plugin-react-hooks@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "eslint-plugin-react-hooks@npm:5.0.0"
   peerDependencies:
-    eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
-  checksum: 10c0/4844e58c929bc05157fb70ba1e462e34f1f4abcbc8dd5bbe5b04513d33e2699effb8bca668297976ceea8e7ebee4e8fc29b9af9d131bcef52886feaa2308b2cc
+    eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
+  checksum: 10c0/bcb74b421f32e4203a7100405b57aab85526be4461e5a1da01bc537969a30012d2ee209a2c2a6cac543833a27188ce1e6ad71e4628d0bb4a2e5365cad86c5002
   languageName: node
   linkType: hard
 
@@ -7836,6 +7834,15 @@ asn1@evs-broadcast/node-asn1:
     merge2: "npm:^1.4.1"
     slash: "npm:^3.0.0"
   checksum: 10c0/b39511b4afe4bd8a7aead3a27c4ade2b9968649abab0a6c28b1a90141b96ca68ca5db1302f7c7bd29eab66bf51e13916b8e0a3d0ac08f75e1e84a39b35691189
+  languageName: node
+  linkType: hard
+
+"goober@npm:^2.0.33":
+  version: 2.1.16
+  resolution: "goober@npm:2.1.16"
+  peerDependencies:
+    csstype: ^3.0.10
+  checksum: 10c0/f4c8256bf9c27873d47c1443f348779ac7f322516cb80a5dc647a6ebe790ce6bb9d3f487a0fb8be0b583fb96b9b2f6b7463f7fea3cd680306f95fa6fc9db1f6a
   languageName: node
   linkType: hard
 
@@ -10530,13 +10537,6 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"methods@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "methods@npm:1.1.2"
-  checksum: 10c0/bdf7cc72ff0a33e3eede03708c08983c4d7a173f91348b4b1e4f47d4cdbf734433ad971e7d1e8c77247d9e5cd8adb81ea4c67b0a2db526b758b2233d7814b8b2
-  languageName: node
-  linkType: hard
-
 "micromatch@npm:^4.0.4, micromatch@npm:~4.0.8":
   version: 4.0.8
   resolution: "micromatch@npm:4.0.8"
@@ -11163,24 +11163,16 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"notistack@npm:^2.0.8":
-  version: 2.0.8
-  resolution: "notistack@npm:2.0.8"
+"notistack@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "notistack@npm:3.0.1"
   dependencies:
     clsx: "npm:^1.1.0"
-    hoist-non-react-statics: "npm:^3.3.0"
+    goober: "npm:^2.0.33"
   peerDependencies:
-    "@emotion/react": ^11.4.1
-    "@emotion/styled": ^11.3.0
-    "@mui/material": ^5.0.0
     react: ^16.8.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
-  peerDependenciesMeta:
-    "@emotion/react":
-      optional: true
-    "@emotion/styled":
-      optional: true
-  checksum: 10c0/61684ff268d5f9779f9ed13761142022215edd89a2417bec92cbb804692f34abc393c2f4060a5775ba8e5ac0a1a43c3a16c96c2cfa1ff276068cdd9e3e1ef204
+  checksum: 10c0/dd5bd492dbaf8d07a1f45a53ae195c5d481bc7136d73a756eb076534d315216a3cd2f4628263be55ad21d8bfed6ec546e5063584ffcc2798fb2aac56e5ccf0cf
   languageName: node
   linkType: hard
 
@@ -11407,10 +11399,10 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"object-hash@npm:^2.0.1":
-  version: 2.2.0
-  resolution: "object-hash@npm:2.2.0"
-  checksum: 10c0/1527de843926c5442ed61f8bdddfc7dc181b6497f725b0e89fcf50a55d9c803088763ed447cac85a5aa65345f1e99c2469ba679a54349ef3c4c0aeaa396a3eb9
+"object-hash@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "object-hash@npm:3.0.0"
+  checksum: 10c0/a06844537107b960c1c8b96cd2ac8592a265186bfa0f6ccafe0d34eabdb526f6fa81da1f37c43df7ed13b12a4ae3457a16071603bcd39d8beddb5f08c37b0f47
   languageName: node
   linkType: hard
 
@@ -14162,7 +14154,7 @@ asn1@evs-broadcast/node-asn1:
     eslint-plugin-n: "npm:^17.11.1"
     eslint-plugin-prettier: "npm:^5.2.1"
     eslint-plugin-react: "npm:^7.37.1"
-    eslint-plugin-react-hooks: "npm:^4.6.2"
+    eslint-plugin-react-hooks: "npm:^5.0.0"
     husky: "npm:^9.1.6"
     jest: "npm:^29.7.0"
     lerna: "npm:^8.1.8"
@@ -14190,7 +14182,7 @@ asn1@evs-broadcast/node-asn1:
     "@fontsource/barlow": "npm:^4.5.9"
     "@fontsource/barlow-condensed": "npm:^4.5.9"
     "@fontsource/barlow-semi-condensed": "npm:^4.5.10"
-    "@koa/router": "npm:^12.0.2"
+    "@koa/router": "npm:^13.1.0"
     "@mui/icons-material": "npm:^5.16.7"
     "@mui/material": "npm:^5.16.7"
     "@shared/api": "npm:^0.12.0-alpha.5"
@@ -14199,7 +14191,7 @@ asn1@evs-broadcast/node-asn1:
     "@shared/server-lib": "npm:^0.12.0-alpha.5"
     "@shared/tsr-bridge": "npm:^0.12.0-alpha.5"
     "@sofie-automation/sorensen": "patch:@sofie-automation/sorensen@npm%3A1.4.3#~/.yarn/patches/@sofie-automation-sorensen-npm-1.4.3-a11a53b994.patch"
-    "@types/deep-extend": "npm:0.4.32"
+    "@types/deep-extend": "npm:0.6.2"
     "@types/jest": "npm:^29.5.13"
     "@types/koa": "npm:^2.15.0"
     "@types/koa-bodyparser": "npm:^4.3.12"
@@ -14234,7 +14226,7 @@ asn1@evs-broadcast/node-asn1:
     mobx-react-lite: "npm:^4.0.7"
     moment: "npm:^2.30.1"
     nodemon: "npm:^2.0.22"
-    notistack: "npm:^2.0.8"
+    notistack: "npm:^3.0.1"
     prop-types: "npm:^15.8.1"
     react: "npm:^18.3.1"
     react-contexify: "npm:^6.0.0"
@@ -14258,7 +14250,7 @@ asn1@evs-broadcast/node-asn1:
     utf-8-validate: "npm:^6.0.4"
     vite: "npm:^5.4.8"
     winston: "npm:^3.15.0"
-    winston-daily-rotate-file: "npm:^4.7.1"
+    winston-daily-rotate-file: "npm:^5.0.0"
     winston-transport: "npm:^4.8.0"
     yup: "npm:1.4.0"
   languageName: unknown
@@ -14623,10 +14615,10 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"triple-beam@npm:^1.3.0":
-  version: 1.3.0
-  resolution: "triple-beam@npm:1.3.0"
-  checksum: 10c0/a6da96495f25b6c04b3629df5161c7eb84760927943f16665fd8dcd3a643daadf73d69eee78306b4b68d606937f22f8703afe763bc8d3723632ffb1f3a798493
+"triple-beam@npm:^1.3.0, triple-beam@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "triple-beam@npm:1.4.1"
+  checksum: 10c0/4bf1db71e14fe3ff1c3adbe3c302f1fdb553b74d7591a37323a7badb32dc8e9c290738996cbb64f8b10dc5a3833645b5d8c26221aaaaa12e50d1251c9aba2fea
   languageName: node
   linkType: hard
 
@@ -15506,21 +15498,21 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"winston-daily-rotate-file@npm:^4.7.1":
-  version: 4.7.1
-  resolution: "winston-daily-rotate-file@npm:4.7.1"
+"winston-daily-rotate-file@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "winston-daily-rotate-file@npm:5.0.0"
   dependencies:
     file-stream-rotator: "npm:^0.6.1"
-    object-hash: "npm:^2.0.1"
-    triple-beam: "npm:^1.3.0"
-    winston-transport: "npm:^4.4.0"
+    object-hash: "npm:^3.0.0"
+    triple-beam: "npm:^1.4.1"
+    winston-transport: "npm:^4.7.0"
   peerDependencies:
     winston: ^3
-  checksum: 10c0/1fb6a6fc16a9f3b20caceea4b841f9966b7a38b429b3e16b4cdbbdfcc3bbf923e7c6a105dde552f78352045137cc1e5206040c2152fe50cd6850327e4a56cb6d
+  checksum: 10c0/c6dfd8ceff8d3801ca702efabaf696bb82919a62c4fbeded8cbf7d2cb188960872eb7a412547af86f12f7257061088a25bac9e318af8932719a2ccba215d7d3f
   languageName: node
   linkType: hard
 
-"winston-transport@npm:^4.4.0, winston-transport@npm:^4.7.0, winston-transport@npm:^4.8.0":
+"winston-transport@npm:^4.7.0, winston-transport@npm:^4.8.0":
   version: 4.8.0
   resolution: "winston-transport@npm:4.8.0"
   dependencies:
