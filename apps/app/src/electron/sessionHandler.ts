@@ -1,7 +1,7 @@
 import EventEmitter from 'events'
 import { BridgeStatus } from '../models/project/Bridge.js'
 import { PeripheralStatus } from '../models/project/Peripheral.js'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
 import { AnalogValue, BridgeId, KnownPeripheral, PeripheralId, PeripheralInfo } from '@shared/api'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
@@ -104,7 +104,7 @@ export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 				connected: connected,
 			},
 		}
-		if (!_.isEqual(newDevice, this.peripherals.get(peripheralId))) {
+		if (!isEqual(newDevice, this.peripherals.get(peripheralId))) {
 			this.peripherals.set(peripheralId, newDevice)
 			this.peripheralsHasChanged.add(peripheralId)
 		}
@@ -131,7 +131,7 @@ export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 			knownPeripheralsObj[unprotectString<PeripheralId>(deviceId)] = knownPeripheral
 		}
 
-		if (!_.isEqual(knownPeripheralsObj, bridgeStatus.peripherals)) {
+		if (!isEqual(knownPeripheralsObj, bridgeStatus.peripherals)) {
 			bridgeStatus.peripherals = knownPeripheralsObj
 			this.bridgeStatusesHasChanged.add(bridgeId)
 		}
@@ -209,7 +209,7 @@ export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 			this.activeAnalogs[fullIdentifier] = analog
 			this.activeAnalogsHasChanged[fullIdentifier] = true
 		} else {
-			if (!_.isEqual(previousAnalog.value, analog.value)) {
+			if (!isEqual(previousAnalog.value, analog.value)) {
 				this.activeAnalogs[fullIdentifier] = analog
 				this.activeAnalogsHasChanged[fullIdentifier] = true
 			}
@@ -218,7 +218,7 @@ export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 		this.triggerUpdate()
 	}
 	updateSelection(selection: Readonly<CurrentSelectionAny[]>): void {
-		if (!_.isEqual(this.selection, selection)) {
+		if (!isEqual(this.selection, selection)) {
 			this.selection = selection
 			this.selectionHasChanged = true
 			this.triggerUpdate()

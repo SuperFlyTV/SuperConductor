@@ -1,6 +1,6 @@
 import { getGroupPlayData, GroupPlayData } from '../../lib/playout/groupPlayData.js'
 import { makeAutoObservable } from 'mobx'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
 import { Rundown } from '../../models/rundown/Rundown.js'
 import { ApiClient } from '../api/ApiClient.js'
@@ -46,7 +46,7 @@ export class GroupPlayDataStore {
 				const now = Date.now()
 				for (const group of this.rundown.groups) {
 					const newData = getGroupPlayData(group.preparedPlayData, now)
-					if (!_.isEqual(newData, this.groups.get(group.id))) {
+					if (!isEqual(newData, this.groups.get(group.id))) {
 						this.groups.set(group.id, newData)
 
 						if (newData.anyPartIsPlaying) {

@@ -1,6 +1,6 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
-import _ from 'lodash'
-import sorensen from '@sofie-automation/sorensen'
+import { isEmpty } from 'lodash-es'
+import { sorensen } from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead.js'
 import { Layer, LayerEmpty } from './Layer.js'
 import {
@@ -456,12 +456,12 @@ export const PartView: React.FC<{
 		])
 
 	useEffect(() => {
-		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+		if (newObjectsToMoveToNewLayer && !isEmpty(newObjectsToMoveToNewLayer)) {
 			changedObjects.current = null
-		} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
+		} else if (newChangedObjects && !isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
 
-			if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+			if (newDuplicatedObjects && !isEmpty(newDuplicatedObjects)) {
 				duplicatedObjects.current = newDuplicatedObjects
 			} else {
 				duplicatedObjects.current = null

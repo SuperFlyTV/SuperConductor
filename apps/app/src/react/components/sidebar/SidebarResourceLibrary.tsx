@@ -48,7 +48,7 @@ import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } fro
 import classNames from 'classnames'
 import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher.js'
 import { computed } from 'mobx'
-import sorensen from '@sofie-automation/sorensen'
+import { sorensen } from '@sofie-automation/sorensen'
 import { CB } from '../../lib/errorHandling.js'
 import { SmallCheckbox } from '../util/SmallCheckbox.js'
 

@@ -1,6 +1,6 @@
 import { deepClone } from '@shared/lib'
 import { ResourceId, TSRDeviceId } from '@shared/models'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { makeAutoObservable } from 'mobx'
 import {
 	CurrentSelectionAny,
@@ -109,7 +109,7 @@ export class GuiStore {
 	}
 	/** Add item to selection */
 	isSelected(selected: CurrentSelectionAny): boolean {
-		return !!this._selected.find((s) => _.isEqual(s, selected))
+		return !!this._selected.find((s) => isEqual(s, selected))
 	}
 	/** Set the selection to this item */
 	setSelected(selected: CurrentSelectionAny): void {
@@ -150,7 +150,7 @@ export class GuiStore {
 	}
 	/** Add item from selection */
 	removeSelected(selected: CurrentSelectionAny): void {
-		const index = this._selected.findIndex((s) => _.isEqual(s, selected))
+		const index = this._selected.findIndex((s) => isEqual(s, selected))
 		if (index >= 0) {
 			this._selected.splice(index, 1)
 		}
@@ -221,7 +221,7 @@ export class GuiStore {
 			...org,
 			...update,
 		}
-		if (!_.isEqual(updated, org)) {
+		if (!isEqual(updated, org)) {
 			this.groupSettings.set(groupId, updated)
 		}
 	}

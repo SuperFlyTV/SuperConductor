@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual, uniq } from 'lodash-es'
 import { computed } from 'mobx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -57,7 +57,7 @@ export function useMemoComputedObject<T extends object | any[] | string | number
 					console.error(value)
 					throw errPrepare
 				}
-				if (!_.isEqual(value, ref.current)) {
+				if (!isEqual(value, ref.current)) {
 					// eslint-disable-next-line no-console
 					if (debug) console.error('useMemoComputedObject update', stackLine(stackPrepare, 2))
 
@@ -109,7 +109,7 @@ export function useMemoComputedArray<T>(fcn: () => T[], deps: React.DependencyLi
 				const newValue = newValues[i]
 				const oldValue = oldValues[i]
 
-				if (_.isEqual(newValue, oldValue)) {
+				if (isEqual(newValue, oldValue)) {
 					resultArray.push(oldValue)
 				} else {
 					resultArray.push(newValue)
@@ -146,7 +146,7 @@ export function useMemoObject<T extends object | any[] | string | number | boole
 
 		if (equalValue) {
 			if (value === ref.current && typeof value === 'object' && value !== null) throw errPrepare
-			if (!_.isEqual(value, ref.current)) {
+			if (!isEqual(value, ref.current)) {
 				// eslint-disable-next-line no-console
 				if (debug) console.error('useMemoObject update', stackLine(stackPrepare, 2))
 				ref.current = value
@@ -182,7 +182,7 @@ export function useMemoArray<T>(fcn: () => T[], deps: React.DependencyList): T[]
 			const newValue = newValues[i]
 			const oldValue = oldValues[i]
 
-			if (_.isEqual(newValue, oldValue)) {
+			if (isEqual(newValue, oldValue)) {
 				resultArray.push(oldValue)
 			} else {
 				resultArray.push(newValue)
@@ -224,7 +224,7 @@ export function assign<T extends { [key: string]: any }>(
 				[key in keyof T]?: () => true | false | void
 		  }
 ): void {
-	const allKeys: string[] = _.uniq([...Object.keys(org), ...Object.keys(apply)])
+	const allKeys: string[] = uniq([...Object.keys(org), ...Object.keys(apply)])
 
 	for (const key of allKeys) {
 		let strategy: true | false | undefined = deep
@@ -261,7 +261,7 @@ export function assign<T extends { [key: string]: any }>(
 					}
 				} else {
 					// replace content:
-					if (!_.isEqual(org[key], apply[key])) {
+					if (!isEqual(org[key], apply[key])) {
 						;(org as any)[key] = apply[key]
 					}
 				}
@@ -288,8 +288,8 @@ export function assignPartial<T extends { [key: string]: any }, K extends keyof 
  * If an item has moved, it'll be moved instead of replaces.
  * @returns an array corresponding to the resulting array, containing information about the changes.
  */
-export function assignArray<T>(org: T[], apply: T[], isEqual?: (a: T, b: T) => boolean): AssignOperation<T>[] {
-	if (!isEqual) isEqual = _.isEqual.bind(_)
+export function assignArray<T>(org: T[], apply: T[], isEqualFn?: (a: T, b: T) => boolean): AssignOperation<T>[] {
+	if (!isEqualFn) isEqualFn = isEqual
 	const results: AssignOperation<T>[] = []
 
 	for (let i = 0; i < apply.length; i++) {
@@ -301,7 +301,7 @@ export function assignArray<T>(org: T[], apply: T[], isEqual?: (a: T, b: T) => b
 			results.push({ op: 'insert', incoming: apply[i] })
 			continue
 		}
-		if (isEqual(orgItem, apply[i])) {
+		if (isEqualFn(orgItem, apply[i])) {
 			// They are equal, so do nothing
 			results.push({ op: 'equal', org: orgItem, incoming: apply[i] })
 			continue
@@ -310,7 +310,7 @@ export function assignArray<T>(org: T[], apply: T[], isEqual?: (a: T, b: T) => b
 		// See if it's a case of an element has moved to this position?
 		let foundIndex = -1
 		for (let j = i + 1; j < org.length; j++) {
-			if (isEqual(orgItem, apply[j])) {
+			if (isEqualFn(orgItem, apply[j])) {
 				foundIndex = j
 				break
 			}

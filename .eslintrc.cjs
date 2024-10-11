@@ -17,7 +17,7 @@ module.exports = {
 		'n/no-unpublished-require': [
 			'error',
 			{
-				allowModules: ['html-webpack-plugin', 'electron-notarize'],
+				allowModules: ['electron-notarize'],
 			},
 		],
 		'n/no-extraneous-import': [

@@ -1,5 +1,5 @@
 import { Button } from '@mui/material'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
 import { RundownActionLight } from '../../../../../../lib/triggers/action.js'
@@ -27,7 +27,7 @@ export const RundownTriggersSubmenu: React.FC<{
 	const hotkeyContext = useContext(HotkeyContext)
 
 	const otherActions: RundownActionLight[] = allActionsForPart.filter(
-		(action) => !part.triggers.find((t) => _.isEqual(t.fullIdentifiers, action.trigger.fullIdentifiers))
+		(action) => !part.triggers.find((t) => isEqual(t.fullIdentifiers, action.trigger.fullIdentifiers))
 	)
 	const actionCount = part.triggers.length + otherActions.length
 

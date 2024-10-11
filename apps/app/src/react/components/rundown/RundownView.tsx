@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
-import sorensen from '@sofie-automation/sorensen'
+import { sorensen } from '@sofie-automation/sorensen'
 import { GroupView } from './GroupView/GroupView.js'
 import { IPCServerContext } from '../../contexts/IPCServer.js'
 import { useDrop } from 'react-dnd'

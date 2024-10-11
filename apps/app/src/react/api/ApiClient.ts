@@ -3,7 +3,7 @@ import { replaceUndefined } from '../../lib/util.js'
 
 import { HookContext, feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
-import io from 'socket.io-client'
+import { io } from 'socket.io-client'
 import { Rundown } from '../../models/rundown/Rundown.js'
 import { Project } from '../../models/project/Project.js'
 
@@ -18,7 +18,7 @@ const socketUri =
 
 const socket = io(socketUri)
 export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
-const socketClient = socketio(socket)
+const socketClient = socketio.default(socket as any) // TODO - fix this type error
 app.configure(socketClient)
 
 type GroupArg<T extends keyof ServiceTypes[ServiceName.GROUPS]> = Parameters<

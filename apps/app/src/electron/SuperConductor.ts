@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog } from 'electron'
-import { autoUpdater } from 'electron-updater'
+import electronUpdater from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group.js'
 import { EverythingService } from './EverythingService.js'
 import { ClientEventBus } from './ClientEventBus.js'
@@ -20,7 +20,7 @@ import {
 	serializeProtectedMap,
 } from '@shared/models'
 import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler.js'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { BridgeStatus } from '../models/project/Bridge.js'
 import { PeripheralStatus } from '../models/project/Peripheral.js'
 import { TriggersHandler } from './triggersHandler.js'
@@ -185,7 +185,7 @@ export class SuperConductor {
 					const newResouceIds = new Set<ResourceId>()
 					for (const resource of resources) {
 						newResouceIds.add(resource.id)
-						if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
+						if (!isEqual(this.storage.getResource(resource.id), resource)) {
 							this.storage.updateResource(resource.id, resource)
 						}
 					}
@@ -198,7 +198,7 @@ export class SuperConductor {
 				// Metadata
 				{
 					// Added, updated, or removed:
-					if (!_.isEqual(this.storage.getMetadata(deviceId), metadata)) {
+					if (!isEqual(this.storage.getMetadata(deviceId), metadata)) {
 						this.storage.updateMetadata(deviceId, metadata)
 					}
 				}
@@ -253,8 +253,8 @@ export class SuperConductor {
 					// Nothing here yet
 				},
 				installUpdate: () => {
-					autoUpdater.autoRunAppAfterInstall = true
-					autoUpdater.quitAndInstall()
+					electronUpdater.autoUpdater.autoRunAppAfterInstall = true
+					electronUpdater.autoUpdater.quitAndInstall()
 				},
 				updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 					return this.updateTimeline(group)
@@ -315,14 +315,14 @@ export class SuperConductor {
 
 		const preReleaseAutoUpdate = appData.preReleaseAutoUpdate ?? appData.version.currentVersionIsPrerelease
 
-		autoUpdater.autoDownload = true
-		autoUpdater.allowDowngrade = true
+		electronUpdater.autoUpdater.autoDownload = true
+		electronUpdater.autoUpdater.allowDowngrade = true
 
-		if (autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
-			autoUpdater.allowPrerelease = preReleaseAutoUpdate
+		if (electronUpdater.autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
+			electronUpdater.autoUpdater.allowPrerelease = preReleaseAutoUpdate
 
 			setTimeout(() => {
-				autoUpdater.checkForUpdatesAndNotify().catch(this.log.error)
+				electronUpdater.autoUpdater.checkForUpdatesAndNotify().catch(this.log.error)
 			}, 1000)
 		}
 	}

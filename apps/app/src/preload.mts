@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { ElectronAPI } from './ipc/IPCAPI'
+import type { ElectronAPI } from './ipc/IPCAPI.js'
 
 contextBridge.exposeInMainWorld('electronAPI', {
 	updateUndoLedger: (key, data) => {

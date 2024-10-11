@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
-import sorensen from '@sofie-automation/sorensen'
+import { sorensen } from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn.js'
 import { GroupBase, GroupGUI } from '../../../../models/rundown/Group.js'
 import { PartView } from './PartView.js'
@@ -49,7 +49,7 @@ import { GroupAutoFillPopover } from './GroupAutoFillPopover.js'
 import VisibilitySensor from 'react-visibility-sensor'
 import { Btn } from '../../inputs/Btn/Btn.js'
 import { sortSelected } from '../../../lib/clientUtil.js'
-import _ from 'lodash'
+import { omit } from 'lodash-es'
 import { formatDateTime, formatDuration } from '../../../../lib/timeLib.js'
 import { ErrorBoundary } from '../../util/ErrorBoundary.js'
 import { DISPLAY_DECIMAL_COUNT } from '../../../constants.js'
@@ -540,7 +540,7 @@ export const GroupView: React.FC<{
 		[group.partIds.length]
 	)
 
-	const groupBase = useMemoObject(() => _.omit(group, ['partIds']) as GroupBase, [group], true)
+	const groupBase = useMemoObject(() => omit(group, ['partIds']) as GroupBase, [group], true)
 
 	// Optimize, so that PartView isn't re-rendered on every part group change
 

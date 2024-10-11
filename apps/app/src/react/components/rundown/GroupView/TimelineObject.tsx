@@ -1,4 +1,4 @@
-import sorensen from '@sofie-automation/sorensen'
+import { sorensen } from '@sofie-automation/sorensen'
 import { describeTimelineObject } from '../../../../lib/TimelineObj.js'
 import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable.js'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj.js'

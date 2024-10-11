@@ -47,7 +47,6 @@
 		"@sofie-automation/eslint-plugin": "^0.1.1",
 		"@tsconfig/node20": "^20.1.4",
 		"@types/jest": "^29.5.13",
-		"@types/lodash": "^4.17.10",
 		"@types/lodash-es": "^4.17.12",
 		"@types/node": "^20.16.11",
 		"@types/shelljs": "^0",

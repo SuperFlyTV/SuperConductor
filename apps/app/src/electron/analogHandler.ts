@@ -5,7 +5,7 @@ import { AnalogInput } from '../models/project/AnalogInput.js'
 import { AnalogInputSetting } from '../models/project/Project.js'
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
 import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay.js'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { BridgeHandler } from './bridgeHandler.js'
 
 export interface AnalogHandlerEvents {
@@ -113,7 +113,7 @@ export class AnalogHandler extends EventEmitter<AnalogHandlerEvents> {
 			lookup?.analogInputSetting
 		)
 
-		if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+		if (!isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 			this.sentkeyDisplays[fullIdentifier] = keyDisplay
 			this.setKeyDisplay(activeAnalog, keyDisplay)
 		}

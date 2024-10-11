@@ -34,7 +34,7 @@
 		"@shared/api": "^0.12.0-alpha.5",
 		"@shared/models": "^0.12.0-alpha.5",
 		"fast-copy": "^3.0.2",
-		"lodash": "^4.17.21",
+		"lodash-es": "^4.17.21",
 		"superfly-timeline": "^8.3.1"
 	},
 	"devDependencies": {

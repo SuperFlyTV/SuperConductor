@@ -72,7 +72,7 @@ import { PeripheralArea } from '../models/project/Peripheral.js'
 import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
 import { BridgeId, LoggerLike, LogLevel, PeripheralId } from '@shared/api'
 import { postProcessPart } from './rundown.js'
-import _ from 'lodash'
+import { uniq } from 'lodash-es'
 import { getLastEndTime } from '../lib/partTimeline.js'
 import { CurrentSelectionAny } from '../lib/GUI.js'
 import { Bridge, BridgePeripheralSettings } from '../models/project/Bridge.js'
@@ -1421,8 +1421,8 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		}
 
 		// Commit the changes:
-		this._saveUpdates({ group: _.uniq(groupsToUpdate) })
-		for (const rundown of _.uniq(rundownsToUpdate)) {
+		this._saveUpdates({ group: uniq(groupsToUpdate) })
+		for (const rundown of uniq(rundownsToUpdate)) {
 			this._saveUpdates({ rundownId: rundown.id, rundown: rundown })
 		}
 		return {

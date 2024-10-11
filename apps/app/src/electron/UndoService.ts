@@ -1,7 +1,7 @@
 import { LoggerLike } from '@shared/api'
 import { ActionDescription, UndoableResult } from '../ipc/IPCAPI.js'
 import EventEmitter from 'events'
-import _ from 'lodash'
+import { mapValues } from 'lodash-es'
 import { SerializableLedgers } from '../models/project/Project.js'
 import { SpecialLedgers } from '../models/project/Project.js'
 
@@ -98,7 +98,7 @@ export class UndoLedgerService extends EventEmitter<UndoServiceEvents> {
 	}
 
 	private toSerializable(): SerializableLedgers {
-		return _.mapValues(Object.fromEntries<UndoLedger>(this.undoLedgers.entries()), (ledger: UndoLedger) => ({
+		return mapValues(Object.fromEntries<UndoLedger>(this.undoLedgers.entries()), (ledger: UndoLedger) => ({
 			undo: ledger.actions[ledger.pointer]
 				? { description: ledger.actions[ledger.pointer]?.description }
 				: undefined,

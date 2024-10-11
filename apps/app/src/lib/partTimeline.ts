@@ -1,4 +1,4 @@
-import { compact } from 'lodash'
+import { compact } from 'lodash-es'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
 import { DeviceType, Mappings } from 'timeline-state-resolver-types'
 import { TimelineObj } from '../models/rundown/TimelineObj.js'

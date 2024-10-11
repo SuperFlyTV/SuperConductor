@@ -12,7 +12,7 @@ export default defineConfig({
 		chunkSizeWarningLimit: 1 * 1000 * 1000, // Disable warning about large chunks
 	},
 	server: {
-		port: 9125,
+		port: 9124,
 		// proxy: {
 		// 	'/int': `http://${upstreamUrl}`,
 		// 	'/docs': `http://${upstreamUrl}`,
@@ -37,6 +37,11 @@ export default defineConfig({
 				api: 'modern-compiler',
 				quietDeps: true,
 			},
+		},
+	},
+	rollupOptions: {
+		output: {
+			interop: 'auto',
 		},
 	},
 })

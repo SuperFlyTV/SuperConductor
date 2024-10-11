@@ -23,7 +23,7 @@ import {
 import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
-import _ from 'lodash'
+import { has as _has } from 'lodash-es'
 import { describeTimelineObject } from './TimelineObj.js'
 import { deepmergeIntoCustom, getKeys } from 'deepmerge-ts'
 
@@ -860,7 +860,7 @@ export function copyTimelineObj(obj: TimelineObj): TimelineObj {
 }
 /** Checks if key is a direct property of object. */
 export function has<T extends { [key: string]: any }>(obj: T, key: keyof T): boolean {
-	return _.has(obj, key)
+	return _has(obj, key)
 }
 export function getPartLabel(part: Part): string {
 	if (part.name) return part.name

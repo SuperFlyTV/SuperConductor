@@ -16,7 +16,7 @@ import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Brid
 import { SessionHandler } from './sessionHandler.js'
 import { StorageHandler } from './storageHandler.js'
 import { assertNever } from '@shared/lib'
-import _ from 'lodash'
+import { cloneDeep, isEqual } from 'lodash-es'
 import { Datastore, DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import {
 	MetadataAny,
@@ -28,8 +28,9 @@ import {
 } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
 import { AnalogInput } from '../models/project/AnalogInput.js'
+import { createRequire } from 'module'
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+const require = createRequire(import.meta.url)
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
 
@@ -208,7 +209,7 @@ export class BridgeHandler {
 		}
 	}
 	updateMappings(mappings: Mappings): void {
-		if (!_.isEqual(this.mappings, mappings)) {
+		if (!isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
 			for (const bridgeConnection of this.connectedBridges.values()) {
@@ -217,7 +218,7 @@ export class BridgeHandler {
 		}
 	}
 	updateTimeline(timelineId: string, timeline: TSRTimeline | null): void {
-		if (!_.isEqual(this.timelines[timelineId], timeline)) {
+		if (!isEqual(this.timelines[timelineId], timeline)) {
 			if (timeline) {
 				this.timelines[timelineId] = timeline
 
@@ -348,8 +349,8 @@ abstract class AbstractBridgeConnection {
 	) {}
 
 	setSettings(settings: Bridge['settings'], force = false) {
-		if (force || !_.isEqual(this.sentSettings, settings)) {
-			this.sentSettings = _.cloneDeep(settings)
+		if (force || !isEqual(this.sentSettings, settings)) {
+			this.sentSettings = cloneDeep(settings)
 			this.send({
 				type: 'setSettings',
 				...settings,
@@ -367,7 +368,7 @@ abstract class AbstractBridgeConnection {
 		this.send({ type: 'removeTimeline', timelineId, currentTime: this.getCurrentTime() })
 	}
 	setMappings(mappings: Mappings, force = false) {
-		if (force || !_.isEqual(this.sentMappings, mappings)) {
+		if (force || !isEqual(this.sentMappings, mappings)) {
 			this.sentMappings = mappings
 			this.send({ type: 'setMappings', mappings, currentTime: this.getCurrentTime() })
 		}

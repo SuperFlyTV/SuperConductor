@@ -11,7 +11,7 @@ import {
 import { Part } from '../../models/rundown/Part.js'
 import { findPart } from '../util.js'
 import { repeatTime } from '../timeLib.js'
-import _ from 'lodash'
+import { last } from 'lodash-es'
 
 /******************************************************************************
  *
@@ -239,7 +239,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 				}
 
 				// Handle the case when a part is looping:
-				const lastSection = _.last(data.sections)
+				const lastSection = last(data.sections)
 				if (endLoopingPart && lastSection && lastSection.endTime) {
 					const loopPartSection: GroupPreparedPlayDataSection = {
 						startTime: lastSection.endTime,
@@ -452,7 +452,7 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 		section.endAction = SectionEndAction.STOP
 	}
 
-	const prevSection = _.last(sections)
+	const prevSection = last(sections)
 	if (prevSection) {
 		// Ensure that the previous section has a correct endTime:
 		if (!prevSection.endTime || prevSection.endTime > section.startTime) {
@@ -460,7 +460,7 @@ function saveSection(sections: GroupPreparedPlayDataSection[], section: GroupPre
 		}
 		prevSection.endAction = SectionEndAction.NEXT_SECTION
 
-		const lastPart = _.last(prevSection.parts)
+		const lastPart = last(prevSection.parts)
 		if (lastPart) {
 			if (prevSection.endTime === section.startTime) {
 				if (section.schedule) {

@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { sortBy } from 'lodash-es'
 import { assertNever } from '@shared/lib'
 import { GroupGUI } from '../../models/rundown/Group.js'
 import { PartGUI } from '../../models/rundown/Part.js'
@@ -33,7 +33,7 @@ export function sortSelected(
 	const rundown = rundownsStore.getRundown(rundownId)
 	if (!rundown) return selected
 
-	return _.sortBy(selected, (s) => {
+	return sortBy(selected, (s) => {
 		let groupIndex = 0
 		let group: GroupGUI | undefined
 		let partIndex = 0

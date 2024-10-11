@@ -9,11 +9,11 @@
 		"node": "20"
 	},
 	"scripts": {
-		"build": "run -B -T rimraf ./dist && run -B -T tsc && webpack",
+		"build": "run -B -T rimraf ./dist && run -B -T tsc && vite build",
 		"build:electron": "run -B -T tsc -p tsconfig.electron.json",
 		"build:binary": "electron-builder",
 		"start": "run build && electron dist/main.mjs",
-		"react:dev": "webpack serve --mode=development",
+		"react:dev": "vite",
 		"electron:dev": "nodemon",
 		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
 		"test": "jest"
@@ -44,24 +44,19 @@
 		"@types/react-dom": "^18.3.0",
 		"@types/react-tabs": "^5.0.5",
 		"@types/react-toggle": "^4.0.5",
+		"@types/semver": "^7.5.8",
+		"@vitejs/plugin-react": "^4.3.2",
 		"@welldone-software/why-did-you-render": "^7.0.1",
 		"concurrently": "^7.6.0",
-		"css-loader": "^6.11.0",
-		"electron": "^32.2.0",
+		"electron": "32.2.0",
 		"electron-builder": "24.13.3",
 		"electron-notarize": "^1.2.2",
-		"html-webpack-plugin": "^5.6.0",
 		"jest": "^29.7.0",
 		"nodemon": "^2.0.22",
 		"sass": "^1.79.4",
-		"sass-loader": "^13.3.3",
-		"style-loader": "^3.3.4",
 		"ts-jest": "^29.2.5",
-		"ts-loader": "^9.5.1",
 		"typed-emitter": "^2.1.0",
-		"webpack": "^5.95.0",
-		"webpack-cli": "^4.10.0",
-		"webpack-dev-server": "^4.15.2"
+		"vite": "^5.4.8"
 	},
 	"dependencies": {
 		"@babel/core": "^7.25.8",
@@ -90,14 +85,13 @@
 		"deep-extend": "^0.6.0",
 		"deepmerge-ts": "^5.1.0",
 		"electron-updater": "^6.3.9",
-		"file-loader": "^6.2.0",
 		"formik": "^2.2.9",
 		"formik-mui": "^5.0.0-alpha.0",
-		"got": "^11.8.6",
+		"got": "^14.4.3",
 		"graphics-data-definition": "1.1.1",
 		"koa": "^2.15.3",
 		"koa-bodyparser": "^4.4.1",
-		"lodash": "^4.17.21",
+		"lodash-es": "^4.17.21",
 		"mobx": "^6.13.3",
 		"mobx-react-lite": "^4.0.7",
 		"moment": "^2.30.1",
@@ -175,9 +169,10 @@
 		"appImage": {
 			"artifactName": "SuperConductor ${version} Linux Executable.${ext}"
 		},
-		"afterSign": "tools/notarize.js",
+		"afterSign": "tools/notarize.cjs",
 		"files": [
-			"dist/**/*"
+			"dist/**/*",
+			"build/**/*"
 		]
 	}
 }

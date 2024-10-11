@@ -1,5 +1,5 @@
 import { assertNever } from '@shared/lib'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 
 /** Returns the first value in a list */
 export function firstValue<T, V>(objects: T[], fcn: (obj: T) => V): V | undefined {
@@ -13,7 +13,7 @@ export function isIndeterminate<T>(objects: T[], fcn: (obj: T) => any): boolean 
 
 	const firstValue = fcn(objects[0])
 	for (let i = objects.length - 1; i > 0; i--) {
-		if (!_.isEqual(fcn(objects[i]), firstValue)) return true
+		if (!isEqual(fcn(objects[i]), firstValue)) return true
 	}
 	return false
 }

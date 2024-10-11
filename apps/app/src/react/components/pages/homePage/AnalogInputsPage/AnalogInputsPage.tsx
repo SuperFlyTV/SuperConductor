@@ -20,7 +20,7 @@ import { Popover } from '@mui/material'
 import Toggle from 'react-toggle'
 import { FloatInput } from '../../../inputs/FloatInput.js'
 import { ActiveAnalog } from '../../../../../models/rundown/Analog.js'
-import { clone } from 'lodash'
+import { clone } from 'lodash-es'
 import { TrashBtn } from '../../../inputs/TrashBtn.js'
 import { ConfirmationDialog } from '../../../util/ConfirmationDialog.js'
 

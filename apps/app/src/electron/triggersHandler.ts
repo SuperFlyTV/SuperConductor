@@ -1,6 +1,6 @@
 import { BridgeId, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralId } from '@shared/api'
 import { BridgePeripheralId, assertNever, literal } from '@shared/lib'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { getGroupPlayData } from '../lib/playout/groupPlayData.js'
 import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
 import { BridgeHandler } from './bridgeHandler.js'
@@ -150,7 +150,7 @@ export class TriggersHandler extends EventEmitter<TriggersHandlerEvents> {
 					used?.actions
 				)
 
-				if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+				if (!isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 					this.sentkeyDisplays[fullIdentifier] = keyDisplay
 					this.setKeyDisplay(trigger, keyDisplay)
 				}
@@ -294,7 +294,7 @@ export class TriggersHandler extends EventEmitter<TriggersHandlerEvents> {
 		const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
 
 		// Don't thrash the registration of hotkeys if nothing has changed.
-		if (_.isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
+		if (isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
 			return
 		}
 
