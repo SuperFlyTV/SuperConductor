@@ -78,7 +78,7 @@
 		"@shared/models": "^0.12.0-alpha.5",
 		"@shared/server-lib": "^0.12.0-alpha.5",
 		"@shared/tsr-bridge": "^0.12.0-alpha.5",
-		"@sofie-automation/sorensen": "^1.4.3",
+		"@sofie-automation/sorensen": "patch:@sofie-automation/sorensen@npm%3A1.4.3#~/.yarn/patches/@sofie-automation-sorensen-npm-1.4.3-a11a53b994.patch",
 		"axios": "^1.7.7",
 		"bufferutil": "^4.0.8",
 		"classnames": "^2.5.1",
