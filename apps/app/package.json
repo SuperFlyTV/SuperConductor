@@ -16,7 +16,7 @@
 		"react:dev": "vite",
 		"electron:dev": "nodemon",
 		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"test": "jest"
+		"test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js"
 	},
 	"repository": {
 		"type": "git",

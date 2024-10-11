@@ -1,11 +1,18 @@
 import { ClientMethods, ServiceName, ServiceTypes } from '../IPCAPI'
+import { jest } from '@jest/globals'
 
-import { EverythingService } from '../../electron/EverythingService'
-import { PartService } from '../../electron/api/PartService'
-import { ProjectService } from '../../electron/api/ProjectService'
-import { ReportingService } from '../../electron/api/ReportingService'
-import { RundownService } from '../../electron/api/RundownService'
-import { GroupService } from '../../electron/api/GroupService'
+// Mock electron as it doesn't provide sensible exports during tests
+jest.unstable_mockModule('electron', () => ({
+	dialog: null,
+}))
+
+// Delay import after the mock ahs been setup
+const { EverythingService } = await import('../../electron/EverythingService')
+const { PartService } = await import('../../electron/api/PartService')
+const { ProjectService } = await import('../../electron/api/ProjectService')
+const { ReportingService } = await import('../../electron/api/ReportingService')
+const { RundownService } = await import('../../electron/api/RundownService')
+const { GroupService } = await import('../../electron/api/GroupService')
 
 describe('ClientMethods', () => {
 	const services: ServiceTypes = {
@@ -47,7 +54,7 @@ describe('ClientMethods', () => {
 
 			for (const method of clientMethods) {
 				if (typeof serviceMethods[method] !== 'function') {
-					nonexistantMethods.push(`${serviceType}.${method}`)
+					nonexistantMethods.push(`${serviceType}.${String(method)}`)
 				}
 			}
 		}
