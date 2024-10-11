@@ -2,12 +2,12 @@ import { getResourceIdFromResource, assertNever, literal } from '@shared/lib'
 import { protectString } from '@shared/models'
 import { CasparCGMedia, CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
-import { getDefaultGroup, getDefaultPart } from '../../../lib/defaults'
-import { findDeviceOfType, shortID } from '../../../lib/util'
-import { Group } from '../../../models/rundown/Group'
-import { Part } from '../../../models/rundown/Part'
-import { store } from '../../mobx/store'
-import { ClipBoardContext, insertGroups, insertParts } from './lib'
+import { getDefaultGroup, getDefaultPart } from '../../../lib/defaults.js'
+import { findDeviceOfType, shortID } from '../../../lib/util.js'
+import { Group } from '../../../models/rundown/Group.js'
+import { Part } from '../../../models/rundown/Part.js'
+import { store } from '../../mobx/store.js'
+import { ClipBoardContext, insertGroups, insertParts } from './lib.js'
 
 const parser = new DOMParser()
 

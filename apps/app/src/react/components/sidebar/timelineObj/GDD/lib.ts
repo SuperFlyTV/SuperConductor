@@ -1,7 +1,6 @@
 import { GDDSchema } from 'graphics-data-definition'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
-// eslint-disable-next-line n/no-missing-import
-import { OnSave } from '../timelineObjs/lib'
+import { OnSave } from '../timelineObjs/lib.js'
 
 export function getBasicType(schemaType: string | string[]): string {
 	return Array.isArray(schemaType) ? schemaType[0] : schemaType

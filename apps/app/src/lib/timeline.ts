@@ -5,10 +5,10 @@ import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataPart,
 	GroupPreparedPlayDataSection,
-} from '../models/GUI/PreparedPlayhead'
-import { GroupBase } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
-import { modifyTimelineObjectForPlayout } from './TimelineObj'
+} from '../models/GUI/PreparedPlayhead.js'
+import { GroupBase } from '../models/rundown/Group.js'
+import { Part } from '../models/rundown/Part.js'
+import { modifyTimelineObjectForPlayout } from './TimelineObj.js'
 
 type CustomPartContent = (
 	group: GroupBase,

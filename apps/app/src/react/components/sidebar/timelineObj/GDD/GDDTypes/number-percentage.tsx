@@ -1,8 +1,8 @@
 import { GDDTypeDurationMs } from 'graphics-data-definition'
 import React from 'react'
-import { getEditPropertyMeta, PropertyProps } from '../lib'
-import { EditProperty } from '../util'
-import { PercentageInput } from '../../../../inputs/PercentageInput'
+import { getEditPropertyMeta, PropertyProps } from '../lib.js'
+import { EditProperty } from '../util.js'
+import { PercentageInput } from '../../../../inputs/PercentageInput.js'
 
 export const gddTypePercentage: React.FC<PropertyProps<GDDTypeDurationMs>> = (props) => {
 	const data = props.data || ''

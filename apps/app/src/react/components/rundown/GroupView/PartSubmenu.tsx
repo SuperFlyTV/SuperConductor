@@ -1,10 +1,10 @@
 import { Button } from '@mui/material'
 import React, { useContext, useState } from 'react'
 import { MdOutlineEditNote } from 'react-icons/md'
-import { PartGUI } from '../../../../models/rundown/Part'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { PartPropertiesDialog } from '../PartPropertiesDialog'
+import { PartGUI } from '../../../../models/rundown/Part.js'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
+import { PartPropertiesDialog } from '../PartPropertiesDialog.js'
 
 export const PartSubmenu: React.FC<{
 	rundownId: string

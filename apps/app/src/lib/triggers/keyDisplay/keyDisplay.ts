@@ -1,10 +1,10 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel, BridgeId, PeripheralId } from '@shared/api'
 import { assertNever, HSVtoRGB, RGBToString } from '@shared/lib'
-import { ActionAny } from '../action'
-import { PeripheralArea } from '../../../models/project/Peripheral'
-import { AnalogInputSetting, Project } from '../../../models/project/Project'
-import { ActiveTrigger } from '../../../models/rundown/Trigger'
-import { keyDisplayRundownPlay, keyDisplayRundownPlayStop, keyDisplayRundownStop } from './rundownAction'
+import { ActionAny } from '../action.js'
+import { PeripheralArea } from '../../../models/project/Peripheral.js'
+import { AnalogInputSetting, Project } from '../../../models/project/Project.js'
+import { ActiveTrigger } from '../../../models/rundown/Trigger.js'
+import { keyDisplayRundownPlay, keyDisplayRundownPlayStop, keyDisplayRundownStop } from './rundownAction.js'
 import {
 	keyDisplayApplicationDelete,
 	keyDisplayApplicationNext,
@@ -13,11 +13,11 @@ import {
 	keyDisplayApplicationPlayStop,
 	keyDisplayApplicationPrevious,
 	keyDisplayApplicationStop,
-} from './applicationAction'
-import { TriggerArea, TriggersAreaMap, triggersAreaToArea } from './lib'
-import { ActiveAnalog } from '../../../models/rundown/Analog'
-import { AnalogInput } from '../../../models/project/AnalogInput'
-import { Bridge, BridgePeripheralSettings } from '../../../models/project/Bridge'
+} from './applicationAction.js'
+import { TriggerArea, TriggersAreaMap, triggersAreaToArea } from './lib.js'
+import { ActiveAnalog } from '../../../models/rundown/Analog.js'
+import { AnalogInput } from '../../../models/project/AnalogInput.js'
+import { Bridge, BridgePeripheralSettings } from '../../../models/project/Bridge.js'
 
 export function prepareTriggersAreaMap(project: Project): TriggersAreaMap {
 	const triggersAreaMap = new Map<

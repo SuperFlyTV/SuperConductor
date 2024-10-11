@@ -1,12 +1,12 @@
 import { Stack, Typography } from '@mui/material'
 import { BridgeId, KnownPeripheral, PeripheralId } from '@shared/api'
 import React, { useCallback, useContext } from 'react'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../contexts/Project'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
 
 import './style.scss'
-import { DeviceIcon } from '../../../pages/homePage/deviceIcon/DeviceIcon'
+import { DeviceIcon } from '../../../pages/homePage/deviceIcon/DeviceIcon.js'
 import { unprotectString } from '@shared/models'
 
 export interface DisabledPeripheralInfo {

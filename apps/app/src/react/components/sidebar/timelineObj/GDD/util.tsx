@@ -1,5 +1,5 @@
 import React from 'react'
-import { PropertyProps, getEditPropertyMeta } from './lib'
+import { PropertyProps, getEditPropertyMeta } from './lib.js'
 
 export const WithLabel: React.FC<
 	PropertyProps<any> & {

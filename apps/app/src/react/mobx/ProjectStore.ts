@@ -1,9 +1,9 @@
 import { makeAutoObservable } from 'mobx'
-import { Project } from '../../models/project/Project'
-import { PeripheralArea } from '../../models/project/Peripheral'
+import { Project } from '../../models/project/Project.js'
+import { PeripheralArea } from '../../models/project/Peripheral.js'
 import { BridgeId, PeripheralId } from '@shared/api'
 import { protectString } from '@shared/models'
-import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge'
+import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge.js'
 
 /**
  * Information about currently opened project.

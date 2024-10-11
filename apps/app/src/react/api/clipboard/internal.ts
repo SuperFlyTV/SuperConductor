@@ -1,11 +1,11 @@
 import { assertNever } from '@shared/lib'
-import { getDefaultPart } from '../../../lib/defaults'
-import { copyGroup, copyPart, copyTimelineObj, MoveTarget, shortID } from '../../../lib/util'
-import { Group } from '../../../models/rundown/Group'
-import { Part } from '../../../models/rundown/Part'
-import { TimelineObj } from '../../../models/rundown/TimelineObj'
-import { store } from '../../mobx/store'
-import { ClipBoardContext, insertGroups, insertParts } from './lib'
+import { getDefaultPart } from '../../../lib/defaults.js'
+import { copyGroup, copyPart, copyTimelineObj, MoveTarget, shortID } from '../../../lib/util.js'
+import { Group } from '../../../models/rundown/Group.js'
+import { Part } from '../../../models/rundown/Part.js'
+import { TimelineObj } from '../../../models/rundown/TimelineObj.js'
+import { store } from '../../mobx/store.js'
+import { ClipBoardContext, insertGroups, insertParts } from './lib.js'
 
 /**
  * Handle pasted data from the SuperConductor

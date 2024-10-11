@@ -1,8 +1,8 @@
 import React from 'react'
-import { BridgeDevice } from 'src/models/project/Bridge'
+import { BridgeDevice } from 'src/models/project/Bridge.js'
 import { DeviceType } from 'timeline-state-resolver-types'
-import { DeviceIcon } from '../deviceIcon/DeviceIcon'
-import { StatusCircle } from '../scList/StatusCircle'
+import { DeviceIcon } from '../deviceIcon/DeviceIcon.js'
+import { StatusCircle } from '../scList/StatusCircle.js'
 
 import './style.scss'
 

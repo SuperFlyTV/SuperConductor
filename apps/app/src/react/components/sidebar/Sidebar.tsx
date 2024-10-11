@@ -1,14 +1,14 @@
 import React from 'react'
-import { SidebarResourceLibrary } from './SidebarResourceLibrary'
-import { SideBarEditTimelineObject } from './SideBarEditTimelineObject'
-import { Project } from '../../../models/project/Project'
-import { store } from '../../mobx/store'
+import { SidebarResourceLibrary } from './SidebarResourceLibrary.js'
+import { SideBarEditTimelineObject } from './SideBarEditTimelineObject.js'
+import { Project } from '../../../models/project/Project.js'
+import { store } from '../../mobx/store.js'
 import { observer } from 'mobx-react-lite'
-import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
+import { useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib.js'
 import { assertNever } from '@shared/lib'
-import { SideBarEditGroup } from './editGroup/SideBarEditGroup'
-import { SideBarEditPart } from './editPart/SideBarEditPart'
-import { ErrorBoundary } from '../util/ErrorBoundary'
+import { SideBarEditGroup } from './editGroup/SideBarEditGroup.js'
+import { SideBarEditPart } from './editPart/SideBarEditPart.js'
+import { ErrorBoundary } from '../util/ErrorBoundary.js'
 
 export const Sidebar: React.FC<{ mappings: Project['mappings'] }> = observer(function Sidebar(props) {
 	const currentRundownId = useMemoComputedValue(() => {

@@ -14,10 +14,10 @@ import {
 	TimelineContentOBSStreaming,
 	TimelineContentTypeOBS,
 } from 'timeline-state-resolver-types'
-import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
+import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib.js'
 
 export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineContentOBSAny>[]; onSave: OnSave }> = ({
 	objs,

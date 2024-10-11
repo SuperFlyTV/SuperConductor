@@ -11,10 +11,10 @@ import {
 	PeripheralSettingsBase,
 } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
-import { AnalogInputSetting, Project } from '../models/project/Project'
-import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
-import { SessionHandler } from './sessionHandler'
-import { StorageHandler } from './storageHandler'
+import { AnalogInputSetting, Project } from '../models/project/Project.js'
+import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Bridge.js'
+import { SessionHandler } from './sessionHandler.js'
+import { StorageHandler } from './storageHandler.js'
 import { assertNever } from '@shared/lib'
 import _ from 'lodash'
 import { Datastore, DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
@@ -27,7 +27,7 @@ import {
 	unprotectString,
 } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { AnalogInput } from '../models/project/AnalogInput'
+import { AnalogInput } from '../models/project/AnalogInput.js'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')

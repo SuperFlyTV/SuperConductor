@@ -7,9 +7,9 @@ import {
 	CurrentSelectionGroup,
 	CurrentSelectionPart,
 	CurrentSelectionTimelineObj,
-} from '../../lib/GUI'
-import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
-import { ApiClient } from '../api/ApiClient'
+} from '../../lib/GUI.js'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay.js'
+import { ApiClient } from '../api/ApiClient.js'
 
 /**
  * Store contains only information about user interface

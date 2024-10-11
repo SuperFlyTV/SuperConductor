@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
-import { ApiClient } from '../api/ApiClient'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
+import { ApiClient } from '../api/ApiClient.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
 import {
 	MetadataAny,
 	ResourceAny,
@@ -9,8 +9,8 @@ import {
 	TSRDeviceId,
 	deserializeProtectedMap,
 } from '@shared/models'
-import { ClientSideLogger } from '../api/logger'
-import { hashObj } from '../../lib/util'
+import { ClientSideLogger } from '../api/logger.js'
+import { hashObj } from '../../lib/util.js'
 
 export type Resources = Map<ResourceId, ResourceAny>
 

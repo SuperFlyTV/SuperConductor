@@ -1,30 +1,30 @@
 import { BridgeId, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralId } from '@shared/api'
 import { BridgePeripheralId, assertNever, literal } from '@shared/lib'
 import _ from 'lodash'
-import { getGroupPlayData } from '../lib/playout/groupPlayData'
-import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { BridgeHandler } from './bridgeHandler'
-import { EverythingService } from './EverythingService'
-import { StorageHandler } from './storageHandler'
+import { getGroupPlayData } from '../lib/playout/groupPlayData.js'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
+import { BridgeHandler } from './bridgeHandler.js'
+import { EverythingService } from './EverythingService.js'
+import { StorageHandler } from './storageHandler.js'
 import {
 	ActionAny,
 	getAllApplicationActions,
 	getPartsWithRefInRundowns,
 	getAllActionsInParts,
 	ApplicationAction,
-} from '../lib/triggers/action'
+} from '../lib/triggers/action.js'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
 	prepareTriggersAreaMap,
-} from '../lib/triggers/keyDisplay/keyDisplay'
-import { SessionHandler } from './sessionHandler'
-import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
+} from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { SessionHandler } from './sessionHandler.js'
+import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral.js'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
-import { convertSorensenToElectron } from '../lib/triggers/identifiers'
+import { convertSorensenToElectron } from '../lib/triggers/identifiers.js'
 import { protectString, unprotectString } from '@shared/models'
-import { BridgePeripheralSettings } from '../models/project/Bridge'
+import { BridgePeripheralSettings } from '../models/project/Bridge.js'
 
 export interface TriggersHandlerEvents {
 	error: [error: Error]

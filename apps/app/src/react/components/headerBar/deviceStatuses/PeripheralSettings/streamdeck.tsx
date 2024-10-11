@@ -11,18 +11,18 @@ import {
 	PeripheralType,
 } from '@shared/api'
 import { stringToRGB, RGBToString, assertNever, getPeripheralId } from '@shared/lib'
-import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger'
-import { PeripheralStatus } from '../../../../../models/project/Peripheral'
-import { HotkeyContext } from '../../../../contexts/Hotkey'
-import { store } from '../../../../mobx/store'
-import { useMemoComputedObject } from '../../../../mobx/lib'
-import { ActionAny } from '../../../../../lib/triggers/action'
+import { ActiveTrigger, ActiveTriggers } from '../../../../../models/rundown/Trigger.js'
+import { PeripheralStatus } from '../../../../../models/project/Peripheral.js'
+import { HotkeyContext } from '../../../../contexts/Hotkey.js'
+import { store } from '../../../../mobx/store.js'
+import { useMemoComputedObject } from '../../../../mobx/lib.js'
+import { ActionAny } from '../../../../../lib/triggers/action.js'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
 	prepareTriggersAreaMap,
-} from '../../../../../lib/triggers/keyDisplay/keyDisplay'
-import { TimelineDisplay } from './TimelineDisplay'
+} from '../../../../../lib/triggers/keyDisplay/keyDisplay.js'
+import { TimelineDisplay } from './TimelineDisplay.js'
 import { protectString, unprotectString } from '@shared/models'
 
 export const StreamdeckSettings: React.FC<{

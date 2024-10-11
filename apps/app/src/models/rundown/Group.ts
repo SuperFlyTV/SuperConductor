@@ -1,6 +1,6 @@
-import { DateTimeObject, RepeatingSettingsAny } from '../../lib/timeLib'
-import { GroupPreparedPlayData } from '../GUI/PreparedPlayhead'
-import { Part } from './Part'
+import { DateTimeObject, RepeatingSettingsAny } from '../../lib/timeLib.js'
+import { GroupPreparedPlayData } from '../GUI/PreparedPlayhead.js'
+import { Part } from './Part.js'
 
 export interface GroupBase {
 	id: string

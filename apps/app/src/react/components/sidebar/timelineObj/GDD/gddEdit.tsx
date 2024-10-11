@@ -3,9 +3,9 @@ import { GDDSchema } from 'graphics-data-definition'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 
 import './style.scss'
-import { componentAny } from './componentAny'
+import { componentAny } from './componentAny.js'
 import { deepClone } from '@shared/lib'
-import { OnSave } from '../timelineObjs/lib'
+import { OnSave } from '../timelineObjs/lib.js'
 
 export const EditGDDData: React.FC<{
 	objs: TSRTimelineObj<TSRTimelineContent>[]

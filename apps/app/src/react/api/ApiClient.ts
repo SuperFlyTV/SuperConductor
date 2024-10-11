@@ -1,11 +1,11 @@
-import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
-import { replaceUndefined } from '../../lib/util'
+import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI.js'
+import { replaceUndefined } from '../../lib/util.js'
 
 import { HookContext, feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
-import { Rundown } from '../../models/rundown/Rundown'
-import { Project } from '../../models/project/Project'
+import { Rundown } from '../../models/rundown/Rundown.js'
+import { Project } from '../../models/project/Project.js'
 
 type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]

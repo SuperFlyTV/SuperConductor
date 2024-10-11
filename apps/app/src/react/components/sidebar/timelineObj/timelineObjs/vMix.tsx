@@ -22,13 +22,13 @@ import {
 	VMixTransform,
 	VMixTransitionType,
 } from 'timeline-state-resolver-types'
-import { firstValue, isIndeterminate, inputValue, anyAreTrue, allAreTrue } from '../../../../lib/multipleEdit'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { DurationInput } from '../../../inputs/DurationInput'
-import { IntInput } from '../../../inputs/IntInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
+import { firstValue, isIndeterminate, inputValue, anyAreTrue, allAreTrue } from '../../../../lib/multipleEdit.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { DurationInput } from '../../../inputs/DurationInput.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib.js'
 
 const DEFAULT_TRANSFORM: VMixTransform = {
 	zoom: 1,

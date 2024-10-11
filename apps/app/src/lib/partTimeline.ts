@@ -1,8 +1,8 @@
 import { compact } from 'lodash'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
 import { DeviceType, Mappings } from 'timeline-state-resolver-types'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { sortMappings } from './TSRMappings'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { sortMappings } from './TSRMappings.js'
 
 export function sortLayers(layers: ResolvedTimeline['layers'], mappings: Mappings): SortedLayer[] {
 	const usedMappings: Mappings = {}

@@ -6,12 +6,12 @@ import {
 	TimelineContentTypeHyperdeck,
 	TransportStatus,
 } from 'timeline-state-resolver-types'
-import { isIndeterminate, inputValue, firstValue } from '../../../../lib/multipleEdit'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { IntInput } from '../../../inputs/IntInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
+import { isIndeterminate, inputValue, firstValue } from '../../../../lib/multipleEdit.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib.js'
 
 /**
  * In TSR, only some of the transport statuses are supported and actually do something.

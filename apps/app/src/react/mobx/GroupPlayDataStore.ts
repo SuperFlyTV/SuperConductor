@@ -1,10 +1,10 @@
-import { getGroupPlayData, GroupPlayData } from '../../lib/playout/groupPlayData'
+import { getGroupPlayData, GroupPlayData } from '../../lib/playout/groupPlayData.js'
 import { makeAutoObservable } from 'mobx'
 import _ from 'lodash'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { Rundown } from '../../models/rundown/Rundown'
-import { ApiClient } from '../api/ApiClient'
-import { ClientSideLogger } from '../api/logger'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { Rundown } from '../../models/rundown/Rundown.js'
+import { ApiClient } from '../api/ApiClient.js'
+import { ClientSideLogger } from '../api/logger.js'
 
 export class GroupPlayDataStore {
 	groups: Map<string, GroupPlayData> = new Map()

@@ -1,7 +1,7 @@
 import React, { useCallback, useContext } from 'react'
 import { useSnackbar } from 'notistack'
 import { Tooltip } from '@mui/material'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
 
 import './style.scss'
 

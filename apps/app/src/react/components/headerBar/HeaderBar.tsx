@@ -3,14 +3,14 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/
 import { Field, Form, Formik } from 'formik'
 import { TextField } from 'formik-mui'
 import * as Yup from 'yup'
-import { IPCServerContext } from '../../contexts/IPCServer'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { IPCServerContext } from '../../contexts/IPCServer.js'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler.js'
 import { observer } from 'mobx-react-lite'
-import { DeviceStatuses } from './deviceStatuses/DeviceStatuses'
-import { Tabs } from './tabs/Tabs'
+import { DeviceStatuses } from './deviceStatuses/DeviceStatuses.js'
+import { Tabs } from './tabs/Tabs.js'
 
 import './style.scss'
-import { store } from '../../mobx/store'
+import { store } from '../../mobx/store.js'
 
 export const HeaderBar: React.FC = observer(function HeaderBar() {
 	const serverAPI = useContext(IPCServerContext)

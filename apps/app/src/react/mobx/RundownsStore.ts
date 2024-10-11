@@ -1,10 +1,10 @@
 import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
-import { getDefaultGroup } from '../../lib/defaults'
-import { Rundown, RundownGUI } from '../../models/rundown/Rundown'
-import { Group, GroupGUI } from '../../models/rundown/Group'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { ApiClient } from '../api/ApiClient'
-import { store } from './store'
+import { getDefaultGroup } from '../../lib/defaults.js'
+import { Rundown, RundownGUI } from '../../models/rundown/Rundown.js'
+import { Group, GroupGUI } from '../../models/rundown/Group.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { ApiClient } from '../api/ApiClient.js'
+import { store } from './store.js'
 import {
 	allowMovingPartIntoGroup,
 	findPartInRundown,
@@ -14,13 +14,13 @@ import {
 	PartWithRef,
 	RundownWithShallowGroups,
 	shortID,
-} from '../../lib/util'
-import { Part, PartGUI } from '../../models/rundown/Part'
+} from '../../lib/util.js'
+import { Part, PartGUI } from '../../models/rundown/Part.js'
 import { deepClone, literal, omit } from '@shared/lib'
-import { ClientSideLogger } from '../api/logger'
-import { ActionAny, RundownActionLight } from '../../lib/triggers/action'
+import { ClientSideLogger } from '../api/logger.js'
+import { ActionAny, RundownActionLight } from '../../lib/triggers/action.js'
 import _ from 'lodash'
-import { TimelineObj } from '../../models/rundown/TimelineObj'
+import { TimelineObj } from '../../models/rundown/TimelineObj.js'
 import { assertNever } from '@shared/lib'
 
 interface IRundownsItems {

@@ -8,11 +8,11 @@ import {
 	MappingTriCaster,
 	MappingVMixAny,
 } from 'timeline-state-resolver-types'
-import { CasparCGMappingSettings } from './device-specific-settings/CasparCGMappingSettings'
-import { AtemMappingSettings } from './device-specific-settings/AtemMappingSettings'
-import { OBSMappingSettings } from './device-specific-settings/OBSMappingSettings'
-import { VMixMappingSettings } from './device-specific-settings/VMixMappingSettings'
-import { TriCasterMappingSettings } from './device-specific-settings/TriCasterMappingSettings'
+import { CasparCGMappingSettings } from './device-specific-settings/CasparCGMappingSettings.js'
+import { AtemMappingSettings } from './device-specific-settings/AtemMappingSettings.js'
+import { OBSMappingSettings } from './device-specific-settings/OBSMappingSettings.js'
+import { VMixMappingSettings } from './device-specific-settings/VMixMappingSettings.js'
+import { TriCasterMappingSettings } from './device-specific-settings/TriCasterMappingSettings.js'
 
 export const DeviceSpecificSettings: React.FC<{
 	mapping?: Mapping

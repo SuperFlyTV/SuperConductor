@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { SchemaValidator, setupSchemaValidator, ValidatorCache } from 'graphics-data-definition'
-import { ApiClient } from '../api/ApiClient'
+import { ApiClient } from '../api/ApiClient.js'
 
 export class GDDValidatorStore {
 	private isInitialized = false

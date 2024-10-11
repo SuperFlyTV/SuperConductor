@@ -1,10 +1,10 @@
-import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group'
-import { Part, PartBase } from '../models/rundown/Part'
+import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group.js'
+import { Part, PartBase } from '../models/rundown/Part.js'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
-import { Rundown, RundownBase } from '../models/rundown/Rundown'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData'
-import { Project } from '../models/project/Project'
+import { Rundown, RundownBase } from '../models/rundown/Rundown.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData.js'
+import { Project } from '../models/project/Project.js'
 import {
 	DeviceOptionsAny,
 	DeviceType,
@@ -24,7 +24,7 @@ import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString,
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
 import _ from 'lodash'
-import { describeTimelineObject } from './TimelineObj'
+import { describeTimelineObject } from './TimelineObj.js'
 import { deepmergeIntoCustom, getKeys } from 'deepmerge-ts'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {

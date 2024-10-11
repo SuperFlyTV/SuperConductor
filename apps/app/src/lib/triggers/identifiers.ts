@@ -1,4 +1,4 @@
-import { AnyTrigger } from '../../models/rundown/Trigger'
+import { AnyTrigger } from '../../models/rundown/Trigger.js'
 
 /**
  * Translate a trigger's identifier keys from the Sorensen format into the Electron format.

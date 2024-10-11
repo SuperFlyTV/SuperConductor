@@ -1,4 +1,4 @@
-import { Group, PlayingPart, PlayoutMode } from '../../models/rundown/Group'
+import { Group, PlayingPart, PlayoutMode } from '../../models/rundown/Group.js'
 import {
 	GroupPreparedPlayData,
 	GroupPreparedPlayDataMulti,
@@ -7,10 +7,10 @@ import {
 	GroupPreparedPlayDataSingle,
 	PlayPartEndAction,
 	SectionEndAction,
-} from '../../models/GUI/PreparedPlayhead'
-import { Part } from '../../models/rundown/Part'
-import { findPart } from '../util'
-import { repeatTime } from '../timeLib'
+} from '../../models/GUI/PreparedPlayhead.js'
+import { Part } from '../../models/rundown/Part.js'
+import { findPart } from '../util.js'
+import { repeatTime } from '../timeLib.js'
 import _ from 'lodash'
 
 /******************************************************************************

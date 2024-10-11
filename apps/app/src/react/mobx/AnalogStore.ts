@@ -1,9 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx'
-import { AnalogInput } from '../../models/project/AnalogInput'
-import { ActiveAnalog } from '../../models/rundown/Analog'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { ApiClient } from '../api/ApiClient'
-import { ClientSideLogger } from '../api/logger'
+import { AnalogInput } from '../../models/project/AnalogInput.js'
+import { ActiveAnalog } from '../../models/rundown/Analog.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { ApiClient } from '../api/ApiClient.js'
+import { ClientSideLogger } from '../api/logger.js'
 
 export class AnalogStore {
 	private analogInputs = new Map<string, AnalogInput>()

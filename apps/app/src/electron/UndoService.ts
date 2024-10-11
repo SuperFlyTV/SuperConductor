@@ -1,9 +1,9 @@
 import { LoggerLike } from '@shared/api'
-import { ActionDescription, UndoableResult } from '../ipc/IPCAPI'
+import { ActionDescription, UndoableResult } from '../ipc/IPCAPI.js'
 import EventEmitter from 'events'
 import _ from 'lodash'
-import { SerializableLedgers } from '../models/project/Project'
-import { SpecialLedgers } from '../models/project/Project'
+import { SerializableLedgers } from '../models/project/Project.js'
+import { SpecialLedgers } from '../models/project/Project.js'
 
 export const MAX_UNDO_LEDGER_LENGTH = 100
 

@@ -2,18 +2,18 @@ import { Button } from '@mui/material'
 import _ from 'lodash'
 import React, { useCallback, useContext, useEffect, useState, useRef } from 'react'
 import { IoAddCircle, IoAddCircleOutline } from 'react-icons/io5'
-import { RundownActionLight } from '../../../../../../lib/triggers/action'
-import { PartGUI } from '../../../../../../models/rundown/Part'
+import { RundownActionLight } from '../../../../../../lib/triggers/action.js'
+import { PartGUI } from '../../../../../../models/rundown/Part.js'
 import {
 	ActiveTriggers,
 	activeTriggersToString,
 	ApplicationTrigger,
 	RundownTrigger,
-} from '../../../../../../models/rundown/Trigger'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { HotkeyContext } from '../../../../../contexts/Hotkey'
-import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { EditApplicationTrigger, EditRundownTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger'
+} from '../../../../../../models/rundown/Trigger.js'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
+import { HotkeyContext } from '../../../../../contexts/Hotkey.js'
+import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
+import { EditApplicationTrigger, EditRundownTrigger, NoEditTrigger } from '../../../../inputs/EditTrigger.js'
 
 export const RundownTriggersSubmenu: React.FC<{
 	rundownId: string

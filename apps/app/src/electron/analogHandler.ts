@@ -1,12 +1,12 @@
-import { StorageHandler } from './storageHandler'
+import { StorageHandler } from './storageHandler.js'
 import EventEmitter from 'events'
-import { ActiveAnalog } from '../models/rundown/Analog'
-import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogInputSetting } from '../models/project/Project'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
+import { AnalogInput } from '../models/project/AnalogInput.js'
+import { AnalogInputSetting } from '../models/project/Project.js'
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
-import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay'
+import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay.js'
 import _ from 'lodash'
-import { BridgeHandler } from './bridgeHandler'
+import { BridgeHandler } from './bridgeHandler.js'
 
 export interface AnalogHandlerEvents {
 	error: [error: Error]

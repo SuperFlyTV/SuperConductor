@@ -1,4 +1,4 @@
-import { ApplicationTrigger } from '../rundown/Trigger'
+import { ApplicationTrigger } from '../rundown/Trigger.js'
 
 export interface AppData {
 	windowPosition: WindowPosition

@@ -1,4 +1,4 @@
-import { ActiveAnalog } from '../rundown/Analog'
+import { ActiveAnalog } from '../rundown/Analog.js'
 
 export interface AnalogInputs {
 	analogs: {

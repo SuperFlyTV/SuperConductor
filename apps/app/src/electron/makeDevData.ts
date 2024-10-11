@@ -12,16 +12,16 @@ import {
 	TimelineContentCCGMedia,
 	TimelineContentTypeCasparCg,
 } from 'timeline-state-resolver-types'
-import { shortID } from '../lib/util'
-import { Bridge } from '../models/project/Bridge'
-import { Project } from '../models/project/Project'
-import { Group } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
-import { Rundown } from '../models/rundown/Rundown'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
-import { postProcessPart } from './rundown'
-import { StorageHandler } from './storageHandler'
+import { shortID } from '../lib/util.js'
+import { Bridge } from '../models/project/Bridge.js'
+import { Project } from '../models/project/Project.js'
+import { Group } from '../models/rundown/Group.js'
+import { Part } from '../models/rundown/Part.js'
+import { Rundown } from '../models/rundown/Rundown.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { getDefaultGroup, getDefaultPart } from '../lib/defaults.js'
+import { postProcessPart } from './rundown.js'
+import { StorageHandler } from './storageHandler.js'
 import { BridgeId } from '@shared/api'
 
 export function makeDevData(): {

@@ -1,16 +1,16 @@
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useState } from 'react'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
-import { store } from '../../../../mobx/store'
+import { IPCServerContext } from '../../../../contexts/IPCServer.js'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout.js'
+import { store } from '../../../../mobx/store.js'
 import Toggle from 'react-toggle'
 
 import './style.scss'
 import { computed } from 'mobx'
-import { HelpButton } from '../../../inputs/HelpButton/HelpButton'
-import { Message } from '../message/Message'
-import { IntInput } from '../../../inputs/IntInput'
+import { HelpButton } from '../../../inputs/HelpButton/HelpButton.js'
+import { Message } from '../message/Message.js'
+import { IntInput } from '../../../inputs/IntInput.js'
 
 export const ApplicationPage: React.FC = observer(function ApplicationPage() {
 	const serverAPI = useContext(IPCServerContext)

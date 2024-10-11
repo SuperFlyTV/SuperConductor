@@ -14,14 +14,14 @@ import {
 	DeviceType,
 	OSCDeviceType,
 } from 'timeline-state-resolver-types'
-import { Bridge } from '../../../../../models/project/Bridge'
+import { Bridge } from '../../../../../models/project/Bridge.js'
 import { literal } from '@shared/lib'
-import { Project } from '../../../../../models/project/Project'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../contexts/Project'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { shortID } from '../../../../../lib/util'
-import { getDefaultDeviceName } from '../../../../../lib/TSRMappings'
+import { Project } from '../../../../../models/project/Project.js'
+import { IPCServerContext } from '../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
+import { shortID } from '../../../../../lib/util.js'
+import { getDefaultDeviceName } from '../../../../../lib/TSRMappings.js'
 import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { BridgeId } from '@shared/api'
 

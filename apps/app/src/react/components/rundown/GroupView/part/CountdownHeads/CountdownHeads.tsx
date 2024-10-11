@@ -1,8 +1,8 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../../../mobx/store'
-import { CountDownHead } from './CountdownHead'
-import { useMemoComputedObject } from '../../../../../mobx/lib'
+import { store } from '../../../../../mobx/store.js'
+import { CountDownHead } from './CountdownHead.js'
+import { useMemoComputedObject } from '../../../../../mobx/lib.js'
 
 type PropsType = {
 	groupId: string

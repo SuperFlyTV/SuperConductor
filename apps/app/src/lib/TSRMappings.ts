@@ -60,9 +60,9 @@ import {
 	TSRTimelineContent,
 	TSRTimelineObj,
 } from 'timeline-state-resolver-types'
-import { Project } from '../models/project/Project'
-import { listAvailableDeviceIDs } from './util'
-import { TimelineObj } from '../models/rundown/TimelineObj'
+import { Project } from '../models/project/Project.js'
+import { listAvailableDeviceIDs } from './util.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
 export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineContent>): boolean {

@@ -1,10 +1,10 @@
 import React, { useCallback, useContext } from 'react'
 import { MappingTriCaster, MappingTriCasterType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../../contexts/Project'
-import { SelectEnum } from '../../../../inputs/SelectEnum'
-import { TextInput } from '../../../../inputs/TextInput'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../../contexts/Project.js'
+import { SelectEnum } from '../../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../../inputs/TextInput.js'
 
 interface ITriCasterMappingSettingsProps {
 	mapping: MappingTriCaster

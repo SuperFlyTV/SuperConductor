@@ -1,8 +1,8 @@
 import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'
-import { GroupBase } from '../../../models/rundown/Group'
-import { ActionAny, ApplicationAction } from '../action'
+import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead.js'
+import { GroupBase } from '../../../models/rundown/Group.js'
+import { ActionAny, ApplicationAction } from '../action.js'
 import {
 	formatKeyDuration,
 	formatKeyTimeToEnd,
@@ -12,7 +12,7 @@ import {
 	TriggerArea,
 	triggersAreaToArea,
 	_getKeyDisplay,
-} from './lib'
+} from './lib.js'
 
 export function keyDisplayApplicationPlay(
 	firstAction: ApplicationAction,

@@ -1,6 +1,6 @@
 import React from 'react'
 import { MdStop } from 'react-icons/md'
-import { Btn } from '../Btn/Btn'
+import { Btn } from '../Btn/Btn.js'
 
 export interface PlayButtonData {
 	groupDisabled: boolean
