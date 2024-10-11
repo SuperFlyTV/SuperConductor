@@ -1,8 +1,8 @@
-import { IPCServerMethods } from '../ipc/IPCAPI'
+import { IPCServerMethods } from '../ipc/IPCAPI.js'
 
 import { LoggerLike } from '@shared/api'
-import { AppSettings } from '../models/AppData'
-import { StorageHandler } from './storageHandler'
+import { AppSettings } from '../models/AppData.js'
+import { StorageHandler } from './storageHandler.js'
 
 /** This class is used server-side, to handle requests from the client */
 export class IPCServer implements IPCServerMethods {

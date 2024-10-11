@@ -39,6 +39,7 @@
 		"release:preminor": "lerna version preminor --force-publish --no-push"
 	},
 	"resolutions": {
+		"app-builder-bin": "npm:@julusian/app-builder-bin@4.0.1",
 		"threadedclass": "^1.2.1",
 		"serialport": "https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
 	},
@@ -46,6 +47,8 @@
 		"@sofie-automation/eslint-plugin": "^0.1.1",
 		"@tsconfig/node20": "^20.1.4",
 		"@types/jest": "^29.5.13",
+		"@types/lodash": "^4.17.10",
+		"@types/lodash-es": "^4.17.12",
 		"@types/node": "^20.16.11",
 		"@types/shelljs": "^0",
 		"@typescript-eslint/eslint-plugin": "^8.8.1",

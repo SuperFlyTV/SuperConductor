@@ -1,11 +1,11 @@
 import path from 'path'
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen } from 'electron'
-import { addLoggerTransport, createLogger } from './logging'
-import { CURRENT_VERSION, TSRBridgeServer } from './electron/server'
-import { IPCClient } from './electron/IPCClient'
-import { StorageHandler } from './electron/storageHandler'
-import { IPCServer } from './electron/IPCServer'
-import { AppData, AppSettings, AppSystem } from './models/AppData'
+import { addLoggerTransport, createLogger } from './logging/index.js'
+import { CURRENT_VERSION, TSRBridgeServer } from './electron/server.js'
+import { IPCClient } from './electron/IPCClient.js'
+import { StorageHandler } from './electron/storageHandler.js'
+import { IPCServer } from './electron/IPCServer.js'
+import { AppData, AppSettings, AppSystem } from './models/AppData.js'
 import os from 'os'
 
 let isQuitting = false
@@ -72,7 +72,7 @@ const createWindow = async (): Promise<void> => {
 		},
 	})
 
-	await win.loadURL(!app.isPackaged ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/dist/index.html`)
+	await win.loadURL(!app.isPackaged ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/build/index.html`)
 
 	storage.on('appData', (appData: AppData) => {
 		ipcClient.settings(appData.settings)

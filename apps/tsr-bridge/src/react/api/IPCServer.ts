@@ -1,4 +1,4 @@
-import { IPCServerMethods } from '../../ipc/IPCAPI'
+import { IPCServerMethods } from '../../ipc/IPCAPI.js'
 
 type Promisify<T> = {
 	[K in keyof T]: T[K] extends (...arg: any[]) => any

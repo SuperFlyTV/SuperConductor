@@ -1,5 +1,5 @@
 {
 	"watch": ["src/main.ts", "src/electron/*", "src/lib/*", "src/ipc/*", "src/models/*"],
-	"exec": "yarn run -B -T tsc && electron ./dist/main.js",
+	"exec": "yarn run -B -T tsc && electron ./dist/main.mjs",
 	"ext": "ts"
 }

@@ -1,6 +1,6 @@
 import Transport from 'winston-transport'
 import { LogEntry } from 'winston'
-import { IPCClient } from '../electron/IPCClient'
+import { IPCClient } from '../electron/IPCClient.js'
 
 export default class IPCTransport extends Transport {
 	constructor(private ipcClient: IPCClient) {

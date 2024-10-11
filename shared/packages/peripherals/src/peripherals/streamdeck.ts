@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
@@ -27,7 +27,7 @@ export class PeripheralStreamDeck extends Peripheral {
 			listStreamDecks()
 				.then((streamDecks) => {
 					// If the list has not changed since the last poll, do nothing.
-					if (_.isEqual(streamDecks, lastSeenStreamDecks)) {
+					if (isEqual(streamDecks, lastSeenStreamDecks)) {
 						return
 					}
 
@@ -287,7 +287,7 @@ export class PeripheralStreamDeck extends Peripheral {
 		}
 
 		const oldKeyDisplay = this.displayKeyDisplay[identifier] as KeyDisplay | undefined
-		if (force || !_.isEqual(oldKeyDisplay, keyDisplay)) {
+		if (force || !isEqual(oldKeyDisplay, keyDisplay)) {
 			this.displayKeyDisplay[identifier] = keyDisplay
 
 			if (!this.connectedToParent) {

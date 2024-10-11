@@ -1,9 +1,9 @@
 import * as Winston from 'winston'
 // @ts-expect-error This is a hack to ensure that electron-builder includes this file.
-import consoleTransport from 'winston/dist/winston/transports/console'
-import { IPCClient } from '../electron/IPCClient'
-import IPCTransport from './ipc-transport'
-import { utilFormatter } from './util-formatter'
+import consoleTransport from 'winston/dist/winston/transports/console.js'
+import { IPCClient } from '../electron/IPCClient.js'
+import IPCTransport from './ipc-transport.js'
+import { utilFormatter } from './util-formatter.js'
 
 /**
  * https://github.com/winstonjs/winston#logging-levels

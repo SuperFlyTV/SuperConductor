@@ -1,8 +1,8 @@
 import React, { useContext, useEffect } from 'react'
 import Toggle from 'react-toggle'
 import { TextField } from '@mui/material'
-import { AppSettings, AppSystem } from '../../models/AppData'
-import { IPCServerContext } from '../contexts/IPCServer'
+import { AppSettings, AppSystem } from '../../models/AppData.js'
+import { IPCServerContext } from '../contexts/IPCServer.js'
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 import classNames from 'classnames'
 import { protectString } from '@shared/models'
@@ -54,6 +54,7 @@ export const Settings: React.FC<{
 					<div className="label">Autostart on system startup</div>
 					<div className="value">
 						<div className="sc-switch">
+							{/* @ts-expect-error lib doesn't export in an esm friendly way */}
 							<Toggle
 								defaultChecked={settings.autostart}
 								onChange={() =>
@@ -69,6 +70,7 @@ export const Settings: React.FC<{
 					<div className="label">Mode select: Client / Server</div>
 					<div className="value">
 						<div className="sc-switch">
+							{/* @ts-expect-error lib doesn't export in an esm friendly way */}
 							<Toggle
 								defaultChecked={settings.acceptConnections}
 								onChange={() =>

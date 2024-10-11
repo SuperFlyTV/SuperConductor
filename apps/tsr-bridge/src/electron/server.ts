@@ -1,10 +1,11 @@
 import { BridgeAPI, LoggerLike, BridgeId } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { AppSettings } from '../models/AppData'
-import { StorageHandler } from './storageHandler'
+import { AppSettings } from '../models/AppData.js'
+import { StorageHandler } from './storageHandler.js'
+import { createRequire } from 'module'
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+const require = createRequire(import.meta.url)
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 
 export class TSRBridgeServer {

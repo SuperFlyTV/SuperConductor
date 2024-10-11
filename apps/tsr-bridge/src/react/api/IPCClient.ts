@@ -1,6 +1,6 @@
 import { LogEntry } from 'winston'
-import { IPCClientMethods } from '../../ipc/IPCAPI'
-import { AppSettings, AppSystem } from '../../models/AppData'
+import { IPCClientMethods } from '../../ipc/IPCAPI.js'
+import { AppSettings, AppSystem } from '../../models/AppData.js'
 
 /** This class is used client-side, to handle messages from the server */
 export class IPCClient implements IPCClientMethods {

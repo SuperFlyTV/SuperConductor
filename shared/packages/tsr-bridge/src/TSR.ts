@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import {
 	AbortError,
 	Conductor,
@@ -118,7 +118,7 @@ export class TSR {
 
 			const existingDevice = this.devices.get(deviceId)
 
-			if (!existingDevice || !_.isEqual(existingDevice.options, newDeviceOptions)) {
+			if (!existingDevice || !isEqual(existingDevice.options, newDeviceOptions)) {
 				if (existingDevice) {
 					existingDevice.abortController.abort()
 					await this.conductor.removeDevice(unprotectString(deviceId))
