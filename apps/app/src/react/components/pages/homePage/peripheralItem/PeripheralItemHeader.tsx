@@ -6,7 +6,7 @@ import { ScListItemLabel } from '../scList/ScListItemLabel.js'
 import { StatusCircle } from '../scList/StatusCircle.js'
 import { KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { PeripheralStatus } from '../../../../../models/project/Peripheral.js'
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 import 'react-toggle/style.css'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon.js'
 

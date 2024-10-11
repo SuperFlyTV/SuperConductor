@@ -12,7 +12,7 @@ import { PeripheralsList } from '../peripheralsList/PeripheralsList.js'
 import './style.scss'
 import { NewDeviceDialog } from '../bridgesPage/NewDeviceDialog.js'
 
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 import 'react-toggle/style.css'
 import { TSRDeviceId, unprotectString } from '@shared/models'
 import { BridgeId } from '@shared/api'

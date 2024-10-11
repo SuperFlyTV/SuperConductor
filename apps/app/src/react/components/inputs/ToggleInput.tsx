@@ -1,6 +1,6 @@
 import classNames from 'classnames'
 import React from 'react'
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 
 export const ToggleInput: React.FC<{
 	currentValue: boolean | undefined

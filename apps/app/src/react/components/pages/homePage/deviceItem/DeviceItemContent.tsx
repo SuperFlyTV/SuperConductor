@@ -8,7 +8,7 @@ import { IPCServerContext } from '../../../../contexts/IPCServer.js'
 import { ProjectContext } from '../../../../contexts/Project.js'
 import { SelectEnum } from '../../../inputs/SelectEnum.js'
 import { BooleanInput } from '../../../inputs/BooleanInput.js'
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 import { TSRDeviceId, unprotectString } from '@shared/models'
 
 const MIN_PORT = 1

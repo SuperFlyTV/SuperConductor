@@ -4,7 +4,8 @@ dist
 # env vars
 /.env
 
-/.yarn
+/.yarn/*
+!.yarn/patches
 
 # misc
 .DS_Store

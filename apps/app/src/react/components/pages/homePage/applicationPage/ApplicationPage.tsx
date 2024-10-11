@@ -4,7 +4,7 @@ import { IPCServerContext } from '../../../../contexts/IPCServer.js'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout.js'
 import { store } from '../../../../mobx/store.js'
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 
 import './style.scss'
 import { computed } from 'mobx'

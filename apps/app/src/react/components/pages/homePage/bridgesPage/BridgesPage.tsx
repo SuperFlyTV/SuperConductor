@@ -13,7 +13,7 @@ import { BridgeItemContent } from '../bridgeItem/BridgeItemContent.js'
 import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout.js'
 import { NewBridgeDialog } from './NewBridgeDialog.js'
 
-import Toggle from 'react-toggle'
+import { Toggle } from 'react-toggle'
 import 'react-toggle/style.css'
 import { unprotectString } from '@shared/models'
 import { BridgeId } from '@shared/api'
