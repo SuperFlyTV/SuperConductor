@@ -5,7 +5,10 @@ import { ServiceTypes } from '../../ipc/IPCAPI.js'
 import { LogLevel } from '@shared/api'
 
 export class ReportingService extends EventEmitter {
-	constructor(private app: Application<ServiceTypes, any>, private everythingService: EverythingService) {
+	constructor(
+		private app: Application<ServiceTypes, any>,
+		private everythingService: EverythingService
+	) {
 		super()
 	}
 

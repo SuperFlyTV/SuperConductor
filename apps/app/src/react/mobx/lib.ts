@@ -219,10 +219,9 @@ export function assign<T extends { [key: string]: any }>(
 	org: T,
 	apply: T,
 	deep: true | false | undefined = undefined,
-	handleKeys?:
-		| {
-				[key in keyof T]?: () => true | false | void
-		  }
+	handleKeys?: {
+		[key in keyof T]?: () => true | false | void
+	}
 ): void {
 	const allKeys: string[] = uniq([...Object.keys(org), ...Object.keys(apply)])
 

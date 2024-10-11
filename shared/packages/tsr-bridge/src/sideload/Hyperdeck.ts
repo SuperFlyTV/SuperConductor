@@ -24,7 +24,11 @@ export class HyperdeckSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: HyperdeckMetadata = { metadataType: MetadataType.HYPERDECK }
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsHyperdeck,
+		private log: LoggerLike
+	) {
 		this.hyperdeck = new HyperdeckPkg.Hyperdeck()
 
 		this.hyperdeck.on('connected', () => {

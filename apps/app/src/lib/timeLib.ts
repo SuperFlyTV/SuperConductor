@@ -377,7 +377,7 @@ export interface RepeatingSettingsWeekly extends RepeatingSettingsBase {
 				boolean, // wednesday
 				boolean, // thursday
 				boolean, // friday
-				boolean // saturday
+				boolean, // saturday
 		  ]
 		| undefined
 	/** Stop repeating after this timestamp */

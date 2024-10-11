@@ -43,7 +43,10 @@ export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 	private connectedToParent = false
 	private shouldConnectToSpecific = new Map<PeripheralId, boolean>()
 	private autoConnectToAll = true
-	constructor(private log: LoggerLike, public readonly id: BridgeId) {
+	constructor(
+		private log: LoggerLike,
+		public readonly id: BridgeId
+	) {
 		super()
 	}
 	init(): void {

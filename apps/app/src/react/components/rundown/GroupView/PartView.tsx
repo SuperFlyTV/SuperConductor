@@ -248,7 +248,7 @@ export const PartView: React.FC<{
 		return {
 			orgResolvedTimeline,
 			orgMaxDuration: orgResolvedTimeline
-				? part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
+				? (part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true))
 				: 0,
 			resolverErrorMessage: errorMessage,
 		}

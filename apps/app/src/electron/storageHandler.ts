@@ -74,7 +74,10 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, private appVersion: string) {
+	constructor(
+		private log: LoggerLike,
+		private appVersion: string
+	) {
 		super()
 		this.appData = this.loadAppData()
 

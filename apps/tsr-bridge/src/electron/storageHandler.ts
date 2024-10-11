@@ -23,7 +23,10 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition) {
+	constructor(
+		private log: LoggerLike,
+		defaultWindowPosition: WindowPosition
+	) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition)
 	}

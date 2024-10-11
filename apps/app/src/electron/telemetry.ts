@@ -19,7 +19,10 @@ export class TelemetryHandler {
 
 	private storedErrors = new Set<string>()
 
-	constructor(private log: LoggerLike, private storageHandler: StorageHandler) {}
+	constructor(
+		private log: LoggerLike,
+		private storageHandler: StorageHandler
+	) {}
 
 	private get enabled(): boolean {
 		return (

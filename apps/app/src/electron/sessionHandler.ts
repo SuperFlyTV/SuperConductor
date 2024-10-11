@@ -100,7 +100,7 @@ export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 			bridgeId: bridgeId,
 			info: info,
 			status: {
-				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
+				lastConnected: connected ? Date.now() : (existing?.status.lastConnected ?? 0),
 				connected: connected,
 			},
 		}

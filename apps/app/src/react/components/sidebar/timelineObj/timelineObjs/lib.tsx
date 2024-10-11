@@ -144,8 +144,8 @@ export const EditWrapper: React.FC<{
 									return enable.duration === null
 										? null
 										: typeof enable.duration === 'number'
-										? enable.duration
-										: 0
+											? enable.duration
+											: 0
 								},
 								0
 							)}

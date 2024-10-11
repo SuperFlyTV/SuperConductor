@@ -35,10 +35,10 @@ export const DeviceItemHeader: React.FC<{
 				{deviceSettings.disable
 					? 'Disabled'
 					: props.device.ok
-					? 'Connected'
-					: props.device.message
-					? props.device.message
-					: 'Not Connected'}
+						? 'Connected'
+						: props.device.message
+							? props.device.message
+							: 'Not Connected'}
 			</div>
 		</div>
 	)

@@ -263,7 +263,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				const mainIndex = lastSelectedResourceId
 					? allListItems.findIndex(
 							(i) => i.type === 'resource' && i.key === unprotectString(lastSelectedResourceId)
-					  )
+						)
 					: 0
 				const thisIndex = allListItems.findIndex(
 					(i) => i.type === 'resource' && i.key === unprotectString(resource.id)

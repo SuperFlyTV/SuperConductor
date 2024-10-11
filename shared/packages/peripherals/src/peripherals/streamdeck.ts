@@ -130,7 +130,11 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private virtualPage = 0
 
-	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
+	constructor(
+		log: LoggerLike,
+		id: PeripheralId,
+		private path: string
+	) {
 		super(log, id)
 	}
 

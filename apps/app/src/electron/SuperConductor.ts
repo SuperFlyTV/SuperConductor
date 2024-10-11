@@ -73,7 +73,10 @@ export class SuperConductor {
 	private internalHttpApiPort = 5500
 	private disableInternalHttpApi = false
 
-	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
+	constructor(
+		private log: LoggerLike,
+		private renderLog: LoggerLike
+	) {
 		this.session = new SessionHandler()
 		this.clientEventBus = new ClientEventBus()
 

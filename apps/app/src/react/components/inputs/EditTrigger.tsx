@@ -207,8 +207,8 @@ export const TriggerPill: React.FC<{
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>
 							<span className="label">
 								{trigger.isGlobalKeyboard
-									? convertSorensenToElectron(fullIdentifier ?? labelPart) ??
-									  `UNSUPPORTED: ${fullIdentifier ?? labelPart}`
+									? (convertSorensenToElectron(fullIdentifier ?? labelPart) ??
+										`UNSUPPORTED: ${fullIdentifier ?? labelPart}`)
 									: labelPart}
 							</span>
 						</div>

@@ -27,7 +27,10 @@ export class TSRBridgeServer {
 		lastTry: number
 	} | null = null
 
-	constructor(private logger: LoggerLike, private storage: StorageHandler) {
+	constructor(
+		private logger: LoggerLike,
+		private storage: StorageHandler
+	) {
 		this.settings = this.storage.getAppData().settings
 
 		storage.on('appData', (appData) => {

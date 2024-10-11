@@ -70,7 +70,7 @@ export class TimelineTracker {
 						attentionLevel: AttentionLevel.IGNORE,
 					},
 					changedAnything: { changedAnything: false },
-			  }
+				}
 
 		if (!isEqual(currentState, this.currentState)) {
 			this.currentState = currentState

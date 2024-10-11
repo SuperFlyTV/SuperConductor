@@ -103,7 +103,7 @@ type ConvertToServerSide<T> = {
 	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
-		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>> | ReturnType<T[K]>
+			) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>> | ReturnType<T[K]>
 		: T[K]
 }
 

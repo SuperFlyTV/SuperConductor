@@ -124,7 +124,11 @@ export class PeripheralXkeys extends Peripheral {
 	private ignoreKeys = new Set<number>()
 	private xkeysPanel?: XKeys
 
-	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
+	constructor(
+		log: LoggerLike,
+		id: PeripheralId,
+		private path: string
+	) {
 		super(log, id)
 	}
 

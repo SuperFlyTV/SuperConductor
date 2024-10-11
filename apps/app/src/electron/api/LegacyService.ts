@@ -6,7 +6,11 @@ import { ServiceTypes } from '../../ipc/IPCAPI.js'
 
 // --- this is only for a rapid prototype, exposing ALL the IPC over WebSocket
 export class LegacyService extends EventEmitter {
-	constructor(private app: Application<ServiceTypes, any>, ipcServer: EverythingService, ipcClient: ClientEventBus) {
+	constructor(
+		private app: Application<ServiceTypes, any>,
+		ipcServer: EverythingService,
+		ipcClient: ClientEventBus
+	) {
 		super()
 		for (const methodName of Object.getOwnPropertyNames(EverythingService.prototype)) {
 			// Ignore "private" methods.

@@ -184,10 +184,10 @@ function sectionToTimelineObj(
 				section.pauseTime !== undefined
 					? null
 					: section.repeating
-					? section.duration
-					: section.endTime !== null
-					? section.endTime - section.startTime
-					: null,
+						? section.duration
+						: section.endTime !== null
+							? section.endTime - section.startTime
+							: null,
 			repeating: section.repeating ? section.duration : undefined,
 		},
 		layer: `${layer}_content`,
@@ -276,7 +276,7 @@ function partToTimelineObj(
 					const partTimelineObj = deepClone(o.obj)
 					modifyTimelineObjectForPlayout(partTimelineObj, playingPart, o, pauseTime)
 					return partTimelineObj
-			  }),
+				}),
 	}
 
 	return timelineObj

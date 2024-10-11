@@ -30,7 +30,11 @@ export class TriCasterSideload implements SideLoadDevice {
 	private triCaster: TriCasterConnection
 	private info?: TriCasterInfo
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsTriCaster, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsTriCaster,
+		private log: LoggerLike
+	) {
 		this.triCaster = new TriCasterConnection(deviceOptions.options?.host ?? '', deviceOptions.options?.port ?? 80)
 
 		this.triCaster.on('connected', (info) => {

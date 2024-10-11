@@ -22,7 +22,10 @@ export class AnalogHandler extends EventEmitter<AnalogHandlerEvents> {
 
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 
-	constructor(private storage: StorageHandler, private bridgeHandler: BridgeHandler) {
+	constructor(
+		private storage: StorageHandler,
+		private bridgeHandler: BridgeHandler
+	) {
 		super()
 	}
 

@@ -26,7 +26,10 @@ export class BaseBridge {
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
-	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: LoggerLike) {
+	constructor(
+		private send: (msg: BridgeAPI.FromBridge.Any) => void,
+		private log: LoggerLike
+	) {
 		this.tsr = new TSR(log)
 		this.sendAndCatch = (msg: BridgeAPI.FromBridge.Any) => {
 			try {
