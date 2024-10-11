@@ -1,4 +1,5 @@
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
+// eslint-disable-next-line n/no-missing-import
 import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection.js'
 import {
 	ResourceAny,

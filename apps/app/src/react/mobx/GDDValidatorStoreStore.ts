@@ -25,6 +25,7 @@ export class GDDValidatorStore {
 		try {
 			const v = await setupSchemaValidator({
 				fetch: async (url: string) => {
+					// eslint-disable-next-line n/no-unsupported-features/node-builtins
 					const response = await fetch(url)
 					return await response.json()
 				},

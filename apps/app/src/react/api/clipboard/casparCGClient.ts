@@ -34,7 +34,7 @@ export async function handleCasparCGClient(context: ClipBoardContext, str: strin
 	}[] = []
 	const parts: { part: Part; resources: ResourceAny[] }[] = []
 
-	for (const itemXML of xml.querySelectorAll(':root>item')) {
+	for (const itemXML of xml.querySelectorAll(':root>item') as any) {
 		const item = parseItem(itemXML)
 
 		// Is Group?
@@ -63,7 +63,7 @@ export async function handleCasparCGClient(context: ClipBoardContext, str: strin
 function parseItem(xml: Element): ItemAny {
 	const o: ItemAny = {} as any
 
-	for (const child of xml.children) {
+	for (const child of xml.children as any) {
 		const key = child.tagName
 		if (key === 'items') {
 			const items = []

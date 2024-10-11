@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography } from '@mui/material'
-import useId from '@mui/material/utils/useId'
+import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography, unstable_useId } from '@mui/material'
 import { HiLink, HiOutlineX } from 'react-icons/hi'
 import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib.js'
 import { store } from '../../../mobx/store.js'
@@ -37,7 +36,7 @@ export const AnalogInputOverridePicker: React.FC<{
 	path: string
 	onSave: OnSave
 }> = observer(function AnalogInputOverridePicker({ objs, path, onSave }) {
-	const elementId = useId()
+	const elementId = unstable_useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
 	const analogInputOptions = useMemoComputedObject(() => {

@@ -1,5 +1,6 @@
 import * as Winston from 'winston'
 // @ts-expect-error This is a hack to ensure that electron-builder includes this file.
+// eslint-disable-next-line n/no-missing-import
 import consoleTransport from 'winston/dist/winston/transports/console.js'
 import { IPCClient } from '../electron/IPCClient.js'
 import IPCTransport from './ipc-transport.js'

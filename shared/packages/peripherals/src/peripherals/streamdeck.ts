@@ -6,6 +6,7 @@ import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elg
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize.js'
 import PQueue from 'p-queue'
+// eslint-disable-next-line n/no-missing-import
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device.js'
 import { protectString } from '@shared/models'
 

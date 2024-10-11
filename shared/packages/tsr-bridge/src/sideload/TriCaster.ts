@@ -2,6 +2,7 @@ import { DeviceOptionsTriCaster } from 'timeline-state-resolver'
 import {
 	TriCasterConnection,
 	TriCasterInfo,
+	// eslint-disable-next-line n/no-missing-import
 } from 'timeline-state-resolver/dist/integrations/tricaster/triCasterConnection.js'
 import {
 	ResourceAny,
