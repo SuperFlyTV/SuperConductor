@@ -122,6 +122,8 @@
 	"build": {
 		"productName": "SuperConductor",
 		"appId": "tv.superfly.superconductor",
+		"npmRebuild": false,
+		"nodeGypRebuild": false,
 		"mac": {
 			"category": "public.app-category.utilities",
 			"hardenedRuntime": true,
