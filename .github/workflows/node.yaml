@@ -48,6 +48,7 @@ jobs:
       - name: Run license check
         run: |
           yarn license-validate
+
   macos-build:
     name: Install and build on macOS
     runs-on: macos-latest
@@ -75,6 +76,28 @@ jobs:
       - name: Build
         run: |
           yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+      - name: Collect binaries
+        run: |
+          mkdir macos-dist
+          mv apps/tsr-bridge/dist/TSR-Bridge* macos-dist/
+          mv apps/app/dist/SuperConductor* macos-dist/
+          mv apps/app/dist/latest-mac.yml macos-dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dist
+          path: macos-dist
+          retention-days: 1
+
   windows-build:
     name: Install and build on Windows
     runs-on: windows-latest
@@ -102,3 +125,19 @@ jobs:
       - name: Build
         run: |
           yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary
+      - name: Collect binaries
+        run: |
+          mkdir win-dist
+          mv apps/tsr-bridge/dist/TSR-Bridge* win-dist/
+          mv apps/app/dist/SuperConductor* win-dist/
+          mv apps/app/dist/latest.yml win-dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-dist
+          path: win-dist
+          retention-days: 1
