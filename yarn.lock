@@ -11078,13 +11078,13 @@ asn1@evs-broadcast/node-asn1:
   linkType: hard
 
 "node-gyp-build@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "node-gyp-build@npm:4.3.0"
+  version: 4.8.2
+  resolution: "node-gyp-build@npm:4.8.2"
   bin:
     node-gyp-build: bin.js
     node-gyp-build-optional: optional.js
     node-gyp-build-test: build-test.js
-  checksum: 10c0/817917b256e5193c1b2f832a8e41e82cfb9915e44dfc01a9b2745ddda203344c82e27c177c1e4da39083a08d6e30859a0ce6672801ac4f0cd1df94a8c43f22b5
+  checksum: 10c0/d816b43974d31d6257b6e87d843f2626c72389a285208394bc57a7766b210454d2642860a5e5b5c333d8ecabaeabad3b31b94f58cf8ca1aabdef0c320d02baaa
   languageName: node
   linkType: hard
 
