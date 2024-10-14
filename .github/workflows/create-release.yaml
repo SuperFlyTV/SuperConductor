@@ -158,6 +158,7 @@ jobs:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
       - name: Remove TSR-Bridge latest-mac.yml
         uses: flcdrg/remove-release-asset-action@v1
@@ -202,5 +203,6 @@ jobs:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
           USE_HARD_LINKS: false

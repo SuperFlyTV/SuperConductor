@@ -83,6 +83,7 @@ jobs:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
       - name: Collect binaries
         run: |
