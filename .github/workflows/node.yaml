@@ -78,7 +78,7 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary
+          yarn build:binary -- --publish=never
         env:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
@@ -128,7 +128,7 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary
+          yarn build:binary -- --publish=never
       - name: Collect binaries
         run: |
           mkdir win-dist
@@ -177,13 +177,12 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary
+          yarn build:binary -- --publish=never
       - name: Collect binaries
         run: |
           mkdir linux-dist
           mv apps/tsr-bridge/dist/TSR-Bridge* linux-dist/
           mv apps/app/dist/SuperConductor* linux-dist/
-          mv apps/app/dist/latest-linux.yml linux-dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

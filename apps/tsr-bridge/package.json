@@ -60,7 +60,6 @@
 	"build": {
 		"productName": "TSR-Bridge",
 		"appId": "tv.superfly.tsr-bridge",
-		"publish": false,
 		"npmRebuild": false,
 		"nodeGypRebuild": false,
 		"mac": {
