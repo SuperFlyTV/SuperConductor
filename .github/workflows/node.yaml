@@ -128,7 +128,7 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary -- --publish=never
+          yarn build:binary -- -- --publish=never
       - name: Collect binaries
         run: |
           mkdir win-dist
