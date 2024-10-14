@@ -108,3 +108,6 @@ export function ensureArray<T>(v: T | T[]): T[] {
 export function capitalizeFirstLetter(input: string): string {
 	return input.charAt(0).toUpperCase() + input.slice(1)
 }
+export async function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}

@@ -1,7 +1,7 @@
 import { isEqual } from 'lodash-es'
 import sharp from 'sharp'
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
-import { stringToRGB, RGBToString, stringifyError, assertNever } from '@shared/lib'
+import { stringToRGB, RGBToString, stringifyError, assertNever, sleep } from '@shared/lib'
 import { openStreamDeck, listStreamDecks, StreamDeck, DeviceModelId } from '@elgato-stream-deck/node'
 import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize.js'
@@ -9,10 +9,11 @@ import PQueue from 'p-queue'
 // eslint-disable-next-line n/no-missing-import
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device.js'
 import { protectString } from '@shared/models'
+import { asyncInterval } from './lib/asyncInterval.js'
 
 export class PeripheralStreamDeck extends Peripheral {
 	private static Watching = false
-	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
+	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback, log: LoggerLike): WatchReturnType {
 		if (PeripheralStreamDeck.Watching) {
 			throw new Error('Already watching')
 		}
@@ -22,58 +23,58 @@ export class PeripheralStreamDeck extends Peripheral {
 		let lastSeenStreamDecks: StreamDeckDeviceInfo[] = []
 
 		// Check for new or removed Stream Decks every second.
-		const interval = setInterval(() => {
-			// List the connected Stream Decks.
-			// TODO - what if the previous interval tick is still running?
-			listStreamDecks()
-				.then((streamDecks) => {
-					// If the list has not changed since the last poll, do nothing.
-					if (isEqual(streamDecks, lastSeenStreamDecks)) {
-						return
+		const removedChecker = asyncInterval(
+			async () => {
+				// List the connected Stream Decks.
+				const streamDecks = await listStreamDecks()
+				// If the list has not changed since the last poll, do nothing.
+				if (isEqual(streamDecks, lastSeenStreamDecks)) {
+					return
+				}
+
+				// Figure out which Stream Decks have been unplugged since the last check.
+				const disconnectedStreamDeckIds = new Set(
+					lastSeenStreamDecks.map(PeripheralStreamDeck.GetStreamDeckId).filter((id) => {
+						return !streamDecks.some((sd) => PeripheralStreamDeck.GetStreamDeckId(sd) === id)
+					})
+				)
+
+				// Figure out which Stream Decks are being seen now that weren't seen in the last completed poll.
+				for (const streamDeck of streamDecks) {
+					const id = PeripheralStreamDeck.GetStreamDeckId(streamDeck)
+					const alreadySeen = lastSeenStreamDecks.some((sd) => {
+						return PeripheralStreamDeck.GetStreamDeckId(sd) === id
+					})
+
+					if (alreadySeen) {
+						continue
 					}
 
-					// Figure out which Stream Decks have been unplugged since the last check.
-					const disconnectedStreamDeckIds = new Set(
-						lastSeenStreamDecks.map(PeripheralStreamDeck.GetStreamDeckId).filter((id) => {
-							return !streamDecks.some((sd) => PeripheralStreamDeck.GetStreamDeckId(sd) === id)
-						})
-					)
+					// Tell the watcher about the discovered Stream Deck.
+					onKnownPeripheral(id, {
+						name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
+						type: PeripheralType.STREAMDECK,
+						devicePath: streamDeck.path,
+					})
+				}
 
-					// Figure out which Stream Decks are being seen now that weren't seen in the last completed poll.
-					for (const streamDeck of streamDecks) {
-						const id = PeripheralStreamDeck.GetStreamDeckId(streamDeck)
-						const alreadySeen = lastSeenStreamDecks.some((sd) => {
-							return PeripheralStreamDeck.GetStreamDeckId(sd) === id
-						})
+				// Tell the watcher about disconnected Stream Decks.
+				for (const id of disconnectedStreamDeckIds) {
+					onKnownPeripheral(id, null)
+				}
 
-						if (alreadySeen) {
-							continue
-						}
-
-						// Tell the watcher about the discovered Stream Deck.
-						onKnownPeripheral(id, {
-							name: PeripheralStreamDeck.GetStreamDeckName(streamDeck),
-							type: PeripheralType.STREAMDECK,
-							devicePath: streamDeck.path,
-						})
-					}
-
-					// Tell the watcher about disconnected Stream Decks.
-					for (const id of disconnectedStreamDeckIds) {
-						onKnownPeripheral(id, null)
-					}
-
-					// Update for the next iteration.
-					lastSeenStreamDecks = streamDecks
-				})
-				.catch(() => {
-					// TODO - log error
-				})
-		}, 1000)
+				// Update for the next iteration.
+				lastSeenStreamDecks = streamDecks
+			},
+			1000,
+			(e) => {
+				log.error(e)
+			}
+		)
 
 		return {
 			stop: () => {
-				clearInterval(interval)
+				removedChecker.stop()
 				PeripheralStreamDeck.Watching = false
 			},
 		}
@@ -130,11 +131,7 @@ export class PeripheralStreamDeck extends Peripheral {
 
 	private virtualPage = 0
 
-	constructor(
-		log: LoggerLike,
-		id: PeripheralId,
-		private path: string
-	) {
+	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
 		super(log, id)
 	}
 
@@ -994,6 +991,3 @@ type Key = {
 	type: KeyType
 }
 type KeyType = 'button' | 'encoder' | 'encoderPress'
-async function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms))
-}

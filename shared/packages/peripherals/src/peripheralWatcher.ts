@@ -1,4 +1,4 @@
-import { KnownPeripheral, PeripheralId } from '@shared/api'
+import { KnownPeripheral, LoggerLike, PeripheralId } from '@shared/api'
 import EventEmitter from 'events'
 import { PeripheralMIDI } from './peripherals/midi.js'
 import { PeripheralStreamDeck } from './peripherals/streamdeck.js'
@@ -15,14 +15,14 @@ export class PeripheralWatcher extends EventEmitter<PeripheralWatcherEvents> {
 	private knownPeripherals = new Map<PeripheralId, KnownPeripheral>()
 	private subwatchers: { stop: () => void }[] = []
 
-	constructor() {
+	constructor(private log: LoggerLike) {
 		super()
 
 		// Make javascript happy:
 		const boundUpdateDiscoveredPeripheral = this.updateDiscoveredPeripheral.bind(this)
 
 		// Set up subwatchers:
-		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral, this.log))
 		this.subwatchers.push(PeripheralXkeys.Watch(boundUpdateDiscoveredPeripheral))
 		this.subwatchers.push(PeripheralMIDI.Watch(boundUpdateDiscoveredPeripheral))
 	}

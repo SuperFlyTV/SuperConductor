@@ -50,7 +50,7 @@ export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 		super()
 	}
 	init(): void {
-		this.watcher = new PeripheralWatcher()
+		this.watcher = new PeripheralWatcher(this.log)
 		this.watcher.on('knownPeripheralsChanged', (peripherals) => {
 			this.emit('knownPeripherals', peripherals)
 		})
