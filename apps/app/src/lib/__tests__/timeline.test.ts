@@ -1,5 +1,6 @@
 import { TimelineObjectInstance } from 'superfly-timeline'
-import { areInstancesOverlapping } from '../timeline'
+import { areInstancesOverlapping } from '../timeline.js'
+
 test('areInstancesOverlapping', () => {
 	function i(start: number, end: number | null, id: string = ''): TimelineObjectInstance {
 		return {

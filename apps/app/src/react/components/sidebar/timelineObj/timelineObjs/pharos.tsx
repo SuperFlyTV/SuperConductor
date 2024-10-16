@@ -1,6 +1,6 @@
 import React from 'react'
 import { TSRTimelineObj, TimelineContentPharosAny } from 'timeline-state-resolver-types'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib.js'
 
 export const EditTimelineObjPharosAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentPharosAny>[]

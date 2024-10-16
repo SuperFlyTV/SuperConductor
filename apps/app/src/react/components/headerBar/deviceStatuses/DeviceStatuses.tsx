@@ -1,17 +1,20 @@
 import React, { useCallback, useContext } from 'react'
-import { store } from '../../../mobx/store'
+import { store } from '../../../mobx/store.js'
 import { observer } from 'mobx-react-lite'
-import { ConnectionStatus } from './ConnectionStatus'
+import { ConnectionStatus } from './ConnectionStatus.js'
 import { Button, Popover } from '@mui/material'
-import { PeripheralSettings } from './PeripheralSettings/PeripheralSettings'
-import { getDeviceName, sortOn } from '../../../../lib/util'
-import { useMemoComputedObject } from '../../../mobx/lib'
-import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge'
+import { PeripheralSettings } from './PeripheralSettings/PeripheralSettings.js'
+import { getDeviceName, sortOn } from '../../../../lib/util.js'
+import { useMemoComputedObject } from '../../../mobx/lib.js'
+import { Bridge, BridgeDevice, BridgeStatus } from '../../../../models/project/Bridge.js'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
-import { ProjectContext } from '../../../contexts/Project'
+import { ProjectContext } from '../../../contexts/Project.js'
 import { BridgeId, KnownPeripheral, PeripheralId, PeripheralSettingsBase } from '@shared/api'
 import { MdAdd } from 'react-icons/md'
-import { DisabledPeripheralInfo, DisabledPeripheralsSettings } from './DisabledPeripherals/DisabledPeripheralsSettings'
+import {
+	DisabledPeripheralInfo,
+	DisabledPeripheralsSettings,
+} from './DisabledPeripherals/DisabledPeripheralsSettings.js'
 import { TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { getPeripheralId } from '@shared/lib'
 

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
-
 /** Runtime-wise, this is a string.
  * In compile-time, this is used to make sure that the "right" string is provided, typings-wise,
  * in order to provide stringer typings.
@@ -49,12 +47,12 @@ export type UnprotectedStringProperties<T extends object | undefined> = {
 	[P in keyof T]: T[P] extends ProtectedString<any>
 		? string
 		: T[P] extends ProtectedString<any> | undefined
-		? string | undefined
-		: T[P] extends object
-		? UnprotectedStringProperties<T[P]>
-		: T[P] extends object | undefined
-		? UnprotectedStringProperties<T[P]>
-		: T[P]
+			? string | undefined
+			: T[P] extends object
+				? UnprotectedStringProperties<T[P]>
+				: T[P] extends object | undefined
+					? UnprotectedStringProperties<T[P]>
+					: T[P]
 }
 export function unprotectObject<T extends object>(obj: T): UnprotectedStringProperties<T>
 export function unprotectObject<T extends object>(obj: T | undefined): UnprotectedStringProperties<T> | undefined

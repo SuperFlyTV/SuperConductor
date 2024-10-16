@@ -1,15 +1,15 @@
 import { makeAutoObservable } from 'mobx'
-import { BridgeDevice, BridgeStatus } from '../../models/project/Bridge'
-import { AppData } from '../../models/App/AppData'
-import { ApiClient } from '../api/ApiClient'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { PeripheralStatus } from '../../models/project/Peripheral'
-import { ClientSideLogger } from '../api/logger'
-import { setConstants } from '../constants'
+import { BridgeDevice, BridgeStatus } from '../../models/project/Bridge.js'
+import { AppData } from '../../models/App/AppData.js'
+import { ApiClient } from '../api/ApiClient.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { PeripheralStatus } from '../../models/project/Peripheral.js'
+import { ClientSideLogger } from '../api/logger.js'
+import { setConstants } from '../constants.js'
 import { BridgeId } from '@shared/api'
 import { TSRDeviceId, protectString } from '@shared/models'
 import { BridgePeripheralId } from '@shared/lib'
-import { SerializableLedgers, SpecialLedgers } from '../../models/project/Project'
+import { SerializableLedgers, SpecialLedgers } from '../../models/project/Project.js'
 
 export class AppStore {
 	bridgeStatuses = new Map<BridgeId, BridgeStatus>()

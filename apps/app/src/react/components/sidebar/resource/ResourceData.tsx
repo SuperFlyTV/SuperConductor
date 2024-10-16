@@ -3,7 +3,7 @@ import React from 'react'
 import moment from 'moment'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, bytesToSize } from '@shared/lib'
-import { DataRow } from '../DataRow/DataRow'
+import { DataRow } from '../DataRow/DataRow.js'
 
 const TIMESTAMP_FORMAT = 'DD.MM.YYYY HH:mm'
 

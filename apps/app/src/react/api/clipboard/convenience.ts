@@ -2,12 +2,12 @@ import { getResourceIdFromResource, literal } from '@shared/lib'
 import { protectString } from '@shared/models'
 import { CasparCGTemplate, ResourceAny, ResourceType } from '@shared/models'
 import { DeviceType } from 'timeline-state-resolver-types'
-import { getDefaultPart } from '../../../lib/defaults'
-import { sortMappings } from '../../../lib/TSRMappings'
-import { shortID } from '../../../lib/util'
-import { Part } from '../../../models/rundown/Part'
-import { ClipBoardContext, insertParts } from './lib'
-import { transformURL } from './transformURL'
+import { getDefaultPart } from '../../../lib/defaults.js'
+import { sortMappings } from '../../../lib/TSRMappings.js'
+import { shortID } from '../../../lib/util.js'
+import { Part } from '../../../models/rundown/Part.js'
+import { ClipBoardContext, insertParts } from './lib.js'
+import { transformURL } from './transformURL.js'
 
 /**
  * Handle various pasted data that might be useful for the user to be able to past

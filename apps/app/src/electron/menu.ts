@@ -80,7 +80,7 @@ export function generateMenu(
 							label: 'Speech',
 							submenu: [{ role: 'startSpeaking' as const }, { role: 'stopSpeaking' as const }],
 						},
-				  ]
+					]
 				: [{ role: 'delete' as const }, { type: 'separator' as const }, { role: 'selectAll' as const }]),
 		],
 	})
@@ -111,7 +111,7 @@ export function generateMenu(
 						{ role: 'front' as const },
 						{ type: 'separator' as const },
 						{ role: 'window' as const },
-				  ]
+					]
 				: [{ role: 'close' as const }]),
 		],
 	})

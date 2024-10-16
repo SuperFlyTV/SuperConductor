@@ -1,9 +1,9 @@
 import { assertNever } from '@shared/lib'
 import { GDDTypeIntegerSelect, GDDTypeStringSelect, GDDTypeNumberSelect } from 'graphics-data-definition'
 import React from 'react'
-import { SelectEnum } from '../../../../inputs/SelectEnum'
-import { getEditPropertyMeta, PropertyProps } from '../lib'
-import { EditProperty } from '../util'
+import { SelectEnum } from '../../../../inputs/SelectEnum.js'
+import { getEditPropertyMeta, PropertyProps } from '../lib.js'
+import { EditProperty } from '../util.js'
 
 export const gddTypeSelect: React.FC<
 	PropertyProps<GDDTypeIntegerSelect | GDDTypeStringSelect | GDDTypeNumberSelect>

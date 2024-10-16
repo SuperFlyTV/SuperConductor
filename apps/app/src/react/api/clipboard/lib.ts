@@ -1,10 +1,10 @@
 import { ResourceAny } from '@shared/models'
-import { MoveTarget } from '../../../lib/util'
-import { Project } from '../../../models/project/Project'
-import { Group } from '../../../models/rundown/Group'
-import { Part } from '../../../models/rundown/Part'
-import { store } from '../../mobx/store'
-import { ApiClient } from '../ApiClient'
+import { MoveTarget } from '../../../lib/util.js'
+import { Project } from '../../../models/project/Project.js'
+import { Group } from '../../../models/rundown/Group.js'
+import { Part } from '../../../models/rundown/Part.js'
+import { store } from '../../mobx/store.js'
+import { ApiClient } from '../ApiClient.js'
 
 export interface ClipBoardContext {
 	project?: Project

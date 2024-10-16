@@ -1,4 +1,4 @@
-import { Part } from '../rundown/Part'
+import { Part } from '../rundown/Part.js'
 
 /**
  * Defines how the parts will be played.

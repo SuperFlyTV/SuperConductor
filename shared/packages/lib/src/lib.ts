@@ -86,10 +86,12 @@ export function stringifyErrorInner(error: unknown): {
 				// Try to stringify the object:
 				message = JSON.stringify(error)
 			} catch (e) {
+				// eslint-disable-next-line @typescript-eslint/no-base-to-string
 				message = `${error} (stringifyError: ${e})`
 			}
 		}
 	} else {
+		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		message = `${error}`
 	}
 	message = `${message}`
@@ -105,4 +107,7 @@ export function ensureArray<T>(v: T | T[]): T[] {
 /** Capitalizes the first letter of a string */
 export function capitalizeFirstLetter(input: string): string {
 	return input.charAt(0).toUpperCase() + input.slice(1)
+}
+export async function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }

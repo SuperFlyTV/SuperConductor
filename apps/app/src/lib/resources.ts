@@ -56,7 +56,7 @@ import {
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
-import { shortID } from './util'
+import { shortID } from './util.js'
 import { GDDSchema, getDefaultDataFromSchema } from 'graphics-data-definition'
 
 export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineObj<TSRTimelineContent> {

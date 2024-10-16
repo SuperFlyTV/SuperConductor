@@ -1,16 +1,21 @@
-import { Rundown } from '../../models/rundown/Rundown'
-import { GroupBase } from '../../models/rundown/Group'
-import { PartBase } from '../../models/rundown/Part'
-import { AppData } from '../../models/App/AppData'
-import { ActiveTrigger, activeTriggersToString, RundownTrigger, ApplicationTrigger } from '../../models/rundown/Trigger'
-import { Project } from '../../models/project/Project'
-import { PeripheralArea, PeripheralStatus } from '../../models/project/Peripheral'
-import { GroupWithShallowParts, PartWithRef } from '../util'
-import { CurrentSelectionAny } from '../GUI'
+import { Rundown } from '../../models/rundown/Rundown.js'
+import { GroupBase } from '../../models/rundown/Group.js'
+import { PartBase } from '../../models/rundown/Part.js'
+import { AppData } from '../../models/App/AppData.js'
+import {
+	ActiveTrigger,
+	activeTriggersToString,
+	RundownTrigger,
+	ApplicationTrigger,
+} from '../../models/rundown/Trigger.js'
+import { Project } from '../../models/project/Project.js'
+import { PeripheralArea, PeripheralStatus } from '../../models/project/Peripheral.js'
+import { GroupWithShallowParts, PartWithRef } from '../util.js'
+import { CurrentSelectionAny } from '../GUI.js'
 import { BridgePeripheralId, assertNever, getPeripheralId } from '@shared/lib'
 import { protectString } from '@shared/models'
 import { BridgeId, PeripheralId } from '@shared/api'
-import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge'
+import { Bridge, BridgePeripheralSettings } from '../../models/project/Bridge.js'
 
 export type ActionAny =
 	| ({

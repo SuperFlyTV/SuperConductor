@@ -1,7 +1,7 @@
 import { GDDTypeColorRRGGBBAA } from 'graphics-data-definition'
 import React, { useCallback, useEffect, useState } from 'react'
-import { PropertyProps } from '../lib'
-import { EditProperty, WithLabel } from '../util'
+import { PropertyProps } from '../lib.js'
+import { EditProperty, WithLabel } from '../util.js'
 
 export const gddTypeColorRRGGBBAA: React.FC<PropertyProps<GDDTypeColorRRGGBBAA>> = (props) => {
 	return <RRGGBBAA {...props} />

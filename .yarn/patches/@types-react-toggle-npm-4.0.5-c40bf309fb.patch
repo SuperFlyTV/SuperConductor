@@ -1,0 +1,12 @@
+diff --git a/index.d.ts b/index.d.ts
+index 60e09f4b847b1da73a644443353303e698620a53..5c0acbbb269b622842a29b3972b42656d49ff22a 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -11,4 +11,6 @@ export interface ToggleProps extends InputHTMLAttributes<HTMLInputElement> {
+     icons?: boolean | ToggleIcons | undefined;
+ }
+ 
+-export default class Toggle extends Component<ToggleProps> {}
++export class Toggle extends Component<ToggleProps> {}
++
++export default Toggle

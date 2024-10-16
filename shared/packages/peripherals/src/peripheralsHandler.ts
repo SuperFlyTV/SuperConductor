@@ -11,28 +11,25 @@ import {
 	PeripheralId,
 	BridgeId,
 } from '@shared/api'
-import { Peripheral } from './peripherals/peripheral'
-import { PeripheralWatcher } from './peripheralWatcher'
-import { PeripheralStreamDeck } from './peripherals/streamdeck'
-import { PeripheralXkeys } from './peripherals/xkeys'
-import { PeripheralMIDI } from './peripherals/midi'
+import { Peripheral } from './peripherals/peripheral.js'
+import { PeripheralWatcher } from './peripheralWatcher.js'
+import { PeripheralStreamDeck } from './peripherals/streamdeck.js'
+import { PeripheralXkeys } from './peripherals/xkeys.js'
+import { PeripheralMIDI } from './peripherals/midi.js'
 import { assertNever, deepClone } from '@shared/lib'
 
 export interface PeripheralsHandlerEvents {
-	connected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
-	disconnected: (peripheralId: PeripheralId, peripheralInfo: PeripheralInfo) => void
+	connected: [peripheralId: PeripheralId, peripheralInfo: PeripheralInfo]
+	disconnected: [peripheralId: PeripheralId, peripheralInfo: PeripheralInfo]
 
-	keyDown: (peripheralId: PeripheralId, identifier: string) => void
-	keyUp: (peripheralId: PeripheralId, identifier: string) => void
-	analog: (peripheralId: PeripheralId, identifier: string, value: AnalogValue) => void
+	keyDown: [peripheralId: PeripheralId, identifier: string]
+	keyUp: [peripheralId: PeripheralId, identifier: string]
+	analog: [peripheralId: PeripheralId, identifier: string, value: AnalogValue]
 
-	knownPeripherals: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
+	knownPeripherals: [peripherals: Map<PeripheralId, KnownPeripheral>]
 }
-export interface PeripheralsHandler {
-	on<U extends keyof PeripheralsHandlerEvents>(event: U, listener: PeripheralsHandlerEvents[U]): this
-	emit<U extends keyof PeripheralsHandlerEvents>(event: U, ...args: Parameters<PeripheralsHandlerEvents[U]>): boolean
-}
-export class PeripheralsHandler extends EventEmitter {
+
+export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 	private peripherals = new Map<PeripheralId, Peripheral>()
 	private peripheralStatuses = new Map<
 		PeripheralId,
@@ -46,11 +43,14 @@ export class PeripheralsHandler extends EventEmitter {
 	private connectedToParent = false
 	private shouldConnectToSpecific = new Map<PeripheralId, boolean>()
 	private autoConnectToAll = true
-	constructor(private log: LoggerLike, public readonly id: BridgeId) {
+	constructor(
+		private log: LoggerLike,
+		public readonly id: BridgeId
+	) {
 		super()
 	}
 	init(): void {
-		this.watcher = new PeripheralWatcher()
+		this.watcher = new PeripheralWatcher(this.log)
 		this.watcher.on('knownPeripheralsChanged', (peripherals) => {
 			this.emit('knownPeripherals', peripherals)
 		})

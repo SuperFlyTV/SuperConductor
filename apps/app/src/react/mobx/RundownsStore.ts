@@ -1,10 +1,10 @@
 import { makeAutoObservable, IObservableArray, runInAction } from 'mobx'
-import { getDefaultGroup } from '../../lib/defaults'
-import { Rundown, RundownGUI } from '../../models/rundown/Rundown'
-import { Group, GroupGUI } from '../../models/rundown/Group'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { ApiClient } from '../api/ApiClient'
-import { store } from './store'
+import { getDefaultGroup } from '../../lib/defaults.js'
+import { Rundown, RundownGUI } from '../../models/rundown/Rundown.js'
+import { Group, GroupGUI } from '../../models/rundown/Group.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { ApiClient } from '../api/ApiClient.js'
+import { store } from './store.js'
 import {
 	allowMovingPartIntoGroup,
 	findPartInRundown,
@@ -14,13 +14,13 @@ import {
 	PartWithRef,
 	RundownWithShallowGroups,
 	shortID,
-} from '../../lib/util'
-import { Part, PartGUI } from '../../models/rundown/Part'
+} from '../../lib/util.js'
+import { Part, PartGUI } from '../../models/rundown/Part.js'
 import { deepClone, literal, omit } from '@shared/lib'
-import { ClientSideLogger } from '../api/logger'
-import { ActionAny, RundownActionLight } from '../../lib/triggers/action'
-import _ from 'lodash'
-import { TimelineObj } from '../../models/rundown/TimelineObj'
+import { ClientSideLogger } from '../api/logger.js'
+import { ActionAny, RundownActionLight } from '../../lib/triggers/action.js'
+import { isEqual } from 'lodash-es'
+import { TimelineObj } from '../../models/rundown/TimelineObj.js'
 import { assertNever } from '@shared/lib'
 
 interface IRundownsItems {
@@ -211,7 +211,7 @@ export class RundownsStore {
 				...omit(rundown, 'groups'),
 				groupIds: rundown.groups.map((g) => g.id),
 			})
-			if (!_.isEqual(uiRundown, existingRundown)) {
+			if (!isEqual(uiRundown, existingRundown)) {
 				this._uiRundowns.set(rundownId, uiRundown)
 				this.onUIDataChanged()
 			}
@@ -268,7 +268,7 @@ export class RundownsStore {
 			...omit(group, 'parts'),
 			partIds: group.parts.map((p) => p.id),
 		})
-		if (!_.isEqual(uiGroup, existingGroup)) {
+		if (!isEqual(uiGroup, existingGroup)) {
 			this._uiGroups.set(groupId, uiGroup)
 			this.onUIDataChanged()
 		}
@@ -293,7 +293,7 @@ export class RundownsStore {
 			...omit(part, 'timeline'),
 			timelineIds: part.timeline.map((o) => o.obj.id),
 		})
-		if (!_.isEqual(uiPart, existingPart)) {
+		if (!isEqual(uiPart, existingPart)) {
 			this._uiParts.set(partId, uiPart)
 			this.onUIDataChanged()
 		}
@@ -301,7 +301,7 @@ export class RundownsStore {
 		for (const obj of part.timeline) {
 			const objId = obj.obj.id
 			cleanup.usedTimelineIds.add(objId)
-			if (!_.isEqual(obj, this._uiTimeline.get(objId))) {
+			if (!isEqual(obj, this._uiTimeline.get(objId))) {
 				this._uiTimeline.set(objId, obj)
 				this.onUIDataChanged()
 			}
@@ -518,7 +518,7 @@ export class RundownsStore {
 
 	moveGroupsInCurrentRundown(groupIds: string[], target: MoveTarget): void {
 		const currentMove = { groupIds, target }
-		if (_.isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
+		if (isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
 		this._currentMove = currentMove
 
 		const currentRundownId = this.currentRundownId
@@ -585,7 +585,7 @@ export class RundownsStore {
 
 	movePartsInCurrentRundown(partIds: string[], toGroupId: string | null, target: MoveTarget): void {
 		const currentMove = { partIds, toGroupId, target }
-		if (_.isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
+		if (isEqual(this._currentMove, currentMove)) return // Optimization: done run this multiple times for the same input data
 		this._currentMove = currentMove
 
 		const currentRundownId = this.currentRundownId
@@ -760,13 +760,13 @@ export class RundownsStore {
 	}
 
 	public updateProjectButtonActions(actions: Map<string, ActionAny[]>): void {
-		if (!_.isEqual(actions, this._projectButtonActions)) {
+		if (!isEqual(actions, this._projectButtonActions)) {
 			this._projectButtonActions = actions
 			this.updateAllButtonActions()
 		}
 	}
 	public updateRundownButtonActions(actions: Map<string, ActionAny[]>): void {
-		if (!_.isEqual(actions, this._rundownButtonActions)) {
+		if (!isEqual(actions, this._rundownButtonActions)) {
 			this._rundownButtonActions = actions
 			this.updateAllButtonActions()
 		}
@@ -795,9 +795,8 @@ export class RundownsStore {
 				if (action.type === 'rundown') {
 					if (action.part.id === partId) {
 						result.push(
-							_.omit(
+							omit(
 								action,
-
 								'group' // omit the group here, to avoid subscribers being reactive to any change in the whole group
 							)
 						)

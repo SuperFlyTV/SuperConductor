@@ -1,7 +1,7 @@
 import React from 'react'
 import { MdPlayArrow, MdReplay } from 'react-icons/md'
-import { Btn } from '../Btn/Btn'
-import { PlayButtonData } from '../StopBtn/StopBtn'
+import { Btn } from '../Btn/Btn.js'
+import { PlayButtonData } from '../StopBtn/StopBtn.js'
 
 import './style.scss'
 export const PlayBtn: React.FC<{

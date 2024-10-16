@@ -1,13 +1,13 @@
 import React, { useContext, useMemo } from 'react'
 import { useDrop } from 'react-dnd'
-import { EMPTY_LAYER_ID_PREFIX } from '../../../../lib/util'
-import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { DropZone } from '../../util/DropZone'
+import { EMPTY_LAYER_ID_PREFIX } from '../../../../lib/util.js'
+import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes.js'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
+import { DropZone } from '../../util/DropZone.js'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
-import { useMemoComputedValue } from '../../../mobx/lib'
+import { store } from '../../../mobx/store.js'
+import { useMemoComputedValue } from '../../../mobx/lib.js'
 
 let EMPTY_LAYER_ID_COUNTER = 0
 

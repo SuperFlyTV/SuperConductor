@@ -1,6 +1,6 @@
 import { BridgeId, KnownPeripheral, PeripheralSettingsAny } from '@shared/api'
 import { DeviceOptionsAny } from 'timeline-state-resolver-types'
-import { PeripheralArea } from './Peripheral'
+import { PeripheralArea } from './Peripheral.js'
 import { protectString } from '@shared/models'
 
 export interface Bridge {

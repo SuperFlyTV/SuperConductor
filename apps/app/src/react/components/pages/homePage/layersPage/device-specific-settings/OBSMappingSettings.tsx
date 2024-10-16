@@ -7,10 +7,10 @@ import {
 	MappingOBSSourceSettings,
 	MappingOBSType,
 } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../../contexts/Project'
-import { SelectEnum } from '../../../../inputs/SelectEnum'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../../contexts/Project.js'
+import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 
 interface IOBSMappingSettingsProps {
 	mapping: MappingOBS

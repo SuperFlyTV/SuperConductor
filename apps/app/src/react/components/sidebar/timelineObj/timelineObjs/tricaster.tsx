@@ -13,13 +13,13 @@ import {
 	TriCasterMixEffectInMixMode,
 	TriCasterMixOutputSource,
 } from 'timeline-state-resolver-types'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib'
-import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
-import { TextInput } from '../../../inputs/TextInput'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib.js'
+import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit.js'
+import { TextInput } from '../../../inputs/TextInput.js'
 import { assertNever } from '@shared/lib'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { FloatInput } from '../../../inputs/FloatInput'
-import { BooleanInput } from '../../../inputs/BooleanInput'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { FloatInput } from '../../../inputs/FloatInput.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
 
 const TRANSITION_EFFECTS = [
 	{ value: 'cut', label: 'Cut' },

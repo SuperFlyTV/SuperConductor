@@ -1,5 +1,5 @@
 import React from 'react'
-import { IntInput } from '../../../../inputs/IntInput'
+import { IntInput } from '../../../../inputs/IntInput.js'
 import { MappingCasparCG } from 'timeline-state-resolver-types'
 
 export const CasparCGMappingSettings: React.FC<{

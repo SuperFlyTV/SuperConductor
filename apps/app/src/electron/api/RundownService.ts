@@ -1,12 +1,12 @@
-import { EverythingService } from '../EverythingService'
+import { EverythingService } from '../EverythingService.js'
 import { Application, Params } from '@feathersjs/feathers'
-import { Rundown } from '../../models/rundown/Rundown'
+import { Rundown } from '../../models/rundown/Rundown.js'
 import EventEmitter from 'node:events'
 import { GeneralError, NotFound } from '@feathersjs/errors'
-import { RundownsEvents, ServiceTypes } from '../../ipc/IPCAPI'
-import { PartialDeep } from 'type-fest/source/partial-deep'
-import { TimelineObj } from '../../models/rundown/TimelineObj'
-import { ClientEventBus } from '../ClientEventBus'
+import { RundownsEvents, ServiceTypes } from '../../ipc/IPCAPI.js'
+import { PartialDeep } from 'type-fest'
+import { TimelineObj } from '../../models/rundown/TimelineObj.js'
+import { ClientEventBus } from '../ClientEventBus.js'
 
 export const RUNDOWN_CHANNEL_PREFIX = 'rundowns/'
 interface TimelineObjectUpdate {

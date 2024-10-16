@@ -1,5 +1,5 @@
 import { assertNever } from '@shared/lib'
-import _ from 'lodash'
+import { cloneDeep } from 'lodash-es'
 
 export function parseDuration(str: string, isWriting?: boolean): number | null | undefined {
 	if (str === '') return null
@@ -316,7 +316,7 @@ export function dateTimeAdvance(d: DateTimeObject, a: { date: number } | { month
 		)
 		return dateTimeObject(dNext)
 	} else if ('month' in a) {
-		const next = _.clone(d)
+		const next = cloneDeep(d)
 
 		next.month += a.month
 		while (next.month >= 12) {
@@ -377,7 +377,7 @@ export interface RepeatingSettingsWeekly extends RepeatingSettingsBase {
 				boolean, // wednesday
 				boolean, // thursday
 				boolean, // friday
-				boolean // saturday
+				boolean, // saturday
 		  ]
 		| undefined
 	/** Stop repeating after this timestamp */
@@ -421,7 +421,7 @@ export function repeatTime(
 		let days = Math.max(0, Math.floor((filterStart - start) / 24 / 3600 / 1000))
 		days = days - (days % interval)
 
-		let prevTime = _.clone(startTime)
+		let prevTime = cloneDeep(startTime)
 		const startTimes: number[] = []
 		let validUntil: number | undefined = undefined
 		while (startTimes.length < options.maxCount) {
@@ -465,7 +465,7 @@ export function repeatTime(
 		updateDateTimeObject(startMonday)
 
 		let days = 0
-		let prevTime = _.clone(startTime)
+		let prevTime = cloneDeep(startTime)
 		const startTimes: number[] = []
 		let validUntil: number | undefined = undefined
 		while (startTimes.length < options.maxCount) {
@@ -498,7 +498,7 @@ export function repeatTime(
 		}
 		return { startTimes, validUntil }
 	} else if (settings.type === RepeatingType.MONTHLY) {
-		let prevTime = _.clone(startTime)
+		let prevTime = cloneDeep(startTime)
 		const interval = settings.interval ?? 1
 
 		let months = 0

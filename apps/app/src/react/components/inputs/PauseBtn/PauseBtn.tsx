@@ -1,8 +1,8 @@
 import React from 'react'
 import { IoPlaySkipBackSharp } from 'react-icons/io5'
 import { MdPause, MdPlayArrow } from 'react-icons/md'
-import { Btn } from '../Btn/Btn'
-import { PlayButtonData } from '../StopBtn/StopBtn'
+import { Btn } from '../Btn/Btn.js'
+import { PlayButtonData } from '../StopBtn/StopBtn.js'
 import './style.scss'
 
 export const PauseBtn: React.FC<{

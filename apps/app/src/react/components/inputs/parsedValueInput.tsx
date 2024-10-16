@@ -1,6 +1,5 @@
-import { FormControl, InputLabel, OutlinedInput, Tooltip } from '@mui/material'
-import useId from '@mui/material/utils/useId'
-import _ from 'lodash'
+import { FormControl, InputLabel, OutlinedInput, Tooltip, unstable_useId } from '@mui/material'
+import { isEqual } from 'lodash-es'
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react'
 
 export function ParsedValueInput<V>(
@@ -30,7 +29,7 @@ export function ParsedValueInput<V>(
 	/** Display a tooltip when typing / focused */
 	focusTooltip?: string
 ): JSX.Element {
-	const inputId = useId()
+	const inputId = unstable_useId()
 	const [value, setValue] = useState<string>('')
 	const [hasFocus, setHasFocus] = useState<boolean>(false)
 	const selectorPosition = useRef<number | null>(null)
@@ -98,7 +97,7 @@ export function ParsedValueInput<V>(
 		return () => {
 			if (input && input.value && hasUnsavedChanges.current) {
 				const value = parse(input.value, false)
-				if (value !== undefined && !_.isEqual(value, currentValue)) {
+				if (value !== undefined && !isEqual(value, currentValue)) {
 					onChange(value)
 				}
 			}

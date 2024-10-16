@@ -1,11 +1,11 @@
 import React, { useContext } from 'react'
 import { Mapping } from 'timeline-state-resolver-types'
-import { ScListItemLabel } from '../scList/ScListItemLabel'
-import { describeMappingConfiguration } from '../../../../../lib/TSRMappings'
-import { DeviceIcon } from '../deviceIcon/DeviceIcon'
+import { ScListItemLabel } from '../scList/ScListItemLabel.js'
+import { describeMappingConfiguration } from '../../../../../lib/TSRMappings.js'
+import { DeviceIcon } from '../deviceIcon/DeviceIcon.js'
 import './style.scss'
-import { ProjectContext } from '../../../../contexts/Project'
-import { getDeviceName, getMappingName } from '../../../../../lib/util'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { getDeviceName, getMappingName } from '../../../../../lib/util.js'
 import { TSRDeviceId } from '@shared/models'
 
 export const LayerItemHeader: React.FC<{

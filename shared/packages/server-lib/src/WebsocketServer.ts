@@ -1,4 +1,4 @@
-import WebSocket from 'ws'
+import { WebSocketServer as LibWebSocketServer, WebSocket } from 'ws'
 import EventEmitter from 'events'
 import { LoggerLike } from '@shared/api'
 
@@ -18,7 +18,7 @@ Notes:
 */
 
 export class WebsocketServer extends EventEmitter {
-	private wss: WebSocket.Server
+	private wss: LibWebSocketServer
 
 	private connections: WebsocketConnection[] = []
 	private isClosed = false
@@ -29,7 +29,7 @@ export class WebsocketServer extends EventEmitter {
 		private onConnection: (connection: WebsocketConnection) => void
 	) {
 		super()
-		this.wss = new WebSocket.Server({ port })
+		this.wss = new LibWebSocketServer({ port })
 
 		this.wss.on('close', () => {
 			// The websocket server is closed.
@@ -175,6 +175,7 @@ export class WebsocketConnection extends EventEmitter {
 			this.lastPingReceived = Date.now()
 		})
 		ws.on('message', (data) => {
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string
 			this._onMessage(data.toString())
 		})
 	}

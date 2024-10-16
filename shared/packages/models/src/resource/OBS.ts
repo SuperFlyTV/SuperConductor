@@ -1,4 +1,4 @@
-import { ResourceBase, ResourceType } from './resource'
+import { ResourceBase, ResourceType } from './resource.js'
 
 export type OBSAny = OBSScene | OBSTransition | OBSRecording | OBSStreaming | OBSSourceSettings | OBSMute | OBSRender
 

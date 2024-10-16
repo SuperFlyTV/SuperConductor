@@ -1,6 +1,6 @@
 import React from 'react'
 import { BsKeyboardFill, BsKeyboard } from 'react-icons/bs'
-import { ToggleBtn } from '../ToggleBtn/ToggleBtn'
+import { ToggleBtn } from '../ToggleBtn/ToggleBtn.js'
 import './style.scss'
 
 export const TriggerBtn: React.FC<{

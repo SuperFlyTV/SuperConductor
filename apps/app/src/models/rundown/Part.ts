@@ -1,5 +1,5 @@
-import { TimelineObj } from './TimelineObj'
-import { RundownTrigger } from './Trigger'
+import { TimelineObj } from './TimelineObj.js'
+import { RundownTrigger } from './Trigger.js'
 
 export interface PartBase {
 	id: string

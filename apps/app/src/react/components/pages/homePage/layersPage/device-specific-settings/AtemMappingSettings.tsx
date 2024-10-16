@@ -1,10 +1,10 @@
 import React, { useCallback, useContext } from 'react'
 import { MappingAtem, MappingAtemType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../../contexts/Project'
-import { IntInput } from '../../../../inputs/IntInput'
-import { SelectEnum } from '../../../../inputs/SelectEnum'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../../contexts/Project.js'
+import { IntInput } from '../../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 
 interface IAtemMappingSettingsProps {
 	mapping: MappingAtem

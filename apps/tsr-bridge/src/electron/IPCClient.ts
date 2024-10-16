@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { LogEntry } from 'winston'
-import { IPCClientMethods } from '../ipc/IPCAPI'
-import { AppSettings, AppSystem } from '../models/AppData'
+import { IPCClientMethods } from '../ipc/IPCAPI.js'
+import { AppSettings, AppSystem } from '../models/AppData.js'
 
 /** This class is used server-side, to send messages to the client */
 export class IPCClient implements IPCClientMethods {

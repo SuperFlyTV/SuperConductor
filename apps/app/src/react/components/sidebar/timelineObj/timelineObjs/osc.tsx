@@ -8,14 +8,14 @@ import {
 	TSRTimelineObj,
 	TimelineContentOSCAny,
 } from 'timeline-state-resolver-types'
-import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
-import { DurationInput } from '../../../inputs/DurationInput'
-import { FloatInput } from '../../../inputs/FloatInput'
-import { IntInput } from '../../../inputs/IntInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { TextInput } from '../../../inputs/TextInput'
-import { TrashBtn } from '../../../inputs/TrashBtn'
-import { EditWrapper, OnSave, OnSaveType } from './lib'
+import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit.js'
+import { DurationInput } from '../../../inputs/DurationInput.js'
+import { FloatInput } from '../../../inputs/FloatInput.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { TrashBtn } from '../../../inputs/TrashBtn.js'
+import { EditWrapper, OnSave, OnSaveType } from './lib.js'
 
 enum OSCEasingType {
 	Linear = 'Linear',

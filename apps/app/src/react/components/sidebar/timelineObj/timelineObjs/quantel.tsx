@@ -1,6 +1,6 @@
 import React from 'react'
 import { TSRTimelineObj, TimelineContentQuantelAny } from 'timeline-state-resolver-types'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib.js'
 
 export const EditTimelineObjQuantelAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentQuantelAny>[]

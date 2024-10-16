@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-require-imports */
 // This script is executed after the version is updated, before the new tag is set.
 const fs = require('fs').promises
 const { exec } = require('child_process')

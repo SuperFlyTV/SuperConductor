@@ -10,11 +10,12 @@
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
+	"type": "module",
 	"engines": {
-		"node": "^16.16.0 || 18"
+		"node": "20"
 	},
-	"main": "dist/index",
-	"types": "dist/index",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"files": [
 		"dist"
 	],
@@ -23,38 +24,25 @@
 		"url": "git+https://github.com/SuperFlyTV/SuperConductor.git"
 	},
 	"scripts": {
-		"build": "rimraf dist && yarn build:main",
-		"build:main": "tsc -p tsconfig.json",
-		"precommit": "lint-staged",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"build": "run -B -T rimraf dist && yarn build:main",
+		"build:main": "run -B -T tsc -p tsconfig.json"
 	},
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
-	},
-	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
 	},
 	"dependencies": {
 		"@shared/api": "^0.12.0-alpha.5",
 		"@shared/lib": "^0.12.0-alpha.5",
 		"@shared/models": "^0.12.0-alpha.5",
 		"@shared/peripherals": "^0.12.0-alpha.5",
-		"casparcg-connection": "6.1.0-nightly-feat-return-data-more-20231006-080324-f41399cf.0",
-		"cheerio": "^1.0.0-rc.12",
-		"got": "^11.8.5",
-		"lodash": "^4.17.21",
+		"cheerio": "^1.0.0",
+		"got": "^14.4.3",
+		"lodash-es": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
-		"timeline-state-resolver": "^8.0.0",
-		"winston": "^3.7.2"
+		"timeline-state-resolver": "^8.1.4",
+		"winston": "^3.15.0"
 	},
 	"devDependencies": {
-		"@types/lodash": "^4.14.178",
-		"@types/recursive-readdir": "^2.2.1"
+		"@types/recursive-readdir": "^2.2.4"
 	}
 }

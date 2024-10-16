@@ -1,22 +1,18 @@
-import { StorageHandler } from './storageHandler'
+import { StorageHandler } from './storageHandler.js'
 import EventEmitter from 'events'
-import { ActiveAnalog } from '../models/rundown/Analog'
-import { AnalogInput } from '../models/project/AnalogInput'
-import { AnalogInputSetting } from '../models/project/Project'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
+import { AnalogInput } from '../models/project/AnalogInput.js'
+import { AnalogInputSetting } from '../models/project/Project.js'
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
-import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay'
-import _ from 'lodash'
-import { BridgeHandler } from './bridgeHandler'
+import { getKeyDisplayForAnalog } from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { isEqual } from 'lodash-es'
+import { BridgeHandler } from './bridgeHandler.js'
 
 export interface AnalogHandlerEvents {
-	error: (error: Error) => void
-}
-export interface AnalogHandler {
-	on<U extends keyof AnalogHandlerEvents>(event: U, listener: AnalogHandlerEvents[U]): this
-	emit<U extends keyof AnalogHandlerEvents>(event: U, ...args: Parameters<AnalogHandlerEvents[U]>): boolean
+	error: [error: Error]
 }
 
-export class AnalogHandler extends EventEmitter {
+export class AnalogHandler extends EventEmitter<AnalogHandlerEvents> {
 	/** Contains a collection of the currently active analog values on all Panels */
 	private activeAnalogs: { [fullIdentifier: string]: ActiveAnalog } = {}
 
@@ -26,7 +22,10 @@ export class AnalogHandler extends EventEmitter {
 
 	private sentkeyDisplays: { [fullidentifier: string]: KeyDisplay | KeyDisplayTimeline } = {}
 
-	constructor(private storage: StorageHandler, private bridgeHandler: BridgeHandler) {
+	constructor(
+		private storage: StorageHandler,
+		private bridgeHandler: BridgeHandler
+	) {
 		super()
 	}
 
@@ -117,7 +116,7 @@ export class AnalogHandler extends EventEmitter {
 			lookup?.analogInputSetting
 		)
 
-		if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+		if (!isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 			this.sentkeyDisplays[fullIdentifier] = keyDisplay
 			this.setKeyDisplay(activeAnalog, keyDisplay)
 		}

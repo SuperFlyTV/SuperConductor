@@ -2,16 +2,20 @@ import { Button, ButtonGroup, ToggleButton } from '@mui/material'
 
 import React, { useMemo } from 'react'
 
-import { ApplicationTrigger, RundownTrigger } from '../../../models/rundown/Trigger'
+import { ApplicationTrigger, RundownTrigger } from '../../../models/rundown/Trigger.js'
 import { MdPlayArrow, MdStop } from 'react-icons/md'
 import { BsTrash } from 'react-icons/bs'
 import { IoMdGlobe } from 'react-icons/io'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../mobx/store'
-import { useMemoComputedObject } from '../../mobx/lib'
+import { store } from '../../mobx/store.js'
+import { useMemoComputedObject } from '../../mobx/lib.js'
 import { assertNever } from '@shared/lib'
-import { convertSorensenToElectron, identifierIsKeyboard, triggerIsKeyboard } from '../../../lib/triggers/identifiers'
+import {
+	convertSorensenToElectron,
+	identifierIsKeyboard,
+	triggerIsKeyboard,
+} from '../../../lib/triggers/identifiers.js'
 
 const ACTION_ICON_SIZE = 12
 
@@ -203,8 +207,8 @@ export const TriggerPill: React.FC<{
 						<div className={classNames('label-part', { keyboard: isKeyboard })}>
 							<span className="label">
 								{trigger.isGlobalKeyboard
-									? convertSorensenToElectron(fullIdentifier ?? labelPart) ??
-									  `UNSUPPORTED: ${fullIdentifier ?? labelPart}`
+									? (convertSorensenToElectron(fullIdentifier ?? labelPart) ??
+										`UNSUPPORTED: ${fullIdentifier ?? labelPart}`)
 									: labelPart}
 							</span>
 						</div>

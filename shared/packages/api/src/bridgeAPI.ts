@@ -1,8 +1,8 @@
 import { MetadataAny, ResourceAny, TSRDeviceId, SerializedProtectedMap } from '@shared/models'
-import { AnalogValue, KnownPeripheral, PeripheralId, PeripheralSettingsAny } from './peripherals'
+import { AnalogValue, KnownPeripheral, PeripheralId, PeripheralSettingsAny } from './peripherals.js'
 import { DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals'
-import { BridgeId } from './bridge'
+import { KeyDisplay, KeyDisplayTimeline, PeripheralInfo } from './peripherals.js'
+import { BridgeId } from './bridge.js'
 
 export namespace BridgeAPI {
 	export namespace FromBridge {

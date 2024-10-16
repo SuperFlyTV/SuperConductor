@@ -1,10 +1,10 @@
-import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group'
-import { Part, PartBase } from '../models/rundown/Part'
+import { Group, GroupBase, GroupGUI, PlayingPart } from '../models/rundown/Group.js'
+import { Part, PartBase } from '../models/rundown/Part.js'
 import { ResolvedTimeline, ResolvedTimelineObject } from 'superfly-timeline'
-import { Rundown, RundownBase } from '../models/rundown/Rundown'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData'
-import { Project } from '../models/project/Project'
+import { Rundown, RundownBase } from '../models/rundown/Rundown.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { getGroupPlayData, GroupPlayData, GroupPlayDataPlayhead } from './playout/groupPlayData.js'
+import { Project } from '../models/project/Project.js'
 import {
 	DeviceOptionsAny,
 	DeviceType,
@@ -23,8 +23,8 @@ import {
 import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
 import shortUUID from 'short-uuid'
-import _ from 'lodash'
-import { describeTimelineObject } from './TimelineObj'
+import { has as _has } from 'lodash-es'
+import { describeTimelineObject } from './TimelineObj.js'
 import { deepmergeIntoCustom, getKeys } from 'deepmerge-ts'
 
 export const findGroup = (rundown: Rundown, groupId: string): Group | undefined => {
@@ -273,6 +273,7 @@ export function hashObj(obj: unknown): string {
 		}
 		return hash(strs.join('|'))
 	} else {
+		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		return obj + ''
 	}
 }
@@ -859,7 +860,7 @@ export function copyTimelineObj(obj: TimelineObj): TimelineObj {
 }
 /** Checks if key is a direct property of object. */
 export function has<T extends { [key: string]: any }>(obj: T, key: keyof T): boolean {
-	return _.has(obj, key)
+	return _has(obj, key)
 }
 export function getPartLabel(part: Part): string {
 	if (part.name) return part.name

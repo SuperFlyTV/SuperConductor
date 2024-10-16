@@ -1,41 +1,37 @@
 import { BridgeId, KeyDisplay, KeyDisplayTimeline, LoggerLike, PeripheralId } from '@shared/api'
 import { BridgePeripheralId, assertNever, literal } from '@shared/lib'
-import _ from 'lodash'
-import { getGroupPlayData } from '../lib/playout/groupPlayData'
-import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { BridgeHandler } from './bridgeHandler'
-import { EverythingService } from './EverythingService'
-import { StorageHandler } from './storageHandler'
+import { isEqual } from 'lodash-es'
+import { getGroupPlayData } from '../lib/playout/groupPlayData.js'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
+import { BridgeHandler } from './bridgeHandler.js'
+import { EverythingService } from './EverythingService.js'
+import { StorageHandler } from './storageHandler.js'
 import {
 	ActionAny,
 	getAllApplicationActions,
 	getPartsWithRefInRundowns,
 	getAllActionsInParts,
 	ApplicationAction,
-} from '../lib/triggers/action'
+} from '../lib/triggers/action.js'
 import {
 	DefiningArea,
 	getKeyDisplayForButtonActions,
 	prepareTriggersAreaMap,
-} from '../lib/triggers/keyDisplay/keyDisplay'
-import { SessionHandler } from './sessionHandler'
-import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral'
+} from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { SessionHandler } from './sessionHandler.js'
+import { PeripheralArea, PeripheralStatus } from '../models/project/Peripheral.js'
 import { globalShortcut } from 'electron'
 import EventEmitter from 'events'
-import { convertSorensenToElectron } from '../lib/triggers/identifiers'
+import { convertSorensenToElectron } from '../lib/triggers/identifiers.js'
 import { protectString, unprotectString } from '@shared/models'
-import { BridgePeripheralSettings } from '../models/project/Bridge'
+import { BridgePeripheralSettings } from '../models/project/Bridge.js'
 
 export interface TriggersHandlerEvents {
-	error: (error: Error) => void
-	failedGlobalTriggers: (identifiers: Readonly<Set<string>>) => void
-}
-export interface TriggersHandler {
-	on<U extends keyof TriggersHandlerEvents>(event: U, listener: TriggersHandlerEvents[U]): this
-	emit<U extends keyof TriggersHandlerEvents>(event: U, ...args: Parameters<TriggersHandlerEvents[U]>): boolean
+	error: [error: Error]
+	failedGlobalTriggers: [identifiers: Readonly<Set<string>>]
 }
 
-export class TriggersHandler extends EventEmitter {
+export class TriggersHandler extends EventEmitter<TriggersHandlerEvents> {
 	private prevTriggersMap: { [fullItentifier: string]: ActiveTrigger } = {}
 
 	/** Contains a collection of the currently active (pressed) keys on the keyboard */
@@ -154,7 +150,7 @@ export class TriggersHandler extends EventEmitter {
 					used?.actions
 				)
 
-				if (!_.isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
+				if (!isEqual(this.sentkeyDisplays[fullIdentifier], keyDisplay)) {
 					this.sentkeyDisplays[fullIdentifier] = keyDisplay
 					this.setKeyDisplay(trigger, keyDisplay)
 				}
@@ -298,7 +294,7 @@ export class TriggersHandler extends EventEmitter {
 		const actionsGroupedByIdentifier = this.getGlobalActionsGroupedByIdentifier()
 
 		// Don't thrash the registration of hotkeys if nothing has changed.
-		if (_.isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
+		if (isEqual(actionsGroupedByIdentifier, this.lastGlobalKeyboardActions)) {
 			return
 		}
 

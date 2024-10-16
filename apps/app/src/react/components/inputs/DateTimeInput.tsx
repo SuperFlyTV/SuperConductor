@@ -1,6 +1,6 @@
 import React from 'react'
-import { DateTimeObject, formatDateTime, parseDateTime } from '../../../lib/timeLib'
-import { ParsedValueInput } from './parsedValueInput'
+import { DateTimeObject, formatDateTime, parseDateTime } from '../../../lib/timeLib.js'
+import { ParsedValueInput } from './parsedValueInput.js'
 
 export const DateTimeInput: React.FC<
 	| {

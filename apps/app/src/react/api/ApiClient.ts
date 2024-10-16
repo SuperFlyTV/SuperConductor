@@ -1,11 +1,11 @@
-import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI'
-import { replaceUndefined } from '../../lib/util'
+import { ClientMethods, IPCServerMethods, ServiceName, ServiceTypes } from '../../ipc/IPCAPI.js'
+import { replaceUndefined } from '../../lib/util.js'
 
 import { HookContext, feathers } from '@feathersjs/feathers'
 import socketio, { SocketService } from '@feathersjs/socketio-client'
-import io from 'socket.io-client'
-import { Rundown } from '../../models/rundown/Rundown'
-import { Project } from '../../models/project/Project'
+import { io } from 'socket.io-client'
+import { Rundown } from '../../models/rundown/Rundown.js'
+import { Project } from '../../models/project/Project.js'
 
 type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]
@@ -18,19 +18,23 @@ const socketUri =
 
 const socket = io(socketUri)
 export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
-const socketClient = socketio(socket)
+const socketClient = socketio.default(socket as any) // TODO - fix this type error
 app.configure(socketClient)
 
-type GroupArg<T extends keyof ServiceTypes[ServiceName.GROUPS]> = Parameters<ServiceTypes[ServiceName.GROUPS][T]>[0]
-type PartArg<T extends keyof ServiceTypes[ServiceName.PARTS]> = Parameters<ServiceTypes[ServiceName.PARTS][T]>[0]
+type GroupArg<T extends keyof ServiceTypes[ServiceName.GROUPS]> = Parameters<
+	Required<ServiceTypes[ServiceName.GROUPS]>[T]
+>[0]
+type PartArg<T extends keyof ServiceTypes[ServiceName.PARTS]> = Parameters<
+	Required<ServiceTypes[ServiceName.PARTS]>[T]
+>[0]
 type RundownArg<T extends keyof ServiceTypes[ServiceName.RUNDOWNS]> = Parameters<
-	ServiceTypes[ServiceName.RUNDOWNS][T]
+	Required<ServiceTypes[ServiceName.RUNDOWNS]>[T]
 >[0]
 type ProjectArg<T extends keyof ServiceTypes[ServiceName.PROJECTS]> = Parameters<
-	ServiceTypes[ServiceName.PROJECTS][T]
+	Required<ServiceTypes[ServiceName.PROJECTS]>[T]
 >[0]
 type ReportingArg<T extends keyof ServiceTypes[ServiceName.REPORTING]> = Parameters<
-	ServiceTypes[ServiceName.REPORTING][T]
+	Required<ServiceTypes[ServiceName.REPORTING]>[T]
 >[0]
 
 // TODO this type assertion below should be unnecessary
@@ -96,7 +100,7 @@ export class ApiClient {
 		return new Promise((resolve, reject) => {
 			socket.emit(methodname, ServiceName.LEGACY, [...replaceUndefined(args)], {}, (error: any, data: any) => {
 				if (error) {
-					reject(error)
+					reject(error as Error)
 				} else {
 					console.log('Called ', methodname, 'received', data)
 					resolve(data)

@@ -1,5 +1,5 @@
 import { Mappings } from 'timeline-state-resolver-types'
-import { Bridge } from './Bridge'
+import { Bridge } from './Bridge.js'
 
 export interface ProjectBase {
 	id: string

@@ -2,11 +2,11 @@ import React, { useCallback, useMemo } from 'react'
 import classNames from 'classnames'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { useDrag } from 'react-dnd'
-import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, ResourceDragItem } from '../../../api/DragItemTypes.js'
 import { assertNever, bytesToSize, compact, describeResource } from '@shared/lib'
-import { formatDurationLabeled } from '../../../../lib/timeLib'
-import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail'
-import { store } from '../../../mobx/store'
+import { formatDurationLabeled } from '../../../../lib/timeLib.js'
+import { ResourceLibraryItemThumbnail } from './ResourceLibraryItemThumbnail.js'
+import { store } from '../../../mobx/store.js'
 
 type IProps = {
 	resource: ResourceAny

@@ -1,7 +1,7 @@
 import { KeyDisplay, KeyDisplayTimeline } from '@shared/api'
 import { TimelineTracker } from '@shared/lib'
 import { useContext, useEffect, useRef, useState } from 'react'
-import { LoggerContext } from '../../../../contexts/Logger'
+import { LoggerContext } from '../../../../contexts/Logger.js'
 
 export const TimelineDisplay: React.FC<{
 	keyDisplayTimeline: KeyDisplay | KeyDisplayTimeline

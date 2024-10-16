@@ -1,8 +1,8 @@
 import React from 'react'
-import { Bridge, BridgeDevice, BridgeStatus } from '../../../../../models/project/Bridge'
-import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
-import { ScListItemLabel } from '../scList/ScListItemLabel'
-import { StatusCircle } from '../scList/StatusCircle'
+import { Bridge, BridgeDevice, BridgeStatus } from '../../../../../models/project/Bridge.js'
+import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut.js'
+import { ScListItemLabel } from '../scList/ScListItemLabel.js'
+import { StatusCircle } from '../scList/StatusCircle.js'
 
 import './style.scss'
 

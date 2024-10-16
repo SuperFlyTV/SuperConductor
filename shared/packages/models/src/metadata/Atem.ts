@@ -1,5 +1,5 @@
-import { InputState } from 'atem-connection'
-import { MetadataBase, MetadataType } from './metadata'
+import type { InputState } from 'atem-connection'
+import { MetadataBase, MetadataType } from './metadata.js'
 
 export interface AtemMetadata extends MetadataBase {
 	metadataType: MetadataType.ATEM

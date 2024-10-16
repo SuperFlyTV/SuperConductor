@@ -1,32 +1,28 @@
-import { KnownPeripheral, PeripheralId } from '@shared/api'
+import { KnownPeripheral, LoggerLike, PeripheralId } from '@shared/api'
 import EventEmitter from 'events'
-import { PeripheralMIDI } from './peripherals/midi'
-import { PeripheralStreamDeck } from './peripherals/streamdeck'
-import { PeripheralXkeys } from './peripherals/xkeys'
+import { PeripheralMIDI } from './peripherals/midi.js'
+import { PeripheralStreamDeck } from './peripherals/streamdeck.js'
+import { PeripheralXkeys } from './peripherals/xkeys.js'
 
 export interface PeripheralWatcherEvents {
-	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
-	knownPeripheralReconnected: (peripheralId: PeripheralId, info: KnownPeripheral) => void
-	knownPeripheralDisconnected: (peripheralId: PeripheralId) => void
-	knownPeripheralsChanged: (peripherals: Map<PeripheralId, KnownPeripheral>) => void
-}
-export interface PeripheralWatcher {
-	on<U extends keyof PeripheralWatcherEvents>(event: U, listener: PeripheralWatcherEvents[U]): this
-	emit<U extends keyof PeripheralWatcherEvents>(event: U, ...args: Parameters<PeripheralWatcherEvents[U]>): boolean
+	knownPeripheralDiscovered: [peripheralId: PeripheralId, info: KnownPeripheral]
+	knownPeripheralReconnected: [peripheralId: PeripheralId, info: KnownPeripheral]
+	knownPeripheralDisconnected: [peripheralId: PeripheralId]
+	knownPeripheralsChanged: [peripherals: Map<PeripheralId, KnownPeripheral>]
 }
 
-export class PeripheralWatcher extends EventEmitter {
+export class PeripheralWatcher extends EventEmitter<PeripheralWatcherEvents> {
 	private knownPeripherals = new Map<PeripheralId, KnownPeripheral>()
 	private subwatchers: { stop: () => void }[] = []
 
-	constructor() {
+	constructor(private log: LoggerLike) {
 		super()
 
 		// Make javascript happy:
 		const boundUpdateDiscoveredPeripheral = this.updateDiscoveredPeripheral.bind(this)
 
 		// Set up subwatchers:
-		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral))
+		this.subwatchers.push(PeripheralStreamDeck.Watch(boundUpdateDiscoveredPeripheral, this.log))
 		this.subwatchers.push(PeripheralXkeys.Watch(boundUpdateDiscoveredPeripheral))
 		this.subwatchers.push(PeripheralMIDI.Watch(boundUpdateDiscoveredPeripheral))
 	}

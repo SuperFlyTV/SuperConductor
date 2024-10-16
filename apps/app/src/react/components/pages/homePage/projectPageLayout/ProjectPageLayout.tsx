@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { HelpButton } from '../../../inputs/HelpButton/HelpButton'
-import { Message } from '../message/Message'
+import { HelpButton } from '../../../inputs/HelpButton/HelpButton.js'
+import { Message } from '../message/Message.js'
 import './style.scss'
 
 export const ProjectPageLayout: React.FC<{

@@ -1,8 +1,8 @@
 import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { GroupBase } from '../../../models/rundown/Group'
-import { PartBase } from '../../../models/rundown/Part'
-import { ActionAny, RundownAction } from '../action'
+import { GroupBase } from '../../../models/rundown/Group.js'
+import { PartBase } from '../../../models/rundown/Part.js'
+import { ActionAny, RundownAction } from '../action.js'
 import {
 	formatKeyDuration,
 	formatKeyTimeToEnd,
@@ -11,7 +11,7 @@ import {
 	TriggerArea,
 	triggersAreaToArea,
 	_getKeyDisplay,
-} from './lib'
+} from './lib.js'
 
 export function keyDisplayRundownPlay(
 	firstAction: RundownAction,

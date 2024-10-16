@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { ParsedValueInput } from './parsedValueInput'
+import { ParsedValueInput } from './parsedValueInput.js'
 export const TextInput: React.FC<
 	| {
 			currentValue: string

@@ -1,13 +1,13 @@
 import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { TextBtn } from '../../../inputs/textBtn/TextBtn'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../contexts/Project'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
+import { TextBtn } from '../../../inputs/textBtn/TextBtn.js'
+import { IPCServerContext } from '../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
 import { Mapping } from 'timeline-state-resolver-types'
-import { DeviceSpecificSettings } from '../layersPage/DeviceSpecificSettings'
+import { DeviceSpecificSettings } from '../layersPage/DeviceSpecificSettings.js'
 import './style.scss'
-import { getDefaultLayerName } from '../../../../../lib/TSRMappings'
+import { getDefaultLayerName } from '../../../../../lib/TSRMappings.js'
 
 export const LayerItemContent: React.FC<{
 	mappingId: string

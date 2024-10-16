@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material'
-import { App } from './react/App'
+import { App } from './react/App.js'
 
 const SMALL_BTN_SIZE = '22px'
 

@@ -16,19 +16,19 @@ import {
 	TimelineContentAtemSsrcProps,
 	TimelineContentAtemAudioRouting,
 } from 'timeline-state-resolver-types'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { IntInput } from '../../../inputs/IntInput'
-import { EditWrapper, OnSave, OnSaveType } from './lib'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { EditWrapper, OnSave, OnSaveType } from './lib.js'
 import { Button, Stack, Typography } from '@mui/material'
-import { TrashBtn } from '../../../inputs/TrashBtn'
-import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR'
+import { TrashBtn } from '../../../inputs/TrashBtn.js'
+import { ATEM_DEFAULT_TRANSITION_RATE } from '../../../../../lib/TSR.js'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
+import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit.js'
 import { AtemMetadata, MetadataType, TSRDeviceId, protectString } from '@shared/models'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../../mobx/store'
+import { store } from '../../../../mobx/store.js'
 
 enum ATEMAudioChannelMixOption {
 	Off = 0,

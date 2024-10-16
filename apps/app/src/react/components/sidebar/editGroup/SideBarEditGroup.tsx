@@ -1,26 +1,26 @@
-import { IPCServerContext } from '../../../contexts/IPCServer'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
 import React, { useCallback, useContext, useMemo, useState } from 'react'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { DataRow } from '../DataRow/DataRow'
-import { SidebarContent } from '../SidebarContent'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { TrashBtn } from '../../inputs/TrashBtn.js'
+import { DataRow } from '../DataRow/DataRow.js'
+import { SidebarContent } from '../SidebarContent.js'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { store } from '../../../mobx/store.js'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog.js'
 import { computed } from 'mobx'
-import { BooleanInput } from '../../inputs/BooleanInput'
-import { SelectEnum } from '../../inputs/SelectEnum'
-import { PlayoutMode, ScheduleSettings } from '../../../../models/rundown/Group'
-import { DateTimeInput } from '../../inputs/DateTimeInput'
-import { RepeatingType } from '../../../../lib/timeLib'
-import { DurationInput } from '../../inputs/DurationInput'
-import { ToggleInput } from '../../inputs/ToggleInput'
+import { BooleanInput } from '../../inputs/BooleanInput.js'
+import { SelectEnum } from '../../inputs/SelectEnum.js'
+import { PlayoutMode, ScheduleSettings } from '../../../../models/rundown/Group.js'
+import { DateTimeInput } from '../../inputs/DateTimeInput.js'
+import { RepeatingType } from '../../../../lib/timeLib.js'
+import { DurationInput } from '../../inputs/DurationInput.js'
+import { ToggleInput } from '../../inputs/ToggleInput.js'
 import { assertNever } from '@shared/lib'
 import { PartialDeep } from 'type-fest'
-import { IntInput } from '../../inputs/IntInput'
-import { SelectEnumMultiple } from '../../inputs/SelectMultiple'
+import { IntInput } from '../../inputs/IntInput.js'
+import { SelectEnumMultiple } from '../../inputs/SelectMultiple.js'
 import { FormLabel, Grid } from '@mui/material'
-import { shortID } from '../../../../lib/util'
+import { shortID } from '../../../../lib/util.js'
 import {
 	allAreTrue,
 	firstValue,
@@ -29,7 +29,7 @@ import {
 	isIndeterminate,
 	ListBoolean,
 	inputValue,
-} from '../../../lib/multipleEdit'
+} from '../../../lib/multipleEdit.js'
 
 export const SideBarEditGroup: React.FC<{
 	rundownId: string

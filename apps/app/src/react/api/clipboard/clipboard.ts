@@ -1,10 +1,11 @@
+/* eslint-disable n/no-unsupported-features/node-builtins */
 import { assertNever, compact } from '@shared/lib'
-import { CB } from '../../lib/errorHandling'
-import { store } from '../../mobx/store'
-import { handleCasparCGClient } from './casparCGClient'
-import { handleConvenience } from './convenience'
-import { ClipBoardInternal, ClipBoardInternalAny, handleInternal } from './internal'
-import { ClipBoardContext } from './lib'
+import { CB } from '../../lib/errorHandling.js'
+import { store } from '../../mobx/store.js'
+import { handleCasparCGClient } from './casparCGClient.js'
+import { handleConvenience } from './convenience.js'
+import { ClipBoardInternal, ClipBoardInternalAny, handleInternal } from './internal.js'
+import { ClipBoardContext } from './lib.js'
 
 export function setupClipboard(context: ClipBoardContext): void {
 	// This function is called once, when the app is started.

@@ -1,10 +1,10 @@
 import React from 'react'
-import { Bridge, BridgeDevice } from '../../../../../models/project/Bridge'
+import { Bridge, BridgeDevice } from '../../../../../models/project/Bridge.js'
 import { AtemOptions, CasparCGOptions, DeviceType } from 'timeline-state-resolver-types'
 
 import './style.scss'
-import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut'
-import { ScListItemLabel } from '../scList/ScListItemLabel'
+import { DeviceShortcut } from '../deviceShorcut/DeviceShortcut.js'
+import { ScListItemLabel } from '../scList/ScListItemLabel.js'
 import { TSRDeviceId, unprotectString } from '@shared/models'
 
 export const DeviceItemHeader: React.FC<{
@@ -35,10 +35,10 @@ export const DeviceItemHeader: React.FC<{
 				{deviceSettings.disable
 					? 'Disabled'
 					: props.device.ok
-					? 'Connected'
-					: props.device.message
-					? props.device.message
-					: 'Not Connected'}
+						? 'Connected'
+						: props.device.message
+							? props.device.message
+							: 'Not Connected'}
 			</div>
 		</div>
 	)

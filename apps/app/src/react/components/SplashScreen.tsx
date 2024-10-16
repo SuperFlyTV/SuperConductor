@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button, DialogTitle, IconButton, Dialog, DialogContent, DialogActions, Typography } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
+import { Close as CloseIcon } from '@mui/icons-material'
 import { styled } from '@mui/material/styles'
 
 export const SplashScreen: React.FC<{

@@ -1,7 +1,7 @@
 import { GDDTypeMultiLine } from 'graphics-data-definition'
 import React from 'react'
-import { PropertyProps } from '../lib'
-import { EditProperty } from '../util'
+import { PropertyProps } from '../lib.js'
+import { EditProperty } from '../util.js'
 
 export const gddTypeMultiLine: React.FC<PropertyProps<GDDTypeMultiLine>> = (props) => {
 	const data = props.data || ''

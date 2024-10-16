@@ -1,5 +1,5 @@
 import { LogEntry } from 'winston'
-import { AppSettings, AppSystem } from '../models/AppData'
+import { AppSettings, AppSystem } from '../models/AppData.js'
 
 /** This class is used server-side, to send messages to the client */
 export interface IPCClientMethods {

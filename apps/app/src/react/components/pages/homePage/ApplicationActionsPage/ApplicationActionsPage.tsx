@@ -1,21 +1,21 @@
 import React, { useCallback } from 'react'
 import { observer } from 'mobx-react-lite'
 import { Popover } from '@mui/material'
-import { store } from '../../../../mobx/store'
-import { useMemoComputedObject } from '../../../../mobx/lib'
+import { store } from '../../../../mobx/store.js'
+import { useMemoComputedObject } from '../../../../mobx/lib.js'
 
-import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout'
-import { RoundedSection } from '../roundedSection/RoundedSection'
-import { ScList } from '../scList/ScList'
-import { ScListItemLabel } from '../scList/ScListItemLabel'
+import { ProjectPageLayout } from '../projectPageLayout/ProjectPageLayout.js'
+import { RoundedSection } from '../roundedSection/RoundedSection.js'
+import { ScList } from '../scList/ScList.js'
+import { ScListItemLabel } from '../scList/ScListItemLabel.js'
 
-import { ApplicationTrigger } from '../../../../../models/rundown/Trigger'
-import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn'
-import { ApplicationTriggersSubmenu } from '../../../rundown/GroupView/part/TriggersSubmenu/TriggersSubmenu'
-import { TriggerPill } from '../../../../components/inputs/EditTrigger'
+import { ApplicationTrigger } from '../../../../../models/rundown/Trigger.js'
+import { TriggerBtn } from '../../../inputs/TriggerBtn/TriggerBtn.js'
+import { ApplicationTriggersSubmenu } from '../../../rundown/GroupView/part/TriggersSubmenu/TriggersSubmenu.js'
+import { TriggerPill } from '../../../../components/inputs/EditTrigger.js'
 
 import './style.scss'
-import { convertSorensenToElectron } from '../../../../../lib/triggers/identifiers'
+import { convertSorensenToElectron } from '../../../../../lib/triggers/identifiers.js'
 
 export const ApplicationActionsPage: React.FC = observer(function ApplicationActionsPage() {
 	return (

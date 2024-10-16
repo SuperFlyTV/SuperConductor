@@ -1,4 +1,4 @@
-import { makePartialData } from '../lib'
+import { makePartialData } from '../lib.js'
 
 test('makePartialData', () => {
 	expect(makePartialData({ a: 1 }, {})).toStrictEqual({ a: 1 })

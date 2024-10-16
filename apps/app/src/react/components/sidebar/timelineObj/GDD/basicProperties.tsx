@@ -10,14 +10,14 @@ import {
 	getDefaultDataFromSchema,
 } from 'graphics-data-definition'
 import React from 'react'
-import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { FloatInput } from '../../../inputs/FloatInput'
-import { IntInput } from '../../../inputs/IntInput'
-import { TextInput } from '../../../inputs/TextInput'
-import { componentAny } from './componentAny'
-import { getEditPropertyMeta, PropertyProps } from './lib'
-import { EditProperty } from './util'
+import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { FloatInput } from '../../../inputs/FloatInput.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { componentAny } from './componentAny.js'
+import { getEditPropertyMeta, PropertyProps } from './lib.js'
+import { EditProperty } from './util.js'
 
 export const basicPropertyUnknown: React.FC<PropertyProps<GDDSchema> & { basicType: string }> = (props) => {
 	return (

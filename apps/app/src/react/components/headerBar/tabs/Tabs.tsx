@@ -1,14 +1,14 @@
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useState } from 'react'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../contexts/IPCServer'
-import { store } from '../../../mobx/store'
-import { NewTabBtn } from './newTabBtn/NewTabBtn'
-import { Tab } from './tab/Tab'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
+import { store } from '../../../mobx/store.js'
+import { NewTabBtn } from './newTabBtn/NewTabBtn.js'
+import { Tab } from './tab/Tab.js'
 
 import './style.scss'
 import { AiFillHome } from 'react-icons/ai'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog.js'
 
 export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = observer(function Tabs(props) {
 	const rundownsStore = store.rundownsStore

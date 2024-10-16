@@ -1,9 +1,9 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../../../mobx/store'
-import { useMemoComputedObject } from '../../../../../mobx/lib'
-import { formatDuration } from '../../../../../../lib/timeLib'
-import { DISPLAY_DECIMAL_COUNT } from '../../../../../constants'
+import { store } from '../../../../../mobx/store.js'
+import { useMemoComputedObject } from '../../../../../mobx/lib.js'
+import { formatDuration } from '../../../../../../lib/timeLib.js'
+import { DISPLAY_DECIMAL_COUNT } from '../../../../../constants.js'
 
 type PropsType = {
 	groupId: string

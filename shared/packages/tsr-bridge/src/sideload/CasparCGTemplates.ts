@@ -4,6 +4,8 @@ import * as util from 'util'
 import { exec } from 'child_process'
 import recursiveReadDir from 'recursive-readdir'
 import * as cheerio from 'cheerio'
+// eslint-disable-next-line n/no-extraneous-import
+import type { Element as domElement } from 'domhandler'
 
 import { CasparCG } from 'casparcg-connection'
 import got from 'got'
@@ -258,7 +260,7 @@ async function checkIfPathExists(path: string): Promise<boolean> {
 	try {
 		await fs.promises.access(path, fs.constants.R_OK)
 		return true
-	} catch (e) {
+	} catch (_e) {
 		return false
 	}
 }
@@ -303,7 +305,7 @@ function getId(fileDir: string, filePath: string): string {
 		.toUpperCase()
 }
 
-async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<cheerio.Element> | undefined> {
+async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<domElement> | undefined> {
 	const html = await fs.promises.readFile(filePath)
 	const $ = cheerio.load(html)
 	const gddScripts = $('script[name="graphics-data-definition"]')
@@ -314,14 +316,14 @@ async function getGDDScriptElement(filePath: string): Promise<cheerio.Cheerio<ch
 	}
 }
 
-async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<cheerio.Element>) {
+async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<domElement>) {
 	const src = scriptElem.attr('src')
 	let gddContent
 	if (src) {
 		const externalGDDPath = path.resolve(path.dirname(filePath), src)
 		try {
 			gddContent = await fs.promises.readFile(externalGDDPath, { encoding: 'utf-8' })
-		} catch (error) {
+		} catch (_error) {
 			throw new Error(`Failed to read external GDD "${src}" from "${filePath}", does the file exist?`)
 		}
 	} else {
@@ -330,7 +332,7 @@ async function extractGDDJSON(filePath: string, scriptElem: cheerio.Cheerio<chee
 
 	try {
 		return JSON.parse(gddContent)
-	} catch (error) {
+	} catch (_error) {
 		throw new Error(`Failed to parse GDD from "${filePath}", is it valid JSON?`)
 	}
 }

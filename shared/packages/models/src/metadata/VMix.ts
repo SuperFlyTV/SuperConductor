@@ -1,4 +1,4 @@
-import { MetadataBase, MetadataType } from './metadata'
+import { MetadataBase, MetadataType } from './metadata.js'
 
 export interface VMixMetadata extends MetadataBase {
 	metadataType: MetadataType.VMIX

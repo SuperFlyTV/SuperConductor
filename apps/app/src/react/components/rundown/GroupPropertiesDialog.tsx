@@ -3,8 +3,8 @@ import { Field, Form, Formik } from 'formik'
 import * as Yup from 'yup'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material'
 import { TextField } from 'formik-mui'
-import { Group } from '../../../models/rundown/Group'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
+import { Group } from '../../../models/rundown/Group.js'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler.js'
 
 interface IProps {
 	initial?: Partial<Group>

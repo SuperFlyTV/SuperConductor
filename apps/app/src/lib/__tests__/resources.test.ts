@@ -46,11 +46,12 @@ import {
 	TriCasterDsk,
 	TriCasterInput,
 	TriCasterMatrixOutput,
-	TriCasterAudioChannel
+	TriCasterAudioChannel,
 } from '@shared/models'
 import { Mappings, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
-import { TSRTimelineObjFromResource } from '../resources'
-import { getMappingFromTimelineObject } from '../TSRMappings'
+import { TSRTimelineObjFromResource } from '../resources.js'
+import { getMappingFromTimelineObject } from '../TSRMappings.js'
+
 describe('resourceId generation', () => {
 	const testedResourceTypes: ResourceType[] = []
 	function testResource(r: ResourceAny) {

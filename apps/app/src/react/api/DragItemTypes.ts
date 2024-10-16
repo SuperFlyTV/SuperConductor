@@ -1,6 +1,6 @@
 import { ResourceAny } from '@shared/models'
-import { MoveTarget } from '../../lib/util'
-import { GroupGUI } from '../../models/rundown/Group'
+import { MoveTarget } from '../../lib/util.js'
+import { GroupGUI } from '../../models/rundown/Group.js'
 
 export enum DragItemTypes {
 	RESOURCE_ITEM = 'resource_item',

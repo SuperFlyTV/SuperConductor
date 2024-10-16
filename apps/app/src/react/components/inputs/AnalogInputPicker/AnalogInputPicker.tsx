@@ -1,17 +1,16 @@
 import React, { useState } from 'react'
-import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography } from '@mui/material'
-import useId from '@mui/material/utils/useId'
+import { IconButton, InputAdornment, MenuItem, Popover, Tooltip, Typography, unstable_useId } from '@mui/material'
 import { HiLink, HiOutlineX } from 'react-icons/hi'
-import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib'
-import { store } from '../../../mobx/store'
+import { useMemoComputedObject, useMemoComputedValue } from '../../../mobx/lib.js'
+import { store } from '../../../mobx/store.js'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import classNames from 'classnames'
 
 import './style.scss'
-import { firstValue, isIndeterminate } from '../../../lib/multipleEdit'
-import { OnSave } from '../../sidebar/timelineObj/timelineObjs/lib'
+import { firstValue, isIndeterminate } from '../../../lib/multipleEdit.js'
+import { OnSave } from '../../sidebar/timelineObj/timelineObjs/lib.js'
 import { observer } from 'mobx-react-lite'
-import { AnalogInputSetting } from '../../../../models/project/Project'
+import { AnalogInputSetting } from '../../../../models/project/Project.js'
 
 const POPOVER_ANCHOR_ORIGIN: {
 	vertical: 'bottom'
@@ -37,7 +36,7 @@ export const AnalogInputOverridePicker: React.FC<{
 	path: string
 	onSave: OnSave
 }> = observer(function AnalogInputOverridePicker({ objs, path, onSave }) {
-	const elementId = useId()
+	const elementId = unstable_useId()
 	const [anchorEl, setAnchorEl] = useState<Element | null>(null)
 
 	const analogInputOptions = useMemoComputedObject(() => {

@@ -1,4 +1,4 @@
-import { MetadataBase, MetadataType } from './metadata'
+import { MetadataBase, MetadataType } from './metadata.js'
 
 export interface OBSMetadata extends MetadataBase {
 	metadataType: MetadataType.OBS

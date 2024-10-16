@@ -3,8 +3,8 @@ import {
 	GroupPreparedPlayDataSection,
 	PlayPartEndAction,
 	SectionEndAction,
-} from '../../models/GUI/PreparedPlayhead'
-import { Part } from '../../models/rundown/Part'
+} from '../../models/GUI/PreparedPlayhead.js'
+import { Part } from '../../models/rundown/Part.js'
 import { assertNever, literal } from '@shared/lib'
 
 /******************************************************************************

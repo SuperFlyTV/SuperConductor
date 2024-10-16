@@ -1,5 +1,5 @@
 import { protectString, ResourceAny, ResourceType, ResourceId } from '@shared/models'
-import { assertNever } from './lib'
+import { assertNever } from './lib.js'
 import {
 	TSRTimelineObj,
 	TSRTimelineContent,

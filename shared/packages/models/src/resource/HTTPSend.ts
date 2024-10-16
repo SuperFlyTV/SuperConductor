@@ -1,4 +1,4 @@
-import { ResourceBase, ResourceType } from './resource'
+import { ResourceBase, ResourceType } from './resource.js'
 
 export type HTTPSendAny = HTTPRequest
 

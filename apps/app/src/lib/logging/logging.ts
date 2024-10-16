@@ -1,5 +1,5 @@
 import { format, createLogger, transports, Logger } from 'winston'
-import { utilFormatter } from './util-formatter'
+import { utilFormatter } from './util-formatter.js'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { LogLevel } from '@shared/api'
 

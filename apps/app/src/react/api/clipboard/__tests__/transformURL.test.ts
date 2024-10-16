@@ -1,4 +1,4 @@
-import { transformURL } from '../transformURL'
+import { transformURL } from '../transformURL.js'
 
 describe('transformURL', () => {
 	test('Youtube video', () => {

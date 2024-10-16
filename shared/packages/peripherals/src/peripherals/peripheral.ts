@@ -11,26 +11,23 @@ import {
 import { TimelineTracker } from '@shared/lib'
 
 export interface PeripheralEvents {
-	initialized: () => void
-	connected: () => void
-	disconnected: () => void
+	initialized: []
+	connected: []
+	disconnected: []
 
-	keyDown: (identifier: string) => void
-	keyUp: (identifier: string) => void
+	keyDown: [identifier: string]
+	keyUp: [identifier: string]
 
-	analog: (identifier: string, value: AnalogValue) => void
+	analog: [identifier: string, value: AnalogValue]
 }
-export declare interface Peripheral {
-	on<U extends keyof PeripheralEvents>(event: U, listener: PeripheralEvents[U]): this
-	emit<U extends keyof PeripheralEvents>(event: U, ...args: Parameters<PeripheralEvents[U]>): boolean
-}
+
 export type onKnownPeripheralCallback = (peripheralId: PeripheralId, details: KnownPeripheral | null) => void
 
 export interface WatchReturnType {
 	stop: () => void
 }
 
-export abstract class Peripheral extends EventEmitter {
+export abstract class Peripheral extends EventEmitter<PeripheralEvents> {
 	private trackers: { [ident: string]: TimelineTracker } = {}
 	constructor(
 		protected log: LoggerLike,

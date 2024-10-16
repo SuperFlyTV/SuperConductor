@@ -1,10 +1,10 @@
-import { EverythingService } from '../EverythingService'
+import { EverythingService } from '../EverythingService.js'
 import { Application, Params } from '@feathersjs/feathers'
 import EventEmitter from 'node:events'
-import { ProjectsEvents, ServiceTypes } from '../../ipc/IPCAPI'
-import { Project, ProjectBase } from '../../models/project/Project'
-import { ClientEventBus } from '../ClientEventBus'
-import { SerializableLedgers } from '../../models/project/Project'
+import { ProjectsEvents, ServiceTypes } from '../../ipc/IPCAPI.js'
+import { Project, ProjectBase } from '../../models/project/Project.js'
+import { ClientEventBus } from '../ClientEventBus.js'
+import { SerializableLedgers } from '../../models/project/Project.js'
 
 export const PROJECTS_CHANNEL_PREFIX = 'projects'
 export class ProjectService extends EventEmitter {

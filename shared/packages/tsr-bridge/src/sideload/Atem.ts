@@ -18,7 +18,7 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource } from '@shared/lib'
 
@@ -28,7 +28,11 @@ export class AtemSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: AtemMetadata = { metadataType: MetadataType.ATEM, inputs: [] }
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsAtem, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsAtem,
+		private log: LoggerLike
+	) {
 		this.atem = new Atem()
 
 		this.atem.on('connected', () => {

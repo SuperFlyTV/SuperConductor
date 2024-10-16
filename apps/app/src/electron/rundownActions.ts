@@ -1,7 +1,7 @@
-import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playout/groupPlayData'
-import { findPartInGroup } from '../lib/util'
-import { Group } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
+import { getGroupPlayData, GroupPlayDataPlayhead } from '../lib/playout/groupPlayData.js'
+import { findPartInGroup } from '../lib/util.js'
+import { Group } from '../models/rundown/Group.js'
+import { Part } from '../models/rundown/Part.js'
 
 export function stopGroup(group: Group, now: number): void {
 	for (const partId of Object.keys(group.playout.playingParts)) {
