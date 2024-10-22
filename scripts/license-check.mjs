@@ -36,7 +36,8 @@ const allowPackages = [
 checker.init(
 	{
 		start: path.resolve('.'),
-		onlyAllow: 'MIT;BSD;ISC;Apache-2.0;CC0;CC-BY-3.0;CC-BY-4.0;Unlicense;Artistic-2.0;Python-2.0;BlueOak-1.0.0',
+		onlyAllow:
+			'MIT;BSD;ISC;Apache-2.0;CC0;CC-BY-3.0;CC-BY-4.0;Unlicense;Artistic-2.0;Python-2.0;BlueOak-1.0.0;LGPL-3.0-or-later',
 		excludePackages: allowPackages.join(';'),
 		summary: !DEBUG,
 	},
