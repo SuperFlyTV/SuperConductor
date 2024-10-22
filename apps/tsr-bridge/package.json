@@ -93,7 +93,7 @@
 			"**/node_modules/@img/**/*"
 		],
 		"directories": {
-			"buildResources": "assets/",
+			"buildResources": "resources/",
 			"output": "electron-output/"
 		}
 	}
