@@ -1,0 +1,651 @@
+diff --git a/dist/index.js b/dist/index.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b92a71398f3c7fca7ef02b9e4244b12cfab62b93
+--- /dev/null
++++ b/dist/index.js
+@@ -0,0 +1,627 @@
++/// <reference path="dom.KeyboardMapAPI.d.ts" />
++(function (factory) {
++    if (typeof module === "object" && typeof module.exports === "object") {
++        var v = factory(require, exports);
++        if (v !== undefined) module.exports = v;
++    }
++    else if (typeof define === "function" && define.amd) {
++        define(["require", "exports"], factory);
++    }
++})(function (require, exports) {
++    "use strict";
++    Object.defineProperty(exports, "__esModule", { value: true });
++    exports.Sorensen = exports.VIRTUAL_ANY_POSITION_KEYS = void 0;
++    let initialized = false;
++    let keyboardLayoutMap = undefined;
++    let bound = [];
++    let keyUpIgnoreKeys = [];
++    let keyRepeatIgnoreKeys = [];
++    let chordsInProgress = [];
++    let keysDown = [];
++    let poisoned = false;
++    const DEFAULT_CHORD_TIMEOUT = 2000;
++    let CHORD_TIMEOUT = DEFAULT_CHORD_TIMEOUT;
++    const SORENSEN_IMMEDIATE_PROPAGATION_STOPPED = Symbol('sorensen_immediatePropagationStopped');
++    const SORENSEN_STOP_IMMEDIATE_PROPAGATION = Symbol('sorensen_stopImmediatePropagation');
++    function isMac() {
++        return /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
++    }
++    const MODIFIER_KEYS = [
++        'ShiftLeft',
++        'ShiftRight',
++        'ControlLeft',
++        'ControlRight',
++        'AltLeft',
++        'AltRight',
++        'MetaLeft',
++        'MetaRight',
++        'OSLeft',
++        'OSRight',
++    ];
++    /**
++     * Special meta-codes that can be used to match for "any" modifer key, like matching for both ShiftLeft and ShiftRight.
++     */
++    exports.VIRTUAL_ANY_POSITION_KEYS = {
++        Shift: ['ShiftLeft', 'ShiftRight'],
++        Control: ['ControlLeft', 'ControlRight'],
++        Ctrl: ['ControlLeft', 'ControlRight'],
++        Alt: ['AltLeft', 'AltRight'],
++        Meta: ['MetaLeft', 'MetaRight'],
++        AnyEnter: ['Enter', 'NumpadEnter'],
++        Option: ['AltLeft', 'AltRight'],
++        Command: ['OSLeft', 'OSRight'],
++        Windows: ['OSLeft', 'OSRight'],
++        Accel: isMac() ? ['OSLeft', 'OSRight'] : ['ControlLeft', 'ControlRight'],
++    };
++    const INVERSE_VIRTUAL_ANY_POSITION_KEYS = {};
++    Object.entries(exports.VIRTUAL_ANY_POSITION_KEYS).forEach((entry) => {
++        entry[1].forEach((code) => (INVERSE_VIRTUAL_ANY_POSITION_KEYS[code] = entry[0]));
++    });
++    function parseCombo(combo) {
++        return combo
++            .split(/\s+/)
++            .filter(Boolean)
++            .map((note) => note.split('+').filter(Boolean));
++    }
++    function stringifyCombo(combo) {
++        return combo.map((note) => note.join('+')).join(' ');
++    }
++    /**
++     * Bind a combo or set of combos to a given event listener.
++     *
++     * @param {(string | string[])} combo A combo or chord to be bound, specified using keybaord button code values.
++     * 		Whitespace separates multiple notes in a chord. `+` means key combinations.
++     * @param {(e: EnchancedKeyboardEvent) => void} listener
++     * @param {BindOptions} [options]
++     */
++    function bind(combo, listener, options) {
++        if (!initialized) {
++            throw new Error('Sørensen needs to be initialized before binding any combos.');
++        }
++        if (!Array.isArray(combo)) {
++            combo = [combo];
++        }
++        combo.forEach((variant) => {
++            const item = parseCombo(variant);
++            if (!(item === null || item === void 0 ? void 0 : item.length) || !item[0].length) {
++                throw new Error('Combo needs to have at least a single key in it');
++            }
++            if (options === null || options === void 0 ? void 0 : options.prepend) {
++                bound.unshift({
++                    combo: item,
++                    listener,
++                    ...options,
++                });
++            }
++            else {
++                bound.push({
++                    combo: item,
++                    listener,
++                    ...options,
++                });
++            }
++        });
++    }
++    /**
++     * Unbind a combo from a given event listener. If a `tag` is provided, only bindings with a strictly equal binding will
++     * be removed
++     *
++     * @param {string} combo A combo bound to the `listener`.
++     * @param {(e: EnchancedKeyboardEvent) => void} [listener]
++     */
++    function unbind(combo, listener, tag) {
++        let bindingsToUnbind = [];
++        let normalizedCombo = stringifyCombo(parseCombo(combo));
++        bound.forEach((binding) => {
++            if ((!listener || binding.listener === listener) && stringifyCombo(binding.combo) === normalizedCombo) {
++                if (tag === undefined || tag === binding.tag) {
++                    bindingsToUnbind.push(binding);
++                }
++            }
++        });
++        bound = bound.filter((binding) => !bindingsToUnbind.includes(binding));
++    }
++    function noteIncludesKey(note, key) {
++        return (note.includes(key) ||
++            (key in INVERSE_VIRTUAL_ANY_POSITION_KEYS && note.includes(INVERSE_VIRTUAL_ANY_POSITION_KEYS[key])));
++    }
++    function matchNote(note, keysToMatch, options, outIgnoredKeys) {
++        var _a;
++        const match = options.ordered
++            ? matchNoteOrdered(note, keysToMatch, options, outIgnoredKeys)
++            : matchNoteUnordered(note, keysToMatch, options, outIgnoredKeys);
++        if (((_a = options.exclusive) !== null && _a !== void 0 ? _a : true) && keysToMatch.length !== note.length) {
++            return false;
++        }
++        return match;
++    }
++    function matchNoteOrdered(note, keysToMatch, options, outIgnoredKeys) {
++        const modifiersFirst = (options === null || options === void 0 ? void 0 : options.ordered) === 'modifiersFirst';
++        let lastFound = -1;
++        let lastFoundModifier = -1;
++        for (let i = 0; i < note.length; i++) {
++            const code = note[i];
++            if (code in exports.VIRTUAL_ANY_POSITION_KEYS) {
++                const alternatives = exports.VIRTUAL_ANY_POSITION_KEYS[code];
++                let anyMatch = false;
++                for (let j = 0; j < alternatives.length; j++) {
++                    // we can start at lastFound, anything before that has already been processed
++                    const idx = keysToMatch.indexOf(alternatives[j], lastFound + 1);
++                    if (idx >= 0 && idx > lastFound) {
++                        anyMatch = true;
++                        if (modifiersFirst && MODIFIER_KEYS.includes(alternatives[j])) {
++                            lastFoundModifier = idx;
++                        }
++                        else {
++                            lastFound = idx;
++                        }
++                        outIgnoredKeys.push(alternatives[j]);
++                        break;
++                    }
++                }
++                if (!anyMatch) {
++                    return false;
++                }
++            }
++            else {
++                // we can start at lastFound, anything before that has already been processed
++                const idx = keysToMatch.indexOf(note[i], lastFound + 1);
++                if (idx < 0 || idx <= lastFound) {
++                    return false;
++                }
++                if (modifiersFirst && MODIFIER_KEYS.includes(note[i])) {
++                    lastFoundModifier = idx;
++                }
++                else {
++                    lastFound = idx;
++                }
++                outIgnoredKeys.push(note[i]);
++            }
++            // If modifiersFirst, do not allow modifiers after other keys
++            if (modifiersFirst && lastFound >= 0 && lastFoundModifier > lastFound) {
++                return false;
++            }
++        }
++        return true;
++    }
++    function matchNoteUnordered(note, keysToMatch, _options, outIgnoredKeys) {
++        for (let i = 0; i < note.length; i++) {
++            const code = note[i];
++            if (code in exports.VIRTUAL_ANY_POSITION_KEYS) {
++                const alternatives = exports.VIRTUAL_ANY_POSITION_KEYS[code];
++                let anyMatch = false;
++                for (let j = 0; j < alternatives.length; j++) {
++                    if (keysToMatch.includes(alternatives[j])) {
++                        outIgnoredKeys.push(alternatives[j]);
++                        anyMatch = true;
++                        break;
++                    }
++                }
++                if (!anyMatch) {
++                    return false;
++                }
++            }
++            else if (!keysToMatch.includes(code)) {
++                return false;
++            }
++            else {
++                outIgnoredKeys.push(code);
++            }
++        }
++        return true;
++    }
++    function isAllowedToExecute(binding, e) {
++        var _a, _b, _c;
++        if (!binding.global &&
++            (((_a = document.activeElement) === null || _a === void 0 ? void 0 : _a.tagName) === 'TEXTAREA' ||
++                ((_b = document.activeElement) === null || _b === void 0 ? void 0 : _b.tagName) === 'INPUT' ||
++                ((_c = document.activeElement) === null || _c === void 0 ? void 0 : _c.shadowRoot))) {
++            return false;
++        }
++        else if (typeof binding.global === 'function') {
++            return !!binding.global(e, stringifyCombo(binding.combo));
++        }
++        return true;
++    }
++    function callListenerIfAllowed(binding, e, note = 0) {
++        if (!isAllowedToExecute(binding, e) || e[SORENSEN_IMMEDIATE_PROPAGATION_STOPPED]) {
++            return;
++        }
++        binding.listener(Object.assign(e, {
++            comboChordCodes: binding.combo,
++            comboCodes: binding.combo[note],
++            tag: binding.tag,
++            [SORENSEN_IMMEDIATE_PROPAGATION_STOPPED]: false,
++            stopImmediatePropagation: () => {
++                if (e[SORENSEN_IMMEDIATE_PROPAGATION_STOPPED]) {
++                    return;
++                }
++                ;
++                e[SORENSEN_IMMEDIATE_PROPAGATION_STOPPED] = true;
++                e[SORENSEN_STOP_IMMEDIATE_PROPAGATION]();
++            },
++        }));
++    }
++    function insertKeyRepeatIgnoreKeys(binding, e, ignoredKeys) {
++        if (binding.preventDefaultPartials !== false && isAllowedToExecute(binding, e)) {
++            keyRepeatIgnoreKeys = [...keyRepeatIgnoreKeys, ...ignoredKeys];
++        }
++    }
++    function visitBoundCombos(key, up, e) {
++        const chordsInProgressCount = chordsInProgress.length;
++        bound.forEach((binding) => {
++            var _a;
++            const ignoredKeys = [];
++            if (matchNote(binding.combo[0], up ? [...keysDown, key] : keysDown, binding, ignoredKeys) &&
++                ((_a = binding.up) !== null && _a !== void 0 ? _a : false) === up) {
++                if (chordsInProgressCount === 0 || binding.exclusive === false) {
++                    if (binding.combo.length === 1) {
++                        // DEBUG: console.log(binding, chordsInProgress, binding.exclusive)
++                        callListenerIfAllowed(binding, e, 0);
++                    }
++                    else {
++                        // DEBUG: console.log('Begun chord:', binding, binding.exclusive)
++                        chordsInProgress.push({
++                            binding,
++                            note: 1,
++                        });
++                        keyUpIgnoreKeys = [...keyUpIgnoreKeys, ...keysDown];
++                    }
++                }
++            }
++            insertKeyRepeatIgnoreKeys(binding, e, ignoredKeys);
++        });
++    }
++    function visitChordsInProgress(key, up, e) {
++        const notInProgress = [];
++        // DEBUG: console.log(chordsInProgress)
++        chordsInProgress.forEach((chord) => {
++            var _a;
++            if (((_a = chord.binding.up) !== null && _a !== void 0 ? _a : false) !== up) {
++                // DEBUG: console.log('Wrong direction: ', up)
++                return;
++            }
++            if (chord.binding.combo.length <= chord.note) {
++                // DEBUG: console.log('Too short', chord)
++                notInProgress.push(chord);
++                return;
++            }
++            const ignoredKeys = [];
++            if (matchNote(chord.binding.combo[chord.note], up ? [...keysDown, key] : keysDown, chord.binding, ignoredKeys)) {
++                chord.note = chord.note + 1;
++                // DEBUG: console.log('Did match', chord)
++                if (chord.binding.combo.length === chord.note) {
++                    // DEBUG: console.log('Executing', chord)
++                    callListenerIfAllowed(chord.binding, e, chord.note);
++                    return; // do not set up a new timeout for the chord
++                }
++                keyUpIgnoreKeys = [...keyUpIgnoreKeys, ...keysDown];
++            }
++            else if (up && keyUpIgnoreKeys.includes(key)) {
++                keyUpIgnoreKeys = keyUpIgnoreKeys.filter((ignoreKey) => ignoreKey !== key);
++                // DEBUG: console.log('Ignored key ticked off', key, keyUpIgnoreKeys)
++            }
++            else if (!noteIncludesKey(chord.binding.combo[chord.note], key) &&
++                (chord.binding.modifiersPoisonChord || !MODIFIER_KEYS.includes(key))) {
++                // DEBUG: console.log('No match', chord)
++                notInProgress.push(chord);
++            }
++            insertKeyRepeatIgnoreKeys(chord.binding, e, ignoredKeys);
++        });
++        chordsInProgress = chordsInProgress.filter((chord) => !notInProgress.includes(chord));
++    }
++    function registerPreventDefaultDownKeys(_key, e) {
++        const ignoredKeys = [];
++        chordsInProgress.forEach((chord) => {
++            if (!chord.binding.preventDefaultDown) {
++                return;
++            }
++            if (!isAllowedToExecute(chord.binding, e)) {
++                return;
++            }
++            if (chord.note > chord.binding.combo.length) {
++                return;
++            }
++            const ignoredChordKeys = [];
++            const matched = matchNote(chord.binding.combo[chord.note - 1], keysDown, chord.binding, ignoredChordKeys);
++            if (matched) {
++                ;
++                e.defaultPreventedDown = true;
++                ignoredKeys.push(...ignoredChordKeys);
++            }
++        });
++        bound.forEach((binding) => {
++            if (!binding.preventDefaultDown) {
++                return;
++            }
++            if (!isAllowedToExecute(binding, e)) {
++                return;
++            }
++            if (binding.combo.length !== 1) {
++                return;
++            }
++            const ignoredChordKeys = [];
++            const matched = matchNote(binding.combo[0], keysDown, binding, ignoredChordKeys);
++            if (matched) {
++                ;
++                e.defaultPreventedDown = true;
++                ignoredKeys.push(...ignoredChordKeys);
++            }
++        });
++        keyRepeatIgnoreKeys = [...keyRepeatIgnoreKeys, ...Array.from(new Set(ignoredKeys))];
++    }
++    function cleanUpFinishedChords() {
++        chordsInProgress = chordsInProgress.filter((chord) => chord.note < chord.binding.combo.length);
++    }
++    function cleanUpKeyUpIgnoreKeys() {
++        if (keysDown.length === 0) {
++            keyUpIgnoreKeys.length = 0;
++        }
++    }
++    function cleanUpKeyRepeatIgnoreKeys(e) {
++        if (keysDown.length === 0) {
++            keyRepeatIgnoreKeys.length = 0;
++        }
++        if (e) {
++            keyRepeatIgnoreKeys = keyRepeatIgnoreKeys.filter((key) => key !== e.code);
++        }
++    }
++    function preventDefault(e) {
++        e.preventDefault();
++    }
++    function overloadEventStopImmediatePropagation(e) {
++        return Object.assign(e, {
++            [SORENSEN_STOP_IMMEDIATE_PROPAGATION]: e.stopImmediatePropagation,
++        });
++    }
++    let chordTimeout = undefined;
++    function setupChordTimeout() {
++        clearChordTimeout();
++        if (CHORD_TIMEOUT > 0) {
++            chordTimeout = window.setTimeout(() => {
++                chordsInProgress.length = 0;
++            }, CHORD_TIMEOUT);
++        }
++    }
++    function clearChordTimeout() {
++        if (chordTimeout) {
++            clearTimeout(chordTimeout);
++        }
++        chordTimeout = undefined;
++    }
++    /**
++     * Cancel all pressed keys and chords in progress
++     *
++     */
++    function poison() {
++        chordsInProgress.length = 0;
++        poisoned = true;
++    }
++    function keyUp(e) {
++        keysDown = keysDown.filter((key) => key !== e.code);
++        if (!poisoned) {
++            e = overloadEventStopImmediatePropagation(e);
++            visitChordsInProgress(e.code, true, e);
++            visitBoundCombos(e.code, true, e);
++        }
++        cleanUpFinishedChords();
++        setupChordTimeout();
++        cleanUpKeyUpIgnoreKeys();
++        cleanUpKeyRepeatIgnoreKeys(e);
++        if (poisoned && keysDown.length === 0) {
++            poisoned = false;
++        }
++        // DEBUG: console.log(chordsInProgress)
++    }
++    function keyDown(e) {
++        if (!e.repeat) {
++            keysDown.push(e.code);
++            // DEBUG: console.log(keysDown)
++            if (!poisoned) {
++                e = overloadEventStopImmediatePropagation(e);
++                visitChordsInProgress(e.code, false, e);
++                visitBoundCombos(e.code, false, e);
++                registerPreventDefaultDownKeys(e.code, e);
++            }
++            cleanUpFinishedChords();
++            clearChordTimeout();
++        }
++        if (keyRepeatIgnoreKeys.includes(e.code)) {
++            preventDefault(e);
++        }
++    }
++    function visibilityChange() {
++        if ('visibilityState' in document && document.visibilityState === 'hidden') {
++            // reset keysDown when user moved away from the page
++            clearPressedKeys();
++        }
++    }
++    function windowBlur() {
++        clearPressedKeys();
++    }
++    async function getKeyboardLayoutMap() {
++        if ('keyboard' in navigator && navigator.keyboard && typeof navigator.keyboard.getLayoutMap === 'function') {
++            try {
++                keyboardLayoutMap = await navigator.keyboard.getLayoutMap();
++                dispatchEvent('layoutchange');
++            }
++            catch (e) {
++                console.error('Could not get keyboard layout map.', e);
++            }
++        }
++    }
++    /**
++     * Get the keys currently being pressed
++     *
++     * @return {*}  {string[]} A list of key button codes.
++     */
++    function getPressedKeys() {
++        return [...keysDown];
++    }
++    function clearPressedKeys() {
++        // inform potential listeners about cancelled keys
++        const cancelledKeys = keysDown.slice();
++        keysDown.length = 0;
++        cancelledKeys.forEach((code) => dispatchEvent('keycancel', {
++            code,
++        }));
++        poisoned = false;
++    }
++    /**
++     * Figure out the physical key code for a given label.
++     *
++     * @param {string} key The label of a key
++     * @return {*}  {(string | undefined)} Key code
++     */
++    function getCodeForKey(key) {
++        if (key.length === 1) {
++            key = key.toLowerCase();
++        }
++        if (keyboardLayoutMap) {
++            for (let [code, label] of keyboardLayoutMap.entries()) {
++                if (label === key) {
++                    return code;
++                }
++            }
++        }
++        else {
++            if (key.match(/^\d+$/)) {
++                return `Digit${key}`;
++            }
++            else if (key.match(/^\w$/)) {
++                return `Key${key}`;
++            }
++            else {
++                return `${key}`;
++            }
++        }
++        return undefined;
++    }
++    /**
++     * Fetch the key label on the given physical key.
++     *
++     * @param {string} code Key button code
++     * @return {*}  {string} Label on the key with the current keyboard layout.
++     */
++    function getKeyForCode(code) {
++        if (keyboardLayoutMap) {
++            let key = keyboardLayoutMap.get(code);
++            if (key === undefined) {
++                key = code.replace(/^Key/, '').replace(/^Digit(?=\d+)/, '');
++                if (key.length === 1) {
++                    key = key.toLowerCase();
++                }
++            }
++            return key;
++        }
++        else {
++            // the fallback position is to return the key string without the "Key" prefix, if present.
++            // On US-style keyboards works 9 out of 10 cases.
++            let key = code.replace(/^Key/, '').replace(/^Digit(?=\d+)/, '');
++            if (key.length === 1) {
++                key = key.toLowerCase();
++            }
++            return key;
++        }
++    }
++    /**
++     * Initialize Sørensen, get the current keyboard layout map and attach keyboard event listeners to
++     * a root DOM node.
++     *
++     * Default:
++     * * `chordTimeout: 2000` - time in milliseconds waiting for a new keypress in chords
++     *
++     * @param {{ chordTimeout?: number, shadowRoot?: any }} [options]
++     */
++    async function init(options) {
++        var _a;
++        if (!initialized) {
++            CHORD_TIMEOUT = (_a = options === null || options === void 0 ? void 0 : options.chordTimeout) !== null && _a !== void 0 ? _a : DEFAULT_CHORD_TIMEOUT;
++            window.addEventListener('keyup', keyUp, {
++                passive: false,
++                capture: true,
++            });
++            window.addEventListener('keydown', keyDown, {
++                passive: false,
++                capture: true,
++            });
++            window.addEventListener('visibilitychange', visibilityChange);
++            window.addEventListener('blur', windowBlur);
++            window.addEventListener('pagehide', windowBlur);
++            if ('keyboard' in navigator && navigator.keyboard && typeof navigator.keyboard.addEventListener === 'function') {
++                navigator.keyboard.addEventListener('layoutchange', getKeyboardLayoutMap);
++            }
++            await getKeyboardLayoutMap();
++            bound = [];
++            keysDown = [];
++            chordsInProgress = [];
++            initialized = true;
++        }
++        else {
++            throw new Error('Sørensen already initialized.');
++        }
++    }
++    /**
++     * Remove all Sørensen event handlers from the window.
++     *
++     */
++    async function destroy() {
++        if (initialized) {
++            window.removeEventListener('keyup', keyUp);
++            window.removeEventListener('keydown', keyDown);
++            window.removeEventListener('visibilitychange', visibilityChange);
++            window.removeEventListener('blur', windowBlur);
++            window.removeEventListener('pagehide', windowBlur);
++            if ('keyboard' in navigator && navigator.keyboard && typeof navigator.keyboard.removeEventListener === 'function') {
++                navigator.keyboard.removeEventListener('layoutchange', getKeyboardLayoutMap);
++            }
++            initialized = false;
++        }
++        else {
++            throw new Error('Sørensen already destroyed.');
++        }
++    }
++    const eventListeners = {};
++    function dispatchEvent(event, args) {
++        if (Array.isArray(eventListeners[event])) {
++            eventListeners[event].forEach((handler) => {
++                try {
++                    handler(args);
++                }
++                catch (e) {
++                    // simulate the behavior of an exception reaching top-level
++                    console.error(e);
++                }
++            });
++        }
++    }
++    function addEventListener(event, handler) {
++        if (eventListeners[event] === undefined) {
++            eventListeners[event] = [];
++        }
++        eventListeners[event].push(handler);
++    }
++    function removeEventListener(event, handler) {
++        if (Array.isArray(eventListeners[event])) {
++            eventListeners[event] = eventListeners[event].filter((someHandler) => someHandler !== handler);
++        }
++    }
++    exports.Sorensen = {
++        init,
++        destroy,
++        getCodeForKey,
++        getKeyForCode,
++        getPressedKeys,
++        bind,
++        unbind,
++        poison,
++        addEventListener,
++        removeEventListener,
++    };
++    if (window) {
++        //@ts-ignore this is to work around a bug in webpack DevServer
++        window['sorensen'] = exports.Sorensen;
++    }
++    exports.default = exports.Sorensen;
++});
++//# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/package.json b/package.json
+index c6bb696c6a5af164a041b374b1b56f963658a7a3..6755f14f05d4cf5f233309c88c6d93cf41620c1e 100644
+--- a/package.json
++++ b/package.json
+@@ -2,10 +2,10 @@
+   "name": "@sofie-automation/sorensen",
+   "version": "1.5.0",
+   "description": "A modern, i18n-friendly hotkey library for the Web",
+-  "main": "dist/sorensen.js",
++  "main": "dist/index.js",
+   "types": "dist/index.d.ts",
+   "files": [
+-    "dist/index.d.ts",
++    "dist",
+     "README.md",
+     "CHANGELOG.md"
+   ],

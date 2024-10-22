@@ -48,7 +48,7 @@ import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } fro
 import classNames from 'classnames'
 import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher.js'
 import { computed } from 'mobx'
-import { sorensen } from '@sofie-automation/sorensen'
+import { Sorensen } from '@sofie-automation/sorensen'
 import { CB } from '../../lib/errorHandling.js'
 import { SmallCheckbox } from '../util/SmallCheckbox.js'
 
@@ -245,7 +245,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			const selectedResourceIds = store.guiStore.resourceLibrary.selectedResourceIds
 			let lastSelectedResourceId = store.guiStore.resourceLibrary.lastSelectedResourceId
 
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 				// Add this group to the selection, or remove it if it's already there:
 				const foundIndex = selectedResourceIds.indexOf(resource.id)

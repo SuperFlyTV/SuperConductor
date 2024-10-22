@@ -2869,17 +2869,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sofie-automation/sorensen@npm:1.4.3":
-  version: 1.4.3
-  resolution: "@sofie-automation/sorensen@npm:1.4.3"
-  checksum: 10c0/d9b9d739acd009a3ca1b3025d10cca7e152ae244795faf7019e6616ad6f442aff2d8b58ca48487bd9d9d170703458fc46e370523607cd1ce9d73c0af6e428c36
+"@sofie-automation/sorensen@npm:1.5.0":
+  version: 1.5.0
+  resolution: "@sofie-automation/sorensen@npm:1.5.0"
+  checksum: 10c0/bf4815ae54c1cbbe0faefca94519675a038a19458b3fd4f07d4c28f9729c1bbcc006e51e27a22ec7cc974c3d333ec3d01b2ae775ae2fd77a72cf625a8874d571
   languageName: node
   linkType: hard
 
-"@sofie-automation/sorensen@patch:@sofie-automation/sorensen@npm%3A1.4.3#~/.yarn/patches/@sofie-automation-sorensen-npm-1.4.3-a11a53b994.patch":
-  version: 1.4.3
-  resolution: "@sofie-automation/sorensen@patch:@sofie-automation/sorensen@npm%3A1.4.3#~/.yarn/patches/@sofie-automation-sorensen-npm-1.4.3-a11a53b994.patch::version=1.4.3&hash=41d8d9"
-  checksum: 10c0/c707b79aad46291a350ef3fc763d40ef9bfc052a72c5b5eefaaef35512e650a7ca740e65183aaa5e53fb8c1300ce3facd209f186acc8d964f7832ef60f48f483
+"@sofie-automation/sorensen@patch:@sofie-automation/sorensen@npm%3A1.5.0#~/.yarn/patches/@sofie-automation-sorensen-npm-1.5.0-88bfc56810.patch":
+  version: 1.5.0
+  resolution: "@sofie-automation/sorensen@patch:@sofie-automation/sorensen@npm%3A1.5.0#~/.yarn/patches/@sofie-automation-sorensen-npm-1.5.0-88bfc56810.patch::version=1.5.0&hash=ae12e3"
+  checksum: 10c0/bccb0edd166b8ea619692410c91cf1c2ce1d6a64f5bb92be392c81334a1b9478ad6490f15eee9760b88050f0e72a04c12d3df371fea89de207602634e555d01e
   languageName: node
   linkType: hard
 
@@ -14535,7 +14535,7 @@ asn1@evs-broadcast/node-asn1:
     "@shared/models": "npm:^0.12.0-alpha.5"
     "@shared/server-lib": "npm:^0.12.0-alpha.5"
     "@shared/tsr-bridge": "npm:^0.12.0-alpha.5"
-    "@sofie-automation/sorensen": "patch:@sofie-automation/sorensen@npm%3A1.4.3#~/.yarn/patches/@sofie-automation-sorensen-npm-1.4.3-a11a53b994.patch"
+    "@sofie-automation/sorensen": "patch:@sofie-automation/sorensen@npm%3A1.5.0#~/.yarn/patches/@sofie-automation-sorensen-npm-1.5.0-88bfc56810.patch"
     "@types/deep-extend": "npm:0.6.2"
     "@types/jest": "npm:^29.5.13"
     "@types/koa": "npm:^2.15.0"

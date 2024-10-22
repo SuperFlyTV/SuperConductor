@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { sorensen } from '@sofie-automation/sorensen'
+import { Sorensen } from '@sofie-automation/sorensen'
 import { GroupView } from './GroupView/GroupView.js'
 import { IPCServerContext } from '../../contexts/IPCServer.js'
 import { useDrop } from 'react-dnd'
@@ -148,18 +148,18 @@ export const RundownView: React.FC<{ mappings: Mappings }> = observer(function R
 			}
 		}
 		// Select All
-		sorensen.bind('Control+KeyA', onKeySelectAll, {
+		Sorensen.bind('Control+KeyA', onKeySelectAll, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Command+KeyA', onKeySelectAll, {
+		Sorensen.bind('Command+KeyA', onKeySelectAll, {
 			up: false,
 			global: true,
 		})
 
 		return () => {
-			sorensen.unbind('Control+KeyA', onKeySelectAll)
-			sorensen.unbind('Command+KeyA', onKeySelectAll)
+			Sorensen.unbind('Control+KeyA', onKeySelectAll)
+			Sorensen.unbind('Command+KeyA', onKeySelectAll)
 		}
 	}, [currentRundownId])
 

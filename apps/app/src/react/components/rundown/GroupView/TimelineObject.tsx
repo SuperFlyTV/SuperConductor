@@ -1,4 +1,4 @@
-import { sorensen } from '@sofie-automation/sorensen'
+import { Sorensen } from '@sofie-automation/sorensen'
 import { describeTimelineObject } from '../../../../lib/TimelineObj.js'
 import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable.js'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj.js'
@@ -203,7 +203,7 @@ export const TimelineObject: React.FC<{
 
 	useEffect(() => {
 		const onKey = () => {
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 
 			// Debounce to let setAllowDuplicate update:
@@ -214,30 +214,30 @@ export const TimelineObject: React.FC<{
 		}
 		onKey()
 
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.bind('Alt', onKey, {
+		Sorensen.bind('Alt', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Alt', onKey, {
+		Sorensen.bind('Alt', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.addEventListener('keycancel', onKey)
+		Sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			sorensen.unbind('Shift', onKey)
-			sorensen.unbind('Alt', onKey)
-			sorensen.removeEventListener('keycancel', onKey)
+			Sorensen.unbind('Shift', onKey)
+			Sorensen.unbind('Alt', onKey)
+			Sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext, move])
 
@@ -251,7 +251,7 @@ export const TimelineObject: React.FC<{
 			wasMoving.current = false
 		}
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this timline-object to the selection:
 			store.guiStore.toggleAddSelected({

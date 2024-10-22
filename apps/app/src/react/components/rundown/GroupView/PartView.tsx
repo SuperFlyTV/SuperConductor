@@ -1,6 +1,6 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { isEmpty } from 'lodash-es'
-import { sorensen } from '@sofie-automation/sorensen'
+import { Sorensen } from '@sofie-automation/sorensen'
 import { PlayHead } from './PlayHead.js'
 import { Layer, LayerEmpty } from './Layer.js'
 import {
@@ -125,7 +125,7 @@ export const PartView: React.FC<{
 		)
 			return
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this part to the selection:
 			store.guiStore.toggleAddSelected({
@@ -575,25 +575,25 @@ export const PartView: React.FC<{
 
 	useEffect(() => {
 		const onKey = () => {
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
 		onKey()
 
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.addEventListener('keycancel', onKey)
+		Sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			sorensen.unbind('Shift', onKey)
-			sorensen.removeEventListener('keycancel', onKey)
+			Sorensen.unbind('Shift', onKey)
+			Sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext])
 
@@ -1360,7 +1360,7 @@ const EndCapHover: React.FC<{
 					disabled={groupOrPartLocked}
 					title={'Delete Part' + (groupOrPartLocked ? ' (disabled due to locked Part or Group)' : '')}
 					onClick={() => {
-						const pressedKeys = sorensen.getPressedKeys()
+						const pressedKeys = Sorensen.getPressedKeys()
 						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 							// Delete immediately with no confirmation dialog.
 							handleDelete()

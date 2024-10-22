@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
-import { sorensen } from '@sofie-automation/sorensen'
+import { Sorensen } from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn.js'
 import { GroupBase, GroupGUI } from '../../../../models/rundown/Group.js'
 import { PartView } from './PartView.js'
@@ -146,7 +146,7 @@ export const GroupView: React.FC<{
 		)
 			return
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this group to the selection:
 			store.guiStore.toggleAddSelected({
@@ -416,7 +416,7 @@ export const GroupView: React.FC<{
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 	const handleDeleteClick = useCallback(() => {
-		const pressedKeys = sorensen.getPressedKeys()
+		const pressedKeys = Sorensen.getPressedKeys()
 		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 			// Delete immediately with no confirmation dialog.
 			handleDelete()
@@ -432,7 +432,7 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('AltLeft') || pressed.includes('AltRight')) {
 			ipcServer
 				.toggleAllGroupsCollapse({
