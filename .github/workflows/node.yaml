@@ -88,9 +88,9 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir macos-dist
-          mv apps/tsr-bridge/dist/TSR-Bridge* macos-dist/
-          mv apps/app/dist/SuperConductor* macos-dist/
-          mv apps/app/dist/latest-mac.yml macos-dist/
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* macos-dist/
+          mv apps/app/electron-output/SuperConductor* macos-dist/
+          mv apps/app/electron-output/latest-mac.yml macos-dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -132,9 +132,9 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir win-dist
-          mv apps/tsr-bridge/dist/TSR-Bridge* win-dist/
-          mv apps/app/dist/SuperConductor* win-dist/
-          mv apps/app/dist/latest.yml win-dist/
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* win-dist/
+          mv apps/app/electron-output/SuperConductor* win-dist/
+          mv apps/app/electron-output/latest.yml win-dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -181,8 +181,8 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir linux-dist
-          mv apps/tsr-bridge/dist/TSR-Bridge* linux-dist/
-          mv apps/app/dist/SuperConductor* linux-dist/
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* linux-dist/
+          mv apps/app/electron-output/SuperConductor* linux-dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
