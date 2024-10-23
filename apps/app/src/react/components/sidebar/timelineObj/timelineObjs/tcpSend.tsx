@@ -1,9 +1,9 @@
 import React from 'react'
-import { IntInput } from '../../../inputs/IntInput'
-import { TextInput } from '../../../inputs/TextInput'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { TextInput } from '../../../inputs/TextInput.js'
 import { TSRTimelineObj, TimelineContentTCPSendAny } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
-import { inputValue } from '../../../../lib/multipleEdit'
+import { EditWrapper, OnSave } from './lib.js'
+import { inputValue } from '../../../../lib/multipleEdit.js'
 
 export const EditTimelineObjTCPSendAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentTCPSendAny>[]

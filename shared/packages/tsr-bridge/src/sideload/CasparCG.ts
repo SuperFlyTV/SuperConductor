@@ -11,13 +11,13 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import {
 	addTemplatesToResourcesFromCasparCG,
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
-} from './CasparCGTemplates'
+} from './CasparCGTemplates.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
@@ -26,7 +26,11 @@ export class CasparCGSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: CasparCGMetadata = { metadataType: MetadataType.CASPARCG }
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsCasparCG, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsCasparCG,
+		private log: LoggerLike
+	) {
 		this.ccg = new CasparCG({
 			host: this.deviceOptions.options?.host,
 			port: this.deviceOptions.options?.port,

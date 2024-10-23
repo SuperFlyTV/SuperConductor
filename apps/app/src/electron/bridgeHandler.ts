@@ -11,12 +11,12 @@ import {
 	PeripheralSettingsBase,
 } from '@shared/api'
 import { WebsocketConnection, WebsocketServer } from '@shared/server-lib'
-import { AnalogInputSetting, Project } from '../models/project/Project'
-import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Bridge'
-import { SessionHandler } from './sessionHandler'
-import { StorageHandler } from './storageHandler'
+import { AnalogInputSetting, Project } from '../models/project/Project.js'
+import { Bridge, BridgeDevice, INTERNAL_BRIDGE_ID } from '../models/project/Bridge.js'
+import { SessionHandler } from './sessionHandler.js'
+import { StorageHandler } from './storageHandler.js'
 import { assertNever } from '@shared/lib'
-import _ from 'lodash'
+import { cloneDeep, isEqual } from 'lodash-es'
 import { Datastore, DeviceOptionsAny, Mappings, TSRTimeline } from 'timeline-state-resolver-types'
 import {
 	MetadataAny,
@@ -27,9 +27,10 @@ import {
 	unprotectString,
 } from '@shared/models'
 import { BaseBridge } from '@shared/tsr-bridge'
-import { AnalogInput } from '../models/project/AnalogInput'
+import { AnalogInput } from '../models/project/AnalogInput.js'
+import { createRequire } from 'module'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const require = createRequire(import.meta.url)
 export const { version: CURRENT_VERSION }: { version: string } = require('../../package.json')
 export const SERVER_PORT = 5400
 
@@ -65,7 +66,7 @@ export class BridgeHandler {
 	private datastore: Datastore = {}
 	private closed = false
 
-	reconnectToBridgesInterval: NodeJS.Timer
+	reconnectToBridgesInterval: NodeJS.Timeout
 
 	constructor(
 		private log: LoggerLike,
@@ -202,13 +203,13 @@ export class BridgeHandler {
 					// remove bridge:
 					delete bridge.connection
 				})
-			} catch (error) {
+			} catch (_error) {
 				// this.log.warn(`Failed to create a websocket connection to "${bridge.bridge.url}"`)
 			}
 		}
 	}
 	updateMappings(mappings: Mappings): void {
-		if (!_.isEqual(this.mappings, mappings)) {
+		if (!isEqual(this.mappings, mappings)) {
 			this.mappings = mappings
 
 			for (const bridgeConnection of this.connectedBridges.values()) {
@@ -217,7 +218,7 @@ export class BridgeHandler {
 		}
 	}
 	updateTimeline(timelineId: string, timeline: TSRTimeline | null): void {
-		if (!_.isEqual(this.timelines[timelineId], timeline)) {
+		if (!isEqual(this.timelines[timelineId], timeline)) {
 			if (timeline) {
 				this.timelines[timelineId] = timeline
 
@@ -348,8 +349,8 @@ abstract class AbstractBridgeConnection {
 	) {}
 
 	setSettings(settings: Bridge['settings'], force = false) {
-		if (force || !_.isEqual(this.sentSettings, settings)) {
-			this.sentSettings = _.cloneDeep(settings)
+		if (force || !isEqual(this.sentSettings, settings)) {
+			this.sentSettings = cloneDeep(settings)
 			this.send({
 				type: 'setSettings',
 				...settings,
@@ -367,7 +368,7 @@ abstract class AbstractBridgeConnection {
 		this.send({ type: 'removeTimeline', timelineId, currentTime: this.getCurrentTime() })
 	}
 	setMappings(mappings: Mappings, force = false) {
-		if (force || !_.isEqual(this.sentMappings, mappings)) {
+		if (force || !isEqual(this.sentMappings, mappings)) {
 			this.sentMappings = mappings
 			this.send({ type: 'setMappings', mappings, currentTime: this.getCurrentTime() })
 		}

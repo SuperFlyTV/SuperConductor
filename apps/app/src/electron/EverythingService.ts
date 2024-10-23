@@ -27,11 +27,11 @@ import {
 	MoveTarget,
 	shortID,
 	updateGroupPlayingParts,
-} from '../lib/util'
+} from '../lib/util.js'
 import { PartialDeep } from 'type-fest'
 import deepExtend from 'deep-extend'
-import { Group, PlayingPart } from '../models/rundown/Group'
-import { Part } from '../models/rundown/Part'
+import { Group, PlayingPart } from '../models/rundown/Group.js'
+import { Part } from '../models/rundown/Part.js'
 import {
 	TSRTimelineObj,
 	Mapping,
@@ -40,11 +40,11 @@ import {
 	TSRTimelineContent,
 	DeviceOptionsAny,
 } from 'timeline-state-resolver-types'
-import { ActionDescription, IPCServerMethods, UndoableResult, UpdateAppDataOptions } from '../ipc/IPCAPI'
-import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler'
-import { Rundown } from '../models/rundown/Rundown'
-import { SessionHandler } from './sessionHandler'
+import { ActionDescription, IPCServerMethods, UndoableResult, UpdateAppDataOptions } from '../ipc/IPCAPI.js'
+import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead.js'
+import { convertToFilename, ExportProjectData, StorageHandler } from './storageHandler.js'
+import { Rundown } from '../models/rundown/Rundown.js'
+import { SessionHandler } from './sessionHandler.js'
 import {
 	isProtectedString,
 	protectString,
@@ -55,33 +55,33 @@ import {
 	unprotectString,
 } from '@shared/models'
 import { assertNever, deepClone, getResourceIdFromTimelineObj, omit } from '@shared/lib'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { Project, ProjectBase } from '../models/project/Project'
-import { AppData } from '../models/App/AppData'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { Project, ProjectBase } from '../models/project/Project.js'
+import { AppData } from '../models/App/AppData.js'
 import {
 	filterMapping,
 	getMappingFromTimelineObject,
 	guessDeviceIdFromTimelineObject,
 	sortMappings,
-} from '../lib/TSRMappings'
-import { getDefaultGroup, getDefaultPart } from '../lib/defaults'
-import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger'
-import { getGroupPlayData } from '../lib/playout/groupPlayData'
-import { TSRTimelineObjFromResource } from '../lib/resources'
-import { PeripheralArea } from '../models/project/Peripheral'
-import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+} from '../lib/TSRMappings.js'
+import { getDefaultGroup, getDefaultPart } from '../lib/defaults.js'
+import { ActiveTrigger, ApplicationTrigger, RundownTrigger } from '../models/rundown/Trigger.js'
+import { getGroupPlayData } from '../lib/playout/groupPlayData.js'
+import { TSRTimelineObjFromResource } from '../lib/resources.js'
+import { PeripheralArea } from '../models/project/Peripheral.js'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
 import { BridgeId, LoggerLike, LogLevel, PeripheralId } from '@shared/api'
-import { postProcessPart } from './rundown'
-import _ from 'lodash'
-import { getLastEndTime } from '../lib/partTimeline'
-import { CurrentSelectionAny } from '../lib/GUI'
-import { Bridge, BridgePeripheralSettings } from '../models/project/Bridge'
-import { TriggersHandler } from './triggersHandler'
+import { postProcessPart } from './rundown.js'
+import { uniq } from 'lodash-es'
+import { getLastEndTime } from '../lib/partTimeline.js'
+import { CurrentSelectionAny } from '../lib/GUI.js'
+import { Bridge, BridgePeripheralSettings } from '../models/project/Bridge.js'
+import { TriggersHandler } from './triggersHandler.js'
 import { GDDSchema, ValidatorCache } from 'graphics-data-definition'
-import * as RundownActions from './rundownActions'
-import { SuperConductor } from './SuperConductor'
-import { UndoLedgerKey, UndoLedgerService } from './UndoService'
-import { SpecialLedgers } from '../models/project/Project'
+import * as RundownActions from './rundownActions.js'
+import { SuperConductor } from './SuperConductor.js'
+import { UndoLedgerKey, UndoLedgerService } from './UndoService.js'
+import { SpecialLedgers } from '../models/project/Project.js'
 
 export function isUndoable(result: unknown): result is UndoableResult<any> {
 	if (typeof result !== 'object' || result === null) {
@@ -103,7 +103,7 @@ type ConvertToServerSide<T> = {
 	[K in keyof T]: T[K] extends (arg: any) => any
 		? (
 				...args: Parameters<T[K]>
-		  ) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>> | ReturnType<T[K]>
+			) => Promise<UndoableResult<ReturnType<T[K]>> | undefined> | Promise<ReturnType<T[K]>> | ReturnType<T[K]>
 		: T[K]
 }
 
@@ -879,7 +879,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		try {
 			const { part } = this.getPartByExternalId(arg)
 			partId = part.id
-		} catch (error) {
+		} catch (_error) {
 			// Discard error.
 		}
 
@@ -1158,7 +1158,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		try {
 			const { group } = this.getGroupByExternalId(arg)
 			groupId = group.id
-		} catch (error) {
+		} catch (_error) {
 			// Ignore error.
 		}
 
@@ -1354,7 +1354,9 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 				if (insertPosition === -1)
 					throw new Error(
-						`Internal error: part insertAfterId "${nextTarget}" not found in group "${toGroup.id}"`
+						`Internal error: part insertAfterId "${JSON.stringify(nextTarget)}" not found in group "${
+							toGroup.id
+						}"`
 					)
 				toGroup.parts.splice(insertPosition, 0, part)
 
@@ -1419,8 +1421,8 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		}
 
 		// Commit the changes:
-		this._saveUpdates({ group: _.uniq(groupsToUpdate) })
-		for (const rundown of _.uniq(rundownsToUpdate)) {
+		this._saveUpdates({ group: uniq(groupsToUpdate) })
+		for (const rundown of uniq(rundownsToUpdate)) {
 			this._saveUpdates({ rundownId: rundown.id, rundown: rundown })
 		}
 		return {
@@ -1848,7 +1850,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 		for (const resourceId of arg.resourceIds) {
 			const resource = isProtectedString(resourceId) ? this.storage.getResource(resourceId) : resourceId
-			if (!resource) throw new Error(`Resource ${resourceId} not found.`)
+			if (!resource) throw new Error(`Resource ${JSON.stringify(resourceId)} not found.`)
 
 			const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(resource)
 

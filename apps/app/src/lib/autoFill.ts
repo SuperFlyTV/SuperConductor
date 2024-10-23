@@ -1,11 +1,11 @@
 import { assertNever } from '@shared/lib'
 import { ResourceAny, ResourceId } from '@shared/models'
 import { Mapping, Mappings, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
-import { Project } from '../models/project/Project'
-import { AutoFillSettings, AutoFillSortMode } from '../models/rundown/Group'
-import { TSRTimelineObjFromResource } from './resources'
-import { filterMapping } from './TSRMappings'
-import { scatterMatchString } from './util'
+import { Project } from '../models/project/Project.js'
+import { AutoFillSettings, AutoFillSortMode } from '../models/rundown/Group.js'
+import { TSRTimelineObjFromResource } from './resources.js'
+import { filterMapping } from './TSRMappings.js'
+import { scatterMatchString } from './util.js'
 
 export function findAutoFillResources(
 	project: Project,

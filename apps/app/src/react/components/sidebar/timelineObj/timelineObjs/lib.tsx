@@ -1,13 +1,13 @@
 import React, { useContext } from 'react'
-import { getCompatibleMappings } from '../../../../../lib/TSRMappings'
+import { getCompatibleMappings } from '../../../../../lib/TSRMappings.js'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
-import { ProjectContext } from '../../../../contexts/Project'
-import { DurationInput } from '../../../inputs/DurationInput'
-import { TextInput } from '../../../inputs/TextInput'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { DurationInput } from '../../../inputs/DurationInput.js'
+import { TextInput } from '../../../inputs/TextInput.js'
 import { PartialDeep } from 'type-fest'
-import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { useMemoComputedObject } from '../../../../mobx/lib'
+import { firstValue, isIndeterminate, inputValue } from '../../../../lib/multipleEdit.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { useMemoComputedObject } from '../../../../mobx/lib.js'
 
 export type OnSave = (update: PartialDeep<TSRTimelineObj<TSRTimelineContent>>) => void
 export type OnSaveType<T> = (update: PartialDeep<T>) => void
@@ -144,8 +144,8 @@ export const EditWrapper: React.FC<{
 									return enable.duration === null
 										? null
 										: typeof enable.duration === 'number'
-										? enable.duration
-										: 0
+											? enable.duration
+											: 0
 								},
 								0
 							)}

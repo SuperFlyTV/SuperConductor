@@ -1,5 +1,5 @@
 import React from 'react'
-import { ActiveTriggers } from '../../models/rundown/Trigger'
+import { ActiveTriggers } from '../../models/rundown/Trigger.js'
 import { EventEmitter } from 'events'
 /** Used to communicate with the backend */
 

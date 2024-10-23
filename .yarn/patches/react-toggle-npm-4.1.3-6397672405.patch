@@ -1,0 +1,14 @@
+diff --git a/dist/component/index.js b/dist/component/index.js
+index af91ef8082c1922b805354b06d3e8b474ba91140..eb1e6de4edd770b01ea776adca65bc62b4549ab9 100644
+--- a/dist/component/index.js
++++ b/dist/component/index.js
+@@ -237,6 +237,9 @@ var Toggle = function (_PureComponent) {
+ 
+ exports.default = Toggle;
+ 
++// Vite hates default exports, so add a named one for us to use
++exports.Toggle = Toggle
++
+ 
+ Toggle.displayName = 'Toggle';
+ 

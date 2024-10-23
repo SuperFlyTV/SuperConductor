@@ -1,10 +1,10 @@
 import { KeyDisplay, KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { ActionAny, ApplicationActionSelected } from '../action'
-import { GroupBase } from '../../../models/rundown/Group'
-import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'
-import { PeripheralArea } from '../../../models/project/Peripheral'
-import { getTimelineForGroup } from '../../timeline'
+import { ActionAny, ApplicationActionSelected } from '../action.js'
+import { GroupBase } from '../../../models/rundown/Group.js'
+import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead.js'
+import { PeripheralArea } from '../../../models/project/Peripheral.js'
+import { getTimelineForGroup } from '../../timeline.js'
 import { TimelineObject } from 'superfly-timeline'
 
 export type TriggersAreaMap = Map<string, TriggerArea>

@@ -18,10 +18,10 @@ import {
 	TriCasterMixEffectInMixMode,
 } from 'timeline-state-resolver-types'
 import { assertNever, capitalizeFirstLetter } from '@shared/lib'
-import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { formatDuration } from './timeLib'
-import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR'
+import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { formatDuration } from './timeLib.js'
+import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR.js'
 import { TimelineObject } from 'superfly-timeline'
 import { MetadataAny, MetadataType } from '@shared/models'
 

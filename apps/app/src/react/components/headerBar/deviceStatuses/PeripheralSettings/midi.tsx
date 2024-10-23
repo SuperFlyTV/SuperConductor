@@ -1,7 +1,7 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import { PeripheralStatus } from '../../../../../models/project/Peripheral'
-import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
+import { PeripheralStatus } from '../../../../../models/project/Peripheral.js'
+import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay.js'
 import { BridgeId, PeripheralId, PeripheralType } from '@shared/api'
 
 export const MIDISettings: React.FC<{

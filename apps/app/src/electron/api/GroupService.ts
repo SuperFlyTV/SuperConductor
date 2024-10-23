@@ -1,13 +1,13 @@
-import { EverythingService } from '../EverythingService'
+import { EverythingService } from '../EverythingService.js'
 import { Application } from '@feathersjs/feathers'
 import EventEmitter from 'node:events'
 import { GeneralError } from '@feathersjs/errors'
-import { PartialDeep } from 'type-fest/source/partial-deep'
-import { ClientEventBus } from '../ClientEventBus'
+import { PartialDeep } from 'type-fest'
+import { ClientEventBus } from '../ClientEventBus.js'
 import { ResourceAny } from '@shared/models'
-import { MoveTarget } from '../../lib/util'
-import { Group } from '../../models/rundown/Group'
-import { ServiceTypes } from '../../ipc/IPCAPI'
+import { MoveTarget } from '../../lib/util.js'
+import { Group } from '../../models/rundown/Group.js'
+import { ServiceTypes } from '../../ipc/IPCAPI.js'
 
 interface GroupData {
 	rundownId: string

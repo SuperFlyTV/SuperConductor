@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import {
 	AbortError,
 	Conductor,
@@ -9,16 +9,16 @@ import {
 } from 'timeline-state-resolver'
 import { MetadataAny, ResourceAny, TSRDeviceId, unprotectString } from '@shared/models'
 import { BridgeAPI, LoggerLike } from '@shared/api'
-import { CasparCGSideload } from './sideload/CasparCG'
-import { AtemSideload } from './sideload/Atem'
-import { OBSSideload } from './sideload/OBS'
-import { VMixSideload } from './sideload/VMix'
-import { OSCSideload } from './sideload/OSC'
-import { HTTPSendSideload } from './sideload/HTTPSend'
-import { HyperdeckSideload } from './sideload/Hyperdeck'
-import { SideLoadDevice } from './sideload/sideload'
-import { TCPSendSideload } from './sideload/TCPSend'
-import { TriCasterSideload } from './sideload/TriCaster'
+import { CasparCGSideload } from './sideload/CasparCG.js'
+import { AtemSideload } from './sideload/Atem.js'
+import { OBSSideload } from './sideload/OBS.js'
+import { VMixSideload } from './sideload/VMix.js'
+import { OSCSideload } from './sideload/OSC.js'
+import { HTTPSendSideload } from './sideload/HTTPSend.js'
+import { HyperdeckSideload } from './sideload/Hyperdeck.js'
+import { SideLoadDevice } from './sideload/sideload.js'
+import { TCPSendSideload } from './sideload/TCPSend.js'
+import { TriCasterSideload } from './sideload/TriCaster.js'
 import { stringifyError } from '@shared/lib'
 
 export class TSR {
@@ -118,7 +118,7 @@ export class TSR {
 
 			const existingDevice = this.devices.get(deviceId)
 
-			if (!existingDevice || !_.isEqual(existingDevice.options, newDeviceOptions)) {
+			if (!existingDevice || !isEqual(existingDevice.options, newDeviceOptions)) {
 				if (existingDevice) {
 					existingDevice.abortController.abort()
 					await this.conductor.removeDevice(unprotectString(deviceId))

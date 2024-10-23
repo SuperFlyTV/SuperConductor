@@ -5,10 +5,10 @@ import {
 	TimelineContentSofieChefAny,
 	TimelineContentTypeSofieChef,
 } from 'timeline-state-resolver-types'
-import { firstValue, inputValue } from '../../../../lib/multipleEdit'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { TextInput } from '../../../inputs/TextInput'
-import { EditWrapper, OnSave, OnSaveType } from './lib'
+import { firstValue, inputValue } from '../../../../lib/multipleEdit.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { EditWrapper, OnSave, OnSaveType } from './lib.js'
 
 export const EditTimelineObjSofieChefAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentSofieChefAny>[]

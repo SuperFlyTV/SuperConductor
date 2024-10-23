@@ -1,5 +1,6 @@
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
-import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection'
+// eslint-disable-next-line n/no-missing-import
+import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection.js'
 import {
 	ResourceAny,
 	ResourceType,
@@ -22,7 +23,7 @@ import {
 	TSRDeviceId,
 	VMixScript,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
@@ -32,7 +33,11 @@ export class VMixSideload implements SideLoadDevice {
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsVMix, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsVMix,
+		private log: LoggerLike
+	) {
 		this.vmix = new VMix(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
 
 		this.vmix.on('connected', () => {

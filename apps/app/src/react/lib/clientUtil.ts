@@ -1,14 +1,14 @@
-import _ from 'lodash'
+import { sortBy } from 'lodash-es'
 import { assertNever } from '@shared/lib'
-import { GroupGUI } from '../../models/rundown/Group'
-import { PartGUI } from '../../models/rundown/Part'
+import { GroupGUI } from '../../models/rundown/Group.js'
+import { PartGUI } from '../../models/rundown/Part.js'
 import {
 	CurrentSelectionGroup,
 	CurrentSelectionPart,
 	CurrentSelectionTimelineObj,
 	CurrentSelectionAny,
-} from '../../lib/GUI'
-import { RundownsStore } from '../mobx/RundownsStore'
+} from '../../lib/GUI.js'
+import { RundownsStore } from '../mobx/RundownsStore.js'
 
 export function sortSelected(
 	rundownId: string,
@@ -33,7 +33,7 @@ export function sortSelected(
 	const rundown = rundownsStore.getRundown(rundownId)
 	if (!rundown) return selected
 
-	return _.sortBy(selected, (s) => {
+	return sortBy(selected, (s) => {
 		let groupIndex = 0
 		let group: GroupGUI | undefined
 		let partIndex = 0

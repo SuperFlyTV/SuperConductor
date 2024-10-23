@@ -1,8 +1,8 @@
 import { KeyDisplayTimeline, AttentionLevel } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead'
-import { GroupBase } from '../../../models/rundown/Group'
-import { ActionAny, ApplicationAction } from '../action'
+import { GroupPreparedPlayDataPart } from '../../../models/GUI/PreparedPlayhead.js'
+import { GroupBase } from '../../../models/rundown/Group.js'
+import { ActionAny, ApplicationAction } from '../action.js'
 import {
 	formatKeyDuration,
 	formatKeyTimeToEnd,
@@ -12,7 +12,7 @@ import {
 	TriggerArea,
 	triggersAreaToArea,
 	_getKeyDisplay,
-} from './lib'
+} from './lib.js'
 
 export function keyDisplayApplicationPlay(
 	firstAction: ApplicationAction,
@@ -36,7 +36,7 @@ export function keyDisplayApplicationPlay(
 						info: {
 							long: formatKeyDuration(longestDuration),
 						},
-				  }
+					}
 				: {
 						// Nothing to play:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -46,7 +46,7 @@ export function keyDisplayApplicationPlay(
 							long: `Play`,
 							short: `▶`,
 						},
-				  },
+					},
 
 		paused: ({ action, group, pausedPart }) => {
 			// Only show the playing state while OUR part is playing:
@@ -107,7 +107,7 @@ export function keyDisplayApplicationStop(
 						info: {
 							long: formatKeyDuration(longestDuration),
 						},
-				  }
+					}
 				: {
 						// Nothing to stop:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -117,7 +117,7 @@ export function keyDisplayApplicationStop(
 							long: `Stop`,
 							short: `⏹`,
 						},
-				  },
+					},
 		paused: ({ action, group, pausedPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (!group.oneAtATime && !isThisSelected(action, group, pausedPart)) return null // Display idle
@@ -176,7 +176,7 @@ export function keyDisplayApplicationPlayStop(
 						info: {
 							long: formatKeyDuration(longestDuration),
 						},
-				  }
+					}
 				: {
 						// Nothing to PlayStop:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -186,7 +186,7 @@ export function keyDisplayApplicationPlayStop(
 							long: `Play / Stop`,
 							short: `▶⏹`,
 						},
-				  },
+					},
 		paused: ({ action, group, pausedPart }) => {
 			// Only show the playing state while OUR part is playing:
 			if (!isThisSelected(action, group, pausedPart)) return null // Display idle
@@ -245,7 +245,7 @@ export function keyDisplayApplicationPause(
 						info: {
 							long: formatKeyDuration(longestDuration),
 						},
-				  }
+					}
 				: {
 						// Nothing to Pause/Cue:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -255,7 +255,7 @@ export function keyDisplayApplicationPause(
 							long: `Cue`,
 							short: `⏵⏸`,
 						},
-				  },
+					},
 		paused: ({ action, pausedPart, group }) => {
 			// Only show the playing state while OUR part is playing:
 			if (!group.oneAtATime && !isThisSelected(action, group, pausedPart)) return null // Display idle
@@ -310,7 +310,7 @@ export function keyDisplayApplicationNext(
 							long: `Next ${label}`,
 							short: `⏭${label}`,
 						},
-				  }
+					}
 				: {
 						// Nothing to Next:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -320,7 +320,7 @@ export function keyDisplayApplicationNext(
 							long: `Next`,
 							short: `⏭`,
 						},
-				  },
+					},
 		playing: ({ playingPart }) => {
 			return {
 				attentionLevel: AttentionLevel.NEUTRAL,
@@ -355,7 +355,7 @@ export function keyDisplayApplicationPrevious(
 							long: `Previous ${label}`,
 							short: `⏮${label}`,
 						},
-				  }
+					}
 				: {
 						// Nothing to Previous:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -365,7 +365,7 @@ export function keyDisplayApplicationPrevious(
 							long: `Previous`,
 							short: `⏮`,
 						},
-				  },
+					},
 		playing: ({ playingPart }) => {
 			return {
 				attentionLevel: AttentionLevel.NEUTRAL,
@@ -399,7 +399,7 @@ export function keyDisplayApplicationDelete(
 							long: `Delete ${label}`,
 							short: `🗑${label}`,
 						},
-				  }
+					}
 				: {
 						// Nothing to Delete:
 						attentionLevel: AttentionLevel.IGNORE,
@@ -409,7 +409,7 @@ export function keyDisplayApplicationDelete(
 							long: `Delete`,
 							short: `🗑`,
 						},
-				  },
+					},
 		playing: () => {
 			return null
 		},

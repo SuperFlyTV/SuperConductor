@@ -1,33 +1,29 @@
 import EventEmitter from 'events'
-import { BridgeStatus } from '../models/project/Bridge'
-import { PeripheralStatus } from '../models/project/Peripheral'
-import _ from 'lodash'
-import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { BridgeStatus } from '../models/project/Bridge.js'
+import { PeripheralStatus } from '../models/project/Peripheral.js'
+import { isEqual } from 'lodash-es'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
 import { AnalogValue, BridgeId, KnownPeripheral, PeripheralId, PeripheralInfo } from '@shared/api'
-import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { CurrentSelectionAny } from '../lib/GUI'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { CurrentSelectionAny } from '../lib/GUI.js'
 import { BridgePeripheralId, getPeripheralId } from '@shared/lib'
-import { ActiveAnalog } from '../models/rundown/Analog'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
 import { unprotectString } from '@shared/models'
 
 export interface SessionHandlerEvents {
-	knownPeripheralDiscovered: (peripheralId: PeripheralId, info: KnownPeripheral) => void
+	knownPeripheralDiscovered: [peripheralId: PeripheralId, info: KnownPeripheral]
 
-	bridgeStatus: (bridgeId: BridgeId, status: BridgeStatus | null) => void
-	peripheral: (peripheralId: BridgePeripheralId, status: PeripheralStatus | null) => void
-	allTrigger: (fullIdentifier: string, activeTrigger: ActiveTrigger | null) => void
-	activeTriggers: (activeTriggers: ActiveTriggers) => void
-	activeAnalog: (fullIdentifier: string, activeAnalog: ActiveAnalog | null) => void
-	definingArea: (definingArea: DefiningArea | null) => void
-	selection: (selection: Readonly<CurrentSelectionAny[]>) => void
-}
-export interface SessionHandler {
-	on<U extends keyof SessionHandlerEvents>(event: U, listener: SessionHandlerEvents[U]): this
-	emit<U extends keyof SessionHandlerEvents>(event: U, ...args: Parameters<SessionHandlerEvents[U]>): boolean
+	bridgeStatus: [bridgeId: BridgeId, status: BridgeStatus | null]
+	peripheral: [peripheralId: BridgePeripheralId, status: PeripheralStatus | null]
+	allTrigger: [fullIdentifier: string, activeTrigger: ActiveTrigger | null]
+	activeTriggers: [activeTriggers: ActiveTriggers]
+	activeAnalog: [fullIdentifier: string, activeAnalog: ActiveAnalog | null]
+	definingArea: [definingArea: DefiningArea | null]
+	selection: [selection: Readonly<CurrentSelectionAny[]>]
 }
 
 /** This class handles all non-persistant data */
-export class SessionHandler extends EventEmitter {
+export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 	private bridgeStatuses = new Map<BridgeId, BridgeStatus>()
 	private bridgeStatusesHasChanged = new Set<BridgeId>()
 
@@ -104,11 +100,11 @@ export class SessionHandler extends EventEmitter {
 			bridgeId: bridgeId,
 			info: info,
 			status: {
-				lastConnected: connected ? Date.now() : existing?.status.lastConnected ?? 0,
+				lastConnected: connected ? Date.now() : (existing?.status.lastConnected ?? 0),
 				connected: connected,
 			},
 		}
-		if (!_.isEqual(newDevice, this.peripherals.get(peripheralId))) {
+		if (!isEqual(newDevice, this.peripherals.get(peripheralId))) {
 			this.peripherals.set(peripheralId, newDevice)
 			this.peripheralsHasChanged.add(peripheralId)
 		}
@@ -135,7 +131,7 @@ export class SessionHandler extends EventEmitter {
 			knownPeripheralsObj[unprotectString<PeripheralId>(deviceId)] = knownPeripheral
 		}
 
-		if (!_.isEqual(knownPeripheralsObj, bridgeStatus.peripherals)) {
+		if (!isEqual(knownPeripheralsObj, bridgeStatus.peripherals)) {
 			bridgeStatus.peripherals = knownPeripheralsObj
 			this.bridgeStatusesHasChanged.add(bridgeId)
 		}
@@ -213,7 +209,7 @@ export class SessionHandler extends EventEmitter {
 			this.activeAnalogs[fullIdentifier] = analog
 			this.activeAnalogsHasChanged[fullIdentifier] = true
 		} else {
-			if (!_.isEqual(previousAnalog.value, analog.value)) {
+			if (!isEqual(previousAnalog.value, analog.value)) {
 				this.activeAnalogs[fullIdentifier] = analog
 				this.activeAnalogsHasChanged[fullIdentifier] = true
 			}
@@ -222,7 +218,7 @@ export class SessionHandler extends EventEmitter {
 		this.triggerUpdate()
 	}
 	updateSelection(selection: Readonly<CurrentSelectionAny[]>): void {
-		if (!_.isEqual(this.selection, selection)) {
+		if (!isEqual(this.selection, selection)) {
 			this.selection = selection
 			this.selectionHasChanged = true
 			this.triggerUpdate()

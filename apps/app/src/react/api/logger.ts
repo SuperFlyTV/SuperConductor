@@ -1,6 +1,6 @@
 import { LogLevel } from '@shared/api'
 import { stringifyError } from '@shared/lib'
-import { ApiClient } from './ApiClient'
+import { ApiClient } from './ApiClient.js'
 
 export class ClientSideLogger {
 	constructor(private serverAPI: ApiClient) {

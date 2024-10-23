@@ -10,12 +10,16 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource } from '@shared/lib'
 
 export class TCPSendSideload implements SideLoadDevice {
-	constructor(private deviceId: TSRDeviceId, _deviceOptions: DeviceOptionsTCPSend, _log: LoggerLike) {}
+	constructor(
+		private deviceId: TSRDeviceId,
+		_deviceOptions: DeviceOptionsTCPSend,
+		_log: LoggerLike
+	) {}
 	async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
 		return this._refreshResourcesAndMetadata()
 	}

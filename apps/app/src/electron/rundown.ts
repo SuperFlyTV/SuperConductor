@@ -1,7 +1,7 @@
 import { ResolvedTimeline, Resolver } from 'superfly-timeline'
-import { getPartLabel, getResolvedTimelineTotalDuration } from '../lib/util'
-import { Part } from '../models/rundown/Part'
-import { TimelineObjResolvedInstance } from '../models/rundown/TimelineObj'
+import { getPartLabel, getResolvedTimelineTotalDuration } from '../lib/util.js'
+import { Part } from '../models/rundown/Part.js'
+import { TimelineObjResolvedInstance } from '../models/rundown/TimelineObj.js'
 
 export function postProcessPart(part: Part, noModify?: boolean): void {
 	let resolvedTimeline: ResolvedTimeline

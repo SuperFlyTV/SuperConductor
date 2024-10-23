@@ -1,6 +1,6 @@
 {
 	"watch": ["src/**/*"],
 	"ignore": ["*.test.ts", "src/react/*", "README"],
-	"exec": "tsc -p tsconfig.electron.json && electron ./dist/main.js --inspect=9229",
+	"exec": "run -B -T tsc -p tsconfig.electron.json && electron ./dist/main.mjs --inspect=9229",
 	"ext": "ts"
 }

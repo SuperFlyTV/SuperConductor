@@ -1,6 +1,6 @@
 import React from 'react'
 import { GDDSchema, GDDSchemaProperty, GDDTypes, validateData } from 'graphics-data-definition'
-import { ComponentAnyProps, getBasicType, PropertyProps } from './lib'
+import { ComponentAnyProps, getBasicType, PropertyProps } from './lib.js'
 import {
 	basicPropertyBoolean,
 	basicPropertyString,
@@ -9,15 +9,15 @@ import {
 	basicPropertyArray,
 	basicPropertyObject,
 	basicPropertyUnknown,
-} from './basicProperties'
-import { gddTypeSingleLine } from './GDDTypes/string-single-line'
+} from './basicProperties.js'
+import { gddTypeSingleLine } from './GDDTypes/string-single-line.js'
 import { assertNever } from '@shared/lib'
-import { gddTypeMultiLine } from './GDDTypes/string-multi-line'
-import { gddTypeSelect } from './GDDTypes/select'
-import { gddTypeColorRRGGBB } from './GDDTypes/string-color-rrggbb'
-import { gddTypeColorRRGGBBAA } from './GDDTypes/string-color-rrggbbaa'
-import { gddTypeIntegerMs } from './GDDTypes/integer-duration-ms'
-import { gddTypePercentage } from './GDDTypes/number-percentage'
+import { gddTypeMultiLine } from './GDDTypes/string-multi-line.js'
+import { gddTypeSelect } from './GDDTypes/select.js'
+import { gddTypeColorRRGGBB } from './GDDTypes/string-color-rrggbb.js'
+import { gddTypeColorRRGGBBAA } from './GDDTypes/string-color-rrggbbaa.js'
+import { gddTypeIntegerMs } from './GDDTypes/integer-duration-ms.js'
+import { gddTypePercentage } from './GDDTypes/number-percentage.js'
 
 export const componentAny: React.FC<ComponentAnyProps<GDDSchemaProperty>> = (props) => {
 	const schema = props.schema

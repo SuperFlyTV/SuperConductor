@@ -1,15 +1,15 @@
 import { literal, stringifyError } from '@shared/lib'
 import { app, BrowserWindow, dialog, Menu, shell, screen, ipcMain } from 'electron'
-import isDev from 'electron-is-dev'
-import { autoUpdater } from 'electron-updater'
-import { CURRENT_VERSION } from './electron/bridgeHandler'
-import { generateMenu, GenerateMenuArgs } from './electron/menu'
-import { SuperConductor } from './electron/SuperConductor'
-import { createLoggers } from './lib/logging'
-import { baseFolder } from './lib/baseFolder'
+import electronUpdater from 'electron-updater'
+import { CURRENT_VERSION } from './electron/bridgeHandler.js'
+import { generateMenu, GenerateMenuArgs } from './electron/menu.js'
+import { SuperConductor } from './electron/SuperConductor.js'
+import { createLoggers } from './lib/logging/index.js'
+import { baseFolder } from './lib/baseFolder.js'
 import path from 'path'
 import winston from 'winston'
-import { SerializableLedger } from './models/project/Project'
+import { SerializableLedger } from './models/project/Project.js'
+import { fileURLToPath } from 'url'
 
 function createWindow(log: winston.Logger, superConductor: SuperConductor): void {
 	const appData = superConductor.storage.getAppData()
@@ -21,9 +21,9 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		height: appData.windowPosition.height,
 
 		webPreferences: {
-			nodeIntegration: false,
+			nodeIntegration: true,
 			contextIsolation: true,
-			preload: path.join(__dirname, 'preload.js'),
+			preload: fileURLToPath(new URL('./preload.mjs', import.meta.url)),
 		},
 		title: 'SuperConductor',
 	})
@@ -49,7 +49,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		handler.close()
 	})
 
-	if (isDev) {
+	if (!app.isPackaged) {
 		// Disabled until https://github.com/MarshallOfSound/electron-devtools-installer/issues/215 is fixed
 		// installExtension(REACT_DEVELOPER_TOOLS)
 		// 	.then((name) => log.info(`Added Extension:  ${name}`))
@@ -59,16 +59,16 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		// 	.catch((err) => log.info('An error occurred: ', err))
 		win.webContents.openDevTools()
 	}
-	win.loadURL(isDev ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/dist/index.html`).catch(log.error)
+	win
+		.loadURL(!app.isPackaged ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/build/index.html`)
+		.catch(log.error)
 
 	const menuOpts = literal<GenerateMenuArgs>({
 		undoLabel: 'Undo',
 		undoEnabled: false,
 		redoLabel: 'Redo',
 		redoEnabled: false,
-		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		onUndoClick: () => {},
-		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		onRedoClick: () => {},
 		onAboutClick: () => {
 			// TODO: this should probably become a client-side only action
@@ -77,7 +77,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		onUpdateClick: async () => {
 			try {
-				const result = await autoUpdater.checkForUpdatesAndNotify()
+				const result = await electronUpdater.autoUpdater.checkForUpdatesAndNotify()
 				if (!result) {
 					if (!app.isPackaged) {
 						await dialog.showMessageBox(win, {
@@ -186,10 +186,10 @@ function onAppReady(): void {
 
 	const superConductor = new SuperConductor(log, rendererLogger)
 
-	autoUpdater.on('update-available', (info) => {
+	electronUpdater.autoUpdater.on('update-available', (info) => {
 		// Notify:
 
-		if (autoUpdater.autoDownload) {
+		if (electronUpdater.autoUpdater.autoDownload) {
 			superConductor.sendSystemMessage(
 				`A new version (${info.version}) is available. It will automatically be downloaded and installed next time you restart SuperConductor.`,
 				{
@@ -202,7 +202,7 @@ function onAppReady(): void {
 			})
 		}
 	})
-	autoUpdater.on('update-downloaded', (info) => {
+	electronUpdater.autoUpdater.on('update-downloaded', (info) => {
 		superConductor.sendSystemMessage(
 			`A new version (${info.version}) has been downloaded. Restart SuperConductor to install it.`,
 			{
@@ -212,7 +212,7 @@ function onAppReady(): void {
 			}
 		)
 	})
-	autoUpdater.on('error', (error, message) => {
+	electronUpdater.autoUpdater.on('error', (error, message) => {
 		const errString = stringifyError(error) + message ? ` ${message}` : ''
 
 		// Ignore, this is an error that pops up if the latest tag doesn't have a release yet (or if there a draft release):
@@ -292,7 +292,7 @@ function onAppReady(): void {
 					console.error(_err)
 				})
 				log.on('finish', () => {
-					// eslint-disable-next-line no-process-exit
+					// eslint-disable-next-line n/no-process-exit
 					process.exit(0)
 					// app.quit()
 				})

@@ -1,15 +1,15 @@
 import { BrowserWindow, dialog } from 'electron'
-import { autoUpdater } from 'electron-updater'
-import { AutoFillMode, Group } from '../models/rundown/Group'
-import { EverythingService } from './EverythingService'
-import { ClientEventBus } from './ClientEventBus'
-import { updateTimeline } from './timeline'
-import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
-import { StorageHandler } from './storageHandler'
-import { AppData } from '../models/App/AppData'
-import { Project } from '../models/project/Project'
-import { Rundown } from '../models/rundown/Rundown'
-import { SessionHandler } from './sessionHandler'
+import electronUpdater from 'electron-updater'
+import { AutoFillMode, Group } from '../models/rundown/Group.js'
+import { EverythingService } from './EverythingService.js'
+import { ClientEventBus } from './ClientEventBus.js'
+import { updateTimeline } from './timeline.js'
+import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead.js'
+import { StorageHandler } from './storageHandler.js'
+import { AppData } from '../models/App/AppData.js'
+import { Project } from '../models/project/Project.js'
+import { Rundown } from '../models/rundown/Rundown.js'
+import { SessionHandler } from './sessionHandler.js'
 import {
 	ResourceAny,
 	ResourceId,
@@ -19,31 +19,31 @@ import {
 	TSRDeviceId,
 	serializeProtectedMap,
 } from '@shared/models'
-import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler'
-import _ from 'lodash'
-import { BridgeStatus } from '../models/project/Bridge'
-import { PeripheralStatus } from '../models/project/Peripheral'
-import { TriggersHandler } from './triggersHandler'
-import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
+import { BridgeHandler, CURRENT_VERSION } from './bridgeHandler.js'
+import { isEqual } from 'lodash-es'
+import { BridgeStatus } from '../models/project/Bridge.js'
+import { PeripheralStatus } from '../models/project/Peripheral.js'
+import { TriggersHandler } from './triggersHandler.js'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
 import { BridgeId, LoggerLike } from '@shared/api'
-import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util'
-import { findAutoFillResources } from '../lib/autoFill'
-import { Part } from '../models/rundown/Part'
-import { getDefaultPart } from '../lib/defaults'
-import { TimelineObj } from '../models/rundown/TimelineObj'
-import { postProcessPart } from './rundown'
+import { hash, listAvailableDeviceIDs, rateLimitIgnore, updateGroupPlayingParts } from '../lib/util.js'
+import { findAutoFillResources } from '../lib/autoFill.js'
+import { Part } from '../models/rundown/Part.js'
+import { getDefaultPart } from '../lib/defaults.js'
+import { TimelineObj } from '../models/rundown/TimelineObj.js'
+import { postProcessPart } from './rundown.js'
 import { BridgePeripheralId, assertNever } from '@shared/lib'
-import { TelemetryHandler } from './telemetry'
-import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
-import { ApiServer } from './api/ApiServer'
-import { ActiveAnalog } from '../models/rundown/Analog'
-import { AnalogHandler } from './analogHandler'
-import { AnalogInput } from '../models/project/AnalogInput'
-import { SystemMessageOptions } from '../ipc/IPCAPI'
-import { getTimelineForGroup } from '../lib/timeline'
+import { TelemetryHandler } from './telemetry.js'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement.js'
+import { ApiServer } from './api/ApiServer.js'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
+import { AnalogHandler } from './analogHandler.js'
+import { AnalogInput } from '../models/project/AnalogInput.js'
+import { SystemMessageOptions } from '../ipc/IPCAPI.js'
+import { getTimelineForGroup } from '../lib/timeline.js'
 import { TSRTimeline } from 'timeline-state-resolver-types'
-import { UndoLedgerService } from './UndoService'
+import { UndoLedgerService } from './UndoService.js'
 
 export class SuperConductor {
 	ipcServer: EverythingService
@@ -64,7 +64,7 @@ export class SuperConductor {
 	private __triggerBatchSendResourcesAndMetadataTimeout: NodeJS.Timeout | null = null
 	private autoRefreshInterval: {
 		interval: number
-		timer: NodeJS.Timer
+		timer: NodeJS.Timeout
 	} | null = null
 	private refreshStatus = new Map<TSRDeviceId, number>()
 
@@ -73,7 +73,10 @@ export class SuperConductor {
 	private internalHttpApiPort = 5500
 	private disableInternalHttpApi = false
 
-	constructor(private log: LoggerLike, private renderLog: LoggerLike) {
+	constructor(
+		private log: LoggerLike,
+		private renderLog: LoggerLike
+	) {
 		this.session = new SessionHandler()
 		this.clientEventBus = new ClientEventBus()
 
@@ -185,7 +188,7 @@ export class SuperConductor {
 					const newResouceIds = new Set<ResourceId>()
 					for (const resource of resources) {
 						newResouceIds.add(resource.id)
-						if (!_.isEqual(this.storage.getResource(resource.id), resource)) {
+						if (!isEqual(this.storage.getResource(resource.id), resource)) {
 							this.storage.updateResource(resource.id, resource)
 						}
 					}
@@ -198,7 +201,7 @@ export class SuperConductor {
 				// Metadata
 				{
 					// Added, updated, or removed:
-					if (!_.isEqual(this.storage.getMetadata(deviceId), metadata)) {
+					if (!isEqual(this.storage.getMetadata(deviceId), metadata)) {
 						this.storage.updateMetadata(deviceId, metadata)
 					}
 				}
@@ -253,8 +256,8 @@ export class SuperConductor {
 					// Nothing here yet
 				},
 				installUpdate: () => {
-					autoUpdater.autoRunAppAfterInstall = true
-					autoUpdater.quitAndInstall()
+					electronUpdater.autoUpdater.autoRunAppAfterInstall = true
+					electronUpdater.autoUpdater.quitAndInstall()
 				},
 				updateTimeline: (group: Group): GroupPreparedPlayData | null => {
 					return this.updateTimeline(group)
@@ -315,14 +318,14 @@ export class SuperConductor {
 
 		const preReleaseAutoUpdate = appData.preReleaseAutoUpdate ?? appData.version.currentVersionIsPrerelease
 
-		autoUpdater.autoDownload = true
-		autoUpdater.allowDowngrade = true
+		electronUpdater.autoUpdater.autoDownload = true
+		electronUpdater.autoUpdater.allowDowngrade = true
 
-		if (autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
-			autoUpdater.allowPrerelease = preReleaseAutoUpdate
+		if (electronUpdater.autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
+			electronUpdater.autoUpdater.allowPrerelease = preReleaseAutoUpdate
 
 			setTimeout(() => {
-				autoUpdater.checkForUpdatesAndNotify().catch(this.log.error)
+				electronUpdater.autoUpdater.checkForUpdatesAndNotify().catch(this.log.error)
 			}, 1000)
 		}
 	}

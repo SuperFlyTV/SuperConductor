@@ -1,24 +1,24 @@
-import { BridgeStatus } from '../models/project/Bridge'
-import { Project } from '../models/project/Project'
+import { BridgeStatus } from '../models/project/Bridge.js'
+import { Project } from '../models/project/Project.js'
 import { MetadataAny, ResourceAny, ResourceId, SerializedProtectedMap, TSRDeviceId } from '@shared/models'
-import { Rundown } from '../models/rundown/Rundown'
-import { PeripheralStatus } from '../models/project/Peripheral'
-import { IPCClientMethods, SystemMessageOptions } from '../ipc/IPCAPI'
-import { AppData } from '../models/App/AppData'
-import { ActiveTriggers } from '../models/rundown/Trigger'
-import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { ActiveAnalog } from '../models/rundown/Analog'
-import { AnalogInput } from '../models/project/AnalogInput'
+import { Rundown } from '../models/rundown/Rundown.js'
+import { PeripheralStatus } from '../models/project/Peripheral.js'
+import { IPCClientMethods, SystemMessageOptions } from '../ipc/IPCAPI.js'
+import { AppData } from '../models/App/AppData.js'
+import { ActiveTriggers } from '../models/rundown/Trigger.js'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
+import { AnalogInput } from '../models/project/AnalogInput.js'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
-import EventEmitter from 'eventemitter3'
-import { SerializableLedgers } from '../models/project/Project'
+import EventEmitter from 'events'
+import { SerializableLedgers } from '../models/project/Project.js'
 
 type ClientEventBusEvents = {
-	callMethod: (...args: any[]) => void // legacy
-	updateUndoLedgers: (undoLedgers: SerializableLedgers) => void
-	updateRundown: (rundown: Rundown) => void
-	updateProject: (rundown: Project) => void
+	callMethod: [...args: any[]] // legacy
+	updateUndoLedgers: [undoLedgers: SerializableLedgers]
+	updateRundown: [rundown: Rundown]
+	updateProject: [rundown: Project]
 }
 
 // --- some of it might be needed, most of it hopefully not

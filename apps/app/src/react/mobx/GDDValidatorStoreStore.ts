@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 import { SchemaValidator, setupSchemaValidator, ValidatorCache } from 'graphics-data-definition'
-import { ApiClient } from '../api/ApiClient'
+import { ApiClient } from '../api/ApiClient.js'
 
 export class GDDValidatorStore {
 	private isInitialized = false
@@ -25,6 +25,7 @@ export class GDDValidatorStore {
 		try {
 			const v = await setupSchemaValidator({
 				fetch: async (url: string) => {
+					// eslint-disable-next-line n/no-unsupported-features/node-builtins
 					const response = await fetch(url)
 					return await response.json()
 				},

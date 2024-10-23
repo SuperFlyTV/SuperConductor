@@ -10,11 +10,12 @@
 	"homepage": "https://github.com/SuperFlyTV/SuperConductor#readme",
 	"license": "AGPL-3.0-or-later",
 	"private": true,
+	"type": "module",
 	"engines": {
-		"node": "^16.16.0 || 18"
+		"node": "20"
 	},
-	"main": "dist/index",
-	"types": "dist/index",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"files": [
 		"dist"
 	],
@@ -23,24 +24,13 @@
 		"url": "git+https://github.com/SuperFlyTV/SuperConductor.git"
 	},
 	"scripts": {
-		"build": "rimraf dist && yarn build:main",
-		"build:main": "tsc -p tsconfig.json",
-		"precommit": "lint-staged",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"build": "run -B -T rimraf dist && yarn build:main",
+		"build:main": "run -B -T tsc -p tsconfig.json"
 	},
 	"dependencies": {
 		"graphics-data-definition": "^1.1.1"
 	},
 	"bugs": {
 		"url": "https://github.com/SuperFlyTV/SuperConductor/issues"
-	},
-	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
 	}
 }

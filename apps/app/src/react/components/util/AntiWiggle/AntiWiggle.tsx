@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import { cloneDeep, isEqual } from 'lodash-es'
 import * as React from 'react'
 
 import './style.scss'
@@ -29,7 +29,7 @@ export const AntiWiggle: React.FC<{
 	const updateSize = React.useCallback(() => {
 		if (refInner.current && refOuter.current) {
 			const { width, height } = refInner.current.getBoundingClientRect()
-			let d = _.clone(dimensions.current)
+			let d = cloneDeep(dimensions.current)
 			if (d.width < width || d.height < height) {
 				// Make larger
 				d = {
@@ -46,7 +46,7 @@ export const AntiWiggle: React.FC<{
 				d.height = height
 			}
 
-			if (!_.isEqual(d, dimensions.current)) {
+			if (!isEqual(d, dimensions.current)) {
 				refOuter.current.style.width = d.width + 'px'
 				refOuter.current.style.height = d.height + 'px'
 				dimensions.current = d

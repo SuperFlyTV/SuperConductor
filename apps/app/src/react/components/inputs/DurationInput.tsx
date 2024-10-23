@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
-import { formatDuration, parseDuration } from '../../../lib/timeLib'
-import { ParsedValueInput } from './parsedValueInput'
+import { formatDuration, parseDuration } from '../../../lib/timeLib.js'
+import { ParsedValueInput } from './parsedValueInput.js'
 
 export const DurationInput: React.FC<
 	| {

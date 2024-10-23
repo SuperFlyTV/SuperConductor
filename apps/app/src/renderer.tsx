@@ -4,7 +4,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { SnackbarProvider } from 'notistack'
 import { createTheme, CssBaseline, ThemeProvider } from '@mui/material'
-import { App } from './react/App'
+import { App } from './react/App.js'
 
 const SMALL_BTN_SIZE = '22px'
 

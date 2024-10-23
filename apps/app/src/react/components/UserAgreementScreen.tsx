@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, Dialog, DialogContent, DialogActions, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { USER_AGREEMENT_VERSION } from '../../lib/userAgreement'
+import { USER_AGREEMENT_VERSION } from '../../lib/userAgreement.js'
 
 /**
  * The User Agreement is shown to users on startup

@@ -1,11 +1,11 @@
 import got from 'got'
 import os from 'os'
 import { app } from 'electron'
-import { CURRENT_VERSION } from './bridgeHandler'
-import { StorageHandler } from './storageHandler'
-import { hash } from '../lib/util'
+import { CURRENT_VERSION } from './bridgeHandler.js'
+import { StorageHandler } from './storageHandler.js'
+import { hash } from '../lib/util.js'
 import { LoggerLike } from '@shared/api'
-import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement.js'
 
 /*
   This file handles the sending of usage statistics.
@@ -19,7 +19,10 @@ export class TelemetryHandler {
 
 	private storedErrors = new Set<string>()
 
-	constructor(private log: LoggerLike, private storageHandler: StorageHandler) {}
+	constructor(
+		private log: LoggerLike,
+		private storageHandler: StorageHandler
+	) {}
 
 	private get enabled(): boolean {
 		return (
@@ -124,7 +127,7 @@ export class TelemetryHandler {
 			if (!report) continue
 			try {
 				JSON.parse(report)
-			} catch (err) {
+			} catch (_err) {
 				// if it's not parseable, don't send it
 				continue
 			}

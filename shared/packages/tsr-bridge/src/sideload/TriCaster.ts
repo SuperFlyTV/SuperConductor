@@ -2,7 +2,8 @@ import { DeviceOptionsTriCaster } from 'timeline-state-resolver'
 import {
 	TriCasterConnection,
 	TriCasterInfo,
-} from 'timeline-state-resolver/dist/integrations/tricaster/triCasterConnection'
+	// eslint-disable-next-line n/no-missing-import
+} from 'timeline-state-resolver/dist/integrations/tricaster/triCasterConnection.js'
 import {
 	ResourceAny,
 	ResourceType,
@@ -19,7 +20,7 @@ import {
 	TriCasterAudioChannel,
 	TriCasterMatrixOutput,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
@@ -29,7 +30,11 @@ export class TriCasterSideload implements SideLoadDevice {
 	private triCaster: TriCasterConnection
 	private info?: TriCasterInfo
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsTriCaster, private log: LoggerLike) {
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsTriCaster,
+		private log: LoggerLike
+	) {
 		this.triCaster = new TriCasterConnection(deviceOptions.options?.host ?? '', deviceOptions.options?.port ?? 80)
 
 		this.triCaster.on('connected', (info) => {

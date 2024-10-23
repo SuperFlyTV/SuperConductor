@@ -1,4 +1,4 @@
-import { Group } from './Group'
+import { Group } from './Group.js'
 
 export interface RundownBase {
 	id: string

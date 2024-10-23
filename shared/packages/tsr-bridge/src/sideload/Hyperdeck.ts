@@ -1,5 +1,5 @@
 import { DeviceOptionsHyperdeck } from 'timeline-state-resolver'
-import { Hyperdeck, Commands } from 'hyperdeck-connection'
+import HyperdeckPkg from 'hyperdeck-connection'
 import {
 	ResourceAny,
 	ResourceType,
@@ -14,18 +14,22 @@ import {
 	MetadataType,
 	TSRDeviceId,
 } from '@shared/models'
-import { SideLoadDevice } from './sideload'
+import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class HyperdeckSideload implements SideLoadDevice {
-	private hyperdeck: Hyperdeck
+	private hyperdeck: HyperdeckPkg.Hyperdeck
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: HyperdeckMetadata = { metadataType: MetadataType.HYPERDECK }
 
-	constructor(private deviceId: TSRDeviceId, private deviceOptions: DeviceOptionsHyperdeck, private log: LoggerLike) {
-		this.hyperdeck = new Hyperdeck()
+	constructor(
+		private deviceId: TSRDeviceId,
+		private deviceOptions: DeviceOptionsHyperdeck,
+		private log: LoggerLike
+	) {
+		this.hyperdeck = new HyperdeckPkg.Hyperdeck()
 
 		this.hyperdeck.on('connected', () => {
 			this.log.info(`HyperDeck ${deviceId}: Sideload connection initialized`)
@@ -104,8 +108,8 @@ export class HyperdeckSideload implements SideLoadDevice {
 		// TODO: replace this with the "Device Metadata" system, like how we do ATEM Inputs.
 		// This will be kind of broken until then.
 		{
-			const res: Commands.DiskListCommandResponse = await this.hyperdeck.sendCommand(
-				new Commands.DiskListCommand()
+			const res: HyperdeckPkg.Commands.DiskListCommandResponse = await this.hyperdeck.sendCommand(
+				new HyperdeckPkg.Commands.DiskListCommand()
 			)
 
 			for (const clip of res.clips) {

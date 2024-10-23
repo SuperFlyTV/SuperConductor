@@ -1,11 +1,11 @@
 import React, { useCallback, useContext } from 'react'
 import { MappingVMixAny, MappingVMixType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../../contexts/IPCServer'
-import { ProjectContext } from '../../../../../contexts/Project'
-import { IntInput } from '../../../../inputs/IntInput'
-import { SelectEnum } from '../../../../inputs/SelectEnum'
-import { TextInput } from '../../../../inputs/TextInput'
+import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
+import { ProjectContext } from '../../../../../contexts/Project.js'
+import { IntInput } from '../../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../../inputs/TextInput.js'
 
 enum VMixMixIndex {
 	'One' = 1,

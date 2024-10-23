@@ -1,12 +1,12 @@
-import { AtemMetadata } from './Atem'
-import { CasparCGMetadata } from './CasparCG'
-import { HTTPSendMetadata } from './HTTPSend'
-import { HyperdeckMetadata } from './Hyperdeck'
-import { OBSMetadata } from './OBS'
-import { OSCMetadata } from './OSC'
-import { TCPSendMetadata } from './TCPSend'
-import { TriCasterMetadata } from './TriCaster'
-import { VMixMetadata } from './VMix'
+import { AtemMetadata } from './Atem.js'
+import { CasparCGMetadata } from './CasparCG.js'
+import { HTTPSendMetadata } from './HTTPSend.js'
+import { HyperdeckMetadata } from './Hyperdeck.js'
+import { OBSMetadata } from './OBS.js'
+import { OSCMetadata } from './OSC.js'
+import { TCPSendMetadata } from './TCPSend.js'
+import { TriCasterMetadata } from './TriCaster.js'
+import { VMixMetadata } from './VMix.js'
 
 export type MetadataAny =
 	| AtemMetadata

@@ -1,11 +1,11 @@
-import { prepareGroupPlayData } from '../preparedGroupPlayData'
-import { getDefaultGroup, getDefaultPart } from '../../defaults'
-import { Group } from '../../../models/rundown/Group'
-import * as RundownActions from '../../../electron/rundownActions'
-import { findPartInGroup, updateGroupPlayingParts } from '../../util'
-import { Part } from '../../../models/rundown/Part'
-import { getGroupPlayData } from '../groupPlayData'
-import { PlayPartEndAction, SectionEndAction } from '../../../models/GUI/PreparedPlayhead'
+import { prepareGroupPlayData } from '../preparedGroupPlayData.js'
+import { getDefaultGroup, getDefaultPart } from '../../defaults.js'
+import { Group } from '../../../models/rundown/Group.js'
+import * as RundownActions from '../../../electron/rundownActions.js'
+import { findPartInGroup, updateGroupPlayingParts } from '../../util.js'
+import { Part } from '../../../models/rundown/Part.js'
+import { getGroupPlayData } from '../groupPlayData.js'
+import { PlayPartEndAction, SectionEndAction } from '../../../models/GUI/PreparedPlayhead.js'
 
 describe('prepareGroupPlayData', () => {
 	describe('Default Group', () => {

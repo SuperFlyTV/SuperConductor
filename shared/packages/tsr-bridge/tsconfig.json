@@ -2,9 +2,8 @@
 	"extends": "../../../tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "src",
-		"outDir": "dist",
-		"lib": ["es6"]
+		"outDir": "dist"
 	},
-	"include": ["src/**.ts"],
-	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
+	"include": ["src/**/*.ts"],
+	"exclude": ["src/**/__tests__/**/*"]
 }

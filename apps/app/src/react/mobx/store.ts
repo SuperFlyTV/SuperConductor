@@ -1,12 +1,12 @@
-import { AppStore } from './AppStore'
-import { GuiStore } from './GuiStore'
-import { ResourcesAndMetadataStore } from './ResourcesAndMetadataStore'
-import { RundownsStore } from './RundownsStore'
-import { GroupPlayDataStore } from './GroupPlayDataStore'
-import { ProjectStore } from './ProjectStore'
-import { TriggersStore } from './TriggersStore'
-import { AnalogStore } from './AnalogStore'
-import { GDDValidatorStore } from './GDDValidatorStoreStore'
+import { AppStore } from './AppStore.js'
+import { GuiStore } from './GuiStore.js'
+import { ResourcesAndMetadataStore } from './ResourcesAndMetadataStore.js'
+import { RundownsStore } from './RundownsStore.js'
+import { GroupPlayDataStore } from './GroupPlayDataStore.js'
+import { ProjectStore } from './ProjectStore.js'
+import { TriggersStore } from './TriggersStore.js'
+import { AnalogStore } from './AnalogStore.js'
+import { GDDValidatorStore } from './GDDValidatorStoreStore.js'
 
 export const store = {
 	guiStore: new GuiStore(),

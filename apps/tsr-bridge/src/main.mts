@@ -1,12 +1,11 @@
 import path from 'path'
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, screen } from 'electron'
-import isDev from 'electron-is-dev'
-import { addLoggerTransport, createLogger } from './logging'
-import { CURRENT_VERSION, TSRBridgeServer } from './electron/server'
-import { IPCClient } from './electron/IPCClient'
-import { StorageHandler } from './electron/storageHandler'
-import { IPCServer } from './electron/IPCServer'
-import { AppData, AppSettings, AppSystem } from './models/AppData'
+import { addLoggerTransport, createLogger } from './logging/index.js'
+import { CURRENT_VERSION, TSRBridgeServer } from './electron/server.js'
+import { IPCClient } from './electron/IPCClient.js'
+import { StorageHandler } from './electron/storageHandler.js'
+import { IPCServer } from './electron/IPCServer.js'
+import { AppData, AppSettings, AppSystem } from './models/AppData.js'
 import os from 'os'
 
 let isQuitting = false
@@ -27,7 +26,7 @@ const storage = new StorageHandler(log, {
 	maximized: false,
 })
 let server: TSRBridgeServer | undefined
-let systemInterval: NodeJS.Timer | undefined
+let systemInterval: NodeJS.Timeout | undefined
 
 const createWindow = async (): Promise<void> => {
 	const appData = storage.getAppData()
@@ -59,7 +58,7 @@ const createWindow = async (): Promise<void> => {
 	if (appData.windowPosition.maximized) {
 		win.maximize()
 	}
-	if (isDev) {
+	if (!app.isPackaged) {
 		win.webContents.openDevTools()
 	}
 
@@ -73,7 +72,7 @@ const createWindow = async (): Promise<void> => {
 		},
 	})
 
-	await win.loadURL(isDev ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/dist/index.html`)
+	await win.loadURL(!app.isPackaged ? 'http://127.0.0.1:9125' : `file://${app.getAppPath()}/build/index.html`)
 
 	storage.on('appData', (appData: AppData) => {
 		ipcClient.settings(appData.settings)
@@ -153,7 +152,7 @@ const createWindow = async (): Promise<void> => {
 		if (!isQuitting) {
 			event.preventDefault()
 			win.hide()
-			event.returnValue = false
+			// event.returnValue = false
 		}
 	})
 	function updateSystem() {
@@ -221,6 +220,5 @@ app.on('before-quit', () => {
 })
 
 app.on('ready', () => {
-	// eslint-disable-next-line no-console
 	createWindow().catch(log.error)
 })

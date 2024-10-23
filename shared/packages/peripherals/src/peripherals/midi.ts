@@ -1,7 +1,7 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import * as MIDI from '@julusian/midi'
-import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { protectString } from '@shared/models'
 
 export type DevicesMap = Map<PeripheralId, { port: number; name: string }>
@@ -38,7 +38,7 @@ export class PeripheralMIDI extends Peripheral {
 			}
 
 			// If the set of IDs hasn't changed, do nothing.
-			if (_.isEqual(devices, lastSeenDevices)) {
+			if (isEqual(devices, lastSeenDevices)) {
 				return
 			}
 
@@ -162,7 +162,7 @@ export class PeripheralMIDI extends Peripheral {
 		return this._info
 	}
 	async _setKeyDisplay(identifier: string, keyDisplay: KeyDisplay, force = false): Promise<void> {
-		if (force || !_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
+		if (force || !isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
 			const key = this.seenKeys.get(identifier)

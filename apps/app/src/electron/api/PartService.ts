@@ -1,14 +1,14 @@
-import { EverythingService } from '../EverythingService'
+import { EverythingService } from '../EverythingService.js'
 import { Application } from '@feathersjs/feathers'
 import EventEmitter from 'node:events'
 import { GeneralError } from '@feathersjs/errors'
-import { RundownTrigger } from '../../models/rundown/Trigger'
-import { ClientEventBus } from '../ClientEventBus'
+import { RundownTrigger } from '../../models/rundown/Trigger.js'
+import { ClientEventBus } from '../ClientEventBus.js'
 import { ResourceAny, ResourceId } from '@shared/models'
-import { MoveTarget } from '../../lib/util'
-import { Part } from '../../models/rundown/Part'
-import { ServiceTypes } from '../../ipc/IPCAPI'
-import { TimelineObj } from '../../models/rundown/TimelineObj'
+import { MoveTarget } from '../../lib/util.js'
+import { Part } from '../../models/rundown/Part.js'
+import { ServiceTypes } from '../../ipc/IPCAPI.js'
+import { TimelineObj } from '../../models/rundown/TimelineObj.js'
 
 export class PartService extends EventEmitter {
 	constructor(

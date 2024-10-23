@@ -1,21 +1,21 @@
-import sorensen from '@sofie-automation/sorensen'
-import { describeTimelineObject } from '../../../../lib/TimelineObj'
-import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable'
-import { TimelineObj } from '../../../../models/rundown/TimelineObj'
-import { HotkeyContext } from '../../../contexts/Hotkey'
+import { Sorensen } from '@sofie-automation/sorensen'
+import { describeTimelineObject } from '../../../../lib/TimelineObj.js'
+import { DeltaPosition, Position, useMovable } from '../../../../lib/useMovable.js'
+import { TimelineObj } from '../../../../models/rundown/TimelineObj.js'
+import { HotkeyContext } from '../../../contexts/Hotkey.js'
 import classNames from 'classnames'
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { ResolvedTimelineObject, Resolver, TimelineObjectInstance } from 'superfly-timeline'
 import { TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
+import { store } from '../../../mobx/store.js'
 import { MdWarningAmber } from 'react-icons/md'
-import { TimelineObjectMove } from '../../../mobx/GuiStore'
-import { shortID } from '../../../../lib/util'
+import { TimelineObjectMove } from '../../../mobx/GuiStore.js'
+import { shortID } from '../../../../lib/util.js'
 import { computed } from 'mobx'
-import { millisecondsToTime } from '../../../../lib/timeLib'
-import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
-import { CB } from '../../../lib/errorHandling'
+import { millisecondsToTime } from '../../../../lib/timeLib.js'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline.js'
+import { CB } from '../../../lib/errorHandling.js'
 import { TSRDeviceId } from '@shared/models'
 
 const HANDLE_WIDTH = 8
@@ -203,7 +203,7 @@ export const TimelineObject: React.FC<{
 
 	useEffect(() => {
 		const onKey = () => {
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			setAllowDuplicate(pressed.includes('AltLeft') || pressed.includes('AltRight'))
 
 			// Debounce to let setAllowDuplicate update:
@@ -214,30 +214,30 @@ export const TimelineObject: React.FC<{
 		}
 		onKey()
 
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.bind('Alt', onKey, {
+		Sorensen.bind('Alt', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Alt', onKey, {
+		Sorensen.bind('Alt', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.addEventListener('keycancel', onKey)
+		Sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			sorensen.unbind('Shift', onKey)
-			sorensen.unbind('Alt', onKey)
-			sorensen.removeEventListener('keycancel', onKey)
+			Sorensen.unbind('Shift', onKey)
+			Sorensen.unbind('Alt', onKey)
+			Sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext, move])
 
@@ -251,7 +251,7 @@ export const TimelineObject: React.FC<{
 			wasMoving.current = false
 		}
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this timline-object to the selection:
 			store.guiStore.toggleAddSelected({

@@ -1,4 +1,4 @@
-import { isIndeterminate, getListBoolean, ListBoolean } from '../multipleEdit'
+import { isIndeterminate, getListBoolean, ListBoolean } from '../multipleEdit.js'
 test('isIndeterminate', () => {
 	expect(isIndeterminate([1, 1, 1], (n) => n)).toBe(false)
 	expect(isIndeterminate([1, 2, 1], (n) => n)).toBe(true)

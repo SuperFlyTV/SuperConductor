@@ -1,3 +1,3 @@
-import { ProtectedString } from './protectedString'
+import { ProtectedString } from './protectedString.js'
 
 export type TSRDeviceId = ProtectedString<'TSRDeviceId'>

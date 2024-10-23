@@ -1,8 +1,8 @@
 import React, { useContext, useLayoutEffect, useMemo, useRef, useState, useEffect, useCallback } from 'react'
-import _ from 'lodash'
-import sorensen from '@sofie-automation/sorensen'
-import { PlayHead } from './PlayHead'
-import { Layer, LayerEmpty } from './Layer'
+import { isEmpty } from 'lodash-es'
+import { Sorensen } from '@sofie-automation/sorensen'
+import { PlayHead } from './PlayHead.js'
+import { Layer, LayerEmpty } from './Layer.js'
 import {
 	ResolvedTimeline,
 	ResolvedTimelineObject,
@@ -15,49 +15,49 @@ import {
 	EMPTY_LAYER_ID_PREFIX,
 	getResolvedTimelineTotalDuration,
 	MoveTarget,
-} from '../../../../lib/util'
-import { Group, PlayoutMode } from '../../../../models/rundown/Group'
+} from '../../../../lib/util.js'
+import { Group, PlayoutMode } from '../../../../models/rundown/Group.js'
 import classNames from 'classnames'
-import { IPCServerContext } from '../../../contexts/IPCServer'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
 import { DropTargetMonitor, useDrag, useDrop, XYCoord } from 'react-dnd'
-import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes'
+import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragItemTypes.js'
 import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
-import { TimelineObj, DEFAULT_DURATION } from '../../../../models/rundown/TimelineObj'
+import { TimelineObj, DEFAULT_DURATION } from '../../../../models/rundown/TimelineObj.js'
 import { compact, stringifyError } from '@shared/lib'
 import { Mappings } from 'timeline-state-resolver-types'
-import { EmptyLayer } from './EmptyLayer'
-import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj'
-import { HotkeyContext } from '../../../contexts/Hotkey'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
-import { filterMapping } from '../../../../lib/TSRMappings'
+import { EmptyLayer } from './EmptyLayer.js'
+import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj.js'
+import { HotkeyContext } from '../../../contexts/Hotkey.js'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
+import { filterMapping } from '../../../../lib/TSRMappings.js'
 import { Popover, TextField } from '@mui/material'
 import { IoMdEye } from 'react-icons/io'
 import { RiEyeCloseLine } from 'react-icons/ri'
-import { store } from '../../../mobx/store'
-import { PartSubmenu } from './PartSubmenu'
-import { LayerName, LayerNameEmpty } from './part/LayerName/LayerName'
+import { store } from '../../../mobx/store.js'
+import { PartSubmenu } from './PartSubmenu.js'
+import { LayerName, LayerNameEmpty } from './part/LayerName/LayerName.js'
 import { observer } from 'mobx-react-lite'
 import { computed } from 'mobx'
-import { CurrentTime } from './part/CurrentTime/CurrentTime'
-import { RemainingTime } from './part/RemainingTime/RemainingTime'
-import { CountdownHeads } from './part/CountdownHeads/CountdownHeads'
-import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
-import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
-import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
-import { LoggerContext } from '../../../contexts/Logger'
-import { useMemoComputedObject } from '../../../mobx/lib'
-import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn'
-import { RundownTriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu'
-import { TimelineObjectMove } from '../../../mobx/GuiStore'
-import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn'
-import { formatDuration } from '../../../../lib/timeLib'
+import { CurrentTime } from './part/CurrentTime/CurrentTime.js'
+import { RemainingTime } from './part/RemainingTime/RemainingTime.js'
+import { CountdownHeads } from './part/CountdownHeads/CountdownHeads.js'
+import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn.js'
+import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn.js'
+import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn.js'
+import { LoggerContext } from '../../../contexts/Logger.js'
+import { useMemoComputedObject } from '../../../mobx/lib.js'
+import { TriggerBtn } from '../../inputs/TriggerBtn/TriggerBtn.js'
+import { RundownTriggersSubmenu } from './part/TriggersSubmenu/TriggersSubmenu.js'
+import { TimelineObjectMove } from '../../../mobx/GuiStore.js'
+import { ToggleBtn } from '../../inputs/ToggleBtn/ToggleBtn.js'
+import { formatDuration } from '../../../../lib/timeLib.js'
 import VisibilitySensor from 'react-visibility-sensor'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { sortSelected } from '../../../lib/clientUtil'
-import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline'
-import { convertSorensenToElectron } from '../../../../lib/triggers/identifiers'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog.js'
+import { TrashBtn } from '../../inputs/TrashBtn.js'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn.js'
+import { sortSelected } from '../../../lib/clientUtil.js'
+import { sortLayers, timelineObjsOntoLayers } from '../../../../lib/partTimeline.js'
+import { convertSorensenToElectron } from '../../../../lib/triggers/identifiers.js'
 
 /**
  * How close an edge of a timeline object needs to be to another edge before it will snap to that edge (in pixels).
@@ -125,7 +125,7 @@ export const PartView: React.FC<{
 		)
 			return
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this part to the selection:
 			store.guiStore.toggleAddSelected({
@@ -248,7 +248,7 @@ export const PartView: React.FC<{
 		return {
 			orgResolvedTimeline,
 			orgMaxDuration: orgResolvedTimeline
-				? part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true)
+				? (part.duration ?? getResolvedTimelineTotalDuration(orgResolvedTimeline, true))
 				: 0,
 			resolverErrorMessage: errorMessage,
 		}
@@ -456,12 +456,12 @@ export const PartView: React.FC<{
 		])
 
 	useEffect(() => {
-		if (newObjectsToMoveToNewLayer && !_.isEmpty(newObjectsToMoveToNewLayer)) {
+		if (newObjectsToMoveToNewLayer && !isEmpty(newObjectsToMoveToNewLayer)) {
 			changedObjects.current = null
-		} else if (newChangedObjects && !_.isEmpty(newChangedObjects)) {
+		} else if (newChangedObjects && !isEmpty(newChangedObjects)) {
 			changedObjects.current = newChangedObjects
 
-			if (newDuplicatedObjects && !_.isEmpty(newDuplicatedObjects)) {
+			if (newDuplicatedObjects && !isEmpty(newDuplicatedObjects)) {
 				duplicatedObjects.current = newDuplicatedObjects
 			} else {
 				duplicatedObjects.current = null
@@ -575,25 +575,25 @@ export const PartView: React.FC<{
 
 	useEffect(() => {
 		const onKey = () => {
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			setBypassSnapping(pressed.includes('ShiftLeft') || pressed.includes('ShiftRight'))
 		}
 		onKey()
 
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Shift', onKey, {
+		Sorensen.bind('Shift', onKey, {
 			up: true,
 			global: true,
 		})
 
-		sorensen.addEventListener('keycancel', onKey)
+		Sorensen.addEventListener('keycancel', onKey)
 
 		return () => {
-			sorensen.unbind('Shift', onKey)
-			sorensen.removeEventListener('keycancel', onKey)
+			Sorensen.unbind('Shift', onKey)
+			Sorensen.removeEventListener('keycancel', onKey)
 		}
 	}, [hotkeyContext])
 
@@ -1360,7 +1360,7 @@ const EndCapHover: React.FC<{
 					disabled={groupOrPartLocked}
 					title={'Delete Part' + (groupOrPartLocked ? ' (disabled due to locked Part or Group)' : '')}
 					onClick={() => {
-						const pressedKeys = sorensen.getPressedKeys()
+						const pressedKeys = Sorensen.getPressedKeys()
 						if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 							// Delete immediately with no confirmation dialog.
 							handleDelete()

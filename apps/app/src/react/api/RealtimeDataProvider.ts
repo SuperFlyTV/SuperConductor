@@ -1,19 +1,19 @@
-import { ProjectsEvents, RundownsEvents, ServiceName, SystemMessageOptions } from '../../ipc/IPCAPI'
-import { BridgeStatus } from '../../models/project/Bridge'
-import { Project } from '../../models/project/Project'
-import { PeripheralStatus } from '../../models/project/Peripheral'
+import { ProjectsEvents, RundownsEvents, ServiceName, SystemMessageOptions } from '../../ipc/IPCAPI.js'
+import { BridgeStatus } from '../../models/project/Bridge.js'
+import { Project } from '../../models/project/Project.js'
+import { PeripheralStatus } from '../../models/project/Peripheral.js'
 import { MetadataAny, ResourceAny, ResourceId, SerializedProtectedMap, TSRDeviceId } from '@shared/models'
-import { Rundown } from '../../models/rundown/Rundown'
-import { AppData } from '../../models/App/AppData'
-import { ActiveTriggers } from '../../models/rundown/Trigger'
-import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
-import { ClientSideLogger } from './logger'
-import { ActiveAnalog } from '../../models/rundown/Analog'
-import { AnalogInput } from '../../models/project/AnalogInput'
+import { Rundown } from '../../models/rundown/Rundown.js'
+import { AppData } from '../../models/App/AppData.js'
+import { ActiveTriggers } from '../../models/rundown/Trigger.js'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay.js'
+import { ClientSideLogger } from './logger.js'
+import { ActiveAnalog } from '../../models/rundown/Analog.js'
+import { AnalogInput } from '../../models/project/AnalogInput.js'
 import { BridgeId } from '@shared/api'
 import { BridgePeripheralId } from '@shared/lib'
-import { app } from './ApiClient'
-import { SerializableLedgers } from '../../models/project/Project'
+import { app } from './ApiClient.js'
+import { SerializableLedgers } from '../../models/project/Project.js'
 
 /** This class is used client-side, to handle messages from the server */
 export class RealtimeDataProvider {
@@ -114,7 +114,6 @@ export class RealtimeDataProvider {
 		this.callbacks.updateAnalogInput?.(fullIdentifier, analogInput)
 	}
 	destroy(): void {
-		// eslint-disable-next-line @typescript-eslint/unbound-method
 		// this.ipcRenderer.off('callMethod', this.handleCallMethod)
 	}
 

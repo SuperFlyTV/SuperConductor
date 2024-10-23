@@ -3,9 +3,9 @@ import path from 'path'
 import EventEmitter from 'events'
 import * as os from 'os'
 import { BridgeId, LoggerLike } from '@shared/api'
-import { AppData, WindowPosition } from '../models/AppData'
-import { baseFolder } from './lib/baseFolder'
-import { shortID } from './lib/lib'
+import { AppData, WindowPosition } from '../models/AppData.js'
+import { baseFolder } from './lib/baseFolder.js'
+import { shortID } from './lib/lib.js'
 import { protectString } from '@shared/models'
 
 const fsWriteFile = fs.promises.writeFile
@@ -23,7 +23,10 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, defaultWindowPosition: WindowPosition) {
+	constructor(
+		private log: LoggerLike,
+		defaultWindowPosition: WindowPosition
+	) {
 		super()
 		this.appData = this.loadAppData(defaultWindowPosition)
 	}

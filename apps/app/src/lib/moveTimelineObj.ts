@@ -7,9 +7,9 @@ import {
 	TimelineObjectInstance,
 	ResolvedTimelineObject,
 } from 'superfly-timeline'
-import { TimelineObj, DEFAULT_DURATION } from '../models/rundown/TimelineObj'
-import { TimelineObjectMove } from '../react/mobx/GuiStore'
-import { getResolvedTimelineTotalDuration, shortID } from './util'
+import { TimelineObj, DEFAULT_DURATION } from '../models/rundown/TimelineObj.js'
+import { TimelineObjectMove } from '../react/mobx/GuiStore.js'
+import { getResolvedTimelineTotalDuration, shortID } from './util.js'
 
 const MIN_DURATION = 1
 

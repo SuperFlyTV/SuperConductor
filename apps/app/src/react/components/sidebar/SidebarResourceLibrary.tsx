@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { SidebarContent } from './SidebarContent'
-import { IPCServerContext } from '../../contexts/IPCServer'
-import { ProjectContext } from '../../contexts/Project'
+import { SidebarContent } from './SidebarContent.js'
+import { IPCServerContext } from '../../contexts/IPCServer.js'
+import { ProjectContext } from '../../contexts/Project.js'
 import {
 	protectString,
 	protectStringArray,
@@ -12,10 +12,10 @@ import {
 	unprotectString,
 } from '@shared/models'
 import { flatten } from '@shared/lib'
-import { ResourceData } from './resource/ResourceData'
-import { ResourceLibraryItem } from './resource/ResourceLibraryItem'
+import { ResourceData } from './resource/ResourceData.js'
+import { ResourceLibraryItem } from './resource/ResourceLibraryItem.js'
 import { Field, Form, Formik } from 'formik'
-import { getDeviceName, getResourceTypeName, rateLimitIgnore, scatterMatchString } from '../../../lib/util'
+import { getDeviceName, getResourceTypeName, rateLimitIgnore, scatterMatchString } from '../../../lib/util.js'
 
 import {
 	Button,
@@ -38,19 +38,19 @@ import {
 	IconButton,
 } from '@mui/material'
 import { TextField as FormikMuiTextField } from 'formik-mui'
-import { ErrorHandlerContext } from '../../contexts/ErrorHandler'
-import { store } from '../../mobx/store'
+import { ErrorHandlerContext } from '../../contexts/ErrorHandler.js'
+import { store } from '../../mobx/store.js'
 import { observer } from 'mobx-react-lite'
 import { HiRefresh, HiChevronDown, HiOutlineX } from 'react-icons/hi'
-import { useDebounce } from '../../lib/useDebounce'
-import { sortMappings } from '../../../lib/TSRMappings'
-import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib'
+import { useDebounce } from '../../lib/useDebounce.js'
+import { sortMappings } from '../../../lib/TSRMappings.js'
+import { useMemoComputedArray, useMemoComputedObject, useMemoComputedValue } from '../../mobx/lib.js'
 import classNames from 'classnames'
-import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher'
+import { ScrollWatcher } from '../rundown/ScrollWatcher/ScrollWatcher.js'
 import { computed } from 'mobx'
-import sorensen from '@sofie-automation/sorensen'
-import { CB } from '../../lib/errorHandling'
-import { SmallCheckbox } from '../util/SmallCheckbox'
+import { Sorensen } from '@sofie-automation/sorensen'
+import { CB } from '../../lib/errorHandling.js'
+import { SmallCheckbox } from '../util/SmallCheckbox.js'
 
 const ITEM_HEIGHT = 48
 const ITEM_PADDING_TOP = 8
@@ -245,7 +245,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 			const selectedResourceIds = store.guiStore.resourceLibrary.selectedResourceIds
 			let lastSelectedResourceId = store.guiStore.resourceLibrary.lastSelectedResourceId
 
-			const pressed = sorensen.getPressedKeys()
+			const pressed = Sorensen.getPressedKeys()
 			if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 				// Add this group to the selection, or remove it if it's already there:
 				const foundIndex = selectedResourceIds.indexOf(resource.id)
@@ -263,7 +263,7 @@ export const SidebarResourceLibrary: React.FC = observer(function SidebarResourc
 				const mainIndex = lastSelectedResourceId
 					? allListItems.findIndex(
 							(i) => i.type === 'resource' && i.key === unprotectString(lastSelectedResourceId)
-					  )
+						)
 					: 0
 				const thisIndex = allListItems.findIndex(
 					(i) => i.type === 'resource' && i.key === unprotectString(resource.id)

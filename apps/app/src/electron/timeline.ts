@@ -1,10 +1,10 @@
-import { prepareGroupPlayData } from '../lib/playout/preparedGroupPlayData'
-import { Group } from '../models/rundown/Group'
-import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead'
+import { prepareGroupPlayData } from '../lib/playout/preparedGroupPlayData.js'
+import { Group } from '../models/rundown/Group.js'
+import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead.js'
 import { TSRTimeline } from 'timeline-state-resolver-types'
-import { StorageHandler } from './storageHandler'
-import { BridgeHandler } from './bridgeHandler'
-import { getTimelineForGroup } from '../lib/timeline'
+import { StorageHandler } from './storageHandler.js'
+import { BridgeHandler } from './bridgeHandler.js'
+import { getTimelineForGroup } from '../lib/timeline.js'
 
 const queuedUpdateTimelines = new Map<string, NodeJS.Timeout>()
 

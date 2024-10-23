@@ -1,27 +1,27 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
-import sorensen from '@sofie-automation/sorensen'
-import { TrashBtn } from '../../inputs/TrashBtn'
-import { GroupBase, GroupGUI } from '../../../../models/rundown/Group'
-import { PartView } from './PartView'
-import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead'
-import { IPCServerContext } from '../../../contexts/IPCServer'
+import { Sorensen } from '@sofie-automation/sorensen'
+import { TrashBtn } from '../../inputs/TrashBtn.js'
+import { GroupBase, GroupGUI } from '../../../../models/rundown/Group.js'
+import { PartView } from './PartView.js'
+import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead.js'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
 import {
 	DragItemTypes,
 	GroupDragItem,
 	isGroupDragItem,
 	isPartDragItem,
 	isResourceDragItem,
-} from '../../../api/DragItemTypes'
+} from '../../../api/DragItemTypes.js'
 import { useDrag, useDrop, XYCoord } from 'react-dnd'
 import { Mappings } from 'timeline-state-resolver-types'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
-import { PartPropertiesDialog } from '../PartPropertiesDialog'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { PartPropertiesDialog } from '../PartPropertiesDialog.js'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
 import { assertNever } from '@shared/lib'
-import { allowMovingPartIntoGroup, getNextPartIndex, getPrevPartIndex, MoveTarget } from '../../../../lib/util'
-import { ConfirmationDialog } from '../../util/ConfirmationDialog'
+import { allowMovingPartIntoGroup, getNextPartIndex, getPrevPartIndex, MoveTarget } from '../../../../lib/util.js'
+import { ConfirmationDialog } from '../../util/ConfirmationDialog.js'
 
-import { DropZone } from '../../util/DropZone'
+import { DropZone } from '../../util/DropZone.js'
 import {
 	MdChevronRight,
 	MdLock,
@@ -36,25 +36,25 @@ import { RiEyeCloseLine } from 'react-icons/ri'
 import { AiFillStepForward } from 'react-icons/ai'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
+import { store } from '../../../mobx/store.js'
 import { computed } from 'mobx'
-import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn'
-import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn'
-import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn'
-import { DuplicateBtn } from '../../inputs/DuplicateBtn'
-import { useMemoComputedObject, useMemoComputedValue, useMemoObject } from '../../../mobx/lib'
+import { PlayBtn } from '../../inputs/PlayBtn/PlayBtn.js'
+import { PauseBtn } from '../../inputs/PauseBtn/PauseBtn.js'
+import { PlayButtonData, StopBtn } from '../../inputs/StopBtn/StopBtn.js'
+import { DuplicateBtn } from '../../inputs/DuplicateBtn.js'
+import { useMemoComputedObject, useMemoComputedValue, useMemoObject } from '../../../mobx/lib.js'
 import { BsKeyboard, BsKeyboardFill, BsLightning, BsLightningFill } from 'react-icons/bs'
-import { GroupButtonAreaPopover } from './GroupButtonAreaPopover'
-import { GroupAutoFillPopover } from './GroupAutoFillPopover'
+import { GroupButtonAreaPopover } from './GroupButtonAreaPopover.js'
+import { GroupAutoFillPopover } from './GroupAutoFillPopover.js'
 import VisibilitySensor from 'react-visibility-sensor'
-import { Btn } from '../../inputs/Btn/Btn'
-import { sortSelected } from '../../../lib/clientUtil'
-import _ from 'lodash'
-import { formatDateTime, formatDuration } from '../../../../lib/timeLib'
-import { ErrorBoundary } from '../../util/ErrorBoundary'
-import { DISPLAY_DECIMAL_COUNT } from '../../../constants'
-import { useFrame } from '../../../lib/useFrame'
-import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle'
+import { Btn } from '../../inputs/Btn/Btn.js'
+import { sortSelected } from '../../../lib/clientUtil.js'
+import { omit } from 'lodash-es'
+import { formatDateTime, formatDuration } from '../../../../lib/timeLib.js'
+import { ErrorBoundary } from '../../util/ErrorBoundary.js'
+import { DISPLAY_DECIMAL_COUNT } from '../../../constants.js'
+import { useFrame } from '../../../lib/useFrame.js'
+import { AntiWiggle } from '../../util/AntiWiggle/AntiWiggle.js'
 
 const DEFAULT_PART_HEIGHT = 80
 
@@ -146,7 +146,7 @@ export const GroupView: React.FC<{
 		)
 			return
 
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('ControlLeft') || pressed.includes('ControlRight')) {
 			// Add this group to the selection:
 			store.guiStore.toggleAddSelected({
@@ -416,7 +416,7 @@ export const GroupView: React.FC<{
 		ipcServer.deleteGroup({ rundownId, groupId: group.id }).catch(handleError)
 	}, [group.id, handleError, ipcServer, rundownId])
 	const handleDeleteClick = useCallback(() => {
-		const pressedKeys = sorensen.getPressedKeys()
+		const pressedKeys = Sorensen.getPressedKeys()
 		if (pressedKeys.includes('ControlLeft') || pressedKeys.includes('ControlRight')) {
 			// Delete immediately with no confirmation dialog.
 			handleDelete()
@@ -432,7 +432,7 @@ export const GroupView: React.FC<{
 
 	// Collapse button:
 	const handleCollapse = useCallback(() => {
-		const pressed = sorensen.getPressedKeys()
+		const pressed = Sorensen.getPressedKeys()
 		if (pressed.includes('AltLeft') || pressed.includes('AltRight')) {
 			ipcServer
 				.toggleAllGroupsCollapse({
@@ -540,7 +540,7 @@ export const GroupView: React.FC<{
 		[group.partIds.length]
 	)
 
-	const groupBase = useMemoObject(() => _.omit(group, ['partIds']) as GroupBase, [group], true)
+	const groupBase = useMemoObject(() => omit(group, ['partIds']) as GroupBase, [group], true)
 
 	// Optimize, so that PartView isn't re-rendered on every part group change
 

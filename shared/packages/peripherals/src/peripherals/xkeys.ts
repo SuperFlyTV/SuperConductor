@@ -1,8 +1,8 @@
 import { AttentionLevel, KeyDisplay, LoggerLike, PeripheralId, PeripheralInfo, PeripheralType } from '@shared/api'
 import { assertNever } from '@shared/lib'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { listAllConnectedPanels, XKeys, PRODUCTS, Product, HID_Device, setupXkeysPanel } from 'xkeys'
-import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral'
+import { onKnownPeripheralCallback, Peripheral, WatchReturnType } from './peripheral.js'
 import { protectString } from '@shared/models'
 
 /** An X-keys value for how fast the keys should flash, when flashing Fast */
@@ -28,7 +28,7 @@ export class PeripheralXkeys extends Peripheral {
 			const connectedPanelInfos = listAllConnectedPanels()
 
 			// If the list has not changed since the last poll, do nothing.
-			if (_.isEqual(connectedPanelInfos, lastSeenXkeysPanels)) {
+			if (isEqual(connectedPanelInfos, lastSeenXkeysPanels)) {
 				return
 			}
 
@@ -124,7 +124,11 @@ export class PeripheralXkeys extends Peripheral {
 	private ignoreKeys = new Set<number>()
 	private xkeysPanel?: XKeys
 
-	constructor(log: LoggerLike, id: PeripheralId, private path: string) {
+	constructor(
+		log: LoggerLike,
+		id: PeripheralId,
+		private path: string
+	) {
 		super(log, id)
 	}
 
@@ -245,7 +249,7 @@ export class PeripheralXkeys extends Peripheral {
 		if (!keyDisplay) keyDisplay = { attentionLevel: AttentionLevel.IGNORE }
 
 		if (!this.xkeysPanel) return
-		if (force || !_.isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
+		if (force || !isEqual(this.sentKeyDisplay[identifier], keyDisplay)) {
 			this.sentKeyDisplay[identifier] = keyDisplay
 
 			let { color, flashFrequency } = { color: 'black', flashFrequency: 0 }
@@ -296,7 +300,7 @@ export class PeripheralXkeys extends Peripheral {
 				color,
 				flashing,
 			}
-			if (!_.isEqual(backlight, this.sentBacklight[identifier])) {
+			if (!isEqual(backlight, this.sentBacklight[identifier])) {
 				this.sentBacklight[identifier] = backlight
 				this.xkeysPanel.setBacklight(keyIndex, color, flashing)
 

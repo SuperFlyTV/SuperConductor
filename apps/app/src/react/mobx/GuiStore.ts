@@ -1,15 +1,15 @@
 import { deepClone } from '@shared/lib'
 import { ResourceId, TSRDeviceId } from '@shared/models'
-import _ from 'lodash'
+import { isEqual } from 'lodash-es'
 import { makeAutoObservable } from 'mobx'
 import {
 	CurrentSelectionAny,
 	CurrentSelectionGroup,
 	CurrentSelectionPart,
 	CurrentSelectionTimelineObj,
-} from '../../lib/GUI'
-import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay'
-import { ApiClient } from '../api/ApiClient'
+} from '../../lib/GUI.js'
+import { DefiningArea } from '../../lib/triggers/keyDisplay/keyDisplay.js'
+import { ApiClient } from '../api/ApiClient.js'
 
 /**
  * Store contains only information about user interface
@@ -109,7 +109,7 @@ export class GuiStore {
 	}
 	/** Add item to selection */
 	isSelected(selected: CurrentSelectionAny): boolean {
-		return !!this._selected.find((s) => _.isEqual(s, selected))
+		return !!this._selected.find((s) => isEqual(s, selected))
 	}
 	/** Set the selection to this item */
 	setSelected(selected: CurrentSelectionAny): void {
@@ -150,7 +150,7 @@ export class GuiStore {
 	}
 	/** Add item from selection */
 	removeSelected(selected: CurrentSelectionAny): void {
-		const index = this._selected.findIndex((s) => _.isEqual(s, selected))
+		const index = this._selected.findIndex((s) => isEqual(s, selected))
 		if (index >= 0) {
 			this._selected.splice(index, 1)
 		}
@@ -221,7 +221,7 @@ export class GuiStore {
 			...org,
 			...update,
 		}
-		if (!_.isEqual(updated, org)) {
+		if (!isEqual(updated, org)) {
 			this.groupSettings.set(groupId, updated)
 		}
 	}
@@ -244,5 +244,5 @@ export class GuiStore {
  * This used to have content but doesn't anymore.
  * We're keeping it around temporarily just in case it becomes useful again.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface GroupSettings {}

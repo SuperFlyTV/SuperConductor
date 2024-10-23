@@ -1,16 +1,16 @@
 import React, { useContext } from 'react'
-import { GroupGUI } from '../../../../models/rundown/Group'
-import { IPCServerContext } from '../../../contexts/IPCServer'
+import { GroupGUI } from '../../../../models/rundown/Group.js'
+import { IPCServerContext } from '../../../contexts/IPCServer.js'
 import { Box, Button } from '@mui/material'
-import { ErrorHandlerContext } from '../../../contexts/ErrorHandler'
+import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
 import { observer } from 'mobx-react-lite'
-import { store } from '../../../mobx/store'
-import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral'
-import { useMemoComputedObject } from '../../../mobx/lib'
+import { store } from '../../../mobx/store.js'
+import { PeripheralArea, PeripheralStatus } from '../../../../models/project/Peripheral.js'
+import { useMemoComputedObject } from '../../../mobx/lib.js'
 import { getPeripheralId } from '@shared/lib'
 import { BridgeId, PeripheralId } from '@shared/api'
 import { protectString } from '@shared/models'
-import { Bridge, BridgePeripheralSettings } from '../../../../models/project/Bridge'
+import { Bridge, BridgePeripheralSettings } from '../../../../models/project/Bridge.js'
 
 export const GroupButtonAreaPopover: React.FC<{ group: GroupGUI }> = observer(function GroupButtonAreaPopover({
 	group,

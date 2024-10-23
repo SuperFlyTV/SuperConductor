@@ -1,6 +1,6 @@
 import React from 'react'
 import { TSRTimelineObj, TimelineContentAbstractAny } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave } from './lib'
+import { EditWrapper, OnSave } from './lib.js'
 
 export const EditTimelineObjAbstractAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentAbstractAny>[]

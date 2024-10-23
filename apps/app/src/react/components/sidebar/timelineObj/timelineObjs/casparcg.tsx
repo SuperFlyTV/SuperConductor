@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 import React, { useState } from 'react'
 import { assertNever, deepClone, getResourceIdFromTimelineObj } from '@shared/lib'
 import {
@@ -25,31 +24,31 @@ import {
 	TimelineContentCCGRoute,
 	TimelineContentCCGRecord,
 } from 'timeline-state-resolver-types'
-import { EditWrapper, OnSave, OnSaveType } from './lib'
-import { BooleanInput } from '../../../inputs/BooleanInput'
-import { DurationInput } from '../../../inputs/DurationInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { IntInput } from '../../../inputs/IntInput'
-import { TextInput } from '../../../inputs/TextInput'
+import { EditWrapper, OnSave, OnSaveType } from './lib.js'
+import { BooleanInput } from '../../../inputs/BooleanInput.js'
+import { DurationInput } from '../../../inputs/DurationInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { TextInput } from '../../../inputs/TextInput.js'
 import { Link } from '@mui/material'
-import { Btn } from '../../../inputs/Btn/Btn'
-import { TrashBtn } from '../../../inputs/TrashBtn'
-import { AddBtn } from '../../../inputs/AddBtn'
+import { Btn } from '../../../inputs/Btn/Btn.js'
+import { TrashBtn } from '../../../inputs/TrashBtn.js'
+import { AddBtn } from '../../../inputs/AddBtn.js'
 
 import './casparcg.scss'
-import { FloatInput } from '../../../inputs/FloatInput'
-import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker'
+import { FloatInput } from '../../../inputs/FloatInput.js'
+import { AnalogInputOverridePicker } from '../../../inputs/AnalogInputPicker/AnalogInputPicker.js'
 import { HiOutlineX } from 'react-icons/hi'
-import { store } from '../../../../mobx/store'
+import { store } from '../../../../mobx/store.js'
 import { computed } from 'mobx'
 import { CasparCGMedia, ResourceAny, ResourceId, ResourceType } from '@shared/models'
-import { usePromise } from '../../../../mobx/lib'
-import { EditGDDData } from '../GDD/gddEdit'
+import { usePromise } from '../../../../mobx/lib.js'
+import { EditGDDData } from '../GDD/gddEdit.js'
 import { GDDSchema } from 'graphics-data-definition'
 import { PartialDeep } from 'type-fest'
-import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit'
-import { makePartialData } from '../GDD/lib'
-import { sortMappings } from '../../../../../lib/TSRMappings'
+import { isIndeterminate, inputValue, firstValue, anyAreTrue } from '../../../../lib/multipleEdit.js'
+import { makePartialData } from '../GDD/lib.js'
+import { sortMappings } from '../../../../../lib/TSRMappings.js'
 import { observer } from 'mobx-react-lite'
 
 export const EditTimelineObjCasparCGAny: React.FC<{
@@ -2116,7 +2115,7 @@ const CasparEditTemplateData: React.FC<{
 	resourceIds: ResourceId[]
 	onSave: OnSave
 }> = ({ objs, resourceIds, onSave }) => {
-	const initializedGDDValidator = usePromise(() =>
+	const initializedGDDValidator = usePromise(async () =>
 		store.gddValidatorStore.initializeGDDSchemaValidator().then(() => true)
 	)
 
@@ -2177,7 +2176,9 @@ function prepareGDDEdit(resources: ResourceAny[]): GDDEdit | undefined {
 			gddIsIndeterminate = isIndeterminate(gdds, (gdd) => gdd.schema)
 
 			if (!gddIsIndeterminate) {
-				store.gddValidatorStore.initializeGDDSchemaValidator().catch((window as any).handleError)
+				store.gddValidatorStore.initializeGDDSchemaValidator().catch((e) => {
+					;(window as any).handleError(e)
+				})
 				const gddValidator = computed(() => store.gddValidatorStore.gddValidator).get()
 				if (gddValidator) {
 					for (const gdd of gdds) {

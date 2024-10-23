@@ -3,19 +3,18 @@
 	"private": true,
 	"version": "0.12.0-alpha.5",
 	"description": "A companion app to SuperConductor, to handle playout on another computer",
-	"main": "dist/main.js",
+	"main": "dist/main.mjs",
+	"type": "module",
 	"engines": {
-		"node": "^16.16.0 || 18"
+		"node": "20"
 	},
 	"scripts": {
-		"build": "rimraf ./dist && tsc && webpack",
+		"build": "run -B -T rimraf ./dist && run -B -T tsc && vite build",
 		"build:binary": "electron-builder",
-		"start": "yarn build && electron dist/main.js",
-		"react:dev": "webpack serve --mode=development",
+		"start": "yarn build && electron dist/main.mjs",
+		"react:dev": "vite",
 		"electron:dev": "nodemon",
-		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\"",
-		"precommit": "lint-staged",
-		"lint:raw": "eslint --ext .ts --ext .js --ext .tsx --ext .jsx --ignore-pattern dist"
+		"dev": "concurrently --kill-others \"yarn react:dev\" \"yarn electron:dev\""
 	},
 	"repository": {
 		"type": "git",
@@ -28,97 +27,50 @@
 	},
 	"license": "AGPL-3.0-or-later",
 	"devDependencies": {
-		"@types/node": "^18.11.9",
-		"@types/react-toggle": "^4.0.3",
-		"@types/triple-beam": "^1.3.2",
-		"concurrently": "^7.5.0",
-		"css-loader": "^6.7.2",
-		"electron": "^19.1.6",
-		"electron-builder": "^23.6.0",
-		"electron-notarize": "^1.2.2",
-		"html-webpack-plugin": "^5.5.0",
-		"node-loader": "^2.0.0",
-		"nodemon": "^2.0.20",
-		"rimraf": "^3.0.2",
-		"sass": "^1.56.1",
-		"sass-loader": "^13.2.0",
-		"style-loader": "^3.3.1",
-		"ts-loader": "^9.4.1",
-		"webpack": "^5.75.0",
-		"webpack-cli": "^4.10.0",
-		"webpack-dev-server": "^4.11.1"
+		"@electron/notarize": "^2.5.0",
+		"@types/react-toggle": "patch:@types/react-toggle@npm%3A4.0.5#~/.yarn/patches/@types-react-toggle-npm-4.0.5-c40bf309fb.patch",
+		"@types/triple-beam": "^1.3.5",
+		"@vitejs/plugin-react": "^4.3.2",
+		"concurrently": "^7.6.0",
+		"electron": "32.2.0",
+		"electron-builder": "24.13.3",
+		"nodemon": "^2.0.22",
+		"sass": "^1.79.4",
+		"vite": "^5.4.8"
 	},
 	"dependencies": {
-		"@babel/core": "^7.22.1",
-		"@mui/material": "^5.10.14",
+		"@babel/core": "^7.25.8",
+		"@mui/material": "^5.16.7",
 		"@shared/api": "^0.12.0-alpha.5",
 		"@shared/lib": "^0.12.0-alpha.5",
 		"@shared/models": "^0.12.0-alpha.5",
 		"@shared/server-lib": "^0.12.0-alpha.5",
 		"@shared/tsr-bridge": "^0.12.0-alpha.5",
-		"classnames": "^2.3.2",
-		"electron-is-dev": "^2.0.0",
-		"electron-updater": "^5.3.0",
-		"lodash": "^4.17.21",
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0",
-		"react-icons": "^4.6.0",
+		"classnames": "^2.5.1",
+		"electron-updater": "^6.3.9",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"react-icons": "^5.3.0",
 		"react-scroll-to-bottom": "^4.2.0",
-		"react-toggle": "^4.1.3",
-		"short-uuid": "^4.2.2",
-		"winston": "^3.8.2",
-		"winston-transport": "^4.5.0"
-	},
-	"prettier": "@sofie-automation/code-standard-preset/.prettierrc.json",
-	"lint-staged": {
-		"*.{css,json,md,scss}": [
-			"prettier --write"
-		],
-		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
-		]
+		"react-toggle": "patch:react-toggle@npm%3A4.1.3#~/.yarn/patches/react-toggle-npm-4.1.3-6397672405.patch",
+		"short-uuid": "^5.2.0",
+		"winston": "^3.15.0",
+		"winston-transport": "^4.8.0"
 	},
 	"build": {
 		"productName": "TSR-Bridge",
 		"appId": "tv.superfly.tsr-bridge",
+		"npmRebuild": false,
+		"nodeGypRebuild": false,
 		"mac": {
 			"category": "public.app-category.utilities",
 			"hardenedRuntime": true,
 			"gatekeeperAssess": false,
 			"entitlements": "entitlements.mac.plist",
-			"entitlementsInherit": "entitlements.mac.plist",
-			"extraFiles": [
-				{
-					"from": "../../node_modules/sharp/vendor/8.13.3/darwin-x64/lib",
-					"to": "Frameworks",
-					"filter": [
-						"!glib-2.0/**/*"
-					]
-				}
-			]
+			"entitlementsInherit": "entitlements.mac.plist"
 		},
-		"win": {
-			"extraFiles": [
-				{
-					"from": "../../node_modules/sharp/build/Release",
-					"to": ".",
-					"filter": [
-						"lib*.dll"
-					]
-				}
-			]
-		},
-		"linux": {
-			"extraFiles": [
-				{
-					"from": "../../node_modules/sharp/vendor/8.13.3/linux-x64/lib",
-					"to": ".",
-					"filter": [
-						"libvips*.so.*"
-					]
-				}
-			]
-		},
+		"win": {},
+		"linux": {},
 		"dmg": {
 			"artifactName": "TSR-Bridge ${version} macOS Installer.${ext}"
 		},
@@ -128,13 +80,21 @@
 		"appImage": {
 			"artifactName": "TSR-Bridge ${version} Linux Executable.${ext}"
 		},
-		"afterSign": "tools/notarize.js",
-		"electronVersion": "19.1.6",
+		"afterSign": "tools/notarize.cjs",
 		"files": [
-			"dist/**/*"
+			"dist/**/*",
+			"build/**/*"
 		],
 		"extraResources": [
 			"assets/**/*"
-		]
+		],
+		"asarUnpack": [
+			"**/node_modules/sharp/**/*",
+			"**/node_modules/@img/**/*"
+		],
+		"directories": {
+			"buildResources": "resources/",
+			"output": "electron-output/"
+		}
 	}
 }

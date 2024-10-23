@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: apt-get update
         run: sudo apt-get update
       - name: Install libasound2-dev
@@ -26,14 +26,19 @@ jobs:
       - name: Install libudev-dev
         run: sudo apt-get install -y libudev-dev
       - name: restore node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Typecheck
         run: yarn build
       - name: Lint
@@ -43,47 +48,145 @@ jobs:
       - name: Run license check
         run: |
           yarn license-validate
+
   macos-build:
-    name: Install and build on macOS
+    name: Build on macOS
     runs-on: macos-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: restore node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary -- --publish=never
+        env:
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLEID: ${{ secrets.APPLEID }}
+          APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
+          APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+      - name: Collect binaries
+        run: |
+          mkdir macos-dist
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* macos-dist/
+          mv apps/app/electron-output/SuperConductor* macos-dist/
+          mv apps/app/electron-output/latest-mac.yml macos-dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dist
+          path: macos-dist
+          retention-days: 1
+
   windows-build:
-    name: Install and build on Windows
+    name: Build on Windows
     runs-on: windows-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version-file: '.nvmrc'
       - name: restore node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
           key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
       - name: Prepare Environment
         run: |
-          yarn --ignore-engines --frozen-lockfile --network-timeout 1000000
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
       - name: Build
         run: |
           yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary -- -- --publish=never
+      - name: Collect binaries
+        run: |
+          mkdir win-dist
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* win-dist/
+          mv apps/app/electron-output/SuperConductor* win-dist/
+          mv apps/app/electron-output/latest.yml win-dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-dist
+          path: win-dist
+          retention-days: 1
+
+  linux-build:
+    name: Build Linux Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: apt-get update
+        run: sudo apt-get update
+      - name: Install libasound2-dev
+        run: sudo apt-get install -y libasound2-dev
+      - name: Install libudev-dev
+        run: sudo apt-get install -y libudev-dev
+      - name: restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Prepare Environment
+        run: |
+          corepack enable
+
+          # try and avoid timeout errors
+          yarn config set httpTimeout 100000
+
+          yarn --immutable
+      - name: Build
+        run: |
+          yarn build
+      - name: Build binaries
+        run: |
+          yarn build:binary -- --publish=never
+      - name: Collect binaries
+        run: |
+          mkdir linux-dist
+          mv apps/tsr-bridge/electron-output/TSR-Bridge* linux-dist/
+          mv apps/app/electron-output/SuperConductor* linux-dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-dist
+          path: linux-dist
+          retention-days: 1

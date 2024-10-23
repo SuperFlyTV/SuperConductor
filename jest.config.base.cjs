@@ -1,13 +1,18 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
 	roots: ['<rootDir>/src'],
 	projects: ['<rootDir>'],
 	preset: 'ts-jest',
 	moduleFileExtensions: ['js', 'ts'],
+	extensionsToTreatAsEsm: ['.ts'],
+	moduleNameMapper: {
+		'^(\\.{1,2}/.*)\\.js$': '$1',
+	},
 	transform: {
 		'^.+\\.(ts|tsx)$': [
 			'ts-jest',
 			{
-				tsconfig: 'tsconfig.json',
+				useESM: true,
 			},
 		],
 	},

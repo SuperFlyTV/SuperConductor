@@ -1,12 +1,12 @@
 import { Button, Stack, Typography } from '@mui/material'
 import React from 'react'
 import { TSRTimelineObj, TimelineContentHTTPSendAny, TimelineContentTypeHTTP } from 'timeline-state-resolver-types'
-import { inputValue, isIndeterminate } from '../../../../lib/multipleEdit'
-import { IntInput } from '../../../inputs/IntInput'
-import { SelectEnum } from '../../../inputs/SelectEnum'
-import { TextInput } from '../../../inputs/TextInput'
-import { TrashBtn } from '../../../inputs/TrashBtn'
-import { EditWrapper, OnSave, OnSaveType } from './lib'
+import { inputValue, isIndeterminate } from '../../../../lib/multipleEdit.js'
+import { IntInput } from '../../../inputs/IntInput.js'
+import { SelectEnum } from '../../../inputs/SelectEnum.js'
+import { TextInput } from '../../../inputs/TextInput.js'
+import { TrashBtn } from '../../../inputs/TrashBtn.js'
+import { EditWrapper, OnSave, OnSaveType } from './lib.js'
 
 export const EditTimelineObjHTTPSendAny: React.FC<{
 	objs: TSRTimelineObj<TimelineContentHTTPSendAny>[]

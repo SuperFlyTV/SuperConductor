@@ -1,5 +1,5 @@
 import { BridgeId, PeripheralId, PeripheralInfo } from '@shared/api'
-import { RundownTrigger } from '../rundown/Trigger'
+import { RundownTrigger } from '../rundown/Trigger.js'
 import { protectString } from '@shared/models'
 
 export interface PeripheralStatus {

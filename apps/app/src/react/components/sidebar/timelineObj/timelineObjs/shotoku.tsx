@@ -1,6 +1,6 @@
 import React from 'react'
 import { TSRTimelineObj, TimelineContentShotoku } from 'timeline-state-resolver-types'
-import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib'
+import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave } from './lib.js'
 
 export const EditTimelineObjShotoku: React.FC<{ objs: TSRTimelineObj<TimelineContentShotoku>[]; onSave: OnSave }> = ({
 	objs,

@@ -4,21 +4,21 @@ import EventEmitter from 'events'
 import * as semver from 'semver'
 import { LoggerLike } from '@shared/api'
 import { omit } from '@shared/lib'
-import { Project, ProjectBase } from '../models/project/Project'
-import { Rundown } from '../models/rundown/Rundown'
-import { AppData } from '../models/App/AppData'
-import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults'
+import { Project, ProjectBase } from '../models/project/Project.js'
+import { Rundown } from '../models/rundown/Rundown.js'
+import { AppData } from '../models/App/AppData.js'
+import { getDefaultAppData, getDefaultGroup, getDefaultProject, getDefaultRundown } from '../lib/defaults.js'
 import { protectString, ResourceAny, ResourceId, MetadataAny, TSRDeviceId } from '@shared/models'
-import { baseFolder } from '../lib/baseFolder'
-import * as _ from 'lodash'
-import { makeDevData } from './makeDevData'
-import { getPartLabel, shortID } from '../lib/util'
+import { baseFolder } from '../lib/baseFolder.js'
+import * as _ from 'lodash-es'
+import { makeDevData } from './makeDevData.js'
+import { getPartLabel, shortID } from '../lib/util.js'
 import { DeviceType, Mapping, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
-import { CURRENT_VERSION } from './bridgeHandler'
-import { ensureValidId, ensureValidObject } from '../lib/TimelineObj'
-import { AnalogInput } from '../models/project/AnalogInput'
+import { CURRENT_VERSION } from './bridgeHandler.js'
+import { ensureValidId, ensureValidObject } from '../lib/TimelineObj.js'
+import { AnalogInput } from '../models/project/AnalogInput.js'
 import { ValidatorCache } from 'graphics-data-definition'
-import { Bridge } from '../models/project/Bridge'
+import { Bridge } from '../models/project/Bridge.js'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -74,7 +74,10 @@ export class StorageHandler extends EventEmitter {
 	private emitTimeout: NodeJS.Timeout | null = null
 	private writeTimeout: NodeJS.Timeout | null = null
 
-	constructor(private log: LoggerLike, private appVersion: string) {
+	constructor(
+		private log: LoggerLike,
+		private appVersion: string
+	) {
 		super()
 		this.appData = this.loadAppData()
 
@@ -111,7 +114,7 @@ export class StorageHandler extends EventEmitter {
 			try {
 				const read = fs.readFileSync(projectPath, 'utf8')
 				project = JSON.parse(read)
-			} catch (error) {
+			} catch (_error) {
 				// ignore
 			}
 
@@ -135,7 +138,7 @@ export class StorageHandler extends EventEmitter {
 		let files: string[] = []
 		try {
 			files = fs.readdirSync(rundownsDir)
-		} catch (e) {
+		} catch (_e) {
 			// ignore, it's probably because the folder doesn't exist yet
 		}
 

@@ -2,18 +2,18 @@ import React, { useCallback, useContext } from 'react'
 import { Box, Button, Grid } from '@mui/material'
 
 import { observer } from 'mobx-react-lite'
-import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay'
-import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler'
-import { IPCServerContext } from '../../../../contexts/IPCServer'
-import { PeripheralArea, PeripheralStatus } from '../../../../../models/project/Peripheral'
-import { ProjectContext } from '../../../../contexts/Project'
-import { store } from '../../../../mobx/store'
-import { useMemoComputedObject } from '../../../../mobx/lib'
-import { StreamdeckSettings } from './streamdeck'
-import { XKeysSettings } from './xkeys'
-import { MIDISettings } from './midi'
-import { TrashBtn } from '../../../../components/inputs/TrashBtn'
-import { BridgeId, PeripheralId } from '@shared/api'
+import { DefiningArea } from '../../../../../lib/triggers/keyDisplay/keyDisplay.js'
+import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
+import { IPCServerContext } from '../../../../contexts/IPCServer.js'
+import { PeripheralArea, PeripheralStatus } from '../../../../../models/project/Peripheral.js'
+import { ProjectContext } from '../../../../contexts/Project.js'
+import { store } from '../../../../mobx/store.js'
+import { useMemoComputedObject } from '../../../../mobx/lib.js'
+import { StreamdeckSettings } from './streamdeck.js'
+import { XKeysSettings } from './xkeys.js'
+import { MIDISettings } from './midi.js'
+import { TrashBtn } from '../../../../components/inputs/TrashBtn.js'
+import { BridgeId, PeripheralId, PeripheralType } from '@shared/api'
 import { unprotectString } from '@shared/models'
 
 export const PeripheralSettings: React.FC<{
@@ -73,7 +73,7 @@ export const PeripheralSettings: React.FC<{
 			<div>Name: {peripheral.info.name}</div>
 
 			<div className="peripheral-settings__popover__settings">
-				{peripheral.info.gui.type === 'streamdeck' && (
+				{peripheral.info.gui.type === PeripheralType.STREAMDECK && (
 					<StreamdeckSettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
@@ -81,7 +81,7 @@ export const PeripheralSettings: React.FC<{
 						definingArea={definingArea}
 					/>
 				)}
-				{peripheral.info.gui.type === 'xkeys' && (
+				{peripheral.info.gui.type === PeripheralType.XKEYS && (
 					<XKeysSettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}
@@ -89,7 +89,7 @@ export const PeripheralSettings: React.FC<{
 						definingArea={definingArea}
 					/>
 				)}
-				{peripheral.info.gui.type === 'midi' && (
+				{peripheral.info.gui.type === PeripheralType.MIDI && (
 					<MIDISettings
 						bridgeId={bridgeId}
 						deviceId={deviceId}

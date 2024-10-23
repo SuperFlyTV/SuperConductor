@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx'
-import { ApiClient } from '../api/ApiClient'
-import { RealtimeDataProvider } from '../api/RealtimeDataProvider'
-import { ClientSideLogger } from '../api/logger'
+import { ApiClient } from '../api/ApiClient.js'
+import { RealtimeDataProvider } from '../api/RealtimeDataProvider.js'
+import { ClientSideLogger } from '../api/logger.js'
 
 export class TriggersStore {
 	failedGlobalTriggers: Set<string> = new Set()

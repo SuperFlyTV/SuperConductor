@@ -1,16 +1,16 @@
 import { BridgeAPI, BridgeId, LoggerLike } from '@shared/api'
-import { assertNever } from '@shared/lib'
+import { assertNever, deepClone } from '@shared/lib'
 import { MetadataAny, ResourceAny, serializeProtectedMap } from '@shared/models'
 import { PeripheralsHandler } from '@shared/peripherals'
-import { clone } from 'lodash'
 import { Datastore } from 'timeline-state-resolver'
 import { Mappings, TSRTimeline } from 'timeline-state-resolver-types'
-import { TSR } from './TSR'
+import { TSR } from './TSR.js'
 import { TSRDeviceId } from '@shared/models'
 import { deserializeProtectedMap } from '@shared/models'
+import { createRequire } from 'module'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
+const require = createRequire(import.meta.url)
+export const { version: CURRENT_VERSION }: { version: string } = require('../package.json')
 
 export class BaseBridge {
 	peripheralsHandler: PeripheralsHandler | null = null
@@ -26,7 +26,10 @@ export class BaseBridge {
 	private peripheralsHandlerSend: (message: BridgeAPI.FromBridge.Any) => void | null = () => null
 	private sendAndCatch: (msg: BridgeAPI.FromBridge.Any) => void
 
-	constructor(private send: (msg: BridgeAPI.FromBridge.Any) => void, private log: LoggerLike) {
+	constructor(
+		private send: (msg: BridgeAPI.FromBridge.Any) => void,
+		private log: LoggerLike
+	) {
 		this.tsr = new TSR(log)
 		this.sendAndCatch = (msg: BridgeAPI.FromBridge.Any) => {
 			try {
@@ -125,7 +128,7 @@ export class BaseBridge {
 	private updateTSRDatastore(currentTime: number) {
 		this.tsr.setCurrentTime(currentTime)
 
-		this.tsr.conductor.setDatastore(clone(this.dataStore)) // shallow clone
+		this.tsr.conductor.setDatastore(deepClone(this.dataStore)) // shallow clone
 	}
 
 	private updateMappings(newMappings: Mappings, currentTime: number) {

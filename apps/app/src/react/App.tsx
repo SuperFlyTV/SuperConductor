@@ -9,47 +9,47 @@ import '@fontsource/barlow-condensed/300.css'
 import '@fontsource/barlow-condensed/400.css'
 import '@fontsource/barlow-condensed/500.css'
 import './styles/app.scss'
-import { RundownView } from './components/rundown/RundownView'
-import { Sidebar } from './components/sidebar/Sidebar'
-import sorensen from '@sofie-automation/sorensen'
-import { RealtimeDataProvider } from './api/RealtimeDataProvider'
-import { ApiClient } from './api/ApiClient'
-import { Project, SpecialLedgers } from '../models/project/Project'
-import { IPCServerContext } from './contexts/IPCServer'
-import { ProjectContext } from './contexts/Project'
-import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey'
+import { RundownView } from './components/rundown/RundownView.js'
+import { Sidebar } from './components/sidebar/Sidebar.js'
+import { Sorensen } from '@sofie-automation/sorensen'
+import { RealtimeDataProvider } from './api/RealtimeDataProvider.js'
+import { ApiClient } from './api/ApiClient.js'
+import { Project, SpecialLedgers } from '../models/project/Project.js'
+import { IPCServerContext } from './contexts/IPCServer.js'
+import { ProjectContext } from './contexts/Project.js'
+import { HotkeyContext, IHotkeyContext, TriggersEmitter } from './contexts/Hotkey.js'
 import { useSnackbar } from 'notistack'
-import { AppData } from '../models/App/AppData'
-import { ErrorHandlerContext } from './contexts/ErrorHandler'
-import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger'
+import { AppData } from '../models/App/AppData.js'
+import { ErrorHandlerContext } from './contexts/ErrorHandler.js'
+import { ActiveTrigger, ActiveTriggers } from '../models/rundown/Trigger.js'
 import { observer } from 'mobx-react-lite'
-import { HeaderBar } from './components/headerBar/HeaderBar'
-import { store } from './mobx/store'
-import { HomePage } from './components/pages/homePage/HomePage'
-import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage'
-import { SplashScreen } from './components/SplashScreen'
-import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay'
-import { ConfirmationDialog } from './components/util/ConfirmationDialog'
-import { LoggerContext } from './contexts/Logger'
-import { ClientSideLogger } from './api/logger'
-import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib'
-import { getAllActionsInParts, ActionAny, getAllApplicationActions } from '../lib/triggers/action'
+import { HeaderBar } from './components/headerBar/HeaderBar.js'
+import { store } from './mobx/store.js'
+import { HomePage } from './components/pages/homePage/HomePage.js'
+import { NewRundownPage } from './components/pages/newRundownPage/NewRundownPage.js'
+import { SplashScreen } from './components/SplashScreen.js'
+import { DefiningArea } from '../lib/triggers/keyDisplay/keyDisplay.js'
+import { ConfirmationDialog } from './components/util/ConfirmationDialog.js'
+import { LoggerContext } from './contexts/Logger.js'
+import { ClientSideLogger } from './api/logger.js'
+import { useMemoComputedObject, useMemoComputedValue } from './mobx/lib.js'
+import { getAllActionsInParts, ActionAny, getAllApplicationActions } from '../lib/triggers/action.js'
 import { assertNever, deepClone, stringifyErrorInner } from '@shared/lib'
-import { setupClipboard } from './api/clipboard/clipboard'
-import { ClipBoardContext } from './api/clipboard/lib'
-import { UserAgreementScreen } from './components/UserAgreementScreen'
-import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
-import { DebugTestErrors } from './components/util/Debug'
-import { ErrorBoundary } from './components/util/ErrorBoundary'
-import { Spinner } from './components/util/Spinner'
-import { CB } from './lib/errorHandling'
-import { ActiveAnalog } from '../models/rundown/Analog'
-import { SystemMessageOptions } from '../ipc/IPCAPI'
-import { TextBtn } from './components/inputs/textBtn/TextBtn'
+import { setupClipboard } from './api/clipboard/clipboard.js'
+import { ClipBoardContext } from './api/clipboard/lib.js'
+import { UserAgreementScreen } from './components/UserAgreementScreen.js'
+import { USER_AGREEMENT_VERSION } from '../lib/userAgreement.js'
+import { DebugTestErrors } from './components/util/Debug.js'
+import { ErrorBoundary } from './components/util/ErrorBoundary.js'
+import { Spinner } from './components/util/Spinner.js'
+import { CB } from './lib/errorHandling.js'
+import { ActiveAnalog } from '../models/rundown/Analog.js'
+import { SystemMessageOptions } from '../ipc/IPCAPI.js'
+import { TextBtn } from './components/inputs/textBtn/TextBtn.js'
 import { HiOutlineX, HiDotsVertical } from 'react-icons/hi'
 import { protectString } from '@shared/models'
-import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral'
-import { ElectronApi } from './api/ElectronApi'
+import { PERIPHERAL_KEYBOARD } from '../models/project/Peripheral.js'
+import { ElectronApi } from './api/ElectronApi.js'
 
 /**
  * Used to remove unnecessary cruft from error messages.
@@ -62,7 +62,7 @@ const ENABLE_WHY_DID_YOU_RENDER = false
 if (process.env.NODE_ENV === 'development' && ENABLE_WHY_DID_YOU_RENDER) {
 	// eslint-disable-next-line no-console
 	console.log('Why-did-you-render-enabled')
-	// eslint-disable-next-line @typescript-eslint/no-var-requires, node/no-unpublished-require
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
 	const whyDidYouRender = require('@welldone-software/why-did-you-render')
 	whyDidYouRender(React, {
 		trackAllPureComponents: true,
@@ -245,14 +245,14 @@ export const App = observer(function App() {
 
 			debugKeyPressesLastTime.current = Date.now()
 		}
-		sorensen.bind('F12', onF12Key, {
+		Sorensen.bind('F12', onF12Key, {
 			up: false,
 			global: true,
 			exclusive: true,
 			preventDefaultPartials: false,
 		})
 		return () => {
-			sorensen.unbind('F12', onF12Key)
+			Sorensen.unbind('F12', onF12Key)
 		}
 	}, [sorensenInitialized, handleError, serverAPI])
 
@@ -265,13 +265,13 @@ export const App = observer(function App() {
 				if (document.activeElement?.tagName === 'INPUT') return
 			}
 
-			const activeKeys = sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
+			const activeKeys = Sorensen.getPressedKeys().map<ActiveTrigger>((code) => {
 				return {
 					fullIdentifier: `keyboard-${code}`,
 					bridgeId: protectString(''),
 					deviceId: PERIPHERAL_KEYBOARD,
 					deviceName: '',
-					identifier: sorensen.getKeyForCode(code),
+					identifier: Sorensen.getKeyForCode(code),
 				}
 			})
 			triggers.setActiveKeys(activeKeys)
@@ -321,8 +321,7 @@ export const App = observer(function App() {
 
 	/* eslint-disable @typescript-eslint/unbound-method */
 	useEffect(() => {
-		sorensen
-			.init()
+		Sorensen.init()
 			.then(() => {
 				setSorensenInitialized(true)
 			})
@@ -479,7 +478,7 @@ export const App = observer(function App() {
 			}
 		}
 
-		sorensen.bind('Delete', onDeleteKey, {
+		Sorensen.bind('Delete', onDeleteKey, {
 			up: false,
 			global: true,
 			exclusive: true,
@@ -487,7 +486,7 @@ export const App = observer(function App() {
 		})
 
 		return () => {
-			sorensen.unbind('Delete', onDeleteKey)
+			Sorensen.unbind('Delete', onDeleteKey)
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, deleteSelectedTimelineObjs])
 
@@ -534,24 +533,24 @@ export const App = observer(function App() {
 			setUserAgreementScreenOpen(false)
 			if (undoLedgerKey) serverAPI.redo({ key: undoLedgerKey }).catch(handleError)
 		}
-		sorensen.bind('Escape', onEscapeKey, {
+		Sorensen.bind('Escape', onEscapeKey, {
 			up: false,
 			global: true,
 			exclusive: true,
 			preventDefaultPartials: false,
 		})
-		sorensen.bind('Control+KeyZ', onUndo, {
+		Sorensen.bind('Control+KeyZ', onUndo, {
 			up: false,
 			global: true,
 		})
-		sorensen.bind('Control+KeyY', onRedo, {
+		Sorensen.bind('Control+KeyY', onRedo, {
 			up: false,
 			global: true,
 		})
 		return () => {
-			sorensen.unbind('Escape', onEscapeKey)
-			sorensen.unbind('Control+KeyZ', onUndo)
-			sorensen.unbind('Control+KeyY', onRedo)
+			Sorensen.unbind('Escape', onEscapeKey)
+			Sorensen.unbind('Control+KeyZ', onUndo)
+			Sorensen.unbind('Control+KeyY', onRedo)
 		}
 	}, [sorensenInitialized, handleError, gui, currentRundownId, serverAPI, undoLedgerKey])
 

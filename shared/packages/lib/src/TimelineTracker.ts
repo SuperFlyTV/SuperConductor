@@ -6,8 +6,8 @@ import {
 	TimelineObject,
 	TimelineObjectInstance,
 } from 'superfly-timeline'
-import _ from 'lodash'
-import { deepClone } from './lib'
+import { each, isEqual } from 'lodash-es'
+import { deepClone } from './lib.js'
 
 export class TimelineTracker {
 	private timeline: TimelineObject[]
@@ -70,9 +70,9 @@ export class TimelineTracker {
 						attentionLevel: AttentionLevel.IGNORE,
 					},
 					changedAnything: { changedAnything: false },
-			  }
+				}
 
-		if (!_.isEqual(currentState, this.currentState)) {
+		if (!isEqual(currentState, this.currentState)) {
 			this.currentState = currentState
 
 			try {
@@ -85,7 +85,7 @@ export class TimelineTracker {
 
 		// Now that we've handled this point in time, it's time to determine what the next point in time is:
 		let nextEventTime: number | null = null
-		_.each(this.resolvedStates.nextEvents, (event) => {
+		each(this.resolvedStates.nextEvents, (event) => {
 			if (event.time && event.time > now && (!nextEventTime || event.time < nextEventTime)) {
 				nextEventTime = event.time
 			}
