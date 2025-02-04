@@ -284,16 +284,16 @@ export class PeripheralMIDI extends Peripheral {
 					// Note on
 					const channel = data[0] & 15 // Second nibble
 					const keyNumber = data[1]
-					// const velocity = data[2]
+					const velocity = data[2]
 
 					const identifier = `${channel}_${keyNumber}`
 
 					this.seenKeys.set(identifier, {
 						channel,
 						keyNumber,
-						state: true,
+						state: velocity > 0,
 					})
-					this.emit('keyDown', identifier)
+					this.emit(velocity > 0 ? 'keyDown' : 'keyUp', identifier)
 				} else if (fcn === 2) {
 					// Polyphonic Key Pressure / Aftertouch
 					// Not supported
