@@ -44,7 +44,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 			<Tab
 				id="home"
 				name="Home"
-				onClick={() => {
+				onMouseDown={() => {
 					guiStore.goToHome()
 				}}
 				disableClose={true}
@@ -63,7 +63,7 @@ export const Tabs: React.FC<{ onTabDoubleClick: (rundown: any) => void }> = obse
 						id={rundown.rundownId}
 						name={rundown.name}
 						active={isThisSelected}
-						onClick={() => handleSelect(rundown.rundownId)}
+						onMouseDown={() => handleSelect(rundown.rundownId)}
 						onDoubleClick={() => props.onTabDoubleClick(rundown)}
 						// eslint-disable-next-line @typescript-eslint/no-misused-promises
 						onClose={async () => {
