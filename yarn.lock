@@ -5800,14 +5800,14 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"casparcg-connection@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "casparcg-connection@npm:5.1.0"
+"casparcg-connection@npm:^6.2.0":
+  version: 6.3.0
+  resolution: "casparcg-connection@npm:6.3.0"
   dependencies:
-    highland: "npm:^3.0.0-beta.6"
-    xml2js: "npm:^0.4.19"
-    xmlbuilder: "npm:^9.0.7"
-  checksum: 10c0/b1552837df22f2fecbe778d8767993b25d7c30a38e8fe7861de90494420c51ae9b94cbdd2aa99a04e0bf816a893821d75f72009fe61d9a7245ad2542f620f1c5
+    eventemitter3: "npm:^5.0.1"
+    tslib: "npm:^2.5.0"
+    xml2js: "npm:^0.6.2"
+  checksum: 10c0/93670ec9925a709368a22270f9b309e9515477adf9f1b74fd545d5d933d58f89d08ed91919226f1494cf3e1298f6a73b073b1bae1a2b5783ce14ba49ce6e3fb6
   languageName: node
   linkType: hard
 
@@ -9617,13 +9617,6 @@ asn1@evs-broadcast/node-asn1:
   version: 1.0.0
   resolution: "hexoid@npm:1.0.0"
   checksum: 10c0/9c45e8ba676b9eb88455631ebceec4c829a8374a583410dc735472ab9808bf11339fcd074633c3fa30e420901b894d8a92ffd5e2e21eddd41149546e05a91f69
-  languageName: node
-  linkType: hard
-
-"highland@npm:^3.0.0-beta.6":
-  version: 3.0.0-beta.10
-  resolution: "highland@npm:3.0.0-beta.10"
-  checksum: 10c0/7530fccc8bc9651db085e374c9e062bfe1a35479eb3481842042d340c4939433870255da5f3071147bfc511c8102665d4fa8f93867848041a1f41b32dce740b4
   languageName: node
   linkType: hard
 
@@ -16708,7 +16701,7 @@ asn1@evs-broadcast/node-asn1:
     "@welldone-software/why-did-you-render": "npm:^7.0.1"
     axios: "npm:^1.7.7"
     bufferutil: "npm:^4.0.8"
-    casparcg-connection: "npm:^5.1.0"
+    casparcg-connection: "npm:^6.2.0"
     classnames: "npm:^2.5.1"
     concurrently: "npm:^7.6.0"
     deep-extend: "npm:^0.6.0"
@@ -18466,16 +18459,6 @@ asn1@evs-broadcast/node-asn1:
   bin:
     xml-js: ./bin/cli.js
   checksum: 10c0/c83631057f10bf90ea785cee434a8a1a0030c7314fe737ad9bf568a281083b565b28b14c9e9ba82f11fc9dc582a3a907904956af60beb725be1c9ad4b030bc5a
-  languageName: node
-  linkType: hard
-
-"xml2js@npm:^0.4.19":
-  version: 0.4.23
-  resolution: "xml2js@npm:0.4.23"
-  dependencies:
-    sax: "npm:>=0.6.0"
-    xmlbuilder: "npm:~11.0.0"
-  checksum: 10c0/a3f41c9afc46d5bd0bea4070e5108777b605fd5ce2ebb978a68fd4c75513978ad5939f8135664ffea6f1adb342f391b1ba1584ed7955123b036e9ab8a1d26566
   languageName: node
   linkType: hard
 
