@@ -3476,7 +3476,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:*, @types/lodash@npm:^4.14.189":
+"@types/lodash@npm:*":
   version: 4.17.16
   resolution: "@types/lodash@npm:4.17.16"
   checksum: 10c0/cf017901b8ab1d7aabc86d5189d9288f4f99f19a75caf020c0e2c77b8d4cead4db0d0b842d009b029339f92399f49f34377dd7c2721053388f251778b4c23534
@@ -4440,13 +4440,6 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"async@npm:0.1.18":
-  version: 0.1.18
-  resolution: "async@npm:0.1.18"
-  checksum: 10c0/b7d5f2472bf3d431348871425c1cfa6800fc8e857d763c5fc3666045fdcbbc61a57cabdc7abfd6d3c26636f197a49c22d6f754c87c8d1b8b2395f557f5c41c14
-  languageName: node
-  linkType: hard
-
 "async@npm:^3.2.3":
   version: 3.2.3
   resolution: "async@npm:3.2.3"
@@ -4684,13 +4677,6 @@ asn1@evs-broadcast/node-asn1:
   version: 2.2.0
   resolution: "binary-extensions@npm:2.2.0"
   checksum: 10c0/d73d8b897238a2d3ffa5f59c0241870043aa7471335e89ea5e1ff48edb7c2d0bb471517a3e4c5c3f4c043615caa2717b5f80a5e61e07503d51dc85cb848e665d
-  languageName: node
-  linkType: hard
-
-"bindings@npm:0.3.0":
-  version: 0.3.0
-  resolution: "bindings@npm:0.3.0"
-  checksum: 10c0/195f4931e957a7d0bc9ec84be2d6cc451d9407fb805441cd17d89833c5af410365466f3513a8b7b990e2f650217319baba3ecf9677f4ff3e7d2db5e680754786
   languageName: node
   linkType: hard
 
@@ -12147,15 +12133,6 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"optimist@npm:~0.3.4":
-  version: 0.3.7
-  resolution: "optimist@npm:0.3.7"
-  dependencies:
-    wordwrap: "npm:~0.0.2"
-  checksum: 10c0/510175b89c4a2410ae0df38ce505a9a1bd4a3a4698006d976da208cd745f1fe9ac081a6f89202b4c99f9efd7a2efd84f356c28ef010921ec5f7416fef22a8a7e
-  languageName: node
-  linkType: hard
-
 "optionator@npm:^0.9.3":
   version: 0.9.4
   resolution: "optionator@npm:0.9.4"
@@ -14014,17 +13991,8 @@ asn1@evs-broadcast/node-asn1:
 
 "serialport@https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz":
   version: 1.0.2
-  resolution: "serialport@npm:1.0.2"
-  dependencies:
-    async: "npm:0.1.18"
-    bindings: "npm:0.3.0"
-    node-gyp: "npm:latest"
-    optimist: "npm:~0.3.4"
-    sf: "npm:0.1.3"
-  bin:
-    serialportlist: ./bin/serialportList.js
-    serialportterm: ./bin/serialportTerminal.js
-  checksum: 10c0/88c8af372e49a38f6a7291296bf5e81565a2f76e47805e66a2d31b96a50c707d68b315b4081b7e23114ca2337e3c214ac838ab1855f93f5991c90f25fda42c3e
+  resolution: "serialport@https://registry.yarnpkg.com/@favware/skip-dependency/-/skip-dependency-1.0.2.tgz"
+  checksum: 10c0/44fd8828034c98c1eb9e83c2a1dfde0e1ec6d48efbcfd0b1ede6ea0dc079ba5fd152c43d9adf8200df6fb59c53eee927b1daf6d589f788b58d81ecbdd3520293
   languageName: node
   linkType: hard
 
@@ -14083,13 +14051,6 @@ asn1@evs-broadcast/node-asn1:
   version: 1.2.0
   resolution: "setprototypeof@npm:1.2.0"
   checksum: 10c0/68733173026766fa0d9ecaeb07f0483f4c2dc70ca376b3b7c40b7cda909f94b0918f6c5ad5ce27a9160bdfb475efaa9d5e705a11d8eaae18f9835d20976028bc
-  languageName: node
-  linkType: hard
-
-"sf@npm:0.1.3":
-  version: 0.1.3
-  resolution: "sf@npm:0.1.3"
-  checksum: 10c0/7de53ebfc54b94f175d631c34db6e92fd9220665190c5e7637d945829b0b0078f7083863e2e2cdb2bd692b69267706f13f5e46d0f4e94bd541180452867970ba
   languageName: node
   linkType: hard
 
@@ -15007,7 +14968,6 @@ asn1@evs-broadcast/node-asn1:
     "@types/koa": "npm:^2.15.0"
     "@types/koa-bodyparser": "npm:^4.3.12"
     "@types/koa__router": "npm:^12.0.4"
-    "@types/lodash": "npm:^4.14.189"
     "@types/moment": "npm:^2.13.0"
     "@types/react": "npm:^18.3.11"
     "@types/react-dom": "npm:^18.3.0"
@@ -16461,13 +16421,6 @@ asn1@evs-broadcast/node-asn1:
   version: 1.0.0
   resolution: "wordwrap@npm:1.0.0"
   checksum: 10c0/7ed2e44f3c33c5c3e3771134d2b0aee4314c9e49c749e37f464bf69f2bcdf0cbf9419ca638098e2717cff4875c47f56a007532f6111c3319f557a2ca91278e92
-  languageName: node
-  linkType: hard
-
-"wordwrap@npm:~0.0.2":
-  version: 0.0.3
-  resolution: "wordwrap@npm:0.0.3"
-  checksum: 10c0/b3b212f8b2167091f59bc60929ada2166eb157abb6c8c82e2a705fe5aa5876440c3966ab39eb6c7bcb2ff0ac0c8d9fba726a9c2057b83bd65cdc1858f9d816ce
   languageName: node
   linkType: hard
 
