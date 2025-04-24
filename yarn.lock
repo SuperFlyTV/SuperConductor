@@ -14677,7 +14677,7 @@ asn1@evs-broadcast/node-asn1:
     react-toggle: "patch:react-toggle@npm%3A4.1.3#~/.yarn/patches/react-toggle-npm-4.1.3-6397672405.patch"
     react-visibility-sensor: "npm:^5.1.1"
     sass: "npm:^1.79.4"
-    semver: "npm:^7.6.3"
+    semver: "npm:^7.7.1"
     short-uuid: "npm:^5.2.0"
     socket.io-client: "npm:^4.8.0"
     superfly-timeline: "npm:^8.3.1"
