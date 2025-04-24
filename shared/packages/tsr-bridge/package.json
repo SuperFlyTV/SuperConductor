@@ -32,7 +32,6 @@
 		"@shared/models": "^0.12.0-alpha.5",
 		"@shared/peripherals": "^0.12.0-alpha.5",
 		"cheerio": "^1.0.0",
-		"got": "^14.4.3",
 		"lodash-es": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
 		"timeline-state-resolver": "^9.2.0",

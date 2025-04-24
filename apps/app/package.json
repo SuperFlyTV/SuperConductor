@@ -87,7 +87,6 @@
 		"electron-updater": "^6.3.9",
 		"formik": "patch:formik@npm%3A2.2.9#~/.yarn/patches/formik-npm-2.2.9-0e8cb516ca.patch",
 		"formik-mui": "^5.0.0-alpha.0",
-		"got": "^14.4.3",
 		"graphics-data-definition": "1.1.1",
 		"koa": "^2.15.3",
 		"koa-bodyparser": "^4.4.1",
