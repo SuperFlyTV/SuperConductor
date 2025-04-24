@@ -1,4 +1,3 @@
-import got from 'got'
 import os from 'os'
 import { app } from 'electron'
 import { CURRENT_VERSION } from './bridgeHandler.js'
@@ -135,19 +134,26 @@ export class TelemetryHandler {
 			// If there are errors, don't flood with requests:
 			if (errorCount < 3) {
 				try {
-					await got
-						// .post('http://superconductor-statistics/superconductor/reportUsageStatistics', {
-						// .post('http://localhost:2500/superconductor/reportUsageStatistics', {
-						.post(
-							// 'https://faas-ams3-2a2df116.doserverless.co/api/v1/web/fn-7ba9c1fc-f987-4993-b324-a86c98928fcb/telemetry/insert',
-							'https://faas-ams3-2a2df116.doserverless.co/api/v1/web/fn-7ba9c1fc-f987-4993-b324-a86c98928fcb/telemetry/insert',
-							{
-								json: {
-									report: report,
-								},
-							}
-						)
-						.json()
+					const response = await fetch(
+						// 'http://superconductor-statistics/superconductor/reportUsageStatistics',
+						// 'http://localhost:2500/superconductor/reportUsageStatistics',
+						// 'https://faas-ams3-2a2df116.doserverless.co/api/v1/web/fn-7ba9c1fc-f987-4993-b324-a86c98928fcb/telemetry/insert',
+						'https://faas-ams3-2a2df116.doserverless.co/api/v1/web/fn-7ba9c1fc-f987-4993-b324-a86c98928fcb/telemetry/insert',
+						{
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								report: report,
+							}),
+						}
+					)
+					// Not sure if this is needed, but something equivalent was in the previous version
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`)
+					}
+					await response.json()
 				} catch (error: any) {
 					// For a strange reason we get an error even though it all works
 
