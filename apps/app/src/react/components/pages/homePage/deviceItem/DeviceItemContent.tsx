@@ -241,19 +241,17 @@ export const DeviceItemContent: React.FC<{
 				)}
 			</div>
 			<div className="actions">
+				<div className="sc-switch" title="Enabled">
+					<Toggle
+						checked={!deviceSettings.disable}
+						onChange={() => {
+							deviceSettings.disable = !deviceSettings.disable
+							ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+						}}
+					/>
+				</div>
+
 				<TextBtn label="Delete" style="danger" onClick={removeDevice} />
-				<>
-					<label>Enabled&nbsp;</label>
-					<div className="sc-switch">
-						<Toggle
-							checked={!deviceSettings.disable}
-							onChange={() => {
-								deviceSettings.disable = !deviceSettings.disable
-								ipcServer.updateProject({ id: project.id, project }).catch(handleError)
-							}}
-						/>
-					</div>
-				</>
 			</div>
 		</div>
 	)
