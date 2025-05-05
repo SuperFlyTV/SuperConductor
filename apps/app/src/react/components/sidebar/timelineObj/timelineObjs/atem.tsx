@@ -15,6 +15,7 @@ import {
 	TimelineContentAtemSsrc,
 	TimelineContentAtemSsrcProps,
 	TimelineContentAtemAudioRouting,
+	TimelineContentAtemColorGenerator,
 } from 'timeline-state-resolver-types'
 import { BooleanInput } from '../../../inputs/BooleanInput.js'
 import { SelectEnum } from '../../../inputs/SelectEnum.js'
@@ -939,6 +940,51 @@ export const EditTimelineObjAtemAny: React.FC<{ objs: TSRTimelineObj<TimelineCon
 							}}
 							allowUndefined={true}
 							caps={[0, 65381]}
+						/>
+					</div>
+				</>
+			)
+		} else if (contentType === TimelineContentTypeAtem.COLORGENERATOR) {
+			const objs = objs0 as TSRTimelineObj<TimelineContentAtemColorGenerator>[]
+			const firstObj = objs[0]
+			if (!firstObj) return null
+			const onSave = onSave0 as OnSaveType<TSRTimelineObj<TimelineContentAtemColorGenerator>>
+			settings = (
+				<>
+					<div className="setting">
+						<IntInput
+							label="Hue (0 - 3599)"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.colorGenerator.hue, 0)}
+							onChange={(v) => {
+								onSave({ content: { colorGenerator: { hue: v } } })
+							}}
+							allowUndefined={true}
+							caps={[0, 3599]}
+						/>
+					</div>
+					<div className="setting">
+						<IntInput
+							label="Saturation (0 - 1000)"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.colorGenerator.saturation, 0)}
+							onChange={(v) => {
+								onSave({ content: { colorGenerator: { saturation: v } } })
+							}}
+							allowUndefined={true}
+							caps={[0, 1000]}
+						/>
+					</div>
+					<div className="setting">
+						<IntInput
+							label="Luma (0 - 1000)"
+							fullWidth
+							{...inputValue(objs, (obj) => obj.content.colorGenerator.luma, 0)}
+							onChange={(v) => {
+								onSave({ content: { colorGenerator: { luma: v } } })
+							}}
+							allowUndefined={true}
+							caps={[0, 1000]}
 						/>
 					</div>
 				</>

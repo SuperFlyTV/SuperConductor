@@ -1,4 +1,4 @@
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mappings, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { Bridge } from './Bridge.js'
 
 export interface ProjectBase {
@@ -7,7 +7,7 @@ export interface ProjectBase {
 }
 
 export interface Project extends ProjectBase {
-	mappings: Mappings
+	mappings: Mappings<TSRMappingOptions>
 	bridges: {
 		[BridgeId: string]: Bridge
 	}

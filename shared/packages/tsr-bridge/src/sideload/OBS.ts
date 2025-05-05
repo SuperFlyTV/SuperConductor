@@ -7,15 +7,16 @@ import {
 	OBSTransition,
 	OBSRecording,
 	OBSStreaming,
-	OBSSourceSettings,
+	OBSInputSettings,
 	OBSRender,
-	OBSMute,
+	OBSInputAudio,
 	ResourceId,
 	protectString,
 	MetadataAny,
 	OBSMetadata,
 	MetadataType,
 	TSRDeviceId,
+	OBSInputMedia,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
@@ -61,10 +62,10 @@ export class OBSSideload implements SideLoadDevice {
 	}
 	private async _connect() {
 		if (this.deviceOptions.options?.host && this.deviceOptions.options?.port) {
-			await this.obs.connect({
-				address: `${this.deviceOptions.options?.host}:${this.deviceOptions.options?.port}`,
-				password: this.deviceOptions.options.password,
-			})
+			await this.obs.connect(
+				`ws://${this.deviceOptions.options.host}:${this.deviceOptions.options.port}`,
+				this.deviceOptions.options.password
+			)
 		}
 	}
 
@@ -101,28 +102,30 @@ export class OBSSideload implements SideLoadDevice {
 		}
 
 		// Scenes and Scene Items
-		const { scenes } = await this.obs.send('GetSceneList')
+
+		const { scenes } = await this.obs.call('GetSceneList')
 		for (const scene of scenes) {
 			const resource: OBSScene = {
 				resourceType: ResourceType.OBS_SCENE,
 				deviceId: this.deviceId,
 				id: protectString(''), // set by getResourceIdFromResource() later
-				name: scene.name,
-				displayName: `Scene: ${scene.name}`,
+				name: scene.sceneName as string,
+				displayName: `Scene: ${scene.sceneName as string}`,
 			}
 			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
 		}
 
 		// Transitions
-		const { transitions } = await this.obs.send('GetTransitionList')
+		const { transitions } = await this.obs.call('GetSceneTransitionList')
+		console.log('Transitions:', transitions)
 		for (const transition of transitions) {
 			const resource: OBSTransition = {
 				resourceType: ResourceType.OBS_TRANSITION,
 				deviceId: this.deviceId,
 				id: protectString(''), // set by getResourceIdFromResource() later
-				name: transition.name,
-				displayName: `Transition: ${transition.name}`,
+				name: transition.transitionName as string,
+				displayName: `Transition: ${transition.transitionName as string}`,
 			}
 			resource.id = getResourceIdFromResource(resource)
 			resources.set(resource.id, resource)
@@ -152,18 +155,6 @@ export class OBSSideload implements SideLoadDevice {
 			resources.set(resource.id, resource)
 		}
 
-		// Mute
-		{
-			const resource: OBSMute = {
-				resourceType: ResourceType.OBS_MUTE,
-				deviceId: this.deviceId,
-				id: protectString(''), // set by getResourceIdFromResource() later
-				displayName: 'Mute',
-			}
-			resource.id = getResourceIdFromResource(resource)
-			resources.set(resource.id, resource)
-		}
-
 		// Render
 		{
 			const resource: OBSRender = {
@@ -176,16 +167,46 @@ export class OBSSideload implements SideLoadDevice {
 			resources.set(resource.id, resource)
 		}
 
-		// Source Settings
-		{
-			const resource: OBSSourceSettings = {
-				resourceType: ResourceType.OBS_SOURCE_SETTINGS,
-				deviceId: this.deviceId,
-				id: protectString(''), // set by getResourceIdFromResource() later
-				displayName: 'Source Settings',
+		const { inputs } = await this.obs.call('GetInputList')
+		for (const input of inputs) {
+			// Input Settings
+			{
+				const resource: OBSInputSettings = {
+					resourceType: ResourceType.OBS_INPUT_SETTINGS,
+					deviceId: this.deviceId,
+					id: protectString(''), // set by getResourceIdFromResource() later
+					displayName: `Input Settings: ${input.inputName as string}`,
+					input: input.inputName as string,
+				}
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
 			}
-			resource.id = getResourceIdFromResource(resource)
-			resources.set(resource.id, resource)
+
+			// Input Media
+			{
+				const resource: OBSInputMedia = {
+					resourceType: ResourceType.OBS_INPUT_MEDIA,
+					deviceId: this.deviceId,
+					id: protectString(''), // set by getResourceIdFromResource() later
+					displayName: `Input Media: ${input.inputName as string}`,
+					input: input.inputName as string,
+				}
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
+			}
+
+			// Input Audio
+			{
+				const resource: OBSInputAudio = {
+					resourceType: ResourceType.OBS_INPUT_AUDIO,
+					deviceId: this.deviceId,
+					id: protectString(''), // set by getResourceIdFromResource() later
+					displayName: `Input Audio: ${input.inputName as string}`,
+					input: input.inputName as string,
+				}
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
+			}
 		}
 
 		this.cacheResources = resources

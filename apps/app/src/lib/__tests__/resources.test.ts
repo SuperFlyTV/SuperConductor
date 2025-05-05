@@ -15,11 +15,11 @@ import {
 	HyperdeckPlay,
 	HyperdeckPreview,
 	HyperdeckRecord,
-	OBSMute,
+	OBSInputAudio,
 	OBSRecording,
 	OBSRender,
 	OBSScene,
-	OBSSourceSettings,
+	OBSInputSettings,
 	OBSStreaming,
 	OBSTransition,
 	OSCMessage,
@@ -47,6 +47,8 @@ import {
 	TriCasterInput,
 	TriCasterMatrixOutput,
 	TriCasterAudioChannel,
+	AtemColorGenerator,
+	OBSInputMedia,
 } from '@shared/models'
 import { Mappings, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { TSRTimelineObjFromResource } from '../resources.js'
@@ -219,6 +221,15 @@ describe('resourceId generation', () => {
 			})
 		)
 	})
+	test('ATEM_COLOR_GENERATOR', () => {
+		testResource(
+			literal<AtemColorGenerator>({
+				...COMMON,
+				resourceType: ResourceType.ATEM_COLOR_GENERATOR,
+				index: 6,
+			})
+		)
+	})
 	test('OBS_SCENE', () => {
 		testResource(
 			literal<OBSScene>({
@@ -253,19 +264,27 @@ describe('resourceId generation', () => {
 			})
 		)
 	})
-	test('OBS_SOURCE_SETTINGS', () => {
+	test('OBS_INPUT_SETTINGS', () => {
 		testResource(
-			literal<OBSSourceSettings>({
+			literal<OBSInputSettings>({
 				...COMMON,
-				resourceType: ResourceType.OBS_SOURCE_SETTINGS,
+				resourceType: ResourceType.OBS_INPUT_SETTINGS,
 			})
 		)
 	})
-	test('OBS_MUTE', () => {
+	test('OBS_INPUT_AUDIO', () => {
 		testResource(
-			literal<OBSMute>({
+			literal<OBSInputAudio>({
 				...COMMON,
-				resourceType: ResourceType.OBS_MUTE,
+				resourceType: ResourceType.OBS_INPUT_AUDIO,
+			})
+		)
+	})
+	test('OBS_INPUT_MEDIA', () => {
+		testResource(
+			literal<OBSInputMedia>({
+				...COMMON,
+				resourceType: ResourceType.OBS_INPUT_MEDIA,
 			})
 		)
 	})

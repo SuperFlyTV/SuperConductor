@@ -1,6 +1,10 @@
 import { DeviceOptionsVMix } from 'timeline-state-resolver'
 // eslint-disable-next-line n/no-missing-import
-import { VMix } from 'timeline-state-resolver/dist/integrations/vmix/connection.js'
+import { VMixConnection } from 'timeline-state-resolver/dist/integrations/vmix/connection.js'
+// eslint-disable-next-line n/no-missing-import
+import { VMixXmlStateParser } from 'timeline-state-resolver/dist/integrations/vmix/vMixXmlStateParser.js'
+// eslint-disable-next-line n/no-missing-import
+import { VMixState } from 'timeline-state-resolver/dist/integrations/vmix/vMixStateDiffer.js'
 import {
 	ResourceAny,
 	ResourceType,
@@ -28,7 +32,11 @@ import { LoggerLike } from '@shared/api'
 import { getResourceIdFromResource, stringifyError } from '@shared/lib'
 
 export class VMixSideload implements SideLoadDevice {
-	private vmix: VMix
+	private readonly vmix: VMixConnection
+	private readonly vmixParser = new VMixXmlStateParser()
+
+	private vmixState: VMixState | null = null
+
 	/** A cache of resources to be used when the device is offline. */
 	private cacheResources: Map<ResourceId, ResourceAny> = new Map()
 	private cacheMetadata: VMixMetadata = { metadataType: MetadataType.VMIX }
@@ -38,20 +46,29 @@ export class VMixSideload implements SideLoadDevice {
 		private deviceOptions: DeviceOptionsVMix,
 		private log: LoggerLike
 	) {
-		this.vmix = new VMix(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
+		this.vmix = new VMixConnection(deviceOptions.options?.host ?? '', deviceOptions.options?.port, false)
 
 		this.vmix.on('connected', () => {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection initialized`)
+			this.vmixState = null
 		})
 		this.vmix.on('disconnected', () => {
 			this.log.info(`vMix ${this.deviceId}: Sideload connection disconnected`)
+			this.vmixState = null
+		})
+		this.vmix.on('data', (data) => {
+			if (data.command === 'XML' && data.body) {
+				try {
+					this.vmixState = this.vmixParser.parseVMixState(data.body)
+				} catch (e) {
+					this.log.error(`vMix ${this.deviceId}: Error parsing XML: ${stringifyError(e)}`)
+				}
+			}
 		})
 
 		if (this.deviceOptions.options?.host && this.deviceOptions.options?.port) {
-			// No idea why TypeScript thinks this is a promise that must be marked as `void`.
-			// It's just `void`. No promise.
 			try {
-				void this.vmix.connect(this.deviceOptions.options.host, this.deviceOptions.options.port)
+				this.vmix.connect(this.deviceOptions.options.host, this.deviceOptions.options.port)
 			} catch (error) {
 				this.log.error(stringifyError(error))
 			}
@@ -75,8 +92,9 @@ export class VMixSideload implements SideLoadDevice {
 		}
 
 		// Inputs
-		for (const key in this.vmix.state.inputs) {
-			const input = this.vmix.state.inputs[key]
+		const vmixInputs = this.vmixState ? { ...this.vmixState.inputsAddedByUs, ...this.vmixState.existingInputs } : {}
+		for (const key in vmixInputs) {
+			const input = vmixInputs[key]
 			if (typeof input.number !== 'undefined' && typeof input.type !== 'undefined') {
 				const resource: VMixInput = {
 					resourceType: ResourceType.VMIX_INPUT,

@@ -1,6 +1,6 @@
 import { assertNever } from '@shared/lib'
 import { ResourceAny, ResourceId } from '@shared/models'
-import { Mapping, Mappings, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
+import { Mapping, Mappings, TSRMappingOptions, TSRTimelineContent, TSRTimelineObj } from 'timeline-state-resolver-types'
 import { Project } from '../models/project/Project.js'
 import { AutoFillSettings, AutoFillSortMode } from '../models/rundown/Group.js'
 import { TSRTimelineObjFromResource } from './resources.js'
@@ -13,7 +13,7 @@ export function findAutoFillResources(
 	resources: Map<ResourceId, ResourceAny>
 ): AutoFillResource[] {
 	// Prepare, look up the mappings
-	const mappings: Mappings = {}
+	const mappings: Mappings<TSRMappingOptions> = {}
 
 	for (const layerId of autoFill.layerIds) {
 		const mapping = project.mappings[layerId]
@@ -53,7 +53,7 @@ export function findAutoFillResources(
 		const obj: TSRTimelineObj<TSRTimelineContent> = TSRTimelineObjFromResource(resource)
 
 		let matchLayerId: string | undefined = undefined
-		for (const [layerId, mapping] of Object.entries<Mapping>(mappings)) {
+		for (const [layerId, mapping] of Object.entries<Mapping<TSRMappingOptions>>(mappings)) {
 			if (filterMapping(mapping, obj)) {
 				matchLayerId = layerId
 				break

@@ -68,7 +68,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 						type: DeviceType.OBS,
 						options: {
 							host: '127.0.0.1',
-							port: 4444,
+							port: 4455,
 						},
 					})
 					break
@@ -194,7 +194,7 @@ export function NewDeviceDialog({ open, onAccepted, onDiscarded, bridge }: INewD
 					label="Device Type"
 					value={deviceType.toString()}
 					onChange={(event) => {
-						setDeviceType(parseInt(event.target.value, 10))
+						setDeviceType(event.target.value as DeviceType)
 					}}
 				>
 					<MenuItem value={DeviceType.CASPARCG}>CasparCG</MenuItem>

@@ -35,7 +35,7 @@
 		"got": "^14.4.3",
 		"lodash-es": "^4.17.21",
 		"recursive-readdir": "^2.2.3",
-		"timeline-state-resolver": "^8.1.4",
+		"timeline-state-resolver": "^9.2.0",
 		"winston": "^3.15.0"
 	},
 	"devDependencies": {

@@ -1,5 +1,5 @@
 import React, { useCallback, useContext } from 'react'
-import { MappingTriCaster, MappingTriCasterType } from 'timeline-state-resolver-types'
+import { SomeMappingTricaster, MappingTricasterType } from 'timeline-state-resolver-types'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
 import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
 import { ProjectContext } from '../../../../../contexts/Project.js'
@@ -7,7 +7,7 @@ import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 import { TextInput } from '../../../../inputs/TextInput.js'
 
 interface ITriCasterMappingSettingsProps {
-	mapping: MappingTriCaster
+	mapping: SomeMappingTricaster
 }
 
 export const TriCasterMappingSettings: React.FC<ITriCasterMappingSettingsProps> = ({ mapping }) => {
@@ -16,7 +16,7 @@ export const TriCasterMappingSettings: React.FC<ITriCasterMappingSettingsProps> 
 	const { handleError } = useContext(ErrorHandlerContext)
 
 	const handleMappingTypeChange = useCallback(
-		(newMappingType: MappingTriCasterType) => {
+		(newMappingType: MappingTricasterType) => {
 			mapping.mappingType = newMappingType
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
@@ -25,7 +25,7 @@ export const TriCasterMappingSettings: React.FC<ITriCasterMappingSettingsProps> 
 
 	const handleNameChange = useCallback(
 		(newName: string) => {
-			mapping.name = newName as MappingTriCaster['name'] // TODO: make some dropdowns and/or validation
+			mapping.name = newName // TODO: make some dropdowns and/or validation
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
 		[handleError, ipcServer, mapping, project]
@@ -38,7 +38,7 @@ export const TriCasterMappingSettings: React.FC<ITriCasterMappingSettingsProps> 
 					label="Type"
 					fullWidth
 					currentValue={mapping.mappingType}
-					options={MappingTriCasterType}
+					options={MappingTricasterType}
 					onChange={handleMappingTypeChange}
 				/>
 			</div>

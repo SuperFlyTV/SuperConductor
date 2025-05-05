@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { ResolvedTimelineObject } from 'superfly-timeline'
-import { Mapping } from 'timeline-state-resolver-types'
+import { Mapping, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { filterMapping } from '../../../../lib/TSRMappings.js'
 import { allowAddingResourceToLayer } from '../../../../lib/util.js'
 import { TimelineObj } from '../../../../models/rundown/TimelineObj.js'
@@ -27,7 +27,7 @@ export const Layer: React.FC<{
 	partDuration: number
 	msPerPixel: number
 	locked?: boolean
-	mapping: Mapping | undefined
+	mapping: Mapping<TSRMappingOptions> | undefined
 }> = ({ rundownId, layerId, groupId, partId, objectsOnLayer, partDuration, msPerPixel, locked, mapping }) => {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)

@@ -24,7 +24,7 @@ import { DragItemTypes, isPartDragItem, PartDragItem } from '../../../api/DragIt
 import { MdOutlineDragIndicator, MdMoreHoriz, MdLockOpen, MdLock, MdRepeatOne } from 'react-icons/md'
 import { TimelineObj, DEFAULT_DURATION } from '../../../../models/rundown/TimelineObj.js'
 import { compact, stringifyError } from '@shared/lib'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mappings, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { EmptyLayer } from './EmptyLayer.js'
 import { applyMovementToTimeline, SnapPoint } from '../../../../lib/moveTimelineObj.js'
 import { HotkeyContext } from '../../../contexts/Hotkey.js'
@@ -78,7 +78,7 @@ export const PartView: React.FC<{
 	rundownId: string
 	parentGroupId: string
 	partId: string
-	mappings: Mappings
+	mappings: Mappings<TSRMappingOptions>
 }> = observer(function PartView({ rundownId, parentGroupId, partId, mappings }) {
 	const part = store.rundownsStore.getPart(partId)
 	const ipcServer = useContext(IPCServerContext)

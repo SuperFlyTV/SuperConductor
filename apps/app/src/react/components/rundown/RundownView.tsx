@@ -4,7 +4,7 @@ import { GroupView } from './GroupView/GroupView.js'
 import { IPCServerContext } from '../../contexts/IPCServer.js'
 import { useDrop } from 'react-dnd'
 import { DragItemTypes, isPartDragItem, isResourceDragItem } from '../../api/DragItemTypes.js'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mappings, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { PartPropertiesDialog } from './PartPropertiesDialog.js'
 import { GroupPropertiesDialog } from './GroupPropertiesDialog.js'
 import { ErrorHandlerContext } from '../../contexts/ErrorHandler.js'
@@ -19,7 +19,9 @@ import { ErrorBoundary } from '../util/ErrorBoundary.js'
 import { assertNever } from '@shared/lib'
 import { CurrentSelectionAny } from '../../../lib/GUI.js'
 
-export const RundownView: React.FC<{ mappings: Mappings }> = observer(function RundownView({ mappings }) {
+export const RundownView: React.FC<{ mappings: Mappings<TSRMappingOptions> }> = observer(function RundownView({
+	mappings,
+}) {
 	// Drag n' Drop:
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const [{ handlerId }, drop] = useDrop(

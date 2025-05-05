@@ -9,16 +9,17 @@ import {
 	DeviceOptionsAny,
 	DeviceType,
 	Mapping,
-	MappingAtem,
+	SomeMappingAtem,
 	MappingAtemType,
-	MappingHyperdeck,
+	SomeMappingHyperdeck,
 	MappingHyperdeckType,
-	MappingOBS,
-	MappingOBSType,
-	MappingTriCaster,
-	MappingTriCasterType,
-	MappingVMix,
-	MappingVMixType,
+	SomeMappingObs,
+	MappingObsType,
+	SomeMappingTricaster,
+	MappingTricasterType,
+	SomeMappingVmix,
+	MappingVmixType,
+	TSRMappingOptions,
 } from 'timeline-state-resolver-types'
 import { ProtectedString, ResourceAny, ResourceType, TSRDeviceId, protectString, unprotectString } from '@shared/models'
 import { assertNever, deepClone } from '@shared/lib'
@@ -440,31 +441,38 @@ export function getPrevPartIndex(group: GroupWithShallowParts): number {
 /**
  * @returns True if the resource can be added to the layer/mapping, false if not.
  */
-export function allowAddingResourceToLayer(project: Project, resource: ResourceAny, mapping: Mapping): boolean {
+export function allowAddingResourceToLayer(
+	project: Project,
+	resource: ResourceAny,
+	mapping: Mapping<TSRMappingOptions>
+): boolean {
 	if (mapping.device === DeviceType.ABSTRACT) {
 		return false
 	} else if (mapping.device === DeviceType.ATEM) {
-		const mapping0 = mapping as MappingAtem
-		if (mapping0.mappingType === MappingAtemType.AudioChannel) {
-			return resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL
-		} else if (mapping0.mappingType === MappingAtemType.Auxilliary) {
-			return resource.resourceType === ResourceType.ATEM_AUX
-		} else if (mapping0.mappingType === MappingAtemType.DownStreamKeyer) {
-			return resource.resourceType === ResourceType.ATEM_DSK
-		} else if (mapping0.mappingType === MappingAtemType.MacroPlayer) {
-			return resource.resourceType === ResourceType.ATEM_MACRO_PLAYER
-		} else if (mapping0.mappingType === MappingAtemType.MediaPlayer) {
-			return resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER
-		} else if (mapping0.mappingType === MappingAtemType.MixEffect) {
-			return resource.resourceType === ResourceType.ATEM_ME
-		} else if (mapping0.mappingType === MappingAtemType.SuperSourceBox) {
-			return resource.resourceType === ResourceType.ATEM_SSRC
-		} else if (mapping0.mappingType === MappingAtemType.SuperSourceProperties) {
-			return resource.resourceType === ResourceType.ATEM_SSRC_PROPS
-		} else if (mapping0.mappingType === MappingAtemType.AudioRouting) {
-			return resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT
-		} else {
-			assertNever(mapping0.mappingType)
+		const mapping0 = mapping.options as SomeMappingAtem
+		switch (mapping0.mappingType) {
+			case MappingAtemType.AudioChannel:
+				return resource.resourceType === ResourceType.ATEM_AUDIO_CHANNEL
+			case MappingAtemType.Auxilliary:
+				return resource.resourceType === ResourceType.ATEM_AUX
+			case MappingAtemType.DownStreamKeyer:
+				return resource.resourceType === ResourceType.ATEM_DSK
+			case MappingAtemType.MacroPlayer:
+				return resource.resourceType === ResourceType.ATEM_MACRO_PLAYER
+			case MappingAtemType.MediaPlayer:
+				return resource.resourceType === ResourceType.ATEM_MEDIA_PLAYER
+			case MappingAtemType.MixEffect:
+				return resource.resourceType === ResourceType.ATEM_ME
+			case MappingAtemType.SuperSourceBox:
+				return resource.resourceType === ResourceType.ATEM_SSRC
+			case MappingAtemType.SuperSourceProperties:
+				return resource.resourceType === ResourceType.ATEM_SSRC_PROPS
+			case MappingAtemType.AudioRouting:
+				return resource.resourceType === ResourceType.ATEM_AUDIO_OUTPUT
+			case MappingAtemType.ColorGenerator:
+				return resource.resourceType === ResourceType.ATEM_COLOR_GENERATOR
+			default:
+				assertNever(mapping0)
 		}
 	} else if (mapping.device === DeviceType.CASPARCG) {
 		return (
@@ -477,8 +485,8 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.HYPERDECK) {
-		const mapping0 = mapping as MappingHyperdeck
-		if (mapping0.mappingType === MappingHyperdeckType.TRANSPORT) {
+		const mapping0 = mapping.options as SomeMappingHyperdeck
+		if (mapping0.mappingType === MappingHyperdeckType.Transport) {
 			return (
 				resource.resourceType === ResourceType.HYPERDECK_PLAY ||
 				resource.resourceType === ResourceType.HYPERDECK_RECORD ||
@@ -490,23 +498,25 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.OBS) {
-		const mapping0 = mapping as MappingOBS
-		if (mapping0.mappingType === MappingOBSType.CurrentScene) {
+		const mapping0 = mapping.options as SomeMappingObs
+		if (mapping0.mappingType === MappingObsType.CurrentScene) {
 			return resource.resourceType === ResourceType.OBS_SCENE
-		} else if (mapping0.mappingType === MappingOBSType.CurrentTransition) {
+		} else if (mapping0.mappingType === MappingObsType.CurrentTransition) {
 			return resource.resourceType === ResourceType.OBS_TRANSITION
-		} else if (mapping0.mappingType === MappingOBSType.Mute) {
-			return resource.resourceType === ResourceType.OBS_MUTE
-		} else if (mapping0.mappingType === MappingOBSType.Recording) {
+		} else if (mapping0.mappingType === MappingObsType.InputAudio) {
+			return resource.resourceType === ResourceType.OBS_INPUT_AUDIO
+		} else if (mapping0.mappingType === MappingObsType.Recording) {
 			return resource.resourceType === ResourceType.OBS_RECORDING
-		} else if (mapping0.mappingType === MappingOBSType.SceneItemRender) {
+		} else if (mapping0.mappingType === MappingObsType.SceneItem) {
 			return resource.resourceType === ResourceType.OBS_RENDER
-		} else if (mapping0.mappingType === MappingOBSType.SourceSettings) {
-			return resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS
-		} else if (mapping0.mappingType === MappingOBSType.Streaming) {
+		} else if (mapping0.mappingType === MappingObsType.InputSettings) {
+			return resource.resourceType === ResourceType.OBS_INPUT_SETTINGS
+		} else if (mapping0.mappingType === MappingObsType.Streaming) {
 			return resource.resourceType === ResourceType.OBS_STREAMING
+		} else if (mapping0.mappingType === MappingObsType.InputMedia) {
+			return resource.resourceType === ResourceType.OBS_INPUT_MEDIA
 		} else {
-			assertNever(mapping0.mappingType)
+			assertNever(mapping0)
 		}
 	} else if (mapping.device === DeviceType.OSC) {
 		return resource.resourceType === ResourceType.OSC_MESSAGE
@@ -534,33 +544,34 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.VMIX) {
-		const mapping0 = mapping as MappingVMix
-		if (mapping0.mappingType === MappingVMixType.AudioChannel) {
-			return resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS
-		} else if (mapping0.mappingType === MappingVMixType.External) {
-			return resource.resourceType === ResourceType.VMIX_EXTERNAL
-		} else if (mapping0.mappingType === MappingVMixType.FadeToBlack) {
-			return resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK
-		} else if (mapping0.mappingType === MappingVMixType.Fader) {
-			return resource.resourceType === ResourceType.VMIX_FADER
-		} else if (mapping0.mappingType === MappingVMixType.Input) {
-			return resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS
-		} else if (mapping0.mappingType === MappingVMixType.Output) {
-			return resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS
-		} else if (mapping0.mappingType === MappingVMixType.Overlay) {
-			return resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS
-		} else if (mapping0.mappingType === MappingVMixType.Preview) {
-			return resource.resourceType === ResourceType.VMIX_PREVIEW
-		} else if (mapping0.mappingType === MappingVMixType.Program) {
-			return resource.resourceType === ResourceType.VMIX_INPUT
-		} else if (mapping0.mappingType === MappingVMixType.Recording) {
-			return resource.resourceType === ResourceType.VMIX_RECORDING
-		} else if (mapping0.mappingType === MappingVMixType.Streaming) {
-			return resource.resourceType === ResourceType.VMIX_STREAMING
-		} else if (mapping0.mappingType === MappingVMixType.Script) {
-			return resource.resourceType === ResourceType.VMIX_SCRIPT
-		} else {
-			assertNever(mapping0.mappingType)
+		const mapping0 = mapping.options as SomeMappingVmix
+		switch (mapping0.mappingType) {
+			case MappingVmixType.AudioChannel:
+				return resource.resourceType === ResourceType.VMIX_AUDIO_SETTINGS
+			case MappingVmixType.External:
+				return resource.resourceType === ResourceType.VMIX_EXTERNAL
+			case MappingVmixType.FadeToBlack:
+				return resource.resourceType === ResourceType.VMIX_FADE_TO_BLACK
+			case MappingVmixType.Fader:
+				return resource.resourceType === ResourceType.VMIX_FADER
+			case MappingVmixType.Input:
+				return resource.resourceType === ResourceType.VMIX_INPUT_SETTINGS
+			case MappingVmixType.Output:
+				return resource.resourceType === ResourceType.VMIX_OUTPUT_SETTINGS
+			case MappingVmixType.Overlay:
+				return resource.resourceType === ResourceType.VMIX_OVERLAY_SETTINGS
+			case MappingVmixType.Preview:
+				return resource.resourceType === ResourceType.VMIX_PREVIEW
+			case MappingVmixType.Program:
+				return resource.resourceType === ResourceType.VMIX_INPUT
+			case MappingVmixType.Recording:
+				return resource.resourceType === ResourceType.VMIX_RECORDING
+			case MappingVmixType.Streaming:
+				return resource.resourceType === ResourceType.VMIX_STREAMING
+			case MappingVmixType.Script:
+				return resource.resourceType === ResourceType.VMIX_SCRIPT
+			default:
+				assertNever(mapping0)
 		}
 	} else if (mapping.device === DeviceType.SOFIE_CHEF) {
 		// @TODO
@@ -569,19 +580,19 @@ export function allowAddingResourceToLayer(project: Project, resource: ResourceA
 		// @TODO
 		return false
 	} else if (mapping.device === DeviceType.TRICASTER) {
-		const mapping0 = mapping as MappingTriCaster
+		const mapping0 = mapping.options as SomeMappingTricaster
 		switch (mapping0.mappingType) {
-			case MappingTriCasterType.ME:
+			case MappingTricasterType.ME:
 				return resource.resourceType === ResourceType.TRICASTER_ME
-			case MappingTriCasterType.AUDIO_CHANNEL:
+			case MappingTricasterType.AUDIOCHANNEL:
 				return resource.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL
-			case MappingTriCasterType.DSK:
+			case MappingTricasterType.DSK:
 				return resource.resourceType === ResourceType.TRICASTER_DSK
-			case MappingTriCasterType.INPUT:
+			case MappingTricasterType.INPUT:
 				return resource.resourceType === ResourceType.TRICASTER_INPUT
-			case MappingTriCasterType.MATRIX_OUTPUT:
+			case MappingTricasterType.MATRIXOUTPUT:
 				return resource.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT
-			case MappingTriCasterType.MIX_OUTPUT:
+			case MappingTricasterType.MIXOUTPUT:
 				return resource.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
 			default:
 				assertNever(mapping0)
@@ -712,7 +723,7 @@ export function getDeviceName(project: Project, deviceId: TSRDeviceId): string {
 	const deviceIdStr = unprotectString(deviceId)
 	return project.deviceNames?.[deviceIdStr] || deviceIdStr
 }
-export function getMappingName(mapping: Mapping, layerId: string): string {
+export function getMappingName(mapping: Mapping<TSRMappingOptions>, layerId: string): string {
 	return mapping.layerName ?? layerId
 }
 export function getResourceTypeName(resourceType: ResourceType): string {
@@ -908,3 +919,11 @@ export const deepExtendRemovingUndefined = deepmergeIntoCustom({
 	},
 	mergeArrays: false,
 })
+
+/**
+ * Make all optional properties be required and `| undefined`
+ * This is useful to ensure that no property is missed, when manually converting between types, but allowing fields to be undefined
+ */
+export type Complete<T> = {
+	[P in keyof Required<T>]: Pick<T, P> extends Required<Pick<T, P>> ? T[P] : T[P] | undefined
+}

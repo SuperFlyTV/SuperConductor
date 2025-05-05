@@ -26,9 +26,6 @@ import {
 	TimelineContentOBSCurrentTransition,
 	TimelineContentOBSRecording,
 	TimelineContentOBSStreaming,
-	TimelineContentOBSSourceSettings,
-	TimelineContentOBSMute,
-	TimelineContentOBSSceneItemRender,
 	TimelineContentVMixProgram,
 	TimelineContentVMixPreview,
 	TimelineContentVMixInput,
@@ -53,6 +50,11 @@ import {
 	TimelineContentTriCasterAudioChannel,
 	TimelineContentTriCasterMatrixOutput,
 	TimelineContentTriCasterMixOutput,
+	TimelineContentAtemColorGenerator,
+	TimelineContentOBSInputSettings,
+	TimelineContentOBSInputAudio,
+	TimelineContentOBSSceneItem,
+	TimelineContentOBSInputMedia,
 } from 'timeline-state-resolver-types'
 import { ResourceAny, ResourceType } from '@shared/models'
 import { assertNever, literal } from '@shared/lib'
@@ -327,6 +329,24 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 				},
 			},
 		})
+	} else if (resource.resourceType === ResourceType.ATEM_COLOR_GENERATOR) {
+		return literal<TSRTimelineObj<TimelineContentAtemColorGenerator>>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.ATEM,
+				type: TimelineContentTypeAtem.COLORGENERATOR,
+				colorGenerator: {
+					hue: 0,
+					saturation: 0,
+					luma: 0,
+				},
+			},
+		})
 	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 		return literal<TSRTimelineObj<TimelineContentOBSCurrentScene>>({
 			id: shortID(),
@@ -375,8 +395,8 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			},
 			content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.STREAMING, on: true },
 		})
-	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
-		return literal<TSRTimelineObj<TimelineContentOBSSourceSettings>>({
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_SETTINGS) {
+		return literal<TSRTimelineObj<TimelineContentOBSInputSettings>>({
 			id: shortID(),
 			layer: '', // set later
 			enable: {
@@ -385,29 +405,50 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 			},
 			content: {
 				deviceType: DeviceType.OBS,
-				type: TimelineContentTypeOBS.SOURCE_SETTINGS,
+				type: TimelineContentTypeOBS.INPUT_SETTINGS,
 				sourceType: 'dshow_input',
 			},
 		})
-	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
-		return literal<TSRTimelineObj<TimelineContentOBSMute>>({
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_AUDIO) {
+		return literal<TSRTimelineObj<TimelineContentOBSInputAudio>>({
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
 				duration: INFINITE_DURATION,
 			},
-			content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.MUTE, mute: true },
+			content: {
+				deviceType: DeviceType.OBS,
+				type: TimelineContentTypeOBS.INPUT_AUDIO,
+				mute: true,
+			},
+		})
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_MEDIA) {
+		return literal<TSRTimelineObj<TimelineContentOBSInputMedia>>({
+			id: shortID(),
+			layer: '', // set later
+			enable: {
+				start: 0,
+				duration: INFINITE_DURATION,
+			},
+			content: {
+				deviceType: DeviceType.OBS,
+				type: TimelineContentTypeOBS.INPUT_MEDIA,
+			},
 		})
 	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
-		return literal<TSRTimelineObj<TimelineContentOBSSceneItemRender>>({
+		return literal<TSRTimelineObj<TimelineContentOBSSceneItem>>({
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
 				duration: INFINITE_DURATION,
 			},
-			content: { deviceType: DeviceType.OBS, type: TimelineContentTypeOBS.SCENE_ITEM_RENDER, on: true },
+			content: {
+				deviceType: DeviceType.OBS,
+				type: TimelineContentTypeOBS.SCENE_ITEM,
+				on: true,
+			},
 		})
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {
 		return literal<TSRTimelineObj<TimelineContentVMixProgram>>({
@@ -766,6 +807,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.HYPERDECK_PLAY:
 		case ResourceType.HYPERDECK_CLIP:
+		case ResourceType.OBS_INPUT_MEDIA:
 			return 'Media'
 		case ResourceType.CASPARCG_TEMPLATE:
 			return 'Graphics'
@@ -790,6 +832,7 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'Macros'
 		case ResourceType.ATEM_AUDIO_CHANNEL:
 		case ResourceType.TRICASTER_AUDIO_CHANNEL:
+		case ResourceType.OBS_INPUT_AUDIO:
 			return 'Audio'
 		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return 'Audio Output'
@@ -804,10 +847,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 		case ResourceType.OBS_STREAMING:
 		case ResourceType.VMIX_STREAMING:
 			return 'Streams'
-		case ResourceType.OBS_SOURCE_SETTINGS:
+		case ResourceType.OBS_INPUT_SETTINGS:
 			return 'Sources'
-		case ResourceType.OBS_MUTE:
-			return 'Mute'
 		case ResourceType.OBS_RENDER:
 			return 'Render'
 		case ResourceType.VMIX_INPUT:
@@ -836,6 +877,8 @@ export function getClassNameFromResource(resource: ResourceAny): string {
 			return 'HTTP'
 		case ResourceType.TCP_REQUEST:
 			return 'TCP'
+		case ResourceType.ATEM_COLOR_GENERATOR:
+			return 'Color'
 		default:
 			assertNever(resource)
 			return 'Other'

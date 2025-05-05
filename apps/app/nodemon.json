@@ -1,5 +1,5 @@
 {
-	"watch": ["src/**/*"],
+	"watch": ["src/**/*", "../../shared/packages/*/src/**/*"],
 	"ignore": ["*.test.ts", "src/react/*", "README"],
 	"exec": "electron ./dist/main.mjs --inspect=9229",
 	"ext": "ts"

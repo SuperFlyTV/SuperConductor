@@ -92,8 +92,9 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.VMIX_SCRIPT ||
 			resource.resourceType === ResourceType.OSC_MESSAGE ||
 			resource.resourceType === ResourceType.OBS_RENDER ||
-			resource.resourceType === ResourceType.OBS_MUTE ||
-			resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS ||
+			resource.resourceType === ResourceType.OBS_INPUT_AUDIO ||
+			resource.resourceType === ResourceType.OBS_INPUT_MEDIA ||
+			resource.resourceType === ResourceType.OBS_INPUT_SETTINGS ||
 			resource.resourceType === ResourceType.OBS_STREAMING ||
 			resource.resourceType === ResourceType.OBS_RECORDING ||
 			resource.resourceType === ResourceType.OBS_TRANSITION ||
@@ -107,6 +108,7 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 			resource.resourceType === ResourceType.ATEM_AUX ||
 			resource.resourceType === ResourceType.ATEM_DSK ||
 			resource.resourceType === ResourceType.ATEM_ME ||
+			resource.resourceType === ResourceType.ATEM_COLOR_GENERATOR ||
 			resource.resourceType === ResourceType.CASPARCG_TEMPLATE ||
 			resource.resourceType === ResourceType.HTTP_REQUEST ||
 			resource.resourceType === ResourceType.HYPERDECK_PLAY ||

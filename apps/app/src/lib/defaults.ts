@@ -2,7 +2,13 @@ import { Project } from '../models/project/Project.js'
 import { Rundown } from '../models/rundown/Rundown.js'
 import { AutoFillMode, AutoFillSortMode, Group, PlayoutMode } from '../models/rundown/Group.js'
 import { INTERNAL_BRIDGE_ID } from '../models/project/Bridge.js'
-import { DeviceType, MappingCasparCG, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import {
+	DeviceType,
+	Mapping,
+	MappingCasparCGType,
+	SomeMappingCasparCG,
+	TimelineContentTypeCasparCg,
+} from 'timeline-state-resolver-types'
 import { literal } from '@shared/lib'
 import { shortID } from './util.js'
 import { Part } from '../models/rundown/Part.js'
@@ -87,47 +93,65 @@ export function getDefaultProject(newName = 'Default Project'): Omit<Project, 'i
 		name: newName,
 
 		mappings: {
-			'casparcg-1-10': literal<MappingCasparCG>({
+			'casparcg-1-10': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 1-10',
-				channel: 1,
-				layer: 10,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 1,
+					layer: 10,
+				},
 			}),
-			'casparcg-1-20': literal<MappingCasparCG>({
+			'casparcg-1-20': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 1-20',
-				channel: 1,
-				layer: 20,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 1,
+					layer: 20,
+				},
 			}),
-			'casparcg-1-30': literal<MappingCasparCG>({
+			'casparcg-1-30': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 1-30',
-				channel: 1,
-				layer: 30,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 1,
+					layer: 30,
+				},
 			}),
-			'casparcg-2-10': literal<MappingCasparCG>({
+			'casparcg-2-10': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 2-10',
-				channel: 2,
-				layer: 10,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 2,
+					layer: 10,
+				},
 			}),
-			'casparcg-2-20': literal<MappingCasparCG>({
+			'casparcg-2-20': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 2-20',
-				channel: 2,
-				layer: 20,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 2,
+					layer: 20,
+				},
 			}),
-			'casparcg-2-30': literal<MappingCasparCG>({
+			'casparcg-2-30': literal<Mapping<SomeMappingCasparCG>>({
 				device: DeviceType.CASPARCG,
 				deviceId: 'casparcg0',
 				layerName: 'CasparCG 2-30',
-				channel: 2,
-				layer: 30,
+				options: {
+					mappingType: MappingCasparCGType.Layer,
+					channel: 2,
+					layer: 30,
+				},
 			}),
 		},
 

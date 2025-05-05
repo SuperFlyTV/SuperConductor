@@ -12,13 +12,15 @@ import { protectString, ResourceAny, ResourceId, MetadataAny, TSRDeviceId } from
 import { baseFolder } from '../lib/baseFolder.js'
 import * as _ from 'lodash-es'
 import { makeDevData } from './makeDevData.js'
-import { getPartLabel, shortID } from '../lib/util.js'
-import { DeviceType, Mapping, TimelineContentTypeCasparCg } from 'timeline-state-resolver-types'
+import { Complete, getPartLabel, shortID } from '../lib/util.js'
+import { DeviceType, Mapping, TimelineContentTypeCasparCg, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { CURRENT_VERSION } from './bridgeHandler.js'
 import { ensureValidId, ensureValidObject } from '../lib/TimelineObj.js'
 import { AnalogInput } from '../models/project/AnalogInput.js'
 import { ValidatorCache } from 'graphics-data-definition'
 import { Bridge } from '../models/project/Bridge.js'
+import { getDefaultMappingForDeviceType } from '../lib/TSRMappings.js'
+import { translateMappingType, translateTSRDeviceType } from '../lib/TSR.js'
 
 const fsWriteFile = fs.promises.writeFile
 const fsAppendFile = fs.promises.appendFile
@@ -1237,8 +1239,45 @@ export class StorageHandler extends EventEmitter {
 		// Ensure mapping id's are valid, Timeline-wise:
 		const mappings = project.mappings
 		project.mappings = {}
-		for (const [layerName, mapping] of Object.entries<Mapping>(mappings)) {
+		for (const [layerName, mapping] of Object.entries<Mapping<TSRMappingOptions>>(mappings)) {
 			project.mappings[ensureValidId(layerName)] = mapping
+		}
+
+		// Fixup bridge device types (TSR r51):
+		for (const bridge of Object.values(project.bridges)) {
+			if (bridge.clientSidePeripheralSettings) {
+				for (const device of Object.values(bridge.settings.devices)) {
+					device.type = translateTSRDeviceType(device.type)
+				}
+			}
+		}
+
+		// Fixup mapping device types (TSR r51):
+		for (const [layerName, mapping] of Object.entries(project.mappings)) {
+			mapping.device = translateTSRDeviceType(mapping.device)
+
+			if (!mapping.options) {
+				const newMapping: Complete<Mapping<any>> = {
+					device: mapping.device,
+					deviceId: mapping.deviceId,
+					layerName: mapping.layerName,
+					options: {
+						..._.omit(mapping, 'device', 'deviceId', 'layerName'),
+					},
+				}
+				if (newMapping.options.mappingType === undefined) {
+					// If there is no mappingType, set it to the default:
+					const tmpMapping = getDefaultMappingForDeviceType(newMapping.device, newMapping.deviceId as any, {})
+					newMapping.options.mappingType = tmpMapping.options.mappingType
+				} else {
+					newMapping.options.mappingType = translateMappingType(
+						newMapping.device,
+						newMapping.options.mappingType
+					)
+				}
+
+				project.mappings[layerName] = newMapping
+			}
 		}
 	}
 	private ensureCompatibilityRundown(rundown: Omit<Rundown, 'id'>) {

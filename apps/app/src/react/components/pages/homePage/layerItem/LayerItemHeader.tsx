@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { Mapping } from 'timeline-state-resolver-types'
+import { Mapping, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { ScListItemLabel } from '../scList/ScListItemLabel.js'
 import { describeMappingConfiguration } from '../../../../../lib/TSRMappings.js'
 import { DeviceIcon } from '../deviceIcon/DeviceIcon.js'
@@ -10,7 +10,7 @@ import { TSRDeviceId } from '@shared/models'
 
 export const LayerItemHeader: React.FC<{
 	id: string
-	mapping: Mapping
+	mapping: Mapping<TSRMappingOptions>
 	deviceId: TSRDeviceId
 }> = (props) => {
 	const project = useContext(ProjectContext)

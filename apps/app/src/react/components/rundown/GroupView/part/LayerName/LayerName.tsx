@@ -2,7 +2,7 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../../../mobx/store.js'
-import { Mapping, Mappings } from 'timeline-state-resolver-types'
+import { Mapping, Mappings, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { useSnackbar } from 'notistack'
 import { MdWarningAmber } from 'react-icons/md'
 import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
@@ -25,7 +25,7 @@ export const LayerName: React.FC<{
 	/**
 	 * Project mappings, used for generating dropdown list of available options
 	 */
-	mappings: Mappings
+	mappings: Mappings<TSRMappingOptions>
 	locked: boolean
 }> = observer(function LayerName({ rundownId, groupId, partId, layerId, mappings, locked }) {
 	const serverAPI = useContext(IPCServerContext)
@@ -33,7 +33,7 @@ export const LayerName: React.FC<{
 	const appStore = store.appStore
 
 	const { enqueueSnackbar } = useSnackbar()
-	const mapping = mappings[layerId] as Mapping | undefined
+	const mapping = mappings[layerId] as Mapping<TSRMappingOptions> | undefined
 	const name = mapping?.layerName ?? layerId
 	const deviceStatus = mapping ? appStore.allDeviceStatuses.get(protectString(mapping.deviceId)) : undefined
 

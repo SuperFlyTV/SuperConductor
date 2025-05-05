@@ -1,5 +1,5 @@
 import React, { useCallback, useContext } from 'react'
-import { MappingAtem, MappingAtemType } from 'timeline-state-resolver-types'
+import { SomeMappingAtem, MappingAtemType } from 'timeline-state-resolver-types'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
 import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
 import { ProjectContext } from '../../../../../contexts/Project.js'
@@ -7,7 +7,7 @@ import { IntInput } from '../../../../inputs/IntInput.js'
 import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 
 interface IAtemMappingSettingsProps {
-	mapping: MappingAtem
+	mapping: SomeMappingAtem
 }
 
 export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mapping }) => {
@@ -24,8 +24,10 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 	)
 
 	const handleIndexChange = useCallback(
-		(newIndex: MappingAtem['index']) => {
-			mapping.index = newIndex
+		(newIndex: number | undefined) => {
+			if (mapping.mappingType === MappingAtemType.MacroPlayer) return
+
+			mapping.index = newIndex ?? 0
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
 		[handleError, ipcServer, mapping, project]
@@ -43,17 +45,19 @@ export const AtemMappingSettings: React.FC<IAtemMappingSettingsProps> = ({ mappi
 				/>
 			</div>
 
-			<div className="form-control">
-				<IntInput
-					label="Index"
-					fullWidth
-					currentValue={mapping.index}
-					onChange={handleIndexChange}
-					allowUndefined={true}
-					width="7rem"
-					caps={[0, Number.POSITIVE_INFINITY]}
-				/>
-			</div>
+			{mapping.mappingType !== MappingAtemType.MacroPlayer && (
+				<div className="form-control">
+					<IntInput
+						label="Index"
+						fullWidth
+						currentValue={mapping.index}
+						onChange={handleIndexChange}
+						allowUndefined={true}
+						width="7rem"
+						caps={[0, Number.POSITIVE_INFINITY]}
+					/>
+				</div>
+			)}
 		</>
 	)
 }

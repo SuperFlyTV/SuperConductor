@@ -1,6 +1,14 @@
 import { ResourceBase, ResourceType } from './resource.js'
 
-export type OBSAny = OBSScene | OBSTransition | OBSRecording | OBSStreaming | OBSSourceSettings | OBSMute | OBSRender
+export type OBSAny =
+	| OBSScene
+	| OBSTransition
+	| OBSRecording
+	| OBSStreaming
+	| OBSInputSettings
+	| OBSInputAudio
+	| OBSInputMedia
+	| OBSRender
 
 export interface OBSScene extends ResourceBase {
 	resourceType: ResourceType.OBS_SCENE
@@ -22,12 +30,19 @@ export interface OBSStreaming extends ResourceBase {
 	resourceType: ResourceType.OBS_STREAMING
 }
 
-export interface OBSSourceSettings extends ResourceBase {
-	resourceType: ResourceType.OBS_SOURCE_SETTINGS
+export interface OBSInputSettings extends ResourceBase {
+	resourceType: ResourceType.OBS_INPUT_SETTINGS
+	input: string
 }
 
-export interface OBSMute extends ResourceBase {
-	resourceType: ResourceType.OBS_MUTE
+export interface OBSInputAudio extends ResourceBase {
+	resourceType: ResourceType.OBS_INPUT_AUDIO
+	input: string
+}
+
+export interface OBSInputMedia extends ResourceBase {
+	resourceType: ResourceType.OBS_INPUT_MEDIA
+	input: string
 }
 
 export interface OBSRender extends ResourceBase {
