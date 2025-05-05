@@ -148,12 +148,24 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 
 		superConductor.storage.updateAppData(appData)
 	}
-	win.on('resized', () => {
-		updateSizeAndPosition()
-	})
-	win.on('moved', () => {
-		updateSizeAndPosition()
-	})
+	if (process.platform === 'linux') {
+		// Linux doesn't emit 'resized', so we need to use 'resize' instead:
+		win.on('resize', () => {
+			// TODO: this should probably be debounced
+			updateSizeAndPosition()
+		})
+		win.on('move', () => {
+			// TODO: this should probably be debounced
+			updateSizeAndPosition()
+		})
+	} else {
+		win.on('resized', () => {
+			updateSizeAndPosition()
+		})
+		win.on('moved', () => {
+			updateSizeAndPosition()
+		})
+	}
 	win.on('maximize', () => {
 		updateSizeAndPosition()
 	})
