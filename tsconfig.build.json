@@ -1,16 +1,13 @@
 {
-	"extends": "@tsconfig/node20/tsconfig.json",
-	"exclude": ["node_modules/**", "src/**/__tests__/*", "dist/**/*"],
-	"compilerOptions": {
-		"experimentalDecorators": true /* Enable experimental support for TC39 stage 2 draft decorators. */,
-		"types": ["node"],
-		"resolveJsonModule": true /* Enable importing .json files */,
-		"declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
-		"declarationMap": true /* Create sourcemaps for d.ts files. */,
-		"sourceMap": true /* Create source map files for emitted JavaScript files. */,
-		"esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */,
-		"forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
-		"skipLibCheck": true /* Skip type checking all .d.ts files. */,
-		"allowSyntheticDefaultImports": true
-	}
+	"files": [],
+	"references": [
+		{ "path": "./shared/packages/api/tsconfig.json" },
+		{ "path": "./shared/packages/lib/tsconfig.json" },
+		{ "path": "./shared/packages/models/tsconfig.json" },
+		{ "path": "./shared/packages/peripherals/tsconfig.json" },
+		{ "path": "./shared/packages/server-lib/tsconfig.json" },
+		{ "path": "./shared/packages/tsr-bridge/tsconfig.json" },
+		{ "path": "./apps/tsr-bridge/tsconfig.json" },
+		{ "path": "./apps/app/tsconfig.build.json" }
+	]
 }

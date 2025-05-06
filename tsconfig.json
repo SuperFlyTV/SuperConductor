@@ -1,3 +1,13 @@
 {
-	"extends": "./tsconfig.build.json"
+	"files": [],
+	"references": [
+		{ "path": "./shared/packages/api/tsconfig.json" },
+		{ "path": "./shared/packages/lib/tsconfig.json" },
+		{ "path": "./shared/packages/models/tsconfig.json" },
+		{ "path": "./shared/packages/peripherals/tsconfig.json" },
+		{ "path": "./shared/packages/server-lib/tsconfig.json" },
+		{ "path": "./shared/packages/tsr-bridge/tsconfig.json" },
+		{ "path": "./apps/app/tsconfig.json" },
+		{ "path": "./apps/tsr-bridge/tsconfig.json" }
+	]
 }

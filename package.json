@@ -23,20 +23,21 @@
 		"lint:raw": "eslint",
 		"lint": "run lint:raw .",
 		"lintfix": "run lint --fix",
-		"build": "lerna run build",
+		"build": "run build:ts && lerna run build",
+		"build:ts": "(rimraf apps/*/dist || true) && (rimraf shared/packages/*/dist || true) && (rimraf apps/*/*.tsbuildinfo || true) && (rimraf shared/packages/*/*.tsbuildinfo || true) && tsc -b tsconfig.build.json",
 		"build:binary": "lerna run build:binary",
-		"build:shared": "lerna run build --stream --scope=@shared/\\*",
-		"build:shared:changed": "lerna run build --stream --scope=@shared/\\* --since head --exclude-dependents --stream",
-		"start": "yarn && run build:shared && run dev:electron",
-		"start:all": "run build:shared && lerna run dev --stream",
-		"start:bridge": "run build:shared && run dev:bridge",
+		"start": "yarn && run build:ts && run dev:electron",
+		"start:all": "run build:ts && lerna run dev --stream",
+		"start:bridge": "run build:ts && run dev:bridge",
 		"dev:electron": "lerna run dev --stream --scope=superconductor",
 		"dev:bridge": "lerna run dev --stream --scope=tsr-bridge",
 		"test": "lerna run test",
 		"license-validate": "node scripts/license-check.mjs",
 		"release:bump": "lerna version --force-publish --no-push",
 		"release:prerelease": "lerna version prerelease --force-publish --no-push",
-		"release:preminor": "lerna version preminor --force-publish --no-push"
+		"release:preminor": "lerna version preminor --force-publish --no-push",
+		"check-types": "tsc -b --noEmit",
+		"watch-types": "tsc -b --noEmit --watch"
 	},
 	"resolutions": {
 		"app-builder-bin": "npm:@julusian/app-builder-bin@4.0.1",
@@ -78,5 +79,5 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.5.0"
+	"packageManager": "yarn@4.9.1"
 }
