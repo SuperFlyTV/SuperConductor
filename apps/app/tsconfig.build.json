@@ -1,5 +1,5 @@
 {
-	"extends": "../../tsconfig.json",
+	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"rootDir": "src",
 		"outDir": "dist",
@@ -8,5 +8,13 @@
 		"baseUrl": "./"
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mts"],
-	"exclude": ["src/**/__tests__/**/*", "dist/**/*"]
+	"exclude": ["src/**/__tests__/**/*", "dist/**/*"],
+	"references": [
+		//
+		{ "path": "../../shared/packages/api" },
+		{ "path": "../../shared/packages/lib" },
+		{ "path": "../../shared/packages/models" },
+		{ "path": "../../shared/packages/peripherals" },
+		{ "path": "../../shared/packages/tsr-bridge" }
+	]
 }

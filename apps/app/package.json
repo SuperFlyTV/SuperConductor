@@ -9,8 +9,7 @@
 		"node": "20"
 	},
 	"scripts": {
-		"build": "run -B -T rimraf ./dist && run -B -T tsc -p tsconfig.build.json && vite build",
-		"build:electron": "run -B -T tsc -p tsconfig.build.json",
+		"build": "vite build",
 		"build:binary": "electron-builder",
 		"start": "run build && electron dist/main.mjs",
 		"react:dev": "vite",
