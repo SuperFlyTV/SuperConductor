@@ -118,7 +118,6 @@ export class OBSSideload implements SideLoadDevice {
 
 		// Transitions
 		const { transitions } = await this.obs.call('GetSceneTransitionList')
-		console.log('Transitions:', transitions)
 		for (const transition of transitions) {
 			const resource: OBSTransition = {
 				resourceType: ResourceType.OBS_TRANSITION,
