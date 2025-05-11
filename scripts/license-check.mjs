@@ -1,4 +1,4 @@
-/* eslint-disable n/no-process-exit, n/no-extraneous-require,@typescript-eslint/no-require-imports */
+/* eslint-disable n/no-process-exit */
 // @ts-check
 
 import fs from 'fs'

@@ -189,7 +189,7 @@ export function ParsedValueInput<V>(
 	let displayPlaceholder = emptyPlaceholder
 	if (indeterminate && !hasUnsavedChanges.current) {
 		displayValue = ''
-		displayLabel = label + ': -- Different values --'
+		displayLabel = [label, ': -- Different values --']
 		displayPlaceholder = '-- Different values --'
 	}
 
