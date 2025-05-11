@@ -245,7 +245,7 @@ export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 
 	/**
 	 * Tells the handler to not auto connect to all peripherals.
-	 * Closes any peripherals that aren't explictly marked as ones that should be connected to.
+	 * Closes any peripherals that aren't explicitly marked as ones that should be connected to.
 	 * Does nothing if already disabled.
 	 * @returns A promise that resolves once all peripherals that should be closed have been closed.
 	 */
@@ -258,7 +258,7 @@ export class PeripheralsHandler extends EventEmitter<PeripheralsHandlerEvents> {
 
 		const closePromises: Promise<void>[] = []
 		for (const peripheral of this.peripherals.values()) {
-			// If the user has indicated that they specifically want to conenct to this peripheral
+			// If the user has indicated that they specifically want to connect to this peripheral
 			// even when auto-connect is off, do nothing.
 			if (this.shouldConnectToSpecific.get(peripheral.id)) {
 				continue

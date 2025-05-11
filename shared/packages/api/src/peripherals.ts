@@ -52,7 +52,7 @@ export enum AttentionLevel {
 	NEUTRAL = 0,
 	/** User should notice me, if looking for me */
 	INFO = 1,
-	/** User should notice me easilly, even if not looking */
+	/** User should notice me easily, even if not looking */
 	NOTIFY = 2,
 	/** User should notice me immediately */
 	ALERT = 3,

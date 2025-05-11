@@ -89,7 +89,7 @@ export const GroupAutoFillPopover: React.FC<{ rundownId: string; group: GroupGUI
 
 					<div>
 						{showHelp && (
-							<Message type="help">Choose one or more layers to put the mathing resources onto</Message>
+							<Message type="help">Choose one or more layers to put the matching resources onto</Message>
 						)}
 						<SelectEnumMultiple
 							label="Layers"

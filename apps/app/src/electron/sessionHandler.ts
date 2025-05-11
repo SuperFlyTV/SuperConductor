@@ -22,7 +22,7 @@ export interface SessionHandlerEvents {
 	selection: [selection: Readonly<CurrentSelectionAny[]>]
 }
 
-/** This class handles all non-persistant data */
+/** This class handles all non-persistent data */
 export class SessionHandler extends EventEmitter<SessionHandlerEvents> {
 	private bridgeStatuses = new Map<BridgeId, BridgeStatus>()
 	private bridgeStatusesHasChanged = new Set<BridgeId>()

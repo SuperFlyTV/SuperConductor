@@ -293,7 +293,7 @@ export class PeripheralXkeys extends Peripheral {
 				}
 			}
 
-			// Only flash this key, if its frequency mathces the one on the flashing-bus:
+			// Only flash this key, if its frequency matches the one on the flashing-bus:
 			const flashing = flashFrequency > 0 && flashFrequency === fastestFlashFrequency
 
 			const backlight = {

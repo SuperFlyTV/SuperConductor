@@ -416,7 +416,7 @@ export class TriggersHandler extends EventEmitter<TriggersHandlerEvents> {
 						matchingNewlyPressed = true
 					}
 
-					// All of the fullIdentifiers much be active (ie all of the speficied keys must be pressed down):
+					// All of the fullIdentifiers much be active (ie all of the specified keys must be pressed down):
 					if (activeTriggersMap[fullIdentifier]) {
 						allMatching = true
 					} else {

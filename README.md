@@ -53,7 +53,7 @@ Resources (such as media files) are kept in the rightmost pane and can be dragge
 
 Automatically displays input fields in GUI for CasparCG-templates that expose a GDD schema.
 
-Read more about how to write GDD (Grahics Data Definition) templates here:
+Read more about how to write GDD (Graphics Data Definition) templates here:
 https://superflytv.github.io/GraphicsDataDefinition
 
 ![Play mode single](/doc/img/gdd-input.png)
