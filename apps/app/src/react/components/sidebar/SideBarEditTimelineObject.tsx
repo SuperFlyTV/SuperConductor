@@ -17,6 +17,7 @@ import { PartialDeep } from 'type-fest'
 import { OnSave } from './timelineObj/timelineObjs/lib.js'
 import { TimelineObj } from '../../../models/rundown/TimelineObj.js'
 import { Tooltip } from '@mui/material'
+import { ErrorBoundary } from '../util/ErrorBoundary.js'
 
 export const SideBarEditTimelineObject: React.FC<{
 	rundownId: string
@@ -142,7 +143,9 @@ export const SideBarEditTimelineObject: React.FC<{
 				</div>
 			)}
 
-			<EditTimelineObjContent modifiableObjects={modifiableObjects} onSave={onSaveObj} />
+			<ErrorBoundary key={modifiableObjects.map((o) => o.timelineObjId).join(',')}>
+				<EditTimelineObjContent modifiableObjects={modifiableObjects} onSave={onSaveObj} />
+			</ErrorBoundary>
 
 			<ConfirmationDialog
 				open={deleteConfirmationOpen}

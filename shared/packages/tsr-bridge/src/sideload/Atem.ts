@@ -17,6 +17,7 @@ import {
 	MetadataAny,
 	MetadataType,
 	TSRDeviceId,
+	AtemColorGenerator,
 } from '@shared/models'
 import { SideLoadDevice } from './sideload.js'
 import { LoggerLike } from '@shared/api'
@@ -213,6 +214,24 @@ export class AtemSideload implements SideLoadDevice {
 				metadata.inputs.push({
 					...input,
 				})
+			}
+		}
+
+		if (this.atem.state.colorGenerators) {
+			for (const [i, colorGen] of Object.entries(this.atem.state.colorGenerators)) {
+				if (!colorGen) {
+					continue
+				}
+
+				const resource: AtemColorGenerator = {
+					resourceType: ResourceType.ATEM_COLOR_GENERATOR,
+					deviceId: this.deviceId,
+					id: protectString(''), // set by getResourceIdFromResource() later
+					index: Number(i),
+					displayName: `ATEM Color Generator ${Number(i) + 1}`,
+				}
+				resource.id = getResourceIdFromResource(resource)
+				resources.set(resource.id, resource)
 			}
 		}
 

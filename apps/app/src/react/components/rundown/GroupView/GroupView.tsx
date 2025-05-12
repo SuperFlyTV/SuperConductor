@@ -13,7 +13,7 @@ import {
 	isResourceDragItem,
 } from '../../../api/DragItemTypes.js'
 import { useDrag, useDrop, XYCoord } from 'react-dnd'
-import { Mappings } from 'timeline-state-resolver-types'
+import { Mappings, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { Button, Popover, TextField, ToggleButton } from '@mui/material'
 import { PartPropertiesDialog } from '../PartPropertiesDialog.js'
 import { ErrorHandlerContext } from '../../../contexts/ErrorHandler.js'
@@ -61,7 +61,7 @@ const DEFAULT_PART_HEIGHT = 80
 export const GroupView: React.FC<{
 	rundownId: string
 	groupId: string
-	mappings: Mappings
+	mappings: Mappings<TSRMappingOptions>
 }> = observer(function GroupView({ groupId, rundownId, mappings }) {
 	const ipcServer = useContext(IPCServerContext)
 	const { handleError } = useContext(ErrorHandlerContext)

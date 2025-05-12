@@ -10,6 +10,7 @@ export type AtemAny =
 	| AtemAudioChannel
 	| AtemMediaPlayer
 	| AtemAudioOutput
+	| AtemColorGenerator
 
 export interface AtemMe extends ResourceBase {
 	resourceType: ResourceType.ATEM_ME
@@ -68,5 +69,12 @@ export interface AtemAudioOutput extends ResourceBase {
 	resourceType: ResourceType.ATEM_AUDIO_OUTPUT
 
 	/** The 0-based index of the Audio Output */
+	index: number
+}
+
+export interface AtemColorGenerator extends ResourceBase {
+	resourceType: ResourceType.ATEM_COLOR_GENERATOR
+
+	/** The 0-based index of the Color Generator */
 	index: number
 }

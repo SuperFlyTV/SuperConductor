@@ -26,8 +26,9 @@ import {
 	TimelineContentOBSCurrentScene,
 	TimelineContentOBSCurrentTransition,
 	TimelineContentVMixProgram,
-	MappingAtem,
-	MappingTriCaster,
+	SomeMappingTricaster,
+	MappingAtemMixEffect,
+	MappingObsInputMedia,
 } from 'timeline-state-resolver-types'
 
 enum GeneralResourceType {
@@ -42,6 +43,7 @@ enum GeneralResourceType {
 	AUDIO_CHANNEL = 'audioChan',
 	AUDIO_OUTPUT = 'audioOut',
 	MEDIA_PLAYER = 'mp',
+	COLOR_GENERATOR = 'color',
 	CURRENT_SCENE = 'CURRENT_SCENE',
 	CURRENT_TRANSITION = 'CURRENT_TRANSITION',
 	MUTE = 'MUTE',
@@ -87,6 +89,8 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.AUDIO_CHANNEL
 		case ResourceType.ATEM_MEDIA_PLAYER:
 			return GeneralResourceType.MEDIA_PLAYER
+		case ResourceType.ATEM_COLOR_GENERATOR:
+			return GeneralResourceType.COLOR_GENERATOR
 		case ResourceType.ATEM_AUDIO_OUTPUT:
 			return GeneralResourceType.AUDIO_OUTPUT
 		case ResourceType.OBS_SCENE:
@@ -95,12 +99,14 @@ export function describeResource(resource: ResourceAny): GeneralResourceType {
 			return GeneralResourceType.CURRENT_TRANSITION
 		case ResourceType.OBS_RECORDING:
 			return GeneralResourceType.RECORDING
-		case ResourceType.OBS_SOURCE_SETTINGS:
+		case ResourceType.OBS_INPUT_SETTINGS:
 			return GeneralResourceType.SOURCE_SETTINGS
 		case ResourceType.OBS_STREAMING:
 			return GeneralResourceType.STREAMING
-		case ResourceType.OBS_MUTE:
+		case ResourceType.OBS_INPUT_AUDIO:
 			return GeneralResourceType.MUTE
+		case ResourceType.OBS_INPUT_MEDIA:
+			return GeneralResourceType.MEDIA
 		case ResourceType.OBS_RENDER:
 			return GeneralResourceType.SCENE_ITEM_RENDER
 		case ResourceType.VMIX_INPUT:
@@ -184,6 +190,8 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj<TSRTimelineCo
 					return ResourceType.ATEM_SSRC_PROPS
 				case TimelineContentTypeAtem.AUDIOROUTING:
 					return ResourceType.ATEM_AUDIO_OUTPUT
+				case TimelineContentTypeAtem.COLORGENERATOR:
+					return ResourceType.ATEM_COLOR_GENERATOR
 				default:
 					assertNever(obj.content)
 			}
@@ -279,16 +287,18 @@ export function getResourceTypeFromTimelineObj(obj: TSRTimelineObj<TSRTimelineCo
 					return ResourceType.OBS_SCENE
 				case TimelineContentTypeOBS.CURRENT_TRANSITION:
 					return ResourceType.OBS_TRANSITION
-				case TimelineContentTypeOBS.MUTE:
-					return ResourceType.OBS_MUTE
+				case TimelineContentTypeOBS.INPUT_AUDIO:
+					return ResourceType.OBS_INPUT_AUDIO
 				case TimelineContentTypeOBS.RECORDING:
 					return ResourceType.OBS_RECORDING
-				case TimelineContentTypeOBS.SCENE_ITEM_RENDER:
+				case TimelineContentTypeOBS.SCENE_ITEM:
 					return ResourceType.OBS_RENDER
-				case TimelineContentTypeOBS.SOURCE_SETTINGS:
-					return ResourceType.OBS_SOURCE_SETTINGS
+				case TimelineContentTypeOBS.INPUT_SETTINGS:
+					return ResourceType.OBS_INPUT_SETTINGS
 				case TimelineContentTypeOBS.STREAMING:
 					return ResourceType.OBS_STREAMING
+				case TimelineContentTypeOBS.INPUT_MEDIA:
+					return ResourceType.OBS_INPUT_MEDIA
 				default:
 					assertNever(obj.content)
 			}
@@ -466,13 +476,15 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.ATEM_AUDIO_CHANNEL:
 		case ResourceType.ATEM_AUX:
 		case ResourceType.ATEM_DSK:
-		case ResourceType.ATEM_MACRO_PLAYER:
 		case ResourceType.ATEM_ME:
 		case ResourceType.ATEM_MEDIA_PLAYER:
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
 		case ResourceType.ATEM_AUDIO_OUTPUT:
-			return String((mapping as MappingAtem).index)
+		case ResourceType.ATEM_COLOR_GENERATOR:
+			return String((mapping.options as MappingAtemMixEffect).index)
+		case ResourceType.ATEM_MACRO_PLAYER:
+			return '0'
 		case ResourceType.CASPARCG_MEDIA:
 			return (obj as TSRTimelineObj<TimelineContentCCGMedia>).content.file.toUpperCase()
 		case ResourceType.CASPARCG_SERVER:
@@ -488,16 +500,18 @@ export function getResourceLocatorFromTimelineObj(
 			return '0'
 		case ResourceType.INVALID:
 			return 'INVALID'
-		case ResourceType.OBS_MUTE:
+		case ResourceType.OBS_INPUT_AUDIO:
 		case ResourceType.OBS_RECORDING:
 		case ResourceType.OBS_STREAMING:
 		case ResourceType.OBS_RENDER:
-		case ResourceType.OBS_SOURCE_SETTINGS:
+		case ResourceType.OBS_INPUT_SETTINGS:
 			return '0'
 		case ResourceType.OBS_SCENE:
 			return (obj as TSRTimelineObj<TimelineContentOBSCurrentScene>).content.sceneName
 		case ResourceType.OBS_TRANSITION:
 			return (obj as TSRTimelineObj<TimelineContentOBSCurrentTransition>).content.transitionName
+		case ResourceType.OBS_INPUT_MEDIA:
+			return (mapping.options as MappingObsInputMedia).input
 		case ResourceType.OSC_MESSAGE:
 		case ResourceType.TCP_REQUEST:
 			return '0'
@@ -524,7 +538,7 @@ export function getResourceLocatorFromTimelineObj(
 		case ResourceType.TRICASTER_AUDIO_CHANNEL:
 		case ResourceType.TRICASTER_MIX_OUTPUT:
 		case ResourceType.TRICASTER_MATRIX_OUTPUT:
-			return (mapping as MappingTriCaster).name
+			return (mapping.options as SomeMappingTricaster).name
 		default:
 			assertNever(resourceType)
 	}
@@ -548,6 +562,7 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 		case ResourceType.ATEM_SSRC:
 		case ResourceType.ATEM_SSRC_PROPS:
 		case ResourceType.ATEM_AUDIO_OUTPUT:
+		case ResourceType.ATEM_COLOR_GENERATOR:
 			return `${resource.index}`
 		case ResourceType.ATEM_MACRO_PLAYER:
 			return `0`
@@ -564,12 +579,14 @@ export function getResourceLocatorFromResource(resource: ResourceAny): string {
 			return '0'
 		case ResourceType.HYPERDECK_CLIP:
 			return `${resource.clipId}_${resource.clipName}`
-		case ResourceType.OBS_MUTE:
 		case ResourceType.OBS_RECORDING:
 		case ResourceType.OBS_STREAMING:
 		case ResourceType.OBS_RENDER:
-		case ResourceType.OBS_SOURCE_SETTINGS:
 			return '0'
+		case ResourceType.OBS_INPUT_SETTINGS:
+		case ResourceType.OBS_INPUT_AUDIO:
+		case ResourceType.OBS_INPUT_MEDIA:
+			return `${resource.input}`
 		case ResourceType.OBS_SCENE:
 		case ResourceType.OBS_TRANSITION:
 			return resource.name
@@ -614,7 +631,7 @@ export function getResourceIdFromTimelineObj(
 	obj: TSRTimelineObj<TSRTimelineContent>,
 	mappings: Mappings
 ): ResourceId | undefined {
-	const mapping = mappings[obj.layer] as Mapping | undefined
+	const mapping = mappings[obj.layer] as Mapping<any> | undefined
 	if (!mapping) return undefined
 	const resourceType = getResourceTypeFromTimelineObj(obj)
 	const locator = getResourceLocatorFromTimelineObj(obj, resourceType, mappings)

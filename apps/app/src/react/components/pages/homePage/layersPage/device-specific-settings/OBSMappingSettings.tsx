@@ -1,19 +1,13 @@
 import { TextField } from '@mui/material'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import {
-	MappingOBS,
-	MappingOBSMute,
-	MappingOBSSceneItemRender,
-	MappingOBSSourceSettings,
-	MappingOBSType,
-} from 'timeline-state-resolver-types'
+import { SomeMappingObs, MappingObsType } from 'timeline-state-resolver-types'
 import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
 import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
 import { ProjectContext } from '../../../../../contexts/Project.js'
 import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 
 interface IOBSMappingSettingsProps {
-	mapping: MappingOBS
+	mapping: SomeMappingObs
 }
 
 export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping }) => {
@@ -24,7 +18,7 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 	const [source, setSource] = useState('')
 
 	const handleMappingTypeChange = useCallback(
-		(newMappingType: MappingOBSType) => {
+		(newMappingType: MappingObsType) => {
 			mapping.mappingType = newMappingType
 			ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 		},
@@ -33,9 +27,8 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 
 	const handleSceneNameChange = useCallback(
 		(newSceneName: string) => {
-			if (mapping.mappingType === MappingOBSType.SceneItemRender) {
-				const mapping0 = mapping as MappingOBSSceneItemRender
-				mapping0.sceneName = newSceneName
+			if (mapping.mappingType === MappingObsType.SceneItem) {
+				mapping.sceneName = newSceneName
 				ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 			}
 		},
@@ -44,13 +37,14 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 
 	const handleSourceChange = useCallback(
 		(newSource: string) => {
-			if (
-				mapping.mappingType === MappingOBSType.SceneItemRender ||
-				mapping.mappingType === MappingOBSType.SourceSettings ||
-				mapping.mappingType === MappingOBSType.Mute
+			if (mapping.mappingType === MappingObsType.SceneItem) {
+				mapping.source = newSource
+				ipcServer.updateProject({ id: project.id, project }).catch(handleError)
+			} else if (
+				mapping.mappingType === MappingObsType.InputSettings ||
+				mapping.mappingType === MappingObsType.InputAudio
 			) {
-				const mapping0 = mapping as MappingOBSSceneItemRender | MappingOBSSourceSettings | MappingOBSMute
-				mapping0.source = newSource
+				mapping.input = newSource
 				ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 			}
 		},
@@ -58,20 +52,19 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 	)
 
 	useEffect(() => {
-		if (mapping.mappingType === MappingOBSType.SceneItemRender) {
-			const mapping0 = mapping as MappingOBSSceneItemRender
-			setSceneName(mapping0.sceneName ?? '')
+		if (mapping.mappingType === MappingObsType.SceneItem) {
+			setSceneName(mapping.sceneName ?? '')
 		} else {
 			setSceneName('')
 		}
 
-		if (
-			mapping.mappingType === MappingOBSType.SceneItemRender ||
-			mapping.mappingType === MappingOBSType.SourceSettings ||
-			mapping.mappingType === MappingOBSType.Mute
+		if (mapping.mappingType === MappingObsType.SceneItem) {
+			setSource(mapping.source ?? '')
+		} else if (
+			mapping.mappingType === MappingObsType.InputSettings ||
+			mapping.mappingType === MappingObsType.InputAudio
 		) {
-			const mapping0 = mapping as MappingOBSSceneItemRender | MappingOBSSourceSettings | MappingOBSMute
-			setSource(mapping0.source ?? '')
+			setSource(mapping.input ?? '')
 		} else {
 			setSource('')
 		}
@@ -84,14 +77,14 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 					label="Type"
 					fullWidth
 					currentValue={mapping.mappingType}
-					options={MappingOBSType}
+					options={MappingObsType}
 					onChange={(v) => {
 						handleMappingTypeChange(v)
 					}}
 				/>
 			</div>
 
-			{mapping.mappingType === MappingOBSType.SceneItemRender && (
+			{mapping.mappingType === MappingObsType.SceneItem && (
 				<div className="form-control">
 					<TextField
 						margin="normal"
@@ -112,9 +105,9 @@ export const OBSMappingSettings: React.FC<IOBSMappingSettingsProps> = ({ mapping
 				</div>
 			)}
 
-			{(mapping.mappingType === MappingOBSType.SceneItemRender ||
-				mapping.mappingType === MappingOBSType.SourceSettings ||
-				mapping.mappingType === MappingOBSType.Mute) && (
+			{(mapping.mappingType === MappingObsType.SceneItem ||
+				mapping.mappingType === MappingObsType.InputSettings ||
+				mapping.mappingType === MappingObsType.InputAudio) && (
 				<div className="form-control">
 					<TextField
 						margin="normal"

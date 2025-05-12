@@ -5,12 +5,14 @@ import {
 	DeviceOptionsCasparCG,
 	DeviceType,
 	Mapping,
-	MappingAtem,
+	SomeMappingAtem,
 	MappingAtemType,
-	MappingCasparCG,
+	SomeMappingCasparCG,
 	TSRTimelineObj,
 	TimelineContentCCGMedia,
 	TimelineContentTypeCasparCg,
+	MappingCasparCGType,
+	TSRMappingOptions,
 } from 'timeline-state-resolver-types'
 import { shortID } from '../lib/util.js'
 import { Bridge } from '../models/project/Bridge.js'
@@ -68,12 +70,15 @@ export function makeDevData(): {
 				// Mappings
 				{
 					for (const m of rangeIds(1, 50)) {
-						project.mappings[m.id] = literal<MappingCasparCG>({
+						project.mappings[m.id] = literal<Mapping<SomeMappingCasparCG>>({
 							device: device.type,
 							deviceId: casparDeviceId,
 							layerName: `CasparCG 1-${m.i}`,
-							channel: 1,
-							layer: m.i,
+							options: {
+								mappingType: MappingCasparCGType.Layer,
+								channel: 1,
+								layer: m.i,
+							},
 						})
 					}
 				}
@@ -90,12 +95,14 @@ export function makeDevData(): {
 				// Mappings
 				{
 					for (const m of rangeIds(1, 10)) {
-						project.mappings[m.id] = literal<MappingAtem>({
+						project.mappings[m.id] = literal<Mapping<SomeMappingAtem>>({
 							device: device.type,
 							deviceId: deviceId,
 							layerName: `ME 1-${m.i}`,
-							mappingType: MappingAtemType.MixEffect,
-							index: m.i,
+							options: {
+								mappingType: MappingAtemType.MixEffect,
+								index: m.i,
+							},
 						})
 					}
 				}
@@ -138,7 +145,9 @@ export function makeDevData(): {
 				// Timeline
 				{
 					const layerId = pickRandom(
-						Object.entries<Mapping>(project.mappings).filter((e) => e[1].deviceId === casparDeviceId),
+						Object.entries<Mapping<TSRMappingOptions>>(project.mappings).filter(
+							(e) => e[1].deviceId === casparDeviceId
+						),
 						notRandom
 					)[0]
 

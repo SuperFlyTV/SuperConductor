@@ -36,9 +36,10 @@ import {
 	TSRTimelineObj,
 	Mapping,
 	DeviceType,
-	MappingCasparCG,
+	SomeMappingCasparCG,
 	TSRTimelineContent,
 	DeviceOptionsAny,
+	TSRMappingOptions,
 } from 'timeline-state-resolver-types'
 import { ActionDescription, IPCServerMethods, UndoableResult, UpdateAppDataOptions } from '../ipc/IPCAPI.js'
 import { GroupPreparedPlayData } from '../models/GUI/PreparedPlayhead.js'
@@ -1897,7 +1898,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 			obj.layer = addToLayerId
 			usePreviousLayerId = obj.layer
 
-			const mapping = project.mappings[obj.layer] as Mapping | undefined
+			const mapping = project.mappings[obj.layer] as Mapping<TSRMappingOptions> | undefined
 			const allow = mapping && allowAddingResourceToLayer(project, resource, mapping)
 			if (!allow) {
 				if (arg.resourceIds.length > 1) continue // ignore the error if we're adding multiple resources
@@ -2333,7 +2334,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		}
 
 		// Find all timeline objects which reside on the missing layer.
-		const createdMappings: { [mappingId: string]: Mapping } = {}
+		const createdMappings: { [mappingId: string]: Mapping<TSRMappingOptions> } = {}
 
 		for (const group of rundown.groups) {
 			for (const part of group.parts) {
@@ -2378,7 +2379,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 				throw new Error('No layer could be automatically created.')
 			case 1: {
 				newLayerId = Object.keys(createdMappings)[0]
-				const newMapping = Object.values<Mapping>(createdMappings)[0]
+				const newMapping = Object.values<Mapping<TSRMappingOptions>>(createdMappings)[0]
 
 				if (!newMapping.layerName) {
 					throw new Error('INTERNAL ERROR: Layer lacks a name.')
@@ -2797,7 +2798,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 			for (const layerId of Object.keys(possibleLayers)) {
 				const mapping = arg.project.mappings[layerId]
 				if (mapping?.device === DeviceType.CASPARCG) {
-					const m = mapping as MappingCasparCG
+					const m = mapping.options as SomeMappingCasparCG
 
 					if (useCasparCGChannel && m.channel !== useCasparCGChannel) {
 						possibleLayers[layerId] = -999
@@ -2822,14 +2823,16 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 		if (!addToLayerId) {
 			// If no layer was found, create a new layer:
-			let newMapping: Mapping | undefined = undefined
+			let newMapping: Mapping<TSRMappingOptions> | undefined = undefined
 			const deviceId = arg.resource?.deviceId || guessDeviceIdFromTimelineObject(arg.project, arg.obj)
 			if (deviceId) {
 				newMapping = getMappingFromTimelineObject(arg.obj, deviceId, arg.resource)
 			}
 
 			if (!newMapping && arg.originalLayerId !== undefined) {
-				const originalLayer = arg.project.mappings[arg.originalLayerId] as Mapping | undefined
+				const originalLayer = arg.project.mappings[arg.originalLayerId] as
+					| Mapping<TSRMappingOptions>
+					| undefined
 				if (originalLayer) {
 					newMapping = {
 						...deepClone(originalLayer),

@@ -6,17 +6,19 @@ import {
 	TimelineContentOBSAny,
 	TimelineContentOBSCurrentScene,
 	TimelineContentOBSCurrentTransition,
-	TimelineContentOBSMute,
+	TimelineContentOBSInputAudio,
 	TimelineContentOBSRecording,
-	TimelineContentOBSSceneItemRender,
-	TimelineContentOBSSourceSettings,
+	TimelineContentOBSSceneItem,
+	TimelineContentOBSInputSettings,
 	TimelineContentOBSStreaming,
 	TimelineContentTypeOBS,
+	TimelineContentOBSInputMedia,
 } from 'timeline-state-resolver-types'
-import { firstValue, inputValue, isIndeterminate } from '../../../../lib/multipleEdit.js'
+import { firstValue, inputValue } from '../../../../lib/multipleEdit.js'
 import { BooleanInput } from '../../../inputs/BooleanInput.js'
 import { TextInput } from '../../../inputs/TextInput.js'
 import { EditWrapper, NOT_IMPLEMENTED_SETTINGS, OnSave, OnSaveType } from './lib.js'
+import { FloatInput } from '../../../inputs/FloatInput.js'
 
 export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineContentOBSAny>[]; onSave: OnSave }> = ({
 	objs,
@@ -93,8 +95,8 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 				</div>
 			</>
 		)
-	} else if (contentType === TimelineContentTypeOBS.MUTE) {
-		const objs = objs0 as TSRTimelineObj<TimelineContentOBSMute>[]
+	} else if (contentType === TimelineContentTypeOBS.INPUT_AUDIO) {
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSInputAudio>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -106,10 +108,52 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 						}}
 					/>
 				</div>
+
+				<div className="form-control">
+					<FloatInput
+						label="Volume"
+						fullWidth
+						{...inputValue(objs, (obj) => obj.content.volume, undefined)}
+						onChange={(v) => {
+							onSave({ content: { volume: v } })
+						}}
+						allowUndefined={true}
+						caps={[-100, 25]}
+					/>
+				</div>
 			</>
 		)
-	} else if (contentType === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
-		const objs = objs0 as TSRTimelineObj<TimelineContentOBSSceneItemRender>[]
+	} else if (contentType === TimelineContentTypeOBS.INPUT_MEDIA) {
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSInputMedia>[]
+
+		const currentState = inputValue(objs, (obj) => obj.content.state, '')
+
+		settings = (
+			<>
+				<div className="setting">
+					<TextField
+						select
+						margin="normal"
+						fullWidth
+						autoFocus
+						label="State"
+						value={currentState.currentValue}
+						onChange={(event) => {
+							const state = event.target.value as any
+							onSave({ content: { state } })
+						}}
+					>
+						<MenuItem value="">Not set</MenuItem>
+						<MenuItem value="playing">Playing</MenuItem>
+						<MenuItem value="paused">Paused</MenuItem>
+						<MenuItem value="stopped">Stopped</MenuItem>
+					</TextField>
+				</div>
+			</>
+		)
+		// Future: add seek prop
+	} else if (contentType === TimelineContentTypeOBS.SCENE_ITEM) {
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSSceneItem>[]
 		settings = (
 			<>
 				<div className="setting">
@@ -123,10 +167,13 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 				</div>
 			</>
 		)
-	} else if (contentType === TimelineContentTypeOBS.SOURCE_SETTINGS) {
-		const objs = objs0 as TSRTimelineObj<TimelineContentOBSSourceSettings>[]
+		// Future: add transform props
+	} else if (contentType === TimelineContentTypeOBS.INPUT_SETTINGS) {
+		const objs = objs0 as TSRTimelineObj<TimelineContentOBSInputSettings>[]
 		const firstObj = objs[0]
 		if (!firstObj) return null
+
+		const currentSourceType = inputValue(objs, (obj) => obj.content.sourceType, '')
 
 		settings = (
 			<>
@@ -137,7 +184,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 						fullWidth
 						autoFocus
 						label="Source Type"
-						{...inputValue(objs, (obj) => obj.content.sourceType, '')}
+						value={currentSourceType.currentValue}
 						onChange={(event) => {
 							const sourceType = event.target.value as any
 							if (firstObj.content.sourceType === 'ffmpeg_source' && !firstObj.content.sourceSettings) {
@@ -155,7 +202,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 					</TextField>
 				</div>
 
-				{isIndeterminate(objs, (obj) => obj.content.sourceType) ? (
+				{currentSourceType.indeterminate ? (
 					<>-- Different values -- </>
 				) : (
 					firstObj.content.sourceType === 'ffmpeg_source' && (
@@ -165,8 +212,8 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 									label="Close when inactive"
 									{...inputValue(
 										objs,
-										(obj) => (obj.content.sourceSettings as any).close_when_inactive,
-										''
+										(obj) => obj.content.sourceSettings?.close_when_inactive,
+										false
 									)}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
@@ -177,7 +224,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 							<div className="setting">
 								<BooleanInput
 									label="Hardware decode"
-									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).hw_decode, '')}
+									{...inputValue(objs, (obj) => obj.content.sourceSettings?.hw_decode, false)}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
 										onSave({ content: { sourceSettings: { hw_decode: v } } })
@@ -188,7 +235,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 								<TextInput
 									label="Input"
 									fullWidth
-									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).input, '')}
+									{...inputValue(objs, (obj) => obj.content.sourceSettings?.input, '')}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
 										onSave({ content: { sourceSettings: { input: v } } })
@@ -199,11 +246,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 							<div className="setting">
 								<BooleanInput
 									label="Is local file"
-									{...inputValue(
-										objs,
-										(obj) => (obj.content.sourceSettings as any).is_local_file,
-										''
-									)}
+									{...inputValue(objs, (obj) => obj.content.sourceSettings?.is_local_file, false)}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
 										onSave({ content: { sourceSettings: { is_local_file: v } } })
@@ -214,7 +257,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 								<TextInput
 									label="Local file"
 									fullWidth
-									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).local_file, '')}
+									{...inputValue(objs, (obj) => obj.content.sourceSettings?.local_file, '')}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
 										onSave({ content: { sourceSettings: { local_file: v } } })
@@ -225,7 +268,7 @@ export const EditTimelineObjOBSAny: React.FC<{ objs: TSRTimelineObj<TimelineCont
 							<div className="setting">
 								<BooleanInput
 									label="Looping content"
-									{...inputValue(objs, (obj) => (obj.content.sourceSettings as any).looping, '')}
+									{...inputValue(objs, (obj) => obj.content.sourceSettings?.looping, false)}
 									onChange={(v) => {
 										if (!firstObj.content.sourceSettings) return
 										onSave({ content: { sourceSettings: { looping: v } } })

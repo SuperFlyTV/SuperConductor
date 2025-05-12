@@ -1,10 +1,10 @@
 import React from 'react'
 import { IntInput } from '../../../../inputs/IntInput.js'
-import { MappingCasparCG } from 'timeline-state-resolver-types'
+import { SomeMappingCasparCG } from 'timeline-state-resolver-types'
 
 export const CasparCGMappingSettings: React.FC<{
-	mapping: MappingCasparCG
-	onUpdate: (mappingUpdate: MappingCasparCG) => void
+	mapping: SomeMappingCasparCG
+	onUpdate: (mappingUpdate: SomeMappingCasparCG) => void
 }> = (props) => {
 	return (
 		<>

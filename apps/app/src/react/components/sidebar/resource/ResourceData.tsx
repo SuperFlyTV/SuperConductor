@@ -109,6 +109,13 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 				{universalRows}
 			</ResourceDataInner>
 		)
+	} else if (resource.resourceType === ResourceType.ATEM_COLOR_GENERATOR) {
+		return (
+			<ResourceDataInner title="ATEM Color Generator">
+				<DataRow label="Index" value={resource.index} />
+				{universalRows}
+			</ResourceDataInner>
+		)
 	} else if (resource.resourceType === ResourceType.OBS_SCENE) {
 		return (
 			<ResourceDataInner title="OBS Scene">
@@ -127,10 +134,12 @@ export const ResourceData: React.FC<{ resource: ResourceAny }> = ({ resource }) 
 		return <ResourceDataInner title="OBS Recording">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.OBS_STREAMING) {
 		return <ResourceDataInner title="OBS Streaming">{universalRows}</ResourceDataInner>
-	} else if (resource.resourceType === ResourceType.OBS_SOURCE_SETTINGS) {
-		return <ResourceDataInner title="OBS Source Settings">{universalRows}</ResourceDataInner>
-	} else if (resource.resourceType === ResourceType.OBS_MUTE) {
-		return <ResourceDataInner title="OBS Mute">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_SETTINGS) {
+		return <ResourceDataInner title="OBS Input Settings">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_AUDIO) {
+		return <ResourceDataInner title="OBS Input Audio">{universalRows}</ResourceDataInner>
+	} else if (resource.resourceType === ResourceType.OBS_INPUT_MEDIA) {
+		return <ResourceDataInner title="OBS Input Media">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.OBS_RENDER) {
 		return <ResourceDataInner title="OBS Render">{universalRows}</ResourceDataInner>
 	} else if (resource.resourceType === ResourceType.VMIX_INPUT) {

@@ -119,7 +119,7 @@ export class HyperdeckSideload implements SideLoadDevice {
 					id: protectString(''), // set by getResourceIdFromResource() later
 					displayName: `Clip ${clip.clipId} - ${clip.name}`,
 					slotId: res.slotId,
-					clipId: parseInt(clip.clipId, 10),
+					clipId: clip.clipId,
 					clipName: clip.name,
 				}
 				resource.id = getResourceIdFromResource(resource)

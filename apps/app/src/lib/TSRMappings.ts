@@ -4,45 +4,36 @@ import { GDDSchema } from 'graphics-data-definition'
 import {
 	DeviceType,
 	Mapping,
-	MappingAbstract,
-	MappingAtem,
+	SomeMappingAbstract,
+	SomeMappingAtem,
 	MappingAtemType,
-	MappingCasparCG,
-	MappingHTTPSend,
-	MappingHTTPWatcher,
-	MappingHyperdeck,
+	SomeMappingCasparCG,
+	SomeMappingHttpSend,
+	SomeMappingHttpWatcher,
+	SomeMappingHyperdeck,
 	MappingHyperdeckType,
-	MappingLawo,
+	SomeMappingLawo,
 	MappingLawoType,
-	MappingOBS,
-	MappingOBSAny,
-	MappingOBSSourceSettings,
-	MappingOBSType,
-	MappingOSC,
-	MappingPanasonicPtz,
-	MappingPanasonicPtzType,
-	MappingPharos,
-	MappingQuantel,
+	SomeMappingObs,
+	MappingObsType,
+	SomeMappingOsc,
+	SomeMappingPanasonicPTZ,
+	MappingPanasonicPTZType,
+	SomeMappingPharos,
+	SomeMappingQuantel,
 	Mappings,
-	MappingShotoku,
-	MappingSingularLive,
-	MappingSisyfos,
+	SomeMappingShotoku,
+	SomeMappingSingularLive,
+	SomeMappingSisyfos,
 	MappingSisyfosType,
-	MappingSofieChef,
-	MappingTCPSend,
-	MappingTriCaster,
-	MappingTriCasterAudioChannel,
-	MappingTriCasterDownStreamKeyer,
-	MappingTriCasterInput,
-	MappingTriCasterMatrixOutput,
-	MappingTriCasterMixEffect,
-	MappingTriCasterMixOutput,
-	MappingTriCasterType,
-	MappingVizMSE,
-	MappingVMix,
-	MappingVMixAny,
-	MappingVMixProgram,
-	MappingVMixType,
+	SomeMappingSofieChef,
+	SomeMappingTcpSend,
+	SomeMappingTricaster,
+	MappingTricasterType,
+	SomeMappingVizMSE,
+	SomeMappingVmix,
+	MappingVmixProgram,
+	MappingVmixType,
 	TimelineContentTypeAtem,
 	TimelineContentTypeHyperdeck,
 	TimelineContentTypeLawo,
@@ -57,22 +48,31 @@ import {
 	TriCasterMatrixOutputName,
 	TriCasterMixEffectName,
 	TriCasterMixOutputName,
+	TSRMappingOptions,
 	TSRTimelineContent,
 	TSRTimelineObj,
+	MappingCasparCGType,
+	MappingQuantelType,
+	MappingSingularLiveType,
+	MappingSofieChefType,
+	SomeMappingTelemetrics,
+	SomeMappingMultiOsc,
+	MappingMultiOscType,
+	MappingAtemMixEffect,
 } from 'timeline-state-resolver-types'
 import { Project } from '../models/project/Project.js'
 import { listAvailableDeviceIDs } from './util.js'
 import { TimelineObj } from '../models/rundown/TimelineObj.js'
 
 /** Returns true if the given mapping - TSRTimelineObject-combination is valid */
-export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineContent>): boolean {
+export function filterMapping(mapping: Mapping<TSRMappingOptions>, obj: TSRTimelineObj<TSRTimelineContent>): boolean {
 	if (mapping.device !== obj.content.deviceType) return false
 
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
 		// MappingAbstract
 		return true
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
-		const atemMapping = mapping as MappingAtem
+		const atemMapping = mapping.options as SomeMappingAtem
 
 		switch (obj.content.type) {
 			case TimelineContentTypeAtem.ME:
@@ -93,6 +93,8 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 				return atemMapping.mappingType === MappingAtemType.MacroPlayer
 			case TimelineContentTypeAtem.AUDIOROUTING:
 				return atemMapping.mappingType === MappingAtemType.AudioRouting
+			case TimelineContentTypeAtem.COLORGENERATOR:
+				return atemMapping.mappingType === MappingAtemType.ColorGenerator
 			default:
 				assertNever(obj.content)
 				return false
@@ -107,21 +109,21 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 		// MappingTCPSend
 		return true
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
-		const hyperdeckMapping = mapping as MappingHyperdeck
+		const hyperdeckMapping = mapping.options as SomeMappingHyperdeck
 
 		switch (obj.content.type) {
 			case TimelineContentTypeHyperdeck.TRANSPORT:
-				return hyperdeckMapping.mappingType === MappingHyperdeckType.TRANSPORT
+				return hyperdeckMapping.mappingType === MappingHyperdeckType.Transport
 			default:
 				assertNever(obj.content)
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.LAWO) {
-		const lawoMapping = mapping as MappingLawo
+		const lawoMapping = mapping.options as SomeMappingLawo
 
 		switch (obj.content.type) {
 			case TimelineContentTypeLawo.SOURCE:
-				return lawoMapping.mappingType === MappingLawoType.SOURCE
+				return lawoMapping.mappingType === MappingLawoType.Source
 			case TimelineContentTypeLawo.SOURCES:
 				return true
 			case TimelineContentTypeLawo.EMBER_PROPERTY:
@@ -133,23 +135,25 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 				return false
 		}
 	} else if (obj.content.deviceType === DeviceType.OBS) {
-		const obsMapping = mapping as MappingOBS
+		const obsMapping = mapping.options as SomeMappingObs
 
 		switch (obj.content.type) {
 			case TimelineContentTypeOBS.CURRENT_TRANSITION:
-				return obsMapping.mappingType === MappingOBSType.CurrentTransition
+				return obsMapping.mappingType === MappingObsType.CurrentTransition
 			case TimelineContentTypeOBS.CURRENT_SCENE:
-				return obsMapping.mappingType === MappingOBSType.CurrentScene
+				return obsMapping.mappingType === MappingObsType.CurrentScene
 			case TimelineContentTypeOBS.RECORDING:
-				return obsMapping.mappingType === MappingOBSType.Recording
+				return obsMapping.mappingType === MappingObsType.Recording
 			case TimelineContentTypeOBS.STREAMING:
-				return obsMapping.mappingType === MappingOBSType.Streaming
-			case TimelineContentTypeOBS.SCENE_ITEM_RENDER:
-				return obsMapping.mappingType === MappingOBSType.SceneItemRender
-			case TimelineContentTypeOBS.MUTE:
-				return obsMapping.mappingType === MappingOBSType.Mute
-			case TimelineContentTypeOBS.SOURCE_SETTINGS:
-				return obsMapping.mappingType === MappingOBSType.SourceSettings
+				return obsMapping.mappingType === MappingObsType.Streaming
+			case TimelineContentTypeOBS.INPUT_AUDIO:
+				return obsMapping.mappingType === MappingObsType.InputAudio
+			case TimelineContentTypeOBS.INPUT_MEDIA:
+				return obsMapping.mappingType === MappingObsType.InputMedia
+			case TimelineContentTypeOBS.INPUT_SETTINGS:
+				return obsMapping.mappingType === MappingObsType.InputSettings
+			case TimelineContentTypeOBS.SCENE_ITEM:
+				return obsMapping.mappingType === MappingObsType.SceneItem
 			default:
 				assertNever(obj.content)
 				return false
@@ -161,17 +165,17 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 		// MappingPharos
 		return true
 	} else if (obj.content.deviceType === DeviceType.PANASONIC_PTZ) {
-		const panasonicPtzMapping = mapping as MappingPanasonicPtz
+		const panasonicPtzMapping = mapping.options as SomeMappingPanasonicPTZ
 
 		switch (obj.content.type) {
 			case TimelineContentTypePanasonicPtz.SPEED:
-				return panasonicPtzMapping.mappingType === MappingPanasonicPtzType.PRESET_SPEED
+				return panasonicPtzMapping.mappingType === MappingPanasonicPTZType.PresetSpeed
 			case TimelineContentTypePanasonicPtz.PRESET:
-				return panasonicPtzMapping.mappingType === MappingPanasonicPtzType.PRESET
+				return panasonicPtzMapping.mappingType === MappingPanasonicPTZType.PresetMem
 			case TimelineContentTypePanasonicPtz.ZOOM:
-				return panasonicPtzMapping.mappingType === MappingPanasonicPtzType.ZOOM
+				return panasonicPtzMapping.mappingType === MappingPanasonicPTZType.Zoom
 			case TimelineContentTypePanasonicPtz.ZOOM_SPEED:
-				return panasonicPtzMapping.mappingType === MappingPanasonicPtzType.ZOOM_SPEED
+				return panasonicPtzMapping.mappingType === MappingPanasonicPTZType.ZoomSpeed
 			default:
 				assertNever(obj.content)
 				return false
@@ -183,16 +187,16 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 		// MappingShotoku
 		return true
 	} else if (obj.content.deviceType === DeviceType.SISYFOS) {
-		const sisyfosMapping = mapping as MappingSisyfos
+		const sisyfosMapping = mapping.options as SomeMappingSisyfos
 
 		switch (obj.content.type) {
 			case TimelineContentTypeSisyfos.CHANNEL:
 				return (
-					sisyfosMapping.mappingType === MappingSisyfosType.CHANNEL ||
-					sisyfosMapping.mappingType === MappingSisyfosType.CHANNEL_BY_LABEL
+					sisyfosMapping.mappingType === MappingSisyfosType.Channel ||
+					sisyfosMapping.mappingType === MappingSisyfosType.ChannelByLabel
 				)
 			case TimelineContentTypeSisyfos.CHANNELS:
-				return sisyfosMapping.mappingType === MappingSisyfosType.CHANNELS
+				return sisyfosMapping.mappingType === MappingSisyfosType.Channels
 			case TimelineContentTypeSisyfos.TRIGGERVALUE:
 				return true
 			default:
@@ -203,33 +207,33 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 		// MappingSingularLive
 		return true
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
-		const vmixMapping = mapping as MappingVMix
+		const vmixMapping = mapping.options as SomeMappingVmix
 
 		switch (obj.content.type) {
 			case TimelineContentTypeVMix.PROGRAM:
-				return vmixMapping.mappingType === MappingVMixType.Program
+				return vmixMapping.mappingType === MappingVmixType.Program
 			case TimelineContentTypeVMix.PREVIEW:
-				return vmixMapping.mappingType === MappingVMixType.Preview
+				return vmixMapping.mappingType === MappingVmixType.Preview
 			case TimelineContentTypeVMix.INPUT:
-				return vmixMapping.mappingType === MappingVMixType.Input
+				return vmixMapping.mappingType === MappingVmixType.Input
 			case TimelineContentTypeVMix.AUDIO:
-				return vmixMapping.mappingType === MappingVMixType.AudioChannel
+				return vmixMapping.mappingType === MappingVmixType.AudioChannel
 			case TimelineContentTypeVMix.OUTPUT:
-				return vmixMapping.mappingType === MappingVMixType.Output
+				return vmixMapping.mappingType === MappingVmixType.Output
 			case TimelineContentTypeVMix.OVERLAY:
-				return vmixMapping.mappingType === MappingVMixType.Overlay
+				return vmixMapping.mappingType === MappingVmixType.Overlay
 			case TimelineContentTypeVMix.RECORDING:
-				return vmixMapping.mappingType === MappingVMixType.Recording
+				return vmixMapping.mappingType === MappingVmixType.Recording
 			case TimelineContentTypeVMix.STREAMING:
-				return vmixMapping.mappingType === MappingVMixType.Streaming
+				return vmixMapping.mappingType === MappingVmixType.Streaming
 			case TimelineContentTypeVMix.EXTERNAL:
-				return vmixMapping.mappingType === MappingVMixType.External
+				return vmixMapping.mappingType === MappingVmixType.External
 			case TimelineContentTypeVMix.FADE_TO_BLACK:
-				return vmixMapping.mappingType === MappingVMixType.FadeToBlack
+				return vmixMapping.mappingType === MappingVmixType.FadeToBlack
 			case TimelineContentTypeVMix.FADER:
-				return vmixMapping.mappingType === MappingVMixType.Fader
+				return vmixMapping.mappingType === MappingVmixType.Fader
 			case TimelineContentTypeVMix.SCRIPT:
-				return vmixMapping.mappingType === MappingVMixType.Script
+				return vmixMapping.mappingType === MappingVmixType.Script
 			default:
 				assertNever(obj.content)
 				return false
@@ -243,21 +247,21 @@ export function filterMapping(mapping: Mapping, obj: TSRTimelineObj<TSRTimelineC
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
 		return true
 	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
-		const triCasterMapping = mapping as MappingTriCaster
+		const triCasterMapping = mapping.options as SomeMappingTricaster
 
 		switch (obj.content.type) {
 			case TimelineContentTypeTriCaster.ME:
-				return triCasterMapping.mappingType === MappingTriCasterType.ME
+				return triCasterMapping.mappingType === MappingTricasterType.ME
 			case TimelineContentTypeTriCaster.AUDIO_CHANNEL:
-				return triCasterMapping.mappingType === MappingTriCasterType.AUDIO_CHANNEL
+				return triCasterMapping.mappingType === MappingTricasterType.AUDIOCHANNEL
 			case TimelineContentTypeTriCaster.DSK:
-				return triCasterMapping.mappingType === MappingTriCasterType.DSK
+				return triCasterMapping.mappingType === MappingTricasterType.DSK
 			case TimelineContentTypeTriCaster.INPUT:
-				return triCasterMapping.mappingType === MappingTriCasterType.INPUT
+				return triCasterMapping.mappingType === MappingTricasterType.INPUT
 			case TimelineContentTypeTriCaster.MATRIX_OUTPUT:
-				return triCasterMapping.mappingType === MappingTriCasterType.MATRIX_OUTPUT
+				return triCasterMapping.mappingType === MappingTricasterType.MATRIXOUTPUT
 			case TimelineContentTypeTriCaster.MIX_OUTPUT:
-				return triCasterMapping.mappingType === MappingTriCasterType.MIX_OUTPUT
+				return triCasterMapping.mappingType === MappingTricasterType.MIXOUTPUT
 			default:
 				assertNever(obj.content)
 				return false
@@ -290,13 +294,14 @@ export function getMappingFromTimelineObject(
 	obj: TSRTimelineObj<TSRTimelineContent>,
 	deviceId: TSRDeviceId,
 	resource: ResourceAny | undefined
-): Mapping | undefined {
+): Mapping<TSRMappingOptions> | undefined {
 	const deviceIdStr = unprotectString(deviceId)
 	if (obj.content.deviceType === DeviceType.ABSTRACT) {
-		return literal<MappingAbstract>({
+		return literal<Mapping<SomeMappingAbstract>>({
 			device: DeviceType.ABSTRACT,
 			deviceId: deviceIdStr,
 			layerName: 'Abstract',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.ATEM) {
 		// MappingAtem
@@ -304,100 +309,131 @@ export function getMappingFromTimelineObject(
 		switch (obj.content.type) {
 			case TimelineContentTypeAtem.ME: {
 				const index = resource?.resourceType === ResourceType.ATEM_ME ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem ME ${index + 1}`,
-					mappingType: MappingAtemType.MixEffect,
-					index,
+					options: {
+						mappingType: MappingAtemType.MixEffect,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.DSK: {
 				const index = resource?.resourceType === ResourceType.ATEM_DSK ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem DSK ${index + 1}`,
-					mappingType: MappingAtemType.DownStreamKeyer,
-					index,
+					options: {
+						mappingType: MappingAtemType.DownStreamKeyer,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.SSRC: {
 				const index = resource?.resourceType === ResourceType.ATEM_SSRC ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem SS ${index + 1}`,
-					mappingType: MappingAtemType.SuperSourceBox,
-					index,
+					options: {
+						mappingType: MappingAtemType.SuperSourceBox,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.AUX: {
 				const index = resource?.resourceType === ResourceType.ATEM_AUX ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem AUX ${index + 1}`,
-					mappingType: MappingAtemType.Auxilliary,
-					index,
+					options: {
+						mappingType: MappingAtemType.Auxilliary,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.MEDIAPLAYER: {
 				const index = resource?.resourceType === ResourceType.ATEM_MEDIA_PLAYER ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem MP ${index + 1}`,
-					mappingType: MappingAtemType.MediaPlayer,
-					index,
+					options: {
+						mappingType: MappingAtemType.MediaPlayer,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.SSRCPROPS: {
 				const index = resource?.resourceType === ResourceType.ATEM_SSRC_PROPS ? resource.index : 0
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem SS ${index + 1} props`,
-					mappingType: MappingAtemType.SuperSourceProperties,
-					index,
+					options: {
+						mappingType: MappingAtemType.SuperSourceProperties,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.AUDIOCHANNEL: {
 				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_CHANNEL ? resource.index : 0
 
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem Audio ${index + 1}`,
-					mappingType: MappingAtemType.AudioChannel,
-					index,
+					options: {
+						mappingType: MappingAtemType.AudioChannel,
+						index,
+					},
 				})
 			}
 
 			case TimelineContentTypeAtem.MACROPLAYER:
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
-					layerName: 'Atem Macro 1',
-					mappingType: MappingAtemType.MacroPlayer,
-					index: 0,
+					layerName: 'Atem Macro',
+					options: {
+						mappingType: MappingAtemType.MacroPlayer,
+					},
 				})
 
 			case TimelineContentTypeAtem.AUDIOROUTING: {
 				const index = resource?.resourceType === ResourceType.ATEM_AUDIO_OUTPUT ? resource.index : 0
 
-				return literal<MappingAtem>({
+				return literal<Mapping<SomeMappingAtem>>({
 					device: DeviceType.ATEM,
 					deviceId: deviceIdStr,
 					layerName: `Atem Audio Routing ${index + 1}`,
-					mappingType: MappingAtemType.AudioRouting,
-					index,
+					options: {
+						mappingType: MappingAtemType.AudioRouting,
+						index,
+					},
+				})
+			}
+
+			case TimelineContentTypeAtem.COLORGENERATOR: {
+				const index = resource?.resourceType === ResourceType.ATEM_COLOR_GENERATOR ? resource.index : 0
+
+				return literal<Mapping<SomeMappingAtem>>({
+					device: DeviceType.ATEM,
+					deviceId: deviceIdStr,
+					layerName: `Atem Color Generator ${index + 1}`,
+					options: {
+						mappingType: MappingAtemType.ColorGenerator,
+						index,
+					},
 				})
 			}
 
@@ -441,38 +477,44 @@ export function getMappingFromTimelineObject(
 
 			if (!layer) layer = 1 // Default
 		}
-		return literal<MappingCasparCG>({
+		return literal<Mapping<SomeMappingCasparCG>>({
 			device: DeviceType.CASPARCG,
 			deviceId: deviceIdStr,
 			layerName: `CasparCG ${channel}-${layer}`,
-			channel: channel,
-			layer: layer,
+			options: {
+				mappingType: MappingCasparCGType.Layer,
+				channel: channel,
+				layer: layer,
+			},
 		})
 	} else if (obj.content.deviceType === DeviceType.HTTPSEND) {
 		// MappingHTTPSend
-		return literal<MappingHTTPSend>({
+		return literal<Mapping<SomeMappingHttpSend>>({
 			device: DeviceType.HTTPSEND,
 			deviceId: deviceIdStr,
 			layerName: 'HTTP Send',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.TCPSEND) {
 		// MappingTCPSend
-		return literal<MappingTCPSend>({
+		return literal<Mapping<SomeMappingTcpSend>>({
 			device: DeviceType.TCPSEND,
 			deviceId: deviceIdStr,
 			layerName: 'TCP Send',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.HYPERDECK) {
 		// MappingHyperdeck
 
 		switch (obj.content.type) {
 			case TimelineContentTypeHyperdeck.TRANSPORT:
-				return literal<MappingHyperdeck>({
+				return literal<Mapping<SomeMappingHyperdeck>>({
 					device: DeviceType.HYPERDECK,
 					deviceId: deviceIdStr,
 					layerName: 'HyperDeck 1',
-					mappingType: MappingHyperdeckType.TRANSPORT,
-					index: 0,
+					options: {
+						mappingType: MappingHyperdeckType.Transport,
+					},
 				})
 			default:
 				assertNever(obj.content)
@@ -483,25 +525,32 @@ export function getMappingFromTimelineObject(
 		switch (obj.content.type) {
 			case TimelineContentTypeLawo.SOURCE:
 			case TimelineContentTypeLawo.SOURCES:
-				return literal<MappingLawo>({
+				return literal<Mapping<SomeMappingLawo>>({
 					device: DeviceType.LAWO,
 					deviceId: deviceIdStr,
 					layerName: 'Lawo source',
-					mappingType: MappingLawoType.SOURCE,
+					options: {
+						mappingType: MappingLawoType.Source,
+						identifier: '',
+					},
 				})
 			case TimelineContentTypeLawo.EMBER_PROPERTY:
-				return literal<MappingLawo>({
+				return literal<Mapping<SomeMappingLawo>>({
 					device: DeviceType.LAWO,
 					deviceId: deviceIdStr,
 					layerName: 'Lawo property',
-					mappingType: MappingLawoType.FULL_PATH,
+					options: {
+						mappingType: MappingLawoType.Fullpath,
+					},
 				})
 			case TimelineContentTypeLawo.TRIGGER_VALUE:
-				return literal<MappingLawo>({
+				return literal<Mapping<SomeMappingLawo>>({
 					device: DeviceType.LAWO,
 					deviceId: deviceIdStr,
 					layerName: 'Lawo Trigger',
-					mappingType: MappingLawoType.TRIGGER_VALUE,
+					options: {
+						mappingType: MappingLawoType.TriggerValue,
+					},
 				})
 			default:
 				assertNever(obj.content)
@@ -511,121 +560,169 @@ export function getMappingFromTimelineObject(
 
 		switch (obj.content.type) {
 			case TimelineContentTypeOBS.CURRENT_TRANSITION:
-				return literal<MappingOBS>({
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
 					layerName: 'OBS Transition',
-					mappingType: MappingOBSType.CurrentTransition,
+					options: {
+						mappingType: MappingObsType.CurrentTransition,
+					},
 				})
 			case TimelineContentTypeOBS.CURRENT_SCENE:
-				return literal<MappingOBS>({
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
 					layerName: 'OBS Scene',
-					mappingType: MappingOBSType.CurrentScene,
+					options: {
+						mappingType: MappingObsType.CurrentScene,
+					},
 				})
 			case TimelineContentTypeOBS.RECORDING:
-				return literal<MappingOBS>({
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
 					layerName: 'OBS Record',
-					mappingType: MappingOBSType.Recording,
+					options: {
+						mappingType: MappingObsType.Recording,
+					},
 				})
 			case TimelineContentTypeOBS.STREAMING:
-				return literal<MappingOBS>({
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
 					layerName: 'OBS Streaming',
-					mappingType: MappingOBSType.Streaming,
+					options: {
+						mappingType: MappingObsType.Streaming,
+					},
 				})
-			case TimelineContentTypeOBS.SCENE_ITEM_RENDER:
-				return literal<MappingOBS>({
+			case TimelineContentTypeOBS.SCENE_ITEM:
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
 					layerName: 'OBS Item render',
-					mappingType: MappingOBSType.SceneItemRender,
+					options: {
+						mappingType: MappingObsType.SceneItem,
+						sceneName: '',
+						source: '',
+					},
 				})
-			case TimelineContentTypeOBS.MUTE:
-				return literal<MappingOBS>({
+			case TimelineContentTypeOBS.INPUT_AUDIO: {
+				const input = resource?.resourceType === ResourceType.OBS_INPUT_AUDIO ? resource.input : ''
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
-					layerName: 'OBS Mute',
-					mappingType: MappingOBSType.Mute,
+					layerName: `OBS Input Audio: ${input}`,
+					options: {
+						mappingType: MappingObsType.InputAudio,
+						input: input,
+					},
 				})
-			case TimelineContentTypeOBS.SOURCE_SETTINGS:
-				return literal<MappingOBS>({
+			}
+			case TimelineContentTypeOBS.INPUT_SETTINGS: {
+				const input = resource?.resourceType === ResourceType.OBS_INPUT_SETTINGS ? resource.input : ''
+				return literal<Mapping<SomeMappingObs>>({
 					device: DeviceType.OBS,
 					deviceId: deviceIdStr,
-					layerName: 'OBS Source settings',
-					mappingType: MappingOBSType.SourceSettings,
+					layerName: `OBS Input settings: ${input}`,
+					options: {
+						mappingType: MappingObsType.InputSettings,
+						input: input,
+					},
 				})
+			}
+			case TimelineContentTypeOBS.INPUT_MEDIA: {
+				const input = resource?.resourceType === ResourceType.OBS_INPUT_MEDIA ? resource.input : ''
+				return literal<Mapping<SomeMappingObs>>({
+					device: DeviceType.OBS,
+					deviceId: deviceIdStr,
+					layerName: `OBS Input Media: ${input}`,
+					options: {
+						mappingType: MappingObsType.InputMedia,
+						input: input,
+					},
+				})
+			}
 			default:
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.OSC) {
 		// MappingOSC
-		return literal<MappingOSC>({
+		return literal<Mapping<SomeMappingOsc>>({
 			device: DeviceType.OSC,
 			deviceId: deviceIdStr,
 			layerName: 'OSC',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.PHAROS) {
 		// MappingPharos
-		return literal<MappingPharos>({
+		return literal<Mapping<SomeMappingPharos>>({
 			device: DeviceType.PHAROS,
 			deviceId: deviceIdStr,
 			layerName: 'Pharos',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.PANASONIC_PTZ) {
 		// MappingPanasonicPtz
 
 		switch (obj.content.type) {
 			case TimelineContentTypePanasonicPtz.SPEED:
-				return literal<MappingPanasonicPtz>({
+				return literal<Mapping<SomeMappingPanasonicPTZ>>({
 					device: DeviceType.PANASONIC_PTZ,
 					deviceId: deviceIdStr,
 					layerName: 'PTZ Speed',
-					mappingType: MappingPanasonicPtzType.PRESET_SPEED,
+					options: {
+						mappingType: MappingPanasonicPTZType.PresetSpeed,
+					},
 				})
 			case TimelineContentTypePanasonicPtz.PRESET:
-				return literal<MappingPanasonicPtz>({
+				return literal<Mapping<SomeMappingPanasonicPTZ>>({
 					device: DeviceType.PANASONIC_PTZ,
 					deviceId: deviceIdStr,
 					layerName: 'PTZ Preset',
-					mappingType: MappingPanasonicPtzType.PRESET,
+					options: {
+						mappingType: MappingPanasonicPTZType.PresetMem,
+					},
 				})
 			case TimelineContentTypePanasonicPtz.ZOOM:
-				return literal<MappingPanasonicPtz>({
+				return literal<Mapping<SomeMappingPanasonicPTZ>>({
 					device: DeviceType.PANASONIC_PTZ,
 					deviceId: deviceIdStr,
 					layerName: 'PTZ Zoom',
-					mappingType: MappingPanasonicPtzType.ZOOM,
+					options: {
+						mappingType: MappingPanasonicPTZType.Zoom,
+					},
 				})
 			case TimelineContentTypePanasonicPtz.ZOOM_SPEED:
-				return literal<MappingPanasonicPtz>({
+				return literal<Mapping<SomeMappingPanasonicPTZ>>({
 					device: DeviceType.PANASONIC_PTZ,
 					deviceId: deviceIdStr,
 					layerName: 'PTZ Zoom Speed',
-					mappingType: MappingPanasonicPtzType.ZOOM_SPEED,
+					options: {
+						mappingType: MappingPanasonicPTZType.ZoomSpeed,
+					},
 				})
 			default:
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.QUANTEL) {
 		// MappingQuantel
-		return literal<MappingQuantel>({
+		return literal<Mapping<SomeMappingQuantel>>({
 			device: DeviceType.QUANTEL,
 			deviceId: deviceIdStr,
 			layerName: 'Quantel 1',
-			channelId: 1,
-			portId: 'port-id',
+			options: {
+				mappingType: MappingQuantelType.Port,
+				channelId: 1,
+				portId: 'port-id',
+			},
 		})
 	} else if (obj.content.deviceType === DeviceType.SHOTOKU) {
 		// MappingShotoku
-		return literal<MappingShotoku>({
+		return literal<Mapping<SomeMappingShotoku>>({
 			device: DeviceType.SHOTOKU,
 			deviceId: deviceIdStr,
 			layerName: 'Shotoku',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.SISYFOS) {
 		// MappingSisyfos
@@ -633,20 +730,24 @@ export function getMappingFromTimelineObject(
 		switch (obj.content.type) {
 			case TimelineContentTypeSisyfos.CHANNEL:
 			case TimelineContentTypeSisyfos.TRIGGERVALUE:
-				return literal<MappingSisyfos>({
+				return literal<Mapping<SomeMappingSisyfos>>({
 					device: DeviceType.SISYFOS,
 					deviceId: deviceIdStr,
 					layerName: 'Channel 1',
-					mappingType: MappingSisyfosType.CHANNEL,
-					channel: 0,
-					setLabelToLayerName: true,
+					options: {
+						mappingType: MappingSisyfosType.Channel,
+						channel: 0,
+						setLabelToLayerName: true,
+					},
 				})
 			case TimelineContentTypeSisyfos.CHANNELS:
-				return literal<MappingSisyfos>({
+				return literal<Mapping<SomeMappingSisyfos>>({
 					device: DeviceType.SISYFOS,
 					deviceId: deviceIdStr,
 					layerName: 'Channels',
-					mappingType: MappingSisyfosType.CHANNELS,
+					options: {
+						mappingType: MappingSisyfosType.Channels,
+					},
 				})
 
 			default:
@@ -654,130 +755,162 @@ export function getMappingFromTimelineObject(
 		}
 	} else if (obj.content.deviceType === DeviceType.SINGULAR_LIVE) {
 		// MappingSingularLive
-		return literal<MappingSingularLive>({
+		return literal<Mapping<SomeMappingSingularLive>>({
 			device: DeviceType.SINGULAR_LIVE,
 			deviceId: deviceIdStr,
 			layerName: 'Singular Live',
-			compositionName: 'composition-name',
+			options: {
+				mappingType: MappingSingularLiveType.Composition,
+				compositionName: 'composition-name',
+			},
 		})
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
 		// MappingVMix
 
 		switch (obj.content.type) {
 			case TimelineContentTypeVMix.PROGRAM:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Program',
-					mappingType: MappingVMixType.Program,
-					index: 1,
+					options: {
+						mappingType: MappingVmixType.Program,
+						index: 1,
+					},
 				})
 			case TimelineContentTypeVMix.PREVIEW:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Preview',
-					mappingType: MappingVMixType.Preview,
-					index: 1,
+					options: {
+						mappingType: MappingVmixType.Preview,
+						index: 1,
+					},
 				})
 			case TimelineContentTypeVMix.INPUT: {
-				const index = resource?.resourceType === ResourceType.VMIX_INPUT ? resource.number : 1
-				return literal<MappingVMixAny>({
+				const index = resource?.resourceType === ResourceType.VMIX_INPUT ? resource.number + '' : '1'
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Input',
-					mappingType: MappingVMixType.Input,
-					index,
+					options: {
+						mappingType: MappingVmixType.Input,
+						index,
+					},
 				})
 			}
 			case TimelineContentTypeVMix.AUDIO:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'AudioChannel',
-					mappingType: MappingVMixType.AudioChannel,
-					index: 1,
+					options: {
+						mappingType: MappingVmixType.AudioChannel,
+						index: '1',
+					},
 				})
 			case TimelineContentTypeVMix.OUTPUT:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Output',
-					mappingType: MappingVMixType.Output,
-					index: '2',
+					options: {
+						mappingType: MappingVmixType.Output,
+						index: '2',
+					},
 				})
 			case TimelineContentTypeVMix.OVERLAY:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Overlay',
-					mappingType: MappingVMixType.Overlay,
-					index: 1,
+					options: {
+						mappingType: MappingVmixType.Overlay,
+						index: 1,
+					},
 				})
 			case TimelineContentTypeVMix.RECORDING:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Recording',
-					mappingType: MappingVMixType.Recording,
+					options: {
+						mappingType: MappingVmixType.Recording,
+					},
 				})
 			case TimelineContentTypeVMix.STREAMING:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Streaming',
-					mappingType: MappingVMixType.Streaming,
+					options: {
+						mappingType: MappingVmixType.Streaming,
+					},
 				})
 			case TimelineContentTypeVMix.EXTERNAL:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'External',
-					mappingType: MappingVMixType.External,
+					options: {
+						mappingType: MappingVmixType.External,
+					},
 				})
 			case TimelineContentTypeVMix.FADE_TO_BLACK:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'FadeToBlack',
-					mappingType: MappingVMixType.FadeToBlack,
+					options: {
+						mappingType: MappingVmixType.FadeToBlack,
+					},
 				})
 			case TimelineContentTypeVMix.FADER:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Fader',
-					mappingType: MappingVMixType.Fader,
+					options: {
+						mappingType: MappingVmixType.Fader,
+					},
 				})
 			case TimelineContentTypeVMix.SCRIPT:
-				return literal<MappingVMixAny>({
+				return literal<Mapping<SomeMappingVmix>>({
 					device: DeviceType.VMIX,
 					deviceId: deviceIdStr,
 					layerName: 'Script',
-					mappingType: MappingVMixType.Script,
+					options: {
+						mappingType: MappingVmixType.Script,
+					},
 				})
 			default:
 				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.VIZMSE) {
 		// MappingVizMSE
-		return literal<MappingVizMSE>({
+		return literal<Mapping<SomeMappingVizMSE>>({
 			device: DeviceType.VIZMSE,
 			deviceId: deviceIdStr,
 			layerName: 'VizMSE',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.SOFIE_CHEF) {
-		return literal<MappingSofieChef>({
+		return literal<Mapping<SomeMappingSofieChef>>({
 			device: DeviceType.SOFIE_CHEF,
 			deviceId: deviceIdStr,
 			layerName: 'Chef window',
-			windowId: 'default',
+			options: {
+				mappingType: MappingSofieChefType.Window,
+				windowId: 'default',
+			},
 		})
 	} else if (obj.content.deviceType === DeviceType.TELEMETRICS) {
-		return literal<Mapping>({
+		return literal<Mapping<SomeMappingTelemetrics>>({
 			device: DeviceType.TELEMETRICS,
 			deviceId: deviceIdStr,
 			layerName: 'Telemetrics',
+			options: {},
 		})
 	} else if (obj.content.deviceType === DeviceType.TRICASTER) {
 		switch (obj.content.type) {
@@ -786,12 +919,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_ME
 						? (resource.name as TriCasterMixEffectName) // TODO: perhaps resource.name should be of this type?
 						: 'main'
-				return literal<MappingTriCasterMixEffect>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.ME,
 					layerName: `TriCaster ME ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.ME,
+						name,
+					},
 				})
 			}
 			case TimelineContentTypeTriCaster.AUDIO_CHANNEL: {
@@ -799,12 +934,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_AUDIO_CHANNEL
 						? (resource.name as TriCasterAudioChannelName) // TODO: perhaps resource.name should be of this type?
 						: 'master'
-				return literal<MappingTriCasterAudioChannel>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.AUDIO_CHANNEL,
 					layerName: `TriCaster Audio Channel ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.AUDIOCHANNEL,
+						name,
+					},
 				})
 			}
 			case TimelineContentTypeTriCaster.DSK: {
@@ -812,12 +949,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_DSK
 						? (resource.name as TriCasterKeyerName) // TODO: perhaps resource.name should be of this type?
 						: 'dsk1'
-				return literal<MappingTriCasterDownStreamKeyer>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.DSK,
 					layerName: `TriCaster DSK ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.DSK,
+						name,
+					},
 				})
 			}
 			case TimelineContentTypeTriCaster.INPUT: {
@@ -825,12 +964,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_INPUT
 						? (resource.name as TriCasterInputName) // TODO: perhaps resource.name should be of this type?
 						: 'input1'
-				return literal<MappingTriCasterInput>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.INPUT,
 					layerName: `TriCaster Input ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.INPUT,
+						name,
+					},
 				})
 			}
 			case TimelineContentTypeTriCaster.MATRIX_OUTPUT: {
@@ -838,12 +979,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_MATRIX_OUTPUT
 						? (resource.name as TriCasterMatrixOutputName) // TODO: perhaps resource.name should be of this type?
 						: 'out1'
-				return literal<MappingTriCasterMatrixOutput>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.MATRIX_OUTPUT,
 					layerName: `TriCaster Matrix Out ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.MATRIXOUTPUT,
+						name,
+					},
 				})
 			}
 			case TimelineContentTypeTriCaster.MIX_OUTPUT: {
@@ -851,12 +994,14 @@ export function getMappingFromTimelineObject(
 					resource?.resourceType === ResourceType.TRICASTER_MIX_OUTPUT
 						? (resource.name as TriCasterMixOutputName) // TODO: perhaps resource.name should be of this type?
 						: 'mix1'
-				return literal<MappingTriCasterMixOutput>({
+				return literal<Mapping<SomeMappingTricaster>>({
 					deviceId: deviceIdStr,
 					device: DeviceType.TRICASTER,
-					mappingType: MappingTriCasterType.MIX_OUTPUT,
 					layerName: `TriCaster Mix Out ${name}`,
-					name,
+					options: {
+						mappingType: MappingTricasterType.MIXOUTPUT,
+						name,
+					},
 				})
 			}
 			default:
@@ -921,16 +1066,16 @@ export function getDefaultDeviceName(deviceType: DeviceType): string {
 }
 
 /** Returns a short textual description of the Mapping */
-export function describeMappingConfiguration(mapping: Mapping): string {
+export function describeMappingConfiguration(mapping: Mapping<TSRMappingOptions>): string {
 	switch (mapping.device) {
 		case DeviceType.ABSTRACT:
 			return ''
 		case DeviceType.CASPARCG: {
-			const typedMapping = mapping as MappingCasparCG
+			const typedMapping = mapping.options as SomeMappingCasparCG
 			return `Channel: ${typedMapping.channel}, Layer: ${typedMapping.layer}`
 		}
 		case DeviceType.ATEM: {
-			const typedMapping = mapping as MappingAtem
+			const typedMapping = mapping.options as SomeMappingAtem
 			switch (typedMapping.mappingType) {
 				case MappingAtemType.MixEffect:
 					return `ME: ${typedMapping.index}`
@@ -947,11 +1092,13 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 				case MappingAtemType.AudioChannel:
 					return `Audio Channel: ${typedMapping.index}`
 				case MappingAtemType.MacroPlayer:
-					return `Macro Player: ${typedMapping.index}`
+					return `Macro Player`
 				case MappingAtemType.AudioRouting:
 					return `Audio Output: ${typedMapping.index}`
+				case MappingAtemType.ColorGenerator:
+					return `Color Generator ${typedMapping.index}`
 				default:
-					assertNever(typedMapping.mappingType)
+					assertNever(typedMapping)
 					return ''
 			}
 		}
@@ -982,31 +1129,31 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 		case DeviceType.SHOTOKU:
 			return ''
 		case DeviceType.VMIX: {
-			const typedMapping = mapping as MappingVMixAny
+			const typedMapping = mapping.options as SomeMappingVmix
 			switch (typedMapping.mappingType) {
-				case MappingVMixType.AudioChannel:
+				case MappingVmixType.AudioChannel:
 					return `Index: ${typedMapping.index}, Input Layer: ${typedMapping.inputLayer}`
-				case MappingVMixType.External:
+				case MappingVmixType.External:
 					return ''
-				case MappingVMixType.FadeToBlack:
+				case MappingVmixType.FadeToBlack:
 					return ''
-				case MappingVMixType.Fader:
+				case MappingVmixType.Fader:
 					return ''
-				case MappingVMixType.Input:
+				case MappingVmixType.Input:
 					return `Index: ${typedMapping.index}`
-				case MappingVMixType.Output:
+				case MappingVmixType.Output:
 					return `Index: ${typedMapping.index}`
-				case MappingVMixType.Overlay:
+				case MappingVmixType.Overlay:
 					return `Index: ${typedMapping.index}`
-				case MappingVMixType.Preview:
+				case MappingVmixType.Preview:
 					return `Index: ${typedMapping.index}`
-				case MappingVMixType.Program:
+				case MappingVmixType.Program:
 					return `Index: ${typedMapping.index}`
-				case MappingVMixType.Recording:
+				case MappingVmixType.Recording:
 					return ''
-				case MappingVMixType.Streaming:
+				case MappingVmixType.Streaming:
 					return ''
-				case MappingVMixType.Script:
+				case MappingVmixType.Script:
 					return ''
 				default:
 					assertNever(typedMapping)
@@ -1014,36 +1161,36 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 			}
 		}
 		case DeviceType.OBS: {
-			// This is here to fix a typing bug in TSR. MappingOBSSourceSettings is not part of the MappingOBSAny type.
-			// See https://github.com/nrkno/sofie-timeline-state-resolver/pull/208 for more details.
-			const mapping0 = mapping as MappingOBS
-			if (mapping0.mappingType === MappingOBSType.SourceSettings) {
-				const mapping1 = mapping0 as MappingOBSSourceSettings
-				return `Source: ${mapping1.source}`
-			}
-
-			const typedMapping = mapping as MappingOBSAny
+			const typedMapping = mapping.options as SomeMappingObs
 			switch (typedMapping.mappingType) {
-				case MappingOBSType.CurrentScene:
+				case MappingObsType.CurrentScene:
 					return ''
-				case MappingOBSType.CurrentTransition:
+				case MappingObsType.CurrentTransition:
 					return ''
-				case MappingOBSType.Mute:
-					return `Source: "${typedMapping.source}"`
-				case MappingOBSType.Recording:
+				case MappingObsType.Recording:
 					return ''
-				case MappingOBSType.SceneItemRender:
-					return `Scene: "${typedMapping.sceneName}", Source: "${typedMapping.source}"`
-				case MappingOBSType.Streaming: {
+				case MappingObsType.Streaming: {
 					return ''
 				}
+				case MappingObsType.InputAudio: {
+					return `Audio Input: ${typedMapping.input}`
+				}
+				case MappingObsType.InputMedia: {
+					return `Media Input: ${typedMapping.input}`
+				}
+				case MappingObsType.InputSettings: {
+					return `Input Settings: ${typedMapping.input}`
+				}
+				case MappingObsType.SceneItem:
+					return `Scene: ${typedMapping.sceneName}, Source: ${typedMapping.source}`
+
 				default:
-					// assertNever(typedMapping.mappingType)
+					assertNever(typedMapping)
 					return ''
 			}
 		}
 		case DeviceType.SOFIE_CHEF: {
-			const typedMapping = mapping as MappingSofieChef
+			const typedMapping = mapping.options as SomeMappingSofieChef
 			return `Window ${typedMapping.windowId}`
 		}
 		case DeviceType.TELEMETRICS: {
@@ -1064,113 +1211,141 @@ export function describeMappingConfiguration(mapping: Mapping): string {
 export function getDefaultMappingForDeviceType(
 	deviceType: DeviceType,
 	deviceId: TSRDeviceId,
-	allMappings: Mappings
-): Mapping {
+	allMappings: Mappings<TSRMappingOptions>
+): Mapping<TSRMappingOptions> {
 	const deviceIdStr = unprotectString(deviceId)
 	// Filter mapping for deviceId:
-	const mappings: Mappings = {}
-	for (const [id, mapping] of Object.entries<Mapping>(allMappings)) {
+	const mappings: Mappings<TSRMappingOptions> = {}
+	for (const [id, mapping] of Object.entries<Mapping<TSRMappingOptions>>(allMappings)) {
 		if (protectString(mapping.deviceId) === deviceId) mappings[id] = mapping
 	}
 
 	if (deviceType === DeviceType.ABSTRACT) {
-		const m = literal<MappingAbstract>({
+		const m = literal<Mapping<SomeMappingAbstract>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.CASPARCG) {
-		const channel = getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channel) ?? 1
-		const layer = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.layer) ?? 0) + 10
+		const channel =
+			getLastBiggestValue(
+				mappings,
+				(m) => m.device === deviceType && (m.options as SomeMappingCasparCG).channel
+			) ?? 1
+		const layer =
+			(getLastBiggestValue(
+				mappings,
+				(m) => m.device === deviceType && (m.options as SomeMappingCasparCG).layer
+			) ?? 0) + 10
 
-		const m = literal<MappingCasparCG>({
-			channel,
-			layer,
+		const m = literal<Mapping<SomeMappingCasparCG>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingCasparCGType.Layer,
+				channel,
+				layer,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.ATEM) {
-		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? 0) + 1
-		const m = literal<MappingAtem>({
-			index,
+		const index =
+			(getLastBiggestValue(
+				mappings,
+				(m) => m.device === deviceType && (m.options as MappingAtemMixEffect).index
+			) ?? 0) + 1
+		const m = literal<Mapping<SomeMappingAtem>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingAtemType.MixEffect,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingAtemType.MixEffect,
+				index,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.LAWO) {
-		const m = literal<MappingLawo>({
+		const m = literal<Mapping<SomeMappingLawo>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingLawoType.SOURCE,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingLawoType.Source,
+				identifier: '',
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.HTTPSEND) {
-		const m = literal<MappingHTTPSend>({
+		const m = literal<Mapping<SomeMappingHttpSend>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.PANASONIC_PTZ) {
-		const m = literal<MappingPanasonicPtz>({
+		const m = literal<Mapping<SomeMappingPanasonicPTZ>>({
 			device: DeviceType.PANASONIC_PTZ,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
-			mappingType: MappingPanasonicPtzType.PRESET,
+			options: {
+				mappingType: MappingPanasonicPTZType.PresetMem,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.TCPSEND) {
-		const m = literal<MappingTCPSend>({
+		const m = literal<Mapping<SomeMappingTcpSend>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.HYPERDECK) {
-		const index = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.index) ?? -1) + 1
-		const m = literal<MappingHyperdeck>({
+		const m = literal<Mapping<SomeMappingHyperdeck>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingHyperdeckType.TRANSPORT,
-			index,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingHyperdeckType.Transport,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.PHAROS) {
-		const m = literal<MappingPharos>({
+		const m = literal<Mapping<SomeMappingPharos>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.OSC) {
-		const m = literal<MappingOSC>({
+		const m = literal<Mapping<SomeMappingOsc>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.HTTPWATCHER) {
-		const m = literal<MappingHTTPWatcher>({
+		const m = literal<Mapping<SomeMappingHttpWatcher>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
@@ -1178,125 +1353,157 @@ export function getDefaultMappingForDeviceType(
 		const channel =
 			(getLastBiggestValue(
 				mappings,
-				(m) => m.device === deviceType && m.mappingType === MappingSisyfosType.CHANNEL && m.channel
+				(m) =>
+					m.device === deviceType && m.options.mappingType === MappingSisyfosType.Channel && m.options.channel
 			) ?? -1) + 1
-		const m = literal<MappingSisyfos>({
+		const m = literal<Mapping<SomeMappingSisyfos>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingSisyfosType.CHANNEL,
-			channel,
 			layerName: '', // Set later
-			setLabelToLayerName: true,
+			options: {
+				mappingType: MappingSisyfosType.Channel,
+				channel,
+				setLabelToLayerName: true,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.QUANTEL) {
-		const channelId = (getLastBiggestValue(mappings, (m) => m.device === deviceType && m.channelId) ?? 0) + 1
+		const channelId =
+			(getLastBiggestValue(
+				mappings,
+				(m) => m.device === deviceType && (m.options as SomeMappingQuantel).channelId
+			) ?? 0) + 1
 
-		const m = literal<MappingQuantel>({
+		const m = literal<Mapping<SomeMappingQuantel>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			channelId,
 			layerName: '', // Set later
-			portId: 'port-id',
+			options: {
+				mappingType: MappingQuantelType.Port,
+				portId: 'port-id',
+				channelId,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.VIZMSE) {
-		const m = literal<MappingVizMSE>({
+		const m = literal<Mapping<SomeMappingVizMSE>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.SINGULAR_LIVE) {
-		const m = literal<MappingSingularLive>({
+		const m = literal<Mapping<SomeMappingSingularLive>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
-			compositionName: 'composition-name',
+			options: {
+				mappingType: MappingSingularLiveType.Composition,
+				compositionName: 'composition-name',
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.SHOTOKU) {
-		const m = literal<MappingShotoku>({
+		const m = literal<Mapping<SomeMappingShotoku>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.VMIX) {
-		const m = literal<MappingVMixProgram>({
-			index: 1,
+		const m = literal<Mapping<MappingVmixProgram>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingVMixType.Program,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingVmixType.Program,
+				index: 1,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.OBS) {
-		const m = literal<MappingOBS>({
+		const m = literal<Mapping<SomeMappingObs>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
-			mappingType: MappingOBSType.CurrentScene,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingObsType.CurrentScene,
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.SOFIE_CHEF) {
-		const m = literal<MappingSofieChef>({
+		const m = literal<Mapping<SomeMappingSofieChef>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
-			windowId: 'default',
+			options: {
+				mappingType: MappingSofieChefType.Window,
+				windowId: 'default',
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.TELEMETRICS) {
-		const m = literal<Mapping>({
+		const m = literal<Mapping<SomeMappingTelemetrics>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.TRICASTER) {
-		const m = literal<Mapping>({
+		const m = literal<Mapping<SomeMappingTricaster>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingTricasterType.ME,
+				name: 'main',
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else if (deviceType === DeviceType.MULTI_OSC) {
-		const m = literal<Mapping>({
+		const m = literal<Mapping<SomeMappingMultiOsc>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
 			layerName: '', // Set later
+			options: {
+				mappingType: MappingMultiOscType.Layer,
+				connectionId: 'default',
+			},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	} else {
 		assertNever(deviceType)
-		const m = literal<Mapping>({
+		const m = literal<Mapping<any>>({
 			device: deviceType,
 			deviceId: deviceIdStr,
+			options: {},
 		})
 		m.layerName = getDefaultLayerName(m)
 		return m
 	}
 }
-export function getDefaultLayerName(mapping: Mapping): string {
+export function getDefaultLayerName(mapping: Mapping<TSRMappingOptions>): string {
 	if (mapping.device === DeviceType.ABSTRACT) {
 		return `Abstract`
 	} else if (mapping.device === DeviceType.CASPARCG) {
-		const m = mapping as MappingCasparCG
+		const m = mapping.options as SomeMappingCasparCG
 		return `CasparCG ${m.channel}-${m.layer}`
 	} else if (mapping.device === DeviceType.ATEM) {
-		const m = mapping as MappingAtem
+		const m = mapping.options as MappingAtemMixEffect
 		return `Atem ME ${m.index}`
 	} else if (mapping.device === DeviceType.LAWO) {
 		return `Lawo source`
@@ -1307,13 +1514,7 @@ export function getDefaultLayerName(mapping: Mapping): string {
 	} else if (mapping.device === DeviceType.TCPSEND) {
 		return `TCP Send`
 	} else if (mapping.device === DeviceType.HYPERDECK) {
-		const m = mapping as MappingHyperdeck
-		if (m.mappingType === MappingHyperdeckType.TRANSPORT) {
-			return `HyperDeck ${(m.index ?? 0) + 1}`
-		} else {
-			assertNever(m.mappingType)
-			return `HyperDeck`
-		}
+		return `HyperDeck`
 	} else if (mapping.device === DeviceType.PHAROS) {
 		return `Pharos`
 	} else if (mapping.device === DeviceType.OSC) {
@@ -1321,19 +1522,19 @@ export function getDefaultLayerName(mapping: Mapping): string {
 	} else if (mapping.device === DeviceType.HTTPWATCHER) {
 		return `HTTP watcher`
 	} else if (mapping.device === DeviceType.SISYFOS) {
-		const m = mapping as MappingSisyfos
-		if (m.mappingType === MappingSisyfosType.CHANNEL) {
+		const m = mapping.options as SomeMappingSisyfos
+		if (m.mappingType === MappingSisyfosType.Channel) {
 			return `Channel ${m.channel + 1}`
-		} else if (m.mappingType === MappingSisyfosType.CHANNELS) {
+		} else if (m.mappingType === MappingSisyfosType.Channels) {
 			return `Channels`
-		} else if (m.mappingType === MappingSisyfosType.CHANNEL_BY_LABEL) {
+		} else if (m.mappingType === MappingSisyfosType.ChannelByLabel) {
 			return `Channel ${m.label}`
 		} else {
 			assertNever(m)
 			return 'Sisyfos'
 		}
 	} else if (mapping.device === DeviceType.QUANTEL) {
-		const m = mapping as MappingQuantel
+		const m = mapping.options as SomeMappingQuantel
 		return `Quantel ${m.channelId}`
 	} else if (mapping.device === DeviceType.VIZMSE) {
 		return 'VizMSE'
@@ -1359,34 +1560,12 @@ export function getDefaultLayerName(mapping: Mapping): string {
 	}
 }
 
-type AnyMapping =
-	| MappingAbstract
-	| MappingAtem
-	| MappingCasparCG
-	| MappingHTTPSend
-	| MappingHTTPWatcher
-	| MappingHyperdeck
-	| MappingLawo
-	| MappingOBS
-	| MappingOBSAny
-	| MappingOSC
-	| MappingPanasonicPtz
-	| MappingPharos
-	| MappingQuantel
-	| MappingShotoku
-	| MappingSingularLive
-	| MappingSisyfos
-	| MappingTCPSend
-	| MappingVizMSE
-	| MappingVMixAny
-	| MappingTriCaster
-
 function getLastBiggestValue(
-	mappings: Mappings,
-	filterFunction: (mapping: AnyMapping) => number | false | undefined
+	mappings: Mappings<TSRMappingOptions>,
+	filterFunction: (mapping: Mapping<TSRMappingOptions>) => number | false | undefined
 ): number | undefined {
 	let lastBiggest: number | undefined = undefined
-	Object.values<Mapping>(mappings).forEach((mapping) => {
+	Object.values<Mapping<TSRMappingOptions>>(mappings).forEach((mapping) => {
 		const value = filterFunction(mapping as any)
 		if (value !== undefined && value !== false) {
 			if (lastBiggest === undefined || value > lastBiggest) {
@@ -1430,9 +1609,9 @@ function getDeviceTypeOrder(deviceType: DeviceType): number {
 	return index === -1 ? 9999 : index
 }
 
-export type SortedMappings = { layerId: string; mapping: Mapping }[]
-export function sortMappings(mappings: Mappings): SortedMappings {
-	return Object.entries<Mapping>(mappings)
+export type SortedMappings = { layerId: string; mapping: Mapping<TSRMappingOptions> }[]
+export function sortMappings(mappings: Mappings<TSRMappingOptions>): SortedMappings {
+	return Object.entries<Mapping<TSRMappingOptions>>(mappings)
 		.map(([layerId, mapping]) => ({
 			layerId,
 			mapping,
@@ -1453,42 +1632,44 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			if (device === DeviceType.ABSTRACT) {
 				// Nothing
 			} else if (device === DeviceType.CASPARCG) {
-				const _a = a.mapping as MappingCasparCG
-				const _b = b.mapping as MappingCasparCG
+				const _a = a.mapping.options as SomeMappingCasparCG
+				const _b = b.mapping.options as SomeMappingCasparCG
 				if (_a.channel > _b.channel) return 1
 				if (_a.channel < _b.channel) return -1
 				if (_a.layer > _b.layer) return 1
 				if (_a.layer < _b.layer) return -1
 			} else if (device === DeviceType.ATEM) {
-				const _a = a.mapping as MappingAtem
-				const _b = b.mapping as MappingAtem
+				const _a = a.mapping.options as SomeMappingAtem
+				const _b = b.mapping.options as SomeMappingAtem
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
-				if ((_a.index || 0) > (_b.index || 0)) return 1
-				if ((_a.index || 0) < (_b.index || 0)) return -1
+				if (_a.mappingType !== MappingAtemType.MacroPlayer && _b.mappingType !== MappingAtemType.MacroPlayer) {
+					if ((_a.index || 0) > (_b.index || 0)) return 1
+					if ((_a.index || 0) < (_b.index || 0)) return -1
+				}
 			} else if (device === DeviceType.LAWO) {
-				const _a = a.mapping as MappingLawo
-				const _b = b.mapping as MappingLawo
+				const _a = a.mapping.options as SomeMappingLawo
+				const _b = b.mapping.options as SomeMappingLawo
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
-				if ((_a.identifier || '') > (_b.identifier || '')) return 1
-				if ((_a.identifier || '') < (_b.identifier || '')) return -1
+				if (_a.mappingType === MappingLawoType.Source && _b.mappingType === MappingLawoType.Source) {
+					if ((_a.identifier || '') > (_b.identifier || '')) return 1
+					if ((_a.identifier || '') < (_b.identifier || '')) return -1
+				}
 			} else if (device === DeviceType.HTTPSEND) {
 				// Nothing
 			} else if (device === DeviceType.PANASONIC_PTZ) {
-				const _a = a.mapping as MappingPanasonicPtz
-				const _b = b.mapping as MappingPanasonicPtz
+				const _a = a.mapping.options as SomeMappingPanasonicPTZ
+				const _b = b.mapping.options as SomeMappingPanasonicPTZ
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
 			} else if (device === DeviceType.TCPSEND) {
 				// Nothing
 			} else if (device === DeviceType.HYPERDECK) {
-				const _a = a.mapping as MappingHyperdeck
-				const _b = b.mapping as MappingHyperdeck
+				const _a = a.mapping.options as SomeMappingHyperdeck
+				const _b = b.mapping.options as SomeMappingHyperdeck
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
-				if ((_a.index || 0) > (_b.index || 0)) return 1
-				if ((_a.index || 0) < (_b.index || 0)) return -1
 			} else if (device === DeviceType.PHAROS) {
 				// Nothing
 			} else if (device === DeviceType.OSC) {
@@ -1496,13 +1677,13 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			} else if (device === DeviceType.HTTPWATCHER) {
 				// Nothing
 			} else if (device === DeviceType.SISYFOS) {
-				const _a = a.mapping as MappingSisyfos
-				const _b = b.mapping as MappingSisyfos
+				const _a = a.mapping.options as SomeMappingSisyfos
+				const _b = b.mapping.options as SomeMappingSisyfos
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
 			} else if (device === DeviceType.QUANTEL) {
-				const _a = a.mapping as MappingQuantel
-				const _b = b.mapping as MappingQuantel
+				const _a = a.mapping.options as SomeMappingQuantel
+				const _b = b.mapping.options as SomeMappingQuantel
 				if (_a.portId > _b.portId) return 1
 				if (_a.portId < _b.portId) return -1
 				if (_a.channelId > _b.channelId) return 1
@@ -1510,34 +1691,34 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 			} else if (device === DeviceType.VIZMSE) {
 				// Nothing
 			} else if (device === DeviceType.SINGULAR_LIVE) {
-				const _a = a.mapping as MappingSingularLive
-				const _b = b.mapping as MappingSingularLive
+				const _a = a.mapping.options as SomeMappingSingularLive
+				const _b = b.mapping.options as SomeMappingSingularLive
 				if (_a.compositionName > _b.compositionName) return 1
 				if (_a.compositionName < _b.compositionName) return -1
 			} else if (device === DeviceType.SHOTOKU) {
 				// Nothing
 			} else if (device === DeviceType.VMIX) {
-				const _a = a.mapping as MappingVMixProgram
-				const _b = b.mapping as MappingVMixProgram
+				const _a = a.mapping.options as MappingVmixProgram
+				const _b = b.mapping.options as MappingVmixProgram
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
 				if ((_a.index || 0) > (_b.index || 0)) return 1
 				if ((_a.index || 0) < (_b.index || 0)) return -1
 			} else if (device === DeviceType.OBS) {
-				const _a = a.mapping as MappingOBSAny
-				const _b = b.mapping as MappingOBSAny
+				const _a = a.mapping.options as SomeMappingObs
+				const _b = b.mapping.options as SomeMappingObs
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
 			} else if (device === DeviceType.SOFIE_CHEF) {
-				const _a = a.mapping as MappingSofieChef
-				const _b = b.mapping as MappingSofieChef
+				const _a = a.mapping.options as SomeMappingSofieChef
+				const _b = b.mapping.options as SomeMappingSofieChef
 				if (_a.windowId > _b.windowId) return 1
 				if (_a.windowId < _b.windowId) return -1
 			} else if (device === DeviceType.TELEMETRICS) {
 				// Nothing
 			} else if (device === DeviceType.TRICASTER) {
-				const _a = a.mapping as MappingTriCaster
-				const _b = b.mapping as MappingTriCaster
+				const _a = a.mapping.options as SomeMappingTricaster
+				const _b = b.mapping.options as SomeMappingTricaster
 				if (_a.mappingType > _b.mappingType) return 1
 				if (_a.mappingType < _b.mappingType) return -1
 				return compareStringsEndingWithNumber(_a.name ?? '', _b.name ?? '') // TODO: find a better alternative
@@ -1553,7 +1734,7 @@ export function sortMappings(mappings: Mappings): SortedMappings {
 }
 /** Returns a list of mappings that are compatible with the provided timeline objects */
 export function getCompatibleMappings(
-	projectMappings: Mappings,
+	projectMappings: Mappings<TSRMappingOptions>,
 	filterObjects: (TimelineObj | TSRTimelineObj<TSRTimelineContent>)[]
 ): SortedMappings {
 	return sortMappings(projectMappings).filter((m) => {

@@ -21,7 +21,7 @@ import { assertNever, capitalizeFirstLetter } from '@shared/lib'
 import { GroupPreparedPlayDataPart } from '../models/GUI/PreparedPlayhead.js'
 import { TimelineObj } from '../models/rundown/TimelineObj.js'
 import { formatDuration } from './timeLib.js'
-import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate } from './TSR.js'
+import { ATEM_DEFAULT_TRANSITION_RATE, getAtemFrameRate, translateTSRDeviceType } from './TSR.js'
 import { TimelineObject } from 'superfly-timeline'
 import { MetadataAny, MetadataType } from '@shared/models'
 
@@ -166,26 +166,39 @@ export function describeTimelineObject(
 			}
 		} else if (obj.content.type === TimelineContentTypeAtem.AUDIOROUTING) {
 			label = `Audio Routing`
+		} else if (obj.content.type === TimelineContentTypeAtem.COLORGENERATOR) {
+			label = `Color Generator`
 		} else {
 			assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.OBS) {
-		if (obj.content.type === TimelineContentTypeOBS.CURRENT_SCENE) {
-			label = obj.content.sceneName
-		} else if (obj.content.type === TimelineContentTypeOBS.CURRENT_TRANSITION) {
-			label = obj.content.transitionName
-		} else if (obj.content.type === TimelineContentTypeOBS.MUTE) {
-			label = `Mute ${obj.content.mute ? 'On' : 'Off'}`
-		} else if (obj.content.type === TimelineContentTypeOBS.RECORDING) {
-			label = `Recording ${obj.content.on ? 'On' : 'Off'}`
-		} else if (obj.content.type === TimelineContentTypeOBS.SCENE_ITEM_RENDER) {
-			label = `Render ${obj.content.on ? 'On' : 'Off'}`
-		} else if (obj.content.type === TimelineContentTypeOBS.SOURCE_SETTINGS) {
-			label = 'Source Settings'
-		} else if (obj.content.type === TimelineContentTypeOBS.STREAMING) {
-			label = `Stream ${obj.content.on ? 'On' : 'Off'}`
-		} else {
-			assertNever(obj.content)
+		switch (obj.content.type) {
+			case TimelineContentTypeOBS.CURRENT_SCENE:
+				label = obj.content.sceneName
+				break
+			case TimelineContentTypeOBS.CURRENT_TRANSITION:
+				label = obj.content.transitionName
+				break
+			case TimelineContentTypeOBS.RECORDING:
+				label = `Recording ${obj.content.on ? 'On' : 'Off'}`
+				break
+			case TimelineContentTypeOBS.STREAMING:
+				label = `Stream ${obj.content.on ? 'On' : 'Off'}`
+				break
+			case TimelineContentTypeOBS.INPUT_AUDIO:
+				label = `Input Audio`
+				break
+			case TimelineContentTypeOBS.INPUT_MEDIA:
+				label = `Input Media`
+				break
+			case TimelineContentTypeOBS.INPUT_SETTINGS:
+				label = `Input Settings`
+				break
+			case TimelineContentTypeOBS.SCENE_ITEM:
+				label = `Render ${obj.content.on ? 'On' : 'Off'}`
+				break
+			default:
+				assertNever(obj.content)
 		}
 	} else if (obj.content.deviceType === DeviceType.VMIX) {
 		if (obj.content.type === TimelineContentTypeVMix.AUDIO) {
@@ -449,6 +462,8 @@ export function ensureValidId(id: string): string {
 
 export function ensureValidObject(obj: TimelineObject): void {
 	obj.layer = ensureValidId(`${obj.layer}`)
+
+	obj.content.deviceType = translateTSRDeviceType(obj.content.deviceType)
 
 	if (obj.children) {
 		for (const child of obj.children) {

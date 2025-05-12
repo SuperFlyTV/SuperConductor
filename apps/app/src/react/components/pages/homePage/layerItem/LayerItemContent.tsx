@@ -4,14 +4,14 @@ import { TextBtn } from '../../../inputs/textBtn/TextBtn.js'
 import { IPCServerContext } from '../../../../contexts/IPCServer.js'
 import { ProjectContext } from '../../../../contexts/Project.js'
 import { ErrorHandlerContext } from '../../../../contexts/ErrorHandler.js'
-import { Mapping } from 'timeline-state-resolver-types'
+import { Mapping, TSRMappingOptions } from 'timeline-state-resolver-types'
 import { DeviceSpecificSettings } from '../layersPage/DeviceSpecificSettings.js'
 import './style.scss'
 import { getDefaultLayerName } from '../../../../../lib/TSRMappings.js'
 
 export const LayerItemContent: React.FC<{
 	mappingId: string
-	mapping: Mapping
+	mapping: Mapping<TSRMappingOptions>
 }> = (props) => {
 	const ipcServer = useContext(IPCServerContext)
 	const project = useContext(ProjectContext)
@@ -23,7 +23,7 @@ export const LayerItemContent: React.FC<{
 	}, [props.mapping])
 
 	const handleNameChange = useCallback(
-		(newName: Mapping['layerName']) => {
+		(newName: Mapping<TSRMappingOptions>['layerName']) => {
 			if (typeof newName === 'undefined' || newName.trim().length <= 0) {
 				return
 			}
@@ -39,14 +39,19 @@ export const LayerItemContent: React.FC<{
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}, [handleError, ipcServer, props.mappingId, project])
 
-	const handleSpecificMappingSettingsUpdate = (mappingUpdate: Mapping) => {
-		const oldMapping = project.mappings[props.mappingId]
-		if (oldMapping && oldMapping.layerName === getDefaultLayerName(oldMapping)) {
+	const handleSpecificMappingSettingsUpdate = (mappingUpdate: TSRMappingOptions) => {
+		let existingMapping = project.mappings[props.mappingId]
+		if (!existingMapping) return
+
+		const oldDefaultName = getDefaultLayerName(existingMapping)
+
+		project.mappings[props.mappingId] = existingMapping = { ...existingMapping, options: mappingUpdate }
+
+		if (existingMapping.layerName === oldDefaultName) {
 			// If the layername is the default, update it to the new default:
-			mappingUpdate.layerName = getDefaultLayerName(mappingUpdate)
+			existingMapping.layerName = getDefaultLayerName(existingMapping)
 		}
 
-		project.mappings[props.mappingId] = mappingUpdate
 		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
 	}
 

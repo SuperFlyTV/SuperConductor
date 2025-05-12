@@ -1,8 +1,6 @@
-import React, { useCallback, useContext } from 'react'
-import { MappingVMixAny, MappingVMixType } from 'timeline-state-resolver-types'
-import { ErrorHandlerContext } from '../../../../../contexts/ErrorHandler.js'
-import { IPCServerContext } from '../../../../../contexts/IPCServer.js'
-import { ProjectContext } from '../../../../../contexts/Project.js'
+import React from 'react'
+import { SomeMappingVmix, MappingVmixType } from 'timeline-state-resolver-types'
+
 import { IntInput } from '../../../../inputs/IntInput.js'
 import { SelectEnum } from '../../../../inputs/SelectEnum.js'
 import { TextInput } from '../../../../inputs/TextInput.js'
@@ -31,17 +29,9 @@ enum VMixOutputIndex {
 }
 
 export const VMixMappingSettings: React.FC<{
-	mapping: MappingVMixAny
-	onUpdate: (mappingUpdate: MappingVMixAny) => void
+	mapping: SomeMappingVmix
+	onUpdate: (mappingUpdate: SomeMappingVmix) => void
 }> = (props) => {
-	const ipcServer = useContext(IPCServerContext)
-	const project = useContext(ProjectContext)
-	const { handleError } = useContext(ErrorHandlerContext)
-
-	const updateProject = useCallback(() => {
-		ipcServer.updateProject({ id: project.id, project }).catch(handleError)
-	}, [handleError, ipcServer, project])
-
 	return (
 		<>
 			<div className="form-control">
@@ -49,15 +39,15 @@ export const VMixMappingSettings: React.FC<{
 					label="Type"
 					fullWidth
 					currentValue={props.mapping.mappingType}
-					options={MappingVMixType}
+					options={MappingVmixType}
 					onChange={(v) => {
 						props.onUpdate({ ...props.mapping, mappingType: v })
 					}}
 				/>
 			</div>
 
-			{(props.mapping.mappingType === MappingVMixType.Program ||
-				props.mapping.mappingType === MappingVMixType.Preview) && (
+			{(props.mapping.mappingType === MappingVmixType.Program ||
+				props.mapping.mappingType === MappingVmixType.Preview) && (
 				<div className="form-control">
 					<SelectEnum
 						label="Index"
@@ -66,8 +56,8 @@ export const VMixMappingSettings: React.FC<{
 						options={VMixMixIndex}
 						onChange={(v) => {
 							if (
-								props.mapping.mappingType === MappingVMixType.Program ||
-								props.mapping.mappingType === MappingVMixType.Preview
+								props.mapping.mappingType === MappingVmixType.Program ||
+								props.mapping.mappingType === MappingVmixType.Preview
 							) {
 								props.onUpdate({ ...props.mapping, index: v })
 							}
@@ -76,7 +66,7 @@ export const VMixMappingSettings: React.FC<{
 				</div>
 			)}
 
-			{props.mapping.mappingType === MappingVMixType.Overlay && (
+			{props.mapping.mappingType === MappingVmixType.Overlay && (
 				<div className="form-control">
 					<SelectEnum
 						label="Index"
@@ -84,29 +74,28 @@ export const VMixMappingSettings: React.FC<{
 						currentValue={props.mapping.index}
 						options={VMixOverlayIndex}
 						onChange={(v) => {
-							if (props.mapping.mappingType === MappingVMixType.Overlay) {
+							if (props.mapping.mappingType === MappingVmixType.Overlay) {
 								props.onUpdate({ ...props.mapping, index: v })
 							}
-							updateProject()
 						}}
 					/>
 				</div>
 			)}
 
-			{(props.mapping.mappingType === MappingVMixType.Input ||
-				props.mapping.mappingType === MappingVMixType.AudioChannel) && (
+			{(props.mapping.mappingType === MappingVmixType.Input ||
+				props.mapping.mappingType === MappingVmixType.AudioChannel) && (
 				<div className="form-control">
 					<IntInput
 						label="Index"
 						fullWidth
 						width="7rem"
-						currentValue={props.mapping.index as number}
+						currentValue={Number(props.mapping.index)}
 						onChange={(v) => {
 							if (
-								props.mapping.mappingType === MappingVMixType.Input ||
-								props.mapping.mappingType === MappingVMixType.AudioChannel
+								props.mapping.mappingType === MappingVmixType.Input ||
+								props.mapping.mappingType === MappingVmixType.AudioChannel
 							) {
-								props.onUpdate({ ...props.mapping, index: v })
+								props.onUpdate({ ...props.mapping, index: v + '' })
 							}
 						}}
 						allowUndefined={false}
@@ -115,30 +104,29 @@ export const VMixMappingSettings: React.FC<{
 				</div>
 			)}
 
-			{props.mapping.mappingType === MappingVMixType.Output && (
+			{props.mapping.mappingType === MappingVmixType.Output && (
 				<div className="form-control">
 					<SelectEnum
 						label="Index"
 						currentValue={props.mapping.index}
 						options={VMixOutputIndex}
 						onChange={(v) => {
-							if (props.mapping.mappingType === MappingVMixType.Output) {
+							if (props.mapping.mappingType === MappingVmixType.Output) {
 								props.onUpdate({ ...props.mapping, index: v })
 							}
-							updateProject()
 						}}
 					/>
 				</div>
 			)}
 
-			{props.mapping.mappingType === MappingVMixType.AudioChannel && (
+			{props.mapping.mappingType === MappingVmixType.AudioChannel && (
 				<div className="form-control">
 					<TextInput
 						label="Input Layer"
 						fullWidth
 						currentValue={props.mapping.inputLayer}
 						onChange={(v) => {
-							if (props.mapping.mappingType === MappingVMixType.AudioChannel) {
+							if (props.mapping.mappingType === MappingVmixType.AudioChannel) {
 								props.onUpdate({ ...props.mapping, inputLayer: v })
 							}
 						}}
