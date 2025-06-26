@@ -2,6 +2,8 @@
 
 ## Prerequisites
 
+Cannot run yarn 1.2.x anymore with develop branch, must run yarn2, tested with 4.9.2
+
 SuperConductor has some native dependencies which need to be (re)built from source. This requires a full Node.js native module compiler toolchain, including Python 3.
 
 **On Windows**, modern versions of the Node.js installer come with all the necessary build tools, and no further action is required. If you have issues with Python, install [Python 3](https://www.python.org/downloads/).
