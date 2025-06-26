@@ -60,7 +60,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		win.webContents.openDevTools()
 	}
 	win
-		.loadURL(!app.isPackaged ? 'http://127.0.0.1:9124' : `file://${app.getAppPath()}/build/index.html`)
+		.loadURL(!app.isPackaged ? 'http://localhost:9124' : `file://${app.getAppPath()}/build/index.html`)
 		.catch(log.error)
 
 	const menuOpts = literal<GenerateMenuArgs>({
