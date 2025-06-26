@@ -19,7 +19,13 @@ import { unReplaceUndefined } from '../../lib/util.js'
 export class ApiServer {
 	private app = koa<ServiceTypes>(feathers())
 
-	constructor(port: number, ipcServer: EverythingService, clientEventBus: ClientEventBus, log: LoggerLike) {
+	constructor(
+		port: number,
+		ipcServer: EverythingService,
+		clientEventBus: ClientEventBus,
+		log: LoggerLike,
+		host: string = '0.0.0.0'
+	) {
 		this.app.use(serveStatic('src'))
 
 		this.app.use(
@@ -104,8 +110,8 @@ export class ApiServer {
 		// ---- end legacy code
 
 		this.app
-			.listen(port, '127.0.0.1')
-			.then(() => log.info('Feathers server listening on 127.0.0.1:' + port))
+			.listen(port, host)
+			.then(() => log.info(`Feathers server listening on http://${host}:${port}`))
 			.catch(log.error)
 	}
 }

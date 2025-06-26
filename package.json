@@ -47,6 +47,7 @@
 	"devDependencies": {
 		"@sofie-automation/eslint-plugin": "^0.1.1",
 		"@tsconfig/node20": "^20.1.4",
+		"@types/express": "^5",
 		"@types/jest": "^29.5.13",
 		"@types/license-checker": "^25",
 		"@types/lodash-es": "^4.17.12",
@@ -79,5 +80,8 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.9.1"
+	"packageManager": "yarn@4.9.1",
+	"dependencies": {
+		"express": "^5.1.0"
+	}
 }

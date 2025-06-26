@@ -13,6 +13,7 @@ export default defineConfig({
 	},
 	server: {
 		port: 9124,
+		host: true,
 		// proxy: {
 		// 	'/int': `http://${upstreamUrl}`,
 		// 	'/docs': `http://${upstreamUrl}`,
