@@ -1,0 +1,20 @@
+version: '3.9'
+
+services:
+  superconductor:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "9124:9124"  # Dev UI
+      - "9125:9125"  # Likely IPC or WebSocket bridge
+      - "5500:5500"  # Possibly live reload or dev server
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.yarn/cache
+      - /
+    environment:
+      - NODE_ENV=development
+      - ELECTRON_ENABLE_LOGGING=true
+    command: "yarn start"

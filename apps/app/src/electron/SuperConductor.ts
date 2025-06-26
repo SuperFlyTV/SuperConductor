@@ -319,7 +319,7 @@ export class SuperConductor {
 		const preReleaseAutoUpdate = appData.preReleaseAutoUpdate ?? appData.version.currentVersionIsPrerelease
 
 		electronUpdater.autoUpdater.autoDownload = true
-		electronUpdater.autoUpdater.allowDowngrade = true
+		electronUpdater.autoUpdater.allowDowngrade = false
 
 		if (electronUpdater.autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
 			electronUpdater.autoUpdater.allowPrerelease = preReleaseAutoUpdate

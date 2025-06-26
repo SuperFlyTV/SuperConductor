@@ -1,0 +1,25 @@
+# Use Node 20 with slim image
+FROM node:20-slim
+
+# Enable Yarn 4+
+RUN corepack enable
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency descriptors
+COPY package.json yarn.lock ./
+COPY .yarn .yarn
+COPY .yarnrc.yml ./
+
+# Install dependencies
+RUN yarn install
+
+# Copy the rest of the code
+COPY . .
+
+# Set environment variables for dev
+ENV NODE_ENV=development
+
+# Set default command (can be overridden in docker-compose)
+CMD ["yarn", "start"]
