@@ -12,7 +12,7 @@ type AddTypeToProperties<T, U> = {
 }
 
 const queryHost = new URLSearchParams(window.location.search).get('host')
-const socketUri = `http://${queryHost ?? 'localhost'}:5500`
+const socketUri = `http://${queryHost ?? 'localhost'}:5500` // Todo: must be set to actuall host IP instead of localhost to work on remote machine
 
 const socket = io(socketUri)
 export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()
