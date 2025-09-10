@@ -8,7 +8,6 @@ import * as cheerio from 'cheerio'
 import type { Element as domElement } from 'domhandler'
 
 import { CasparCG } from 'casparcg-connection'
-import got from 'got'
 import {
 	ResourceAny,
 	ResourceType,
@@ -63,7 +62,11 @@ export async function addTemplatesToResourcesFromCasparCGMediaScanner(
 	let jsonData: MediaScannerTemplateData | null = null
 
 	try {
-		jsonData = await got.get(`http://${casparCG.host}:8000/templates`).json()
+		const response = await fetch(`http://${casparCG.host}:8000/templates`)
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`)
+		}
+		jsonData = (await response.json()) as MediaScannerTemplateData
 	} catch {
 		// ignore
 	}
