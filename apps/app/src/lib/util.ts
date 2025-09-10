@@ -237,7 +237,7 @@ export function updateGroupPlayingParts(group: Group, now?: number): void {
 			fromSchedule: playhead.fromSchedule,
 		}
 	}
-	// Also add previously stopped playingParts, so that the stops still block sheduled playing parts:
+	// Also add previously stopped playingParts, so that the stops still block scheduled playing parts:
 	for (const [partId, prevPlayingPart] of Object.entries<PlayingPart>(prevPlayingParts)) {
 		if (!group.playout.playingParts[partId] && prevPlayingPart.stopTime) {
 			if (!group.parts.find((p) => p.id === partId)) continue

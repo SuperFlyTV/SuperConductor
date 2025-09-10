@@ -299,7 +299,7 @@ function onAppReady(): void {
 				// Wait for the logger to finish writing logs:
 
 				log.on('error', (_err) => {
-					// Supress error
+					// Suppress error
 					// eslint-disable-next-line no-console
 					console.error(_err)
 				})

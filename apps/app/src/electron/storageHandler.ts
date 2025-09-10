@@ -38,7 +38,7 @@ const fsExists = async (filePath: string): Promise<boolean> => {
 const fsRename = fs.promises.rename
 const fsUnlink = fs.promises.unlink
 
-/** This class handles all persistant data, that is stored on disk */
+/** This class handles all persistent data, that is stored on disk */
 export class StorageHandler extends EventEmitter {
 	private appData: FileAppData
 	private appDataHasChanged = false

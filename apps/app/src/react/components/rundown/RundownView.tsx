@@ -124,7 +124,7 @@ export const RundownView: React.FC<{ mappings: Mappings<TSRMappingOptions> }> = 
 						selection.push({ type: 'part', groupId: mainSelected.groupId, partId: part.id })
 					}
 				} else if (mainSelected.type === 'timelineObj') {
-					// Select all timeline objets in Group:
+					// Select all timeline objects in Group:
 
 					for (const obj of store.rundownsStore.getPartTimeline(mainSelected.partId)) {
 						selection.push({

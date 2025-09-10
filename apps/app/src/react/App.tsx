@@ -350,7 +350,6 @@ export const App = observer(function App() {
 				setUserAgreementScreenOpen(true)
 			}
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [appStore])
 	function onSplashScreenClose(remindMeLater: boolean): void {
 		setSplashScreenOpen(false)

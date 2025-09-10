@@ -30,7 +30,7 @@ export namespace BridgeAPI {
 			type: 'init'
 			id: BridgeId
 			version: string
-			/** Set to true if the bridge is the one connecting to SuperConector (incoming bridge)  */
+			/** Set to true if the bridge is the one connecting to SuperConnector (incoming bridge)  */
 			incoming: boolean
 		}
 		export interface Status extends MessageBase {

@@ -1037,7 +1037,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 		) {
 			affectsPlayout = group
 		}
-		// Special Case: When scheduling is enabled, any prevous stop-times should be removed.
+		// Special Case: When scheduling is enabled, any previous stop-times should be removed.
 		// This is to allow a user to click Stop, then to resume schedule; Disable then Enable schedule.
 		if (!groupPreChange.schedule?.activate && group.schedule?.activate) {
 			for (const [partId, playingPart] of Object.entries<PlayingPart>(group.playout.playingParts)) {
@@ -2663,7 +2663,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 	/** Save updates to various data sets.
 	 * Use this last when there has been any changes to data.
-	 * This will also trigger updates of the playout (timeline), perihperals etc..
+	 * This will also trigger updates of the playout (timeline), peripherals etc..
 	 */
 	private _saveUpdates(updates: {
 		appData?: AppData
@@ -2731,7 +2731,7 @@ export class EverythingService implements ConvertToServerSide<IPCServerMethods> 
 
 		const allDeviceIds = listAvailableDeviceIDs(arg.project.bridges)
 
-		/** Possible layers, wich votes. The layer with the highest vote will be picked in the end */
+		/** Possible layers, which votes. The layer with the highest vote will be picked in the end */
 		const possibleLayers: { [layerId: string]: number } = {}
 
 		let useCasparCGChannel: number | undefined = undefined

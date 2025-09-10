@@ -20,7 +20,7 @@ export async function handleInternal(context: ClipBoardContext, str: string): Pr
 	try {
 		data = JSON.parse(str)
 	} catch (_err) {
-		// unable to parse, fo nothing
+		// unable to parse, do nothing
 		return false
 	}
 	if (!data) return false

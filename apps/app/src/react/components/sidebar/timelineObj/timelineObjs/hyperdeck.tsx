@@ -69,7 +69,7 @@ export const EditTimelineObjHyperdeckAny: React.FC<{
 							// There isn't any runtime code which enforces that clipId is a number or null.
 							// What this means is that, if a user first creates a RECORD object then
 							// changes it to a PLAY object, it can have an undefined clipId which
-							// can then propogate throughout the system, which won't be handled correctly by TSR.
+							// can then propagate throughout the system, which won't be handled correctly by TSR.
 							// To prevent this, we check for an undefined value and replace it with null here.
 							if (
 								firstObj.content.status === TransportStatus.PLAY &&

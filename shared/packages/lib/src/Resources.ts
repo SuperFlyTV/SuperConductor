@@ -551,7 +551,7 @@ export function getResourceIdFromResource(resource: ResourceAny): ResourceId {
 
 	return protectString<ResourceId>(`${resource.deviceId}_${resource.resourceType}_${locator}`)
 }
-/** Returns a string that can uniquely identify a a resouce (within its type) */
+/** Returns a string that can uniquely identify a resource (within its type) */
 export function getResourceLocatorFromResource(resource: ResourceAny): string {
 	switch (resource.resourceType) {
 		case ResourceType.ATEM_AUDIO_CHANNEL:

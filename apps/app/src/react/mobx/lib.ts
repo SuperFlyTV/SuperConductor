@@ -283,7 +283,7 @@ export function assignPartial<T extends { [key: string]: any }, K extends keyof 
 	}
 }
 /**
- * Syncronizes the contents of two array.
+ * Synchronizes the contents of two array.
  * If an item has moved, it'll be moved instead of replaces.
  * @returns an array corresponding to the resulting array, containing information about the changes.
  */

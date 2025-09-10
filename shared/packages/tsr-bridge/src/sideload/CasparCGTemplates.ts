@@ -141,7 +141,7 @@ export async function addTemplatesToResourcesFromDisk(
 					}
 				}
 
-				// Extract any Graphics Data Defintions (GDD) from HTML templates.
+				// Extract any Graphics Data Definitions (GDD) from HTML templates.
 				const htmlTemplatesInfo: MediaScannerTemplateDataTemplate[] = await Promise.all(
 					htmlTemplates.map(async ({ filePath, type }) => {
 						const info: MediaScannerTemplateDataTemplate = {

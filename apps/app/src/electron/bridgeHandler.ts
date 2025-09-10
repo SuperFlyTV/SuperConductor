@@ -520,7 +520,7 @@ abstract class AbstractBridgeConnection {
 			for (const peripheralId of knownPeripherals.keys()) {
 				const peripheralIdStr = unprotectString(peripheralId)
 				if (!bridge.settings.peripherals[peripheralIdStr]) {
-					// Initalize with defaults
+					// Initialize with defaults
 					bridge.settings.peripherals[peripheralIdStr] = {
 						manualConnect: false,
 					}

@@ -7,7 +7,7 @@ export interface AppData {
 		seenVersion: string | null
 		/** The version of the SuperConductor who saved the data*/
 		currentVersion: string
-		/** Wether the current version is a pre-release or not */
+		/** Whether the current version is a pre-release or not */
 		currentVersionIsPrerelease: boolean
 	}
 	/** Which version of the user agreement the user has agreed to  */

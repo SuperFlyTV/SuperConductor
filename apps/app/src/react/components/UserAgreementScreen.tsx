@@ -5,7 +5,7 @@ import { USER_AGREEMENT_VERSION } from '../../lib/userAgreement.js'
 
 /**
  * The User Agreement is shown to users on startup
- * Note: If any changes are made to the user agreement, USER_AGREEMENT_VERSION must be incremeneted so that it's shown to users again
+ * Note: If any changes are made to the user agreement, USER_AGREEMENT_VERSION must be incremented so that it's shown to users again
  */
 
 export const UserAgreementScreen: React.FC<{
