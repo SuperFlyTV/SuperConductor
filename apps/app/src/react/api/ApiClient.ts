@@ -11,10 +11,8 @@ type AddTypeToProperties<T, U> = {
 	[K in keyof T]: U & T[K]
 }
 
-const socketUri =
-	window.location.protocol === 'file:' // When served through electron, always connect back to localhost
-		? 'http://127.0.0.1:5500'
-		: `${window.location.protocol}//${window.location.hostname}:5500`
+const queryHost = new URLSearchParams(window.location.search).get('host')
+const socketUri = `http://${queryHost ?? 'localhost'}:5500` // Todo: must be set to actuall host IP instead of localhost to work on remote machine
 
 const socket = io(socketUri)
 export const app = feathers<AddTypeToProperties<ServiceTypes, SocketService>>()

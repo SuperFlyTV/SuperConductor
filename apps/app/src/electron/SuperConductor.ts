@@ -305,7 +305,7 @@ export class SuperConductor {
 		// if (this.disableInternalHttpApi) {
 		// 	this.log.info(`Internal HTTP API disabled`)
 		// } else {
-		this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
+		this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log, '0.0.0.0')
 		// }
 
 		this._restoreTimelines()
@@ -319,7 +319,7 @@ export class SuperConductor {
 		const preReleaseAutoUpdate = appData.preReleaseAutoUpdate ?? appData.version.currentVersionIsPrerelease
 
 		electronUpdater.autoUpdater.autoDownload = true
-		electronUpdater.autoUpdater.allowDowngrade = true
+		electronUpdater.autoUpdater.allowDowngrade = false
 
 		if (electronUpdater.autoUpdater.allowPrerelease !== preReleaseAutoUpdate || forceCheckUpdates) {
 			electronUpdater.autoUpdater.allowPrerelease = preReleaseAutoUpdate
