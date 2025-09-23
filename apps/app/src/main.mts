@@ -71,8 +71,7 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 		onUndoClick: () => {},
 		onRedoClick: () => {},
 		onAboutClick: () => {
-			// TODO: this should probably become a client-side only action
-			// handler.ipcClient.displayAboutDialog()
+			superConductor.displayAboutDialog()
 		},
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		onUpdateClick: async () => {
@@ -110,22 +109,29 @@ function createWindow(log: winston.Logger, superConductor: SuperConductor): void
 			}
 		},
 	})
-	const menu = generateMenu(menuOpts, log)
-	Menu.setApplicationMenu(menu)
+	const updateApplicationMenu = (lastKey: string | null, undoLedger: SerializableLedger | null) => {
+		menuOpts.undoLabel = undoLedger?.undo ? `Undo ${undoLedger.undo.description}` : 'Undo'
+		menuOpts.undoEnabled = Boolean(undoLedger?.undo)
+		if (lastKey !== null) {
+			menuOpts.onUndoClick = () => {
+				superConductor.ipcServer.undo(lastKey).catch(log.error)
+			}
+			menuOpts.onRedoClick = () => {
+				superConductor.ipcServer.redo(lastKey).catch(log.error)
+			}
+		} else {
+			menuOpts.onUndoClick = () => {}
+			menuOpts.onRedoClick = () => {}
+		}
+		menuOpts.redoLabel = undoLedger?.redo ? `Redo ${undoLedger.redo.description}` : 'Redo'
+		menuOpts.redoEnabled = Boolean(undoLedger?.redo)
 
-	ipcMain.on('updateUndoLedger', (_event, key: string, undoLedger: SerializableLedger) => {
-		menuOpts.undoLabel = undoLedger.undo ? `Undo ${undoLedger.undo.description}` : 'Undo'
-		menuOpts.undoEnabled = Boolean(undoLedger.undo)
-		menuOpts.onUndoClick = () => {
-			superConductor.ipcServer.undo(key).catch(log.error)
-		}
-		menuOpts.redoLabel = undoLedger.redo ? `Redo ${undoLedger.redo.description}` : 'Redo'
-		menuOpts.redoEnabled = Boolean(undoLedger.redo)
-		menuOpts.onRedoClick = () => {
-			superConductor.ipcServer.redo(key).catch(log.error)
-		}
-		const menu = generateMenu(menuOpts, log)
+		const menu = generateMenu(menuOpts, log, superConductor)
 		Menu.setApplicationMenu(menu)
+	}
+	updateApplicationMenu(null, null)
+	ipcMain.on('updateUndoLedger', (_event, key: string, undoLedger: SerializableLedger) => {
+		updateApplicationMenu(key, undoLedger)
 	})
 	// Listen to and update the size and position of the app, so that it starts in the same place next time:
 	const updateSizeAndPosition = () => {
@@ -196,7 +202,7 @@ function onAppReady(): void {
 
 	log.info('Starting up...')
 
-	const superConductor = new SuperConductor(log, rendererLogger)
+	const superConductor = new SuperConductor(log, rendererLogger, app)
 
 	electronUpdater.autoUpdater.on('update-available', (info) => {
 		// Notify:

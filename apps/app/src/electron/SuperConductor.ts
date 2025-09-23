@@ -314,6 +314,9 @@ export class SuperConductor {
 	sendSystemMessage(message: string, options: SystemMessageOptions): void {
 		this.clientEventBus.systemMessage(message, options)
 	}
+	displayAboutDialog(): void {
+		this.clientEventBus.displayAboutDialog()
+	}
 	public setAutoUpdateAllowPrerelease(forceCheckUpdates: boolean): void {
 		const appData = this.storage.getAppData()
 

@@ -190,6 +190,16 @@ export const App = observer(function App() {
 		window.makeDevData = () => {
 			serverAPI.makeDevData().catch(handleError)
 		}
+
+		if (!ElectronApi) {
+			// Disable F1 key (which opens help in many browsers)
+			window.addEventListener('keydown', function (e) {
+				console.log('e.key', e.key)
+				if (e.key === 'F1') {
+					e.preventDefault()
+				}
+			})
+		}
 	}, [handleError, serverAPI])
 
 	useEffect(() => {

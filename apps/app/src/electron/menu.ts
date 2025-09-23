@@ -1,5 +1,6 @@
 import { app, Menu, shell } from 'electron'
 import winston from 'winston'
+import { SuperConductor } from './SuperConductor.js'
 
 const isMac = process.platform === 'darwin'
 
@@ -25,7 +26,8 @@ export function generateMenu(
 		onAboutClick,
 		onUpdateClick,
 	}: GenerateMenuArgs,
-	log: winston.Logger
+	log: winston.Logger,
+	superConductor: SuperConductor
 ): Electron.Menu {
 	const menuTemplate: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = []
 
@@ -113,6 +115,20 @@ export function generateMenu(
 						{ role: 'window' as const },
 					]
 				: [{ role: 'close' as const }]),
+			{ type: 'separator' },
+			{
+				label: 'Open in Browser',
+				accelerator: 'Shift+CommandOrControl+N',
+				click: () => {
+					if (!superConductor.httpAPI) return
+					shell
+						.openExternal(
+							`http://localhost:${superConductor.httpAPI.port}${superConductor.httpAPI.GUI_PATH}/index.html`
+						)
+						.catch(log.error)
+				},
+				enabled: Boolean(superConductor.httpAPI?.port),
+			},
 		],
 	})
 
@@ -126,7 +142,7 @@ export function generateMenu(
 				},
 			},
 			{
-				label: 'Search Issues',
+				label: 'Report a bug',
 				click: () => {
 					shell.openExternal('https://github.com/SuperFlyTV/SuperConductor/issues').catch(log.error)
 				},
