@@ -75,7 +75,8 @@ export class SuperConductor {
 
 	constructor(
 		private log: LoggerLike,
-		private renderLog: LoggerLike
+		private renderLog: LoggerLike,
+		private app: Electron.App
 	) {
 		this.session = new SessionHandler()
 		this.clientEventBus = new ClientEventBus()
@@ -305,7 +306,7 @@ export class SuperConductor {
 		// if (this.disableInternalHttpApi) {
 		// 	this.log.info(`Internal HTTP API disabled`)
 		// } else {
-		this.httpAPI = new ApiServer(this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
+		this.httpAPI = new ApiServer(this.app, this.internalHttpApiPort, this.ipcServer, this.clientEventBus, this.log)
 		// }
 
 		this._restoreTimelines()

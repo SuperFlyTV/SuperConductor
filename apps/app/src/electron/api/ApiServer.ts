@@ -1,8 +1,10 @@
+import path from 'path'
 import { EverythingService } from '../EverythingService.js'
 import { LoggerLike } from '@shared/api'
 
 import { HookContext, feathers } from '@feathersjs/feathers'
 import { koa, rest, bodyParser, errorHandler, serveStatic, cors } from '@feathersjs/koa'
+import mount from 'koa-mount'
 import socketio from '@feathersjs/socketio'
 import { Rundown } from '../../models/rundown/Rundown.js'
 import { ClientEventBus } from '../ClientEventBus.js'
@@ -18,9 +20,16 @@ import { unReplaceUndefined } from '../../lib/util.js'
 
 export class ApiServer {
 	private app = koa<ServiceTypes>(feathers())
+	readonly GUI_PATH = '/gui'
 
-	constructor(port: number, ipcServer: EverythingService, clientEventBus: ClientEventBus, log: LoggerLike) {
-		this.app.use(serveStatic('src'))
+	constructor(
+		app: Electron.App,
+		public readonly port: number,
+		ipcServer: EverythingService,
+		clientEventBus: ClientEventBus,
+		log: LoggerLike
+	) {
+		// this.app.use(serveStatic('src'))
 
 		this.app.use(
 			cors({
@@ -83,6 +92,17 @@ export class ApiServer {
 				return this.app.channel(PROJECTS_CHANNEL_PREFIX)
 			})
 
+		// Serve the GUI from the build folder:
+		{
+			let guiUrlPath: string
+			if (app.isPackaged) {
+				guiUrlPath = `${app.getAppPath()}/build`
+			} else {
+				guiUrlPath = path.resolve(`${app.getAppPath()}`, '../build')
+			}
+			this.app.use(mount(this.GUI_PATH, serveStatic(guiUrlPath)))
+		}
+
 		// --- legacy code, only for a rapid prototype
 		this.app.use(
 			ServiceName.LEGACY,
@@ -104,8 +124,8 @@ export class ApiServer {
 		// ---- end legacy code
 
 		this.app
-			.listen(port, '127.0.0.1')
-			.then(() => log.info('Feathers server listening on 127.0.0.1:' + port))
+			.listen(this.port, '127.0.0.1')
+			.then(() => log.info('Feathers server listening on 127.0.0.1:' + this.port))
 			.catch(log.error)
 	}
 }
