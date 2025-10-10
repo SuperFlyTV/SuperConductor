@@ -4523,7 +4523,7 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.6.5, axios@npm:^1.7.7, axios@npm:^1.8.3":
+"axios@npm:^1.6.5, axios@npm:^1.8.3":
   version: 1.8.4
   resolution: "axios@npm:1.8.4"
   dependencies:
@@ -14540,7 +14540,6 @@ asn1@evs-broadcast/node-asn1:
     "@types/semver": "npm:^7.5.8"
     "@vitejs/plugin-react": "npm:^4.3.2"
     "@welldone-software/why-did-you-render": "npm:^7.0.1"
-    axios: "npm:^1.7.7"
     bufferutil: "npm:^4.0.8"
     casparcg-connection: "npm:*"
     classnames: "npm:^2.5.1"
