@@ -12,7 +12,7 @@ type PropsType = {
 
 export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 	// Memoize this, to avoid recalculating it every time the playhead is calculated
-	const { value, label } = useMemoComputedObject(
+	const { value, label, value2, label2 } = useMemoComputedObject(
 		() => {
 			const playData = store.groupPlayDataStore.groups.get(props.groupId)
 			if (playData) {
@@ -21,7 +21,11 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 				if (playhead) {
 					const playheadTime = playhead.playheadTime
 					if (typeof playheadTime === 'number') {
+						// Calculate the start time (current time minus playheadTime)
+						const startTime = new Date(new Date().getTime() - playheadTime)
 						return {
+							label2: 'Started at',
+							value2: startTime.toLocaleTimeString(), // Start time
 							label: 'ELAPSED',
 							value: formatDuration(playheadTime, DISPLAY_DECIMAL_COUNT),
 						}
@@ -30,7 +34,9 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 					const countDown = countDowns[0]
 
 					return {
-						label: 'TO START',
+						label2: 'Start Time ',
+						value2: new Date(countDown.timestamp).toLocaleTimeString(),
+						label: 'Starting in',
 						value: formatDuration(countDown.duration, DISPLAY_DECIMAL_COUNT, true),
 					}
 				}
@@ -50,6 +56,9 @@ export const CurrentTime = observer(function CurrentTime(props: PropsType) {
 
 	return (
 		<>
+			<span className="part__time__current-time__label2">{label2}</span>{' '}
+			<span className="part__time__current-time__value2">{value2}</span>{' '}
+			<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
 			<span className="part__time__current-time__label">{label}</span>{' '}
 			<span className="part__time__current-time__value">{value}</span>
 		</>
