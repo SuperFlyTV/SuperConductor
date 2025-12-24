@@ -72,12 +72,21 @@ export function TSRTimelineObjFromResource(resource: ResourceAny): TSRTimelineOb
 		},
 	}
 	if (resource.resourceType === ResourceType.CASPARCG_MEDIA) {
+		let durationMs: number | undefined = undefined
+		if (
+			resource.duration != null &&
+			typeof resource.duration === 'number' &&
+			isFinite(resource.duration) &&
+			resource.duration >= 0
+		) {
+			durationMs = resource.duration * 1000
+		}
 		return {
 			id: shortID(),
 			layer: '', // set later
 			enable: {
 				start: 0,
-				duration: resource.duration * 1000 || undefined,
+				duration: durationMs,
 			},
 			content: {
 				deviceType: DeviceType.CASPARCG,

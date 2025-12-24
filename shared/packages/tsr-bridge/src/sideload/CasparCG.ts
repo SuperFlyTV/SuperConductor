@@ -43,7 +43,7 @@ export class CasparCGSideload implements SideLoadDevice {
 			this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
 		})
 		this.ccg.on('error', (error) => {
-			this.log.info(`CasparCG Error: ${error}`)
+			this.log.error(`CasparCG ${this.deviceId} Error:`, error)
 		})
 	}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
@@ -70,15 +70,25 @@ export class CasparCGSideload implements SideLoadDevice {
 		{
 			let mediaList: ClipInfo[] = []
 
-			const res = await this.ccg.cls()
-			if (res.error) throw res.error
+			try {
+				const res = await this.ccg.cls()
+				if (res.error) {
+					this.log.error(`CasparCG ${this.deviceId}: Error getting media list:`, res.error)
+					throw res.error
+				}
 
-			const response = await res.request
-			if (this._isSuccessful(response)) {
-				mediaList = response.data
-			} else if (response.responseCode !== 501) {
-				// This probably means it's something other than media-scanner not running
-				this.log.error(`Could not get media list. Received response:`, response.responseCode, response.message)
+				const response = await res.request
+				if (this._isSuccessful(response)) {
+					mediaList = response.data || []
+				} else if (response.responseCode !== 501) {
+					// This probably means it's something other than media-scanner not running
+					this.log.error(
+						`CasparCG ${this.deviceId}: Could not get media list. Received response code: ${response.responseCode}, message: ${response.message}`
+					)
+				}
+			} catch (error) {
+				this.log.error(`CasparCG ${this.deviceId}: Exception while getting media list:`, error)
+				mediaList = []
 			}
 
 			for (const media of mediaList) {
@@ -99,6 +109,99 @@ export class CasparCGSideload implements SideLoadDevice {
 					type = 'video'
 				}
 
+				/**
+				 * Calculate duration safely, handling edge cases for CasparCG 2.5 compatibility
+				 * CasparCG 2.5 may store framerate in different formats:
+				 * As fps directly (e.g., 30 for 30fps)
+				 * As fps * 1000 (e.g., 30000 for 30fps) - most common in CasparCG 2.5
+				 * First, check if duration is provided directly (preferred)
+				 */
+				let duration = 0
+				let framerateFps = 0
+				let frameTime = ''
+
+				if (
+					(media as any).duration != null &&
+					typeof (media as any).duration === 'number' &&
+					(media as any).duration > 0
+				) {
+					duration = (media as any).duration
+					if (media.framerate != null && media.framerate > 0) {
+						framerateFps = media.framerate > 1000 ? media.framerate / 1000 : media.framerate
+					}
+				} else if (
+					media.frames != null &&
+					media.framerate != null &&
+					typeof media.frames === 'number' &&
+					typeof media.framerate === 'number' &&
+					media.framerate > 0 &&
+					!isNaN(media.frames) &&
+					!isNaN(media.framerate)
+				) {
+					framerateFps = media.framerate
+
+					if (framerateFps > 1000) {
+						const fpsBy1000 = framerateFps / 1000
+						const fpsBy1001 = framerateFps / 1001
+						if (framerateFps % 1000 === 0) {
+							if (Math.abs(fpsBy1001 - 29.97) < 0.1 || Math.abs(fpsBy1001 - 59.94) < 0.1) {
+								framerateFps = fpsBy1001
+							} else if (fpsBy1000 >= 20 && fpsBy1000 <= 70) {
+								framerateFps = fpsBy1000
+							} else {
+								framerateFps = fpsBy1000
+							}
+						} else {
+							if (fpsBy1000 >= 20 && fpsBy1000 <= 70) {
+								framerateFps = fpsBy1000
+							} else if (fpsBy1001 >= 20 && fpsBy1001 <= 70) {
+								framerateFps = fpsBy1001
+							} else {
+								framerateFps = fpsBy1000
+							}
+						}
+					}
+
+					duration = media.frames / framerateFps
+
+					if (media.framerate > 1000 || duration < 0.1 || duration > 3600 || media.clip.includes('5994')) {
+						this.log.info(
+							`Clip "${media.clip}": frames=${media.frames}, raw_framerate=${media.framerate}, calculated_fps=${framerateFps.toFixed(2)}, duration=${duration.toFixed(2)}s`
+						)
+					}
+
+					if (!isFinite(duration) || duration < 0 || duration > 86400) {
+						this.log.warn(
+							`Invalid duration calculated for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}, calculated_fps=${framerateFps}, duration=${duration}. Using 0.`
+						)
+						duration = 0
+					}
+				} else {
+					if (media.frames == null || media.framerate == null) {
+						this.log.warn(
+							`Missing duration data for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}. Using 0.`
+						)
+					} else if (media.framerate === 0) {
+						this.log.warn(
+							`Zero framerate for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}. Using 0.`
+						)
+					}
+					duration = 0
+				}
+
+				if (media.frames != null && framerateFps > 0 && media.frames > 0) {
+					const totalFrames = media.frames
+					const fps = Math.round(framerateFps) // Round to integer for timecode
+
+					const frames = totalFrames % fps
+					const totalSeconds = Math.floor(totalFrames / fps)
+					const hours = Math.floor(totalSeconds / 3600)
+					const minutes = Math.floor((totalSeconds % 3600) / 60)
+					const seconds = totalSeconds % 60
+
+					frameTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`
+				}
+
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
@@ -107,11 +210,11 @@ export class CasparCGSideload implements SideLoadDevice {
 					name: media.clip,
 					displayName: media.clip,
 					changed: media.datetime,
-					duration: media.frames / media.framerate,
-					frameRate: media.framerate,
-					frames: media.frames,
+					duration,
+					frameRate: media.framerate ?? 0,
+					frames: media.frames ?? 0,
 					size: media.size,
-					frameTime: '',
+					frameTime,
 				}
 				resource.id = getResourceIdFromResource(resource)
 

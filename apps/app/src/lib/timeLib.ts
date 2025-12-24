@@ -235,6 +235,8 @@ export function formatDurationLabeled(inputMs: number | undefined): string {
 		} else {
 			returnStr += `${s}s`
 		}
+	} else if (ms > 0 && !h && !m) {
+		returnStr += `${ms}ms`
 	}
 
 	return returnStr
