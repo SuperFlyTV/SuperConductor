@@ -58,7 +58,11 @@ export const ResourceLibraryItem = function ResourceLibraryItem({ resource, sele
 						<div className="resource__attributes">
 							<div>{resource.type}</div>
 							<div style={{ textAlign: 'right' }}>{bytesToSize(resource.size)}</div>
-							<div style={{ textAlign: 'right' }}>{formatDurationLabeled(resource.duration * 1000)}</div>
+							<div style={{ textAlign: 'right' }}>
+								{resource.duration != null && resource.duration > 0
+									? formatDurationLabeled(resource.duration * 1000)
+									: ''}
+							</div>
 						</div>
 					</div>
 				</>
