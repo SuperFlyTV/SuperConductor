@@ -51,14 +51,28 @@ list(buildResources)
 const args = process.argv.slice(2)
 console.log('\nRunning electron-builder with args:', args.join(' '))
 
-// Use npx so we run the local binary in CI/local
-const cmd = 'npx'
-const cmdArgs = ['electron-builder', ...args]
-const res = spawnSync(cmd, cmdArgs, { stdio: 'inherit' })
-if (res.error) {
-    console.error('prep-build-binary: spawn error', res.error)
-    throw res.error
+// Try running electron-builder via available runner: prefer npx, fall back to yarn
+// Run electron-builder via a shell fallback chain so missing binaries don't
+// cause spawnSync to throw ENOENT on Windows/CI. Try `npx`, then `yarn`, then
+// the local `node_modules/.bin/electron-builder`.
+const cmdParts = []
+const quotedArgs = args.map(a => {
+    if (/\s/.test(a)) return '"' + a.replace(/"/g, '\\"') + '"'
+    return a
+})
+const argString = quotedArgs.join(' ')
+cmdParts.push(`npx electron-builder ${argString}`)
+cmdParts.push(`yarn electron-builder ${argString}`)
+cmdParts.push(`node ./node_modules/.bin/electron-builder ${argString}`)
+const shellCmd = cmdParts.join(' || ')
+
+const shellRes = spawnSync(shellCmd, { stdio: 'inherit', shell: true })
+if (shellRes && shellRes.error) {
+    console.error('prep-build-binary: spawn error', shellRes.error)
+    process.exit(1)
 }
-if (res.status && res.status !== 0) {
-    throw new Error('electron-builder exited with code ' + res.status)
+if (typeof shellRes.status === 'number' && shellRes.status !== 0) {
+    console.error('prep-build-binary: electron-builder exited with code', shellRes.status)
+    process.exit(shellRes.status)
 }
+process.exit(0)
