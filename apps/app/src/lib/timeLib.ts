@@ -243,7 +243,6 @@ export function formatDurationLabeled(inputMs: number | undefined): string {
 		returnStr += `${ms}ms`
 	}
 
-
 	if (!returnStr) return '0s'
 
 	return returnStr
