@@ -138,9 +138,6 @@ export class CasparCGSideload implements SideLoadDevice {
 			) {
 				frameTime = frameTimeFromFrames(media.frames, media.framerate)
 			}
-
-				const resource: CasparCGMedia = {
-					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
 					id: protectString(''), // set by getResourceIdFromResource() later
 					type,
