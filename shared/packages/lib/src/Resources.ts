@@ -500,12 +500,14 @@ export function getResourceLocatorFromTimelineObj(
 			return '0'
 		case ResourceType.INVALID:
 			return 'INVALID'
-		case ResourceType.OBS_INPUT_AUDIO:
 		case ResourceType.OBS_RECORDING:
 		case ResourceType.OBS_STREAMING:
 		case ResourceType.OBS_RENDER:
-		case ResourceType.OBS_INPUT_SETTINGS:
 			return '0'
+		case ResourceType.OBS_INPUT_AUDIO:
+			return ((mapping && (mapping.options as any).input) as string) || '0'
+		case ResourceType.OBS_INPUT_SETTINGS:
+			return ((mapping && (mapping.options as any).input) as string) || '0'
 		case ResourceType.OBS_SCENE:
 			return (obj as TSRTimelineObj<TimelineContentOBSCurrentScene>).content.sceneName
 		case ResourceType.OBS_TRANSITION:
