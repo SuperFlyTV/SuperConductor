@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - develop
+      - '**'
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack (Yarn v4)
+        run: corepack enable
+
+      - name: Cache Yarn cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .yarn/cache
+            .yarn/unplugged
+            .yarn/build-state.yml
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build TypeScript
+        run: yarn build:ts
+
+      - name: Run tests
+        run: yarn test
