@@ -134,7 +134,9 @@ export class TelemetryHandler {
 			// If there are errors, don't flood with requests:
 			if (errorCount < 3) {
 				try {
-					const response = await fetch(
+					// The Node 'fetch' builtin is only supported in Node 21+; allow it here for runtime environments that provide fetch
+				// eslint-disable-next-line n/no-unsupported-features/node-builtins
+				const response = await fetch(
 						// 'http://superconductor-statistics/superconductor/reportUsageStatistics',
 						// 'http://localhost:2500/superconductor/reportUsageStatistics',
 						// 'https://faas-ams3-2a2df116.doserverless.co/api/v1/web/fn-7ba9c1fc-f987-4993-b324-a86c98928fcb/telemetry/insert',

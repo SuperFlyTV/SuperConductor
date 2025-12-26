@@ -1,7 +1,5 @@
 // Helpers for parsing CasparCG framerates and calculating durations
-export function parseCasparFramerate(
-	raw: number | undefined | null
-): number {
+export function parseCasparFramerate(raw: number | undefined | null): number {
 	if (raw == null || typeof raw !== 'number' || !isFinite(raw) || raw <= 0) return 0
 
 	// If value looks already like FPS (20-70), return it directly
@@ -34,10 +32,7 @@ export function parseCasparFramerate(
 	return raw
 }
 
-export function durationFromFrames(
-	frames: number | undefined | null,
-	rawFramerate: number | undefined | null
-): number {
+export function durationFromFrames(frames: number | undefined | null, rawFramerate: number | undefined | null): number {
 	if (frames == null || rawFramerate == null) return 0
 	const fps = parseCasparFramerate(rawFramerate)
 	if (!(fps > 0)) return 0
@@ -46,10 +41,7 @@ export function durationFromFrames(
 	return duration
 }
 
-export function frameTimeFromFrames(
-	framesTotal: number | undefined | null,
-	rawFramerate: number | undefined | null
-): string {
+export function frameTimeFromFrames(framesTotal: number | undefined | null, rawFramerate: number | undefined | null): string {
 	if (framesTotal == null || rawFramerate == null) return ''
 	const fps = Math.round(parseCasparFramerate(rawFramerate))
 	if (!(fps > 0)) return ''

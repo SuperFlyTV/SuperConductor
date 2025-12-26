@@ -62,6 +62,8 @@ export async function addTemplatesToResourcesFromCasparCGMediaScanner(
 	let jsonData: MediaScannerTemplateData | null = null
 
 	try {
+		// The Node 'fetch' builtin is only supported in Node 21+; allow it here for runtime environments that provide fetch
+		// eslint-disable-next-line n/no-unsupported-features/node-builtins
 		const response = await fetch(`http://${casparCG.host}:8000/templates`)
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`)
