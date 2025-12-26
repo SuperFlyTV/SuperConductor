@@ -125,13 +125,8 @@ export class CasparCGSideload implements SideLoadDevice {
 				typeof (media as any).duration === 'number' &&
 				(media as any).duration > 0
 			) {
-					duration = durationFromFrames(media.frames, media.framerate)
-				}
-
-if (
-				media.frames != null &&
-				media.framerate != null &&
-				typeof media.frames === 'number' &&
+				duration = (media as any).duration
+			} else {
 				typeof media.framerate === 'number'
 			) {
 					frameTime = frameTimeFromFrames(media.frames, media.framerate)

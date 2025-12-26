@@ -41,7 +41,10 @@ export function durationFromFrames(frames: number | undefined | null, rawFramera
 	return duration
 }
 
-export function frameTimeFromFrames(framesTotal: number | undefined | null, rawFramerate: number | undefined | null): string {
+export function frameTimeFromFrames(
+	framesTotal: number | undefined | null,
+	rawFramerate: number | undefined | null
+): string {
 	if (framesTotal == null || rawFramerate == null) return ''
 	const fps = Math.round(parseCasparFramerate(rawFramerate))
 	if (!(fps > 0)) return ''
