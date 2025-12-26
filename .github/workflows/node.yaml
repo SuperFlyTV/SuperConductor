@@ -78,7 +78,9 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary -- --publish=never
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          yarn workspace tsr-bridge build:binary -- --publish=never
+          yarn workspace superconductor build:binary -- --publish=never
         env:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
@@ -128,7 +130,9 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary -- -- --publish=never
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          yarn workspace tsr-bridge build:binary -- --publish=never
+          yarn workspace superconductor build:binary -- --publish=never
       - name: Collect binaries
         run: |
           mkdir win-dist
@@ -177,7 +181,9 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary -- --publish=never
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          yarn workspace tsr-bridge build:binary -- --publish=never
+          yarn workspace superconductor build:binary -- --publish=never
       - name: Collect binaries
         run: |
           mkdir linux-dist
