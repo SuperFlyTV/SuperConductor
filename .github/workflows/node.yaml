@@ -87,6 +87,7 @@ jobs:
           APPLEID: ${{ secrets.APPLEID }}
           APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Collect binaries
         run: |
           mkdir macos-dist
@@ -133,6 +134,8 @@ jobs:
           # Run binary builds per workspace to ensure electron-builder runs in package cwd
           yarn workspace tsr-bridge build:binary -- --publish=never
           yarn workspace superconductor build:binary -- --publish=never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Collect binaries
         run: |
           mkdir win-dist
@@ -184,6 +187,8 @@ jobs:
           # Run binary builds per workspace to ensure electron-builder runs in package cwd
           yarn workspace tsr-bridge build:binary -- --publish=never
           yarn workspace superconductor build:binary -- --publish=never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Collect binaries
         run: |
           mkdir linux-dist
