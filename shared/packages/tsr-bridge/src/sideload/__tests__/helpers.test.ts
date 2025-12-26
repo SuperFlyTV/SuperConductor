@@ -1,4 +1,4 @@
-import { parseCasparFramerate, durationFromFrames, frameTimeFromFrames } from '../helpers'
+import { parseCasparFramerate, durationFromFrames, frameTimeFromFrames } from '../helpers.js'
 
 describe('CasparCG helpers', () => {
 	test('parse simple fps', () => {

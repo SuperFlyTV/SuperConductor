@@ -1,4 +1,4 @@
-import { formatDurationLabeled } from '../lib/timeLib'
+import { formatDurationLabeled } from '../lib/timeLib.js'
 
 describe('timeLib.formatDurationLabeled', () => {
 	test('formats seconds and ms correctly', () => {
