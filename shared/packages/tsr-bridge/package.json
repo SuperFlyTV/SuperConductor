@@ -40,7 +40,4 @@
 	"devDependencies": {
 		"@types/recursive-readdir": "^2.2.4"
 	}
-	,"scripts": {
-		"test": "node ../../../node_modules/jest/bin/jest.js --config ../../../jest.config.base.cjs"
-	}
 }

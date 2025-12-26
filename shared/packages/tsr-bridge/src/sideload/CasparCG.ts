@@ -18,7 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates.js'
-import { parseCasparFramerate, durationFromFrames, frameTimeFromFrames } from './helpers'
+import { durationFromFrames, frameTimeFromFrames } from './helpers.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
@@ -120,16 +120,24 @@ export class CasparCGSideload implements SideLoadDevice {
 				// Use helper to parse framerate and calculate duration/frameTime
 				let duration = 0
 				let frameTime = ''
-				if ((media as any).duration != null && typeof (media as any).duration === 'number' && (media as any).duration > 0) {
+				if (
+					(media as any).duration != null &&
+					typeof (media as any).duration === 'number' &&
+					(media as any).duration > 0
+				) {
 					duration = (media as any).duration
 				} else {
 					duration = durationFromFrames(media.frames, media.framerate)
 				}
 
-				if (media.frames != null && media.framerate != null && typeof media.frames === 'number' && typeof media.framerate === 'number') {
+				if (
+					media.frames != null &&
+					media.framerate != null &&
+					typeof media.frames === 'number' &&
+					typeof media.framerate === 'number'
+				) {
 					frameTime = frameTimeFromFrames(media.frames, media.framerate)
 				}
-
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,

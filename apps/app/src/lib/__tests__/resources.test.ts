@@ -269,6 +269,7 @@ describe('resourceId generation', () => {
 			literal<OBSInputSettings>({
 				...COMMON,
 				resourceType: ResourceType.OBS_INPUT_SETTINGS,
+				input: 'mock-input',
 			})
 		)
 	})
@@ -277,6 +278,7 @@ describe('resourceId generation', () => {
 			literal<OBSInputAudio>({
 				...COMMON,
 				resourceType: ResourceType.OBS_INPUT_AUDIO,
+				input: 'mock-input',
 			})
 		)
 	})
@@ -285,6 +287,7 @@ describe('resourceId generation', () => {
 			literal<OBSInputMedia>({
 				...COMMON,
 				resourceType: ResourceType.OBS_INPUT_MEDIA,
+				input: 'mock-input',
 			})
 		)
 	})
