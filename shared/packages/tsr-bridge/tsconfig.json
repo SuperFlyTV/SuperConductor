@@ -4,8 +4,8 @@
 		"rootDir": "src",
 		"outDir": "dist"
 	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["src/**/__tests__/**/*"],
+	"include": ["src/**/*.ts", "src/**/*.test.ts"],
+	"exclude": ["dist/**/*"],
 	"references": [
 		//
 		{ "path": "../api" },
