@@ -18,7 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates.js'
-import { parseCasparFramerate, durationFromFrames, frameTimeFromFrames } from './helpers'
+import { parseCasparFramerate, durationFromFrames, frameTimeFromFrames } from './helpers.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
