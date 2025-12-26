@@ -141,6 +141,9 @@ export class CasparCGSideload implements SideLoadDevice {
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
+					id: protectString(''), // set by getResourceIdFromResource() later
+					type,
+					name: media.clip,
 					displayName: media.clip,
 					changed: media.datetime,
 					duration,
