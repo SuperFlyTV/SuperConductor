@@ -120,30 +120,27 @@ export class CasparCGSideload implements SideLoadDevice {
 				// Use helper to parse framerate and calculate duration/frameTime
 				let duration = 0
 				let frameTime = ''
-			if (
-				(media as any).duration != null &&
-				typeof (media as any).duration === 'number' &&
-				(media as any).duration > 0
-			) {
-				duration = (media as any).duration
-			} else {
-				duration = durationFromFrames(media.frames, media.framerate)
-			}
+				if (
+					(media as any).duration != null &&
+					typeof (media as any).duration === 'number' &&
+					(media as any).duration > 0
+				) {
+					duration = (media as any).duration
+				} else {
+					duration = durationFromFrames(media.frames, media.framerate)
+				}
 
-			if (
-				media.frames != null &&
-				media.framerate != null &&
-				typeof media.frames === 'number' &&
-				typeof media.framerate === 'number'
-			) {
-				frameTime = frameTimeFromFrames(media.frames, media.framerate)
-			}
-const resource: CasparCGMedia = {
-				resourceType: ResourceType.CASPARCG_MEDIA,
-				deviceId: this.deviceId,
-					id: protectString(''), // set by getResourceIdFromResource() later
-					type,
-					name: media.clip,
+				if (
+					media.frames != null &&
+					media.framerate != null &&
+					typeof media.frames === 'number' &&
+					typeof media.framerate === 'number'
+				) {
+					frameTime = frameTimeFromFrames(media.frames, media.framerate)
+				}
+				const resource: CasparCGMedia = {
+					resourceType: ResourceType.CASPARCG_MEDIA,
+					deviceId: this.deviceId,
 					displayName: media.clip,
 					changed: media.datetime,
 					duration,
