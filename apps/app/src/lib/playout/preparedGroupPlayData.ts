@@ -66,21 +66,46 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 		if (userAction) actions.push(userAction)
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
-			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
-			if (group.schedule.startTime && group.schedule.activate && firstPlayablePart) {
+			const playableParts = getPlayablePartsAfter(group.parts, null)
+			if (group.schedule.startTime && group.schedule.activate && playableParts.length > 0) {
 				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
 					now: now,
 					end: now + prepareValidDuration,
 					maxCount: prepareValidMaxCount,
 				})
 
-				for (const startTime of repeatResult.startTimes) {
-					if (startTime >= (lastStopTime ?? 0)) {
-						actions.push({
-							time: startTime,
-							partId: firstPlayablePart.id,
-							fromSchedule: true,
-						})
+				// Auto Step: cycle through parts at each scheduled start time
+				if (group.autoStep) {
+					for (let i = 0; i < repeatResult.startTimes.length; i++) {
+						const startTime = repeatResult.startTimes[i]
+						if (startTime >= (lastStopTime ?? 0)) {
+							// If loop is disabled and we've cycled through all parts, stop scheduling
+							if (!group.loop && i >= playableParts.length) {
+								break
+							}
+
+							// Calculate which part to play based on sequence number
+							const partIndex = i % playableParts.length
+							const partToPlay = playableParts[partIndex]
+
+							actions.push({
+								time: startTime,
+								partId: partToPlay.id,
+								fromSchedule: true,
+							})
+						}
+					}
+				} else {
+					// Original behavior: always play the first part
+					const firstPlayablePart = playableParts[0]
+					for (const startTime of repeatResult.startTimes) {
+						if (startTime >= (lastStopTime ?? 0)) {
+							actions.push({
+								time: startTime,
+								partId: firstPlayablePart.id,
+								fromSchedule: true,
+							})
+						}
 					}
 				}
 				validUntil = repeatResult.validUntil

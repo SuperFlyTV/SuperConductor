@@ -237,6 +237,26 @@ export const SideBarEditGroup: React.FC<{
 									}}
 								/>
 							)}
+							<div className="setting">
+								<BooleanInput
+									label="Auto Step (cycle through parts)"
+									{...inputValue(modifiableGroups, (g) => g.autoStep, undefined)}
+									disabled={modifiableGroups.length === 0}
+									onChange={(value) => {
+										modifiableGroups.forEach((g) => {
+											ipcServer
+												.updateGroup({
+													rundownId,
+													groupId: g.id,
+													group: {
+														autoStep: value,
+													},
+												})
+												.catch(handleError)
+										})
+									}}
+								/>
+							</div>
 						</div>
 					)}
 				</>

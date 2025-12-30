@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useCallback } from 'react'
 import { Sorensen } from '@sofie-automation/sorensen'
 import { TrashBtn } from '../../inputs/TrashBtn.js'
-import { GroupBase, GroupGUI } from '../../../../models/rundown/Group.js'
+import { GroupBase, GroupGUI, PlayoutMode } from '../../../../models/rundown/Group.js'
 import { PartView } from './PartView.js'
 import { GroupPreparedPlayData, SectionEndAction } from '../../../../models/GUI/PreparedPlayhead.js'
 import { IPCServerContext } from '../../../contexts/IPCServer.js'
@@ -506,6 +506,19 @@ export const GroupView: React.FC<{
 			.catch(handleError)
 	}, [group.autoPlay, group.id, handleError, ipcServer, rundownId])
 
+	// Auto-step button (for scheduled groups):
+	const toggleAutoStep = useCallback(() => {
+		ipcServer
+			.updateGroup({
+				rundownId,
+				groupId: group.id,
+				group: {
+					autoStep: !group.autoStep,
+				},
+			})
+			.catch(handleError)
+	}, [group.autoStep, group.id, handleError, ipcServer, rundownId])
+
 	const assignedAreas = computed(() =>
 		allAssignedAreas.filter((assignedArea) => assignedArea.assignedToGroupId === group.id)
 	)
@@ -724,6 +737,23 @@ export const GroupView: React.FC<{
 							>
 								<MdPlaylistPlay size={22} />
 							</ToggleButton>
+
+							{group.playoutMode === PlayoutMode.SCHEDULE && (
+								<ToggleButton
+									title={
+										group.autoStep
+											? 'Auto Step enabled.\n\nEach scheduled start time will play the next part in sequence.\n\nClick to disable.'
+											: 'Enable Auto Step (cycle through parts at each scheduled start time).'
+									}
+									value="auto-step-schedule"
+									selected={group.autoStep ?? false}
+									size="small"
+									disabled={group.locked}
+									onChange={toggleAutoStep}
+								>
+									<AiFillStepForward size={22} />
+								</ToggleButton>
+							)}
 
 							<ToggleButton
 								title={

@@ -246,6 +246,7 @@ export function getDefaultGroup(): Omit<Group, 'id' | 'name'> {
 		oneAtATime: true,
 		autoPlay: false,
 		loop: false,
+		autoStep: false,
 		playoutMode: PlayoutMode.NORMAL,
 		parts: [],
 		playout: {
