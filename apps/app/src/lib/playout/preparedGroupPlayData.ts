@@ -76,16 +76,19 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 
 				// Auto Step: cycle through parts at each scheduled start time
 				if (group.autoStep) {
+					// Track occurrence index separately from array index
+					// This ensures correct part selection even when some start times are filtered out
+					let occurrenceIndex = 0
 					for (let i = 0; i < repeatResult.startTimes.length; i++) {
 						const startTime = repeatResult.startTimes[i]
 						if (startTime >= (lastStopTime ?? 0)) {
 							// If loop is disabled and we've cycled through all parts, stop scheduling
-							if (!group.loop && i >= playableParts.length) {
+							if (!group.loop && occurrenceIndex >= playableParts.length) {
 								break
 							}
 
-							// Calculate which part to play based on sequence number
-							const partIndex = i % playableParts.length
+							// Calculate which part to play based on occurrence number, not array index
+							const partIndex = occurrenceIndex % playableParts.length
 							const partToPlay = playableParts[partIndex]
 
 							actions.push({
@@ -93,6 +96,9 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 								partId: partToPlay.id,
 								fromSchedule: true,
 							})
+
+							// Increment occurrence index only for times that pass the filter
+							occurrenceIndex++
 						}
 					}
 				} else {
