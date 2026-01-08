@@ -78,7 +78,7 @@ jobs:
           corepack enable
 
           # set isolated electron-builder cache early so downloads use it
-          echo "XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}"
+          echo "XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}" >> $GITHUB_ENV
           export XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
           rm -rf "$XDG_CACHE_HOME/electron-builder" || true
           mkdir -p "$XDG_CACHE_HOME"
@@ -104,8 +104,10 @@ jobs:
           ls -la apps/tsr-bridge/electron-output || true
           echo 'package.json for tsr-bridge:'
           sed -n '1,200p' apps/tsr-bridge/package.json || true
+      - name: Set signing secret
+        run: echo "HAS_MAC_CSC_LINK=${{ secrets.MAC_CSC_LINK != '' }}" >> $GITHUB_ENV
       - name: Build binaries
-        if: ${{ secrets.MAC_CSC_LINK != '' }}
+        if: env.HAS_MAC_CSC_LINK == 'true'
         run: |
           # Run binary builds per workspace to ensure electron-builder runs in package cwd
           retry() { cmd="$1"; n=0; until [ $n -ge 3 ]; do eval "$cmd" && return 0; n=$((n+1)); echo "Retry $n for: $cmd"; sleep 5; done; return 1; }
