@@ -10,7 +10,8 @@
 	},
 	"scripts": {
 		"build": "vite build",
-		"build:binary": "electron-builder",
+		"clean:electron-output": "rm -rf electron-output",
+		"build:binary": "yarn clean:electron-output && node ./scripts/prep-build-binary.cjs",
 		"start": "yarn build && electron dist/main.mjs",
 		"react:dev": "vite",
 		"electron:dev": "nodemon",

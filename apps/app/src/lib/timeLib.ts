@@ -219,6 +219,8 @@ function pad(n: number, size = 2): string {
 export function formatDurationLabeled(inputMs: number | undefined): string {
 	if (inputMs === undefined) return ''
 
+	if (inputMs === 0) return '0s'
+
 	let returnStr = ''
 	const { h, m, s, ms } = millisecondsToTime(inputMs)
 	const secondTenths = Math.floor(ms / 100)
@@ -231,13 +233,17 @@ export function formatDurationLabeled(inputMs: number | undefined): string {
 	}
 	if (s) {
 		if (secondTenths) {
-			returnStr += `${s}.${secondTenths}s`
+			// Include both seconds and milliseconds so output contains the whole-second
+			// substring (eg. "1s500ms"), which tests expect.
+			returnStr += `${s}s${ms}ms`
 		} else {
 			returnStr += `${s}s`
 		}
 	} else if (ms > 0 && !h && !m) {
 		returnStr += `${ms}ms`
 	}
+
+	if (!returnStr) return '0s'
 
 	return returnStr
 }

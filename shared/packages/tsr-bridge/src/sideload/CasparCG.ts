@@ -18,6 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates.js'
+import { durationFromFrames, frameTimeFromFrames } from './helpers.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
@@ -116,92 +117,27 @@ export class CasparCGSideload implements SideLoadDevice {
 				 * As fps * 1000 (e.g., 30000 for 30fps) - most common in CasparCG 2.5
 				 * First, check if duration is provided directly (preferred)
 				 */
+				// Use helper to parse framerate and calculate duration/frameTime
 				let duration = 0
-				let framerateFps = 0
 				let frameTime = ''
-
 				if (
 					(media as any).duration != null &&
 					typeof (media as any).duration === 'number' &&
 					(media as any).duration > 0
 				) {
 					duration = (media as any).duration
-					if (media.framerate != null && media.framerate > 0) {
-						framerateFps = media.framerate > 1000 ? media.framerate / 1000 : media.framerate
-					}
-				} else if (
+				} else {
+					duration = durationFromFrames(media.frames, media.framerate)
+				}
+
+				if (
 					media.frames != null &&
 					media.framerate != null &&
 					typeof media.frames === 'number' &&
-					typeof media.framerate === 'number' &&
-					media.framerate > 0 &&
-					!isNaN(media.frames) &&
-					!isNaN(media.framerate)
+					typeof media.framerate === 'number'
 				) {
-					framerateFps = media.framerate
-
-					if (framerateFps > 1000) {
-						const fpsBy1000 = framerateFps / 1000
-						const fpsBy1001 = framerateFps / 1001
-						if (framerateFps % 1000 === 0) {
-							if (Math.abs(fpsBy1001 - 29.97) < 0.1 || Math.abs(fpsBy1001 - 59.94) < 0.1) {
-								framerateFps = fpsBy1001
-							} else if (fpsBy1000 >= 20 && fpsBy1000 <= 70) {
-								framerateFps = fpsBy1000
-							} else {
-								framerateFps = fpsBy1000
-							}
-						} else {
-							if (fpsBy1000 >= 20 && fpsBy1000 <= 70) {
-								framerateFps = fpsBy1000
-							} else if (fpsBy1001 >= 20 && fpsBy1001 <= 70) {
-								framerateFps = fpsBy1001
-							} else {
-								framerateFps = fpsBy1000
-							}
-						}
-					}
-
-					duration = media.frames / framerateFps
-
-					if (media.framerate > 1000 || duration < 0.1 || duration > 3600 || media.clip.includes('5994')) {
-						this.log.info(
-							`Clip "${media.clip}": frames=${media.frames}, raw_framerate=${media.framerate}, calculated_fps=${framerateFps.toFixed(2)}, duration=${duration.toFixed(2)}s`
-						)
-					}
-
-					if (!isFinite(duration) || duration < 0 || duration > 86400) {
-						this.log.warn(
-							`Invalid duration calculated for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}, calculated_fps=${framerateFps}, duration=${duration}. Using 0.`
-						)
-						duration = 0
-					}
-				} else {
-					if (media.frames == null || media.framerate == null) {
-						this.log.warn(
-							`Missing duration data for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}. Using 0.`
-						)
-					} else if (media.framerate === 0) {
-						this.log.warn(
-							`Zero framerate for clip "${media.clip}": frames=${media.frames}, framerate=${media.framerate}. Using 0.`
-						)
-					}
-					duration = 0
+					frameTime = frameTimeFromFrames(media.frames, media.framerate)
 				}
-
-				if (media.frames != null && framerateFps > 0 && media.frames > 0) {
-					const totalFrames = media.frames
-					const fps = Math.round(framerateFps) // Round to integer for timecode
-
-					const frames = totalFrames % fps
-					const totalSeconds = Math.floor(totalFrames / fps)
-					const hours = Math.floor(totalSeconds / 3600)
-					const minutes = Math.floor((totalSeconds % 3600) / 60)
-					const seconds = totalSeconds % 60
-
-					frameTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`
-				}
-
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
