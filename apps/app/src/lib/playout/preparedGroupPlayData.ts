@@ -90,6 +90,7 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 							// Calculate which part to play based on occurrence number, not array index
 							const partIndex = occurrenceIndex % playableParts.length
 							const partToPlay = playableParts[partIndex]
+							if (!partToPlay) continue
 
 							actions.push({
 								time: startTime,
@@ -104,13 +105,15 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 				} else {
 					// Original behavior: always play the first part
 					const firstPlayablePart = playableParts[0]
-					for (const startTime of repeatResult.startTimes) {
-						if (startTime >= (lastStopTime ?? 0)) {
-							actions.push({
-								time: startTime,
-								partId: firstPlayablePart.id,
-								fromSchedule: true,
-							})
+					if (firstPlayablePart) {
+						for (const startTime of repeatResult.startTimes) {
+							if (startTime >= (lastStopTime ?? 0)) {
+								actions.push({
+									time: startTime,
+									partId: firstPlayablePart.id,
+									fromSchedule: true,
+								})
+							}
 						}
 					}
 				}
