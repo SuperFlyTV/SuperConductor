@@ -12,6 +12,8 @@ export interface GroupBase {
 	oneAtATime: boolean
 	autoPlay: boolean
 	loop: boolean
+	/** When enabled in SCHEDULE mode, cycles through parts at each scheduled start time (one part per start time) */
+	autoStep?: boolean
 	disabled?: boolean
 	locked?: boolean
 

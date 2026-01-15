@@ -2,10 +2,11 @@
 	"extends": "../../../tsconfig.base.json",
 	"compilerOptions": {
 		"rootDir": "src",
-		"outDir": "dist"
+		"outDir": "dist",
+		"types": ["jest"]
 	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["src/**/__tests__/**/*"],
+	"include": ["src/**/*.ts", "src/**/*.test.ts"],
+	"exclude": ["dist/**/*"],
 	"references": [
 		//
 		{ "path": "../api" },

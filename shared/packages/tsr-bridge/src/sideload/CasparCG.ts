@@ -18,6 +18,7 @@ import {
 	addTemplatesToResourcesFromCasparCGMediaScanner,
 	addTemplatesToResourcesFromDisk,
 } from './CasparCGTemplates.js'
+import { durationFromFrames, frameTimeFromFrames } from './helpers.js'
 import { assertNever, getResourceIdFromResource } from '@shared/lib'
 
 export class CasparCGSideload implements SideLoadDevice {
@@ -43,7 +44,7 @@ export class CasparCGSideload implements SideLoadDevice {
 			this.log.info(`CasparCG ${this.deviceId}: Sideload connection disconnected`)
 		})
 		this.ccg.on('error', (error) => {
-			this.log.info(`CasparCG Error: ${error}`)
+			this.log.error(`CasparCG ${this.deviceId} Error:`, error)
 		})
 	}
 	public async refreshResourcesAndMetadata(): Promise<{ resources: ResourceAny[]; metadata: MetadataAny }> {
@@ -70,15 +71,25 @@ export class CasparCGSideload implements SideLoadDevice {
 		{
 			let mediaList: ClipInfo[] = []
 
-			const res = await this.ccg.cls()
-			if (res.error) throw res.error
+			try {
+				const res = await this.ccg.cls()
+				if (res.error) {
+					this.log.error(`CasparCG ${this.deviceId}: Error getting media list:`, res.error)
+					throw res.error
+				}
 
-			const response = await res.request
-			if (this._isSuccessful(response)) {
-				mediaList = response.data
-			} else if (response.responseCode !== 501) {
-				// This probably means it's something other than media-scanner not running
-				this.log.error(`Could not get media list. Received response:`, response.responseCode, response.message)
+				const response = await res.request
+				if (this._isSuccessful(response)) {
+					mediaList = response.data || []
+				} else if (response.responseCode !== 501) {
+					// This probably means it's something other than media-scanner not running
+					this.log.error(
+						`CasparCG ${this.deviceId}: Could not get media list. Received response code: ${response.responseCode}, message: ${response.message}`
+					)
+				}
+			} catch (error) {
+				this.log.error(`CasparCG ${this.deviceId}: Exception while getting media list:`, error)
+				mediaList = []
 			}
 
 			for (const media of mediaList) {
@@ -99,6 +110,34 @@ export class CasparCGSideload implements SideLoadDevice {
 					type = 'video'
 				}
 
+				/**
+				 * Calculate duration safely, handling edge cases for CasparCG 2.5 compatibility
+				 * CasparCG 2.5 may store framerate in different formats:
+				 * As fps directly (e.g., 30 for 30fps)
+				 * As fps * 1000 (e.g., 30000 for 30fps) - most common in CasparCG 2.5
+				 * First, check if duration is provided directly (preferred)
+				 */
+				// Use helper to parse framerate and calculate duration/frameTime
+				let duration = 0
+				let frameTime = ''
+				if (
+					(media as any).duration != null &&
+					typeof (media as any).duration === 'number' &&
+					(media as any).duration > 0
+				) {
+					duration = (media as any).duration
+				} else {
+					duration = durationFromFrames(media.frames, media.framerate)
+				}
+
+				if (
+					media.frames != null &&
+					media.framerate != null &&
+					typeof media.frames === 'number' &&
+					typeof media.framerate === 'number'
+				) {
+					frameTime = frameTimeFromFrames(media.frames, media.framerate)
+				}
 				const resource: CasparCGMedia = {
 					resourceType: ResourceType.CASPARCG_MEDIA,
 					deviceId: this.deviceId,
@@ -107,11 +146,11 @@ export class CasparCGSideload implements SideLoadDevice {
 					name: media.clip,
 					displayName: media.clip,
 					changed: media.datetime,
-					duration: media.frames / media.framerate,
-					frameRate: media.framerate,
-					frames: media.frames,
+					duration,
+					frameRate: media.framerate ?? 0,
+					frames: media.frames ?? 0,
 					size: media.size,
-					frameTime: '',
+					frameTime,
 				}
 				resource.id = getResourceIdFromResource(resource)
 

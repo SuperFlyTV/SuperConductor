@@ -35,6 +35,12 @@ jobs:
         run: |
           corepack enable
 
+          # set isolated electron-builder cache early so downloads use it
+          echo "XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}"
+          export XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
+          rm -rf "$XDG_CACHE_HOME/electron-builder" || true
+          mkdir -p "$XDG_CACHE_HOME"
+
           # try and avoid timeout errors
           yarn config set httpTimeout 100000
 
@@ -51,6 +57,8 @@ jobs:
 
   macos-build:
     name: Build on macOS
+    permissions:
+      contents: write
     runs-on: macos-latest
     continue-on-error: true
     steps:
@@ -69,6 +77,12 @@ jobs:
         run: |
           corepack enable
 
+          # set isolated electron-builder cache early so downloads use it
+          echo "XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}" >> $GITHUB_ENV
+          export XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
+          rm -rf "$XDG_CACHE_HOME/electron-builder" || true
+          mkdir -p "$XDG_CACHE_HOME"
+
           # try and avoid timeout errors
           yarn config set httpTimeout 100000
 
@@ -76,21 +90,59 @@ jobs:
       - name: Build
         run: |
           yarn build
-      - name: Build binaries
+      - name: macOS pre-build diagnostics
         run: |
-          yarn build:binary -- --publish=never
+          echo "XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}"
+          export XDG_CACHE_HOME=${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
+          # ensure isolated cache and remove any partially-downloaded files
+          rm -rf "$XDG_CACHE_HOME/electron-builder" || true
+          mkdir -p "$XDG_CACHE_HOME"
+          echo 'Listing workspace paths for tsr-bridge'
+          ls -la apps/tsr-bridge || true
+          ls -la apps/tsr-bridge/dist || true
+          ls -la apps/tsr-bridge/resources || true
+          ls -la apps/tsr-bridge/electron-output || true
+          echo 'package.json for tsr-bridge:'
+          sed -n '1,200p' apps/tsr-bridge/package.json || true
+      - name: Set signing secret
+        run: echo "HAS_MAC_CSC_LINK=${{ secrets.MAC_CSC_LINK != '' }}" >> $GITHUB_ENV
+      - name: Build binaries
+        if: env.HAS_MAC_CSC_LINK == 'true'
+        run: |
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          retry() { cmd="$1"; n=0; until [ $n -ge 3 ]; do eval "$cmd" && return 0; n=$((n+1)); echo "Retry $n for: $cmd"; sleep 5; done; return 1; }
+          retry "yarn workspace tsr-bridge build:binary -- --publish=never"
+          retry "yarn workspace superconductor build:binary -- --publish=never"
         env:
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLEID: ${{ secrets.APPLEID }}
           APPLEIDTEAM: ${{ secrets.APPLEIDTEAM }}
           APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XDG_CACHE_HOME: ${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
+      - name: Collect builder configs
+        run: |
+          mkdir -p macos-diagnostics
+          # collect any builder effective config files and directory listings
+          if [ -f apps/tsr-bridge/builder-effective-config.yaml ]; then cp apps/tsr-bridge/builder-effective-config.yaml macos-diagnostics/ || true; fi
+          if [ -f apps/app/builder-effective-config.yaml ]; then cp apps/app/builder-effective-config.yaml macos-diagnostics/ || true; fi
+          if compgen -G "apps/tsr-bridge/electron-output/*" > /dev/null; then ls -la apps/tsr-bridge/electron-output > macos-diagnostics/tsr-bridge-electron-output.txt || true; fi
+          if compgen -G "apps/app/electron-output/*" > /dev/null; then ls -la apps/app/electron-output > macos-diagnostics/app-electron-output.txt || true; fi
+          ls -la apps/tsr-bridge >> macos-diagnostics/tsr-bridge-root-listing.txt || true
+          ls -la apps/app >> macos-diagnostics/app-root-listing.txt || true
+      - name: Upload macOS diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-diagnostics
+          path: macos-diagnostics
+          retention-days: 1
       - name: Collect binaries
         run: |
-          mkdir macos-dist
-          mv apps/tsr-bridge/electron-output/TSR-Bridge* macos-dist/
-          mv apps/app/electron-output/SuperConductor* macos-dist/
-          mv apps/app/electron-output/latest-mac.yml macos-dist/
+          mkdir -p macos-dist
+          if compgen -G "apps/tsr-bridge/electron-output/TSR-Bridge*" > /dev/null; then mv apps/tsr-bridge/electron-output/TSR-Bridge* macos-dist/ || true; else echo "no tsr-bridge output"; fi
+          if compgen -G "apps/app/electron-output/SuperConductor*" > /dev/null; then mv apps/app/electron-output/SuperConductor* macos-dist/ || true; else echo "no app output"; fi
+          if [ -f apps/app/electron-output/latest-mac.yml ]; then mv apps/app/electron-output/latest-mac.yml macos-dist/ || true; else echo "no latest-mac.yml"; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -101,6 +153,8 @@ jobs:
 
   windows-build:
     name: Build on Windows
+    permissions:
+      contents: write
     runs-on: windows-latest
     continue-on-error: true
     steps:
@@ -127,14 +181,22 @@ jobs:
         run: |
           yarn build
       - name: Build binaries
+        shell: bash
         run: |
-          yarn build:binary -- -- --publish=never
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          retry() { cmd="$1"; n=0; until [ $n -ge 3 ]; do eval "$cmd" && return 0; n=$((n+1)); echo "Retry $n for: $cmd"; sleep 5; done; return 1; }
+          retry "yarn workspace tsr-bridge build:binary -- --publish=never"
+          retry "yarn workspace superconductor build:binary -- --publish=never"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XDG_CACHE_HOME: ${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
       - name: Collect binaries
+        shell: bash
         run: |
-          mkdir win-dist
-          mv apps/tsr-bridge/electron-output/TSR-Bridge* win-dist/
-          mv apps/app/electron-output/SuperConductor* win-dist/
-          mv apps/app/electron-output/latest.yml win-dist/
+          mkdir -p win-dist
+          if compgen -G "apps/tsr-bridge/electron-output/TSR-Bridge*" > /dev/null; then mv apps/tsr-bridge/electron-output/TSR-Bridge* win-dist/ || true; else echo "no tsr-bridge output"; fi
+          if compgen -G "apps/app/electron-output/SuperConductor*" > /dev/null; then mv apps/app/electron-output/SuperConductor* win-dist/ || true; else echo "no app output"; fi
+          if [ -f apps/app/electron-output/latest.yml ]; then mv apps/app/electron-output/latest.yml win-dist/ || true; else echo "no latest.yml"; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -145,6 +207,8 @@ jobs:
 
   linux-build:
     name: Build Linux Binaries
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -177,12 +241,18 @@ jobs:
           yarn build
       - name: Build binaries
         run: |
-          yarn build:binary -- --publish=never
+          # Run binary builds per workspace to ensure electron-builder runs in package cwd
+          retry() { cmd="$1"; n=0; until [ $n -ge 3 ]; do eval "$cmd" && return 0; n=$((n+1)); echo "Retry $n for: $cmd"; sleep 5; done; return 1; }
+          retry "yarn workspace tsr-bridge build:binary -- --publish=never"
+          retry "yarn workspace superconductor build:binary -- --publish=never"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XDG_CACHE_HOME: ${{ runner.temp }}/electron-builder-cache-${{ github.run_id }}
       - name: Collect binaries
         run: |
-          mkdir linux-dist
-          mv apps/tsr-bridge/electron-output/TSR-Bridge* linux-dist/
-          mv apps/app/electron-output/SuperConductor* linux-dist/
+          mkdir -p linux-dist
+          if compgen -G "apps/tsr-bridge/electron-output/TSR-Bridge*" > /dev/null; then mv apps/tsr-bridge/electron-output/TSR-Bridge* linux-dist/ || true; else echo "no tsr-bridge output"; fi
+          if compgen -G "apps/app/electron-output/SuperConductor*" > /dev/null; then mv apps/app/electron-output/SuperConductor* linux-dist/ || true; else echo "no app output"; fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

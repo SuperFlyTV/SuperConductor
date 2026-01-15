@@ -66,21 +66,55 @@ export function prepareGroupPlayData(group: Group, now?: number): GroupPreparedP
 		if (userAction) actions.push(userAction)
 
 		if (group.playoutMode === PlayoutMode.SCHEDULE) {
-			const firstPlayablePart = getPlayablePartsAfter(group.parts, null)[0]
-			if (group.schedule.startTime && group.schedule.activate && firstPlayablePart) {
+			const playableParts = getPlayablePartsAfter(group.parts, null)
+			if (group.schedule.startTime && group.schedule.activate && playableParts.length > 0) {
 				const repeatResult = repeatTime(group.schedule.startTime, group.schedule.repeating, {
 					now: now,
 					end: now + prepareValidDuration,
 					maxCount: prepareValidMaxCount,
 				})
 
-				for (const startTime of repeatResult.startTimes) {
-					if (startTime >= (lastStopTime ?? 0)) {
-						actions.push({
-							time: startTime,
-							partId: firstPlayablePart.id,
-							fromSchedule: true,
-						})
+				// Auto Step: cycle through parts at each scheduled start time
+				if (group.autoStep) {
+					// Track occurrence index separately from array index
+					// This ensures correct part selection even when some start times are filtered out
+					let occurrenceIndex = 0
+					for (let i = 0; i < repeatResult.startTimes.length; i++) {
+						const startTime = repeatResult.startTimes[i]
+						if (startTime >= (lastStopTime ?? 0)) {
+							// If loop is disabled and we've cycled through all parts, stop scheduling
+							if (!group.loop && occurrenceIndex >= playableParts.length) {
+								break
+							}
+
+							// Calculate which part to play based on occurrence number, not array index
+							const partIndex = occurrenceIndex % playableParts.length
+							const partToPlay = playableParts[partIndex]
+							if (!partToPlay) continue
+
+							actions.push({
+								time: startTime,
+								partId: partToPlay.id,
+								fromSchedule: true,
+							})
+
+							// Increment occurrence index only for times that pass the filter
+							occurrenceIndex++
+						}
+					}
+				} else {
+					// Original behavior: always play the first part
+					const firstPlayablePart = playableParts[0]
+					if (firstPlayablePart) {
+						for (const startTime of repeatResult.startTimes) {
+							if (startTime >= (lastStopTime ?? 0)) {
+								actions.push({
+									time: startTime,
+									partId: firstPlayablePart.id,
+									fromSchedule: true,
+								})
+							}
+						}
 					}
 				}
 				validUntil = repeatResult.validUntil
