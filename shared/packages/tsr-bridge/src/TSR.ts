@@ -166,6 +166,38 @@ export class TSR {
 				})
 		}
 	}
+	/** Closes all devices and the conductor. The TSR instance should not be used after this. */
+	public async destroy(): Promise<void> {
+		// Don't report anything after this point:
+		this.send = () => undefined
+
+		for (const [deviceId, sideload] of Object.entries(this.sideLoadedDevices)) {
+			try {
+				await sideload.close()
+			} catch (e) {
+				this.log.error(`Error when closing sideloaded device ${deviceId}: ${stringifyError(e)}`)
+			}
+		}
+		this.sideLoadedDevices = {}
+		this.devices = {}
+		this.deviceStatus = {}
+
+		// HACK: Removing devices might never return (see note in updateDevices()),
+		// so don't wait for it indefinitely:
+		const DESTROY_TIMEOUT = 3000
+		let resolveTimeout: () => void = () => undefined
+		const timeoutPromise = new Promise<void>((resolve) => (resolveTimeout = resolve))
+		const timeout = setTimeout(() => {
+			this.log.warn('Timed out while destroying TSR')
+			resolveTimeout()
+		}, DESTROY_TIMEOUT)
+
+		await Promise.race([
+			this.conductor.destroy().catch((e) => this.log.error('Error when destroying TSR: ' + stringifyError(e))),
+			timeoutPromise,
+		])
+		clearTimeout(timeout)
+	}
 	public reportAllStatuses(): void {
 		for (const deviceId of Object.keys(this.deviceStatus)) {
 			this.reportDeviceStatus(deviceId)
