@@ -8,6 +8,28 @@ import { estimateTextWidth, limitTextWidth } from './lib/estimateTextSize'
 import PQueue from 'p-queue'
 import { StreamDeckDeviceInfo } from '@elgato-stream-deck/node/dist/device'
 
+// The images rendered are tiny, so there is no need for sharp's operation cache or multiple threads.
+// (The cache and the threads' memory pools otherwise add up to a lot of native memory over time)
+sharp.cache(false)
+sharp.concurrency(1)
+
+/** How long to wait for sharp to render a key image before giving up */
+const RENDER_TIMEOUT = 1000
+let renderTimeoutCount = 0
+
+/** Cache of rendered key images (raw RGBA), shared between all Stream Decks */
+const renderedImageCache = new Map<string, Buffer>()
+const RENDERED_IMAGE_CACHE_MAX_SIZE = 128
+function setRenderedImageCache(cacheKey: string, buffer: Buffer): void {
+	// Least recently used entries are evicted first (a Map iterates in insertion order):
+	renderedImageCache.delete(cacheKey)
+	renderedImageCache.set(cacheKey, buffer)
+	while (renderedImageCache.size > RENDERED_IMAGE_CACHE_MAX_SIZE) {
+		const oldestKey = renderedImageCache.keys().next().value as string
+		renderedImageCache.delete(oldestKey)
+	}
+}
+
 export class PeripheralStreamDeck extends Peripheral {
 	private static Watching = false
 	static Watch(this: void, onKnownPeripheral: onKnownPeripheralCallback): WatchReturnType {
@@ -767,50 +789,72 @@ export class PeripheralStreamDeck extends Peripheral {
 			})
 		}
 
-		let keyGotAnyContent = false
+		const keyGotAnyContent = Boolean(img) || inputs.length > 0
 
-		if (!img) {
-			img = sharp({
-				create: {
-					width: SIZE_W,
-					height: SIZE_H,
-					channels: 3,
-					background: bgColor,
-				},
-			}).ensureAlpha()
-		} else {
-			keyGotAnyContent = true
-		}
+		// Images without a background image are fully determined by these, so they can be cached:
+		const cacheKey = img ? null : `${SIZE_W}x${SIZE_H}|${bgColor}|${svg}`
 
-		if (inputs.length) {
-			keyGotAnyContent = true
-			img = img.composite(inputs)
+		const renderImage = async (): Promise<Buffer | null> => {
+			if (cacheKey) {
+				const cached = renderedImageCache.get(cacheKey)
+				if (cached) {
+					setRenderedImageCache(cacheKey, cached) // Mark as recently used
+					return cached
+				}
+			}
+
+			let imgToRender: sharp.Sharp =
+				img ??
+				sharp({
+					create: {
+						width: SIZE_W,
+						height: SIZE_H,
+						channels: 3,
+						background: bgColor,
+					},
+				}).ensureAlpha()
+			if (inputs.length) {
+				imgToRender = imgToRender.composite(inputs)
+			}
+
+			// Temporary hack fix:
+			// There is an strange, unsolved bug where sharp .toBuffer() doesn't resolve,
+			// but only when two streamdecks are connected.
+			// A timeout is used to lessen the impact of this bug.
+			// Note: An unresolved sharp pipeline holds on to its (native) memory, so this should rarely happen.
+			let timeout: NodeJS.Timeout | undefined
+			const buffer: Buffer | null = await Promise.race([
+				imgToRender.raw().toBuffer(),
+				new Promise<null>((resolve) => {
+					timeout = setTimeout(() => resolve(null), RENDER_TIMEOUT)
+				}),
+			])
+			clearTimeout(timeout)
+
+			if (!buffer) {
+				renderTimeoutCount++
+				this.log.warn(
+					`Streamdeck: Rendering of key image timed out after ${RENDER_TIMEOUT}ms (${renderTimeoutCount} times in total)`
+				)
+				return null
+			}
+			if (cacheKey) setRenderedImageCache(cacheKey, buffer)
+			return buffer
 		}
 
 		try {
-			const img2: sharp.Sharp = img
-
 			await queue.add(async () => {
-				// Do an additional check if we're still connected to the device:
-				if (!this.connected) return
-
-				// Remporary hack fix:
-				// There is an strange, unsolved bug where sharp .toBuffer() doesn't resolve,
-				// but only when two streamdecks are connected.
-				// Adding a temporary timeout for now to lessen the impact of this bug.
-				const tmpImg: Buffer | null = await Promise.race([
-					img2.raw().toBuffer(),
-					new Promise<null>((resolve) => setTimeout(() => resolve(null), 100)),
-				])
-				if (!tmpImg) return
-
 				// Do an additional check if we're still connected to the device:
 				if (!this.connected) return
 
 				if (key.type === 'button') {
 					if (keyGotAnyContent) {
-						await streamDeck.fillKeyBuffer(key.keyIndex, tmpImg, { format: 'rgba' })
+						const buffer = await renderImage()
+						// Do an additional check if we're still connected to the device:
+						if (!buffer || !this.connected) return
+						await streamDeck.fillKeyBuffer(key.keyIndex, buffer, { format: 'rgba' })
 					} else {
+						// Nothing to render, just fill the key with the background color:
 						const bgRGB = stringToRGB(bgColor)
 						if (bgRGB.r + bgRGB.g + bgRGB.b === 0) {
 							await streamDeck.clearKey(key.keyIndex)
@@ -819,7 +863,10 @@ export class PeripheralStreamDeck extends Peripheral {
 						}
 					}
 				} else if (key.type === 'encoder') {
-					await streamDeck.fillEncoderLcd(key.keyIndex, tmpImg, { format: 'rgba' })
+					const buffer = await renderImage()
+					// Do an additional check if we're still connected to the device:
+					if (!buffer || !this.connected) return
+					await streamDeck.fillEncoderLcd(key.keyIndex, buffer, { format: 'rgba' })
 				} else if (key.type === 'encoderPress') {
 					// not supported yet
 				} else {

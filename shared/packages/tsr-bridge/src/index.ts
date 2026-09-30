@@ -208,5 +208,7 @@ export class BaseBridge {
 			await this.peripheralsHandler.close()
 			this.peripheralsHandler = null
 		}
+		// Close the TSR devices and conductor, otherwise they (and their connections) would be kept alive:
+		await this.tsr.destroy()
 	}
 }

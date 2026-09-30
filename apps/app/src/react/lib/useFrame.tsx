@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /**
  * Execute callback on every frame
@@ -9,21 +9,29 @@ export function useFrame(fcn: (nowTime: number) => boolean, deps: React.Dependen
 
 	const isRunning = useRef(true)
 
-	const updateFrame = useCallback(() => {
-		if (!isRunning.current) return
-
-		setTime(Date.now())
-
-		window.requestAnimationFrame(() => {
-			updateFrame()
-		})
-	}, [])
-
 	useEffect(() => {
+		// Each run of this effect owns its own frame loop.
+		// It is important that the loop is cancelled in the cleanup, otherwise a new loop
+		// would be added (and never stopped) every time the deps change.
+		let cancelled = false
+		let frameId: number | null = null
+
 		isRunning.current = true
+
+		const updateFrame = () => {
+			frameId = null
+			if (cancelled || !isRunning.current) return
+
+			setTime(Date.now())
+
+			frameId = window.requestAnimationFrame(updateFrame)
+		}
 		updateFrame()
+
 		return () => {
+			cancelled = true
 			isRunning.current = false
+			if (frameId !== null) window.cancelAnimationFrame(frameId)
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, deps)

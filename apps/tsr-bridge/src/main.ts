@@ -8,6 +8,10 @@ import { StorageHandler } from './electron/storageHandler'
 import { IPCServer } from './electron/IPCServer'
 import { AppSystem } from './models/AppData'
 import os from 'os'
+import { describeMemoryUsage } from '@shared/lib'
+
+/** How often to log the memory usage */
+const LOG_MEMORY_USAGE_INTERVAL = 60 * 1000
 
 let isQuitting = false
 
@@ -26,6 +30,7 @@ const storage = new StorageHandler(log, {
 })
 let server: TSRBridgeServer | undefined
 let systemInterval: NodeJS.Timer | undefined
+let logMemoryUsageInterval: NodeJS.Timer | undefined
 
 const createWindow = async (): Promise<void> => {
 	const appData = storage.getAppData()
@@ -174,6 +179,15 @@ const createWindow = async (): Promise<void> => {
 		updateSystem()
 	}, 10000)
 
+	// Log the memory usage, to help tracking down memory leaks:
+	logMemoryUsageInterval = setInterval(() => {
+		try {
+			log.info(describeMemoryUsage(app.getAppMetrics()))
+		} catch (e) {
+			log.error(`Error when logging memory usage: ${e}`)
+		}
+	}, LOG_MEMORY_USAGE_INTERVAL)
+
 	log.info('TSR-Bridge current version:', CURRENT_VERSION)
 
 	if (!server) {
@@ -192,6 +206,7 @@ app.on('before-quit', () => {
 	if (isQuitting) {
 		log.info('Shutting down...')
 		if (systemInterval) clearInterval(systemInterval)
+		if (logMemoryUsageInterval) clearInterval(logMemoryUsageInterval)
 		Promise.resolve()
 			.then(async () => {
 				await server?.terminate()

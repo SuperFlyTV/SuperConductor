@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { AutoFillMode, Group } from '../models/rundown/Group'
 import { IPCServer } from './IPCServer'
@@ -25,7 +25,7 @@ import { Part } from '../models/rundown/Part'
 import { getDefaultPart } from '../lib/defaults'
 import { TimelineObj } from '../models/rundown/TimelineObj'
 import { postProcessPart } from './rundown'
-import { assertNever } from '@shared/lib'
+import { assertNever, describeMemoryUsage } from '@shared/lib'
 import { TelemetryHandler } from './telemetry'
 import { USER_AGREEMENT_VERSION } from '../lib/userAgreement'
 import { HTTPAPI } from './HTTPAPI'
@@ -35,6 +35,9 @@ import { AnalogInput } from '../models/project/AnalogInput'
 import { SystemMessageOptions } from '../ipc/IPCAPI'
 import { getTimelineForGroup } from '../lib/timeline'
 import { TSRTimeline } from 'timeline-state-resolver-types'
+
+/** How often to log the memory usage */
+const LOG_MEMORY_USAGE_INTERVAL = 60 * 1000
 
 export class SuperConductor {
 	ipcServer: IPCServer
@@ -56,6 +59,7 @@ export class SuperConductor {
 		timer: NodeJS.Timer
 	} | null = null
 	private refreshStatus: { [deviceId: string]: number } = {}
+	private logMemoryUsageInterval: NodeJS.Timer | null = null
 
 	private hasStoredStartupUserStatistics = false
 
@@ -260,6 +264,8 @@ export class SuperConductor {
 		}
 
 		this._restoreTimelines()
+
+		this.logMemoryUsageInterval = setInterval(() => this.logMemoryUsage(), LOG_MEMORY_USAGE_INTERVAL)
 	}
 	sendSystemMessage(message: string, options: SystemMessageOptions): void {
 		this.clients.forEach((clients) => clients.ipcClient.systemMessage(message, options))
@@ -508,6 +514,15 @@ export class SuperConductor {
 		this.bridgeHandler?.refreshResources()
 	}
 
+	/** Logs the memory usage, to help tracking down memory leaks */
+	private logMemoryUsage(): void {
+		try {
+			this.log.info(describeMemoryUsage(app.getAppMetrics()))
+		} catch (e) {
+			this.log.error(`Error when logging memory usage: ${e}`)
+		}
+	}
+
 	private updateTimeline(group: Group): GroupPreparedPlayData | null {
 		if (!this.bridgeHandler) throw new Error('Internal Error: No bridgeHandler set')
 
@@ -543,5 +558,9 @@ export class SuperConductor {
 	terminate(): void {
 		this.storage.terminate()
 		this.triggerHandleAutoFill.clear()
+		if (this.logMemoryUsageInterval) {
+			clearInterval(this.logMemoryUsageInterval)
+			this.logMemoryUsageInterval = null
+		}
 	}
 }

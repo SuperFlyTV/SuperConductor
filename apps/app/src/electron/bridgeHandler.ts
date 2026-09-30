@@ -82,6 +82,12 @@ export class BridgeHandler {
 			}
 
 			this.connectedBridges.push(bridge)
+
+			connection.on('close', () => {
+				// The connection is gone for good, remove it so that it can be garbage collected:
+				const index = this.connectedBridges.indexOf(bridge)
+				if (index >= 0) this.connectedBridges.splice(index, 1)
+			})
 		})
 
 		this.server.on('close', () => {
@@ -98,7 +104,11 @@ export class BridgeHandler {
 		}, 1000)
 	}
 	getBridgeConnection(bridgeId: string): AnyBridgeConnection | undefined {
-		return this.connectedBridges.find((b) => b.bridgeId === bridgeId)
+		// Prefer a live connection, there might be an old one lingering for the same bridge:
+		return (
+			this.connectedBridges.find((b) => b.bridgeId === bridgeId && b.isConnected()) ??
+			this.connectedBridges.find((b) => b.bridgeId === bridgeId)
+		)
 	}
 	async onClose(): Promise<void> {
 		if (this.internalBridge) {
@@ -232,7 +242,7 @@ export class BridgeHandler {
 		}
 	}
 	updateSettings(bridgeId: string, settings: Bridge['settings']): void {
-		const bridgeConnection = this.connectedBridges.find((bc) => bc.bridgeId === bridgeId)
+		const bridgeConnection = this.getBridgeConnection(bridgeId)
 		if (bridgeConnection) {
 			bridgeConnection.setSettings(settings)
 		}
@@ -579,6 +589,7 @@ abstract class AbstractBridgeConnection {
 	}
 	protected abstract send(msg: BridgeAPI.FromSuperConductor.Any): void
 	protected abstract getConnectionId(): number
+	abstract isConnected(): boolean
 }
 
 export class WebsocketBridgeConnection extends AbstractBridgeConnection {
@@ -623,6 +634,9 @@ export class WebsocketBridgeConnection extends AbstractBridgeConnection {
 	protected getConnectionId(): number {
 		return this.connection.connectionId
 	}
+	isConnected(): boolean {
+		return this.connection.connected
+	}
 }
 
 export class LocalBridgeConnection extends AbstractBridgeConnection {
@@ -656,5 +670,8 @@ export class LocalBridgeConnection extends AbstractBridgeConnection {
 	}
 	protected getConnectionId(): number {
 		return this.connectionId
+	}
+	isConnected(): boolean {
+		return true
 	}
 }

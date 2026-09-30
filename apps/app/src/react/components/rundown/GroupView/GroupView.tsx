@@ -957,6 +957,9 @@ export const GroupEndTime = observer(function RemainingTime(props: { groupId: st
 	)
 	const [sectionEndTimeString, setSectionEndTimeString] = useState('')
 
+	// Note: sectionTimeToEnd changes on every frame while playing, so only whether it is set is used as a dependency:
+	const hasSectionTimeToEnd = sectionTimeToEnd !== null
+
 	useFrame(
 		(nowTime: number) => {
 			if (!groupIsPlaying) return false // Stop evaluating each frame
@@ -977,7 +980,7 @@ export const GroupEndTime = observer(function RemainingTime(props: { groupId: st
 				return true
 			}
 		},
-		[groupIsPlaying, sectionEndTime, sectionTimeToEnd]
+		[groupIsPlaying, sectionEndTime, hasSectionTimeToEnd]
 	)
 
 	let label: string

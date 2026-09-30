@@ -44,7 +44,7 @@ export class WebsocketServer extends EventEmitter {
 			// A new client has connected
 
 			const bridge = new WebsocketConnection(this.log, ws)
-			this.connections.push(bridge)
+			this.addConnection(bridge)
 
 			this.onConnection(bridge)
 		})
@@ -52,11 +52,21 @@ export class WebsocketServer extends EventEmitter {
 
 	connectToServer(url: string): WebsocketConnection {
 		const bridge = new WebsocketConnection(this.log, url)
-		this.connections.push(bridge)
+		this.addConnection(bridge)
 		setImmediate(() => {
+			// The connection might have been terminated already:
+			if (bridge.terminated) return
 			this.onConnection(bridge)
 		})
 		return bridge
+	}
+	private addConnection(connection: WebsocketConnection) {
+		this.connections.push(connection)
+		connection.on('close', () => {
+			// Remove the connection, so that it can be garbage collected:
+			const index = this.connections.indexOf(connection)
+			if (index >= 0) this.connections.splice(index, 1)
+		})
 	}
 	close(): void {
 		this.wss.close()
@@ -64,10 +74,11 @@ export class WebsocketServer extends EventEmitter {
 	}
 	private _onServerClose() {
 		// Close the connections:
-		this.connections.forEach((client) => {
+		const connections = this.connections
+		this.connections = []
+		connections.forEach((client) => {
 			client.terminate()
 		})
-		this.connections = []
 
 		if (!this.isClosed) {
 			this.emit('close')
@@ -83,6 +94,7 @@ export class WebsocketServer extends EventEmitter {
 export class WebsocketConnection extends EventEmitter {
 	public connectionId: number = Date.now() + Math.random()
 	private _connected = false
+	private _terminated = false
 
 	private pingInterval: NodeJS.Timeout | null = null
 	private lastPingReceived = 0
@@ -116,11 +128,23 @@ export class WebsocketConnection extends EventEmitter {
 	get connected(): boolean {
 		return this._connected
 	}
+	/** True if the connection has been terminated, and will not be used anymore */
+	get terminated(): boolean {
+		return this._terminated
+	}
 
+	/**
+	 * Closes the connection for good (it will not reconnect).
+	 * Emits 'close' (after 'disconnected'), then removes all listeners.
+	 */
 	terminate(): void {
-		this.emit('disconnected')
+		if (this._terminated) return
+		this._terminated = true
 
-		this.ws?.close()
+		const wasConnected = this._connected
+		this._connected = false
+		if (wasConnected) this.emit('disconnected')
+
 		if (this.pingInterval) {
 			clearInterval(this.pingInterval)
 			this.pingInterval = null
@@ -129,6 +153,10 @@ export class WebsocketConnection extends EventEmitter {
 			clearInterval(this.reconnectInterval)
 			this.reconnectInterval = null
 		}
+		this.ws?.close()
+		this.ws = null
+
+		this.emit('close')
 		this.removeAllListeners()
 	}
 	send(message: unknown): void {
@@ -156,10 +184,14 @@ export class WebsocketConnection extends EventEmitter {
 	}
 
 	private setupWs(ws: WebSocket) {
+		// Note: Events from a ws that has been replaced (or from a terminated connection) are ignored,
+		// otherwise they could trigger reconnections of an already terminated connection.
 		ws.on('close', () => {
+			if (this.ws !== ws) return
 			this._onDisconnected()
 		})
 		ws.on('error', (err) => {
+			if (this.ws !== ws) return
 			if (!this.connected && `${err}`.match(/ECONNREFUSED/)) {
 				// Yeah, we already know we are not connected..
 				// Ignore.
@@ -169,17 +201,21 @@ export class WebsocketConnection extends EventEmitter {
 			}
 		})
 		ws.on('ping', () => {
+			if (this.ws !== ws) return
 			this.lastPingReceived = Date.now()
 		})
 		ws.on('pong', () => {
+			if (this.ws !== ws) return
 			this.lastPingReceived = Date.now()
 		})
 		ws.on('message', (data) => {
+			if (this.ws !== ws) return
 			this._onMessage(data.toString())
 		})
 	}
 
 	private _triggerReconnect() {
+		if (this._terminated) return
 		if (this.reconnectInterval) {
 			clearInterval(this.reconnectInterval)
 		}
@@ -195,6 +231,7 @@ export class WebsocketConnection extends EventEmitter {
 		}, RECONNECT_INTERVAL)
 	}
 	private _connect() {
+		if (this._terminated) return
 		// Shut down the current connection
 		this.ws?.close()
 
@@ -210,6 +247,7 @@ export class WebsocketConnection extends EventEmitter {
 
 	private _waitForConnection(ws: WebSocket) {
 		ws.once('open', () => {
+			if (this.ws !== ws) return
 			this._onConnected()
 		})
 	}
@@ -240,6 +278,7 @@ export class WebsocketConnection extends EventEmitter {
 		}
 	}
 	private _onDisconnected() {
+		if (this._terminated) return
 		const wasConnected = this._connected
 		this._connected = false
 
@@ -252,8 +291,8 @@ export class WebsocketConnection extends EventEmitter {
 			this.emit('disconnected')
 			if (this.isServer) {
 				// On the server, a connection is lost forever
-				this.emit('close')
-				this.terminate()
+				this.terminate() // Emits 'close'
+				return
 			}
 		}
 
